@@ -58,23 +58,23 @@ namespace System.Xml.Xsl.IlGen
 
         private int _patterns;               // Set of patterns that the annotated Qil node and its subtree matches
         private bool _isReadOnly;            // True if setters are disabled in the case of singleton OptimizerPatterns
-        private object _arg0, _arg1, _arg2;    // Arguments to the matching patterns
+        private object? _arg0, _arg1, _arg2;    // Arguments to the matching patterns
 
-        private static volatile OptimizerPatterns s_zeroOrOneDefault;
-        private static volatile OptimizerPatterns s_maybeManyDefault;
-        private static volatile OptimizerPatterns s_dodDefault;
+        private static volatile OptimizerPatterns? s_zeroOrOneDefault;
+        private static volatile OptimizerPatterns? s_maybeManyDefault;
+        private static volatile OptimizerPatterns? s_dodDefault;
 
         /// <summary>
         /// Get OptimizerPatterns annotation for the specified node.  Lazily create if necessary.
         /// </summary>
         public static OptimizerPatterns Read(QilNode nd)
         {
-            XmlILAnnotation ann = nd.Annotation as XmlILAnnotation;
-            OptimizerPatterns optPatt = (ann != null) ? ann.Patterns : null;
+            XmlILAnnotation? ann = nd.Annotation as XmlILAnnotation;
+            OptimizerPatterns? optPatt = (ann != null) ? ann.Patterns : null;
 
             if (optPatt == null)
             {
-                if (!nd.XmlType.MaybeMany)
+                if (!nd.XmlType!.MaybeMany)
                 {
                     // Expressions with ZeroOrOne cardinality should always report IsDocOrderDistinct and NoContainedNodes
                     if (s_zeroOrOneDefault == null)
@@ -131,14 +131,14 @@ namespace System.Xml.Xsl.IlGen
         public static OptimizerPatterns Write(QilNode nd)
         {
             XmlILAnnotation ann = XmlILAnnotation.Write(nd);
-            OptimizerPatterns optPatt = ann.Patterns;
+            OptimizerPatterns? optPatt = ann.Patterns;
 
             if (optPatt == null || optPatt._isReadOnly)
             {
                 optPatt = new OptimizerPatterns();
                 ann.Patterns = optPatt;
 
-                if (!nd.XmlType.MaybeMany)
+                if (!nd.XmlType!.MaybeMany)
                 {
                     optPatt.AddPattern(OptimizerPatternName.IsDocOrderDistinct);
                     optPatt.AddPattern(OptimizerPatternName.SameDepth);
@@ -224,7 +224,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public object GetArgument(OptimizerPatternArgument argNum)
         {
-            object arg = null;
+            object? arg = null;
 
             switch ((int)argNum)
             {

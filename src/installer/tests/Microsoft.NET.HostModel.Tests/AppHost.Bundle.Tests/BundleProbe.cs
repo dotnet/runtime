@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using Xunit;
+using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
-using BundleTests.Helpers;
-using System.Threading;
+using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundleProbe : IClassFixture<BundleProbe.SharedTestState>
+    public class BundleProbe : BundleTestBase, IClassFixture<BundleProbe.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
@@ -40,7 +38,7 @@ namespace AppHost.Bundle.Tests
         private void Bundle_Probe_Passed_For_Single_File_App()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            string singleFile = BundleHelper.BundleApp(fixture);
+            string singleFile = BundleSelfContainedApp(fixture);
 
             Command.Create(singleFile, "SingleFile")
                 .CaptureStdErr()
@@ -52,19 +50,13 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("BUNDLE_PROBE OK");
         }
 
-        public class SharedTestState : IDisposable
+        public class SharedTestState : SharedTestStateBase, IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-                TestFixture = new TestProjectFixture("BundleProbeTester", RepoDirectories);
-                TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFixture.CurrentRid,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+                TestFixture = PreparePublishedSelfContainedTestProject("BundleProbeTester");
             }
 
             public void Dispose()

@@ -103,6 +103,9 @@ mono_mach_arch_get_thread_fpstate_size ()
 kern_return_t
 mono_mach_arch_get_thread_states (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count, thread_state_t fpstate, mach_msg_type_number_t *fpcount)
 {
+#if defined(HOST_WATCHOS)
+	g_error ("thread_get_state() is not supported by this platform");
+#else
 	x86_thread_state64_t *arch_state = (x86_thread_state64_t *)state;
 	x86_float_state64_t *arch_fpstate = (x86_float_state64_t *)fpstate;
 	kern_return_t ret;
@@ -116,17 +119,22 @@ mono_mach_arch_get_thread_states (thread_port_t thread, thread_state_t state, ma
 
 	ret = thread_get_state (thread, x86_FLOAT_STATE64, (thread_state_t)arch_fpstate, fpcount);
 	return ret;
+#endif
 }
 
 kern_return_t
 mono_mach_arch_set_thread_states (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count, thread_state_t fpstate, mach_msg_type_number_t fpcount)
 {
+#if defined(HOST_WATCHOS)
+	g_error ("thread_set_state() is not supported by this platform");
+#else
 	kern_return_t ret;
 	ret = thread_set_state (thread, x86_THREAD_STATE64, state, count);
 	if (ret != KERN_SUCCESS)
 		return ret;
 	ret = thread_set_state (thread, x86_FLOAT_STATE64, fpstate, fpcount);
 	return ret;
+#endif
 }
 
 #endif

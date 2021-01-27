@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: SkipOnCoreClr("https://github.com/dotnet/runtime/issues/39309", RuntimeTestModes.TailcallStress)]
+[assembly: SkipOnMono("System.Net.HttpListener is not supported on wasm", TestPlatforms.Browser)]

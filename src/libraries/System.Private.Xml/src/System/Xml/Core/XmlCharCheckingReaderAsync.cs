@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Xml;
 using System.Diagnostics;
@@ -173,7 +172,7 @@ namespace System.Xml
                             if (str != null)
                             {
                                 int i;
-                                if ((i = _xmlCharType.IsPublicId(str)) >= 0)
+                                if ((i = XmlCharType.IsPublicId(str)) >= 0)
                                 {
                                     Throw(SR.Xml_InvalidCharacter, XmlException.BuildCharExceptionArgs(str, i));
                                 }

@@ -19,15 +19,15 @@ namespace System.Data
         private int _length = -1;
         private int _minLength = -1;
         private int _maxLength = -1;
-        private string _pattern = string.Empty;
+        private string? _pattern = string.Empty;
         private string _ns = string.Empty;                  // my ns
 
-        private string _maxExclusive = string.Empty;
-        private string _maxInclusive = string.Empty;
-        private string _minExclusive = string.Empty;
-        private string _minInclusive = string.Empty;
+        private string? _maxExclusive = string.Empty;
+        private string? _maxInclusive = string.Empty;
+        private string? _minExclusive = string.Empty;
+        private string? _minInclusive = string.Empty;
 
-        internal string _enumeration = string.Empty;
+        internal string? _enumeration = string.Empty;
 
         internal SimpleType(string baseType)
         {
@@ -82,7 +82,7 @@ namespace System.Data
 
                 if (_baseType == null || _baseType.Length == 0)
                 {
-                    _baseType = content.BaseType.Name;
+                    _baseType = content.BaseType!.Name;
                     _xmlBaseType = null;
                 }
 

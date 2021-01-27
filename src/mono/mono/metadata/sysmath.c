@@ -28,6 +28,7 @@
 
 #include "number-ms.h"
 #include "utils/mono-compiler.h"
+#include "utils/mono-math.h"
 #include "icalls.h"
 #include "icall-decl.h"
 
@@ -40,20 +41,7 @@ ves_icall_System_Math_Floor (gdouble x)
 gdouble
 ves_icall_System_Math_Round (gdouble x)
 {
-	gdouble floor_tmp;
-
-	/* If the number has no fractional part do nothing This shortcut is necessary
-	 * to workaround precision loss in borderline cases on some platforms */
-	if (x == (gdouble)(gint64) x)
-		return x;
-
-	floor_tmp = floor (x + 0.5);
-
-	if ((x == (floor (x) + 0.5)) && (fmod (floor_tmp, 2.0) != 0)) {
-		floor_tmp -= 1.0;
-	}
-
-	return copysign (floor_tmp, x);
+	return mono_round_to_even (x);
 }
 
 gdouble

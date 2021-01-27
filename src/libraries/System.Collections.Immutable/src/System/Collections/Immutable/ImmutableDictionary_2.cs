@@ -912,7 +912,7 @@ namespace System.Collections.Immutable
                 return bucket.TryGetValue(key, origin.Comparers, out value!);
             }
 
-            value = default(TValue)!;
+            value = default;
             return false;
         }
 

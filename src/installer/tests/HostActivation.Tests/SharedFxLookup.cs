@@ -60,7 +60,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Restore and build SharedFxLookupPortableApp from exe dir
             SharedFxLookupPortableAppFixture = new TestProjectFixture("SharedFxLookupPortableApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages)
+                .EnsureRestored()
                 .BuildProject();
             var fixture = SharedFxLookupPortableAppFixture;
 
@@ -155,49 +155,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass()
                 .And.HaveStdErrContaining(Path.Combine("7777.0.0", "System.Collections.Immutable.dll"))
                 .And.NotHaveStdErrContaining(Path.Combine("9999.1.0", "System.Collections.Immutable.dll"));
-        }
-
-        [Fact]
-        public void CoreClrLookup_WithNoDirectorySeparatorInDeps()
-        {
-            var fixture = SharedFxLookupPortableAppFixture
-                .Copy();
-
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.0.0", null);
-
-            // Add versions in the exe folders
-            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0");
-            string sharedFxPath = Path.Combine(_exeSharedFxBaseDir, "9999.0.0");
-            string sharedFxDepsJsonPath = Path.Combine(sharedFxPath, "Microsoft.NETCore.App.deps.json");
-
-            // Modify the .deps.json for Microsoft.NETCore.App FX
-            JObject root = JObject.Parse(File.ReadAllText(sharedFxDepsJsonPath));
-            IEnumerable<JProperty> netCoreAppNativeAssets = root["targets"]
-                .Children<JProperty>().Where(p => p.Name.Contains("/"))
-                .Children().Children().OfType<JProperty>().Where(p => p.Name.Contains("runtime") && p.Name.Contains("Microsoft.NETCore.App"))
-                .Values()["native"].Children().OfType<JProperty>();
-
-            // Change the coreclr.dll asset to specify only "coreclr.dll" as the relative path (no directories).
-            string coreClrLibraryName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("coreclr");
-            JProperty coreClrProperty = netCoreAppNativeAssets.First(p => p.Name.Contains(coreClrLibraryName));
-            JProperty newCoreClrProperty = new JProperty(coreClrProperty.Name.Substring(coreClrProperty.Name.LastIndexOf('/') + 1), coreClrProperty.Value);
-            coreClrProperty.Parent.Add(newCoreClrProperty);
-            coreClrProperty.Remove();
-
-            File.WriteAllText(sharedFxDepsJsonPath, root.ToString());
-
-            dotnet.Exec(appDll)
-                .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdErrContaining($"CoreCLR path = '{Path.Combine(sharedFxPath, coreClrLibraryName)}'");
         }
     }
 }

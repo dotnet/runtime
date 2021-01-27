@@ -1,5 +1,5 @@
-#include "mono/eventpipe/ep.h"
-#include "eglib/test/test.h"
+#include <eventpipe/ep.h>
+#include <eglib/test/test.h>
 #include <mono/mini/jit.h>
 #include <mono/metadata/assembly.h>
 

@@ -2,7 +2,7 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
-
+#include <mono/utils/mono-compiler.h>
 
 #if defined (USE_WASM_BACKEND)
 
@@ -10,6 +10,7 @@
 #include <mono/utils/mono-mmap.h>
 
 #include <emscripten.h>
+#include <emscripten/stack.h>
 #include <glib.h>
 
 #define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
@@ -18,19 +19,14 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_base (void)
 {
-	// Return the bottom limit of the stack
-	return EM_ASM_INT ({
-		return STACK_MAX;
-	});
+	return emscripten_stack_get_end ();
 }
 
 EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_size (void)
 {
-	return EM_ASM_INT ({
-		return TOTAL_STACK;
-	});
+	return (guint8*)emscripten_stack_get_base () - (guint8*)emscripten_stack_get_end ();
 }
 
 int
@@ -318,5 +314,9 @@ void
 mono_memory_barrier_process_wide (void)
 {
 }
+
+#else
+
+MONO_EMPTY_SOURCE_FILE (mono_threads_wasm);
 
 #endif

@@ -38,7 +38,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Constructor
         /// </summary>
-        private XmlQualifiedNameTest(string name, string ns, bool exclude) : base(name, ns)
+        private XmlQualifiedNameTest(string? name, string? ns, bool exclude) : base(name, ns)
         {
             _exclude = exclude;
         }
@@ -46,7 +46,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Construct new from name and namespace. Returns singleton Wildcard in case full wildcard
         /// </summary>
-        public static XmlQualifiedNameTest New(string name, string ns)
+        public static XmlQualifiedNameTest New(string? name, string? ns)
         {
             if (ns == null && name == null)
             {

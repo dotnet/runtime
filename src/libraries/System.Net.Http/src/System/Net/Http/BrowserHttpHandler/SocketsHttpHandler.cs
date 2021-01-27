@@ -2,14 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
+using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Connections;
 
 namespace System.Net.Http
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         public static bool IsSupported => false;
@@ -130,13 +134,20 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public ConnectionFactory? ConnectionFactory
+        public TimeSpan KeepAlivePingDelay
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
+        public TimeSpan KeepAlivePingTimeout
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+
+        public HttpKeepAlivePingPolicy KeepAlivePingPolicy
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
@@ -160,6 +171,24 @@ namespace System.Net.Http
             HttpRequestMessage request, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 
         public bool EnableMultipleHttp2Connections
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? PlaintextStreamFilter
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public QuicImplementationProvider? QuicImplementationProvider
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

@@ -2,5 +2,10 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <PackageDescription>Provides the WebSocketProtocol class, which allows creating a websocket from a connected stream using WebSocketsProtocol.CreateFromConnectedStream.
+
+Commonly Used Types:
+System.Net.WebSockets.WebSocketProtocol</PackageDescription>
   </PropertyGroup>
 </Project>

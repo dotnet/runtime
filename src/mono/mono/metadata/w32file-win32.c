@@ -10,8 +10,7 @@
 
 #include <winsock2.h>
 #include <windows.h>
-#include "mono/metadata/w32file-win32-internals.h"
-#include "mono/metadata/w32subset.h"
+#include <mono/utils/w32subset.h>
 #include "icall-decl.h"
 
 void
@@ -430,8 +429,7 @@ mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, g
 gboolean
 mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 {
-	gboolean result;
-
+	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
 
 	result = MoveFileW (path, dest);
@@ -439,45 +437,65 @@ mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 		*error = GetLastError ();
 
 	MONO_EXIT_GC_SAFE;
-
 	return result;
+}
+#elif HAVE_API_SUPPORT_WIN32_MOVE_FILE_EX
+gboolean
+mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
+{
+	gboolean result = FALSE;
+	MONO_ENTER_GC_SAFE;
+
+	result = MoveFileExW (path, dest, MOVEFILE_COPY_ALLOWED);
+	if (!result) {
+		*error = GetLastError ();
+	}
+
+	MONO_EXIT_GC_SAFE;
+	return result;
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_MOVE_FILE && !HAVE_EXTERN_DEFINED_WIN32_MOVE_FILE_EX
+gboolean
+mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
+{
+	g_unsupported_api ("MoveFile, MoveFileEx");
+	*error = ERROR_NOT_SUPPORTED;
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
 }
 #endif
 
 #if HAVE_API_SUPPORT_WIN32_REPLACE_FILE
 gboolean
-mono_w32file_replace (const gunichar2 *destinationFileName, const gunichar2 *sourceFileName, const gunichar2 *destinationBackupFileName, guint32 flags, gint32 *error)
+mono_w32file_replace (const gunichar2 *destination_file_name, const gunichar2 *source_file_name, const gunichar2 *destination_backup_file_name, guint32 flags, gint32 *error)
 {
-	gboolean result;
-
+	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
 
-	result = ReplaceFileW (destinationFileName, sourceFileName, destinationBackupFileName, flags, NULL, NULL);
+	result = ReplaceFileW (destination_file_name, source_file_name, destination_backup_file_name, flags, NULL, NULL);
 	if (!result)
 		*error = GetLastError ();
 
 	MONO_EXIT_GC_SAFE;
-
 	return result;
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_REPLACE_FILE
+gboolean
+mono_w32file_replace (const gunichar2 *destination_file_name, const gunichar2 *source_file_name, const gunichar2 *destination_backup_file_name, guint32 flags, gint32 *error)
+{
+	g_unsupported_api ("ReplaceFile");
+	*error = ERROR_NOT_SUPPORTED;
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
 }
 #endif
 
 #if HAVE_API_SUPPORT_WIN32_COPY_FILE
-// Support older UWP SDK?
-WINBASEAPI
-BOOL
-WINAPI
-CopyFileW (
-	PCWSTR ExistingFileName,
-	PCWSTR NewFileName,
-	BOOL FailIfExists
-	);
 
 gboolean
 mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwrite, gint32 *error)
 {
-	gboolean result;
-
+	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
 
 	result = CopyFileW (path, dest, !overwrite);
@@ -485,8 +503,36 @@ mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwr
 		*error = GetLastError ();
 
 	MONO_EXIT_GC_SAFE;
-
 	return result;
+}
+#elif HAVE_API_SUPPORT_WIN32_COPY_FILE2
+gboolean
+mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwrite, gint32 *error)
+{
+	gboolean result = FALSE;
+	COPYFILE2_EXTENDED_PARAMETERS copy_param = {0};
+
+	copy_param.dwSize = sizeof (COPYFILE2_EXTENDED_PARAMETERS);
+	copy_param.dwCopyFlags = (!overwrite) ? COPY_FILE_FAIL_IF_EXISTS : 0;
+
+	MONO_ENTER_GC_SAFE;
+
+	result = SUCCEEDED (CopyFile2 (path, dest, &copy_param));
+	if (result == FALSE) {
+		*error=GetLastError ();
+	}
+
+	MONO_EXIT_GC_SAFE;
+	return result;
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_COPY_FILE && !HAVE_EXTERN_DEFINED_WIN32_COPY_FILE2
+gboolean
+mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwrite, gint32 *error)
+{
+	g_unsupported_api ("CopyFile, CopyFile2");
+	*error = ERROR_NOT_SUPPORTED;
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
 }
 #endif
 
@@ -506,6 +552,15 @@ mono_w32file_lock (gpointer handle, gint64 position, gint64 length, gint32 *erro
 
 	return result;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_LOCK_FILE
+gboolean
+mono_w32file_lock (gpointer handle, gint64 position, gint64 length, gint32 *error)
+{
+	g_unsupported_api ("LockFile");
+	*error = ERROR_NOT_SUPPORTED;
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
 #endif
 
 #if HAVE_API_SUPPORT_WIN32_UNLOCK_FILE
@@ -524,10 +579,19 @@ mono_w32file_unlock (gpointer handle, gint64 position, gint64 length, gint32 *er
 
 	return result;
 }
+#elif !HAVE_EXTERN_DEFINED_WIN32_UNLOCK_FILE
+gboolean
+mono_w32file_unlock (gpointer handle, gint64 position, gint64 length, gint32 *error)
+{
+	g_unsupported_api ("UnlockFile");
+	*error = ERROR_NOT_SUPPORTED;
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
 #endif
 
 #if HAVE_API_SUPPORT_WIN32_GET_STD_HANDLE
-HANDLE
+gpointer
 mono_w32file_get_console_input (void)
 {
 	HANDLE res;
@@ -537,7 +601,7 @@ mono_w32file_get_console_input (void)
 	return res;
 }
 
-HANDLE
+gpointer
 mono_w32file_get_console_output (void)
 {
 	HANDLE res;
@@ -547,7 +611,7 @@ mono_w32file_get_console_output (void)
 	return res;
 }
 
-HANDLE
+gpointer
 mono_w32file_get_console_error (void)
 {
 	HANDLE res;
@@ -556,10 +620,33 @@ mono_w32file_get_console_error (void)
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
-#endif // HAVE_API_SUPPORT_WIN32_GET_STD_HANDLE
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_STD_HANDLE
+gpointer
+mono_w32file_get_console_input (void)
+{
+	g_unsupported_api ("GetStdHandle (STD_INPUT_HANDLE)");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return INVALID_HANDLE_VALUE;
+}
+
+gpointer
+mono_w32file_get_console_output (void)
+{
+	g_unsupported_api ("GetStdHandle (STD_OUTPUT_HANDLE)");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return INVALID_HANDLE_VALUE;
+}
+
+gpointer
+mono_w32file_get_console_error (void)
+{
+	g_unsupported_api ("GetStdHandle (STD_ERROR_HANDLE)");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return INVALID_HANDLE_VALUE;
+}
+#endif
 
 #if HAVE_API_SUPPORT_WIN32_GET_FILE_SIZE_EX
-
 gint64
 mono_w32file_get_file_size (HANDLE handle, gint32 *error)
 {
@@ -575,42 +662,55 @@ mono_w32file_get_file_size (HANDLE handle, gint32 *error)
 	MONO_EXIT_GC_SAFE;
 	return length.QuadPart;
 }
-
-#endif // HAVE_API_SUPPORT_WIN32_GET_FILE_SIZE_EX
-
-// Support older UWP SDK.
-WINBASEAPI
-UINT
-WINAPI
-GetDriveTypeW (
-	PCWSTR RootPathName
-	);
-
-guint32
-ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, gint32 root_path_name_length, MonoError *error)
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_FILE_SIZE_EX
+gint64
+mono_w32file_get_file_size (HANDLE handle, gint32 *error)
 {
-	// FIXME Check for embedded nuls here or in native.
+	g_unsupported_api ("GetFileSizeEx");
+	*error = ERROR_NOT_SUPPORTED;
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return 0;
+}
+#endif
+
 #if HAVE_API_SUPPORT_WIN32_GET_DRIVE_TYPE
+guint32
+mono_w32file_get_drive_type (const gunichar2 *root_path_name, gint32 root_path_name_length, MonoError *error)
+{
 	guint32 res;
 	MONO_ENTER_GC_SAFE;
 	res = GetDriveTypeW (root_path_name);
 	MONO_EXIT_GC_SAFE;
 	return res;
-#else
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_DRIVE_TYPE
+guint32
+mono_w32file_get_drive_type (const gunichar2 *root_path_name, gint32 root_path_name_length, MonoError *error)
+{
 	g_unsupported_api ("GetDriveType");
 	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetDriveType");
+	SetLastError (ERROR_NOT_SUPPORTED);
 	return DRIVE_UNKNOWN;
-#endif
 }
+#endif
 
 #if HAVE_API_SUPPORT_WIN32_GET_LOGICAL_DRIVE_STRINGS
 gint32
-mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
+mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf, MonoError *error)
 {
 	gint32 res;
 	MONO_ENTER_GC_SAFE;
 	res = GetLogicalDriveStringsW (len, buf);
 	MONO_EXIT_GC_SAFE;
 	return res;
+}
+#elif !HAVE_EXTERN_DEFINED_WIN32_GET_LOGICAL_DRIVE_STRINGS
+gint32
+mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf, MonoError *error)
+{
+	g_unsupported_api ("GetLogicalDriveStrings");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetLogicalDriveStrings");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return 0;
 }
 #endif

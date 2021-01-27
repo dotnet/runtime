@@ -2,12 +2,18 @@
 
   <PropertyGroup>
     <VersionProp>HostPolicyVersion</VersionProp>
-    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
+    <PackageDescription>Provides a CoreCLR hosting policy implementation -- configuration settings, assembly paths and assembly servicing</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
     <Dependency Include="Microsoft.NETCore.DotNetHostResolver" VersionProp="HostResolverVersion" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildProjectName).props" />
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <NativeBinary Include="$(DotNetHostBinDir)/$(LibPrefix)hostpolicy$(LibSuffix)"/>
+    <File Include="@(NativeBinary)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <IsNative>true</IsNative>
+    </File>
+  </ItemGroup>
 </Project>

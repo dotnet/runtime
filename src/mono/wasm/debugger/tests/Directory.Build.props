@@ -1,0 +1,15 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)..\..\..\Directory.Build.props" />
+  <Import Project="$(MSBuildThisFileDirectory)..\..\build\WasmApp.InTree.props" />
+  <PropertyGroup>
+    <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
+    <OutputType>Library</OutputType>
+    <Configuration>Debug</Configuration>
+    <RuntimeConfiguration>Release</RuntimeConfiguration>
+
+    <AppDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\publish</AppDir>
+    <OutDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\wasm</OutDir>
+
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(RuntimeConfiguration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
+  </PropertyGroup>
+</Project>

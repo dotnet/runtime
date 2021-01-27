@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public abstract class AsymmetricSignatureFormatter
     {
         protected AsymmetricSignatureFormatter() { }

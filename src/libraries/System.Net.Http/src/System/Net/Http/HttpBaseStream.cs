@@ -36,48 +36,6 @@ namespace System.Net.Http
             set { throw new NotSupportedException(); }
         }
 
-        protected static void ValidateBufferArgs(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if ((uint)offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if ((uint)count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-        }
-
-        /// <summary>
-        /// Validate the arguments to CopyTo, as would Stream.CopyTo, but with knowledge that
-        /// the source stream is always readable and so only checking the destination.
-        /// </summary>
-        protected static void ValidateCopyToArgs(Stream source, Stream destination, int bufferSize)
-        {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
-            }
-
-            if (!destination.CanWrite)
-            {
-                throw destination.CanRead ?
-                    new NotSupportedException(SR.NotSupported_UnwritableStream) :
-                    (Exception)new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
-            }
-        }
-
         public sealed override int ReadByte()
         {
             byte b = 0;
@@ -86,13 +44,13 @@ namespace System.Net.Http
 
         public sealed override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateBufferArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return Read(buffer.AsSpan(offset, count));
         }
 
         public sealed override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateBufferArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
@@ -110,7 +68,7 @@ namespace System.Net.Http
 
         public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            ValidateBufferArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 

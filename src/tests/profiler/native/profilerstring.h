@@ -261,7 +261,7 @@ public:
         return temp;
     }
 
-    size_t Size() const
+    size_t Length() const
     {
         return wcslen(buffer);
     }
@@ -280,4 +280,56 @@ inline std::wostream& operator<<(std::wostream& os, const String& obj)
     }
 
     return os;
+}
+
+inline bool EndsWith(const char *lhs, const char *rhs)
+{
+    size_t lhsLen = strlen(lhs);
+    size_t rhsLen = strlen(rhs);
+    if (lhsLen < rhsLen)
+    {
+        return false;
+    }
+
+    size_t lhsPos = lhsLen - rhsLen;
+    size_t rhsPos = 0;
+
+    while (rhsPos < rhsLen)
+    {
+        if (lhs[lhsPos] != rhs[rhsPos])
+        {
+            return false;
+        }
+
+        ++lhsPos;
+        ++rhsPos;
+    }
+
+    return true;
+}
+
+inline bool EndsWith(const String &lhs, const String &rhs)
+{
+    size_t lhsLength = lhs.Length();
+    size_t rhsLength = rhs.Length();
+    if (lhsLength < rhsLength)
+    {
+        return false;
+    }
+
+    size_t lhsPos = lhsLength - rhsLength;
+    size_t rhsPos = 0;
+
+    while (rhsPos < rhsLength)
+    {
+        if (std::tolower(lhs[lhsPos]) != std::tolower(rhs[rhsPos]))
+        {
+            return false;
+        }
+
+        ++lhsPos;
+        ++rhsPos;
+    }
+
+    return true;
 }

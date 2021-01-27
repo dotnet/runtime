@@ -553,7 +553,9 @@ namespace System.Text
         public virtual int GetByteCount(string s)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
 
             char[] chars = s.ToCharArray();
             return GetByteCount(chars, 0, chars.Length);
@@ -708,10 +710,13 @@ namespace System.Text
         }
 
         public virtual int GetBytes(string s, int charIndex, int charCount,
-                                       byte[] bytes, int byteIndex)
+                                    byte[] bytes, int byteIndex)
         {
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+
             return GetBytes(s.ToCharArray(), charIndex, charCount, bytes, byteIndex);
         }
 

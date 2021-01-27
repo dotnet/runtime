@@ -227,7 +227,7 @@ namespace System.Windows.Input
     [System.Windows.Markup.ValueSerializerAttribute("System.Windows.Input.CommandValueSerializer, PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, Custom=null")]
     public partial interface ICommand
     {
-        event System.EventHandler CanExecuteChanged;
+        event System.EventHandler? CanExecuteChanged;
         bool CanExecute(object? parameter);
         void Execute(object? parameter);
     }
@@ -237,9 +237,11 @@ namespace System.Windows.Markup
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=true)]
     public sealed partial class ValueSerializerAttribute : System.Attribute
     {
-        public ValueSerializerAttribute(string valueSerializerTypeName) { }
-        public ValueSerializerAttribute(System.Type valueSerializerType) { }
+        public ValueSerializerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string valueSerializerTypeName) { }
+        public ValueSerializerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type valueSerializerType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type ValueSerializerType { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string ValueSerializerTypeName { get { throw null; } }
     }
 }

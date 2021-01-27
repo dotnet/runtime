@@ -18,9 +18,9 @@ namespace Internal.Cryptography.Pal
     {
         private static readonly Func<string, CancellationToken, byte[]>? s_downloadBytes = CreateDownloadBytesFunc();
 
-        internal static X509Certificate2? DownloadCertificate(string uri, ref TimeSpan remainingDownloadTime)
+        internal static X509Certificate2? DownloadCertificate(string uri, TimeSpan downloadTimeout)
         {
-            byte[]? data = DownloadAsset(uri, ref remainingDownloadTime);
+            byte[]? data = DownloadAsset(uri, downloadTimeout);
 
             if (data == null || data.Length == 0)
             {
@@ -39,9 +39,9 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal static SafeX509CrlHandle? DownloadCrl(string uri, ref TimeSpan remainingDownloadTime)
+        internal static SafeX509CrlHandle? DownloadCrl(string uri, TimeSpan downloadTimeout)
         {
-            byte[]? data = DownloadAsset(uri, ref remainingDownloadTime);
+            byte[]? data = DownloadAsset(uri, downloadTimeout);
 
             if (data == null)
             {
@@ -77,9 +77,9 @@ namespace Internal.Cryptography.Pal
             return null;
         }
 
-        internal static SafeOcspResponseHandle? DownloadOcspGet(string uri, ref TimeSpan remainingDownloadTime)
+        internal static SafeOcspResponseHandle? DownloadOcspGet(string uri, TimeSpan downloadTimeout)
         {
-            byte[]? data = DownloadAsset(uri, ref remainingDownloadTime);
+            byte[]? data = DownloadAsset(uri, downloadTimeout);
 
             if (data == null)
             {
@@ -100,12 +100,11 @@ namespace Internal.Cryptography.Pal
             return resp;
         }
 
-        private static byte[]? DownloadAsset(string uri, ref TimeSpan remainingDownloadTime)
+        private static byte[]? DownloadAsset(string uri, TimeSpan downloadTimeout)
         {
-            if (s_downloadBytes != null && remainingDownloadTime > TimeSpan.Zero)
+            if (s_downloadBytes != null && downloadTimeout > TimeSpan.Zero)
             {
-                long totalMillis = (long)remainingDownloadTime.TotalMilliseconds;
-                Stopwatch stopwatch = Stopwatch.StartNew();
+                long totalMillis = (long)downloadTimeout.TotalMilliseconds;
                 CancellationTokenSource? cts = totalMillis > int.MaxValue ? null : new CancellationTokenSource((int)totalMillis);
 
                 try
@@ -115,8 +114,6 @@ namespace Internal.Cryptography.Pal
                 catch { }
                 finally
                 {
-                    // TimeSpan.Zero isn't a worrisome value on the subtraction, it only means "no limit" on the original input.
-                    remainingDownloadTime -= stopwatch.Elapsed;
                     cts?.Dispose();
                 }
             }

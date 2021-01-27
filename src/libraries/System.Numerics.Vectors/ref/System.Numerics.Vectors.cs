@@ -269,32 +269,32 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Multiply<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(System.Numerics.Vector<T> left, T right) where T : struct { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(T left, System.Numerics.Vector<T> right) where T : struct { throw null; }
-        public static System.Numerics.Vector<System.Single> Narrow(System.Numerics.Vector<System.Double> source1, System.Numerics.Vector<System.Double> source2) { throw null; }
+        public static System.Numerics.Vector<System.Single> Narrow(System.Numerics.Vector<System.Double> low, System.Numerics.Vector<System.Double> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.SByte> Narrow(System.Numerics.Vector<System.Int16> source1, System.Numerics.Vector<System.Int16> source2) { throw null; }
-        public static System.Numerics.Vector<System.Int16> Narrow(System.Numerics.Vector<System.Int32> source1, System.Numerics.Vector<System.Int32> source2) { throw null; }
-        public static System.Numerics.Vector<System.Int32> Narrow(System.Numerics.Vector<System.Int64> source1, System.Numerics.Vector<System.Int64> source2) { throw null; }
+        public static System.Numerics.Vector<System.SByte> Narrow(System.Numerics.Vector<System.Int16> low, System.Numerics.Vector<System.Int16> high) { throw null; }
+        public static System.Numerics.Vector<System.Int16> Narrow(System.Numerics.Vector<System.Int32> low, System.Numerics.Vector<System.Int32> high) { throw null; }
+        public static System.Numerics.Vector<System.Int32> Narrow(System.Numerics.Vector<System.Int64> low, System.Numerics.Vector<System.Int64> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.Byte> Narrow(System.Numerics.Vector<System.UInt16> source1, System.Numerics.Vector<System.UInt16> source2) { throw null; }
+        public static System.Numerics.Vector<System.Byte> Narrow(System.Numerics.Vector<System.UInt16> low, System.Numerics.Vector<System.UInt16> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt16> Narrow(System.Numerics.Vector<System.UInt32> source1, System.Numerics.Vector<System.UInt32> source2) { throw null; }
+        public static System.Numerics.Vector<System.UInt16> Narrow(System.Numerics.Vector<System.UInt32> low, System.Numerics.Vector<System.UInt32> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt32> Narrow(System.Numerics.Vector<System.UInt64> source1, System.Numerics.Vector<System.UInt64> source2) { throw null; }
+        public static System.Numerics.Vector<System.UInt32> Narrow(System.Numerics.Vector<System.UInt64> low, System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Negate<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> OnesComplement<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> SquareRoot<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> Subtract<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.Byte> source, out System.Numerics.Vector<System.UInt16> dest1, out System.Numerics.Vector<System.UInt16> dest2) { throw null; }
-        public static void Widen(System.Numerics.Vector<System.Int16> source, out System.Numerics.Vector<System.Int32> dest1, out System.Numerics.Vector<System.Int32> dest2) { throw null; }
-        public static void Widen(System.Numerics.Vector<System.Int32> source, out System.Numerics.Vector<System.Int64> dest1, out System.Numerics.Vector<System.Int64> dest2) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.Byte> source, out System.Numerics.Vector<System.UInt16> low, out System.Numerics.Vector<System.UInt16> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.Int16> source, out System.Numerics.Vector<System.Int32> low, out System.Numerics.Vector<System.Int32> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.Int32> source, out System.Numerics.Vector<System.Int64> low, out System.Numerics.Vector<System.Int64> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.SByte> source, out System.Numerics.Vector<System.Int16> dest1, out System.Numerics.Vector<System.Int16> dest2) { throw null; }
-        public static void Widen(System.Numerics.Vector<System.Single> source, out System.Numerics.Vector<System.Double> dest1, out System.Numerics.Vector<System.Double> dest2) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.SByte> source, out System.Numerics.Vector<System.Int16> low, out System.Numerics.Vector<System.Int16> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.Single> source, out System.Numerics.Vector<System.Double> low, out System.Numerics.Vector<System.Double> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.UInt16> source, out System.Numerics.Vector<System.UInt32> dest1, out System.Numerics.Vector<System.UInt32> dest2) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.UInt16> source, out System.Numerics.Vector<System.UInt32> low, out System.Numerics.Vector<System.UInt32> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.UInt32> source, out System.Numerics.Vector<System.UInt64> dest1, out System.Numerics.Vector<System.UInt64> dest2) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.UInt32> source, out System.Numerics.Vector<System.UInt64> low, out System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Xor<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
     }
     public partial struct Vector2 : System.IEquatable<System.Numerics.Vector2>, System.IFormattable

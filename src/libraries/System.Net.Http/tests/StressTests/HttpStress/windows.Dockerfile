@@ -5,6 +5,9 @@ FROM $SDK_BASE_IMAGE
 # Use powershell as the default shell
 SHELL ["pwsh", "-Command"]
 
+RUN echo "DOTNET_SDK_VERSION="$env:DOTNET_SDK_VERSION
+RUN echo "DOTNET_VERSION="$env:DOTNET_VERSION
+
 WORKDIR /app
 COPY . .
 

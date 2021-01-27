@@ -98,6 +98,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(Authentication_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task HttpClientHandler_Authentication_Succeeds(string authenticateHeader, bool result)
         {
             if (PlatformDetection.IsWindowsNanoServer)
@@ -137,6 +138,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\nWWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\n")]
         [InlineData("WWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\nWWW-Authenticate: Basic realm=\"hello\"\r\n")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task HttpClientHandler_MultipleAuthenticateHeaders_Succeeds(string authenticateHeader)
         {
             if (PlatformDetection.IsWindowsNanoServer)
@@ -156,6 +158,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\nWWW-Authenticate: NTLM\r\n", "Basic", "Negotiate")]
         [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\nWWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\nWWW-Authenticate: NTLM\r\n", "Digest", "Negotiate")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task HttpClientHandler_MultipleAuthenticateHeaders_PicksSupported(string authenticateHeader, string supportedAuth, string unsupportedAuth)
         {
             if (PlatformDetection.IsWindowsNanoServer)
@@ -181,6 +184,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\n")]
         [InlineData("WWW-Authenticate: Digest realm=\"hello\", nonce=\"testnonce\"\r\n")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task HttpClientHandler_IncorrectCredentials_Fails(string authenticateHeader)
         {
             var options = new LoopbackServer.Options { Domain = Domain, Username = Username, Password = Password };
@@ -218,6 +222,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("NTLM")]
         [InlineData("Kerberos")]
         [InlineData("Negotiate")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task PreAuthenticate_NoPreviousAuthenticatedRequests_NoCredentialsSent(string credCacheScheme)
         {
             const int NumRequests = 3;
@@ -260,6 +265,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(null, "WWW-Authenticate: Basic realm=\"hello\"\r\n")]
         [InlineData("Basic", "WWW-Authenticate: Basic realm=\"hello\"\r\n")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task PreAuthenticate_FirstRequestNoHeaderAndAuthenticates_SecondRequestPreauthenticates(string credCacheScheme, string authResponse)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -352,6 +358,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData((HttpStatusCode)508)] // LoopDetected
         [InlineData((HttpStatusCode)510)] // NotExtended
         [InlineData((HttpStatusCode)511)] // NetworkAuthenticationRequired
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task PreAuthenticate_FirstRequestNoHeader_SecondRequestVariousStatusCodes_ThirdRequestPreauthenticates(HttpStatusCode statusCode)
         {
             const string AuthResponse = "WWW-Authenticate: Basic realm=\"hello\"\r\n";
@@ -395,6 +402,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("/something/hello.html", "/world.html", false)]
         [InlineData("/something/hello.html", "/another/", false)]
         [InlineData("/something/hello.html", "/another/hello.html", false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task PreAuthenticate_AuthenticatedUrl_ThenTryDifferentUrl_SendsAuthHeaderOnlyIfPrefixMatches(
             string originalRelativeUri, string secondRelativeUri, bool expectedAuthHeader)
         {
@@ -434,6 +442,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task PreAuthenticate_SuccessfulBasicButThenFails_DoesntLoopInfinitely()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -472,6 +481,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task PreAuthenticate_SuccessfulBasic_ThenDigestChallenged()
         {
             if (IsWinHttpHandler)

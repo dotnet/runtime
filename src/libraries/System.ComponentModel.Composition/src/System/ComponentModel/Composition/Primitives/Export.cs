@@ -198,7 +198,7 @@ namespace System.ComponentModel.Composition.Primitives
             get
             {
                 // NOTE : the logic below guarantees that the value will be set exactly once. It DOES NOT, however, guarantee that GetExportedValueCore() will be executed
-                // more than once, as locking would be required for that. The said locking is problematic, as we can't reliable call 3rd party code under a lock.
+                // only once, as locking would be required for that. The said locking is problematic, as we can't reliable call 3rd party code under a lock.
                 if (_exportedValue == Export._EmptyValue)
                 {
                     object? exportedValue = GetExportedValueCore();

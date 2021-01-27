@@ -24,22 +24,21 @@ namespace System.Net.Security.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", TestPlatforms.AnyUnix)]
         public async Task SslStream_StreamToStream_HandshakeAlert_Ok()
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new SslStream(clientStream, true, AllowAnyServerCertificate))
-            using (var server = new SslStream(serverStream, true, FailClientCertificate))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, true, AllowAnyServerCertificate))
+            using (var server = new SslStream(stream2, true, FailClientCertificate))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
+                int timeout = TestConfiguration.PassingTestTimeoutMilliseconds;
+
                 Task serverAuth = server.AuthenticateAsServerAsync(certificate);
-                await client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
+                await client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false)).TimeoutAfter(timeout);
 
                 byte[] buffer = new byte[1024];
 
                 // Schannel semantics require that Decrypt is called to receive an alert.
                 await client.WriteAsync(buffer, 0, buffer.Length);
-                var exception = await Assert.ThrowsAsync<IOException>(() => client.ReadAsync(buffer, 0, buffer.Length));
+                var exception = await Assert.ThrowsAsync<IOException>(() => client.ReadAsync(buffer, 0, buffer.Length)).TimeoutAfter(timeout);
 
                 Assert.IsType<Win32Exception>(exception.InnerException);
                 var win32ex = (Win32Exception)exception.InnerException;
@@ -48,7 +47,7 @@ namespace System.Net.Security.Tests
                 // https://msdn.microsoft.com/en-us/library/windows/desktop/dd721886(v=vs.85).aspx
                 Assert.Equal(SEC_E_CERT_UNKNOWN, unchecked((uint)win32ex.NativeErrorCode));
 
-                await Assert.ThrowsAsync<AuthenticationException>(() => serverAuth);
+                await Assert.ThrowsAsync<AuthenticationException>(() => serverAuth).TimeoutAfter(timeout);
 
                 await Assert.ThrowsAsync<AuthenticationException>(() => server.WriteAsync(buffer, 0, buffer.Length));
                 await Assert.ThrowsAsync<AuthenticationException>(() => server.ReadAsync(buffer, 0, buffer.Length));
@@ -58,12 +57,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_ServerInitiatedCloseNotify_Ok()
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new SslStream(clientStream, true, AllowAnyServerCertificate))
-            using (var server = new SslStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, true, AllowAnyServerCertificate))
+            using (var server = new SslStream(stream2))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
                 var handshake = new Task[2];
@@ -131,12 +127,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_DataAfterShutdown_Fail()
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new SslStream(clientStream, true, AllowAnyServerCertificate))
-            using (var server = new SslStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, true, AllowAnyServerCertificate))
+            using (var server = new SslStream(stream2))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
                 var handshake = new Task[2];

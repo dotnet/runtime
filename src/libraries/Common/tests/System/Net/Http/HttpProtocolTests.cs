@@ -15,7 +15,6 @@ namespace System.Net.Http.Functional.Tests
     public abstract class HttpProtocolTests : HttpClientHandlerTestBase
     {
         protected virtual Stream GetStream(Stream s) => s;
-        protected virtual Stream GetStream_ClientDisconnectOk(Stream s) => s;
 
         public HttpProtocolTests(ITestOutputHelper output) : base(output) { }
 
@@ -70,31 +69,22 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(9)]
-        public async Task GetAsync_RequestVersion0X_ThrowsOr11(int minorVersion)
+        public async Task GetAsync_RequestVersion0X_ThrowsNotSupportedException(int minorVersion)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            if (IsWinHttpHandler)
             {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = new Version(0, minorVersion);
+                return;
+            }
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
+            using (HttpClient client = CreateHttpClient())
+            {
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://nosuchhost.invalid");
+                request.Version = new Version(0, minorVersion);
 
-                    if (IsWinHttpHandler)
-                    {
-                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-                        var requestLines = await serverTask;
-                        Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
-                    }
-                    else
-                    {
-                        // Await only client side that will throw. Nothing will get to the server side due to this exception thus do not await it at all.
-                        await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
-                    }
-                }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk});
+                Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
+
+                await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
+            }
         }
 
         [Theory]
@@ -105,15 +95,13 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(2, 7)]
         [InlineData(3, 0)]
         [InlineData(4, 2)]
-        public async Task GetAsync_UnknownRequestVersion_ThrowsOrDegradesTo11(int majorVersion, int minorVersion)
+        public async Task GetAsync_UnknownRequestVersion_DegradesTo11(int majorVersion, int minorVersion)
         {
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync && majorVersion >= 2)
             {
                 return;
             }
-
-            Type exceptionType = null;
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -125,18 +113,11 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
-                    if (exceptionType == null)
-                    {
-                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-                        var requestLines = await serverTask;
-                        Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
-                    }
-                    else
-                    {
-                        await Assert.ThrowsAsync(exceptionType, (() => TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask)));
-                    }
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+                    var requestLines = await serverTask;
+                    Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
                 }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk });
+            }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
         [Theory]
@@ -204,44 +185,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(9)]
-        public async Task GetAsync_ResponseVersion0X_ThrowsOr10(int responseMinorVersion)
-        {
-            bool reportAs10 = false;
-
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = HttpVersion.Version11;
-
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-                    Task<List<string>> serverTask =
-                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                            $"HTTP/0.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
-
-                    if (reportAs10)
-                    {
-                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-
-                        using (HttpResponseMessage response = await getResponseTask)
-                        {
-                            Assert.Equal(1, response.Version.Major);
-                            Assert.Equal(0, response.Version.Minor);
-                        }
-                    }
-                    else
-                    {
-                        await Assert.ThrowsAsync<HttpRequestException>(async () => await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask));
-                    }
-                }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk });
-        }
-
-        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(0, 9)]
         [InlineData(2, 0)]
         [InlineData(2, 1)]
         [InlineData(3, 0)]
@@ -260,9 +206,9 @@ namespace System.Net.Http.Functional.Tests
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
 
-                    await Assert.ThrowsAsync<HttpRequestException>(async () => await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask));
+                    await Assert.ThrowsAsync<HttpRequestException>(() => getResponseTask);
                 }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk });
+            }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
         [Theory]
@@ -547,6 +493,5 @@ namespace System.Net.Http.Functional.Tests
         public HttpProtocolTests_Dribble(ITestOutputHelper output) : base(output) { }
 
         protected override Stream GetStream(Stream s) => new DribbleStream(s);
-        protected override Stream GetStream_ClientDisconnectOk(Stream s) => new DribbleStream(s, true);
     }
 }

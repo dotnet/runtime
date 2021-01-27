@@ -1101,7 +1101,7 @@ namespace System.Data.Odbc
         {
             DataTable resultTable = new DataTable(tableName);
             resultTable.Locale = System.Globalization.CultureInfo.InvariantCulture;
-            DataTable schemaTable = reader.GetSchemaTable();
+            DataTable schemaTable = reader.GetSchemaTable()!;
             foreach (DataRow row in schemaTable.Rows)
             {
                 resultTable.Columns.Add(row["ColumnName"] as string, (Type)row["DataType"]);

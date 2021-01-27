@@ -41,7 +41,7 @@ namespace System.Text
         public override int Remaining => 0;
 
         [DoesNotReturn]
-        private void Throw(byte[] bytesUnknown, int index)
+        private static void Throw(byte[] bytesUnknown, int index)
         {
             bytesUnknown ??= Array.Empty<byte>();
 

@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StructABI.cs" />
-    <Compile Include="StructABI.Windows.cs" Condition="'$(TargetOS)' == 'Windows_NT'" />
+    <Compile Include="StructABI.Windows.cs" Condition="'$(TargetOS)' == 'windows'" />
     <Compile Include="StructABI.Unix.cs" Condition="'$(TargetOS)' == 'Linux' Or '$(TargetOS)' == 'FreeBSD' Or '$(TargetOS)' == 'NetBSD' Or '$(TargetOS)' == 'illumos' Or '$(TargetOS)' == 'Solaris'" />
     <Compile Include="StructABI.OSX.cs" Condition="'$(TargetOS)' == 'OSX'" />
   </ItemGroup>

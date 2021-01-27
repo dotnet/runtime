@@ -13,6 +13,14 @@ using TestLibrary;
 
 namespace BinderTracingTests
 {
+    public class BinderTestException : Exception
+    {
+        public BinderTestException(string message)
+                : base(message)
+        {
+        }
+
+    }
     partial class BinderTracingTest
     {
         private const string AssemblyLoadFromHandlerName = "LoadFromResolveHandler";
@@ -381,7 +389,7 @@ namespace BinderTracingTests
             private Assembly OnAssemblyLoadContextResolving(AssemblyLoadContext context, AssemblyName assemblyName)
             {
                 if (handlerReturn == HandlerReturn.Exception)
-                    throw new Exception("Exception in handler for AssemblyLoadContext.Resolving");
+                    throw new BinderTestException("Exception in handler for AssemblyLoadContext.Resolving");
 
                 Assembly asm = ResolveAssembly(context, assemblyName);
                 var invocation = new HandlerInvocation()
@@ -403,7 +411,7 @@ namespace BinderTracingTests
             private Assembly OnAppDomainAssemblyResolve(object sender, ResolveEventArgs args)
             {
                 if (handlerReturn == HandlerReturn.Exception)
-                    throw new Exception("Exception in handler for AppDomain.AssemblyResolve");
+                    throw new BinderTestException("Exception in handler for AppDomain.AssemblyResolve");
 
                 var assemblyName = new AssemblyName(args.Name);
                 var customContext = new CustomALC(nameof(OnAppDomainAssemblyResolve));

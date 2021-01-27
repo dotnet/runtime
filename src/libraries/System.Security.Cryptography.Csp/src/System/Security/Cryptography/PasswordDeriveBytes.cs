@@ -25,6 +25,7 @@ namespace System.Security.Cryptography
         private HashAlgorithm? _hash;
         private readonly CspParameters? _cspParams;
 
+#pragma warning disable CA1416 // Validate platform compatibility, CspParametersis is windows only type, we might want to annotate this constructors windows only, suppressing for now
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt) : this(strPassword, rgbSalt, new CspParameters()) { }
 
         public PasswordDeriveBytes(byte[] password, byte[]? salt) : this(password, salt, new CspParameters()) { }
@@ -34,6 +35,7 @@ namespace System.Security.Cryptography
 
         public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations) :
             this(password, salt, hashName, iterations, new CspParameters()) { }
+#pragma warning restore CA1416
 
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, CspParameters? cspParams) :
             this(strPassword, rgbSalt, "SHA1", 100, cspParams) { }

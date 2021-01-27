@@ -178,6 +178,31 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45168", TargetFrameworkMonikers.NetFramework)]
+        public static void DocumentDescriptionMissingTerminator()
+        {
+            byte[] rawData = "041e4d00790020004400650073006300720069007000740069006f006e002100".HexToByteArray();
+            Pkcs9DocumentDescription p = new Pkcs9DocumentDescription(rawData);
+            Assert.Equal(rawData, p.RawData);
+            string cookedData = p.DocumentDescription;
+            Assert.Equal("My Description!", cookedData);
+            string oid = p.Oid.Value;
+            Assert.Equal(s_OidDocumentDescription, oid);
+        }
+
+        [Fact]
+        public static void DocumentDescriptionEmbeddedTerminator()
+        {
+            byte[] rawData = "041e4d00790020004400650073006300720000007000740069006f006e000000".HexToByteArray();
+            Pkcs9DocumentDescription p = new Pkcs9DocumentDescription(rawData);
+            Assert.Equal(rawData, p.RawData);
+            string cookedData = p.DocumentDescription;
+            Assert.Equal("My Descr", cookedData);
+            string oid = p.Oid.Value;
+            Assert.Equal(s_OidDocumentDescription, oid);
+        }
+
+        [Fact]
         public static void DocumentDescriptionFromCookedData()
         {
             Pkcs9DocumentDescription p = new Pkcs9DocumentDescription("My Description");
@@ -222,6 +247,31 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(rawData, p.RawData);
             string cookedData = p.DocumentName;
             Assert.Equal("My Name", cookedData);
+            string oid = p.Oid.Value;
+            Assert.Equal(s_OidDocumentName, oid);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45168", TargetFrameworkMonikers.NetFramework)]
+        public static void DocumentNameMissingTerminator()
+        {
+            byte[] rawData = "04104d00790020004e0061006d0065002100".HexToByteArray();
+            Pkcs9DocumentName p = new Pkcs9DocumentName(rawData);
+            Assert.Equal(rawData, p.RawData);
+            string cookedData = p.DocumentName;
+            Assert.Equal("My Name!", cookedData);
+            string oid = p.Oid.Value;
+            Assert.Equal(s_OidDocumentName, oid);
+        }
+
+        [Fact]
+        public static void DocumentNameEmbeddedTerminator()
+        {
+            byte[] rawData = "04104d00790020004e006100000065000000".HexToByteArray();
+            Pkcs9DocumentName p = new Pkcs9DocumentName(rawData);
+            Assert.Equal(rawData, p.RawData);
+            string cookedData = p.DocumentName;
+            Assert.Equal("My Na", cookedData);
             string oid = p.Oid.Value;
             Assert.Equal(s_OidDocumentName, oid);
         }

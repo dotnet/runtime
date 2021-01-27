@@ -20,7 +20,7 @@ namespace System.Xml.Xsl
         public int Left { get { return _left; } }
         public int Right { get { return _right; } }
 
-        public override bool Equals(object other)
+        public override bool Equals(object? other)
         {
             if (other is Int32Pair)
             {

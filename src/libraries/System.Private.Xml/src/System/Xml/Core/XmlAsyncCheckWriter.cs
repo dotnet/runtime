@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Threading.Tasks;
 using System.Xml.XPath;
 
@@ -433,7 +432,7 @@ namespace System.Xml
             return task;
         }
 
-        public override Task WriteProcessingInstructionAsync(string name, string text)
+        public override Task WriteProcessingInstructionAsync(string name, string? text)
         {
             CheckAsync();
             var task = _coreWriter.WriteProcessingInstructionAsync(name, text);

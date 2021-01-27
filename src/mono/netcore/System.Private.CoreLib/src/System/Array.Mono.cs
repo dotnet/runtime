@@ -534,6 +534,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void SetValueRelaxedImpl(object? value, int pos);
 
+#pragma warning disable CA1822
         /*
          * These methods are used to implement the implicit generic interfaces
          * implemented by arrays in NET 2.0.
@@ -637,5 +638,6 @@ namespace System
             // Do not change this to call SetGenericValue_icall directly, due to special casing in the runtime.
             SetGenericValueImpl(index, ref item);
         }
+#pragma warning restore CA1822
     }
 }

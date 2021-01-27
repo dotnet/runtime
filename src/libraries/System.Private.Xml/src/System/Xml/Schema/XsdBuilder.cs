@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.IO;
 using System.Collections;
 using System.Diagnostics;
@@ -676,7 +675,7 @@ namespace System.Xml.Schema
         private XmlSchemaAppInfo? _appInfo;
         private XmlSchemaDocumentation? _documentation;
         private XmlSchemaFacet? _facet;
-        private XmlNode[]? _markup;
+        private XmlNode?[]? _markup;
         private XmlSchemaRedefine? _redefine;
 
         private readonly ValidationEventHandler? _validationEventHandler;
@@ -779,7 +778,7 @@ namespace System.Xml.Schema
             return _currentEntry.ParseContent;
         }
 
-        internal override void ProcessMarkup(XmlNode[] markup)
+        internal override void ProcessMarkup(XmlNode?[] markup)
         {
             _markup = markup;
         }
@@ -795,7 +794,7 @@ namespace System.Xml.Schema
             {
                 if (_namespaces != null && _namespaces.Count > 0)
                 {
-                    _xso.Namespaces.Namespaces = _namespaces;
+                    _xso.Namespaces.Namespaces = _namespaces!;
                     _namespaces = null;
                 }
                 if (_unhandledAttributes.Count != 0)

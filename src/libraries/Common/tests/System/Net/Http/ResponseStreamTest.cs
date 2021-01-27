@@ -254,6 +254,29 @@ namespace System.Net.Http.Functional.Tests
                 await ReadAsStreamHelper(uri);
             });
         }
+
+        [Theory]
+        [InlineData(TransferType.None, TransferError.None)]
+        [InlineData(TransferType.ContentLength, TransferError.None)]
+        [InlineData(TransferType.Chunked, TransferError.None)]
+        public async Task ReadAsStreamAsync_StreamCanReadIsFalseAfterDispose(
+            TransferType transferType,
+            TransferError transferError)
+        {
+            await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                using (HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    Stream stream = await response.Content.ReadAsStreamAsync();
+                    Assert.True(stream.CanRead);
+
+                    stream.Dispose();
+
+                    Assert.False(stream.CanRead);
+                }
+            });
+        }
 #endif
 
         public enum TransferType

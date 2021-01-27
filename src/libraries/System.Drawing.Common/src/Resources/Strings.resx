@@ -263,6 +263,9 @@
   <data name="InvalidArgumentValue" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'.</value>
   </data>
+    <data name="InvalidArgumentValueFontConverter" xml:space="preserve">
+    <value>Value of '{0}' is not valid for font size unit.</value>
+  </data>
   <data name="InvalidBoundArgument" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than {2} and less than or equal to {3}.</value>
   </data>
@@ -436,6 +439,9 @@
   </data>
   <data name="NotImplementedUnderX11" xml:space="preserve">
     <value>Operation not implemented under X11</value>
+  </data>
+  <data name="none" xml:space="preserve">
+    <value>(none)</value>
   </data>
   <data name="NoValidIconImageFound" xml:space="preserve">
     <value>No valid icon image found</value>

@@ -119,8 +119,7 @@ namespace System
             internal bool IsStartDateMarkerForBeginningOfYear() =>
                 !NoDaylightTransitions &&
                 DaylightTransitionStart.Month == 1 && DaylightTransitionStart.Day == 1 &&
-                DaylightTransitionStart.TimeOfDay.TimeOfDay.Ticks < TimeSpan.TicksPerSecond && // < 12:00:01 AM
-                _dateStart.Year == _dateEnd.Year;
+                DaylightTransitionStart.TimeOfDay.TimeOfDay.Ticks < TimeSpan.TicksPerSecond; // < 12:00:01 AM
 
             //
             // When Windows sets the daylight transition end Jan 1st at 12:00 AM, it means the year ends with the daylight saving on.
@@ -129,8 +128,7 @@ namespace System
             internal bool IsEndDateMarkerForEndOfYear() =>
                 !NoDaylightTransitions &&
                 DaylightTransitionEnd.Month == 1 && DaylightTransitionEnd.Day == 1 &&
-                DaylightTransitionEnd.TimeOfDay.TimeOfDay.Ticks < TimeSpan.TicksPerSecond && // < 12:00:01 AM
-                _dateStart.Year == _dateEnd.Year;
+                DaylightTransitionEnd.TimeOfDay.TimeOfDay.Ticks < TimeSpan.TicksPerSecond; // < 12:00:01 AM
 
             /// <summary>
             /// Helper function that performs all of the validation checks for the factory methods and deserialization callback.

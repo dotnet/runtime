@@ -32,7 +32,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Retrieve the key-value pair list of tags attached with the <see cref="ActivityContext"/>.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, object>>? Tags { get; }
+        public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
 
         public override bool Equals(object? obj) => (obj is ActivityLink link) && this.Equals(link);
 

@@ -422,14 +422,13 @@ namespace System.Text.Json
                 return value;
             }
 
-            char numberFormat = JsonReaderHelper.GetFloatingPointStandardParseFormat(span);
-            if (Utf8Parser.TryParse(span, out value, out int bytesConsumed, numberFormat)
+            if (Utf8Parser.TryParse(span, out value, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
                 // NETCOREAPP implementation of the TryParse method above permits case-insenstive variants of the
                 // float constants "NaN", "Infinity", "-Infinity". This differs from the NETFRAMEWORK implementation.
                 // The following logic reconciles the two implementations to enforce consistent behavior.
-                if (!float.IsNaN(value) && !float.IsPositiveInfinity(value) && !float.IsNegativeInfinity(value))
+                if (JsonHelpers.IsFinite(value))
                 {
                     return value;
                 }
@@ -482,14 +481,13 @@ namespace System.Text.Json
                 return value;
             }
 
-            char numberFormat = JsonReaderHelper.GetFloatingPointStandardParseFormat(span);
-            if (Utf8Parser.TryParse(span, out value, out int bytesConsumed, numberFormat)
+            if (Utf8Parser.TryParse(span, out value, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
-                // NETCOREAPP implmentation of the TryParse method above permits case-insenstive variants of the
+                // NETCOREAPP implementation of the TryParse method above permits case-insenstive variants of the
                 // float constants "NaN", "Infinity", "-Infinity". This differs from the NETFRAMEWORK implementation.
                 // The following logic reconciles the two implementations to enforce consistent behavior.
-                if (!double.IsNaN(value) && !double.IsPositiveInfinity(value) && !double.IsNegativeInfinity(value))
+                if (JsonHelpers.IsFinite(value))
                 {
                     return value;
                 }
@@ -536,15 +534,11 @@ namespace System.Text.Json
         internal decimal GetDecimalWithQuotes()
         {
             ReadOnlySpan<byte> span = GetUnescapedSpan();
-
-            char numberFormat = JsonReaderHelper.GetFloatingPointStandardParseFormat(span);
-            if (Utf8Parser.TryParse(span, out decimal value, out int bytesConsumed, numberFormat)
-                && span.Length == bytesConsumed)
+            if (!TryGetDecimalCore(out decimal value, span))
             {
-                return value;
+                throw ThrowHelper.GetFormatException(NumericType.Decimal);
             }
-
-            throw ThrowHelper.GetFormatException(NumericType.Decimal);
+            return value;
         }
 
         /// <summary>
@@ -979,7 +973,7 @@ namespace System.Text.Json
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
 
-            if (Utf8Parser.TryParse(span, out float tmp, out int bytesConsumed, _numberFormat)
+            if (Utf8Parser.TryParse(span, out float tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
                 value = tmp;
@@ -1009,7 +1003,7 @@ namespace System.Text.Json
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
 
-            if (Utf8Parser.TryParse(span, out double tmp, out int bytesConsumed, _numberFormat)
+            if (Utf8Parser.TryParse(span, out double tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
                 value = tmp;
@@ -1038,8 +1032,13 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+            return TryGetDecimalCore(out value, span);
+        }
 
-            if (Utf8Parser.TryParse(span, out decimal tmp, out int bytesConsumed, _numberFormat)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool TryGetDecimalCore(out decimal value, ReadOnlySpan<byte> span)
+        {
+            if (Utf8Parser.TryParse(span, out decimal tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
             {
                 value = tmp;

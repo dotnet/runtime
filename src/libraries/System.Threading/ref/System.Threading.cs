@@ -18,7 +18,7 @@ namespace System.Threading
         public System.Threading.Mutex? Mutex { get { throw null; } }
         public int MutexIndex { get { throw null; } }
     }
-    public partial struct AsyncFlowControl : System.IDisposable
+    public partial struct AsyncFlowControl : System.IEquatable<AsyncFlowControl>, System.IDisposable
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -35,10 +35,8 @@ namespace System.Threading
         private readonly T _PreviousValue_k__BackingField;
         private readonly T _CurrentValue_k__BackingField;
         private readonly int _dummyPrimitive;
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T CurrentValue { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
-        public T PreviousValue { get { throw null; } }
+        public T? CurrentValue { get { throw null; } }
+        public T? PreviousValue { get { throw null; } }
         public bool ThreadContextChanged { get { throw null; } }
     }
     public sealed partial class AsyncLocal<T>
@@ -59,17 +57,25 @@ namespace System.Threading
         public long CurrentPhaseNumber { get { throw null; } }
         public int ParticipantCount { get { throw null; } }
         public int ParticipantsRemaining { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public long AddParticipant() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public long AddParticipants(int participantCount) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void RemoveParticipant() { }
         public void RemoveParticipants(int participantCount) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void SignalAndWait() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool SignalAndWait(int millisecondsTimeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool SignalAndWait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void SignalAndWait(System.Threading.CancellationToken cancellationToken) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool SignalAndWait(System.TimeSpan timeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool SignalAndWait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class BarrierPostPhaseException : System.Exception
@@ -98,11 +104,17 @@ namespace System.Threading
         public bool Signal(int signalCount) { throw null; }
         public bool TryAddCount() { throw null; }
         public bool TryAddCount(int signalCount) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Wait() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(int millisecondsTimeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(System.TimeSpan timeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public enum EventResetMode
@@ -130,6 +142,7 @@ namespace System.Threading
         public void Dispose() { }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool IsFlowSuppressed() { throw null; }
+        public static void Restore(System.Threading.ExecutionContext executionContext) { }
         public static void RestoreFlow() { }
         public static void Run(System.Threading.ExecutionContext executionContext, System.Threading.ContextCallback callback, object? state) { }
         public static System.Threading.AsyncFlowControl SuppressFlow() { throw null; }
@@ -259,11 +272,17 @@ namespace System.Threading
         protected virtual void Dispose(bool disposing) { }
         public void Reset() { }
         public void Set() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Wait() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(int millisecondsTimeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(System.TimeSpan timeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public static partial class Monitor
@@ -281,10 +300,15 @@ namespace System.Threading
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken) { }
         public static bool TryEnter(object obj, System.TimeSpan timeout) { throw null; }
         public static void TryEnter(object obj, System.TimeSpan timeout, ref bool lockTaken) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool Wait(object obj) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool Wait(object obj, int millisecondsTimeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool Wait(object obj, int millisecondsTimeout, bool exitContext) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool Wait(object obj, System.TimeSpan timeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool Wait(object obj, System.TimeSpan timeout, bool exitContext) { throw null; }
     }
     public sealed partial class Mutex : System.Threading.WaitHandle
@@ -303,7 +327,9 @@ namespace System.Threading
         public bool IsReaderLockHeld { get { throw null; } }
         public bool IsWriterLockHeld { get { throw null; } }
         public int WriterSeqNum { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void AcquireReaderLock(int millisecondsTimeout) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void AcquireReaderLock(System.TimeSpan timeout) { }
         public void AcquireWriterLock(int millisecondsTimeout) { }
         public void AcquireWriterLock(System.TimeSpan timeout) { }
@@ -312,8 +338,11 @@ namespace System.Threading
         public System.Threading.LockCookie ReleaseLock() { throw null; }
         public void ReleaseReaderLock() { }
         public void ReleaseWriterLock() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void RestoreLock(ref System.Threading.LockCookie lockCookie) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Threading.LockCookie UpgradeToWriterLock(int millisecondsTimeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Threading.LockCookie UpgradeToWriterLock(System.TimeSpan timeout) { throw null; }
     }
     public partial class ReaderWriterLockSlim : System.IDisposable
@@ -374,11 +403,17 @@ namespace System.Threading
         protected virtual void Dispose(bool disposing) { }
         public int Release() { throw null; }
         public int Release(int releaseCount) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Wait() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(int millisecondsTimeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(System.TimeSpan timeout) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task WaitAsync() { throw null; }
         public System.Threading.Tasks.Task<bool> WaitAsync(int millisecondsTimeout) { throw null; }
@@ -474,7 +509,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static System.UIntPtr Read(ref System.UIntPtr location) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")]
-        public static T Read<T>(ref T location) where T : class? { throw null; }
+        public static T Read<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")] ref T location) where T : class? { throw null; }
         public static void Write(ref bool location, bool value) { }
         public static void Write(ref byte location, byte value) { }
         public static void Write(ref double location, double value) { }

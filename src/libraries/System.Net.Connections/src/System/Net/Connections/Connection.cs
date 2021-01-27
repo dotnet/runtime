@@ -90,22 +90,6 @@ namespace System.Net.Connections
             }
         }
 
-        private sealed class DuplexStreamPipe : IDuplexPipe
-        {
-            private static readonly StreamPipeReaderOptions s_readerOpts = new StreamPipeReaderOptions(leaveOpen: true);
-            private static readonly StreamPipeWriterOptions s_writerOpts = new StreamPipeWriterOptions(leaveOpen: true);
-
-            public DuplexStreamPipe(Stream stream)
-            {
-                Input = PipeReader.Create(stream, s_readerOpts);
-                Output = PipeWriter.Create(stream, s_writerOpts);
-            }
-
-            public PipeReader Input { get; }
-
-            public PipeWriter Output { get; }
-        }
-
         /// <summary>
         /// Creates a connection for a <see cref="Stream"/>.
         /// </summary>

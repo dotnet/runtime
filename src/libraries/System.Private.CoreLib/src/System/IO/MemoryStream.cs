@@ -332,15 +332,7 @@ namespace System.IO
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-
+            ValidateBufferArguments(buffer, offset, count);
             EnsureNotClosed();
 
             int n = _length - _position;
@@ -388,14 +380,7 @@ namespace System.IO
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            ValidateBufferArguments(buffer, offset, count);
 
             // If cancellation was requested, bail early
             if (cancellationToken.IsCancellationRequested)
@@ -467,10 +452,6 @@ namespace System.IO
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
-            // Since we did not originally override this method, validate the arguments
-            // the same way Stream does for back-compat.
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
-
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() which a subclass might have overridden.
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
@@ -480,6 +461,10 @@ namespace System.IO
                 base.CopyTo(destination, bufferSize);
                 return;
             }
+
+            // Validate the arguments the same way Stream does for back-compat.
+            ValidateCopyToArguments(destination, bufferSize);
+            EnsureNotClosed();
 
             int originalPosition = _position;
 
@@ -499,7 +484,8 @@ namespace System.IO
         {
             // This implementation offers better performance compared to the base class version.
 
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
+            EnsureNotClosed();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to ReadAsync() which a subclass might have overridden.
@@ -623,15 +609,7 @@ namespace System.IO
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-
+            ValidateBufferArguments(buffer, offset, count);
             EnsureNotClosed();
             EnsureWriteable();
 
@@ -715,14 +693,7 @@ namespace System.IO
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            ValidateBufferArguments(buffer, offset, count);
 
             // If cancellation is already requested, bail early
             if (cancellationToken.IsCancellationRequested)

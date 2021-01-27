@@ -13,14 +13,3 @@ public class SpanAccessor : IReturnSpan
         return RawData;
     }
 }
-
-public class ThreadStaticSpanAccessor : IReturnSpan
-{
-    [ThreadStatic]
-    public static byte ThreadStaticByte = 7;
-
-    public unsafe ReadOnlySpan<byte> GetSpan()
-    {
-        return new ReadOnlySpan<byte>(Unsafe.AsPointer(ref ThreadStaticByte), 1);
-    }
-}

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
     <!-- SYSLIB0003 is the obsoletion of CAS, but we still have unit tests for it -->
     <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
   </PropertyGroup>

@@ -42,7 +42,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/38887", RuntimeTestModes.TailcallStress)]
         public static void DisableAiaOptionWorks()
         {
             CertificateAuthority.BuildPrivatePki(

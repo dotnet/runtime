@@ -12,6 +12,11 @@ namespace System.Text.Json
 {
     public sealed partial class JsonDocument
     {
+        // Cached unrented documents for literal values.
+        private static JsonDocument? s_nullLiteral;
+        private static JsonDocument? s_trueLiteral;
+        private static JsonDocument? s_falseLiteral;
+
         private const int UnseekableStreamInitialRentSize = 4096;
 
         /// <summary>
@@ -211,7 +216,10 @@ namespace System.Text.Json
                 int actualByteCount = JsonReaderHelper.GetUtf8FromText(jsonChars, utf8Bytes);
                 Debug.Assert(expectedByteCount == actualByteCount);
 
-                return Parse(utf8Bytes.AsMemory(0, actualByteCount), options.GetReaderOptions(), utf8Bytes);
+                return Parse(
+                    utf8Bytes.AsMemory(0, actualByteCount),
+                    options.GetReaderOptions(),
+                    utf8Bytes);
             }
             catch
             {
@@ -286,7 +294,7 @@ namespace System.Text.Json
         /// </exception>
         public static bool TryParseValue(ref Utf8JsonReader reader, [NotNullWhen(true)] out JsonDocument? document)
         {
-            return TryParseValue(ref reader, out document, shouldThrow: false);
+            return TryParseValue(ref reader, out document, shouldThrow: false, useArrayPools: true);
         }
 
         /// <summary>
@@ -326,12 +334,18 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument ParseValue(ref Utf8JsonReader reader)
         {
-            bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true);
+            bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: true);
+
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
-            return document!;
+            Debug.Assert(document != null, "null document returned with shouldThrow: true.");
+            return document;
         }
 
-        private static bool TryParseValue(ref Utf8JsonReader reader, [NotNullWhen(true)] out JsonDocument? document, bool shouldThrow)
+        internal static bool TryParseValue(
+            ref Utf8JsonReader reader,
+            [NotNullWhen(true)] out JsonDocument? document,
+            bool shouldThrow,
+            bool useArrayPools)
         {
             JsonReaderState state = reader.CurrentState;
             CheckSupportedOptions(state.Options, nameof(reader));
@@ -367,6 +381,7 @@ namespace System.Text.Json
                             document = null;
                             return false;
                         }
+
                         break;
                     }
                 }
@@ -414,11 +429,27 @@ namespace System.Text.Json
                         break;
                     }
 
-                    // Single-token values
-                    case JsonTokenType.Number:
-                    case JsonTokenType.True:
                     case JsonTokenType.False:
+                    case JsonTokenType.True:
                     case JsonTokenType.Null:
+                        if (useArrayPools)
+                        {
+                            if (reader.HasValueSequence)
+                            {
+                                valueSequence = reader.ValueSequence;
+                            }
+                            else
+                            {
+                                valueSpan = reader.ValueSpan;
+                            }
+
+                            break;
+                        }
+
+                        document = CreateForLiteral(reader.TokenType);
+                        return true;
+
+                    case JsonTokenType.Number:
                     {
                         if (reader.HasValueSequence)
                         {
@@ -431,6 +462,7 @@ namespace System.Text.Json
 
                         break;
                     }
+
                     // String's ValueSequence/ValueSpan omits the quotes, we need them back.
                     case JsonTokenType.String:
                     {
@@ -507,31 +539,74 @@ namespace System.Text.Json
             }
 
             int length = valueSpan.IsEmpty ? checked((int)valueSequence.Length) : valueSpan.Length;
-            byte[] rented = ArrayPool<byte>.Shared.Rent(length);
-            Span<byte> rentedSpan = rented.AsSpan(0, length);
-
-            try
+            if (useArrayPools)
             {
+                byte[] rented = ArrayPool<byte>.Shared.Rent(length);
+                Span<byte> rentedSpan = rented.AsSpan(0, length);
+
+                try
+                {
+                    if (valueSpan.IsEmpty)
+                    {
+                        valueSequence.CopyTo(rentedSpan);
+                    }
+                    else
+                    {
+                        valueSpan.CopyTo(rentedSpan);
+                    }
+
+                    document = Parse(rented.AsMemory(0, length), state.Options, rented);
+                }
+                catch
+                {
+                    // This really shouldn't happen since the document was already checked
+                    // for consistency by Skip.  But if data mutations happened just after
+                    // the calls to Read then the copy may not be valid.
+                    rentedSpan.Clear();
+                    ArrayPool<byte>.Shared.Return(rented);
+                    throw;
+                }
+            }
+            else
+            {
+                byte[] owned;
+
                 if (valueSpan.IsEmpty)
                 {
-                    valueSequence.CopyTo(rentedSpan);
+                    owned = valueSequence.ToArray();
                 }
                 else
                 {
-                    valueSpan.CopyTo(rentedSpan);
+                    owned = valueSpan.ToArray();
                 }
 
-                document = Parse(rented.AsMemory(0, length), state.Options, rented);
-                return true;
+                document = ParseUnrented(owned, state.Options, reader.TokenType);
             }
-            catch
+
+            return true;
+        }
+
+        private static JsonDocument CreateForLiteral(JsonTokenType tokenType)
+        {
+            switch (tokenType)
             {
-                // This really shouldn't happen since the document was already checked
-                // for consistency by Skip.  But if data mutations happened just after
-                // the calls to Read then the copy may not be valid.
-                rentedSpan.Clear();
-                ArrayPool<byte>.Shared.Return(rented);
-                throw;
+                case JsonTokenType.False:
+                    s_falseLiteral ??= Create(JsonConstants.FalseValue.ToArray());
+                    return s_falseLiteral;
+                case JsonTokenType.True:
+                    s_trueLiteral ??= Create(JsonConstants.TrueValue.ToArray());
+                    return s_trueLiteral;
+                default:
+                    Debug.Assert(tokenType == JsonTokenType.Null);
+                    s_nullLiteral ??= Create(JsonConstants.NullValue.ToArray());
+                    return s_nullLiteral;
+            }
+
+            JsonDocument Create(byte[] utf8Json)
+            {
+                MetadataDb database = MetadataDb.CreateLocked(utf8Json.Length);
+                database.Append(tokenType, startLocation: 0, utf8Json.Length);
+                return new JsonDocument(utf8Json, database, extraRentedBytes: null);
             }
         }
 
@@ -541,7 +616,7 @@ namespace System.Text.Json
             byte[]? extraRentedBytes)
         {
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
-            var database = new MetadataDb(utf8Json.Length);
+            var database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: false);
             var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
 
             try
@@ -559,6 +634,44 @@ namespace System.Text.Json
             }
 
             return new JsonDocument(utf8Json, database, extraRentedBytes);
+        }
+
+        private static JsonDocument ParseUnrented(
+            ReadOnlyMemory<byte> utf8Json,
+            JsonReaderOptions readerOptions,
+            JsonTokenType tokenType)
+        {
+            // These tokens should already have been processed.
+            Debug.Assert(
+                tokenType != JsonTokenType.Null &&
+                tokenType != JsonTokenType.False &&
+                tokenType != JsonTokenType.True);
+
+            ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
+            MetadataDb database;
+
+            if (tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number)
+            {
+                // For primitive types, we can avoid renting MetadataDb and creating StackRowStack.
+                database = MetadataDb.CreateLocked(utf8Json.Length);
+                StackRowStack stack = default;
+                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
+            }
+            else
+            {
+                database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: true);
+                var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
+                try
+                {
+                    Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
+                }
+                finally
+                {
+                    stack.Dispose();
+                }
+            }
+
+            return new JsonDocument(utf8Json, database, extraRentedBytes: null);
         }
 
         private static ArraySegment<byte> ReadToEnd(Stream stream)

@@ -5,6 +5,7 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify HtmlRawTextWriterGenerator.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Text;
@@ -573,12 +574,13 @@ namespace System.Xml
                     {
                         pDstEnd = pDstBegin + _bufLen;
                     }
+
 <# if (WriterType == RawTextWriterType.Utf8) {#>
                     while (pDst < pDstEnd && (_xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch <= 0x7F))
 <# } else { #>
                     while (pDst < pDstEnd && _xmlCharType.IsAttributeValueChar((char)(ch = *pSrc)))
-<# }
-#>                    {
+<# } #>
+                    {
                         *pDst++ = (<#= BufferType #>)ch;
                         pSrc++;
                     }
@@ -813,8 +815,8 @@ namespace System.Xml
         {
             Init(settings);
         }
-<# }
-#>
+
+<# } #>
         public <#= ClassNameIndent #>(Stream stream, XmlWriterSettings settings) : base(stream, settings)
         {
             Init(settings);

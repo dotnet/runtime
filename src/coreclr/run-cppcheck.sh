@@ -36,16 +36,18 @@ Files="$ProjectRoot/src/**"
 FilesFromArgs=""
 CppCheckOutput="cppcheck.xml"
 SloccountOutput="sloccount.sc"
+
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
 # processors available to a single process.
 platform="$(uname)"
 if [ "$platform" = "FreeBSD" ]; then
-NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+  output=("$(sysctl hw.ncpu)")
+  NumProc="$((output[1] + 1))"
 elif [ "$platform" = "NetBSD" || "$platform" = "SunOS" ]; then
-NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+  NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 else
-NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+  NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
 fi
 
 while [[ $# > 0 ]]

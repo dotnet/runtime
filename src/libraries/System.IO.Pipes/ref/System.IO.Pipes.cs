@@ -8,6 +8,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafePipeHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
+        public SafePipeHandle() : base (default(bool)) { }
         public SafePipeHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
@@ -69,7 +70,7 @@ namespace System.IO.Pipes
         public NamedPipeServerStream(string pipeName, System.IO.Pipes.PipeDirection direction, int maxNumberOfServerInstances, System.IO.Pipes.PipeTransmissionMode transmissionMode) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeServerStream(string pipeName, System.IO.Pipes.PipeDirection direction, int maxNumberOfServerInstances, System.IO.Pipes.PipeTransmissionMode transmissionMode, System.IO.Pipes.PipeOptions options) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeServerStream(string pipeName, System.IO.Pipes.PipeDirection direction, int maxNumberOfServerInstances, System.IO.Pipes.PipeTransmissionMode transmissionMode, System.IO.Pipes.PipeOptions options, int inBufferSize, int outBufferSize) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
-        public System.IAsyncResult BeginWaitForConnection(System.AsyncCallback callback, object state) { throw null; }
+        public System.IAsyncResult BeginWaitForConnection(System.AsyncCallback? callback, object? state) { throw null; }
         public void Disconnect() { }
         public void EndWaitForConnection(System.IAsyncResult asyncResult) { }
         ~NamedPipeServerStream() { }

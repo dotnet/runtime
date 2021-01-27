@@ -11,19 +11,19 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class InputScope : DocumentScope
     {
-        private InputScope _parent;
+        private InputScope? _parent;
         private bool _forwardCompatibility;
         private bool _canHaveApplyImports;
-        private Hashtable _variables;
-        private Hashtable _extensionNamespaces;
-        private Hashtable _excludedNamespaces;
+        private Hashtable? _variables;
+        private Hashtable? _extensionNamespaces;
+        private Hashtable? _excludedNamespaces;
 
-        internal InputScope Parent
+        internal InputScope? Parent
         {
             get { return _parent; }
         }
 
-        internal Hashtable Variables
+        internal Hashtable? Variables
         {
             get { return _variables; }
         }
@@ -40,12 +40,12 @@ namespace System.Xml.Xsl.XsltOld
             set { _canHaveApplyImports = value; }
         }
 
-        internal InputScope(InputScope parent)
+        internal InputScope(InputScope? parent)
         {
             Init(parent);
         }
 
-        internal void Init(InputScope parent)
+        internal void Init(InputScope? parent)
         {
             this.scopes = null;
             _parent = parent;
@@ -101,7 +101,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 _variables = new Hashtable();
             }
-            _variables[variable.Name] = variable;
+            _variables[variable.Name!] = variable;
         }
 
         internal int GetVeriablesCount()
@@ -113,13 +113,13 @@ namespace System.Xml.Xsl.XsltOld
             return _variables.Count;
         }
 
-        public VariableAction ResolveVariable(XmlQualifiedName qname)
+        public VariableAction? ResolveVariable(XmlQualifiedName qname)
         {
-            for (InputScope inputScope = this; inputScope != null; inputScope = inputScope.Parent)
+            for (InputScope? inputScope = this; inputScope != null; inputScope = inputScope.Parent)
             {
                 if (inputScope.Variables != null)
                 {
-                    VariableAction variable = (VariableAction)inputScope.Variables[qname];
+                    VariableAction? variable = (VariableAction?)inputScope.Variables[qname];
                     if (variable != null)
                     {
                         return variable;
@@ -129,14 +129,14 @@ namespace System.Xml.Xsl.XsltOld
             return null;
         }
 
-        public VariableAction ResolveGlobalVariable(XmlQualifiedName qname)
+        public VariableAction? ResolveGlobalVariable(XmlQualifiedName qname)
         {
-            InputScope prevScope = null;
-            for (InputScope inputScope = this; inputScope != null; inputScope = inputScope.Parent)
+            InputScope? prevScope = null;
+            for (InputScope? inputScope = this; inputScope != null; inputScope = inputScope.Parent)
             {
                 prevScope = inputScope;
             }
-            return prevScope.ResolveVariable(qname);
+            return prevScope!.ResolveVariable(qname);
         }
     }
 }

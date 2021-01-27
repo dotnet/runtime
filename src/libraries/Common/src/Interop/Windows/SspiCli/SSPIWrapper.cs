@@ -118,7 +118,7 @@ namespace System.Net
 
             if (errorCode != 0)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(AcquireCredentialsHandle), $"0x{errorCode:X}"));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(AcquireCredentialsHandle), $"0x{errorCode:X}"));
                 throw new Win32Exception(errorCode);
             }
 
@@ -226,6 +226,7 @@ namespace System.Net
 
         private static unsafe int EncryptDecryptHelper(OP op, ISSPIInterface secModule, SafeDeleteContext context, Span<SecurityBuffer> input, uint sequenceNumber)
         {
+            Debug.Assert(Enum.IsDefined<OP>(op), $"Unknown op: {op}");
             Debug.Assert(input.Length <= 3, "The below logic only works for 3 or fewer buffers.");
 
             Interop.SspiCli.SecBufferDesc sdcInOut = new Interop.SspiCli.SecBufferDesc(input.Length);
@@ -259,29 +260,13 @@ namespace System.Net
                 }
 
                 // The result is written in the input Buffer passed as type=BufferType.Data.
-                int errorCode;
-                switch (op)
+                int errorCode = op switch
                 {
-                    case OP.Encrypt:
-                        errorCode = secModule.EncryptMessage(context, ref sdcInOut, sequenceNumber);
-                        break;
-
-                    case OP.Decrypt:
-                        errorCode = secModule.DecryptMessage(context, ref sdcInOut, sequenceNumber);
-                        break;
-
-                    case OP.MakeSignature:
-                        errorCode = secModule.MakeSignature(context, ref sdcInOut, sequenceNumber);
-                        break;
-
-                    case OP.VerifySignature:
-                        errorCode = secModule.VerifySignature(context, ref sdcInOut, sequenceNumber);
-                        break;
-
-                    default:
-                        NetEventSource.Fail(null, $"Unknown OP: {op}");
-                        throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
-                }
+                    OP.Encrypt => secModule.EncryptMessage(context, ref sdcInOut, sequenceNumber),
+                    OP.Decrypt => secModule.DecryptMessage(context, ref sdcInOut, sequenceNumber),
+                    OP.MakeSignature => secModule.MakeSignature(context, ref sdcInOut, sequenceNumber),
+                    _ /* OP.VerifySignature */ => secModule.VerifySignature(context, ref sdcInOut, sequenceNumber),
+                };
 
                 // Marshalling back returned sizes / data.
                 for (int i = 0; i < input.Length; i++)
@@ -320,7 +305,7 @@ namespace System.Net
 
                         if (j >= input.Length)
                         {
-                            NetEventSource.Fail(null, "Output buffer out of range.");
+                            Debug.Fail("Output buffer out of range.");
                             iBuffer.size = 0;
                             iBuffer.offset = 0;
                             iBuffer.token = null;
@@ -328,27 +313,15 @@ namespace System.Net
                     }
 
                     // Backup validate the new sizes.
-                    if (iBuffer.offset < 0 || iBuffer.offset > (iBuffer.token == null ? 0 : iBuffer.token.Length))
-                    {
-                        NetEventSource.Fail(null, $"'offset' out of range.  [{iBuffer.offset}]");
-                    }
-
-                    if (iBuffer.size < 0 || iBuffer.size > (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset))
-                    {
-                        NetEventSource.Fail(null, $"'size' out of range.  [{iBuffer.size}]");
-                    }
+                    Debug.Assert(iBuffer.offset >= 0 && iBuffer.offset <= (iBuffer.token == null ? 0 : iBuffer.token.Length), $"'offset' out of range.  [{iBuffer.offset}]");
+                    Debug.Assert(iBuffer.size >= 0 && iBuffer.size <= (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset), $"'size' out of range.  [{iBuffer.size}]");
                 }
 
                 if (NetEventSource.Log.IsEnabled() && errorCode != 0)
                 {
-                    if (errorCode == Interop.SspiCli.SEC_I_RENEGOTIATE)
-                    {
-                        NetEventSource.Error(null, SR.Format(SR.event_OperationReturnedSomething, op, "SEC_I_RENEGOTIATE"));
-                    }
-                    else
-                    {
-                        NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, op, $"0x{0:X}"));
-                    }
+                    NetEventSource.Error(null, errorCode == Interop.SspiCli.SEC_I_RENEGOTIATE ?
+                        SR.Format(SR.event_OperationReturnedSomething, op, "SEC_I_RENEGOTIATE") :
+                        SR.Format(SR.net_log_operation_failed_with_error, op, $"0x{0:X}"));
                 }
 
                 return errorCode;

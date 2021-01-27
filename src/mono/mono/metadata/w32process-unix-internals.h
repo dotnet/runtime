@@ -40,6 +40,9 @@ mono_w32process_get_name (pid_t pid);
 GSList*
 mono_w32process_get_modules (pid_t pid);
 
+void
+mono_w32process_platform_init_once (void);
+
 static void G_GNUC_UNUSED
 mono_w32process_module_free (MonoW32ProcessModule *module)
 {

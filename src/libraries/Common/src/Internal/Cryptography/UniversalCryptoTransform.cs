@@ -17,7 +17,10 @@ namespace Internal.Cryptography
     //
     internal abstract class UniversalCryptoTransform : ICryptoTransform
     {
-        public static ICryptoTransform Create(PaddingMode paddingMode, BasicSymmetricCipher cipher, bool encrypting)
+        public static ICryptoTransform Create(
+            PaddingMode paddingMode,
+            BasicSymmetricCipher cipher,
+            bool encrypting)
         {
             if (encrypting)
                 return new UniversalCryptoEncryptor(paddingMode, cipher);
@@ -39,6 +42,11 @@ namespace Internal.Cryptography
         public bool CanTransformMultipleBlocks
         {
             get { return true; }
+        }
+
+        protected int PaddingSizeBytes
+        {
+            get { return BasicSymmetricCipher.PaddingSizeInBytes; }
         }
 
         public int InputBlockSize

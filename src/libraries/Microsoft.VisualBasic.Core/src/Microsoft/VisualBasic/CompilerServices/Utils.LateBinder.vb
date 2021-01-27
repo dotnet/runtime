@@ -343,6 +343,10 @@ GetSpecialValue:
         End Function
 
         Friend Shared Function VBFriendlyName(ByVal typ As System.Type, ByVal o As Object) As String
+            If typ.IsCOMObject AndAlso (typ.FullName = "System.__ComObject") Then
+                Return TypeNameOfCOMObject(o, False)
+            End If
+
             Return VBFriendlyNameOfType(typ)
         End Function
 

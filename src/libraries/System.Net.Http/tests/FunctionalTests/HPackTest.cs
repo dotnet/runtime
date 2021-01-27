@@ -18,6 +18,7 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class HPackTest : HttpClientHandlerTestBase
     {
         protected override Version UseVersion => HttpVersion.Version20;

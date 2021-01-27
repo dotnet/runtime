@@ -259,13 +259,8 @@ namespace System.Net.Sockets
             _active = true;
         }
 
-        public Task ConnectAsync(IPAddress address, int port)
-        {
-
-            Task result = CompleteConnectAsync(Client.ConnectAsync(address, port));
-
-            return result;
-        }
+        public Task ConnectAsync(IPAddress address, int port) =>
+            CompleteConnectAsync(Client.ConnectAsync(address, port));
 
         public Task ConnectAsync(string host, int port) =>
             CompleteConnectAsync(Client.ConnectAsync(host, port));
@@ -273,7 +268,39 @@ namespace System.Net.Sockets
         public Task ConnectAsync(IPAddress[] addresses, int port) =>
             CompleteConnectAsync(Client.ConnectAsync(addresses, port));
 
+        /// <summary>
+        /// Connects the client to a remote TCP host using the specified endpoint as an asynchronous operation.
+        /// </summary>
+        /// <param name="remoteEP">The <see cref="IPEndPoint"/> to which you intend to connect.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public Task ConnectAsync(IPEndPoint remoteEP) =>
+            CompleteConnectAsync(Client.ConnectAsync(remoteEP));
+
         private async Task CompleteConnectAsync(Task task)
+        {
+            await task.ConfigureAwait(false);
+            _active = true;
+        }
+
+        public ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(address, port, cancellationToken));
+
+        public ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(host, port, cancellationToken));
+
+        public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(addresses, port, cancellationToken));
+
+        /// <summary>
+        /// Connects the client to a remote TCP host using the specified endpoint as an asynchronous operation.
+        /// </summary>
+        /// <param name="remoteEP">The <see cref="IPEndPoint"/> to which you intend to connect.</param>
+        /// <param name="cancellationToken">A cancellation token used to propagate notification that this operation should be canceled.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public ValueTask ConnectAsync(IPEndPoint remoteEP, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(remoteEP, cancellationToken));
+
+        private async ValueTask CompleteConnectAsync(ValueTask task)
         {
             await task.ConfigureAwait(false);
             _active = true;

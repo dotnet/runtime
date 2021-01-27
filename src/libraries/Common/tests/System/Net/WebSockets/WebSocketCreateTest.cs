@@ -40,6 +40,7 @@ namespace System.Net.WebSockets.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // System.Net.Sockets is not supported on this platform.
         public async Task WebSocketProtocol_CreateFromConnectedStream_CanSendReceiveData(Uri echoUri)
         {
             if (PlatformDetection.IsWindows7)
@@ -203,6 +204,7 @@ namespace System.Net.WebSockets.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // System.Net.Sockets is not supported on this platform.
         public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncClosesStream(Uri echoUri, bool explicitCloseAsync)
         {
             if (PlatformDetection.IsWindows7)
@@ -244,6 +246,7 @@ namespace System.Net.WebSockets.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // System.Net.Sockets is not supported on this platform.
         public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncAfterCloseReceivedClosesStream(Uri echoUri, bool useCloseOutputAsync)
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

@@ -3,6 +3,7 @@
 
 #nullable enable
 using Microsoft.Win32.SafeHandles;
+using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -14,20 +15,21 @@ internal partial class Interop
         {
             internal ProcessWaitHandle(SafeProcessHandle processHandle)
             {
-                SafeWaitHandle? waitHandle;
-                SafeProcessHandle currentProcHandle = Interop.Kernel32.GetCurrentProcess();
-                bool succeeded = Interop.Kernel32.DuplicateHandle(
+                IntPtr currentProcHandle = GetCurrentProcess();
+                bool succeeded = DuplicateHandle(
                     currentProcHandle,
                     processHandle,
                     currentProcHandle,
-                    out waitHandle,
+                    out SafeWaitHandle waitHandle,
                     0,
                     false,
-                    Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS);
+                    HandleOptions.DUPLICATE_SAME_ACCESS);
 
                 if (!succeeded)
                 {
-                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                    int error = Marshal.GetHRForLastWin32Error();
+                    waitHandle.Dispose();
+                    Marshal.ThrowExceptionForHR(error);
                 }
 
                 this.SetSafeWaitHandle(waitHandle);

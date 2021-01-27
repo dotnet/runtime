@@ -233,3 +233,6 @@ METHOD(ReverseElementBits)
 // Crc32
 METHOD(ComputeCrc32)
 METHOD(ComputeCrc32C)
+// X86Base
+METHOD(BitScanForward)
+METHOD(BitScanReverse)

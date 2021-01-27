@@ -1276,6 +1276,10 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 #else
 		return m_class_get_byval_arg (mono_defaults.uint32_class);
 #endif
+	case MONO_TYPE_R4:
+		return m_class_get_byval_arg (mono_defaults.single_class);
+	case MONO_TYPE_R8:
+		return m_class_get_byval_arg (mono_defaults.double_class);
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
@@ -4462,6 +4466,21 @@ mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst)
 	}
 
 	return has_vt;
+}
+
+gboolean
+mini_is_gsharedvt_inst (MonoGenericInst *inst)
+{
+	int i;
+
+	for (i = 0; i < inst->type_argc; ++i) {
+		MonoType *type = inst->type_argv [i];
+
+		if (mini_is_gsharedvt_type (type))
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 gboolean

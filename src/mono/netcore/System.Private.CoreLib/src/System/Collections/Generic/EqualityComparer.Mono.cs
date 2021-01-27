@@ -61,30 +61,6 @@ namespace System.Collections.Generic
 
             return new ObjectEqualityComparer<T>();
         }
-
-        // MONOTODO: Add specialized versions
-        internal virtual int IndexOf(T[] array, T value, int startIndex, int count)
-        {
-            int endIndex = startIndex + count;
-            for (int i = startIndex; i < endIndex; i++)
-            {
-                if (Equals(array[i], value))
-                    return i;
-            }
-            return -1;
-        }
-
-        internal virtual int LastIndexOf(T[] array, T value, int startIndex, int count)
-        {
-            int endIndex = startIndex - count + 1;
-            for (int i = startIndex; i >= endIndex; i--)
-            {
-                if (Equals(array[i], value))
-                    return i;
-            }
-            return -1;
-        }
-
     }
 
     public partial class EnumEqualityComparer<T>

@@ -128,6 +128,22 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(listeners[16], new IPEndPoint(IPAddress.Parse("fe80::215:5dff:fe00:402"), 123));
         }
 
+        [Fact]
+        public void WSLListenersParsing()
+        {
+            // WSL1 may have files empty
+            string emptyFile = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("NetworkFiles/empty", emptyFile);
+
+            IPEndPoint[] tcpListeners = StringParsingHelpers.ParseActiveTcpListenersFromFiles(emptyFile, emptyFile);
+            IPEndPoint[] udpListeners = StringParsingHelpers.ParseActiveUdpListenersFromFiles(emptyFile, emptyFile);
+            TcpConnectionInformation[] tcpConnections = StringParsingHelpers.ParseActiveTcpConnectionsFromFiles(emptyFile, emptyFile);
+
+            Assert.Equal(0, tcpListeners.Length);
+            Assert.Equal(0, udpListeners.Length);
+            Assert.Equal(0, tcpConnections.Length);
+        }
+
         private static void ValidateInfo(TcpConnectionInformation tcpConnectionInformation, IPEndPoint localEP, IPEndPoint remoteEP, TcpState state)
         {
             Assert.Equal(localEP, tcpConnectionInformation.LocalEndPoint);

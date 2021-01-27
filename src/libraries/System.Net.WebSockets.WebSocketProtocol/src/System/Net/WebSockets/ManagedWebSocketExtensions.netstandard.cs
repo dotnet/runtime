@@ -33,7 +33,7 @@ namespace System.Net.WebSockets
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(destination.Length);
                 return new ValueTask<int>(FinishReadAsync(stream.ReadAsync(buffer, 0, destination.Length, cancellationToken), buffer, destination));
 
-                async Task<int> FinishReadAsync(Task<int> readTask, byte[] localBuffer, Memory<byte> localDestination)
+                static async Task<int> FinishReadAsync(Task<int> readTask, byte[] localBuffer, Memory<byte> localDestination)
                 {
                     try
                     {
@@ -61,7 +61,7 @@ namespace System.Net.WebSockets
                 source.Span.CopyTo(buffer);
                 return new ValueTask(FinishWriteAsync(stream.WriteAsync(buffer, 0, source.Length, cancellationToken), buffer));
 
-                async Task FinishWriteAsync(Task writeTask, byte[] localBuffer)
+                static async Task FinishWriteAsync(Task writeTask, byte[] localBuffer)
                 {
                     try
                     {

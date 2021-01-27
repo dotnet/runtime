@@ -164,6 +164,8 @@ internal partial class Interop
         public const uint WINHTTP_OPTION_WEB_SOCKET_RECEIVE_BUFFER_SIZE = 122;
         public const uint WINHTTP_OPTION_WEB_SOCKET_SEND_BUFFER_SIZE = 123;
 
+        public const uint WINHTTP_OPTION_TCP_KEEPALIVE = 152;
+
         public enum WINHTTP_WEB_SOCKET_BUFFER_TYPE
         {
             WINHTTP_WEB_SOCKET_BINARY_MESSAGE_BUFFER_TYPE = 0,
@@ -274,6 +276,15 @@ internal partial class Interop
         {
             public IntPtr dwResult;
             public uint dwError;
+        }
+
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct tcp_keepalive
+        {
+            public uint onoff;
+            public uint keepalivetime;
+            public uint keepaliveinterval;
         }
 
         public const uint API_RECEIVE_RESPONSE = 1;

@@ -82,3 +82,6 @@ PATCH_INFO(SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE, "specific_trampolines_got_slots_
  */
 PATCH_INFO(R8_GOT, "r8_got")
 PATCH_INFO(R4_GOT, "r4_got")
+
+/* MonoMethod* -> the address of a memory slot which is used to cache the pinvoke address */
+PATCH_INFO(METHOD_PINVOKE_ADDR_CACHE, "pinvoke_addr_cache")

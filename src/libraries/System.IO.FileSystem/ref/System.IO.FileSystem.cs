@@ -23,7 +23,7 @@ namespace System.IO
         public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static bool Exists(string? path) { throw null; }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? path) { throw null; }
         public static System.DateTime GetCreationTime(string path) { throw null; }
         public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
         public static string GetCurrentDirectory() { throw null; }
@@ -190,8 +190,10 @@ namespace System.IO
         public System.IO.FileInfo CopyTo(string destFileName, bool overwrite) { throw null; }
         public System.IO.FileStream Create() { throw null; }
         public System.IO.StreamWriter CreateText() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void Decrypt() { }
         public override void Delete() { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void Encrypt() { }
         public void MoveTo(string destFileName) { }
         public void MoveTo(string destFileName, bool overwrite) { }

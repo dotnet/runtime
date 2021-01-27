@@ -325,4 +325,6 @@
 <opcode name="mono_ld_delegate_method_ptr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x1E" flow="next" />
 <opcode name="mono_rethrow" input="PopRef" output="Push0" args="InlineNone" o1="0xF0" o2="0x1F" flow="throw" type="Objmodel" />
 <opcode name="mono_get_sp" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x20" flow="next" />
+<opcode name="mono_methodconst" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x21" flow="next" />
+<opcode name="mono_pinvoke_addr_cache" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x22" flow="next" />
 </opdesc>

@@ -209,7 +209,6 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public void Ctor_NullSource_ThrowsArgumentNullException()
         {
-            var feed = new SyndicationFeed();
             AssertExtensions.Throws<ArgumentNullException>("source", () => new SyndicationFeedSubclass(null, true));
         }
 
@@ -469,8 +468,6 @@ namespace System.ServiceModel.Syndication.Tests
             public SyndicationFeedSubclass(SyndicationFeed source, bool cloneItems) : base(source, cloneItems) { }
 
             public SyndicationCategory CreateCategoryEntryPoint() => CreateCategory();
-
-            public SyndicationItem CreateItemEntryPoint() => CreateItem();
 
             public SyndicationLink CreateLinkEntryPoint() => CreateLink();
 

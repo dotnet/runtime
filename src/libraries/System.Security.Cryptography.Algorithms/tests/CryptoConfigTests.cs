@@ -3,13 +3,13 @@
 
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.CryptoConfigTests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static class CryptoConfigTests
     {
         [Fact]
@@ -255,7 +255,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [Theory, MemberData(nameof(AllValidNames))]
         public static void CreateFromName_AllValidNames(string name, string typeName, bool supportsUnixMac)
         {
-            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            bool isWindows = OperatingSystem.IsWindows();
 
             if (supportsUnixMac || isWindows)
             {

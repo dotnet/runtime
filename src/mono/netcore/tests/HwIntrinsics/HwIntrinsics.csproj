@@ -7,5 +7,6 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 </Project>

@@ -13,11 +13,9 @@ internal partial class Interop
             Break = 1
         }
 
-        internal delegate void CtrlCallback(CtrlCode ctrlCode);
-
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_RegisterForCtrl")]
         [SuppressGCTransition]
-        internal static extern void RegisterForCtrl(CtrlCallback handler);
+        internal static extern unsafe void RegisterForCtrl(delegate* unmanaged<CtrlCode, void> handler);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_UnregisterForCtrl")]
         [SuppressGCTransition]

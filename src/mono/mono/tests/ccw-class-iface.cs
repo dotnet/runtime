@@ -30,8 +30,17 @@ public interface IDrupe
     int parent_iface_method();
 }
 
+public class TestGeneric<T,V>
+{
+}
+
 public class TestParent : IDrupe
 {
+    public interface INested
+    {
+        TestGeneric<ICherry, IBanana> method(in ICherry[] cherries, ref object something, out string output, float fl1, float fl2);
+    }
+
     public virtual int parent_method_virtual()
     {
         return 101;
@@ -175,6 +184,8 @@ public class Tests
     public static extern int mono_test_ccw_class_type_auto_dual([MarshalAs (UnmanagedType.Interface)] TestAutoDual obj);
     [DllImport("libtest")]
     public static extern int mono_test_ccw_class_type_none([MarshalAs (UnmanagedType.Interface)] TestNone obj);
+    [DllImport("libtest")]
+    public static extern int mono_test_ccw_query_interface([MarshalAs (UnmanagedType.Interface)] TestParent obj);
 
     public static int Main()
     {
@@ -200,6 +211,41 @@ public class Tests
         {
             Console.Error.WriteLine("TestNone failed: {0}", hr);
             return 5;
+        }
+
+        /*TODO: Reject Guid.Empty when we support generated class GUIDs*/
+        if (typeof(TestParent).GUID != Guid.Empty &&
+			typeof(TestParent).GUID != new Guid("7dcc27e3-e226-35ca-a942-2286b21f2525"))
+        {
+            Console.Error.WriteLine("Unexpected typeof(TestParent).GUID: {0}", typeof(TestParent).GUID);
+            return 6;
+        }
+
+        /*TODO: Reject Guid.Empty when we support generated class GUIDs*/
+        if (typeof(int).GUID != Guid.Empty &&
+			typeof(int).GUID != new Guid("a310fadd-7c33-377c-9d6b-599b0317d7f2"))
+        {
+            Console.Error.WriteLine("Unexpected typeof(int).GUID: {0}", typeof(int).GUID);
+            return 7;
+        }
+
+        if (typeof(TestParent.INested).GUID != new Guid("9aea5855-969a-3c25-8a78-15186615895c"))
+        {
+            Console.Error.WriteLine("Unexpected typeof(TestParent.INested).GUID: {0}", typeof(TestParent.INested).GUID);
+            return 8;
+        }
+
+        if (typeof(IDrupe).GUID != new Guid("9f001e6b-a244-3911-88db-bb2b6d5843aa"))
+        {
+            Console.Error.WriteLine("Unexpected typeof(IDrupe).GUID: {0}", typeof(IDrupe).GUID);
+            return 9;
+        }
+
+        hr = mono_test_ccw_query_interface(new TestParent());
+        if (hr != 0)
+        {
+            Console.Error.WriteLine("TestQueryInterface failed: {0}", hr);
+            return 10;
         }
 
         return 0;

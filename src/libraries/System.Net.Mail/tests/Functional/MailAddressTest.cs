@@ -194,6 +194,22 @@ namespace System.Net.Mail.Tests
             Assert.Equal(n, n2);
         }
 
+        [Fact]
+        public void GetHashCodeTest()
+        {
+            var n = new MailAddress("Mr. Bar <a@example.com>");
+            var n2 = new MailAddress("a@example.com", "Mr. Bar");
+            Assert.Equal(n.GetHashCode(), n2.GetHashCode());
+        }
+
+        [Fact]
+        public void GetHashCodeTest2()
+        {
+            var n = new MailAddress("Mr. Bar <a@example.com>");
+            var n2 = new MailAddress("MR. BAR <a@EXAMPLE.com>");
+            Assert.Equal(n.GetHashCode(), n2.GetHashCode());
+        }
+
         [Theory]
         [MemberData(nameof(GetInvalid_Address))]
         public void TryCreate_Invalid_Address(string address)

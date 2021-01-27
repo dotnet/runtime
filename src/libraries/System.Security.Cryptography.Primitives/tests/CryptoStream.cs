@@ -2,14 +2,37 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.IO.Tests;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
 {
-    public static class CryptoStreamTests
+    public class CryptoStreamTests : WrappingConnectedStreamConformanceTests
     {
+        protected override Task<StreamPair> CreateConnectedStreamsAsync()
+        {
+            (Stream writeable, Stream readable) = ConnectedStreams.CreateBidirectional();
+            return CreateWrappedConnectedStreamsAsync((writeable, readable));
+        }
+
+        protected override Task<StreamPair> CreateWrappedConnectedStreamsAsync(StreamPair wrapped, bool leaveOpen = false)
+        {
+            ICryptoTransform transform = new IdentityTransform(1, 1, true);
+            (Stream writeable, Stream readable) = GetReadWritePair(wrapped);
+            var encryptedWriteable = new CryptoStream(writeable, transform, CryptoStreamMode.Write, leaveOpen);
+            var decryptedReadable = new CryptoStream(readable, transform, CryptoStreamMode.Read, leaveOpen);
+            return Task.FromResult<StreamPair>((encryptedWriteable, decryptedReadable));
+        }
+
+        protected override Type UnsupportedConcurrentExceptionType => null;
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45080")]
+        [Theory]
+        [MemberData(nameof(ReadWrite_Success_Large_MemberData))]
+        public override Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) => base.ReadWrite_Success_Large(mode, writeSize, startWithFlush);
+
         [Fact]
         public static void Ctor()
         {
@@ -40,17 +63,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.False(encryptStream.CanRead);
                 Assert.False(encryptStream.CanSeek);
                 Assert.False(encryptStream.HasFlushedFinalBlock);
-                Assert.Throws<NotSupportedException>(() => encryptStream.SetLength(1));
-                Assert.Throws<NotSupportedException>(() => encryptStream.Length);
-                Assert.Throws<NotSupportedException>(() => encryptStream.Position);
-                Assert.Throws<NotSupportedException>(() => encryptStream.Position = 0);
-                Assert.Throws<NotSupportedException>(() => encryptStream.Seek(0, SeekOrigin.Begin));
-                Assert.Throws<NotSupportedException>(() => encryptStream.Read(new byte[0], 0, 0));
-                Assert.Throws<NullReferenceException>(() => encryptStream.Write(null, 0, 0)); // No arg validation on buffer?
-                Assert.Throws<ArgumentOutOfRangeException>(() => encryptStream.Write(new byte[0], -1, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => encryptStream.Write(new byte[0], 0, -1));
-                Assert.Throws<ArgumentOutOfRangeException>(() => encryptStream.Write(new byte[0], 0, -1));
-                AssertExtensions.Throws<ArgumentException>(null, () => encryptStream.Write(new byte[3], 1, 4));
 
                 byte[] toWrite = Encoding.UTF8.GetBytes(LoremText);
 
@@ -93,17 +105,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.True(decryptStream.CanRead);
                 Assert.False(decryptStream.CanSeek);
                 Assert.False(decryptStream.HasFlushedFinalBlock);
-                Assert.Throws<NotSupportedException>(() => decryptStream.SetLength(1));
-                Assert.Throws<NotSupportedException>(() => decryptStream.Length);
-                Assert.Throws<NotSupportedException>(() => decryptStream.Position);
-                Assert.Throws<NotSupportedException>(() => decryptStream.Position = 0);
-                Assert.Throws<NotSupportedException>(() => decryptStream.Seek(0, SeekOrigin.Begin));
-                Assert.Throws<NotSupportedException>(() => decryptStream.Write(new byte[0], 0, 0));
-                Assert.Throws<NullReferenceException>(() => decryptStream.Read(null, 0, 0)); // No arg validation on buffer?
-                Assert.Throws<ArgumentOutOfRangeException>(() => decryptStream.Read(new byte[0], -1, 0));
-                Assert.Throws<ArgumentOutOfRangeException>(() => decryptStream.Read(new byte[0], 0, -1));
-                Assert.Throws<ArgumentOutOfRangeException>(() => decryptStream.Read(new byte[0], 0, -1));
-                AssertExtensions.Throws<ArgumentException>(null, () => decryptStream.Read(new byte[3], 1, 4));
 
                 using (StreamReader reader = new StreamReader(decryptStream))
                 {
@@ -147,18 +148,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
         }
 
         [Fact]
-        public static void NestedCryptoStreams()
-        {
-            ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
-            using (MemoryStream output = new MemoryStream())
-            using (CryptoStream encryptStream1 = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
-            using (CryptoStream encryptStream2 = new CryptoStream(encryptStream1, encryptor, CryptoStreamMode.Write))
-            {
-                encryptStream2.Write(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
-            }
-        }
-
-        [Fact]
         public static void Clear()
         {
             ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
@@ -167,23 +156,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
             {
                 encryptStream.Clear();
                 Assert.Throws<NotSupportedException>(() => encryptStream.Write(new byte[] { 1, 2, 3, 4, 5 }, 0, 5));
-            }
-        }
-
-        [Fact]
-        public static void FlushAsync()
-        {
-            ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
-            using (MemoryStream output = new MemoryStream())
-            using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
-            {
-                encryptStream.WriteAsync(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
-                Task waitable = encryptStream.FlushAsync(new Threading.CancellationToken(false));
-                Assert.False(waitable.IsCanceled);
-
-                encryptStream.WriteAsync(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
-                waitable = encryptStream.FlushAsync(new Threading.CancellationToken(true));
-                Assert.True(waitable.IsCanceled);
             }
         }
 
@@ -202,7 +174,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
         }
 
         [Fact]
-        public static async Task FlushFinalBlockAsync_Cancelled()
+        public static async Task FlushFinalBlockAsync_Canceled()
         {
             ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
             using (MemoryStream output = new MemoryStream())
@@ -216,7 +188,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
         }
 
         [Fact]
-        public static void FlushCalledOnFlushAsync_DeriveClass()
+        public static void FlushCalledOnFlushAsync_DerivedClass()
         {
             ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
             using (MemoryStream output = new MemoryStream())

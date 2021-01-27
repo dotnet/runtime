@@ -17,7 +17,6 @@ namespace System.Text.Json
         internal long _bytePositionInLine;
         internal bool _inObject;
         internal bool _isNotPrimitive;
-        internal char _numberFormat;
         internal bool _stringHasEscaping;
         internal bool _trailingCommaBeforeComment;
         internal JsonTokenType _tokenType;
@@ -43,7 +42,6 @@ namespace System.Text.Json
             _bytePositionInLine = default;
             _inObject = default;
             _isNotPrimitive = default;
-            _numberFormat = default;
             _stringHasEscaping = default;
             _trailingCommaBeforeComment = default;
             _tokenType = default;

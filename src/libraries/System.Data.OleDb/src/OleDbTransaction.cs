@@ -137,7 +137,7 @@ namespace System.Data.OleDb
             _isolationLevel = isolevel;
         }
 
-        public new OleDbConnection Connection
+        public new OleDbConnection? Connection
         {
             get
             {
@@ -145,7 +145,7 @@ namespace System.Data.OleDb
             }
         }
 
-        protected override DbConnection DbConnection
+        protected override DbConnection? DbConnection
         {
             get
             {

@@ -11,6 +11,7 @@ namespace System.Xml.Serialization
     using System.ComponentModel;
     using System.Xml;
     using System.Xml.Serialization;
+    using System.Diagnostics.CodeAnalysis;
 
     // These classes represent a mapping between classes and a particular XML format.
     // There are two class of mapping information: accessors (such as elements and
@@ -18,12 +19,12 @@ namespace System.Xml.Serialization
 
     internal abstract class Accessor
     {
-        private string _name;
-        private object _defaultValue;
-        private string _ns;
-        private TypeMapping _mapping;
+        private string? _name;
+        private object? _defaultValue;
+        private string? _ns;
+        private TypeMapping? _mapping;
         private bool _any;
-        private string _anyNs;
+        private string? _anyNs;
         private bool _topLevelInSchema;
         private bool _isFixed;
         private bool _isOptional;
@@ -31,13 +32,13 @@ namespace System.Xml.Serialization
 
         internal Accessor() { }
 
-        internal TypeMapping Mapping
+        internal TypeMapping? Mapping
         {
             get { return _mapping; }
             set { _mapping = value; }
         }
 
-        internal object Default
+        internal object? Default
         {
             get { return _defaultValue; }
             set { _defaultValue = value; }
@@ -48,6 +49,7 @@ namespace System.Xml.Serialization
             get { return _defaultValue != null && _defaultValue != DBNull.Value; }
         }
 
+        [AllowNull]
         internal virtual string Name
         {
             get { return _name == null ? string.Empty : _name; }
@@ -60,13 +62,13 @@ namespace System.Xml.Serialization
             set { _any = value; }
         }
 
-        internal string AnyNamespaces
+        internal string? AnyNamespaces
         {
             get { return _anyNs; }
             set { _anyNs = value; }
         }
 
-        internal string Namespace
+        internal string? Namespace
         {
             get { return _ns; }
             set { _ns = value; }
@@ -96,13 +98,15 @@ namespace System.Xml.Serialization
             set { _topLevelInSchema = value; }
         }
 
-        internal static string EscapeName(string name)
+        [return: NotNullIfNotNull("name")]
+        internal static string? EscapeName(string? name)
         {
             if (name == null || name.Length == 0) return name;
             return XmlConvert.EncodeLocalName(name);
         }
 
-        internal static string EscapeQName(string name)
+        [return: NotNullIfNotNull("name")]
+        internal static string? EscapeQName(string? name)
         {
             if (name == null || name.Length == 0) return name;
             int colon = name.LastIndexOf(':');
@@ -116,12 +120,13 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal static string UnescapeName(string name)
+        [return: NotNullIfNotNull("name")]
+        internal static string? UnescapeName(string? name)
         {
             return XmlConvert.DecodeName(name);
         }
 
-        internal string ToString(string defaultNs)
+        internal string ToString(string? defaultNs)
         {
             if (Any)
             {
@@ -177,23 +182,23 @@ namespace System.Xml.Serialization
 
     internal class ChoiceIdentifierAccessor : Accessor
     {
-        private string _memberName;
-        private string[] _memberIds;
-        private MemberInfo _memberInfo;
+        private string? _memberName;
+        private string[]? _memberIds;
+        private MemberInfo? _memberInfo;
 
-        internal string MemberName
+        internal string? MemberName
         {
             get { return _memberName; }
             set { _memberName = value; }
         }
 
-        internal string[] MemberIds
+        internal string[]? MemberIds
         {
             get { return _memberIds; }
             set { _memberIds = value; }
         }
 
-        internal MemberInfo MemberInfo
+        internal MemberInfo? MemberInfo
         {
             get { return _memberInfo; }
             set { _memberInfo = value; }
@@ -276,9 +281,9 @@ namespace System.Xml.Serialization
 
     internal abstract class TypeMapping : Mapping
     {
-        private TypeDesc _typeDesc;
-        private string _typeNs;
-        private string _typeName;
+        private TypeDesc? _typeDesc;
+        private string? _typeNs;
+        private string? _typeName;
         private bool _referencedByElement;
         private bool _referencedByTopLevelElement;
         private bool _includeInSchema = true;
@@ -295,19 +300,19 @@ namespace System.Xml.Serialization
             get { return _referencedByElement || _referencedByTopLevelElement; }
             set { _referencedByElement = value; }
         }
-        internal string Namespace
+        internal string? Namespace
         {
             get { return _typeNs; }
             set { _typeNs = value; }
         }
 
-        internal string TypeName
+        internal string? TypeName
         {
             get { return _typeName; }
             set { _typeName = value; }
         }
 
-        internal TypeDesc TypeDesc
+        internal TypeDesc? TypeDesc
         {
             get { return _typeDesc; }
             set { _typeDesc = value; }
@@ -331,6 +336,7 @@ namespace System.Xml.Serialization
             set { _reference = value; }
         }
 
+        [MemberNotNullWhen(false, nameof(_typeName))]
         internal bool IsAnonymousType
         {
             get { return _typeName == null || _typeName.Length == 0; }
@@ -338,7 +344,7 @@ namespace System.Xml.Serialization
 
         internal virtual string DefaultElementName
         {
-            get { return IsAnonymousType ? XmlConvert.EncodeLocalName(_typeDesc.Name) : _typeName; }
+            get { return IsAnonymousType ? XmlConvert.EncodeLocalName(_typeDesc!.Name) : _typeName; }
         }
     }
 
@@ -355,9 +361,9 @@ namespace System.Xml.Serialization
 
     internal class NullableMapping : TypeMapping
     {
-        private TypeMapping _baseMapping;
+        private TypeMapping? _baseMapping;
 
-        internal TypeMapping BaseMapping
+        internal TypeMapping? BaseMapping
         {
             get { return _baseMapping; }
             set { _baseMapping = value; }
@@ -365,24 +371,24 @@ namespace System.Xml.Serialization
 
         internal override string DefaultElementName
         {
-            get { return BaseMapping.DefaultElementName; }
+            get { return BaseMapping!.DefaultElementName; }
         }
     }
 
     internal class ArrayMapping : TypeMapping
     {
-        private ElementAccessor[] _elements;
-        private ElementAccessor[] _sortedElements;
-        private ArrayMapping _next;
-        private StructMapping _topLevelMapping;
+        private ElementAccessor[]? _elements;
+        private ElementAccessor[]? _sortedElements;
+        private ArrayMapping? _next;
+        private StructMapping? _topLevelMapping;
 
-        internal ElementAccessor[] Elements
+        internal ElementAccessor[]? Elements
         {
             get { return _elements; }
             set { _elements = value; _sortedElements = null; }
         }
 
-        internal ElementAccessor[] ElementsSortedByDerivation
+        internal ElementAccessor[]? ElementsSortedByDerivation
         {
             get
             {
@@ -398,13 +404,13 @@ namespace System.Xml.Serialization
         }
 
 
-        internal ArrayMapping Next
+        internal ArrayMapping? Next
         {
             get { return _next; }
             set { _next = value; }
         }
 
-        internal StructMapping TopLevelMapping
+        internal StructMapping? TopLevelMapping
         {
             get { return _topLevelMapping; }
             set { _topLevelMapping = value; }
@@ -413,7 +419,7 @@ namespace System.Xml.Serialization
 
     internal class EnumMapping : PrimitiveMapping
     {
-        private ConstantMapping[] _constants;
+        private ConstantMapping[]? _constants;
         private bool _isFlags;
 
         internal bool IsFlags
@@ -422,7 +428,7 @@ namespace System.Xml.Serialization
             set { _isFlags = value; }
         }
 
-        internal ConstantMapping[] Constants
+        internal ConstantMapping[]? Constants
         {
             get { return _constants; }
             set { _constants = value; }
@@ -431,16 +437,18 @@ namespace System.Xml.Serialization
 
     internal class ConstantMapping : Mapping
     {
-        private string _xmlName;
-        private string _name;
+        private string? _xmlName;
+        private string? _name;
         private long _value;
 
+        [AllowNull]
         internal string XmlName
         {
             get { return _xmlName == null ? string.Empty : _xmlName; }
             set { _xmlName = value; }
         }
 
+        [AllowNull]
         internal string Name
         {
             get { return _name == null ? string.Empty : _name; }
@@ -456,19 +464,20 @@ namespace System.Xml.Serialization
 
     internal class StructMapping : TypeMapping, INameScope
     {
-        private MemberMapping[] _members;
-        private StructMapping _baseMapping;
-        private StructMapping _derivedMappings;
-        private StructMapping _nextDerivedMapping;
-        private MemberMapping _xmlnsMember;
+        private MemberMapping[]? _members;
+        private StructMapping? _baseMapping;
+        private StructMapping? _derivedMappings;
+        private StructMapping? _nextDerivedMapping;
+        private MemberMapping? _xmlnsMember;
         private bool _hasSimpleContent;
         private bool _openModel;
         private bool _isSequence;
-        private NameTable _elements;
-        private NameTable _attributes;
-        private CodeIdentifiers _scope;
+        private NameTable? _elements;
+        private NameTable? _attributes;
+        private CodeIdentifiers? _scope;
 
-        internal StructMapping BaseMapping
+        [DisallowNull]
+        internal StructMapping? BaseMapping
         {
             get { return _baseMapping; }
             set
@@ -482,9 +491,9 @@ namespace System.Xml.Serialization
                 if (value._isSequence && !_isSequence)
                 {
                     _isSequence = true;
-                    if (_baseMapping.IsSequence)
+                    if (_baseMapping!.IsSequence)
                     {
-                        for (StructMapping derived = _derivedMappings; derived != null; derived = derived.NextDerivedMapping)
+                        for (StructMapping? derived = _derivedMappings; derived != null; derived = derived.NextDerivedMapping)
                         {
                             derived.SetSequence();
                         }
@@ -493,7 +502,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal StructMapping DerivedMappings
+        internal StructMapping? DerivedMappings
         {
             get { return _derivedMappings; }
         }
@@ -521,11 +530,11 @@ namespace System.Xml.Serialization
                 return _attributes;
             }
         }
-        object INameScope.this[string name, string ns]
+        object? INameScope.this[string? name, string? ns]
         {
             get
             {
-                object named = LocalElements[name, ns];
+                object? named = LocalElements[name, ns];
                 if (named != null)
                     return named;
                 if (_baseMapping != null)
@@ -537,7 +546,7 @@ namespace System.Xml.Serialization
                 LocalElements[name, ns] = value;
             }
         }
-        internal StructMapping NextDerivedMapping
+        internal StructMapping? NextDerivedMapping
         {
             get { return _nextDerivedMapping; }
         }
@@ -551,7 +560,7 @@ namespace System.Xml.Serialization
         {
             get
             {
-                StructMapping mapping = this;
+                StructMapping? mapping = this;
                 while (mapping != null)
                 {
                     if (mapping.XmlnsMember != null)
@@ -562,13 +571,13 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal MemberMapping[] Members
+        internal MemberMapping[]? Members
         {
             get { return _members; }
             set { _members = value; }
         }
 
-        internal MemberMapping XmlnsMember
+        internal MemberMapping? XmlnsMember
         {
             get { return _xmlnsMember; }
             set { _xmlnsMember = value; }
@@ -591,12 +600,12 @@ namespace System.Xml.Serialization
             set { _scope = value; }
         }
 
-        internal MemberMapping FindDeclaringMapping(MemberMapping member, out StructMapping declaringMapping, string parent)
+        internal MemberMapping? FindDeclaringMapping(MemberMapping member, out StructMapping? declaringMapping, string? parent)
         {
             declaringMapping = null;
             if (BaseMapping != null)
             {
-                MemberMapping baseMember = BaseMapping.FindDeclaringMapping(member, out declaringMapping, parent);
+                MemberMapping? baseMember = BaseMapping.FindDeclaringMapping(member, out declaringMapping, parent);
                 if (baseMember != null) return baseMember;
             }
             if (_members == null) return null;
@@ -606,7 +615,7 @@ namespace System.Xml.Serialization
                 if (_members[i].Name == member.Name)
                 {
                     if (_members[i].TypeDesc != member.TypeDesc)
-                        throw new InvalidOperationException(SR.Format(SR.XmlHiddenMember, parent, member.Name, member.TypeDesc.FullName, this.TypeName, _members[i].Name, _members[i].TypeDesc.FullName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlHiddenMember, parent, member.Name, member.TypeDesc!.FullName, this.TypeName, _members[i].Name, _members[i].TypeDesc!.FullName));
                     else if (!_members[i].Match(member))
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInvalidXmlOverride, parent, member.Name, this.TypeName, _members[i].Name));
@@ -617,24 +626,24 @@ namespace System.Xml.Serialization
             }
             return null;
         }
-        internal bool Declares(MemberMapping member, string parent)
+        internal bool Declares(MemberMapping member, string? parent)
         {
-            StructMapping m;
+            StructMapping? m;
             return (FindDeclaringMapping(member, out m, parent) != null);
         }
 
-        internal void SetContentModel(TextAccessor text, bool hasElements)
+        internal void SetContentModel(TextAccessor? text, bool hasElements)
         {
-            if (BaseMapping == null || BaseMapping.TypeDesc.IsRoot)
+            if (BaseMapping == null || BaseMapping.TypeDesc!.IsRoot)
             {
-                _hasSimpleContent = !hasElements && text != null && !text.Mapping.IsList;
+                _hasSimpleContent = !hasElements && text != null && !text.Mapping!.IsList;
             }
             else if (BaseMapping.HasSimpleContent)
             {
                 if (text != null || hasElements)
                 {
                     // we can only extent a simleContent type with attributes
-                    throw new InvalidOperationException(SR.Format(SR.XmlIllegalSimpleContentExtension, TypeDesc.FullName, BaseMapping.TypeDesc.FullName));
+                    throw new InvalidOperationException(SR.Format(SR.XmlIllegalSimpleContentExtension, TypeDesc!.FullName, BaseMapping.TypeDesc.FullName));
                 }
                 else
                 {
@@ -645,9 +654,9 @@ namespace System.Xml.Serialization
             {
                 _hasSimpleContent = false;
             }
-            if (!_hasSimpleContent && text != null && !text.Mapping.TypeDesc.CanBeTextValue && !(BaseMapping != null && !BaseMapping.TypeDesc.IsRoot && (text.Mapping.TypeDesc.IsEnum || text.Mapping.TypeDesc.IsPrimitive)))
+            if (!_hasSimpleContent && text != null && !text.Mapping!.TypeDesc!.CanBeTextValue && !(BaseMapping != null && !BaseMapping.TypeDesc!.IsRoot && (text.Mapping.TypeDesc.IsEnum || text.Mapping.TypeDesc.IsPrimitive)))
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlIllegalTypedTextAttribute, TypeDesc.FullName, text.Name, text.Mapping.TypeDesc.FullName));
+                throw new InvalidOperationException(SR.Format(SR.XmlIllegalTypedTextAttribute, TypeDesc!.FullName, text.Name, text.Mapping.TypeDesc.FullName));
             }
         }
 
@@ -668,17 +677,17 @@ namespace System.Xml.Serialization
 
         internal void SetSequence()
         {
-            if (TypeDesc.IsRoot)
+            if (TypeDesc!.IsRoot)
                 return;
 
             StructMapping start = this;
 
             // find first mapping that does not have the sequence set
-            while (start.BaseMapping != null && !start.BaseMapping.IsSequence && !start.BaseMapping.TypeDesc.IsRoot)
+            while (start.BaseMapping != null && !start.BaseMapping.IsSequence && !start.BaseMapping.TypeDesc!.IsRoot)
                 start = start.BaseMapping;
 
             start.IsSequence = true;
-            for (StructMapping derived = start.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
+            for (StructMapping? derived = start.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
             {
                 derived.SetSequence();
             }
@@ -686,20 +695,20 @@ namespace System.Xml.Serialization
 
         internal bool IsSequence
         {
-            get { return _isSequence && !TypeDesc.IsRoot; }
+            get { return _isSequence && !TypeDesc!.IsRoot; }
             set { _isSequence = value; }
         }
     }
 
     internal abstract class AccessorMapping : Mapping
     {
-        private TypeDesc _typeDesc;
-        private AttributeAccessor _attribute;
-        private ElementAccessor[] _elements;
-        private ElementAccessor[] _sortedElements;
-        private TextAccessor _text;
-        private ChoiceIdentifierAccessor _choiceIdentifier;
-        private XmlnsAccessor _xmlns;
+        private TypeDesc? _typeDesc;
+        private AttributeAccessor? _attribute;
+        private ElementAccessor[]? _elements;
+        private ElementAccessor[]? _sortedElements;
+        private TextAccessor? _text;
+        private ChoiceIdentifierAccessor? _choiceIdentifier;
+        private XmlnsAccessor? _xmlns;
         private bool _ignore;
 
         internal AccessorMapping()
@@ -733,19 +742,19 @@ namespace System.Xml.Serialization
             get { return (_elements != null && _elements.Length > 0); }
         }
 
-        internal TypeDesc TypeDesc
+        internal TypeDesc? TypeDesc
         {
             get { return _typeDesc; }
             set { _typeDesc = value; }
         }
 
-        internal AttributeAccessor Attribute
+        internal AttributeAccessor? Attribute
         {
             get { return _attribute; }
             set { _attribute = value; }
         }
 
-        internal ElementAccessor[] Elements
+        internal ElementAccessor[]? Elements
         {
             get { return _elements; }
             set { _elements = value; _sortedElements = null; }
@@ -758,14 +767,14 @@ namespace System.Xml.Serialization
 
         internal class AccessorComparer : IComparer
         {
-            public int Compare(object o1, object o2)
+            public int Compare(object? o1, object? o2)
             {
                 if (o1 == o2)
                     return 0;
-                Accessor a1 = (Accessor)o1;
-                Accessor a2 = (Accessor)o2;
-                int w1 = a1.Mapping.TypeDesc.Weight;
-                int w2 = a2.Mapping.TypeDesc.Weight;
+                Accessor a1 = (Accessor)o1!;
+                Accessor a2 = (Accessor)o2!;
+                int w1 = a1.Mapping!.TypeDesc!.Weight;
+                int w2 = a2.Mapping!.TypeDesc!.Weight;
                 if (w1 == w2)
                     return 0;
                 if (w1 < w2)
@@ -774,7 +783,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal ElementAccessor[] ElementsSortedByDerivation
+        internal ElementAccessor[]? ElementsSortedByDerivation
         {
             get
             {
@@ -789,19 +798,19 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal TextAccessor Text
+        internal TextAccessor? Text
         {
             get { return _text; }
             set { _text = value; }
         }
 
-        internal ChoiceIdentifierAccessor ChoiceIdentifier
+        internal ChoiceIdentifierAccessor? ChoiceIdentifier
         {
             get { return _choiceIdentifier; }
             set { _choiceIdentifier = value; }
         }
 
-        internal XmlnsAccessor Xmlns
+        internal XmlnsAccessor? Xmlns
         {
             get { return _xmlns; }
             set { _xmlns = value; }
@@ -813,7 +822,7 @@ namespace System.Xml.Serialization
             set { _ignore = value; }
         }
 
-        internal Accessor Accessor
+        internal Accessor? Accessor
         {
             get
             {
@@ -824,7 +833,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal static bool ElementsMatch(ElementAccessor[] a, ElementAccessor[] b)
+        internal static bool ElementsMatch(ElementAccessor[]? a, ElementAccessor[]? b)
         {
             if (a == null)
             {
@@ -873,10 +882,10 @@ namespace System.Xml.Serialization
 
     internal class MemberMappingComparer : IComparer
     {
-        public int Compare(object o1, object o2)
+        public int Compare(object? o1, object? o2)
         {
-            MemberMapping m1 = (MemberMapping)o1;
-            MemberMapping m2 = (MemberMapping)o2;
+            MemberMapping m1 = (MemberMapping)o1!;
+            MemberMapping m2 = (MemberMapping)o2!;
 
             bool m1Text = m1.IsText;
             if (m1Text)
@@ -904,15 +913,15 @@ namespace System.Xml.Serialization
 
     internal class MemberMapping : AccessorMapping
     {
-        private string _name;
+        private string? _name;
         private bool _checkShouldPersist;
         private SpecifiedAccessor _checkSpecified;
         private bool _isReturnValue;
         private bool _readOnly;
         private int _sequenceId = -1;
-        private MemberInfo _memberInfo;
-        private MemberInfo _checkSpecifiedMemberInfo;
-        private MethodInfo _checkShouldPersistMethodInfo;
+        private MemberInfo? _memberInfo;
+        private MemberInfo? _checkSpecifiedMemberInfo;
+        private MethodInfo? _checkShouldPersistMethodInfo;
 
         internal MemberMapping() { }
 
@@ -948,19 +957,19 @@ namespace System.Xml.Serialization
             set { _name = value; }
         }
 
-        internal MemberInfo MemberInfo
+        internal MemberInfo? MemberInfo
         {
             get { return _memberInfo; }
             set { _memberInfo = value; }
         }
 
-        internal MemberInfo CheckSpecifiedMemberInfo
+        internal MemberInfo? CheckSpecifiedMemberInfo
         {
             get { return _checkSpecifiedMemberInfo; }
             set { _checkSpecifiedMemberInfo = value; }
         }
 
-        internal MethodInfo CheckShouldPersistMethodInfo
+        internal MethodInfo? CheckShouldPersistMethodInfo
         {
             get { return _checkShouldPersistMethodInfo; }
             set { _checkShouldPersistMethodInfo = value; }
@@ -989,18 +998,6 @@ namespace System.Xml.Serialization
             set { _sequenceId = value; }
         }
 
-        private string GetNullableType(TypeDesc td)
-        {
-            // SOAP encoded arrays not mapped to Nullable<T> since they always derive from soapenc:Array
-            if (td.IsMappedType || (!td.IsValueType && (Elements[0].IsSoap || td.ArrayElementTypeDesc == null)))
-                return td.FullName;
-            if (td.ArrayElementTypeDesc != null)
-            {
-                return GetNullableType(td.ArrayElementTypeDesc) + "[]";
-            }
-            return "System.Nullable`1[" + td.FullName + "]";
-        }
-
         internal MemberMapping Clone()
         {
             return new MemberMapping(this);
@@ -1009,19 +1006,19 @@ namespace System.Xml.Serialization
 
     internal class MembersMapping : TypeMapping
     {
-        private MemberMapping[] _members;
+        private MemberMapping[]? _members;
         private bool _hasWrapperElement = true;
         private bool _validateRpcWrapperElement;
         private bool _writeAccessors = true;
-        private MemberMapping _xmlnsMember;
+        private MemberMapping? _xmlnsMember;
 
-        internal MemberMapping[] Members
+        internal MemberMapping[]? Members
         {
             get { return _members; }
             set { _members = value; }
         }
 
-        internal MemberMapping XmlnsMember
+        internal MemberMapping? XmlnsMember
         {
             get { return _xmlnsMember; }
             set { _xmlnsMember = value; }
@@ -1059,25 +1056,25 @@ namespace System.Xml.Serialization
 
     internal class SerializableMapping : SpecialMapping
     {
-        private XmlSchema _schema;
-        private Type _type;
+        private XmlSchema? _schema;
+        private Type? _type;
         private bool _needSchema = true;
 
         // new implementation of the IXmlSerializable
-        private readonly MethodInfo _getSchemaMethod;
-        private XmlQualifiedName _xsiType;
-        private XmlSchemaType _xsdType;
-        private XmlSchemaSet _schemas;
+        private readonly MethodInfo? _getSchemaMethod;
+        private XmlQualifiedName? _xsiType;
+        private XmlSchemaType? _xsdType;
+        private XmlSchemaSet? _schemas;
         private bool _any;
-        private string _namespaces;
+        private string? _namespaces;
 
-        private SerializableMapping _baseMapping;
-        private SerializableMapping _derivedMappings;
-        private SerializableMapping _nextDerivedMapping;
-        private SerializableMapping _next; // all mappings with the same qname
+        private SerializableMapping? _baseMapping;
+        private SerializableMapping? _derivedMappings;
+        private SerializableMapping? _nextDerivedMapping;
+        private SerializableMapping? _next; // all mappings with the same qname
 
         internal SerializableMapping() { }
-        internal SerializableMapping(MethodInfo getSchemaMethod, bool any, string ns)
+        internal SerializableMapping(MethodInfo getSchemaMethod, bool any, string? ns)
         {
             _getSchemaMethod = getSchemaMethod;
             _any = any;
@@ -1094,7 +1091,7 @@ namespace System.Xml.Serialization
             _needSchema = false;
         }
 
-        internal void SetBaseMapping(SerializableMapping mapping)
+        internal void SetBaseMapping(SerializableMapping? mapping)
         {
             _baseMapping = mapping;
             if (_baseMapping != null)
@@ -1103,7 +1100,7 @@ namespace System.Xml.Serialization
                 _baseMapping._derivedMappings = this;
                 if (this == _nextDerivedMapping)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlCircularDerivation, TypeDesc.FullName));
+                    throw new InvalidOperationException(SR.Format(SR.XmlCircularDerivation, TypeDesc!.FullName));
                 }
             }
         }
@@ -1153,7 +1150,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal SerializableMapping DerivedMappings
+        internal SerializableMapping? DerivedMappings
         {
             get
             {
@@ -1161,7 +1158,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal SerializableMapping NextDerivedMapping
+        internal SerializableMapping? NextDerivedMapping
         {
             get
             {
@@ -1169,19 +1166,19 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal SerializableMapping Next
+        internal SerializableMapping? Next
         {
             get { return _next; }
             set { _next = value; }
         }
 
-        internal Type Type
+        internal Type? Type
         {
             get { return _type; }
             set { _type = value; }
         }
 
-        internal XmlSchemaSet Schemas
+        internal XmlSchemaSet? Schemas
         {
             get
             {
@@ -1190,7 +1187,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal XmlSchema Schema
+        internal XmlSchema? Schema
         {
             get
             {
@@ -1199,7 +1196,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal XmlQualifiedName XsiType
+        internal XmlQualifiedName? XsiType
         {
             get
             {
@@ -1214,7 +1211,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal XmlSchemaType XsdType
+        internal XmlSchemaType? XsdType
         {
             get
             {
@@ -1223,14 +1220,14 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal static void ValidationCallbackWithErrorCode(object sender, ValidationEventArgs args)
+        internal static void ValidationCallbackWithErrorCode(object? sender, ValidationEventArgs args)
         {
             // CONSIDER: need the real type name
             if (args.Severity == XmlSeverityType.Error)
-                throw new InvalidOperationException(SR.Format(SR.XmlSerializableSchemaError, typeof(IXmlSerializable).Name, args.Message));
+                throw new InvalidOperationException(SR.Format(SR.XmlSerializableSchemaError, nameof(IXmlSerializable), args.Message));
         }
 
-        internal void CheckDuplicateElement(XmlSchemaElement element, string elementNs)
+        internal void CheckDuplicateElement(XmlSchemaElement? element, string? elementNs)
         {
             if (element == null)
                 return;
@@ -1239,7 +1236,7 @@ namespace System.Xml.Serialization
             if (element.Parent == null || !(element.Parent is XmlSchema))
                 return;
 
-            XmlSchemaObjectTable elements = null;
+            XmlSchemaObjectTable? elements = null;
             if (Schema != null && Schema.TargetNamespace == elementNs)
             {
                 XmlSchemas.Preprocess(Schema);
@@ -1260,7 +1257,7 @@ namespace System.Xml.Serialization
                     if (Match(e, element))
                         return;
                     // XmlSerializableRootDupName=Cannot reconcile schema for '{0}'. Please use [XmlRoot] attribute to change name or namepace of the top-level element to avoid duplicate element declarations: element name='{1} namespace='{2}'.
-                    throw new InvalidOperationException(SR.Format(SR.XmlSerializableRootDupName, _getSchemaMethod.DeclaringType.FullName, e.Name, elementNs));
+                    throw new InvalidOperationException(SR.Format(SR.XmlSerializableRootDupName, _getSchemaMethod!.DeclaringType!.FullName, e.Name, elementNs));
                 }
             }
         }
@@ -1298,7 +1295,7 @@ namespace System.Xml.Serialization
                     // get the type info
                     if (_schemas == null)
                         _schemas = new XmlSchemaSet();
-                    object typeInfo = _getSchemaMethod.Invoke(null, new object[] { _schemas });
+                    object? typeInfo = _getSchemaMethod.Invoke(null, new object[] { _schemas });
                     _xsiType = XmlQualifiedName.Empty;
 
                     if (typeInfo != null)
@@ -1314,12 +1311,12 @@ namespace System.Xml.Serialization
                             _xsiType = (XmlQualifiedName)typeInfo;
                             if (_xsiType.IsEmpty)
                             {
-                                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaEmptyTypeName, _type.FullName, _getSchemaMethod.Name));
+                                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaEmptyTypeName, _type!.FullName, _getSchemaMethod.Name));
                             }
                         }
                         else
                         {
-                            throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaMethodReturnType, _type.Name, _getSchemaMethod.Name, typeof(XmlSchemaProviderAttribute).Name, typeof(XmlQualifiedName).FullName));
+                            throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaMethodReturnType, _type!.Name, _getSchemaMethod.Name, nameof(XmlSchemaProviderAttribute), typeof(XmlQualifiedName).FullName));
                         }
                     }
                     else
@@ -1347,17 +1344,17 @@ namespace System.Xml.Serialization
                             }
                             if (srcSchemas.Count > 1)
                             {
-                                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaInclude, _xsiType.Namespace, _getSchemaMethod.DeclaringType.FullName, _getSchemaMethod.Name));
+                                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaInclude, _xsiType.Namespace, _getSchemaMethod.DeclaringType!.FullName, _getSchemaMethod.Name));
                             }
-                            XmlSchema s = (XmlSchema)srcSchemas[0];
+                            XmlSchema? s = (XmlSchema?)srcSchemas[0];
                             if (s == null)
                             {
                                 throw new InvalidOperationException(SR.Format(SR.XmlMissingSchema, _xsiType.Namespace));
                             }
-                            _xsdType = (XmlSchemaType)s.SchemaTypes[_xsiType];
+                            _xsdType = (XmlSchemaType?)s.SchemaTypes[_xsiType];
                             if (_xsdType == null)
                             {
-                                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaTypeMissing, _getSchemaMethod.DeclaringType.FullName, _getSchemaMethod.Name, _xsiType.Name, _xsiType.Namespace));
+                                throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaTypeMissing, _getSchemaMethod.DeclaringType!.FullName, _getSchemaMethod.Name, _xsiType.Name, _xsiType.Namespace));
                             }
                             _xsdType = _xsdType.Redefined != null ? _xsdType.Redefined : _xsdType;
                         }
@@ -1365,12 +1362,12 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    IXmlSerializable serializable = (IXmlSerializable)Activator.CreateInstance(_type);
+                    IXmlSerializable serializable = (IXmlSerializable)Activator.CreateInstance(_type!)!;
                     _schema = serializable.GetSchema();
 
                     if (_schema != null)
                     {
-                        if (_schema.Id == null || _schema.Id.Length == 0) throw new InvalidOperationException(SR.Format(SR.XmlSerializableNameMissing1, _type.FullName));
+                        if (_schema.Id == null || _schema.Id.Length == 0) throw new InvalidOperationException(SR.Format(SR.XmlSerializableNameMissing1, _type!.FullName));
                     }
                 }
             }

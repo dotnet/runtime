@@ -415,12 +415,18 @@ mono_gchandle_get_target_handle (MonoGCHandle gchandle)
 }
 
 gpointer
+mono_array_handle_addr (MonoArrayHandle handle, int size, uintptr_t index)
+{
+	MonoArray *raw = MONO_HANDLE_RAW (handle);
+	return mono_array_addr_with_size_internal (raw, size, index);
+}
+
+gpointer
 mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t idx, MonoGCHandle *gchandle)
 {
 	g_assert (gchandle != NULL);
 	*gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST(MonoObject,handle), TRUE);
-	MonoArray *raw = MONO_HANDLE_RAW (handle);
-	return mono_array_addr_with_size_internal (raw, size, idx);
+	return mono_array_handle_addr (handle, size, idx);
 }
 
 gunichar2*

@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Net.Mail.Tests
 {
+    [PlatformSpecific(~TestPlatforms.Browser)]  // SmtpClient is not supported on Browser
     public class EhloParseExtensionsTest
     {
         private SmtpConnection _smtpConnection;

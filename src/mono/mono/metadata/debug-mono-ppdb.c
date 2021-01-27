@@ -41,6 +41,7 @@ struct _MonoPPDBFile {
 	MonoImage *image;
 	GHashTable *doc_hash;
 	GHashTable *method_hash;
+	gboolean is_embedded;
 };
 
 typedef struct {
@@ -130,7 +131,7 @@ doc_free (gpointer key)
 }
 
 static MonoPPDBFile*
-create_ppdb_file (MonoImage *ppdb_image)
+create_ppdb_file (MonoImage *ppdb_image, gboolean is_embedded_ppdb)
 {
 	MonoPPDBFile *ppdb;
 
@@ -138,6 +139,7 @@ create_ppdb_file (MonoImage *ppdb_image)
 	ppdb->image = ppdb_image;
 	ppdb->doc_hash = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) doc_free);
 	ppdb->method_hash = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) g_free);
+	ppdb->is_embedded = is_embedded_ppdb;
 	return ppdb;
 }
 
@@ -154,11 +156,12 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	guint8 *ppdb_data = NULL;
 	guint8 *to_free = NULL;
 	int ppdb_size = 0, ppdb_compressed_size = 0;
+	gboolean is_embedded_ppdb = FALSE;
 
 	if (image->tables [MONO_TABLE_DOCUMENT].rows) {
 		/* Embedded ppdb */
 		mono_image_addref (image);
-		return create_ppdb_file (image);
+		return create_ppdb_file (image, TRUE);
 	}
 
 	if (!get_pe_debug_info (image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size)) {
@@ -188,13 +191,14 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		raw_contents = data;
 		size = ppdb_size;
 		to_free = data;
+		is_embedded_ppdb = TRUE;
 	}
 #endif
 
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
 	if (raw_contents) {
 		if (size > 4 && strncmp ((char*)raw_contents, "BSJB", 4) == 0)
-			ppdb_image = mono_image_open_from_data_internal (alc, (char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL);
+			ppdb_image = mono_image_open_from_data_internal (alc, (char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL, NULL);
 	} else {
 		/* ppdb files drop the .exe/.dll extension */
 		filename = mono_image_get_filename (image);
@@ -232,7 +236,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		return NULL;
 	}
 
-	return create_ppdb_file (ppdb_image);
+	return create_ppdb_file (ppdb_image, is_embedded_ppdb);
 }
 
 void
@@ -442,7 +446,14 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 MonoImage *
 mono_ppdb_get_image (MonoPPDBFile *ppdb)
 {
-    return  ppdb->image;
+	return ppdb->image;
+}
+
+
+gboolean
+mono_ppdb_is_embedded (MonoPPDBFile *ppdb)
+{
+	return ppdb->is_embedded;
 }
 
 void

@@ -28,8 +28,9 @@ namespace System.Diagnostics.Tests
             return SuccessExitCode;
         }
 
-        public static int Sleep(string duration)
+        public static int Sleep(string duration, string callerName)
         {
+            _ = callerName; // argument ignored, for debugging purposes
             Thread.Sleep(int.Parse(duration));
             return SuccessExitCode;
         }
@@ -64,6 +65,12 @@ namespace System.Diagnostics.Tests
             Console.WriteLine("Signal");
             string line = Console.ReadLine();
             return line == "Success" ? SuccessExitCode : SuccessExitCode + 1;
+        }
+
+        public static int Echo(string value)
+        {
+            Console.WriteLine(value);
+            return SuccessExitCode;
         }
 
         public static int ReadLineWriteIfNull()

@@ -21,7 +21,7 @@
     <PackageReference Include="System.ComponentModel.Annotations" Version="$(SystemComponentModelAnnotationsVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
 

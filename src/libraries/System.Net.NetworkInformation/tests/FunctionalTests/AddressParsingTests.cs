@@ -69,7 +69,8 @@ namespace System.Net.NetworkInformation.Tests
         {
             string fileName = GetTestFilePath();
             FileUtil.NormalizeLineEndings("NetworkFiles/dhclient.leases", fileName);
-            List<IPAddress> dhcpServerAddresses = StringParsingHelpers.ParseDhcpServerAddressesFromLeasesFile(fileName, "wlan0");
+            List<IPAddress> dhcpServerAddresses = new List<IPAddress>();
+            StringParsingHelpers.ParseDhcpServerAddressesFromLeasesFile(dhcpServerAddresses, fileName, "wlan0");
             Assert.Equal(1, dhcpServerAddresses.Count);
             Assert.Equal(IPAddress.Parse("10.105.128.4"), dhcpServerAddresses[0]);
         }

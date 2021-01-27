@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);TESTING_CNG_IMPLEMENTATION</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net47-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net47-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CreateTests.cs" />

@@ -14,18 +14,14 @@ namespace System.IO
     {
         private readonly int _threadId;
         internal int state;
-        [MaybeNull, AllowNull]
-        internal TSource current = default;
+        internal TSource? current;
 
         public Iterator()
         {
             _threadId = Environment.CurrentManagedThreadId;
         }
 
-        public TSource Current
-        {
-            get { return current!; }
-        }
+        public TSource Current => current!;
 
         protected abstract Iterator<TSource> Clone();
 
@@ -37,7 +33,7 @@ namespace System.IO
 
         protected virtual void Dispose(bool disposing)
         {
-            current = default(TSource)!;
+            current = default;
             state = -1;
         }
 

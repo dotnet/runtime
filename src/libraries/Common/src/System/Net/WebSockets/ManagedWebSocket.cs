@@ -7,6 +7,7 @@ using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -23,6 +24,7 @@ namespace System.Net.WebSockets
     ///   a send operation while another is in progress or a receive operation while another is in progress will
     ///   result in an exception.
     /// </remarks>
+    [UnsupportedOSPlatform("browser")]
     internal sealed partial class ManagedWebSocket : WebSocket
     {
         /// <summary>Creates a <see cref="ManagedWebSocket"/> from a <see cref="Stream"/> connected to a websocket endpoint.</summary>
@@ -1287,7 +1289,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static unsafe int CombineMaskBytes(Span<byte> buffer, int maskOffset) =>
+        private static int CombineMaskBytes(Span<byte> buffer, int maskOffset) =>
             BitConverter.ToInt32(buffer.Slice(maskOffset));
 
         /// <summary>Applies a mask to a portion of a byte array.</summary>

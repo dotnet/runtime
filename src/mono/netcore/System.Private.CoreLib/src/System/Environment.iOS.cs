@@ -54,19 +54,19 @@ namespace System
 
                 case SpecialFolder.Desktop:
                 case SpecialFolder.DesktopDirectory:
-                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSDesktopDirectory);
+                    return Path.Combine(GetFolderPathCore(SpecialFolder.Personal, SpecialFolderOption.None), "Desktop");
 
                 case SpecialFolder.MyMusic:
-                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSMusicDirectory);
+                    return Path.Combine(GetFolderPathCore(SpecialFolder.Personal, SpecialFolderOption.None), "Music");
 
                 case SpecialFolder.MyPictures:
-                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSPicturesDirectory);
+                    return Path.Combine(GetFolderPathCore(SpecialFolder.Personal, SpecialFolderOption.None), "Pictures");
 
                 case SpecialFolder.Templates:
                     return CombineSearchPath(NSSearchPathDirectory.NSDocumentDirectory, "Templates");
 
                 case SpecialFolder.MyVideos:
-                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSMoviesDirectory);
+                    return Path.Combine(GetFolderPathCore(SpecialFolder.Personal, SpecialFolderOption.None), "Videos");
 
                 case SpecialFolder.CommonTemplates:
                     return "/usr/share/templates";

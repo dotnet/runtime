@@ -62,7 +62,7 @@ namespace System.Threading
                     return OpenExistingResult.NameNotFound;
                 if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND)
                     return OpenExistingResult.PathNotFound;
-                if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
+                if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     return OpenExistingResult.NameInvalid;
                 // this is for passed through NativeMethods Errors
                 throw Win32Marshal.GetExceptionForLastWin32Error();

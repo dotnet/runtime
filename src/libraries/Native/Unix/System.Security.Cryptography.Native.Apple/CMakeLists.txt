@@ -1,7 +1,9 @@
 project(System.Security.Cryptography.Native.Apple C)
 
-find_library(COREFOUNDATION_LIBRARY CoreFoundation)
-find_library(SECURITY_LIBRARY Security)
+include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
+set(NATIVE_LIBS_EXTRA)
+append_extra_cryptography_apple_libs(NATIVE_LIBS_EXTRA)
 
 set(NATIVECRYPTO_SOURCES
     pal_digest.c
@@ -29,11 +31,17 @@ if (CLR_CMAKE_TARGET_TVOS)
     add_definitions(-DTARGET_TVOS)
 endif()
 
-add_library(System.Security.Cryptography.Native.Apple
-    SHARED
-    ${NATIVECRYPTO_SOURCES}
-    ${VERSION_FILE_PATH}
-)
+if (GEN_SHARED_LIB)
+    add_library(System.Security.Cryptography.Native.Apple
+        SHARED
+        ${NATIVECRYPTO_SOURCES}
+        ${VERSION_FILE_PATH}
+    )
+endif()
+
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVECRYPTO_SOURCES ${NATIVECRYPTO_SOURCES} entrypoints.c)
+endif()
 
 add_library(System.Security.Cryptography.Native.Apple-Static
     STATIC
@@ -42,10 +50,14 @@ add_library(System.Security.Cryptography.Native.Apple-Static
 
 set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Apple CLEAN_DIRECT_OUTPUT 1)
 
-target_link_libraries(System.Security.Cryptography.Native.Apple
-    ${COREFOUNDATION_LIBRARY}
-    ${SECURITY_LIBRARY}
-)
+if (GEN_SHARED_LIB)
+    target_link_libraries(System.Security.Cryptography.Native.Apple
+        ${NATIVE_LIBS_EXTRA}
+    )
+endif()
 
-install_with_stripped_symbols (System.Security.Cryptography.Native.Apple PROGRAMS .)
-install (TARGETS System.Security.Cryptography.Native.Apple-Static DESTINATION .)
+if (GEN_SHARED_LIB)
+    install_with_stripped_symbols (System.Security.Cryptography.Native.Apple PROGRAMS .)
+endif()
+
+install (TARGETS System.Security.Cryptography.Native.Apple-Static DESTINATION ${STATIC_LIB_DESTINATION})

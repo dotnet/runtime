@@ -408,13 +408,6 @@ case "$host" in
 		host_sunos=yes
 		;;
 	*-*-darwin*)
-		# Temporary workaround for Apple Silicon
-		# config.guess returns arm-apple-darwin20.0.0
-		if test $ac_cv_host = arm-apple-darwin20.0.0 -o $ac_cv_target = arm-apple-darwin20.0.0; then
-		   echo "You are running on Apple Silicon, but using an old config.guess, invoke configure like this:"
-		   echo "Run configure using ./configure --host=aarch64-apple-darwin20.0.0 --target=aarch64-apple-darwin20.0.0"
-		   exit 1
-		fi
 		parallel_mark="Disabled_Currently_Hangs_On_MacOSX"
 		host_darwin=yes
 		target_mach=yes
@@ -888,7 +881,7 @@ AC_ARG_ENABLE(visibility-hidden,
 WARN=''
 if test x"$GCC" = xyes; then
 		WARN='-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes'
-		CFLAGS="$CFLAGS -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wno-format-zero-length"
+		CFLAGS="$CFLAGS -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wno-format-zero-length -Wc++-compat"
 
 		# We require C99 with some GNU extensions, e.g. `linux` macro
 		CFLAGS="$CFLAGS -std=gnu99"
@@ -1034,9 +1027,8 @@ AM_CONDITIONAL(NINJA, test x$enable_ninja = xyes -a x$HAVE_NINJA != xno)
 
 AC_ARG_ENABLE(werror, [  --enable-werror Pass -Werror to the C compiler], werror_flag=$enableval, werror_flag=no)
 if test x$werror_flag = xyes; then
-	WERROR_CFLAGS="-Werror"
+	SHARED_CFLAGS="$SHARED_CFLAGS -Werror"
 fi
-AC_SUBST([WERROR_CFLAGS])
 AC_SUBST([SHARED_CFLAGS])
 
 GLIB_CFLAGS='-I$(top_srcdir)/mono/eglib -I$(top_builddir)/mono/eglib'
@@ -1418,7 +1410,7 @@ if test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_perfcounters='yes'
    mono_feature_disable_attach='yes'
    mono_feature_disable_cfgdir_config='yes'
-   if test "x$enable_monodroid" = "x" -a "x$enable_monotouch" = "x"; then
+   if test "x$enable_monodroid" = "xno" -a "x$enable_monotouch" = "xno"; then
      mono_feature_disable_dllmap='yes' # FIXME: the mobile products use this
    fi
    disable_mono_native=yes
@@ -1795,7 +1787,7 @@ fi
 AM_CONDITIONAL(ENABLE_STATIC_GCC_LIBS, test "x$enable_static_gcc_libs" = "xyes")
 
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
-     LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, dllmap, reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, interpreter, simd, soft_debug, perfcounters, normalization, desktop_loader, shared_perfcounters, remoting, security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_toggleref, sgen_debug_helpers, sgen_binary_protocol, sockets, gac, threads, processes, eventpipe.],
+     LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, dllmap, reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, interpreter, simd, soft_debug, perfcounters, normalization, desktop_loader, shared_perfcounters, remoting, security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_toggleref, sgen_debug_helpers, sgen_binary_protocol, sockets, gac, threads, processes.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
@@ -2041,22 +2033,6 @@ if test "x$mono_feature_disable_processes" = "xyes"; then
 	AC_MSG_NOTICE([Disabled process support])
 fi
 
-if test "x$mono_feature_disable_eventpipe" = "xyes"; then
-	AC_DEFINE(DISABLE_EVENTPIPE, 1, [Disable EventPipe support])
-	AC_MSG_NOTICE([Disabled EventPipe support])
-	enable_perftracing=no
-fi
-
-if test x$enable_perftracing = x -a x$with_core = xonly; then
-	if test -f $srcdir/mono/eventpipe/ep.h; then
-		enable_perftracing=yes
-	fi
-fi
-if test x$enable_perftracing = xyes; then
-	AC_DEFINE(ENABLE_PERFTRACING,1,[Enables support for eventpipe library])
-fi
-AM_CONDITIONAL(ENABLE_PERFTRACING, test x$enable_perftracing = xyes)
-
 AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
 AM_CONDITIONAL(DISABLE_EXECUTABLES, test x$enable_executables = xno)
 
@@ -2255,7 +2231,28 @@ if test x$host_win32 = xno; then
 		[#include <sys/types.h>])
 
 	dnl hires monotonic clock support
-	AC_SEARCH_LIBS(clock_gettime, rt)
+
+	# Check for clock_gettime
+	if test x$target_osx = xyes; then
+		# On OSX, clock_gettime is only really available on 10.12 or later
+		# However, it exists as a weak symbol on earlier versions, so hard-code a version check
+		AC_MONO_APPLE_AVAILABLE(clock_gettime_available, [whether clock_gettime is available on OSX],
+		[(MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12)])
+		if test x$clock_gettime_available = xyes; then
+			AC_DEFINE(HAVE_CLOCK_GETTIME, 1, [clock_gettime])
+		fi
+	else
+		AC_CHECK_FUNC(clock_gettime, [
+			AC_DEFINE(HAVE_CLOCK_GETTIME, 1, [clock_gettime])
+		], [
+			# Old glibc (< 2.17) has clock_gettime in librt, so check there too
+			AC_CHECK_LIB(rt, clock_gettime, [
+				AC_DEFINE(HAVE_CLOCK_GETTIME, 1, [clock_gettime])
+				LIBS="$LIBS -lrt"
+			])
+		])
+	fi
+
 	AC_CHECK_FUNCS(clock_nanosleep)
 
 	dnl dynamic loader support

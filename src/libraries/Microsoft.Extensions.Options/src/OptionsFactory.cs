@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Options
                 foreach (IValidateOptions<TOptions> validate in _validations)
                 {
                     ValidateOptionsResult result = validate.Validate(name, options);
-                    if (result.Failed)
+                    if (result is not null && result.Failed)
                     {
                         failures.AddRange(result.Failures);
                     }

@@ -196,7 +196,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNullAllowStructs(key, nameof(key));
 
-                TValue value;
+                TValue? value;
                 if (this.TryGetValue(key, out value))
                 {
                     return value;

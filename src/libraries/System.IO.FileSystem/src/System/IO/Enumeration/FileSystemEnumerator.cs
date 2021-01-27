@@ -69,7 +69,7 @@ namespace System.IO.Enumeration
         /// <param name="error">The native error code.</param>
         protected virtual bool ContinueOnError(int error) => false;
 
-        public TResult Current => _current;
+        public TResult Current => _current!;
 
         object? IEnumerator.Current => Current;
 

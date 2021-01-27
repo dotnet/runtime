@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Net.Tests
@@ -62,6 +61,11 @@ namespace System.Net.Tests
             p.BypassList = strings;
             Assert.Equal(strings, p.BypassList);
             Assert.Equal(strings, (string[])p.BypassArrayList.ToArray(typeof(string)));
+
+            strings = null;
+            p.BypassList = strings;
+            Assert.Empty(p.BypassList);
+            Assert.Empty(p.BypassArrayList);
         }
 
         [Fact]
@@ -112,7 +116,6 @@ namespace System.Net.Tests
             var p = new WebProxy();
             AssertExtensions.Throws<ArgumentNullException>("destination", () => p.GetProxy(null));
             AssertExtensions.Throws<ArgumentNullException>("host", () => p.IsBypassed(null));
-            AssertExtensions.Throws<ArgumentNullException>("c", () => p.BypassList = null);
             Assert.ThrowsAny<ArgumentException>(() => p.BypassList = new string[] { "*.com" });
         }
 
@@ -196,7 +199,7 @@ namespace System.Net.Tests
                 // is turned off. Hence dns lookup for it's own hostname fails.
                 Assert.Equal(SocketError.HostNotFound, exception.SocketErrorCode);
                 Assert.Throws<SocketException>(() => Dns.GetHostEntryAsync(Dns.GetHostName()).GetAwaiter().GetResult());
-                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+                Assert.True(OperatingSystem.IsLinux() || OperatingSystem.IsMacOS());
             }
         }
 

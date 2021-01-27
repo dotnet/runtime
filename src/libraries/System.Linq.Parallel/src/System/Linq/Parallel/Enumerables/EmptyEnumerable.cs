@@ -56,7 +56,7 @@ namespace System.Linq.Parallel
         }
     }
 
-    internal class EmptyEnumerator<T> : QueryOperatorEnumerator<T, int>, IEnumerator<T>
+    internal sealed class EmptyEnumerator<T> : QueryOperatorEnumerator<T, int>, IEnumerator<T>
     {
         internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref T currentElement, ref int currentKey)
         {

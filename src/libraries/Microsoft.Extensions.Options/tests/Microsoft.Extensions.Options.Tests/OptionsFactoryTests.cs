@@ -33,8 +33,8 @@ namespace Microsoft.Extensions.Options.Tests
             var factory = sp.GetRequiredService<IOptionsFactory<FakeOptions>>();
             Assert.Equal("UP", factory.Create("UP").Message);
             Assert.Equal("up", factory.Create("up").Message);
-        }        
-        
+        }
+
         [Fact]
         public void CanConfigureAllOptions()
         {
@@ -199,6 +199,14 @@ namespace Microsoft.Extensions.Options.Tests
             }
         }
 
+        public class FakeOptionsValidationNull : IValidateOptions<FakeOptions>
+        {
+            public ValidateOptionsResult Validate(string name, FakeOptions options)
+            {
+                return null;
+            }
+        }
+
         [Fact]
         public void CanValidateOptionsWithConfigureOptions()
         {
@@ -212,6 +220,17 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("Hello world", message);
         }
 
+        [Fact]
+        public void ValidateOptionsChecksNullWithConfigureOptions()
+        {
+            var factory = new ServiceCollection()
+                .ConfigureOptions<FakeOptionsValidationNull>()
+                .BuildServiceProvider()
+                .GetRequiredService<IOptionsFactory<FakeOptions>>();
+
+            Assert.NotNull(factory.Create(Options.DefaultName));
+        }
+
         public class UberSetup
             : IConfigureNamedOptions<FakeOptions>
             , IConfigureNamedOptions<FakeOptions2>
@@ -221,12 +240,12 @@ namespace Microsoft.Extensions.Options.Tests
             , IValidateOptions<FakeOptions2>
         {
             public void Configure(string name, FakeOptions options)
-                => options.Message += "["+name;
+                => options.Message += "[" + name;
 
             public void Configure(FakeOptions options) => Configure(Options.DefaultName, options);
 
             public void Configure(string name, FakeOptions2 options)
-                => options.Message += "[["+name;
+                => options.Message += "[[" + name;
 
             public void Configure(FakeOptions2 options) => Configure(Options.DefaultName, options);
 

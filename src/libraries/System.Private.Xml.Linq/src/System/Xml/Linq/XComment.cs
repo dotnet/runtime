@@ -118,7 +118,7 @@ namespace System.Xml.Linq
 
         internal override bool DeepEquals(XNode node)
         {
-            XComment other = node as XComment;
+            XComment? other = node as XComment;
             return other != null && value == other.value;
         }
 

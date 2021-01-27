@@ -131,15 +131,8 @@ namespace System.Net
         internal SafeDeleteContext? GetContext(out SecurityStatusPal status)
         {
             status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
-            if (!(IsCompleted && IsValidContext))
-            {
-                NetEventSource.Fail(this, "Should be called only when completed with success, currently is not!");
-            }
-
-            if (!IsServer)
-            {
-                NetEventSource.Fail(this, "The method must not be called by the client side!");
-            }
+            Debug.Assert(IsCompleted && IsValidContext, "Should be called only when completed with success, currently is not!");
+            Debug.Assert(IsServer, "The method must not be called by the client side!");
 
             if (!IsValidContext)
             {
@@ -306,10 +299,7 @@ namespace System.Net
 
         private string? GetClientSpecifiedSpn()
         {
-            if (!(IsValidContext && IsCompleted))
-            {
-                NetEventSource.Fail(this, "Trying to get the client SPN before handshaking is done!");
-            }
+            Debug.Assert(IsValidContext && IsCompleted, "Trying to get the client SPN before handshaking is done!");
 
             string? spn = NegotiateStreamPal.QueryContextClientSpecifiedSpn(_securityContext!);
 

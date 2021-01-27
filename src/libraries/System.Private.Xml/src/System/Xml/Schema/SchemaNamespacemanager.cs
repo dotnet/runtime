@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Xml.Schema
 {
     using System;
@@ -24,7 +23,7 @@ namespace System.Xml.Schema
             { //Special case for the XML namespace
                 return XmlReservedNs.NsXml;
             }
-            Dictionary<string, string> namespaces;
+            Dictionary<string, string?> namespaces;
             for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
@@ -44,15 +43,15 @@ namespace System.Xml.Schema
             { //Special case for the XML namespace
                 return "xml";
             }
-            Dictionary<string, string> namespaces;
+            Dictionary<string, string?> namespaces;
             for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
                 if (namespaces != null && namespaces.Count > 0)
                 {
-                    foreach (KeyValuePair<string, string> entry in namespaces)
+                    foreach (KeyValuePair<string, string?> entry in namespaces)
                     {
-                        if (entry.Value.Equals(ns))
+                        if (entry.Value!.Equals(ns))
                         {
                             return entry.Key;
                         }

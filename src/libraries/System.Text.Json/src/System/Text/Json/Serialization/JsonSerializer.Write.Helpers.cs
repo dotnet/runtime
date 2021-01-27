@@ -10,7 +10,7 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         // Members accessed by the serializer when serializing.
-        private const DynamicallyAccessedMemberTypes MembersAccessedOnWrite = DynamicallyAccessedMemberTypes.PublicProperties;
+        private const DynamicallyAccessedMemberTypes MembersAccessedOnWrite = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields;
 
         private static void WriteCore<TValue>(
             Utf8JsonWriter writer,
@@ -21,9 +21,9 @@ namespace System.Text.Json
             Debug.Assert(writer != null);
 
             //  We treat typeof(object) special and allow polymorphic behavior.
-            if (value != null && inputType == JsonClassInfo.ObjectType)
+            if (inputType == JsonClassInfo.ObjectType && value != null)
             {
-                inputType = value!.GetType();
+                inputType = value.GetType();
             }
 
             WriteStack state = default;

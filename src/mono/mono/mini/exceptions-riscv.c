@@ -119,13 +119,6 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 }
 
 gpointer
-mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
-{
-    g_assert_not_reached ();
-    return NULL;
-}
-
-gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
     g_assert_not_reached ();

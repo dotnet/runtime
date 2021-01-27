@@ -15,7 +15,7 @@ namespace System.Net
         private long _leftToWrite = long.MinValue;
         private bool _inOpaqueMode;
         // The last write needs special handling to cancel.
-        private HttpResponseStreamAsyncResult _lastWrite;
+        private HttpResponseStreamAsyncResult? _lastWrite;
 
         internal HttpResponseStream(HttpListenerContext httpContext)
         {
@@ -61,7 +61,7 @@ namespace System.Net
 
             uint statusCode;
             uint dataToWrite = (uint)size;
-            SafeLocalAllocHandle bufferAsIntPtr = null;
+            SafeLocalAllocHandle? bufferAsIntPtr = null;
             IntPtr pBufferAsIntPtr = IntPtr.Zero;
             bool sentHeaders = _httpContext.Response.SentHeaders;
             try
@@ -119,7 +119,7 @@ namespace System.Net
                                     null);
 
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Call to Interop.HttpApi.HttpSendResponseEntityBody returned:" + statusCode);
-                            if (_httpContext.Listener.IgnoreWriteExceptions)
+                            if (_httpContext.Listener!.IgnoreWriteExceptions)
                             {
                                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Write() suppressing error");
                                 statusCode = Interop.HttpApi.ERROR_SUCCESS;
@@ -146,7 +146,7 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, offset, (int)dataToWrite);
         }
 
-        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
             if (_closed || (size == 0 && _leftToWrite != 0))
@@ -207,7 +207,7 @@ namespace System.Net
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS && statusCode != Interop.HttpApi.ERROR_IO_PENDING)
             {
                 asyncResult.InternalCleanup();
-                if (_httpContext.Listener.IgnoreWriteExceptions && sentHeaders)
+                if (_httpContext.Listener!.IgnoreWriteExceptions && sentHeaders)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "BeginWrite() Suppressing error");
                 }
@@ -238,7 +238,7 @@ namespace System.Net
 
         private void EndWriteCore(IAsyncResult asyncResult)
         {
-            HttpResponseStreamAsyncResult castedAsyncResult = asyncResult as HttpResponseStreamAsyncResult;
+            HttpResponseStreamAsyncResult? castedAsyncResult = asyncResult as HttpResponseStreamAsyncResult;
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
@@ -249,9 +249,9 @@ namespace System.Net
             }
             castedAsyncResult.EndCalled = true;
             // wait & then check for errors
-            object returnValue = castedAsyncResult.InternalWaitForCompletion();
+            object? returnValue = castedAsyncResult.InternalWaitForCompletion();
 
-            Exception exception = returnValue as Exception;
+            Exception? exception = returnValue as Exception;
             if (exception != null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "Rethrowing exception:" + exception);
@@ -338,7 +338,7 @@ namespace System.Net
 
                         if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Info(this, "Call to Interop.HttpApi.HttpSendResponseEntityBody returned:" + statusCode);
-                        if (_httpContext.Listener.IgnoreWriteExceptions)
+                        if (_httpContext.Listener!.IgnoreWriteExceptions)
                         {
                             if (NetEventSource.Log.IsEnabled())
                                 NetEventSource.Info(this, "Suppressing error");
@@ -376,7 +376,7 @@ namespace System.Net
         // Sync can only be cancelled by CancelSynchronousIo, but we don't attempt this right now.
         internal void CancelLastWrite(SafeHandle requestQueueHandle)
         {
-            HttpResponseStreamAsyncResult asyncState = _lastWrite;
+            HttpResponseStreamAsyncResult? asyncState = _lastWrite;
             if (asyncState != null && !asyncState.IsCompleted)
             {
                 // It is safe to ignore the return value on a cancel operation because the connection is being closed

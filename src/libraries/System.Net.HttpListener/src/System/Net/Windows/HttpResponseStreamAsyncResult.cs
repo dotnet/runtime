@@ -8,9 +8,9 @@ namespace System.Net
 {
     internal sealed unsafe class HttpResponseStreamAsyncResult : LazyAsyncResult
     {
-        private readonly ThreadPoolBoundHandle _boundHandle;
+        private readonly ThreadPoolBoundHandle? _boundHandle;
         internal NativeOverlapped* _pOverlapped;
-        private readonly Interop.HttpApi.HTTP_DATA_CHUNK[] _dataChunks;
+        private readonly Interop.HttpApi.HTTP_DATA_CHUNK[]? _dataChunks;
         internal bool _sentHeaders;
 
         private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(Callback);
@@ -45,7 +45,7 @@ namespace System.Net
             }
         }
 
-        internal HttpResponseStreamAsyncResult(object asyncObject, object userState, AsyncCallback callback) : base(asyncObject, userState, callback)
+        internal HttpResponseStreamAsyncResult(object asyncObject, object? userState, AsyncCallback? callback) : base(asyncObject, userState, callback)
         {
         }
 
@@ -109,7 +109,7 @@ namespace System.Net
 
         private static readonly byte[] s_CRLFArray = new byte[] { (byte)'\r', (byte)'\n' };
 
-        internal HttpResponseStreamAsyncResult(object asyncObject, object userState, AsyncCallback callback, byte[] buffer, int offset, int size, bool chunked, bool sentHeaders, ThreadPoolBoundHandle boundHandle) : base(asyncObject, userState, callback)
+        internal HttpResponseStreamAsyncResult(object asyncObject, object? userState, AsyncCallback? callback, byte[] buffer, int offset, int size, bool chunked, bool sentHeaders, ThreadPoolBoundHandle boundHandle) : base(asyncObject, userState, callback)
         {
             _boundHandle = boundHandle;
             _sentHeaders = sentHeaders;
@@ -130,7 +130,7 @@ namespace System.Net
 
 
                 int chunkHeaderOffset = 0;
-                byte[] chunkHeaderBuffer = null;
+                byte[]? chunkHeaderBuffer = null;
                 if (chunked)
                 {
                     chunkHeaderBuffer = GetChunkHeader(size, out chunkHeaderOffset);
@@ -167,7 +167,7 @@ namespace System.Net
 
                 if (chunked)
                 {
-                    _dataChunks[0].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(chunkHeaderBuffer, chunkHeaderOffset));
+                    _dataChunks[0].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(chunkHeaderBuffer!, chunkHeaderOffset));
                     _dataChunks[1].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset));
                     _dataChunks[2].pBuffer = (byte*)(Marshal.UnsafeAddrOfPinnedArrayElement(s_CRLFArray, 0));
                 }
@@ -186,7 +186,7 @@ namespace System.Net
         private static void IOCompleted(HttpResponseStreamAsyncResult asyncResult, uint errorCode, uint numBytes)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes}");
-            object result = null;
+            object? result = null;
             try
             {
                 if (errorCode != Interop.HttpApi.ERROR_SUCCESS && errorCode != Interop.HttpApi.ERROR_HANDLE_EOF)
@@ -219,8 +219,8 @@ namespace System.Net
 
         private static unsafe void Callback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
-            object state = ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
-            HttpResponseStreamAsyncResult asyncResult = state as HttpResponseStreamAsyncResult;
+            object state = ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
+            HttpResponseStreamAsyncResult asyncResult = (state as HttpResponseStreamAsyncResult)!;
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "errorCode:0x" + errorCode.ToString("x8") + " numBytes:" + numBytes + " nativeOverlapped:0x" + ((IntPtr)nativeOverlapped).ToString("x8"));
 
             IOCompleted(asyncResult, errorCode, numBytes);
@@ -232,7 +232,7 @@ namespace System.Net
             base.Cleanup();
             if (_pOverlapped != null)
             {
-                _boundHandle.FreeNativeOverlapped(_pOverlapped);
+                _boundHandle!.FreeNativeOverlapped(_pOverlapped);
             }
         }
     }

@@ -1184,15 +1184,7 @@ namespace System.IO.Compression
             // they must set _everWritten, etc.
             public override void Write(byte[] buffer, int offset, int count)
             {
-                //we can't pass the argument checking down a level
-                if (buffer == null)
-                    throw new ArgumentNullException(nameof(buffer));
-                if (offset < 0)
-                    throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentNeedNonNegative);
-                if (count < 0)
-                    throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentNeedNonNegative);
-                if ((buffer.Length - offset) < count)
-                    throw new ArgumentException(SR.OffsetLengthInvalid);
+                ValidateBufferArguments(buffer, offset, count);
 
                 ThrowIfDisposed();
                 Debug.Assert(CanWrite);

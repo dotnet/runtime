@@ -16,12 +16,14 @@ namespace Internal.Cryptography
             int effectiveKeyLength,
             byte[]? iv,
             int blockSize,
+            int feedbackSize,
+            int paddingSize,
             bool encrypting)
         {
             using (SafeAlgorithmHandle algorithm = RC2BCryptModes.GetHandle(cipherMode, effectiveKeyLength))
             {
                 // The BasicSymmetricCipherBCrypt ctor will increase algorithm reference count and take ownership.
-                BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, true, iv, encrypting);
+                BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, paddingSize, key, true, iv, encrypting);
                 return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
             }
         }

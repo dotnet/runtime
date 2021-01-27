@@ -1,10 +1,14 @@
-#include "mono/eventpipe/ep.h"
-#include "mono/eventpipe/ep-config.h"
-#include "mono/eventpipe/ep-buffer.h"
-#include "mono/eventpipe/ep-event.h"
-#include "mono/eventpipe/ep-event-payload.h"
-#include "mono/eventpipe/ep-session.h"
-#include "eglib/test/test.h"
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include "ep-tests-debug.h"
+#endif
+
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-config.h>
+#include <eventpipe/ep-buffer.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-event-payload.h>
+#include <eventpipe/ep-session.h>
+#include <eglib/test/test.h>
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
 #define TEST_FILE "./ep_test_create_file.txt"
@@ -70,7 +74,7 @@ load_buffer_with_events_init (
 
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config;
-	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOG_ALWAYS, "");
+	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
 
 	test_location = 1;
@@ -140,7 +144,7 @@ load_buffer (
 		}
 		if (event_data) {
 			ep_event_payload_init (&payload, (uint8_t *)event_data, event_data_len);
-			result = ep_buffer_write_event (buffer, ep_buffer_get_writer_thread (buffer), session, ep_event, &payload, NULL, NULL, NULL);
+			result = ep_buffer_write_event (buffer, ep_rt_thread_get_handle (), session, ep_event, &payload, NULL, NULL, NULL);
 			ep_event_payload_fini (&payload);
 
 			if (!perf_test)
@@ -600,9 +604,9 @@ test_check_buffer_perf (void)
 	bool done = false;
 
 	while (!done) {
-		int64_t start = ep_perf_counter_query ();
+		int64_t start = ep_perf_timestamp_get ();
 		load_result = load_buffer (buffer, session, ep_event, 10 * 1000 * 1000, true, &events_written);
-		int64_t stop = ep_perf_counter_query ();
+		int64_t stop = ep_perf_timestamp_get ();
 
 		accumulted_time_ticks += stop - start;
 		total_events_written += events_written;
@@ -622,7 +626,7 @@ test_check_buffer_perf (void)
 
 	// Measured number of events/second for one thread.
 	// Only measure loading data into pre-allocated buffer.
-	//TODO: Setup acceptable pass/failure metrics.
+	// TODO: Setup acceptable pass/failure metrics.
 	printf ("\n\tPerformance stats:\n");
 	printf ("\t\tTotal number of events: %i\n", total_events_written);
 	printf ("\t\tTotal time in sec: %.2f\n", accumulted_time_sec);

@@ -251,6 +251,16 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
+            yield return new object[]
+            {
+                ".*", "abc", RegexOptions.None,
+                new[]
+                {
+                    new CaptureData("abc", 0, 3),
+                    new CaptureData("", 3, 0)
+                }
+            };
+
             if (!PlatformDetection.IsNetFramework)
             {
                 // .NET Framework missing fix in https://github.com/dotnet/runtime/pull/1075

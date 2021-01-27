@@ -117,23 +117,26 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
+    <value>Enum value was out of legal range.</value>
+  </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>
-  <data name="Argument_SemaphoreInitialMaximum" xml:space="preserve">
-    <value>The initial count for the semaphore must be greater than or equal to zero and less than the maximum count.</value>
-  </data>
   <data name="Argument_CannotBeNullOrEmpty" xml:space="preserve">
     <value>Argument cannot be null or empty.</value>
   </data>
+  <data name="Argument_EmptyName" xml:space="preserve">
+    <value>Empty name is not legal.</value>
+  </data>
+  <data name="Argument_SemaphoreInitialMaximum" xml:space="preserve">
+    <value>The initial count for the semaphore must be greater than or equal to zero and less than the maximum count.</value>
+  </data>
   <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
     <value>The length of the name exceeds the maximum limit.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
-    <value>Enum value was out of legal range.</value>
   </data>
   <data name="IO_AlreadyExists_Name" xml:space="preserve">
     <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>

@@ -60,7 +60,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/runtime/issues/18487
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Android)]
         public void PropertiesOfValidDrive()
         {
             var root = new DriveInfo("/");

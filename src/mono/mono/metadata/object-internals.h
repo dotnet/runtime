@@ -288,14 +288,18 @@ TYPED_HANDLE_DECL (MonoMarshalByRefObject);
 /* This is a copy of System.AppDomain */
 struct _MonoAppDomain {
 	MonoMarshalByRefObject mbr;
+#ifndef ENABLE_NETCORE
 	MonoDomain *data;
+#endif
 };
 
 /* Safely access System.AppDomain from native code */
 TYPED_HANDLE_DECL (MonoAppDomain);
 
+#ifndef ENABLE_NETCORE
 /* Safely access System.AppDomainSetup from native code.  (struct is in domain-internals.h) */
 TYPED_HANDLE_DECL (MonoAppDomainSetup);
+#endif
 
 typedef struct _MonoStringBuilder MonoStringBuilder;
 TYPED_HANDLE_DECL (MonoStringBuilder);
@@ -590,7 +594,9 @@ struct _MonoInternalThread {
 	gsize debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
 	gpointer *static_data;
 	struct _MonoThreadInfo *thread_info;
+#ifndef ENABLE_NETCORE
 	MonoAppContext *current_appcontext;
+#endif
 	MonoThread *root_domain_thread;
 	MonoObject *_serialized_principal;
 	int _serialized_principal_version;
@@ -837,6 +843,10 @@ typedef struct {
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	void     (*install_state_summarizer) (void);
 	gboolean (*is_interpreter_enabled) (void);
+#ifdef ENABLE_METADATA_UPDATE
+	void     (*metadata_update_init) (MonoError *error);
+	void     (*metadata_update_published) (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);
+#endif
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -1658,15 +1668,7 @@ typedef enum {
 // Keep in sync with System.Runtime.Loader.AssemblyLoadContext
 typedef struct {
 	MonoObject object;
-	MonoObject *unload_lock;
-	MonoEvent *resolving_unmaned_dll;
-	MonoEvent *resolving;
-	MonoEvent *unloading;
-	MonoString *name;
-	gpointer *native_assembly_load_context;
-	gint64 id;
-	gint32 internal_state;
-	MonoBoolean is_collectible;
+	MonoAssemblyLoadContext *native_assembly_load_context;
 } MonoManagedAssemblyLoadContext;
 
 TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);
@@ -1908,9 +1910,9 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 											MonoMethod *method, gpointer code);
 
 gpointer
-mono_method_alloc_generic_virtual_trampoline (MonoDomain *domain, int size);
+mono_method_alloc_generic_virtual_trampoline (MonoMemoryManager *mem_manager, int size);
 
-#define mono_method_alloc_generic_virtual_trampoline(domain, size) (g_cast (mono_method_alloc_generic_virtual_trampoline ((domain), (size))))
+#define mono_method_alloc_generic_virtual_trampoline(mem_manager, size) (g_cast (mono_method_alloc_generic_virtual_trampoline ((mem_manager), (size))))
 
 typedef enum {
 	MONO_UNHANDLED_POLICY_LEGACY,
@@ -2420,5 +2422,11 @@ mono_gc_wbarrier_value_copy_internal (void* dest, const void* src, int count, Mo
 
 void
 mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
+
+char *
+mono_runtime_get_managed_cmd_line (void);
+
+char *
+mono_runtime_get_cmd_line (int argc, char **argv);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

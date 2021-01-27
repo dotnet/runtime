@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -72,7 +73,7 @@ namespace System
             }
 
             if (length == 0)
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                throw Win32Marshal.GetExceptionForLastWin32Error();
 
             // length includes the null terminator
             builder.Length = (int)length - 1;
@@ -86,7 +87,25 @@ namespace System
             Interop.Kernel32.GetComputerName() ??
             throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
 
-        private static int GetCurrentProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Avoid inlining PInvoke frame into the hot path
+        private static int GetProcessId() => unchecked((int)Interop.Kernel32.GetCurrentProcessId());
+
+        private static string? GetProcessPath()
+        {
+            var builder = new ValueStringBuilder(stackalloc char[Interop.Kernel32.MAX_PATH]);
+
+            uint length;
+            while ((length = Interop.Kernel32.GetModuleFileName(IntPtr.Zero, ref builder.GetPinnableReference(), (uint)builder.Capacity)) >= builder.Capacity)
+            {
+                builder.EnsureCapacity((int)length);
+            }
+
+            if (length == 0)
+                throw Win32Marshal.GetExceptionForLastWin32Error();
+
+            builder.Length = (int)length;
+            return builder.ToString();
+        }
 
         private static unsafe OperatingSystem GetOSVersion()
         {

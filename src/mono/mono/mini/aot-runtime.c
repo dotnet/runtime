@@ -65,7 +65,6 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "version.h"
 #include "debugger-agent.h"
 #include "aot-compiler.h"
 #include "aot-runtime.h"
@@ -258,8 +257,14 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 static MonoJumpInfo*
 decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets);
 
+static MonoMethodSignature*
+decode_signature (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
+
 static void
 load_container_amodule (MonoAssemblyLoadContext *alc);
+
+static void
+sort_methods (MonoAotModule *amodule);
 
 static void
 amodule_lock (MonoAotModule *amodule)
@@ -757,6 +762,11 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		if (!t->data.type)
 			goto fail;
 		break;
+	case MONO_TYPE_FNPTR:
+		t->data.method = decode_signature (module, p, &p);
+		if (!t->data.method)
+			goto fail;
+		break;
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *gclass;
 		MonoGenericContext ctx;
@@ -1036,20 +1046,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				
 				kind = decode_value (p, &p);
 
-				/* Can't decode this */
-				if (!target)
-					return FALSE;
-				if (target->wrapper_type == MONO_WRAPPER_STELEMREF) {
-					info = mono_marshal_get_wrapper_info (target);
-
-					g_assert (info);
-					if (info->subtype == subtype && info->d.virtual_stelemref.kind == kind)
-						ref->method = target;
-					else
-						return FALSE;
-				} else {
-					return FALSE;
-				}
+				ref->method = mono_marshal_get_virtual_stelemref_wrapper ((MonoStelemrefKind)kind);
 			} else {
 				mono_error_set_bad_image_by_name (error, module->aot_name, "Invalid STELEMREF subtype %d: %s", subtype, module->aot_name);
 				return FALSE;
@@ -1156,6 +1153,16 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					ref->method = target;
 				else
 					return FALSE;
+			} else if (subtype == WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER) {
+				MonoClass *klass = decode_klass_ref (module, p, &p, error);
+				if (!klass)
+					return FALSE;
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
+				if (!m)
+					return FALSE;
+				int name_idx = decode_value (p, &p);
+				const char *name = (const char*)module->blob + name_idx;
+				ref->method = mono_marshal_get_generic_array_helper (klass, name, m);
 			}
 			break;
 		}
@@ -2490,10 +2497,39 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	init_amodule_got (amodule, TRUE);
 
+#ifdef HOST_WASM
+	/*
+	 * Emscripten could reorder code so methods from different aot images are intermixed. Compute the continuous
+	 * regions of code and register each of them separately.
+	 */
+	sort_methods (amodule);
+	gpointer start = NULL;
+
+#if 0
+	for (i = 0; i < amodule->sorted_methods_len; ++i) {
+		printf ("%s %d\n", amodule->assembly->aname.name, amodule->sorted_methods [i]);
+	}
+#endif
+
+	for (i = 0; i < amodule->sorted_methods_len; ++i) {
+		if (start == NULL)
+			start = amodule->sorted_methods [i];
+		if (i > 0 && GPOINTER_TO_UINT (amodule->sorted_methods [i - 1]) + 1 != GPOINTER_TO_UINT (amodule->sorted_methods [i])) {
+			//printf ("%s %d %d\n", amodule->assembly->aname.name, start, amodule->sorted_methods [i - 1]);
+			mono_jit_info_add_aot_module (assembly->image, start, (guint8*)amodule->sorted_methods [i - 1] + 1);
+			start = amodule->sorted_methods [i];
+		}
+	}
+	if (start != amodule->sorted_methods [amodule->sorted_methods_len - 1]) {
+		//printf ("%s %d %d\n", amodule->assembly->aname.name, start, amodule->sorted_methods [amodule->sorted_methods_len - 1]);
+		mono_jit_info_add_aot_module (assembly->image, start, (guint8*)amodule->sorted_methods [amodule->sorted_methods_len - 1] + 1);
+	}
+#else
 	if (amodule->jit_code_start)
 		mono_jit_info_add_aot_module (assembly->image, amodule->jit_code_start, amodule->jit_code_end);
 	if (amodule->llvm_code_start)
 		mono_jit_info_add_aot_module (assembly->image, amodule->llvm_code_start, amodule->llvm_code_end);
+#endif
 
 	assembly->image->aot_module = amodule;
 
@@ -3613,6 +3649,41 @@ msort_method_addresses (gpointer *array, int *indexes, int len)
 	g_free (scratch_indexes);
 }
 
+static void
+sort_methods (MonoAotModule *amodule)
+{
+	int nmethods = amodule->info.nmethods;
+
+	/* Compute a sorted table mapping code to method indexes. */
+	if (amodule->sorted_methods)
+		return;
+
+	// FIXME: async
+	gpointer *methods = g_new0 (gpointer, nmethods);
+	int *method_indexes = g_new0 (int, nmethods);
+	int methods_len = 0;
+
+	for (int i = 0; i < nmethods; ++i) {
+		/* Skip the -1 entries to speed up sorting */
+		if (amodule->methods [i] == GINT_TO_POINTER (-1))
+			continue;
+		methods [methods_len] = amodule->methods [i];
+		method_indexes [methods_len] = i;
+		methods_len ++;
+	}
+	/* Use a merge sort as this is mostly sorted */
+	msort_method_addresses (methods, method_indexes, methods_len);
+	for (int i = 0; i < methods_len -1; ++i)
+		g_assert (methods [i] <= methods [i + 1]);
+	amodule->sorted_methods_len = methods_len;
+	if (mono_atomic_cas_ptr ((gpointer*)&amodule->sorted_methods, methods, NULL) != NULL)
+		/* Somebody got in before us */
+		g_free (methods);
+	if (mono_atomic_cas_ptr ((gpointer*)&amodule->sorted_method_indexes, method_indexes, NULL) != NULL)
+		/* Somebody got in before us */
+		g_free (method_indexes);
+}
+
 /*
  * mono_aot_find_jit_info:
  *
@@ -3652,33 +3723,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	async = mono_thread_info_is_async_context ();
 
-	/* Compute a sorted table mapping code to method indexes. */
-	if (!amodule->sorted_methods) {
-		// FIXME: async
-		gpointer *methods = g_new0 (gpointer, nmethods);
-		int *method_indexes = g_new0 (int, nmethods);
-		int methods_len = 0;
-
-		for (i = 0; i < nmethods; ++i) {
-			/* Skip the -1 entries to speed up sorting */
-			if (amodule->methods [i] == GINT_TO_POINTER (-1))
-				continue;
-			methods [methods_len] = amodule->methods [i];
-			method_indexes [methods_len] = i;
-			methods_len ++;
-		}
-		/* Use a merge sort as this is mostly sorted */
-		msort_method_addresses (methods, method_indexes, methods_len);
-		for (i = 0; i < methods_len -1; ++i)
-			g_assert (methods [i] <= methods [i + 1]);
-		amodule->sorted_methods_len = methods_len;
-		if (mono_atomic_cas_ptr ((gpointer*)&amodule->sorted_methods, methods, NULL) != NULL)
-			/* Somebody got in before us */
-			g_free (methods);
-		if (mono_atomic_cas_ptr ((gpointer*)&amodule->sorted_method_indexes, method_indexes, NULL) != NULL)
-			/* Somebody got in before us */
-			g_free (method_indexes);
-	}
+	sort_methods (amodule);
 
 	/* Binary search in the sorted_methods table */
 	methods = amodule->sorted_methods;
@@ -3691,10 +3736,14 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 		code1 = (guint8 *)methods [pos];
 		if (pos + 1 == methods_len) {
+#ifdef HOST_WASM
+			code2 = code1 + 1;
+#else
 			if (code1 >= amodule->jit_code_start && code1 < amodule->jit_code_end)
 				code2 = amodule->jit_code_end;
 			else
 				code2 = amodule->llvm_code_end;
+#endif
 		} else {
 			code2 = (guint8 *)methods [pos + 1];
 		}
@@ -3706,6 +3755,11 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 		else
 			break;
 	}
+
+#ifdef HOST_WASM
+	if (addr != methods [pos])
+		return NULL;
+#endif
 
 	g_assert (addr >= methods [pos]);
 	if (pos + 1 < methods_len)
@@ -3729,6 +3783,10 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	code = (guint8 *)amodule->methods [method_index];
 	ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
 
+#ifdef HOST_WASM
+	/* WASM methods have no length, can only look up the method address */
+	code_len = 1;
+#else
 	if (pos == methods_len - 1) {
 		if (code >= amodule->jit_code_start && code < amodule->jit_code_end)
 			code_len = amodule->jit_code_end - code;
@@ -3737,6 +3795,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	} else {
 		code_len = (guint8*)methods [pos + 1] - (guint8*)methods [pos];
 	}
+#endif
 
 	g_assert ((guint8*)code <= (guint8*)addr && (guint8*)addr < (guint8*)code + code_len);
 
@@ -3854,7 +3913,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
 	case MONO_PATCH_INFO_METHOD_RGCTX:
-	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
+	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
 		MethodRef ref;
 		gboolean res;
 
@@ -4518,6 +4578,20 @@ add_module_cb (gpointer key, gpointer value, gpointer user_data)
 	g_ptr_array_add ((GPtrArray*)user_data, value);
 }
 
+static gboolean
+inst_is_private (MonoGenericInst *inst)
+{
+	for (int i = 0; i < inst->type_argc; ++i) {
+		MonoType *t = inst->type_argv [i];
+		if ((t->type == MONO_TYPE_CLASS || t->type == MONO_TYPE_VALUETYPE)) {
+			int access_level = mono_class_get_flags (t->data.klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+			if (access_level == TYPE_ATTRIBUTE_NESTED_PRIVATE || access_level == TYPE_ATTRIBUTE_NOT_PUBLIC)
+				return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 gboolean
 mono_aot_can_dedup (MonoMethod *method)
 {
@@ -4543,9 +4617,16 @@ mono_aot_can_dedup (MonoMethod *method)
 
 	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE) &&
 		!mini_is_gsharedvt_signature (mono_method_signature_internal (method)) &&
-		!mini_is_gsharedvt_klass (method->klass))
+		!mini_is_gsharedvt_klass (method->klass)) {
+		MonoGenericContext *context = mono_method_get_context (method);
+		if (context->method_inst && mini_is_gsharedvt_inst (context->method_inst))
+			return FALSE;
+		/* No point in dedup-ing private instances */
+		if ((context->class_inst && inst_is_private (context->class_inst)) ||
+			(context->method_inst && inst_is_private (context->method_inst)))
+			return FALSE;
 		return TRUE;
-
+	}
 	return FALSE;
 #else
 	gboolean not_normal_gshared = method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE);
@@ -4873,7 +4954,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		method = mono_method_get_declaring_generic_method (method);
 		method_index = mono_metadata_token_index (method->token) - 1;
 
-		if (amodule->llvm_code_start) {
+		if (amodule->info.flags & MONO_AOT_FILE_FLAG_WITH_LLVM) {
 			/* Needed by mini_llvm_init_gshared_method_this () */
 			/* orig_method is a random instance but it is enough to make init_method () work */
 			amodule_lock (amodule);
@@ -5024,10 +5105,12 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		/* Common case */
 		method_index = mono_metadata_token_index (method->token) - 1;
 
-		guint32 num_methods = amodule->info.nmethods - amodule->info.nextra_methods;
-		if (method_index >= num_methods)
-			/* method not available in AOT image */
-			return NULL;
+		if (!mono_llvm_only) {
+			guint32 num_methods = amodule->info.nmethods - amodule->info.nextra_methods;
+			if (method_index >= num_methods)
+				/* method not available in AOT image */
+				return NULL;
+		}
 	}
 
 	code = (guint8 *)load_method (domain, amodule, m_class_get_image (klass), method, method->token, method_index, error);

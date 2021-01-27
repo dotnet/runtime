@@ -1,0 +1,135 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include "pal_evp.h"
+
+// just some unique IDs
+intptr_t CryptoNative_EvpMd5()    { return 101; }
+intptr_t CryptoNative_EvpSha1()   { return 102; }
+intptr_t CryptoNative_EvpSha256() { return 103; }
+intptr_t CryptoNative_EvpSha384() { return 104; }
+intptr_t CryptoNative_EvpSha512() { return 105; }
+
+int32_t CryptoNative_EvpMdSize(intptr_t md)
+{
+    if (md == CryptoNative_EvpSha1()) return 20;
+    if (md == CryptoNative_EvpSha256()) return 32;
+    if (md == CryptoNative_EvpSha384()) return 48;
+    if (md == CryptoNative_EvpSha512()) return 64;
+    if (md == CryptoNative_EvpMd5()) return 16;
+    assert(0 && "unexpected type");
+    return -1;
+}
+
+int32_t CryptoNative_GetMaxMdSize()
+{
+    return EVP_MAX_MD_SIZE;
+}
+
+static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
+{
+    jobject mdName = NULL;
+    if (type == CryptoNative_EvpSha1())
+        mdName = JSTRING("SHA-1");
+    else if (type == CryptoNative_EvpSha256())
+        mdName = JSTRING("SHA-256");
+    else if (type == CryptoNative_EvpSha384())
+        mdName = JSTRING("SHA-384");
+    else if (type == CryptoNative_EvpSha512())
+        mdName = JSTRING("SHA-512");
+    else if (type == CryptoNative_EvpMd5())
+        mdName = JSTRING("MD5");
+    else
+        return NULL;
+
+    jobject mdObj = (*env)->CallStaticObjectMethod(env, g_mdClass, g_mdGetInstanceMethod, mdName);
+    (*env)->DeleteLocalRef(env, mdName);
+
+    return CheckJNIExceptions(env) ? FAIL : mdObj;
+}
+
+int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
+{
+    if (!type || !md || !mdSize || sourceSize < 0)
+        return FAIL;
+
+    JNIEnv* env = GetJNIEnv();
+
+    jobject mdObj = GetMessageDigestInstance(env, type);
+    if (!mdObj)
+        return FAIL;
+
+    jbyteArray bytes = (*env)->NewByteArray(env, sourceSize);
+    (*env)->SetByteArrayRegion(env, bytes, 0, sourceSize, (jbyte*) source);
+    jbyteArray hashedBytes = (jbyteArray)(*env)->CallObjectMethod(env, mdObj, g_mdDigestMethod, bytes);
+    assert(hashedBytes && "MessageDigest.digest(...) was not expected to return null");
+
+    jsize hashedBytesLen = (*env)->GetArrayLength(env, hashedBytes);
+    (*env)->GetByteArrayRegion(env, hashedBytes, 0, hashedBytesLen, (jbyte*) md);
+    *mdSize = (uint32_t)hashedBytesLen;
+
+    (*env)->DeleteLocalRef(env, bytes);
+    (*env)->DeleteLocalRef(env, hashedBytes);
+    (*env)->DeleteLocalRef(env, mdObj);
+
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+jobject CryptoNative_EvpMdCtxCreate(intptr_t type)
+{
+    JNIEnv* env = GetJNIEnv();
+    return (void*)ToGRef(env, GetMessageDigestInstance(env, type));
+}
+
+int32_t CryptoNative_EvpDigestReset(jobject ctx, intptr_t type)
+{
+    if (!ctx)
+        return FAIL;
+
+    JNIEnv* env = GetJNIEnv();
+    (*env)->CallVoidMethod(env, ctx, g_mdResetMethod);
+
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+int32_t CryptoNative_EvpDigestUpdate(jobject ctx, void* d, int32_t cnt)
+{
+    if (!ctx)
+        return FAIL;
+
+    JNIEnv* env = GetJNIEnv();
+
+    jbyteArray bytes = (*env)->NewByteArray(env, cnt);
+    (*env)->SetByteArrayRegion(env, bytes, 0, cnt, (jbyte*) d);
+    (*env)->CallVoidMethod(env, ctx, g_mdUpdateMethod, bytes);
+    (*env)->DeleteLocalRef(env, bytes);
+
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+int32_t CryptoNative_EvpDigestFinalEx(jobject ctx, uint8_t* md, uint32_t* s)
+{
+    return CryptoNative_EvpDigestCurrent(ctx, md, s);
+}
+
+int32_t CryptoNative_EvpDigestCurrent(jobject ctx, uint8_t* md, uint32_t* s)
+{
+    if (!ctx)
+        return FAIL;
+
+    JNIEnv* env = GetJNIEnv();
+
+    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx, g_mdDigestCurrentMethodId);
+    assert(bytes && "digest() was not expected to return null");
+    jsize bytesLen = (*env)->GetArrayLength(env, bytes);
+    *s = (uint32_t)bytesLen;
+    (*env)->GetByteArrayRegion(env, bytes, 0, bytesLen, (jbyte*) md);
+    (*env)->DeleteLocalRef(env, bytes);
+
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+void CryptoNative_EvpMdCtxDestroy(jobject ctx)
+{
+    ReleaseGRef(GetJNIEnv(), ctx);
+}

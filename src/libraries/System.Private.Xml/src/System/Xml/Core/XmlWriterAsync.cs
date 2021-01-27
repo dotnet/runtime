@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Threading.Tasks;
 
 using System;
@@ -71,7 +70,7 @@ namespace System.Xml
         }
 
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
-        public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string value)
+        public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string? value)
         {
             Task task = WriteStartAttributeAsync(prefix, localName, ns);
             if (task.IsSuccess())
@@ -84,7 +83,7 @@ namespace System.Xml
             }
         }
 
-        private async Task WriteAttributeStringAsyncHelper(Task task, string value)
+        private async Task WriteAttributeStringAsyncHelper(Task task, string? value)
         {
             await task.ConfigureAwait(false);
             await WriteStringAsync(value).ConfigureAwait(false);
@@ -121,7 +120,7 @@ namespace System.Xml
 
         // Writes out a processing instruction with a space between the name and text as follows: <?name text?>
 
-        public virtual Task WriteProcessingInstructionAsync(string name, string text)
+        public virtual Task WriteProcessingInstructionAsync(string name, string? text)
         {
             throw new NotImplementedException();
         }

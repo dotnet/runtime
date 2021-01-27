@@ -62,8 +62,6 @@ HRESULT MetaDataGetDispenser::Initialize(IUnknown* pICorProfilerInfoUnk)
         return hr;
     }
 
-
-
     return S_OK;
 }
 
@@ -164,32 +162,6 @@ HRESULT MetaDataGetDispenser::GetDispenser(IMetaDataDispenserEx **disp)
 }
 
 #else // WIN32
-
-bool EndsWith(const char *lhs, const char *rhs)
-{
-    size_t lhsLen = strlen(lhs);
-    size_t rhsLen = strlen(rhs);
-    if (lhsLen < rhsLen)
-    {
-        return false;
-    }
-
-    size_t lhsPos = lhsLen - rhsLen;
-    size_t rhsPos = 0;
-
-    while (rhsPos < rhsLen)
-    {
-        if (lhs[lhsPos] != rhs[rhsPos])
-        {
-            return false;
-        }
-
-        ++lhsPos;
-        ++rhsPos;
-    }
-
-    return true;
-}
 
 #ifdef __APPLE__
 string GetCoreCLRPath()

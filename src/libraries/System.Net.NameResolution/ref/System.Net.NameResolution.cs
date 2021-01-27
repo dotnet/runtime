@@ -22,7 +22,10 @@ namespace System.Net
         [System.ObsoleteAttribute("EndResolve is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static System.Net.IPHostEntry EndResolve(System.IAsyncResult asyncResult) { throw null; }
         public static System.Net.IPAddress[] GetHostAddresses(string hostNameOrAddress) { throw null; }
+        public static System.Net.IPAddress[] GetHostAddresses(string hostNameOrAddress, System.Net.Sockets.AddressFamily family) { throw null; }
         public static System.Threading.Tasks.Task<System.Net.IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress, System.Net.Sockets.AddressFamily family, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.ObsoleteAttribute("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static System.Net.IPHostEntry GetHostByAddress(System.Net.IPAddress address) { throw null; }
         [System.ObsoleteAttribute("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
@@ -31,8 +34,11 @@ namespace System.Net
         public static System.Net.IPHostEntry GetHostByName(string hostName) { throw null; }
         public static System.Net.IPHostEntry GetHostEntry(System.Net.IPAddress address) { throw null; }
         public static System.Net.IPHostEntry GetHostEntry(string hostNameOrAddress) { throw null; }
+        public static System.Net.IPHostEntry GetHostEntry(string hostNameOrAddress, System.Net.Sockets.AddressFamily family) { throw null; }
         public static System.Threading.Tasks.Task<System.Net.IPHostEntry> GetHostEntryAsync(System.Net.IPAddress address) { throw null; }
         public static System.Threading.Tasks.Task<System.Net.IPHostEntry> GetHostEntryAsync(string hostNameOrAddress) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.IPHostEntry> GetHostEntryAsync(string hostNameOrAddress, System.Net.Sockets.AddressFamily family, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.IPHostEntry> GetHostEntryAsync(string hostNameOrAddress, System.Threading.CancellationToken cancellationToken) { throw null; }
         public static string GetHostName() { throw null; }
         [System.ObsoleteAttribute("Resolve is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static System.Net.IPHostEntry Resolve(string hostName) { throw null; }

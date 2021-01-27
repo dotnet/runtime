@@ -65,25 +65,4 @@ namespace System
         [DoesNotReturn]
         public static extern void FailFast(string? message, Exception? exception, string? errorSource);
     }
-
-    #region referencesource dependencies - to be removed
-
-    public partial class Environment
-    {
-        internal static string GetResourceString(string key)
-        {
-            return key;
-        }
-
-        internal static string GetResourceString(string key, CultureInfo culture)
-        {
-            return key;
-        }
-
-        internal static string GetResourceString(string key, params object?[] values)
-        {
-            return string.Format(CultureInfo.InvariantCulture, key, values);
-        }
-    }
-    #endregion
 }

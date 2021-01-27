@@ -6,7 +6,7 @@
 
 [CmdletBinding(PositionalBinding=$false)]
 Param(
-  [string][Alias('f')]$framework = "netcoreapp",
+  [string][Alias('f')]$framework = "net",
   [string][Alias('c')]$configuration = "Release",
   [string][Alias('a')]$arch = "x64",
   [string][Alias('o')]$os = "",
@@ -29,7 +29,7 @@ function Find-Os()
 {
     if (!$(test-path variable:IsWindows) -or $IsWindows)
     {
-        return "Windows_NT"
+        return "windows"
     } 
     else
     {
@@ -137,7 +137,7 @@ function Set-Sdk-Environment()
         Copy-Aspnetcore-Bits $candidate_path
     }
 
-    $pathSeparator=if($os -eq "Windows_NT") { ";" } else { ":" }
+    $pathSeparator=if($os -eq "windows") { ";" } else { ":" }
     
     $env:DOTNET_ROOT=$candidate_path
     $env:DOTNET_CLI_HOME=$candidate_path

@@ -10,6 +10,7 @@ using System.Runtime.Serialization;
 
 namespace System.CodeDom.Compiler
 {
+    [ToolboxItem(false)]
     public abstract class CodeDomProvider : Component
     {
         private static readonly Dictionary<string, CompilerInfo> s_compilerLanguages = new Dictionary<string, CompilerInfo>(StringComparer.OrdinalIgnoreCase);

@@ -295,9 +295,12 @@ namespace System.IO
 
             internal void Start()
             {
-                // Schedule a task to read from the inotify queue and process the events.
-                Task.Factory.StartNew(obj => ((RunningInstance)obj!).ProcessEvents(),
-                    this, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                // Spawn a thread to read from the inotify queue and process the events.
+                new Thread(obj => ((RunningInstance)obj!).ProcessEvents())
+                {
+                    IsBackground = true,
+                    Name = ".NET File Watcher"
+                }.Start(this);
 
                 // PERF: As needed, we can look into making this use async I/O rather than burning
                 // a thread that blocks in the read syscall.
@@ -390,7 +393,12 @@ namespace System.IO
                     // of the world, but there's little that can be done about that.)
                     if (directoryEntry.Parent != parent)
                     {
-                        directoryEntry.Parent?.Children!.Remove (directoryEntry);
+                        // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
+                        if (directoryEntry.Parent != null)
+                        {
+                            directoryEntry.Parent.Children!.Remove(directoryEntry);
+                        }
+
                         directoryEntry.Parent = parent;
                         if (parent != null)
                         {
@@ -443,7 +451,12 @@ namespace System.IO
                 Debug.Assert (_includeSubdirectories);
                 lock (SyncObj)
                 {
-                    directoryEntry.Parent?.Children!.Remove(directoryEntry);
+                    // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
+                    if (directoryEntry.Parent != null)
+                    {
+                        directoryEntry.Parent.Children!.Remove(directoryEntry);
+                    }
+
                     RemoveWatchedDirectoryUnlocked (directoryEntry, removeInotify);
                 }
             }

@@ -5,51 +5,34 @@ namespace System.ServiceProcess
 {
     public readonly struct SessionChangeDescription
     {
-        private readonly SessionChangeReason _reason;
-        private readonly int _id;
-
         internal SessionChangeDescription(SessionChangeReason reason, int id)
         {
-            _reason = reason;
-            _id = id;
+            Reason = reason;
+            SessionId = id;
         }
 
-        public SessionChangeReason Reason
-        {
-            get
-            {
-                return _reason;
-            }
-        }
+        public SessionChangeReason Reason { get; }
 
-        public int SessionId
-        {
-            get
-            {
-                return _id;
-            }
-        }
+        public int SessionId { get; }
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || !(obj is SessionChangeDescription))
+            if (!(obj is SessionChangeDescription))
             {
                 return false;
             }
-            else
-            {
-                return Equals((SessionChangeDescription)obj);
-            }
+
+            return Equals((SessionChangeDescription)obj);
         }
 
         public override int GetHashCode()
         {
-            return (int)_reason ^ _id;
+            return (int)Reason ^ SessionId;
         }
 
         public bool Equals(SessionChangeDescription changeDescription)
         {
-            return (_reason == changeDescription._reason) && (_id == changeDescription._id);
+            return (Reason == changeDescription.Reason) && (SessionId == changeDescription.SessionId);
         }
 
         public static bool operator ==(SessionChangeDescription a, SessionChangeDescription b)

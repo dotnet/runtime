@@ -8,11 +8,14 @@
 #include <cctype>
 #include <iomanip>
 #include <algorithm>
+#include <thread>
+#include <chrono>
 
 using std::shared_ptr;
 using std::vector;
 using std::wcout;
 using std::endl;
+using std::atomic;
 
 shared_ptr<SlowPathELTProfiler> SlowPathELTProfiler::s_profiler;
 
@@ -26,16 +29,22 @@ shared_ptr<SlowPathELTProfiler> SlowPathELTProfiler::s_profiler;
 
 PROFILER_STUB EnterStub(FunctionIDOrClientID functionId, COR_PRF_ELT_INFO eltInfo)
 {
+    SHUTDOWNGUARD_RETVOID();
+
     SlowPathELTProfiler::s_profiler->EnterCallback(functionId, eltInfo);
 }
 
 PROFILER_STUB LeaveStub(FunctionIDOrClientID functionId, COR_PRF_ELT_INFO eltInfo)
 {
+    SHUTDOWNGUARD_RETVOID();
+
     SlowPathELTProfiler::s_profiler->LeaveCallback(functionId, eltInfo);
 }
 
 PROFILER_STUB TailcallStub(FunctionIDOrClientID functionId, COR_PRF_ELT_INFO eltInfo)
 {
+    SHUTDOWNGUARD_RETVOID();
+
     SlowPathELTProfiler::s_profiler->TailcallCallback(functionId, eltInfo);
 }
 

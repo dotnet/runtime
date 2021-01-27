@@ -25,7 +25,7 @@ namespace System.IO.Enumeration
         private Queue<string>? _pending;
 
         private Interop.Sys.DirectoryEntry _entry;
-        private TResult _current = default!;
+        private TResult? _current;
 
         // Used for creating full paths
         private char[]? _pathBuffer;

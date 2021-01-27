@@ -111,11 +111,15 @@ namespace System.Security.Cryptography
 
             ECParameters otherPartyParameters = otherPartyPublicKey.ExportParameters();
 
-            using (ECDiffieHellmanCng otherPartyCng = (ECDiffieHellmanCng)Create(otherPartyParameters))
-            using (otherKey = (ECDiffieHellmanCngPublicKey)otherPartyCng.PublicKey)
-            using (CngKey importedKey = otherKey.Import())
+            using (ECDiffieHellmanCng otherPartyCng = new ECDiffieHellmanCng())
             {
-                return DeriveSecretAgreementHandle(importedKey);
+                otherPartyCng.ImportParameters(otherPartyParameters);
+
+                using (otherKey = (ECDiffieHellmanCngPublicKey)otherPartyCng.PublicKey)
+                using (CngKey importedKey = otherKey.Import())
+                {
+                    return DeriveSecretAgreementHandle(importedKey);
+                }
             }
         }
 

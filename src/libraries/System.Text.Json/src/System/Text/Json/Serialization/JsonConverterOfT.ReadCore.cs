@@ -15,8 +15,7 @@ namespace System.Text.Json.Serialization
             return ReadCore(ref reader, options, ref state);
         }
 
-        [return: MaybeNull]
-        internal T ReadCore(
+        internal T? ReadCore(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
             ref ReadStack state)
@@ -35,7 +34,7 @@ namespace System.Text.Json.Serialization
                             if (state.Current.ReturnValue == null)
                             {
                                 // Avoid returning null for value types.
-                                return default!;
+                                return default;
                             }
 
                             return (T)state.Current.ReturnValue!;
@@ -44,7 +43,7 @@ namespace System.Text.Json.Serialization
                         {
                             // Read more data until we have the full element.
                             state.BytesConsumed += reader.BytesConsumed;
-                            return default!;
+                            return default;
                         }
                     }
                 }
@@ -55,12 +54,12 @@ namespace System.Text.Json.Serialization
                     if (!SingleValueReadWithReadAhead(ClassType.Value, ref reader, ref state))
                     {
                         state.BytesConsumed += reader.BytesConsumed;
-                        return default!;
+                        return default;
                     }
                 }
 
                 JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.PropertyInfoForClassInfo;
-                bool success = TryRead(ref reader, jsonPropertyInfo.RuntimePropertyType!, options, ref state, out T value);
+                bool success = TryRead(ref reader, jsonPropertyInfo.RuntimePropertyType!, options, ref state, out T? value);
                 if (success)
                 {
                     // Read any trailing whitespace. This will throw if JsonCommentHandling=Disallow.

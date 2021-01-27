@@ -185,7 +185,7 @@ namespace System.Net
         {
             if (address.Length == IPAddressParserStatics.IPv4AddressBytes)
             {
-                PrivateAddress = (uint)((address[3] << 24 | address[2] << 16 | address[1] << 8 | address[0]) & 0x0FFFFFFFF);
+                PrivateAddress = BinaryPrimitives.ReadUInt32LittleEndian(address);
             }
             else if (address.Length == IPAddressParserStatics.IPv6AddressBytes)
             {

@@ -18,7 +18,6 @@ using HttpStress;
 /// </summary>
 public static class Program
 {
-
     public enum ExitCode { Success = 0, StressError = 1, CliError = 2 };
 
     public static async Task<int> Main(string[] args)
@@ -46,7 +45,7 @@ public static class Program
         cmd.AddOption(new Option("-connectionLifetime", "Max connection lifetime length (milliseconds).") { Argument = new Argument<int?>("connectionLifetime", null) });
         cmd.AddOption(new Option("-ops", "Indices of the operations to use") { Argument = new Argument<int[]?>("space-delimited indices", null) });
         cmd.AddOption(new Option("-xops", "Indices of the operations to exclude") { Argument = new Argument<int[]?>("space-delimited indices", null) });
-        cmd.AddOption(new Option("-trace", "Enable Microsoft-System-Net-Http tracing.") { Argument = new Argument<string>("\"console\" or path") });
+        cmd.AddOption(new Option("-trace", "Enable System.Net.Http.InternalDiagnostics (client) and/or ASP.NET dignostics (server) tracing.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-aspnetlog", "Enable ASP.NET warning and error logging.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-listOps", "List available options.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-seed", "Seed for generating pseudo-random parameters for a given -n argument.") { Argument = new Argument<int?>("seed", null) });
@@ -99,7 +98,7 @@ public static class Program
 
             UseHttpSys = cmdline.ValueForOption<bool>("-httpSys"),
             LogAspNet = cmdline.ValueForOption<bool>("-aspnetlog"),
-            LogPath = cmdline.HasOption("-trace") ? cmdline.ValueForOption<string>("-trace") : null,
+            Trace = cmdline.ValueForOption<bool>("-trace"),
             ServerMaxConcurrentStreams = cmdline.ValueForOption<int?>("-serverMaxConcurrentStreams"),
             ServerMaxFrameSize = cmdline.ValueForOption<int?>("-serverMaxFrameSize"),
             ServerInitialConnectionWindowSize = cmdline.ValueForOption<int?>("-serverInitialConnectionWindowSize"),
@@ -158,11 +157,12 @@ public static class Program
         Console.WriteLine(" System.Net.Http: " + GetAssemblyInfo(typeof(System.Net.Http.HttpClient).Assembly));
         Console.WriteLine("          Server: " + (config.UseHttpSys ? "http.sys" : "Kestrel"));
         Console.WriteLine("      Server URL: " + config.ServerUri);
-        Console.WriteLine("         Tracing: " + (config.LogPath == null ? (object)false : config.LogPath.Length == 0 ? (object)true : config.LogPath));
+        Console.WriteLine("  Client Tracing: " + (config.Trace && config.RunMode.HasFlag(RunMode.client) ? "ON (client.log)" : "OFF"));
+        Console.WriteLine("  Server Tracing: " + (config.Trace && config.RunMode.HasFlag(RunMode.server) ? "ON (server.log)" : "OFF"));
         Console.WriteLine("     ASP.NET Log: " + config.LogAspNet);
         Console.WriteLine("     Concurrency: " + config.ConcurrentRequests);
         Console.WriteLine("  Content Length: " + config.MaxContentLength);
-        Console.WriteLine("   HTTP2 Version: " + config.HttpVersion);
+        Console.WriteLine("    HTTP Version: " + config.HttpVersion);
         Console.WriteLine("        Lifetime: " + (config.ConnectionLifetime.HasValue ? $"{config.ConnectionLifetime.Value.TotalMilliseconds}ms" : "(infinite)"));
         Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.name)));
         Console.WriteLine("     Random Seed: " + config.RandomSeed);

@@ -13,10 +13,10 @@ namespace System.Net.Http.Json.Functional.Tests
 {
     public class HttpClientJsonExtensionsTests
     {
-        [Fact]
-        public async Task TestGetFromJsonAsync()
+        [Theory]
+        [MemberData(nameof(ReadFromJsonTestData))]
+        public async Task TestGetFromJsonAsync(string json)
         {
-            string json = Person.Create().Serialize();
             HttpHeaderData header = new HttpHeaderData("Content-Type", "application/json");
             List<HttpHeaderData> headers = new List<HttpHeaderData> { header };
 
@@ -39,6 +39,13 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                 },
                 server => server.HandleRequestAsync(content: json, headers: headers));
+        }
+
+        public static IEnumerable<object[]> ReadFromJsonTestData()
+        {
+            Person per = Person.Create();
+            yield return new object[] { per.Serialize() };
+            yield return new object[] { per.SerializeWithNumbersAsStrings() };
         }
 
         [Fact]
@@ -114,7 +121,14 @@ namespace System.Net.Http.Json.Functional.Tests
                 async server => {
                     HttpRequestData request = await server.HandleRequestAsync();
                     ValidateRequest(request);
-                    Person obj = JsonSerializer.Deserialize<Person>(request.Body, JsonOptions.DefaultSerializerOptions);
+
+                    byte[] json = request.Body;
+
+                    Person obj = JsonSerializer.Deserialize<Person>(json, JsonOptions.DefaultSerializerOptions);
+                    obj.Validate();
+
+                    // Assert numbers are not written as strings - JsonException would be thrown here if written as strings.
+                    obj = JsonSerializer.Deserialize<Person>(json, JsonOptions.DefaultSerializerOptions_StrictNumberHandling);
                     obj.Validate();
                 });
         }

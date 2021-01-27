@@ -42,8 +42,20 @@ namespace System.Net.NetworkInformation
             string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
+            // First line is header in each file. On WSL, this file may be empty.
+            int count = 0;
+            if (v4connections.Length > 0)
+            {
+                count += v4connections.Length - 1;
+            }
+
+            if (v6connections.Length > 0)
+            {
+                count += v6connections.Length - 1;
+            }
+
             // First line is header in each file.
-            TcpConnectionInformation[] connections = new TcpConnectionInformation[v4connections.Length + v6connections.Length - 2];
+            TcpConnectionInformation[] connections = new TcpConnectionInformation[count];
             int index = 0;
             int skip = 0;
 
@@ -98,8 +110,20 @@ namespace System.Net.NetworkInformation
             string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
+            // First line is header in each file. On WSL, this file may be empty.
+            int count = 0;
+            if (v4connections.Length > 0)
+            {
+                count += v4connections.Length - 1;
+            }
+
+            if (v6connections.Length > 0)
+            {
+                count += v6connections.Length - 1;
+            }
+
             // First line is header in each file.
-            IPEndPoint[] endPoints = new IPEndPoint[v4connections.Length + v6connections.Length - 2];
+            IPEndPoint[] endPoints = new IPEndPoint[count];
             int index = 0;
             int skip = 0;
 
@@ -154,8 +178,19 @@ namespace System.Net.NetworkInformation
             string udp6FileContents = File.ReadAllText(udp6File);
             string[] v6connections = udp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            // First line is header in each file.
-            IPEndPoint[] endPoints = new IPEndPoint[v4connections.Length + v6connections.Length - 2];
+            // First line is header in each file. On WSL, this file may be empty.
+            int count = 0;
+            if (v4connections.Length > 0)
+            {
+                count += v4connections.Length - 1;
+            }
+
+            if (v6connections.Length > 0)
+            {
+                count += v6connections.Length - 1;
+            }
+
+            IPEndPoint[] endPoints = new IPEndPoint[count];
             int index = 0;
 
             // UDP Connections

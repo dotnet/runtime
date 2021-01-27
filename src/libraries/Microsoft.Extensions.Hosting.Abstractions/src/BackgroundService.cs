@@ -12,8 +12,16 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public abstract class BackgroundService : IHostedService, IDisposable
     {
-        private Task _executingTask;
+        private Task _executeTask;
         private CancellationTokenSource _stoppingCts;
+
+        /// <summary>
+        /// Gets the Task that executes the background operation.
+        /// </summary>
+        /// <remarks>
+        /// Will return <see langword="null"/> if the background operation hasn't started.
+        /// </remarks>
+        public virtual Task ExecuteTask => _executeTask;
 
         /// <summary>
         /// This method is called when the <see cref="IHostedService"/> starts. The implementation should return a task that represents
@@ -33,12 +41,12 @@ namespace Microsoft.Extensions.Hosting
             _stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             // Store the task we're executing
-            _executingTask = ExecuteAsync(_stoppingCts.Token);
+            _executeTask = ExecuteAsync(_stoppingCts.Token);
 
             // If the task is completed then return it, this will bubble cancellation and failure to the caller
-            if (_executingTask.IsCompleted)
+            if (_executeTask.IsCompleted)
             {
-                return _executingTask;
+                return _executeTask;
             }
 
             // Otherwise it's running
@@ -52,7 +60,7 @@ namespace Microsoft.Extensions.Hosting
         public virtual async Task StopAsync(CancellationToken cancellationToken)
         {
             // Stop called without start
-            if (_executingTask == null)
+            if (_executeTask == null)
             {
                 return;
             }
@@ -65,7 +73,7 @@ namespace Microsoft.Extensions.Hosting
             finally
             {
                 // Wait until the task completes or the stop token triggers
-                await Task.WhenAny(_executingTask, Task.Delay(Timeout.Infinite, cancellationToken)).ConfigureAwait(false);
+                await Task.WhenAny(_executeTask, Task.Delay(Timeout.Infinite, cancellationToken)).ConfigureAwait(false);
             }
 
         }

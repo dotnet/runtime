@@ -5,7 +5,7 @@
 * Our goal is to provide high-performance JSON APIs built into .NET Runtime.
   See the [announcement](https://github.com/dotnet/announcements/issues/90) for more details.
   - For the first version of the library, our objective is to remove the
-    dependency on JSON.NET within the shared framework. 
+    dependency on JSON.NET within the shared framework.
   - The primary focus will be on core functionality with emphasis on performance
     over capabilities and additional features.
 
@@ -51,7 +51,7 @@
 ### JsonDocument
 
 * Provides the ability to parse and represent a JSON document in-memory from
-  UTF-8 encoded JSON text. This will enable the caller to query the JSON 
+  UTF-8 encoded JSON text. This will enable the caller to query the JSON
   Document Object Model (DOM), i.e. random access of various nodes.
   - Ability to modify the DOM once it has been generated would be limited
     to slicing (i.e. only removing nodes would be supported)
@@ -83,7 +83,7 @@
   coming from a `Pipe` (from within an async context) as a sequence of segments
   and pass that along. Like streams, providing a higher-level type can help with
   making the end-to-end usage easier for the user when dealing with pipes.
-* A [stream <-> pipe adapter](https://github.com/dotnet/corefx/issues/27246) will help with the interoperability of these types
+* A [stream <-> pipe adapter](https://github.com/dotnet/runtime/issues/25087) will help with the interoperability of these types
   in general.
 
 ## Out of Current Scope & Future Considerations

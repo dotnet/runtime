@@ -201,6 +201,7 @@ namespace System.Net.Test.Common
                         break;
                 }
             }
+            request.Version = HttpVersion.Version30;
 
             return request;
         }

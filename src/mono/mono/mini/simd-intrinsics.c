@@ -877,27 +877,9 @@ mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 		}
 	}
 }
-
-void
-mono_simd_decompose_intrinsics (MonoCompile *cfg)
-{
-	MonoBasicBlock *bb;
-	MonoInst *ins;
-
-	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		for (ins = bb->code; ins; ins = ins->next) {
-			mono_simd_decompose_intrinsic (cfg, bb, ins);
-		}
-	}
-}
 #else
 void
 mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
-{
-}
-
-void
-mono_simd_decompose_intrinsics (MonoCompile *cfg)
 {
 }
 #endif /*defined(TARGET_WIN32) && defined(TARGET_AMD64)*/
@@ -2410,7 +2392,7 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			MONO_EMIT_BOUNDS_CHECK (cfg, array_ins->dreg, MonoArray, max_length, end_index_reg);
 
 			/* Load the array slice into the simd reg */
-			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, TRUE);
+			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, TRUE, FALSE);
 			g_assert (args [0]->opcode == OP_LDADDR);
 			var = (MonoInst*)args [0]->inst_p0;
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADX_MEMBASE, var->dreg, ldelema_ins->dreg, 0);
@@ -2554,7 +2536,7 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "ArgumentException");
 
 		/* Load the simd reg into the array slice */
-		ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, TRUE);
+		ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, TRUE, FALSE);
 		g_assert (args [0]->opcode == OP_LDADDR);
 		var = (MonoInst*)args [0]->inst_p0;
 		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ldelema_ins->dreg, 0, var->dreg);
@@ -2658,4 +2640,5 @@ on_exit:
 }
 
 #endif /* DISABLE_JIT */
+MONO_EMPTY_SOURCE_FILE (simd_intrinsics);
 #endif /* MONO_ARCH_SIMD_INTRINSICS */

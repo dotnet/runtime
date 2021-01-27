@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    internal static unsafe partial class SafeNativeMethods
+    internal static partial class SafeNativeMethods
     {
-        internal static partial class Gdip
+        internal static unsafe partial class Gdip
         {
             private const string LibraryName = "gdiplus.dll";
 

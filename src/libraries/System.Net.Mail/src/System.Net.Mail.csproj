@@ -1,14 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemNetMail_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup>
     <Compile Include="System\Net\Base64Stream.cs" />
     <Compile Include="System\Net\Mime\MimePart.cs" />
     <Compile Include="System\Net\Mime\Base64WriteStateInfo.cs" />
@@ -43,42 +40,22 @@
     <Compile Include="System\Net\Mail\Attachment.cs" />
     <Compile Include="System\Net\Mail\AttachmentCollection.cs" />
     <Compile Include="System\Net\BufferedReadStream.cs" />
-    <Compile Include="System\Net\Mail\ISmtpAuthenticationModule.cs" />
     <Compile Include="System\Net\Mail\LinkedResource.cs" />
     <Compile Include="System\Net\Mail\LinkedResourceCollection.cs" />
     <Compile Include="System\Net\Mail\MailAddress.cs" />
     <Compile Include="System\Net\Mail\MailAddressCollection.cs" />
-    <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
     <Compile Include="System\Net\Mail\MailMessage.cs" />
     <Compile Include="System\Net\Mail\MailPriority.cs" />
-    <Compile Include="System\Net\Mail\MailWriter.cs" />
     <Compile Include="System\Net\Mime\MimeMultiPart.cs" />
     <Compile Include="System\Net\Mime\MimeMultiPartType.cs" />
     <Compile Include="System\Net\Mime\MimeWriter.cs" />
-    <Compile Include="System\Net\Mail\SmtpAuthenticationManager.cs" />
-    <Compile Include="System\Net\Mail\SmtpClient.cs" />
-    <Compile Include="System\Net\Mail\SmtpCommands.cs" />
-    <Compile Include="System\Net\Mail\SmtpConnection.cs" />
-    <Compile Include="System\Net\Mail\SmtpConnection.Auth.cs" />
     <Compile Include="System\Net\Mail\SmtpException.cs" />
     <Compile Include="System\Net\Mail\SmtpFailedRecipientException.cs" />
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
-    <Compile Include="System\Net\Mail\SmtpReplyReader.cs" />
-    <Compile Include="System\Net\Mail\SmtpReplyReaderFactory.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
-    <Compile Include="System\Net\Mail\SmtpTransport.cs" />
-    <Compile Include="System\Net\Mail\SmtpLoginAuthenticationModule.cs" />
-    <Compile Include="System\Net\Mail\SmtpNegotiateAuthenticationModule.cs" />
-    <Compile Include="System\Net\Mail\SmtpNtlmAuthenticationModule.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
-    <Compile Include="$(CommonPath)System\Net\TlsStream.cs"
-             Link="Common\System\Net\TlsStream.cs" />
-    <Compile Include="$(CommonPath)System\Net\InternalException.cs"
-             Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
              Link="Common\System\Net\LazyAsyncResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
-             Link="Common\System\Net\ContextAwareResult.cs" />
     <Compile Include="$(CommonPath)System\Net\Mail\MailBnfHelper.cs"
              Link="Common\System\Net\Mail\MailBnfHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
@@ -95,16 +72,46 @@
              Link="Common\System\Net\Mail\QuotedPairReader.cs" />
     <Compile Include="$(CommonPath)System\Net\Mail\DomainLiteralReader.cs"
              Link="Common\System\Net\Mail\DomainLiteralReader.cs" />
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
-             Link="Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
              Link="Common\System\StringExtensions.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs"
+             Link="Common\System\HexConverter.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="System\Net\Mail\SmtpClient.Browser.cs" />
+  </ItemGroup>
+
+  <!-- Non Browser specific files - internal and security -->
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+    <Compile Include="System\Net\Mail\SmtpClient.cs" />
+    <Compile Include="System\Net\Mail\ISmtpAuthenticationModule.cs" />
+    <Compile Include="System\Net\Mail\SmtpAuthenticationManager.cs" />
+    <Compile Include="System\Net\Mail\SmtpCommands.cs" />
+    <Compile Include="System\Net\Mail\SmtpConnection.cs" />
+    <Compile Include="System\Net\Mail\SmtpConnection.Auth.cs" />
+    <Compile Include="System\Net\Mail\SmtpReplyReader.cs" />
+    <Compile Include="System\Net\Mail\SmtpReplyReaderFactory.cs" />
+    <Compile Include="System\Net\Mail\SmtpTransport.cs" />
+    <Compile Include="System\Net\Mail\SmtpLoginAuthenticationModule.cs" />
+    <Compile Include="System\Net\Mail\SmtpNegotiateAuthenticationModule.cs" />
+    <Compile Include="System\Net\Mail\SmtpNtlmAuthenticationModule.cs" />
+    <Compile Include="System\Net\Mail\MailWriter.cs" />
+    <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
+    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
+             Link="Common\System\Net\ContextAwareResult.cs" />
+    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
+             Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
              Link="Common\System\Net\DebugSafeHandle.cs" />
+    <Compile Include="$(CommonPath)System\Net\TlsStream.cs"
+             Link="Common\System\Net\TlsStream.cs" />
+    <Compile Include="$(CommonPath)System\Net\InternalException.cs"
+             Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
              Link="Common\System\Net\ExceptionCheck.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"
@@ -115,19 +122,20 @@
              Link="Common\System\Net\ContextFlagsPal.cs" />
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
              Link="Common\System\Net\NegotiationInfoClass.cs" />
-    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
-             Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs"
              Link="Common\System\Net\SecurityStatusPal.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SafeCredentialReference.cs"
+             Link="Common\System\Net\Security\SafeCredentialReference.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
              Link="Common\System\Net\Security\SSPIHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
              Link="Common\System\Net\Security\NetEventSource.Security.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
+             Link="Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
              Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
   </ItemGroup>
+
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"

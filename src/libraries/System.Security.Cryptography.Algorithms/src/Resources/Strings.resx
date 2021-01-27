@@ -303,6 +303,9 @@
   <data name="Cryptography_TransformBeyondEndOfBuffer" xml:space="preserve">
     <value>Attempt to transform beyond end of buffer.</value>
   </data>
+  <data name="Cryptography_CipherModeFeedbackNotSupported" xml:space="preserve">
+    <value>The specified feedback size '{0}' for CipherMode '{1}' is not supported.</value>
+  </data>
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
   </data>
@@ -353,5 +356,8 @@
   </data>
   <data name="Cryptography_ExceedKdfExtractLimit" xml:space="preserve">
     <value>The total number of bytes extracted cannot exceed UInt32.MaxValue * hash length.</value>
+  </data>
+  <data name="Cryptography_FeedbackSizeNotSupported" xml:space="preserve">
+    <value>The current platform does not support the specified feedback size.</value>
   </data>
 </root>

@@ -20,20 +20,6 @@ namespace System.Runtime.Versioning.Tests
         }
 
         [Theory]
-        [InlineData("Windows8.0", "Obsolete", "http://test.com/obsoletedInOSPlatform")]
-        [InlineData("Linux", "Message", null)]
-        [InlineData("iOS13", null, null)]
-        [InlineData("", null, "http://test.com/obsoletedInOSPlatform")]
-        public void TestObsoletedInOSPlatformAttribute(string platformName, string message, string url)
-        {
-            var opa = message == null ? new ObsoletedInOSPlatformAttribute(platformName) { Url = url} : new ObsoletedInOSPlatformAttribute(platformName, message) { Url = url };
-
-            Assert.Equal(platformName, opa.PlatformName);
-            Assert.Equal(message, opa.Message);
-            Assert.Equal(url, opa.Url);
-        }
-
-        [Theory]
         [InlineData("Windows8.0")]
         [InlineData("Android4.1")]
         [InlineData("")]

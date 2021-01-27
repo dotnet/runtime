@@ -140,14 +140,20 @@ namespace System.Threading
     public static partial class EventWaitHandleAcl
     {
         public static System.Threading.EventWaitHandle Create(bool initialState, System.Threading.EventResetMode mode, string? name, out bool createdNew, System.Security.AccessControl.EventWaitHandleSecurity? eventSecurity) { throw null; }
+        public static System.Threading.EventWaitHandle OpenExisting(string name, System.Security.AccessControl.EventWaitHandleRights rights) { throw null; }
+        public static bool TryOpenExisting(string name, System.Security.AccessControl.EventWaitHandleRights rights, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.EventWaitHandle? result) { throw null; }
     }
     public static partial class MutexAcl
     {
         public static System.Threading.Mutex Create(bool initiallyOwned, string? name, out bool createdNew, System.Security.AccessControl.MutexSecurity? mutexSecurity) { throw null; }
+        public static System.Threading.Mutex OpenExisting(string name, System.Security.AccessControl.MutexRights rights) { throw null; }
+        public static bool TryOpenExisting(string name, System.Security.AccessControl.MutexRights rights, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.Mutex? result) { throw null; }
     }
     public static partial class SemaphoreAcl
     {
         public static System.Threading.Semaphore Create(int initialCount, int maximumCount, string? name, out bool createdNew, System.Security.AccessControl.SemaphoreSecurity? semaphoreSecurity) { throw null; }
+        public static System.Threading.Semaphore OpenExisting(string name, System.Security.AccessControl.SemaphoreRights rights) { throw null; }
+        public static bool TryOpenExisting(string name, System.Security.AccessControl.SemaphoreRights rights, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.Semaphore? result) { throw null;  }
     }
     public static partial class ThreadingAclExtensions
     {

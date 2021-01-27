@@ -9,6 +9,7 @@
     <HarvestIncludePaths Include="ref/netstandard1.3;lib/netstandard1.3" />
     <HarvestIncludePaths Include="ref/netstandard2.0;lib/netstandard2.0" />
     <HarvestIncludePaths Include="runtimes/win/lib/netcoreapp2.1" />
+    <HarvestIncludePaths Include="ref/net5.0;lib/net5.0;runtimes/win/lib/net5.0" />
     <ProjectReference Include="..\src\System.IO.Pipes.AccessControl.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

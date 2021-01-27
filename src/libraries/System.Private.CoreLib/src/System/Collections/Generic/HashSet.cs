@@ -60,10 +60,24 @@ namespace System.Collections.Generic
                 _comparer = comparer;
             }
 
-            if (typeof(T) == typeof(string) && _comparer == null)
+            // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
+            // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
+            // hash buckets become unbalanced.
+
+            if (typeof(T) == typeof(string))
             {
-                // To start, move off default comparer for string which is randomized.
-                _comparer = (IEqualityComparer<T>)NonRandomizedStringEqualityComparer.Default;
+                if (_comparer is null)
+                {
+                    _comparer = (IEqualityComparer<T>)NonRandomizedStringEqualityComparer.WrappedAroundDefaultComparer;
+                }
+                else if (ReferenceEquals(_comparer, StringComparer.Ordinal))
+                {
+                    _comparer = (IEqualityComparer<T>)NonRandomizedStringEqualityComparer.WrappedAroundStringComparerOrdinal;
+                }
+                else if (ReferenceEquals(_comparer, StringComparer.OrdinalIgnoreCase))
+                {
+                    _comparer = (IEqualityComparer<T>)NonRandomizedStringEqualityComparer.WrappedAroundStringComparerOrdinalIgnoreCase;
+                }
             }
         }
 
@@ -380,7 +394,7 @@ namespace System.Collections.Generic
             }
 
             info.AddValue(VersionName, _version); // need to serialize version to avoid problems with serializing while enumerating
-            info.AddValue(ComparerName, _comparer ?? EqualityComparer<T>.Default, typeof(IEqualityComparer<T>));
+            info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
             info.AddValue(CapacityName, _buckets == null ? 0 : _buckets.Length);
 
             if (_buckets != null)
@@ -912,10 +926,20 @@ namespace System.Collections.Generic
         }
 
         /// <summary>Gets the <see cref="IEqualityComparer"/> object that is used to determine equality for the values in the set.</summary>
-        public IEqualityComparer<T> Comparer =>
-            (_comparer == null || _comparer is NonRandomizedStringEqualityComparer) ?
-                EqualityComparer<T>.Default :
-                _comparer;
+        public IEqualityComparer<T> Comparer
+        {
+            get
+            {
+                if (typeof(T) == typeof(string))
+                {
+                    return (IEqualityComparer<T>)IInternalStringEqualityComparer.GetUnderlyingEqualityComparer((IEqualityComparer<string?>?)_comparer);
+                }
+                else
+                {
+                    return _comparer ?? EqualityComparer<T>.Default;
+                }
+            }
+        }
 
         /// <summary>Ensures that this hash set can hold the specified number of elements without growing.</summary>
         public int EnsureCapacity(int capacity)
@@ -957,14 +981,21 @@ namespace System.Collections.Generic
 
             if (!typeof(T).IsValueType && forceNewHashCodes)
             {
+                Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
+                _comparer = (IEqualityComparer<T>)((NonRandomizedStringEqualityComparer)_comparer).GetRandomizedEqualityComparer();
+
                 for (int i = 0; i < count; i++)
                 {
                     ref Entry entry = ref entries[i];
                     if (entry.Next >= -1)
                     {
-                        Debug.Assert(_comparer == null);
-                        entry.HashCode = entry.Value != null ? entry.Value!.GetHashCode() : 0;
+                        entry.HashCode = entry.Value != null ? _comparer!.GetHashCode(entry.Value) : 0;
                     }
+                }
+
+                if (ReferenceEquals(_comparer, EqualityComparer<T>.Default))
+                {
+                    _comparer = null;
                 }
             }
 
@@ -1185,7 +1216,6 @@ namespace System.Collections.Generic
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
-                _comparer = null;
                 Resize(entries.Length, forceNewHashCodes: true);
                 location = FindItemIndex(value);
                 Debug.Assert(location >= 0);

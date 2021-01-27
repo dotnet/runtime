@@ -7,6 +7,7 @@ using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using Microsoft.Extensions.Logging.EventSource;
 using Xunit;
 using Microsoft.Extensions.DependencyInjection;
@@ -954,7 +955,7 @@ namespace Microsoft.Extensions.Logging.Test
             { "OuterScopeStop", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityStop, null, null, null) },
 
             { "InnerScopeJsonStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStart, null, null, null,
-                        @"""ArgumentsJson"":{""timeParam"":""" + TimeParam.ToString() + @""",""guidParam"":""" + GuidParam.ToString("D")) },
+                        @"""ArgumentsJson"":{""timeParam"":""" + JsonEncodedText.Encode(TimeParam.ToString()).ToString() + @""",""guidParam"":""" + GuidParam.ToString("D")) },
             { "InnerScopeJsonStop", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStop, null, null, null) },
 
             { "InnerScopeStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityStart, null, null, null) },

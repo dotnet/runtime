@@ -47,8 +47,8 @@
         stloc      returnVal
 
         // if (Test(1,1) != 1) goto F1
-        ldc.i4     1
         ldc.i8     1
+        ldc.i4     1
         call       int32 GitHub_18295::Test(int64, int32)
 
         ldc.i4.0

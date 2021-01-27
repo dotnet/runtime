@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
@@ -10,6 +11,9 @@ namespace System.Diagnostics
     /// </summary>
     public readonly struct ActivityCreationOptions<T>
     {
+        private readonly ActivityTagsCollection? _samplerTags;
+        private readonly ActivityContext _context;
+
         /// <summary>
         /// Construct a new <see cref="ActivityCreationOptions{T}"/> object.
         /// </summary>
@@ -27,6 +31,22 @@ namespace System.Diagnostics
             Parent = parent;
             Tags = tags;
             Links = links;
+
+            _samplerTags = null;
+
+            if (parent is ActivityContext ac)
+            {
+                _context = ac;
+            }
+            else if (parent is string p && p != null)
+            {
+                // We don't care about the return value. we care if _context is initialized accordingly.
+                ActivityContext.TryParse(p, null, out _context);
+            }
+            else
+            {
+                _context = default;
+            }
         }
 
         /// <summary>
@@ -58,5 +78,44 @@ namespace System.Diagnostics
         /// Retrieve the list of <see cref="ActivityLink"/> which requested to create the Activity object with.
         /// </summary>
         public IEnumerable<ActivityLink>? Links { get; }
+
+        public ActivityTagsCollection SamplingTags
+        {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
+            get
+            {
+                if (_samplerTags == null)
+                {
+                    // Because the struct is readonly, we cannot directly assign _samplerTags. We have to workaround it by calling Unsafe.AsRef
+                    Unsafe.AsRef(in _samplerTags) = new ActivityTagsCollection();
+                }
+
+                return _samplerTags!;
+            }
+        }
+
+        public ActivityTraceId TraceId
+        {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
+            get
+            {
+                if (Parent is ActivityContext && _context == default)
+                {
+                    // Because the struct is readonly, we cannot directly assign _context. We have to workaround it by calling Unsafe.AsRef
+                    Unsafe.AsRef(in _context) = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
+                }
+
+                return _context.TraceId;
+            }
+        }
+
+        // Helper to access the sampling tags. The SamplingTags Getter can allocate when not necessary.
+        internal ActivityTagsCollection? GetSamplingTags() => _samplerTags;
+
+        internal ActivityContext GetContext() => _context;
     }
 }

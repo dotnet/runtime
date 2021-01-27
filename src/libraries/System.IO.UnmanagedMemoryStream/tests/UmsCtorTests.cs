@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -127,22 +128,16 @@ namespace System.IO.Tests
     // Derived class used to exercise protected members and to test behaviors before and after initialization
     internal sealed unsafe class DerivedUnmanagedMemoryStream : UnmanagedMemoryStream
     {
-        internal DerivedUnmanagedMemoryStream()
-        {
-        }
+        internal DerivedUnmanagedMemoryStream() { }
 
-        internal DerivedUnmanagedMemoryStream(FakeSafeBuffer buffer, long length, FileAccess access) : base(buffer, 0, length, access)
-        {
-        }
+        internal DerivedUnmanagedMemoryStream(SafeBuffer buffer, long length, FileAccess access) : base(buffer, 0, length, access) { }
 
-        internal new void Initialize(byte* pointer, long length, long capacity, FileAccess access)
-        {
+        internal DerivedUnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access) : base(pointer, length, capacity, access) { }
+
+        internal new void Initialize(byte* pointer, long length, long capacity, FileAccess access) =>
             base.Initialize(pointer, length, capacity, access);
-        }
 
-        internal void Initialize(FakeSafeBuffer buffer, long offset, long capacity, FileAccess access)
-        {
+        internal void Initialize(FakeSafeBuffer buffer, long offset, long capacity, FileAccess access) =>
             base.Initialize(buffer, offset, capacity, access);
-        }
     }
 }

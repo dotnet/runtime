@@ -53,8 +53,8 @@ namespace System.Globalization
             int indexOfSeparator = icuSuffixAndVersion.IndexOf(':');
             if (indexOfSeparator >= 0)
             {
-                icuSuffix = icuSuffixAndVersion.AsSpan().Slice(0, indexOfSeparator);
-                version = icuSuffixAndVersion.AsSpan().Slice(icuSuffix.Length + 1);
+                icuSuffix = icuSuffixAndVersion.AsSpan(0, indexOfSeparator);
+                version = icuSuffixAndVersion.AsSpan(icuSuffix.Length + 1);
             }
             else
             {

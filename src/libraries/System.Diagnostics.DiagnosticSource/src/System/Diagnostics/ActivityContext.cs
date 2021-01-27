@@ -93,7 +93,7 @@ namespace System.Diagnostics
             return context;
         }
 
-        public bool Equals(ActivityContext value) =>  SpanId.Equals(value.SpanId) && TraceId.Equals(value.TraceId) && TraceFlags == value.TraceFlags && TraceState == value.TraceState;
+        public bool Equals(ActivityContext value) =>  SpanId.Equals(value.SpanId) && TraceId.Equals(value.TraceId) && TraceFlags == value.TraceFlags && TraceState == value.TraceState && IsRemote == value.IsRemote;
 
         public override bool Equals(object? obj) => (obj is ActivityContext context) ? Equals(context) : false;
         public static bool operator ==(ActivityContext left, ActivityContext right) => left.Equals(right);

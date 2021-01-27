@@ -159,6 +159,7 @@
 #define g_ptr_array_sized_new monoeg_g_ptr_array_sized_new
 #define g_ptr_array_sort monoeg_g_ptr_array_sort
 #define g_ptr_array_sort_with_data monoeg_g_ptr_array_sort_with_data
+#define g_ptr_array_find monoeg_g_ptr_array_find
 #define g_qsort_with_data monoeg_g_qsort_with_data
 #define g_queue_free monoeg_g_queue_free
 #define g_queue_is_empty monoeg_g_queue_is_empty

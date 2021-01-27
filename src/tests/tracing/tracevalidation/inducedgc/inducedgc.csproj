@@ -4,7 +4,7 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <GCStressIncompatible>true</GCStressIncompatible>
-    <!-- Due to https://github.com/dotnet/coreclr/issues/22247 -->
+    <!-- Due to https://github.com/dotnet/runtime/issues/11910 -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>

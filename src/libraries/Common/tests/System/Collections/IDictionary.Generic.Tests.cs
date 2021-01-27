@@ -22,6 +22,13 @@ namespace System.Collections.Tests
         protected abstract IDictionary<TKey, TValue> GenericIDictionaryFactory();
 
         /// <summary>
+        /// Creates an instance of an IDictionary{TKey, TValue} that can be used for testing, with a specific comparer.
+        /// </summary>
+        /// <param name="comparer">The comparer to use with the dictionary.</param>
+        /// <returns>An instance of an IDictionary{TKey, TValue} that can be used for testing, or null if the tested type doesn't support an equality comparer.</returns>
+        protected virtual IDictionary<TKey, TValue> GenericIDictionaryFactory(IEqualityComparer<TKey> comparer) => null;
+
+        /// <summary>
         /// Creates an instance of an IDictionary{TKey, TValue} that can be used for testing.
         /// </summary>
         /// <param name="count">The number of items that the returned IDictionary{TKey, TValue} contains.</param>
@@ -638,6 +645,21 @@ namespace System.Collections.Tests
                 TKey missingKey = GetNewKey(dictionary);
                 dictionary.Add(missingKey, CreateTValue(34251));
                 Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, CreateTValue(134)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void IDictionary_Generic_Add_DistinctValuesWithHashCollisions(int count)
+        {
+            if (!IsReadOnly)
+            {
+                IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(new EqualityComparerConstantHashCode<TKey>(EqualityComparer<TKey>.Default));
+                if (dictionary != null)
+                {
+                    AddToCollection(dictionary, count);
+                    Assert.Equal(count, dictionary.Count);
+                }
             }
         }
 

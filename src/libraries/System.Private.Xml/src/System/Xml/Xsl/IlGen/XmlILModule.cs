@@ -25,7 +25,7 @@ namespace System.Xml.Xsl.IlGen
         private static long s_assemblyId;                                     // Unique identifier used to ensure that assembly names are unique within AppDomain
         private static readonly ModuleBuilder s_LREModule = CreateLREModule();         // Module used to emit dynamic lightweight-reflection-emit (LRE) methods
 
-        private TypeBuilder _typeBldr;
+        private TypeBuilder? _typeBldr;
         private Hashtable _methods;
         private readonly bool _useLRE, _emitSymbols;
 
@@ -114,7 +114,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Define a method in this module with the specified name and parameters.
         /// </summary>
-        public MethodInfo DefineMethod(string name, Type returnType, Type[] paramTypes, string[] paramNames, XmlILMethodAttributes xmlAttrs)
+        public MethodInfo DefineMethod(string name, Type returnType, Type[] paramTypes, string?[] paramNames, XmlILMethodAttributes xmlAttrs)
         {
             MethodInfo methResult;
             int uniqueId = 1;
@@ -141,9 +141,7 @@ namespace System.Xml.Xsl.IlGen
 
             if (!_useLRE)
             {
-                MethodBuilder methBldr;
-
-                methBldr = _typeBldr.DefineMethod(
+                MethodBuilder methBldr = _typeBldr!.DefineMethod(
                             name,
                             MethodAttributes.Private | MethodAttributes.Static,
                             returnType,
@@ -161,7 +159,7 @@ namespace System.Xml.Xsl.IlGen
 
                 for (int i = 0; i < paramNames.Length; i++)
                 {
-                    if (paramNames[i] != null && paramNames[i].Length != 0)
+                    if (paramNames[i] != null && paramNames[i]!.Length != 0)
                         methBldr.DefineParameter(i + (isRaw ? 1 : 2), ParameterAttributes.None, paramNames[i]);
                 }
 
@@ -185,11 +183,11 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public static ILGenerator DefineMethodBody(MethodBase methInfo)
         {
-            DynamicMethod methDyn = methInfo as DynamicMethod;
+            DynamicMethod? methDyn = methInfo as DynamicMethod;
             if (methDyn != null)
                 return methDyn.GetILGenerator();
 
-            MethodBuilder methBldr = methInfo as MethodBuilder;
+            MethodBuilder? methBldr = methInfo as MethodBuilder;
             if (methBldr != null)
                 return methBldr.GetILGenerator();
 
@@ -199,9 +197,9 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Find a MethodInfo of the specified name and return it.  Return null if no such method exists.
         /// </summary>
-        public MethodInfo FindMethod(string name)
+        public MethodInfo? FindMethod(string name)
         {
-            return (MethodInfo)_methods[name];
+            return (MethodInfo?)_methods[name];
         }
 
         /// <summary>
@@ -210,7 +208,7 @@ namespace System.Xml.Xsl.IlGen
         public FieldInfo DefineInitializedData(string name, byte[] data)
         {
             Debug.Assert(!_useLRE, "Cannot create initialized data for an LRE module");
-            return _typeBldr.DefineInitializedData(name, data, FieldAttributes.Private | FieldAttributes.Static);
+            return _typeBldr!.DefineInitializedData(name, data, FieldAttributes.Private | FieldAttributes.Static);
         }
 
         /// <summary>
@@ -219,7 +217,7 @@ namespace System.Xml.Xsl.IlGen
         public FieldInfo DefineField(string fieldName, Type type)
         {
             Debug.Assert(!_useLRE, "Cannot create field for an LRE module");
-            return _typeBldr.DefineField(fieldName, type, FieldAttributes.Private | FieldAttributes.Static);
+            return _typeBldr!.DefineField(fieldName, type, FieldAttributes.Private | FieldAttributes.Static);
         }
 
         /// <summary>
@@ -228,7 +226,7 @@ namespace System.Xml.Xsl.IlGen
         public ConstructorInfo DefineTypeInitializer()
         {
             Debug.Assert(!_useLRE, "Cannot create type initializer for an LRE module");
-            return _typeBldr.DefineTypeInitializer();
+            return _typeBldr!.DefineTypeInitializer();
         }
 
         /// <summary>
@@ -242,7 +240,7 @@ namespace System.Xml.Xsl.IlGen
 
             if (!_useLRE)
             {
-                typBaked = _typeBldr.CreateTypeInfo().AsType();
+                typBaked = _typeBldr!.CreateTypeInfo()!.AsType();
 
                 // Replace all MethodInfos in this.methods
                 methodsBaked = new Hashtable(_methods.Count);
@@ -263,9 +261,9 @@ namespace System.Xml.Xsl.IlGen
         public Delegate CreateDelegate(string name, Type typDelegate)
         {
             if (!_useLRE)
-                return ((MethodInfo)_methods[name]).CreateDelegate(typDelegate);
+                return ((MethodInfo)_methods[name]!).CreateDelegate(typDelegate);
 
-            return ((DynamicMethod)_methods[name]).CreateDelegate(typDelegate);
+            return ((DynamicMethod)_methods[name]!).CreateDelegate(typDelegate);
         }
 
         /// <summary>

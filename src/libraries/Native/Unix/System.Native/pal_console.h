@@ -91,7 +91,7 @@ PALEXPORT int32_t SystemNative_StdinReady(void);
 /**
  * Configures the terminal for System.Console Read.
  */
-PALEXPORT void SystemNative_InitializeConsoleBeforeRead(int32_t convertCrToNl, uint8_t minChars, uint8_t decisecondsTimeout);
+PALEXPORT void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout);
 
 /**
  * Configures the terminal after System.Console Read.

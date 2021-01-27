@@ -3,7 +3,7 @@ Vectors and Hardware Intrinsics Support
 ---
 
 # Introduction
-The CoreCLR runtime has support for several varieties of hardware intrinsics, and various ways to compile code which uses them. This support varies by target processor, and the code produced depends on how the jit compiler is invoked. This document describes the various behaviors of intrinsics in the runtime, and concludes with implications  for developers working on the runtime and libraries portions of the runtime. 
+The CoreCLR runtime has support for several varieties of hardware intrinsics, and various ways to compile code which uses them. This support varies by target processor, and the code produced depends on how the jit compiler is invoked. This document describes the various behaviors of intrinsics in the runtime, and concludes with implications  for developers working on the runtime and libraries portions of the runtime.
 
 # Acronyms and definitions
 | Acronym | Definition
@@ -44,8 +44,8 @@ There are 2 different implementations of AOT compilation under development at th
 
 ###Code written in System.Private.CoreLib.dll
 #### Crossgen implementation rules
-- Any code which uses `Vector<T>` will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_SIMD_NGEN_DISALLOWED`) 
-- Code which uses Sse and Sse2 platform hardware intrinsics is always generated as it would be at jit time. 
+- Any code which uses `Vector<T>` will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_SIMD_NGEN_DISALLOWED`)
+- Code which uses Sse and Sse2 platform hardware intrinsics is always generated as it would be at jit time.
 - Code which uses Sse3, Ssse3, Sse41, Sse42, Popcnt, Pclmulqdq, and Lzcnt instruction sets will be generated, but the associated IsSupported check will be a runtime check. See `FilterNamedIntrinsicMethodAttribs` for details on how this is done.
 - Code which uses other instruction sets will be generated as if the processor does not support that instruction set. (For instance, a usage of Avx2.IsSupported in CoreLib will generate native code where it unconditionally returns false, and then if and when tiered compilation occurs, the function may be rejitted and have code where the property returns true.)
 - Non-platform intrinsics which require more hardware support than the minimum supported hardware capability will not take advantage of that capability. In particular the code generated for `Vector2/3/4.Dot`, and `Math.Round`, and `MathF.Round`. See `FilterNamedIntrinsicMethodAttribs` for details. MethodImplOptions.AggressiveOptimization may be used to disable precompilation compilation of this sub-par code.
@@ -58,8 +58,8 @@ The rules here provide the following characteristics.
 - AOT generated code which could take advantage of more advanced hardware support experiences a performance penalty until rejitted. (If a customer chooses to disable tiered compilation, then customer code may always run slowly).
 
 #### Code review rules for code written in System.Private.CoreLib.dll
-- Any use of a platform intrinsic in the codebase MUST be wrapped with a call to the associated IsSupported property. This wrapping MUST be done within the same function that uses the hardware intrinsic, and MUST NOT be in a wrapper function unless it is one of the intrinsics that are enabled by default for crossgen compilation of System.Private.CoreLib (See list above in the implementation rules section). 
-- Within a single function that uses platform intrinsics, it must behave identically regardless of whether IsSupported returns true or not. This rule is required as code inside of an IsSupported check that calls a helper function cannot assume that the helper function will itself see its use of the same IsSupported check return true. This is due to the impact of tiered compilation on code execution within the process. 
+- Any use of a platform intrinsic in the codebase MUST be wrapped with a call to the associated IsSupported property. This wrapping MUST be done within the same function that uses the hardware intrinsic, and MUST NOT be in a wrapper function unless it is one of the intrinsics that are enabled by default for crossgen compilation of System.Private.CoreLib (See list above in the implementation rules section).
+- Within a single function that uses platform intrinsics, it must behave identically regardless of whether IsSupported returns true or not. This rule is required as code inside of an IsSupported check that calls a helper function cannot assume that the helper function will itself see its use of the same IsSupported check return true. This is due to the impact of tiered compilation on code execution within the process.
 - Excessive use of intrinsics may cause startup performance problems due to additional jitting, or may not achieve desired performance characteristics due to suboptimal codegen.
 
 ACCEPTABLE Code
@@ -130,7 +130,7 @@ public class BitOperations
         of this method may be compiled as if the Avx2 feature is not available, and is not reliably rejitted
         at the same time as the PopCount function.
 
-        As a special note, on the x86 and x64 platforms, this generally unsafe pattern may be used 
+        As a special note, on the x86 and x64 platforms, this generally unsafe pattern may be used
         with the Sse, Sse2, Sse3, Sssse3, Ssse41 and Sse42 instruction sets as those instruction sets
         are treated specially by both crossgen1 and crossgen2 when compiling System.Private.CoreLib.dll.
     }
@@ -140,16 +140,16 @@ public class BitOperations
 ### Code written in other assemblies (both first and third party)
 
 #### Crossgen implementation rules
-- Any code which uses an intrinsic from the `System.Runtime.Intrinsics.Arm` or `System.Runtime.Intrinsics.X86` namespace will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_HWINTRINSIC_NGEN_DISALLOWED`) 
-- Any code which uses `Vector<T>` will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_SIMD_NGEN_DISALLOWED`) 
-- Any code which uses `Vector64<T>`, `Vector128<T>` or `Vector256<T>` will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_HWINTRINSIC_NGEN_DISALLOWED`)  
+- Any code which uses an intrinsic from the `System.Runtime.Intrinsics.Arm` or `System.Runtime.Intrinsics.X86` namespace will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_HWINTRINSIC_NGEN_DISALLOWED`)
+- Any code which uses `Vector<T>` will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_SIMD_NGEN_DISALLOWED`)
+- Any code which uses `Vector64<T>`, `Vector128<T>` or `Vector256<T>` will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_HWINTRINSIC_NGEN_DISALLOWED`)
 - Non-platform intrinsics which require more hardware support than the minimum supported hardware capability will not take advantage of that capability. In particular the code generated for Vector2/3/4 is sub-optimal. MethodImplOptions.AggressiveOptimization may be used to disable compilation of this sub-par code.
 
 #### Characteristics which result from rules
 The rules here provide the following characteristics.
 - Use of platform specific hardware intrinsics causes runtime jit and startup time concerns.
 - Use of `Vector<T>` causes runtime jit and startup time concerns
-- AOT generated code which could take advantage of more advanced hardware support experiences a performance penalty until rejitted. (If a customer chooses to disable tiered compilation, then customer code may always run slowly). 
+- AOT generated code which could take advantage of more advanced hardware support experiences a performance penalty until rejitted. (If a customer chooses to disable tiered compilation, then customer code may always run slowly).
 
 #### Code review rules for use of platform intrinsics
 - Any use of a platform intrinsic in the codebase SHOULD be wrapped with a call to the associated IsSupported property. This wrapping may be done within the same function that uses the hardware intrinsic, but this is not required as long as the programmer can control all entrypoints to a function that uses the hardware intrinsic.
@@ -183,7 +183,7 @@ Since System.Private.CoreLib.dll is known to be code reviewed with the code revi
 
 # Mechanisms in the JIT to generate correct code to handle varied instruction set support
 
-The JIT receives flags which instruct it on what instruction sets are valid to use, and has access to a new jit interface api `notifyInstructionSetUsage(isa, bool supportBehaviorRequired)`. 
+The JIT receives flags which instruct it on what instruction sets are valid to use, and has access to a new jit interface api `notifyInstructionSetUsage(isa, bool supportBehaviorRequired)`.
 
 The notifyInstructionSetUsage api is used to notify the AOT compiler infrastructure that the code may only execute if the runtime environment of the code is exactly the same as the boolean parameter indicates it should be. For instance, if `notifyInstructionSetUsage(Avx, false)` is used, then the code generated must not be used if the `Avx` instruction set is useable. Similarly `notifyInstructionSetUsage(Avx, true)` will indicate that the code may only be used if the `Avx` instruction set is available.
 

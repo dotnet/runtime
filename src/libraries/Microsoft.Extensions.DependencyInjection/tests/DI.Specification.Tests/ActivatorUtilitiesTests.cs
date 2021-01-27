@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         public static IEnumerable<object[]> TypesWithNonPublicConstructorData =>
             CreateInstanceFuncs.Zip(
-                    new[] { typeof(ClassWithPrivateCtor), typeof(ClassWithInternalConstructor), typeof(ClassWithProtectedConstructor) },
+                    new[] { typeof(ClassWithPrivateCtor), typeof(ClassWithInternalConstructor), typeof(ClassWithProtectedConstructor), typeof(StaticConstructorClass) },
                     (a, b) => new object[] { a[0], b });
 
         [Theory]
@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         {
             // Arrange
             var expectedMessage = $"A suitable constructor for type '{type}' could not be located. " +
-                "Ensure the type is concrete and services are registered for all parameters of a public constructor.";
+                "Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.";
 
             // Act and Assert
             var ex = Assert.Throws<InvalidOperationException>(() =>
@@ -165,7 +165,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         {
             // Arrange
             var expectedMessage = $"A suitable constructor for type '{typeof(AnotherClassAcceptingData).FullName}' could not be located. " +
-                "Ensure the type is concrete and services are registered for all parameters of a public constructor.";
+                "Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.";
             var serviceCollection = new TestServiceCollection()
                 .AddTransient<IFakeService, FakeService>();
             var serviceProvider = CreateServiceProvider(serviceCollection);
@@ -373,7 +373,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         {
             // Act & Assert
             var ex = Assert.Throws<InvalidOperationException>(() => ActivatorUtilities.CreateInstance(default(IServiceProvider), typeof(AbstractFoo)));
-            var msg = "A suitable constructor for type 'Microsoft.Extensions.DependencyInjection.Specification.DependencyInjectionSpecificationTests+AbstractFoo' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
+            var msg = "A suitable constructor for type 'Microsoft.Extensions.DependencyInjection.Specification.DependencyInjectionSpecificationTests+AbstractFoo' could not be located. Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.";
             Assert.Equal(msg, ex.Message);
         }
 
@@ -400,6 +400,13 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             {
                 throw new InvalidOperationException("some error");
             }
+        }
+
+        class StaticConstructorClass
+        {
+            static StaticConstructorClass() { }
+
+            private StaticConstructorClass() { }
         }
     }
 }
