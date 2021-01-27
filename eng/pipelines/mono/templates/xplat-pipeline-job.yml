@@ -85,6 +85,9 @@ jobs:
     - name: nativeTestArtifactRootFolderPath
       value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
 
+    - name: priorityArg
+      value: ''
+
     - name: liveRuntimeBuildConfigUpper
       ${{ if eq(parameters.liveRuntimeBuildConfig, 'release') }}:
         value: 'Release'

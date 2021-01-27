@@ -175,6 +175,44 @@ jobs:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
+#
+# Build the whole product using Mono for Windows and run runtime tests
+#
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/global-build-job.yml
+#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#     buildConfig: Release
+#     runtimeFlavor: mono
+#     platforms:
+#     - windows_x64
+#     variables:
+#       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+#         - name: _HelixSource
+#           value: pr/dotnet/runtime/$(Build.SourceBranch)
+#       - ${{ if and(eq(variables['System.TeamProject'], ='public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+#         - name: _HelixSource
+#           value: ci/dotnet/runtime/$(Build.SourceBranch)
+#       - name: timeoutPerTestInMinutes
+#         value: 60
+#       - name: timeoutPerTestCollectionInMinutes
+#         value: 180
+#     jobParameters:
+#       testGroup: innerloop
+#       nameSuffix: AllSubsets_Mono_RuntimeTests
+#       buildArgs: -s mono+libs -c $(_BuildConfig)
+#       timeoutInMinutes: 240
+#       condition: >-
+#         or(
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+#           eq(variables['isFullMatrix'], true))
+#       # extra steps, run tests
+#       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+#       extraStepsParameters:
+#         creator: dotnet-bot
+#         testRunNamePrefixSuffix: Mono_WinTest_$(_BuildConfig)
+
 # Run disabled installer tests on Linux x64
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
