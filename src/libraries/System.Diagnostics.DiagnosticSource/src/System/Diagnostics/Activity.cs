@@ -82,6 +82,46 @@ namespace System.Diagnostics
         private LinkedList<ActivityEvent>? _events;
         private Dictionary<string, object>? _customProperties;
         private string? _displayName;
+        private ActivityStatusCode _statusCode;
+        private string? _statusDescription;
+
+        /// <summary>
+        /// Gets status code of the current activity object.
+        /// </summary>
+        public ActivityStatusCode Status => _statusCode;
+
+        /// <summary>
+        /// Gets the status descrition of the current activity object.
+        /// </summary>
+        public string? StatusDescription => _statusDescription;
+
+        /// <summary>
+        /// Sets the status code and description on the current activity object.
+        /// </summary>
+        /// <param name="code">The status code</param>
+        /// <param name="description">The error status descrition</param>
+        /// <returns>'this' for convenient chaining</returns>
+        /// <remarks>
+        /// It is not allowed to set the status code to Unset value.
+        /// The description parameter is allowed to be non-null value only when passing 'Error' status code.
+        /// </remarks>
+        public Activity SetStatus(ActivityStatusCode code, string? description = null)
+        {
+            if (code <= ActivityStatusCode.Unset || code > ActivityStatusCode.Error)
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidStatusCode, code), nameof(code));
+            }
+
+            if (description != null && code != ActivityStatusCode.Error)
+            {
+                throw new ArgumentException(SR.NotAllowedStatusDescription, nameof(description));
+            }
+
+            _statusCode = code;
+            _statusDescription = description;
+
+            return this;
+        }
 
         /// <summary>
         /// Gets the relationship between the Activity, its parents, and its children in a Trace.

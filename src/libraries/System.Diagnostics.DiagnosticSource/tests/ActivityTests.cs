@@ -1695,6 +1695,39 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void TestStatus()
+        {
+            Activity a = new Activity("Status");
+            Assert.Equal(ActivityStatusCode.Unset, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok, null); // explicit description null parameter
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error, "Error Code"); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Equal("Error Code", a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            Assert.Throws<ArgumentException>(() => a.SetStatus(ActivityStatusCode.Unset)); // Cannot set Unset value
+            Assert.Throws<ArgumentException>(() => a.SetStatus(ActivityStatusCode.Ok, "No Error")); // Cannot use description with any value but "Error"
+            Assert.Throws<ArgumentException>(() => a.SetStatus((ActivityStatusCode) (-1))); // Invalid custom code
+            Assert.Throws<ArgumentException>(() => a.SetStatus((ActivityStatusCode) 100)); // Invalid custom code
+        }
+
+        [Fact]
         public void StructEnumerator_GenericLinkedList()
         {
             // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
