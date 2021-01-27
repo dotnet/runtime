@@ -25,17 +25,13 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stateMachine);
             }
 
-            // enregistrer variables with 0 post-fix so they can be used in registers without EH forcing them to stack
-            // Capture references to Thread Contexts
-            Thread currentThread0 = Thread.CurrentThread;
-            Thread currentThread = currentThread0;
-            ExecutionContext? previousExecutionCtx0 = currentThread0._executionContext;
+            Thread currentThread = Thread.CurrentThread;
 
             // Store current ExecutionContext and SynchronizationContext as "previousXxx".
             // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
             // so that they won't "leak" out of the first await.
-            ExecutionContext? previousExecutionCtx = previousExecutionCtx0;
-            SynchronizationContext? previousSyncCtx = currentThread0._synchronizationContext;
+            ExecutionContext? previousExecutionCtx = currentThread._executionContext;
+            SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
 
             try
             {
@@ -43,21 +39,17 @@ namespace System.Runtime.CompilerServices
             }
             finally
             {
-                // Re-enregistrer variables post EH with 1 post-fix so they can be used in registers rather than from stack
-                SynchronizationContext? previousSyncCtx1 = previousSyncCtx;
-                Thread currentThread1 = currentThread;
                 // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
-                if (previousSyncCtx1 != currentThread1._synchronizationContext)
+                if (previousSyncCtx != currentThread._synchronizationContext)
                 {
                     // Restore changed SynchronizationContext back to previous
-                    currentThread1._synchronizationContext = previousSyncCtx1;
+                    currentThread._synchronizationContext = previousSyncCtx;
                 }
 
-                ExecutionContext? previousExecutionCtx1 = previousExecutionCtx;
-                ExecutionContext? currentExecutionCtx1 = currentThread1._executionContext;
-                if (previousExecutionCtx1 != currentExecutionCtx1)
+                ExecutionContext? currentExecutionCtx = currentThread._executionContext;
+                if (previousExecutionCtx != currentExecutionCtx)
                 {
-                    ExecutionContext.RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
+                    ExecutionContext.RestoreChangedContextToThread(currentThread, previousExecutionCtx, currentExecutionCtx);
                 }
             }
         }
