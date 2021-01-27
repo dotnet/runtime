@@ -228,6 +228,8 @@ namespace System.Net.Sockets.Tests
     {
         // Use a cancellable CancellationToken that we never cancel so that implementations can't just elide handling the CancellationToken.
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        // This variant is typically working with Memory<T> overloads.
+        public override bool ValidatesArrayArguments => false;
 
         public override Task<Socket> AcceptAsync(Socket s) =>
             s.AcceptAsync();
@@ -244,15 +246,15 @@ namespace System.Net.Sockets.Tests
         public override Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
             s.ReceiveAsync(bufferList, SocketFlags.None);
         public override Task<SocketReceiveFromResult> ReceiveFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.ReceiveFromAsync(buffer, SocketFlags.None, endPoint);
+            s.ReceiveFromAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask();
         public override Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-           s.ReceiveMessageFromAsync(buffer, SocketFlags.None, endPoint);
+           s.ReceiveMessageFromAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask();
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
             s.SendAsync(buffer, SocketFlags.None, _cts.Token).AsTask();
         public override Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
             s.SendAsync(bufferList, SocketFlags.None);
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
-            s.SendToAsync(buffer, SocketFlags.None, endPoint);
+            s.SendToAsync(buffer, SocketFlags.None, endPoint, _cts.Token).AsTask() ;
     }
 
     public sealed class SocketHelperEap : SocketHelperBase
