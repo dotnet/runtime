@@ -33,6 +33,11 @@
                                               This is useful for projects that want to handle their own
                                               packaging, or app bundle generation, eg. Blazor.
 
+      - $(WasmStripAOTAssemblies)           - Whether to run `mono-cil-strip` on the assemblies.
+                                              Defaults to true
+
+      - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
+                                              is what triggers the wasm app building. Defaults to `Publish`.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
