@@ -116,7 +116,6 @@ namespace System.Security.Cryptography
             Initialize();
         }
 
-
         public int IterationCount
         {
             get
