@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -251,18 +252,32 @@ namespace System.Linq
              (s_Distinct_TSource_2 = new Func<IQueryable<object>, IEqualityComparer<object>, IQueryable<object>>(Queryable.Distinct).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TSource);
 
-        private static MethodInfo? s_ElementAt_TSource_2;
+        private static MethodInfo? s_ElementAt_Int32_TSource_2;
 
-        public static MethodInfo ElementAt_TSource_2(Type TSource) =>
-             (s_ElementAt_TSource_2 ??
-             (s_ElementAt_TSource_2 = new Func<IQueryable<object>, int, object>(Queryable.ElementAt).GetMethodInfo().GetGenericMethodDefinition()))
+        public static MethodInfo ElementAt_Int32_TSource_2(Type TSource) =>
+             (s_ElementAt_Int32_TSource_2 ??
+             (s_ElementAt_Int32_TSource_2 = new Func<IQueryable<object>, int, object>(Queryable.ElementAt).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TSource);
 
-        private static MethodInfo? s_ElementAtOrDefault_TSource_2;
+        private static MethodInfo? s_ElementAt_Index_TSource_2;
 
-        public static MethodInfo ElementAtOrDefault_TSource_2(Type TSource) =>
-             (s_ElementAtOrDefault_TSource_2 ??
-             (s_ElementAtOrDefault_TSource_2 = new Func<IQueryable<object>, int, object?>(Queryable.ElementAtOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+        public static MethodInfo ElementAt_Index_TSource_2(Type TSource) =>
+             (s_ElementAt_Index_TSource_2 ??
+             (s_ElementAt_Index_TSource_2 = new Func<IQueryable<object>, Index, object>(Queryable.ElementAt).GetMethodInfo().GetGenericMethodDefinition()))
+              .MakeGenericMethod(TSource);
+
+        private static MethodInfo? s_ElementAtOrDefault_Int32_TSource_2;
+
+        public static MethodInfo ElementAtOrDefault_Int32_TSource_2(Type TSource) =>
+             (s_ElementAtOrDefault_Int32_TSource_2 ??
+             (s_ElementAtOrDefault_Int32_TSource_2 = new Func<IQueryable<object>, int, object?>(Queryable.ElementAtOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+              .MakeGenericMethod(TSource);
+
+        private static MethodInfo? s_ElementAtOrDefault_Index_TSource_2;
+
+        public static MethodInfo ElementAtOrDefault_Index_TSource_2(Type TSource) =>
+             (s_ElementAtOrDefault_Index_TSource_2 ??
+             (s_ElementAtOrDefault_Index_TSource_2 = new Func<IQueryable<object>, Index, object?>(Queryable.ElementAtOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Except_TSource_2;
@@ -752,11 +767,18 @@ namespace System.Linq
              (s_Sum_Decimal_TSource_2 = new Func<IQueryable<object>, Expression<Func<object, decimal>>, decimal>(Queryable.Sum).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TSource);
 
-        private static MethodInfo? s_Take_TSource_2;
+        private static MethodInfo? s_Take_Int32_TSource_2;
 
-        public static MethodInfo Take_TSource_2(Type TSource) =>
-             (s_Take_TSource_2 ??
-             (s_Take_TSource_2 = new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.Take).GetMethodInfo().GetGenericMethodDefinition()))
+        public static MethodInfo Take_Int32_TSource_2(Type TSource) =>
+             (s_Take_Int32_TSource_2 ??
+             (s_Take_Int32_TSource_2 = new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.Take).GetMethodInfo().GetGenericMethodDefinition()))
+              .MakeGenericMethod(TSource);
+
+        private static MethodInfo? s_Take_Range_TSource_2;
+
+        public static MethodInfo Take_Range_TSource_2(Type TSource) =>
+             (s_Take_Range_TSource_2 ??
+             (s_Take_Range_TSource_2 = new Func<IQueryable<object>, Range, IQueryable<object>>(Queryable.Take).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_TakeWhile_TSource_2;

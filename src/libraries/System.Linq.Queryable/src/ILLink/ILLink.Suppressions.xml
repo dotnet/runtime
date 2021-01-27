@@ -167,13 +167,25 @@
       <argument>ILLink</argument>
       <argument>IL2060</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Linq.CachedReflectionInfo.ElementAt_TSource_2(System.Type)</property>
+      <property name="Target">M:System.Linq.CachedReflectionInfo.ElementAt_Int32_TSource_2(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2060</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Linq.CachedReflectionInfo.ElementAtOrDefault_TSource_2(System.Type)</property>
+      <property name="Target">M:System.Linq.CachedReflectionInfo.ElementAt_Index_TSource_2(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2060</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Linq.CachedReflectionInfo.ElementAtOrDefault_Int32_TSource_2(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2060</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Linq.CachedReflectionInfo.ElementAtOrDefault_Index_TSource_2(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -557,7 +569,13 @@
       <argument>ILLink</argument>
       <argument>IL2060</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Linq.CachedReflectionInfo.Take_TSource_2(System.Type)</property>
+      <property name="Target">M:System.Linq.CachedReflectionInfo.Take_Int32_TSource_2(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2060</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Linq.CachedReflectionInfo.Take_Range_TSource_2(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

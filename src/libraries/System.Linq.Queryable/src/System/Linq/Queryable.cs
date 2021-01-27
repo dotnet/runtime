@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -384,8 +385,21 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Take_TSource_2(typeof(TSource)),
+                    CachedReflectionInfo.Take_Int32_TSource_2(typeof(TSource)),
                     source.Expression, Expression.Constant(count)
+                    ));
+        }
+
+        [DynamicDependency("Take`1", typeof(Enumerable))]
+        public static IQueryable<TSource> Take<TSource>(this IQueryable<TSource> source, Range range)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Take_Range_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(range)
                     ));
         }
 
@@ -955,7 +969,22 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ElementAt_TSource_2(typeof(TSource)),
+                    CachedReflectionInfo.ElementAt_Int32_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(index)
+                    ));
+        }
+
+        [DynamicDependency("ElementAt`1", typeof(Enumerable))]
+        public static TSource ElementAt<TSource>(this IQueryable<TSource> source, Index index)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            if (index.IsFromEnd && index.Value == 0)
+                throw Error.ArgumentOutOfRange(nameof(index));
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.ElementAt_Index_TSource_2(typeof(TSource)),
                     source.Expression, Expression.Constant(index)
                     ));
         }
@@ -968,7 +997,20 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ElementAtOrDefault_TSource_2(typeof(TSource)),
+                    CachedReflectionInfo.ElementAtOrDefault_Int32_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(index)
+                    ));
+        }
+
+        [DynamicDependency("ElementAtOrDefault`1", typeof(Enumerable))]
+        public static TSource? ElementAtOrDefault<TSource>(this IQueryable<TSource> source, Index index)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.ElementAtOrDefault_Index_TSource_2(typeof(TSource)),
                     source.Expression, Expression.Constant(index)
                     ));
         }
