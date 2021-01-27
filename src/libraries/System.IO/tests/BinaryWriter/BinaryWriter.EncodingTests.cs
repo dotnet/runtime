@@ -5,7 +5,6 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using Moq;
 using Xunit;
 
 namespace System.IO.Tests
@@ -63,10 +62,15 @@ namespace System.IO.Tests
         [Fact]
         public void Ctor_Utf8EncodingDerivedTypeWithWrongCodePage_DoesNotUseFastUtf8()
         {
-            Mock<UTF8Encoding> mockEncoding = new Mock<UTF8Encoding>();
-            mockEncoding.Setup(o => o.CodePage).Returns(65000 /* UTF-7 code page */);
-            BinaryWriter writer = new BinaryWriter(new MemoryStream(), mockEncoding.Object);
+            BinaryWriter writer = new BinaryWriter(new MemoryStream(), new NotActuallyUTF8Encoding());
             Assert.False(IsUsingFastUtf8(writer));
+        }
+
+        [Fact]
+        public void Ctor_Utf8EncodingDerivedTypeWithCorrectCodePage_DoesNotUseFastUtf8()
+        {
+            BinaryWriter writer = new BinaryWriter(new MemoryStream(), new MyCustomUTF8Encoding());
+            Assert.True(IsUsingFastUtf8(writer));
         }
 
         [Theory]
@@ -111,9 +115,9 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(128 * 1024)]
-        [InlineData(768 * 1024)]
-        [InlineData(2 * 1024 * 1024)]
+        [InlineData(8 * 1024)] // both char count & byte count within 64k rental boundary
+        [InlineData(32 * 1024)] // char count within 64k rental boundary, byte count not
+        [InlineData(256 * 1024)] // neither char count nor byte count within 64k rental boundary
         public void WriteChars_FastUtf8(int stringLengthInChars)
         {
             string stringToWrite = GenerateLargeUnicodeString(stringLengthInChars);
@@ -127,10 +131,10 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(128 * 1024)]
-        [InlineData(768 * 1024)]
-        [InlineData(2 * 1024 * 1024)]
+        [InlineData(24)] // within stackalloc path
+        [InlineData(8 * 1024)] // both char count & byte count within 64k rental boundary
+        [InlineData(32 * 1024)] // char count within 64k rental boundary, byte count not
+        [InlineData(256 * 1024)] // neither char count nor byte count within 64k rental boundary
         public void WriteString_FastUtf8(int stringLengthInChars)
         {
             string stringToWrite = GenerateLargeUnicodeString(stringLengthInChars);
@@ -147,8 +151,8 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(24)]
-        [InlineData(25)]
+        [InlineData(127 / 3)] // within stackalloc fast path
+        [InlineData(127 / 3 + 1)] // not within stackalloc fast path
         public void WriteString_FastUtf8_UsingThreeByteChars(int stringLengthInChars)
         {
             string stringToWrite = new string('\u2023', stringLengthInChars); // TRIANGULAR BULLET
@@ -165,9 +169,9 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData(128 * 1024)]
-        [InlineData(768 * 1024)]
-        [InlineData(2 * 1024 * 1024)]
+        [InlineData(8 * 1024)] // both char count & byte count within 64k rental boundary
+        [InlineData(48 * 1024)] // char count within 64k rental boundary, byte count not
+        [InlineData(256 * 1024)] // neither char count nor byte count within 64k rental boundary
         public void WriteString_NotUtf8(int stringLengthInChars)
         {
             string stringToWrite = GenerateLargeUnicodeString(stringLengthInChars);
@@ -232,5 +236,16 @@ namespace System.IO.Tests
         }
 
         private static int Get7BitEncodedIntByteLength(uint value) => (BitOperations.Log2(value) / 7) + 1;
+
+        // subclasses UTF8Encoding, but returns a non-UTF8 code page
+        private class NotActuallyUTF8Encoding : UTF8Encoding
+        {
+            public override int CodePage => 65000; // UTF-7 code page
+        }
+
+        // subclasses UTF8Encoding, returns UTF-8 code page
+        private class MyCustomUTF8Encoding : UTF8Encoding
+        {
+        }
     }
 }

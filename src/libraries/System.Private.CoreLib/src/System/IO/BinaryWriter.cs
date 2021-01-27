@@ -15,11 +15,7 @@ namespace System.IO
     //
     public class BinaryWriter : IDisposable, IAsyncDisposable
     {
-        private const int MaxArrayPoolRentalSize = 1024 * 1024; // ArrayPool<T>.Shared allocates beyond this point
-
-        private delegate void WriteBufferToOutputDelegate(BinaryWriter sink, byte[] buffer, int offset, int count);
-        private static readonly WriteBufferToOutputDelegate s_writeToBinaryWriter = WriteToBinaryWriter;
-        private static readonly WriteBufferToOutputDelegate s_writeToOutStream = WriteToOutStream;
+        private const int MaxArrayPoolRentalSize = 64 * 1024; // try to keep rentals to a reasonable size
 
         public static readonly BinaryWriter Null = new BinaryWriter();
 
@@ -224,7 +220,7 @@ namespace System.IO
             if (chars == null)
                 throw new ArgumentNullException(nameof(chars));
 
-            WriteCharsCommonWithoutLengthPrefix(chars, s_writeToOutStream);
+            WriteCharsCommonWithoutLengthPrefix(chars, useThisWriteOverride: false);
         }
 
         // Writes a section of a character array to this stream.
@@ -243,7 +239,7 @@ namespace System.IO
             if (index > chars.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexCount);
 
-            WriteCharsCommonWithoutLengthPrefix(chars.AsSpan(index, count), s_writeToOutStream);
+            WriteCharsCommonWithoutLengthPrefix(chars.AsSpan(index, count), useThisWriteOverride: false);
         }
 
         // Writes a double to this stream. The current position of the stream is
@@ -362,12 +358,13 @@ namespace System.IO
 
             if (_useFastUtf8)
             {
-                if (value.Length <= 24)
+                if (value.Length <= 127 / 3)
                 {
-                    Span<byte> buffer = stackalloc byte[24 * 3]; // max expansion: each char -> 3 bytes (use const for improved perf)
-                    int actualByteCount = _encoding.GetBytes(value, buffer);
-                    Write7BitEncodedInt(actualByteCount);
-                    OutStream.Write(buffer.Slice(0, actualByteCount));
+                    // Max expansion: each char -> 3 bytes, so 127 bytes max of data, +1 for length prefix
+                    Span<byte> buffer = stackalloc byte[128];
+                    int actualByteCount = _encoding.GetBytes(value, buffer.Slice(1));
+                    buffer[0] = (byte)actualByteCount; // bypass call to Write7BitEncodedInt
+                    OutStream.Write(buffer.Slice(0, actualByteCount + 1 /* length prefix */));
                     return;
                 }
                 else if (value.Length <= MaxArrayPoolRentalSize / 3)
@@ -381,12 +378,12 @@ namespace System.IO
                 }
             }
 
-            // Slow path: not UTF-8, or data is very large. We need to fall back
+            // Slow path: not fast UTF-8, or data is very large. We need to fall back
             // to a 2-pass mechanism so that we're not renting absurdly large arrays.
 
             int actualBytecount = _encoding.GetByteCount(value);
             Write7BitEncodedInt(actualBytecount);
-            WriteCharsCommonWithoutLengthPrefix(value, s_writeToOutStream);
+            WriteCharsCommonWithoutLengthPrefix(value, useThisWriteOverride: false);
         }
 
         public virtual void Write(ReadOnlySpan<byte> buffer)
@@ -412,7 +409,10 @@ namespace System.IO
 
         public virtual void Write(ReadOnlySpan<char> chars)
         {
-            WriteCharsCommonWithoutLengthPrefix(chars, s_writeToBinaryWriter);
+            // When Write(ROS<char>) was first introduced, it dispatched to the this.Write(byte[], ...)
+            // virtual method rather than write directly to the output stream. We maintain that same
+            // double-indirection for compat purposes.
+            WriteCharsCommonWithoutLengthPrefix(chars, useThisWriteOverride: true);
         }
 
         // dispatches to the virtual BinaryWriter.Write(byte[], int, int) method
@@ -427,14 +427,12 @@ namespace System.IO
             sink.OutStream.Write(buffer, offset, count);
         }
 
-        private void WriteCharsCommonWithoutLengthPrefix(ReadOnlySpan<char> chars, WriteBufferToOutputDelegate writeDelegate)
+        private void WriteCharsCommonWithoutLengthPrefix(ReadOnlySpan<char> chars, bool useThisWriteOverride)
         {
-            // We'd like to rent a buffer from the array pool if possible, but we don't want to
-            // rent buffers above some upper threshold since they'll be discarded by the array
-            // pool upon return. Additionally, if our input is truly enormous, the call to
-            // GetMaxByteCount might overflow, which we also want to avoid. Technically any
-            // Encoding could expand from chars -> bytes at an enormous ratio and cause us
-            // problems anyway, but this is so unrealistic that we needn't worry about it.
+            // If our input is truly enormous, the call to GetMaxByteCount might overflow,
+            // which we want to avoid. Theoretically, any Encoding could expand from chars -> bytes
+            // at an enormous ratio and cause us problems anyway given small inputs, but this is so
+            // unrealistic that we needn't worry about it.
 
             byte[] rented;
 
@@ -448,7 +446,7 @@ namespace System.IO
                 {
                     rented = ArrayPool<byte>.Shared.Rent(maxByteCount);
                     int actualByteCount = _encoding.GetBytes(chars, rented);
-                    writeDelegate(this, rented, 0, actualByteCount);
+                    WriteToOutStream(rented, 0, actualByteCount, useThisWriteOverride);
                     ArrayPool<byte>.Shared.Return(rented);
                     return;
                 }
@@ -468,13 +466,25 @@ namespace System.IO
                 encoder.Convert(chars, rented, flush: true, out int charsConsumed, out int bytesWritten, out completed);
                 if (bytesWritten != 0)
                 {
-                    writeDelegate(this, rented, 0, bytesWritten);
+                    WriteToOutStream(rented, 0, bytesWritten, useThisWriteOverride);
                 }
 
                 chars = chars.Slice(charsConsumed);
             } while (!completed);
 
             ArrayPool<byte>.Shared.Return(rented);
+
+            void WriteToOutStream(byte[] buffer, int offset, int count, bool useThisWriteOverride)
+            {
+                if (useThisWriteOverride)
+                {
+                    Write(buffer, offset, count); // bounce through this.Write(...) overridden logic
+                }
+                else
+                {
+                    OutStream.Write(buffer, offset, count); // ignore this.Write(...) override, go straight to inner stream
+                }
+            }
         }
 
         public void Write7BitEncodedInt(int value)

@@ -59,7 +59,4 @@
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
-    <ItemGroup>
-    <PackageReference Include="Moq" Version="$(MoqVersion)" />
-  </ItemGroup>
 </Project>
