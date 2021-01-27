@@ -817,6 +817,14 @@ static SimdIntrinsic crc32_methods [] = {
 	{SN_get_IsSupported}
 };
 
+static SimdIntrinsic sha256_methods [] = {
+	{SN_HashUpdate1, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H},
+	{SN_HashUpdate2, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H2},
+	{SN_ScheduleUpdate0, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA256SU0},
+	{SN_ScheduleUpdate1, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256SU1},
+	{SN_get_IsSupported}
+};
+
 static MonoInst*
 emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -830,6 +838,11 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 	gboolean arg0_i32 = (arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4);
 	SimdIntrinsic *info;
+	MonoCPUFeatures feature = -1;
+	SimdIntrinsic *intrinsics = NULL;
+	int intrinsics_size;
+	int id = -1;
+	gboolean jit_supported = FALSE;
 
 	if (is_hw_intrinsics_class (klass, "ArmBase", &is_64bit)) {
 		info = lookup_intrins_info (armbase_methods, sizeof (armbase_methods), cmethod);
@@ -885,6 +898,48 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		default:
 			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
 		}
+	}
+
+	if (is_hw_intrinsics_class (klass, "Sha256", &is_64bit)) {
+		feature = MONO_CPU_ARM64_CRYPTO;
+		intrinsics = sha256_methods;
+		intrinsics_size = sizeof (sha256_methods);
+	}
+
+	/*
+	 * Common logic for all instruction sets
+	 */
+	if (intrinsics) {
+		if (!COMPILE_LLVM (cfg) && !jit_supported)
+			return NULL;
+		info = lookup_intrins_info (intrinsics, intrinsics_size, cmethod);
+		if (!info)
+			return NULL;
+		id = info->id;
+
+		if (feature)
+			supported = (mini_get_cpu_features (cfg) & feature) != 0;
+		else
+			supported = TRUE;
+		if (id == SN_get_IsSupported) {
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			return ins;
+		}
+
+		if (!supported && cfg->compile_aot) {
+			// Can't emit non-supported llvm intrinsics
+			if (cfg->method != cmethod) {
+				// Keep the original call so we end up in the intrinsic method
+				return NULL;
+			} else {
+				// Emit an exception from the intrinsic method
+				mono_emit_jit_icall (cfg, mono_throw_not_supported, NULL);
+				return NULL;
+			}
+		}
+
+		if (info->op != 0)
+			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 	}
 	return NULL;
 }

@@ -26,6 +26,7 @@
     <Compile Include="LocalEndPointTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
+    <Compile Include="ReceiveFrom.cs" />
     <Compile Include="ReceiveMessageFrom.cs" />
     <Compile Include="SafeHandleTest.cs" />
     <Compile Include="SelectTest.cs" />

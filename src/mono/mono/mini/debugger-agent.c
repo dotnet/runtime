@@ -40,6 +40,7 @@
 #endif
 
 #ifdef HOST_WIN32
+#define sleep(t)                 Sleep((t) * 1000)
 #ifdef _MSC_VER
 #include <winsock2.h>
 #include <process.h>
@@ -47,6 +48,7 @@
 #include <ws2tcpip.h>
 #include <windows.h>
 #endif
+
 
 #ifdef HOST_ANDROID
 #include <linux/in.h>
@@ -262,231 +264,11 @@ typedef struct {
 	int (*recv) (void *buf, int len);
 } DebuggerTransport;
 
-/* 
- * Wire Protocol definitions
- */
+/* Buffered reply packets */
+static ReplyPacket reply_packets [128];
+static int nreply_packets;
 
-#define HEADER_LENGTH 11
-
-#define MAJOR_VERSION 2
-#define MINOR_VERSION 58
-
-typedef enum {
-	CMD_SET_VM = 1,
-	CMD_SET_OBJECT_REF = 9,
-	CMD_SET_STRING_REF = 10,
-	CMD_SET_THREAD = 11,
-	CMD_SET_ARRAY_REF = 13,
-	CMD_SET_EVENT_REQUEST = 15,
-	CMD_SET_STACK_FRAME = 16,
-	CMD_SET_APPDOMAIN = 20,
-	CMD_SET_ASSEMBLY = 21,
-	CMD_SET_METHOD = 22,
-	CMD_SET_TYPE = 23,
-	CMD_SET_MODULE = 24,
-	CMD_SET_FIELD = 25,
-	CMD_SET_EVENT = 64,
-	CMD_SET_POINTER = 65
-} CommandSet;
-
-typedef enum {
-	SUSPEND_POLICY_NONE = 0,
-	SUSPEND_POLICY_EVENT_THREAD = 1,
-	SUSPEND_POLICY_ALL = 2
-} SuspendPolicy;
-
-typedef enum {
-	ERR_NONE = 0,
-	ERR_INVALID_OBJECT = 20,
-	ERR_INVALID_FIELDID = 25,
-	ERR_INVALID_FRAMEID = 30,
-	ERR_NOT_IMPLEMENTED = 100,
-	ERR_NOT_SUSPENDED = 101,
-	ERR_INVALID_ARGUMENT = 102,
-	ERR_UNLOADED = 103,
-	ERR_NO_INVOCATION = 104,
-	ERR_ABSENT_INFORMATION = 105,
-	ERR_NO_SEQ_POINT_AT_IL_OFFSET = 106,
-	ERR_INVOKE_ABORTED = 107,
-	ERR_LOADER_ERROR = 200, /*XXX extend the protocol to pass this information down the pipe */
-} ErrorCode;
-
-typedef enum {
-	TOKEN_TYPE_STRING = 0,
-	TOKEN_TYPE_TYPE = 1,
-	TOKEN_TYPE_FIELD = 2,
-	TOKEN_TYPE_METHOD = 3,
-	TOKEN_TYPE_UNKNOWN = 4
-} DebuggerTokenType;
-
-typedef enum {
-	VALUE_TYPE_ID_NULL = 0xf0,
-	VALUE_TYPE_ID_TYPE = 0xf1,
-	VALUE_TYPE_ID_PARENT_VTYPE = 0xf2,
-	VALUE_TYPE_ID_FIXED_ARRAY = 0xf3
-} ValueTypeId;
-
-typedef enum {
-	FRAME_FLAG_DEBUGGER_INVOKE = 1,
-	FRAME_FLAG_NATIVE_TRANSITION = 2
-} StackFrameFlags;
-
-typedef enum {
-	INVOKE_FLAG_DISABLE_BREAKPOINTS = 1,
-	INVOKE_FLAG_SINGLE_THREADED = 2,
-	INVOKE_FLAG_RETURN_OUT_THIS = 4,
-	INVOKE_FLAG_RETURN_OUT_ARGS = 8,
-	INVOKE_FLAG_VIRTUAL = 16
-} InvokeFlags;
-
-typedef enum {
-	BINDING_FLAGS_IGNORE_CASE = 0x70000000,
-} BindingFlagsExtensions;
-
-typedef enum {
-	CMD_VM_VERSION = 1,
-	CMD_VM_ALL_THREADS = 2,
-	CMD_VM_SUSPEND = 3,
-	CMD_VM_RESUME = 4,
-	CMD_VM_EXIT = 5,
-	CMD_VM_DISPOSE = 6,
-	CMD_VM_INVOKE_METHOD = 7,
-	CMD_VM_SET_PROTOCOL_VERSION = 8,
-	CMD_VM_ABORT_INVOKE = 9,
-	CMD_VM_SET_KEEPALIVE = 10,
-	CMD_VM_GET_TYPES_FOR_SOURCE_FILE = 11,
-	CMD_VM_GET_TYPES = 12,
-	CMD_VM_INVOKE_METHODS = 13,
-	CMD_VM_START_BUFFERING = 14,
-	CMD_VM_STOP_BUFFERING = 15
-} CmdVM;
-
-typedef enum {
-	CMD_THREAD_GET_FRAME_INFO = 1,
-	CMD_THREAD_GET_NAME = 2,
-	CMD_THREAD_GET_STATE = 3,
-	CMD_THREAD_GET_INFO = 4,
-	CMD_THREAD_GET_ID = 5,
-	CMD_THREAD_GET_TID = 6,
-	CMD_THREAD_SET_IP = 7,
-	CMD_THREAD_ELAPSED_TIME = 8
-} CmdThread;
-
-typedef enum {
-	CMD_EVENT_REQUEST_SET = 1,
-	CMD_EVENT_REQUEST_CLEAR = 2,
-	CMD_EVENT_REQUEST_CLEAR_ALL_BREAKPOINTS = 3
-} CmdEvent;
-
-typedef enum {
-	CMD_COMPOSITE = 100
-} CmdComposite;
-
-typedef enum {
-	CMD_APPDOMAIN_GET_ROOT_DOMAIN = 1,
-	CMD_APPDOMAIN_GET_FRIENDLY_NAME = 2,
-	CMD_APPDOMAIN_GET_ASSEMBLIES = 3,
-	CMD_APPDOMAIN_GET_ENTRY_ASSEMBLY = 4,
-	CMD_APPDOMAIN_CREATE_STRING = 5,
-	CMD_APPDOMAIN_GET_CORLIB = 6,
-	CMD_APPDOMAIN_CREATE_BOXED_VALUE = 7,
-	CMD_APPDOMAIN_CREATE_BYTE_ARRAY = 8,
-} CmdAppDomain;
-
-typedef enum {
-	CMD_ASSEMBLY_GET_LOCATION = 1,
-	CMD_ASSEMBLY_GET_ENTRY_POINT = 2,
-	CMD_ASSEMBLY_GET_MANIFEST_MODULE = 3,
-	CMD_ASSEMBLY_GET_OBJECT = 4,
-	CMD_ASSEMBLY_GET_TYPE = 5,
-	CMD_ASSEMBLY_GET_NAME = 6,
-	CMD_ASSEMBLY_GET_DOMAIN = 7,
-	CMD_ASSEMBLY_GET_METADATA_BLOB = 8,
-	CMD_ASSEMBLY_GET_IS_DYNAMIC = 9,
-	CMD_ASSEMBLY_GET_PDB_BLOB = 10,
-	CMD_ASSEMBLY_GET_TYPE_FROM_TOKEN = 11,
-	CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN = 12,
-	CMD_ASSEMBLY_HAS_DEBUG_INFO = 13,
-	CMD_ASSEMBLY_GET_CATTRS = 14,
-} CmdAssembly;
-
-typedef enum {
-	CMD_MODULE_GET_INFO = 1,
-} CmdModule;
-
-typedef enum {
-	CMD_FIELD_GET_INFO = 1,
-} CmdField;
-
-typedef enum {
-	CMD_METHOD_GET_NAME = 1,
-	CMD_METHOD_GET_DECLARING_TYPE = 2,
-	CMD_METHOD_GET_DEBUG_INFO = 3,
-	CMD_METHOD_GET_PARAM_INFO = 4,
-	CMD_METHOD_GET_LOCALS_INFO = 5,
-	CMD_METHOD_GET_INFO = 6,
-	CMD_METHOD_GET_BODY = 7,
-	CMD_METHOD_RESOLVE_TOKEN = 8,
-	CMD_METHOD_GET_CATTRS = 9,
-	CMD_METHOD_MAKE_GENERIC_METHOD = 10
-} CmdMethod;
-
-typedef enum {
-	CMD_TYPE_GET_INFO = 1,
-	CMD_TYPE_GET_METHODS = 2,
-	CMD_TYPE_GET_FIELDS = 3,
-	CMD_TYPE_GET_VALUES = 4,
-	CMD_TYPE_GET_OBJECT = 5,
-	CMD_TYPE_GET_SOURCE_FILES = 6,
-	CMD_TYPE_SET_VALUES = 7,
-	CMD_TYPE_IS_ASSIGNABLE_FROM = 8,
-	CMD_TYPE_GET_PROPERTIES = 9,
-	CMD_TYPE_GET_CATTRS = 10,
-	CMD_TYPE_GET_FIELD_CATTRS = 11,
-	CMD_TYPE_GET_PROPERTY_CATTRS = 12,
-	CMD_TYPE_GET_SOURCE_FILES_2 = 13,
-	CMD_TYPE_GET_VALUES_2 = 14,
-	CMD_TYPE_GET_METHODS_BY_NAME_FLAGS = 15,
-	CMD_TYPE_GET_INTERFACES = 16,
-	CMD_TYPE_GET_INTERFACE_MAP = 17,
-	CMD_TYPE_IS_INITIALIZED = 18,
-	CMD_TYPE_CREATE_INSTANCE = 19,
-	CMD_TYPE_GET_VALUE_SIZE = 20
-} CmdType;
-
-typedef enum {
-	CMD_STACK_FRAME_GET_VALUES = 1,
-	CMD_STACK_FRAME_GET_THIS = 2,
-	CMD_STACK_FRAME_SET_VALUES = 3,
-	CMD_STACK_FRAME_GET_DOMAIN = 4,
-	CMD_STACK_FRAME_SET_THIS = 5,
-} CmdStackFrame;
-
-typedef enum {
-	CMD_ARRAY_REF_GET_LENGTH = 1,
-	CMD_ARRAY_REF_GET_VALUES = 2,
-	CMD_ARRAY_REF_SET_VALUES = 3,
-} CmdArray;
-
-typedef enum {
-	CMD_STRING_REF_GET_VALUE = 1,
-	CMD_STRING_REF_GET_LENGTH = 2,
-	CMD_STRING_REF_GET_CHARS = 3
-} CmdString;
-
-typedef enum {
-	CMD_POINTER_GET_VALUE = 1
-} CmdPointer;
-
-typedef enum {
-	CMD_OBJECT_REF_GET_TYPE = 1,
-	CMD_OBJECT_REF_GET_VALUES = 2,
-	CMD_OBJECT_REF_IS_COLLECTED = 3,
-	CMD_OBJECT_REF_GET_ADDRESS = 4,
-	CMD_OBJECT_REF_GET_DOMAIN = 5,
-	CMD_OBJECT_REF_SET_VALUES = 6,
-	CMD_OBJECT_REF_GET_INFO = 7,
-} CmdObject;
+static int packet_id = 0;
 
 /*
  * Contains additional information for an event
@@ -505,16 +287,6 @@ typedef struct {
 	char *dump;
 	MonoStackHash *hashes;
 } EventInfo;
-
-typedef struct {
-	guint8 *buf, *p, *end;
-} Buffer;
-
-typedef struct ReplyPacket {
-	int id;
-	int error;
-	Buffer *data;
-} ReplyPacket;
 
 #ifdef HOST_WIN32
 #define get_last_sock_error() WSAGetLastError()
@@ -548,8 +320,6 @@ static gint32 agent_inited;
 static int conn_fd;
 static int listen_fd;
 #endif
-
-static int packet_id = 0;
 
 static int objref_id = 0;
 
@@ -613,10 +383,6 @@ static gint32 suspend_count;
 
 /* Whenever to buffer reply messages and send them together */
 static gboolean buffer_replies;
-
-/* Buffered reply packets */
-static ReplyPacket reply_packets [128];
-static int nreply_packets;
 
 #define dbg_lock mono_de_lock
 #define dbg_unlock mono_de_unlock
@@ -1234,7 +1000,7 @@ socket_transport_connect (const char *address)
 			MONO_HINT_UNSPECIFIED
 		};
 
-		mono_network_init ();
+		mono_networking_init ();
 
 		for (int i = 0; i < sizeof(hints) / sizeof(int); i++) {
 			/* Obtain address(es) matching host/port */
@@ -1289,8 +1055,7 @@ socket_transport_connect (const char *address)
 
 				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
 
-				sfd = socket (rp->family, rp->socktype,
-							  rp->protocol);
+				sfd = socket (rp->family, rp->socktype, rp->protocol);
 				if (sfd == -1)
 					continue;
 
@@ -1343,32 +1108,41 @@ socket_transport_connect (const char *address)
 	} else {
 		/* Connect to the specified address */
 		/* FIXME: Respect the timeout */
-		for (rp = result->entries; rp != NULL; rp = rp->next) {
-			MonoSocketAddress sockaddr;
-			socklen_t sock_len;
+		uint32_t startTime = time(NULL);
+		uint32_t elapsedTime;
+		do {
+			PRINT_DEBUG_MSG (1, "Trying to connect.\n");
+			for (rp = result->entries; rp != NULL; rp = rp->next) {
+				MonoSocketAddress sockaddr;
+				socklen_t sock_len;
 
-			mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
 
-			sfd = socket (rp->family, rp->socktype,
-						  rp->protocol);
-			if (sfd == -1)
-				continue;
+				sfd = socket (rp->family, rp->socktype,
+							rp->protocol);
+				if (sfd == -1)
+					continue;
 
-			MONO_ENTER_GC_SAFE;
-			res = connect (sfd, &sockaddr.addr, sock_len);
-			MONO_EXIT_GC_SAFE;
+				MONO_ENTER_GC_SAFE;
+				res = connect (sfd, &sockaddr.addr, sock_len);
+				MONO_EXIT_GC_SAFE;
 
-			if (res != -1)
-				break;       /* Success */
-			
-			MONO_ENTER_GC_SAFE;
-#ifdef HOST_WIN32
-			closesocket (sfd);
-#else
-			close (sfd);
-#endif
-			MONO_EXIT_GC_SAFE;
-		}
+				if (res != -1)
+					break;       /* Success */
+				
+				MONO_ENTER_GC_SAFE;
+	#ifdef HOST_WIN32
+				closesocket (sfd);
+	#else
+				close (sfd);
+	#endif
+				MONO_EXIT_GC_SAFE;
+			}
+			elapsedTime = difftime (time (NULL), startTime) * 1000;
+			if (rp == 0)
+				sleep (1);
+		} while ((elapsedTime < agent_config.timeout) && (rp == 0));
+		
 
 		if (rp == 0) {
 			PRINT_ERROR_MSG ("debugger-agent: Unable to connect to %s:%d\n", host, port);
@@ -1654,194 +1428,6 @@ start_debugger_thread (MonoError *error)
 	
 }
 
-/*
- * Functions to decode protocol data
- */
-
-static int
-decode_byte (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	*endbuf = buf + 1;
-	g_assert (*endbuf <= limit);
-	return buf [0];
-}
-
-static int
-decode_int (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	*endbuf = buf + 4;
-	g_assert (*endbuf <= limit);
-
-	return (((int)buf [0]) << 24) | (((int)buf [1]) << 16) | (((int)buf [2]) << 8) | (((int)buf [3]) << 0);
-}
-
-static gint64
-decode_long (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	guint32 high = decode_int (buf, &buf, limit);
-	guint32 low = decode_int (buf, &buf, limit);
-
-	*endbuf = buf;
-
-	return ((((guint64)high) << 32) | ((guint64)low));
-}
-
-static int
-decode_id (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	return decode_int (buf, endbuf, limit);
-}
-
-static char*
-decode_string (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	int len = decode_int (buf, &buf, limit);
-	char *s;
-
-	if (len < 0) {
-		*endbuf = buf;
-		return NULL;
-	}
-
-	s = (char *)g_malloc (len + 1);
-	g_assert (s);
-
-	memcpy (s, buf, len);
-	s [len] = '\0';
-	buf += len;
-	*endbuf = buf;
-
-	return s;
-}
-
-/*
- * Functions to encode protocol data
- */
-
-static void
-buffer_init (Buffer *buf, int size)
-{
-	buf->buf = (guint8 *)g_malloc (size);
-	buf->p = buf->buf;
-	buf->end = buf->buf + size;
-}
-
-static int
-buffer_len (Buffer *buf)
-{
-	return buf->p - buf->buf;
-}
-
-static void
-buffer_make_room (Buffer *buf, int size)
-{
-	if (buf->end - buf->p < size) {
-		int new_size = buf->end - buf->buf + size + 32;
-		guint8 *p = (guint8 *)g_realloc (buf->buf, new_size);
-		size = buf->p - buf->buf;
-		buf->buf = p;
-		buf->p = p + size;
-		buf->end = buf->buf + new_size;
-	}
-}
-
-static void
-buffer_add_byte (Buffer *buf, guint8 val)
-{
-	buffer_make_room (buf, 1);
-	buf->p [0] = val;
-	buf->p++;
-}
-
-static void
-buffer_add_short (Buffer *buf, guint32 val)
-{
-	buffer_make_room (buf, 2);
-	buf->p [0] = (val >> 8) & 0xff;
-	buf->p [1] = (val >> 0) & 0xff;
-	buf->p += 2;
-}
-
-static void
-buffer_add_int (Buffer *buf, guint32 val)
-{
-	buffer_make_room (buf, 4);
-	buf->p [0] = (val >> 24) & 0xff;
-	buf->p [1] = (val >> 16) & 0xff;
-	buf->p [2] = (val >> 8) & 0xff;
-	buf->p [3] = (val >> 0) & 0xff;
-	buf->p += 4;
-}
-
-static void
-buffer_add_long (Buffer *buf, guint64 l)
-{
-	buffer_add_int (buf, (l >> 32) & 0xffffffff);
-	buffer_add_int (buf, (l >> 0) & 0xffffffff);
-}
-
-static void
-buffer_add_id (Buffer *buf, int id)
-{
-	buffer_add_int (buf, (guint64)id);
-}
-
-static void
-buffer_add_data (Buffer *buf, guint8 *data, int len)
-{
-	buffer_make_room (buf, len);
-	memcpy (buf->p, data, len);
-	buf->p += len;
-}
-
-static void
-buffer_add_utf16 (Buffer *buf, guint8 *data, int len)
-{
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	buffer_make_room (buf, len);
-	memcpy (buf->p, data, len);
-#else
-	for (int i=0; i<len; i +=2) {
-		buf->p[i] = data[i+1];
-		buf->p[i+1] = data[i];
-	}
-#endif
-	buf->p += len;
-}
-
-static void
-buffer_add_string (Buffer *buf, const char *str)
-{
-	int len;
-
-	if (str == NULL) {
-		buffer_add_int (buf, 0);
-	} else {
-		len = strlen (str);
-		buffer_add_int (buf, len);
-		buffer_add_data (buf, (guint8*)str, len);
-	}
-}
-
-static void
-buffer_add_byte_array (Buffer *buf, guint8 *bytes, guint32 arr_len)
-{
-    buffer_add_int (buf, arr_len);
-    buffer_add_data (buf, bytes, arr_len);
-}
-
-static void
-buffer_add_buffer (Buffer *buf, Buffer *data)
-{
-	buffer_add_data (buf, data->buf, buffer_len (data));
-}
-
-static void
-buffer_free (Buffer *buf)
-{
-	g_free (buf->buf);
-}
-
 static gboolean
 send_packet (int command_set, int command, Buffer *data)
 {
@@ -2111,21 +1697,6 @@ buffer_add_objid (Buffer *buf, MonoObject *o)
 {
 	buffer_add_id (buf, get_objid (o));
 }
-
-/*
- * IDS
- */
-
-typedef enum {
-	ID_ASSEMBLY = 0,
-	ID_MODULE = 1,
-	ID_TYPE = 2,
-	ID_METHOD = 3,
-	ID_FIELD = 4,
-	ID_DOMAIN = 5,
-	ID_PROPERTY = 6,
-	ID_NUM
-} IdType;
 
 /*
  * Represents a runtime structure accessible to the debugger client
@@ -3805,34 +3376,6 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 	return events;
 }
 
-static G_GNUC_UNUSED const char*
-event_to_string (EventKind event)
-{
-	switch (event) {
-	case EVENT_KIND_VM_START: return "VM_START";
-	case EVENT_KIND_VM_DEATH: return "VM_DEATH";
-	case EVENT_KIND_THREAD_START: return "THREAD_START";
-	case EVENT_KIND_THREAD_DEATH: return "THREAD_DEATH";
-	case EVENT_KIND_APPDOMAIN_CREATE: return "APPDOMAIN_CREATE";
-	case EVENT_KIND_APPDOMAIN_UNLOAD: return "APPDOMAIN_UNLOAD";
-	case EVENT_KIND_METHOD_ENTRY: return "METHOD_ENTRY";
-	case EVENT_KIND_METHOD_EXIT: return "METHOD_EXIT";
-	case EVENT_KIND_ASSEMBLY_LOAD: return "ASSEMBLY_LOAD";
-	case EVENT_KIND_ASSEMBLY_UNLOAD: return "ASSEMBLY_UNLOAD";
-	case EVENT_KIND_BREAKPOINT: return "BREAKPOINT";
-	case EVENT_KIND_STEP: return "STEP";
-	case EVENT_KIND_TYPE_LOAD: return "TYPE_LOAD";
-	case EVENT_KIND_EXCEPTION: return "EXCEPTION";
-	case EVENT_KIND_KEEPALIVE: return "KEEPALIVE";
-	case EVENT_KIND_USER_BREAK: return "USER_BREAK";
-	case EVENT_KIND_USER_LOG: return "USER_LOG";
-	case EVENT_KIND_CRASH: return "CRASH";
-	default:
-		g_assert_not_reached ();
-		return "";
-	}
-}
-
 /*
  * process_event:
  *
@@ -4104,6 +3647,8 @@ static void
 runtime_initialized (MonoProfiler *prof)
 {
 	process_profiler_event (EVENT_KIND_VM_START, mono_thread_current ());
+	if (CHECK_PROTOCOL_VERSION (3, 0))
+		process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, (mono_defaults.corlib->assembly));
 	if (agent_config.defer) {
 		ERROR_DECL (error);
 		start_debugger_thread (error);
@@ -5360,6 +4905,24 @@ buffer_add_fixed_array (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain
 		}
 	}
 }
+static void
+buffer_add_info_for_null_value (Buffer* buf, MonoType* t, MonoDomain* domain)
+{
+	buffer_add_byte (buf, t->type);
+	switch (t->type) {
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));
+		break;
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+		buffer_add_byte (buf, m_class_get_byval_arg (m_class_get_element_class (mono_class_from_mono_type_internal (t)))->type);
+		buffer_add_int (buf, m_class_get_rank (mono_class_from_mono_type_internal (t)));
+		if (m_class_get_byval_arg (m_class_get_element_class (mono_class_from_mono_type_internal (t)))->type == MONO_TYPE_CLASS)
+			buffer_add_typeid (buf, domain, m_class_get_element_class (mono_class_from_mono_type_internal (t)));
+		break;
+	}
+}
 /*
  * buffer_add_value_full:
  *
@@ -5466,6 +5029,9 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 
 		if (!obj) {
 			buffer_add_byte (buf, VALUE_TYPE_ID_NULL);
+			if (CHECK_PROTOCOL_VERSION (3, 0)) {
+				buffer_add_info_for_null_value(buf, t, domain);
+			}
 		} else {
 			if (m_class_is_valuetype (obj->vtable->klass)) {
 				t = m_class_get_byval_arg (obj->vtable->klass);
@@ -6358,10 +5924,12 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 		return ERR_INVALID_ARGUMENT;
 	} else if (m_class_is_valuetype (m->klass) && (m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		/* Should be null */
-		int type = decode_byte (p, &p, end);
-		if (type != VALUE_TYPE_ID_NULL) {
-			PRINT_DEBUG_MSG (1, "[%p] Error: Static vtype method invoked with this argument.\n", (gpointer) (gsize) mono_native_thread_id_get ());
-			return ERR_INVALID_ARGUMENT;
+		if (!CHECK_PROTOCOL_VERSION (3, 0)) { //on icordbg I couldn't find type information when invoking a static method maybe I can change this later
+			int type = decode_byte (p, &p, end);
+			if (type != VALUE_TYPE_ID_NULL) {
+				PRINT_DEBUG_MSG (1, "[%p] Error: Static vtype method invoked with this argument.\n", (gpointer) (gsize) mono_native_thread_id_get ());
+				return ERR_INVALID_ARGUMENT;
+			}
 		}
 		memset (this_buf, 0, mono_class_instance_size (m->klass));
 	} else if (m_class_is_valuetype (m->klass) && !strcmp (m->name, ".ctor")) {
@@ -6378,12 +5946,14 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 					return err;
 			}
 	} else {
-		err = decode_value (m_class_get_byval_arg (m->klass), domain, this_buf, p, &p, end, FALSE);
-		if (err != ERR_NONE)
-			return err;
+		if (!(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (3, 0))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
+			err = decode_value(m_class_get_byval_arg(m->klass), domain, this_buf, p, &p, end, FALSE);
+			if (err != ERR_NONE)
+				return err;
+		}
 	}
 
-	if (!m_class_is_valuetype (m->klass))
+	if (!m_class_is_valuetype (m->klass) && !(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (3, 0))) //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
 		this_arg = *(MonoObject**)this_buf;
 	else
 		this_arg = NULL;
@@ -7163,14 +6733,15 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		tls->pending_invoke->endp = tls->pending_invoke->p + (end - p);
 		tls->pending_invoke->suspend_count = suspend_count;
 		tls->pending_invoke->nmethods = nmethods;
-
-		if (flags & INVOKE_FLAG_SINGLE_THREADED) {
-			resume_thread (THREAD_TO_INTERNAL (thread));
-		}
-		else {
-			count = suspend_count;
-			for (i = 0; i < count; ++i)
-				resume_vm ();
+		if (!CHECK_PROTOCOL_VERSION (3, 0)) { //on icordbg they send a resume after calling an invoke method
+			if (flags & INVOKE_FLAG_SINGLE_THREADED) {
+				resume_thread(THREAD_TO_INTERNAL(thread));
+			}
+			else {
+				count = suspend_count;
+				for (i = 0; i < count; ++i)
+					resume_vm();
+			}
 		}
 		break;
 	}
@@ -7969,6 +7540,11 @@ field_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_typeid (buf, domain, f->parent);
 		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (f->type));
 		buffer_add_int (buf, f->type->attrs);
+		if (CHECK_PROTOCOL_VERSION (3, 0)) {
+			buffer_add_int (buf, f->type->type);
+			buffer_add_int (buf, m_class_get_type_token (f->parent));
+			buffer_add_int (buf, m_class_get_type_token (mono_class_from_mono_type_internal (f->type)));
+		}
 		break;
 	}
 	default:
@@ -8108,6 +7684,8 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		while ((m = mono_class_get_methods (klass, &iter))) {
 			buffer_add_methodid (buf, domain, m);
+			if (CHECK_PROTOCOL_VERSION (3, 0))
+				buffer_add_int(buf, m->token);
 			i ++;
 		}
 		g_assert (i == nmethods);
@@ -8966,6 +8544,14 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		buffer_add_methodid (buf, domain, inflated);
 		break;
 	}
+	case CMD_METHOD_TOKEN: {
+		buffer_add_int(buf, method->token);
+		break;
+	}
+	case CMD_METHOD_ASSEMBLY: {
+		buffer_add_assemblyid(buf, mono_domain_get (), m_class_get_image(method->klass)->assembly);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -9068,7 +8654,6 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			 */
 			buffer_add_byte (buf, tls->frames [i]->flags);
 		}
-
 		break;
 	}
 	case CMD_THREAD_GET_STATE:
@@ -9147,6 +8732,62 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 }
 
 static ErrorCode
+cmd_stack_frame_get_this (StackFrame *frame, MonoMethodSignature *sig, Buffer *buf, MonoDebugMethodJitInfo *jit)
+{
+	if (frame->de.method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+			return ERR_ABSENT_INFORMATION;
+	if (m_class_is_valuetype (frame->api_method->klass)) {
+		if (!sig->hasthis) {
+			MonoObject *p = NULL;
+			buffer_add_value (buf, mono_get_object_type (), &p, frame->de.domain);
+		} else {
+			if (frame->de.ji->is_interp) {
+				guint8 *addr;
+
+				addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
+
+				buffer_add_value_full (buf, m_class_get_this_arg (frame->actual_method->klass), addr, frame->de.domain, FALSE, NULL, 1);
+			} else {
+				add_var (buf, jit, m_class_get_this_arg (frame->actual_method->klass), jit->this_var, &frame->ctx, frame->de.domain, TRUE);
+			}
+		}
+	} else {
+		if (!sig->hasthis) {
+			MonoObject *p = NULL;
+			buffer_add_value (buf, m_class_get_byval_arg (frame->actual_method->klass), &p, frame->de.domain);
+		} else {
+			if (frame->de.ji->is_interp) {
+				guint8 *addr;
+
+				addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
+
+				buffer_add_value_full (buf, m_class_get_byval_arg (frame->api_method->klass), addr, frame->de.domain, FALSE, NULL, 1);
+			} else {
+				add_var (buf, jit, m_class_get_byval_arg (frame->api_method->klass), jit->this_var, &frame->ctx, frame->de.domain, TRUE);
+			}
+		}
+	}
+	return ERR_NONE;
+}
+static void 
+cmd_stack_frame_get_parameter (StackFrame *frame, MonoMethodSignature *sig, int pos, Buffer *buf, MonoDebugMethodJitInfo *jit)
+{
+	PRINT_DEBUG_MSG (4, "[dbg]   send arg %d.\n", pos);
+	if (frame->de.ji->is_interp) {
+		guint8 *addr;
+
+		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
+
+		buffer_add_value_full (buf, sig->params [pos], addr, frame->de.domain, FALSE, NULL, 1);
+	} else {
+		g_assert (pos >= 0 && pos < jit->num_params);
+
+		add_var (buf, jit, sig->params [pos], &jit->params [pos], &frame->ctx, frame->de.domain, FALSE);
+	}
+}
+
+
+static ErrorCode
 frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 {
 	int objid;
@@ -9160,7 +8801,8 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	MonoMethodSignature *sig;
 	gssize id;
 	MonoMethodHeader *header;
-
+	ERROR_DECL (error);
+	
 	objid = decode_objid (p, &p, end);
 	err = get_object (objid, (MonoObject**)&thread_obj);
 	if (err != ERR_NONE)
@@ -9212,8 +8854,20 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		return ERR_ABSENT_INFORMATION;
 
 	switch (command) {
+	case CMD_STACK_FRAME_GET_ARGUMENT: {
+		pos = decode_int (p, &p, end);
+		if (sig->hasthis) {
+			if (pos == 0)
+				return cmd_stack_frame_get_this (frame, sig, buf, jit);
+			else
+				pos--;
+		}
+		len = 1;		
+		header = mono_method_get_header_checked (frame->actual_method, error);
+		cmd_stack_frame_get_parameter (frame, sig, pos, buf, jit);
+		break;
+	}
 	case CMD_STACK_FRAME_GET_VALUES: {
-		ERROR_DECL (error);
 		len = decode_int (p, &p, end);
 		header = mono_method_get_header_checked (frame->actual_method, error);
 		mono_error_assert_ok (error); /* FIXME report error */
@@ -9223,20 +8877,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 			if (pos < 0) {
 				pos = - pos - 1;
-
-				PRINT_DEBUG_MSG (4, "[dbg]   send arg %d.\n", pos);
-
-				if (frame->de.ji->is_interp) {
-					guint8 *addr;
-
-					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
-
-					buffer_add_value_full (buf, sig->params [pos], addr, frame->de.domain, FALSE, NULL, 1);
-				} else {
-					g_assert (pos >= 0 && pos < jit->num_params);
-
-					add_var (buf, jit, sig->params [pos], &jit->params [pos], &frame->ctx, frame->de.domain, FALSE);
-				}
+				cmd_stack_frame_get_parameter (frame, sig, pos, buf, jit);
 			} else {
 				MonoDebugLocalsInfo *locals;
 
@@ -9266,39 +8907,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_STACK_FRAME_GET_THIS: {
-		if (frame->de.method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
-			return ERR_ABSENT_INFORMATION;
-		if (m_class_is_valuetype (frame->api_method->klass)) {
-			if (!sig->hasthis) {
-				MonoObject *p = NULL;
-				buffer_add_value (buf, mono_get_object_type (), &p, frame->de.domain);
-			} else {
-				if (frame->de.ji->is_interp) {
-					guint8 *addr;
-
-					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
-
-					buffer_add_value_full (buf, m_class_get_this_arg (frame->actual_method->klass), addr, frame->de.domain, FALSE, NULL, 1);
-				} else {
-					add_var (buf, jit, m_class_get_this_arg (frame->actual_method->klass), jit->this_var, &frame->ctx, frame->de.domain, TRUE);
-				}
-			}
-		} else {
-			if (!sig->hasthis) {
-				MonoObject *p = NULL;
-				buffer_add_value (buf, m_class_get_byval_arg (frame->actual_method->klass), &p, frame->de.domain);
-			} else {
-				if (frame->de.ji->is_interp) {
-					guint8 *addr;
-
-					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
-
-					buffer_add_value_full (buf, m_class_get_byval_arg (frame->api_method->klass), addr, frame->de.domain, FALSE, NULL, 1);
-				} else {
-					add_var (buf, jit, m_class_get_byval_arg (frame->api_method->klass), jit->this_var, &frame->ctx, frame->de.domain, TRUE);
-				}
-			}
-		}
+		return cmd_stack_frame_get_this (frame, sig, buf, jit);
 		break;
 	}
 	case CMD_STACK_FRAME_SET_VALUES: {
@@ -9417,6 +9026,13 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		return err;
 
 	switch (command) {
+	case CMD_ARRAY_REF_GET_TYPE: {
+			buffer_add_byte(buf, m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type);
+			buffer_add_int (buf, m_class_get_rank (arr->obj.vtable->klass));
+			if (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type == MONO_TYPE_CLASS)
+				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
+		}
+		break;
 	case CMD_ARRAY_REF_GET_LENGTH:
 		buffer_add_int (buf, m_class_get_rank (arr->obj.vtable->klass));
 		if (!arr->bounds) {
@@ -9613,7 +9229,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	ErrorCode err;
 	MonoObject *obj;
 	int len, i;
-	MonoClassField *f;
+	MonoClassField *f = NULL;
 	MonoClass *k;
 	gboolean found;
 	gboolean remote_obj = FALSE;
@@ -9650,14 +9266,26 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		/* This handles transparent proxies too */
 		buffer_add_typeid (buf, obj->vtable->domain, mono_class_from_mono_type_internal (((MonoReflectionType*)obj->vtable->type)->type));
 		break;
+	case CMD_OBJECT_REF_GET_VALUES_ICORDBG: {
+		gpointer iter;
+		iter = NULL;
+		len = 1;
+		MonoClass *dummy_class;
+		int field_token =  decode_int (p, &p, end);
+		i = 0;
+		f = mono_field_from_token_checked (m_class_get_image (obj_type), field_token, &dummy_class, NULL, error);
+		if (f) {
+			goto get_field_value;
+		}
+		goto invalid_fieldid;
+	}
 	case CMD_OBJECT_REF_GET_VALUES:
 		len = decode_int (p, &p, end);
 
 		for (i = 0; i < len; ++i) {
-			MonoClassField *f = decode_fieldid (p, &p, end, NULL, &err);
+			f = decode_fieldid (p, &p, end, NULL, &err);
 			if (err != ERR_NONE)
 				goto exit;
-
 			/* Check that the field belongs to the object */
 			found = FALSE;
 			for (k = obj_type; k; k = m_class_get_parent (k)) {
@@ -9668,7 +9296,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			}
 			if (!found)
 				goto invalid_fieldid;
-
+get_field_value:
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				guint8 *val;
 				MonoVTable *vtable;
@@ -9827,6 +9455,7 @@ command_set_to_string (CommandSet command_set)
 }
 
 static const char* vm_cmds_str [] = {
+	"",
 	"VERSION",
 	"ALL_THREADS",
 	"SUSPEND",
@@ -9839,7 +9468,9 @@ static const char* vm_cmds_str [] = {
 	"SET_KEEPALIVE"
 	"GET_TYPES_FOR_SOURCE_FILE",
 	"GET_TYPES",
-	"INVOKE_METHODS"
+	"INVOKE_METHODS",
+	"START_BUFFERING",
+	"STOP_BUFFERING"
 };
 
 static const char* thread_cmds_str[] = {
@@ -9877,7 +9508,13 @@ static const char* assembly_cmds_str[] = {
 	"GET_TYPE",
 	"GET_NAME",
 	"GET_DOMAIN",
-	"HAS_DEBUG_INFO"
+	"GET_METADATA_BLOB",
+	"GET_IS_DYNAMIC",
+	"GET_PDB_BLOB",
+	"GET_TYPE_FROM_TOKEN", 
+	"GET_METHOD_FROM_TOKEN",
+	"HAS_DEBUG_INFO",
+	"GET_CUSTOM_ATTRIBUTES",
 };
 
 static const char* module_cmds_str[] = {

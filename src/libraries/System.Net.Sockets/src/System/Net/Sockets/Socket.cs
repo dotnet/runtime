@@ -3266,7 +3266,9 @@ namespace System.Net.Sockets
             return socketError == SocketError.IOPending;
         }
 
-        public bool ReceiveFromAsync(SocketAsyncEventArgs e)
+        public bool ReceiveFromAsync(SocketAsyncEventArgs e) => ReceiveFromAsync(e, default);
+
+        private bool ReceiveFromAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -3300,7 +3302,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationReceiveFrom(_handle);
+                socketError = e.DoOperationReceiveFrom(_handle, cancellationToken);
             }
             catch
             {
@@ -3313,7 +3315,9 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public bool ReceiveMessageFromAsync(SocketAsyncEventArgs e)
+        public bool ReceiveMessageFromAsync(SocketAsyncEventArgs e) => ReceiveMessageFromAsync(e, default);
+
+        private bool ReceiveMessageFromAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -3349,7 +3353,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationReceiveMessageFrom(this, _handle);
+                socketError = e.DoOperationReceiveMessageFrom(this, _handle, cancellationToken);
             }
             catch
             {
@@ -3423,7 +3427,9 @@ namespace System.Net.Sockets
             return socketError == SocketError.IOPending;
         }
 
-        public bool SendToAsync(SocketAsyncEventArgs e)
+        public bool SendToAsync(SocketAsyncEventArgs e) => SendToAsync(e, default);
+
+        private bool SendToAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -3452,7 +3458,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationSendTo(_handle);
+                socketError = e.DoOperationSendTo(_handle, cancellationToken);
             }
             catch
             {

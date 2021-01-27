@@ -173,6 +173,7 @@ typedef struct {
 	gboolean *unreachable;
 	gboolean llvm_only;
 	gboolean has_got_access;
+	gboolean is_linkonce;
 	gboolean emit_dummy_arg;
 	gboolean has_safepoints;
 	int this_arg_pindex, rgctx_arg_pindex;
@@ -4917,7 +4918,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	LLVMBuilderRef builder, starting_builder;
 	gboolean has_terminator;
 	LLVMValueRef v;
-	LLVMValueRef lhs, rhs;
+	LLVMValueRef lhs, rhs, arg3;
 	int nins = 0;
 
 	cbb = get_end_bb (ctx, bb);
@@ -5096,7 +5097,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			lhs = NULL;
 		}
 
-		if (spec [MONO_INST_SRC2] != ' ' && spec [MONO_INST_SRC2] != ' ') {
+		if (spec [MONO_INST_SRC2] != ' ' && spec [MONO_INST_SRC2] != 'v') {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg2);
 			if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
 				rhs = emit_volatile_load (ctx, ins->sreg2);
@@ -5109,6 +5110,21 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}
 		} else {
 			rhs = NULL;
+		}
+
+		if (spec [MONO_INST_SRC3] != ' ' && spec [MONO_INST_SRC3] != 'v') {
+			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg3);
+			if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
+				arg3 = emit_volatile_load (ctx, ins->sreg3);
+			} else {
+				if (!values [ins->sreg3]) {
+					set_failure (ctx, "sreg3");
+					return;
+				}
+				arg3 = values [ins->sreg3];
+			}
+		} else {
+			arg3 = NULL;
 		}
 
 		//mono_print_ins (ins);
@@ -9041,6 +9057,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
 			break;
 		}
+		case OP_XOP_X_X_X:
 		case OP_XOP_I4_I4_I4:
 		case OP_XOP_I4_I4_I8: {
 			IntrinsicId id = (IntrinsicId)0;
@@ -9054,12 +9071,25 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_ARM64_CRC32CH: id = INTRINS_AARCH64_CRC32CH; zext_last = TRUE; break;
 			case SIMD_OP_ARM64_CRC32CW: id = INTRINS_AARCH64_CRC32CW; zext_last = TRUE; break;
 			case SIMD_OP_ARM64_CRC32CX: id = INTRINS_AARCH64_CRC32CX; break;
+			case SIMD_OP_ARM64_SHA256SU0: id = INTRINS_AARCH64_SHA256SU0; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef arg1 = rhs;
 			if (zext_last)
 				arg1 = LLVMBuildZExt (ctx->builder, arg1, LLVMInt32Type (), "");
 			LLVMValueRef args [] = { lhs, arg1 };
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_XOP_X_X_X_X: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_ARM64_SHA256H: id = INTRINS_AARCH64_SHA256H; break;
+			case SIMD_OP_ARM64_SHA256H2: id = INTRINS_AARCH64_SHA256H2; break;
+			case SIMD_OP_ARM64_SHA256SU1: id = INTRINS_AARCH64_SHA256SU1; break;
+			default: g_assert_not_reached (); break;
+			}
+			LLVMValueRef args [] = { lhs, rhs, arg3 };
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
@@ -9397,6 +9427,25 @@ free_ctx (EmitContext *ctx)
 	g_free (ctx);
 }
 
+static gboolean
+is_linkonce_method (MonoMethod *method)
+{
+#ifdef TARGET_WASM
+	/*
+	 * Under wasm, linkonce works, so use it instead of the dedup pass for wrappers at least.
+	 * FIXME: Use for everything, i.e. can_dedup ().
+	 * FIXME: Fails System.Core tests
+	 * -> amodule->sorted_methods contains duplicates, screwing up jit tables.
+	 */
+	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
+			return TRUE;
+	}
+#endif
+	return FALSE;
+}
+
 /*
  * mono_llvm_emit_method:
  *
@@ -9407,6 +9456,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 {
 	EmitContext *ctx;
 	char *method_name;
+	gboolean is_linkonce = FALSE;
 	int i;
 
 	if (cfg->skip)
@@ -9448,7 +9498,15 @@ mono_llvm_emit_method (MonoCompile *cfg)
  	if (cfg->compile_aot) {
 		ctx->module = &aot_module;
 
-		if (mono_aot_is_externally_callable (cfg->method))
+		/*
+		 * Allow the linker to discard duplicate copies of wrappers, generic instances etc. by using the 'linkonce'
+		 * linkage for them. This requires the following:
+		 * - the method needs to have a unique mangled name
+		 * - llvmonly mode, since the code in aot-runtime.c would initialize got slots in the wrong aot image etc.
+		 */
+		if (ctx->module->llvm_only && ctx->module->static_link && is_linkonce_method (cfg->method))
+			is_linkonce = TRUE;
+		if (is_linkonce || mono_aot_is_externally_callable (cfg->method))
 			method_name = mono_aot_get_mangled_method_name (cfg->method);
 		else
 			method_name = mono_aot_get_method_name (cfg);
@@ -9459,6 +9517,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		method_name = mono_method_full_name (cfg->method, TRUE);
 	}
 	ctx->method_name = method_name;
+	ctx->is_linkonce = is_linkonce;
 
 	if (cfg->compile_aot) {
 		ctx->lmodule = ctx->module->lmodule;
@@ -9690,6 +9749,10 @@ emit_method_inner (EmitContext *ctx)
 				LLVMSetLinkage (method, LLVMExternalLinkage);
 				LLVMSetVisibility (method, LLVMHiddenVisibility);
 			}
+		}
+		if (ctx->is_linkonce) {
+			LLVMSetLinkage (method, LLVMLinkOnceAnyLinkage);
+			LLVMSetVisibility (method, LLVMDefaultVisibility);
 		}
 	} else {
 		LLVMSetLinkage (method, LLVMExternalLinkage);
@@ -11887,6 +11950,7 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #endif
 #if defined(TARGET_ARM64)
 		{ "crc",	MONO_CPU_ARM64_CRC },
+		{ "crypto",	MONO_CPU_ARM64_CRYPTO },
 #endif
 	};
 	if (!cpu_features)
