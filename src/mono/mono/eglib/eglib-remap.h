@@ -29,6 +29,7 @@
 #define g_clear_error monoeg_g_clear_error
 #define g_convert monoeg_g_convert
 #define g_convert_error_quark monoeg_g_convert_error_quark
+#define g_fixed_buffer_custom_allocator monoeg_g_fixed_buffer_custom_allocator
 #define g_dir_close monoeg_g_dir_close
 #define g_dir_open monoeg_g_dir_open
 #define g_dir_read_name monoeg_g_dir_read_name

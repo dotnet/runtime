@@ -831,7 +831,7 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 }
 
 static gunichar2 *
-eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints, GConvertCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err) 
+eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err) 
 {
 	gunichar2 *outbuf, *outptr;
 	size_t outlen = 0;
@@ -884,7 +884,7 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 	if (G_LIKELY (!custom_alloc_func))
 		outptr = outbuf = g_malloc ((outlen + 1) * sizeof (gunichar2));
 	else
-		outptr = outbuf = custom_alloc_func ((outlen + 1) * sizeof (gunichar2), custom_alloc_data);
+		outptr = outbuf = (gunichar2 *)custom_alloc_func ((outlen + 1) * sizeof (gunichar2), custom_alloc_data);
 
 	if (G_UNLIKELY (custom_alloc_func && !outbuf)) {
 		mono_set_errno (ENOMEM);
@@ -947,9 +947,9 @@ g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_wr
 }
 
 gunichar2 *
-g_utf8_to_utf16_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GConvertCustomAllocator cusotm_alloc_func, gpointer custom_alloc_data, GError **err)
+g_utf8_to_utf16_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, cusotm_alloc_func, custom_alloc_data, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, custom_alloc_func, custom_alloc_data, err);
 }
 
 gunichar2 *
@@ -1038,7 +1038,7 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 
 static
 gchar *
-g_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GConvertCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+g_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
 	char *inptr, *outbuf, *outptr;
 	size_t outlen = 0;
@@ -1100,7 +1100,7 @@ g_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glo
 	if (G_LIKELY (!custom_alloc_func))
 		outptr = outbuf = g_malloc (outlen + 1);
 	else
-		outptr = outbuf = custom_alloc_func (outlen + 1, custom_alloc_data);
+		outptr = outbuf = (char *)custom_alloc_func (outlen + 1, custom_alloc_data);
 
 	if (G_UNLIKELY (custom_alloc_func && !outbuf)) {
 		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_MEMORY, "Allocation failed.");
@@ -1135,7 +1135,7 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 }
 
 gchar *
-g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GConvertCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
 	return g_utf16_to_utf8_general (str, len, items_read, items_written, custom_alloc_func, custom_alloc_data, err);
 }
@@ -1343,4 +1343,18 @@ g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items
 		*items_read = i;
 	
 	return outbuf;
+}
+
+gpointer
+g_fixed_buffer_custom_allocator (gsize req_size, gpointer custom_alloc_data)
+{
+	GFixedBufferCustomAllocatorData *fixed_buffer_custom_alloc_data = (GFixedBufferCustomAllocatorData *)custom_alloc_data;
+	if (!fixed_buffer_custom_alloc_data)
+		return NULL;
+
+	fixed_buffer_custom_alloc_data->req_buffer_size = req_size;
+	if (req_size > fixed_buffer_custom_alloc_data->buffer_size)
+		return NULL;
+
+	return fixed_buffer_custom_alloc_data->buffer;
 }

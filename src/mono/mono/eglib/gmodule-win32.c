@@ -172,11 +172,11 @@ g_module_address (void *addr, char *file_name, size_t file_name_len,
 		DWORD bytes = GetModuleFileNameW (module, fname, G_N_ELEMENTS (fname));
 		if (bytes) {
 			/* Convert back to UTF-8 from wide for runtime */
-			GConvertFixedBufferCustomAllocatorData custom_alloc_data;
+			GFixedBufferCustomAllocatorData custom_alloc_data;
 			custom_alloc_data.buffer = file_name;
 			custom_alloc_data.buffer_size = file_name_len;
 			custom_alloc_data.req_buffer_size = 0;
-			if (!g_utf16_to_utf8_custom_alloc (fname, -1, NULL, NULL, g_converter_fixed_buffer_custom_allocator_func, &custom_alloc_data, NULL))
+			if (!g_utf16_to_utf8_custom_alloc (fname, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL))
 				*file_name = '\0';
 		} else {
 			*file_name = '\0';

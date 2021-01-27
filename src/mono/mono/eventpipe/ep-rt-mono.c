@@ -607,17 +607,17 @@ write_buffer_string_utf8_t (
 	if (!value)
 		return true;
 
-	GConvertFixedBufferCustomAllocatorData custom_alloc_data;
+	GFixedBufferCustomAllocatorData custom_alloc_data;
 	custom_alloc_data.buffer = *buffer + *offset;
 	custom_alloc_data.buffer_size = *size - *offset;
 	custom_alloc_data.req_buffer_size = 0;
 
-	if (!g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_converter_fixed_buffer_custom_allocator_func, &custom_alloc_data, NULL)) {
+	if (!g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL)) {
 		ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + custom_alloc_data.req_buffer_size, fixed_buffer));
 		custom_alloc_data.buffer = *buffer + *offset;
 		custom_alloc_data.buffer_size = *size - *offset;
 		custom_alloc_data.req_buffer_size = 0;
-		ep_raise_error_if_nok (g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_converter_fixed_buffer_custom_allocator_func, &custom_alloc_data, NULL) != NULL);
+		ep_raise_error_if_nok (g_utf8_to_utf16_custom_alloc (value, -1, NULL, NULL, g_fixed_buffer_custom_allocator, &custom_alloc_data, NULL) != NULL);
 	}
 
 	*offset += custom_alloc_data.req_buffer_size;
