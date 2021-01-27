@@ -11,11 +11,11 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public abstract class SendToBase<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    public abstract class SendTo<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
         protected static readonly IPEndPoint ValidUdpRemoteEndpoint = new IPEndPoint(IPAddress.Parse("10.20.30.40"), 1234);
 
-        protected SendToBase(ITestOutputHelper output) : base(output)
+        protected SendTo(ITestOutputHelper output) : base(output)
         {
         }
 
@@ -95,42 +95,42 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendTo_SyncSpan : SendToBase<SocketHelperSpanSync>
+    public sealed class SendTo_SyncSpan : SendTo<SocketHelperSpanSync>
     {
         public SendTo_SyncSpan(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendTo_SyncSpanForceNonBlocking : SendToBase<SocketHelperSpanSyncForceNonBlocking>
+    public sealed class SendTo_SyncSpanForceNonBlocking : SendTo<SocketHelperSpanSyncForceNonBlocking>
     {
         public SendTo_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendTo_ArraySync : SendToBase<SocketHelperArraySync>
+    public sealed class SendTo_ArraySync : SendTo<SocketHelperArraySync>
     {
         public SendTo_ArraySync(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendTo_SyncForceNonBlocking : SendToBase<SocketHelperSyncForceNonBlocking>
+    public sealed class SendTo_SyncForceNonBlocking : SendTo<SocketHelperSyncForceNonBlocking>
     {
         public SendTo_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
-    public sealed class SendTo_Apm : SendToBase<SocketHelperApm>
+    public sealed class SendTo_Apm : SendTo<SocketHelperApm>
     {
         public SendTo_Apm(ITestOutputHelper output) : base(output) {}
     }
 
-    public sealed class SendTo_Eap : SendToBase<SocketHelperEap>
+    public sealed class SendTo_Eap : SendTo<SocketHelperEap>
     {
         public SendTo_Eap(ITestOutputHelper output) : base(output) {}
     }
 
-    public sealed class SendTo_Task : SendToBase<SocketHelperTask>
+    public sealed class SendTo_Task : SendTo<SocketHelperTask>
     {
         public SendTo_Task(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendTo_CancellableTask : SendToBase<SocketHelperCancellableTask>
+    public sealed class SendTo_CancellableTask : SendTo<SocketHelperCancellableTask>
     {
         public SendTo_CancellableTask(ITestOutputHelper output) : base(output) { }
 
@@ -148,12 +148,12 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendTo_MemoryArrayTask : SendToBase<SocketHelperMemoryArrayTask>
+    public sealed class SendTo_MemoryArrayTask : SendTo<SocketHelperMemoryArrayTask>
     {
         public SendTo_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendTo_MemoryNativeTask : SendToBase<SocketHelperMemoryNativeTask>
+    public sealed class SendTo_MemoryNativeTask : SendTo<SocketHelperMemoryNativeTask>
     {
         public SendTo_MemoryNativeTask(ITestOutputHelper output) : base(output) { }
     }
