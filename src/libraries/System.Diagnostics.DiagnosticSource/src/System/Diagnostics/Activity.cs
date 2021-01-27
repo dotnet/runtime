@@ -102,24 +102,13 @@ namespace System.Diagnostics
         /// <param name="description">The error status descrition</param>
         /// <returns>'this' for convenient chaining</returns>
         /// <remarks>
-        /// It is not allowed to set the status code to Unset value.
-        /// The description parameter is allowed to be non-null value only when passing 'Error' status code.
+        /// When passing code value different than ActivityStatusCode.Error, the Activity.StatusDescription will reset to null value.
+        /// The description paramater will be respected only when passing ActivityStatusCode.Error value.
         /// </remarks>
         public Activity SetStatus(ActivityStatusCode code, string? description = null)
         {
-            if (code <= ActivityStatusCode.Unset || code > ActivityStatusCode.Error)
-            {
-                throw new ArgumentException(SR.Format(SR.InvalidStatusCode, code), nameof(code));
-            }
-
-            if (description != null && code != ActivityStatusCode.Error)
-            {
-                throw new ArgumentException(SR.NotAllowedStatusDescription, nameof(description));
-            }
-
             _statusCode = code;
-            _statusDescription = description;
-
+            _statusDescription = code == ActivityStatusCode.Error ? description : null;
             return this;
         }
 

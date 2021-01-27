@@ -1709,6 +1709,10 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityStatusCode.Ok, a.Status);
             Assert.Null(a.StatusDescription);
 
+            a.SetStatus(ActivityStatusCode.Ok, "Ignored Description"); // explicit non null description
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
             a.SetStatus(ActivityStatusCode.Error); // Default description null parameter
             Assert.Equal(ActivityStatusCode.Error, a.Status);
             Assert.Null(a.StatusDescription);
@@ -1717,14 +1721,17 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityStatusCode.Error, a.Status);
             Assert.Equal("Error Code", a.StatusDescription);
 
-            a.SetStatus(ActivityStatusCode.Ok); // Default description null parameter
+            a.SetStatus(ActivityStatusCode.Ok, "Description will reset to null");
             Assert.Equal(ActivityStatusCode.Ok, a.Status);
             Assert.Null(a.StatusDescription);
 
-            Assert.Throws<ArgumentException>(() => a.SetStatus(ActivityStatusCode.Unset)); // Cannot set Unset value
-            Assert.Throws<ArgumentException>(() => a.SetStatus(ActivityStatusCode.Ok, "No Error")); // Cannot use description with any value but "Error"
-            Assert.Throws<ArgumentException>(() => a.SetStatus((ActivityStatusCode) (-1))); // Invalid custom code
-            Assert.Throws<ArgumentException>(() => a.SetStatus((ActivityStatusCode) 100)); // Invalid custom code
+            a.SetStatus(ActivityStatusCode.Error, "Another Error Code Description");
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Equal("Another Error Code Description", a.StatusDescription);
+
+            a.SetStatus((ActivityStatusCode) 100, "Another Error Code Description");
+            Assert.Equal((ActivityStatusCode) 100, a.Status);
+            Assert.Null(a.StatusDescription);
         }
 
         [Fact]
