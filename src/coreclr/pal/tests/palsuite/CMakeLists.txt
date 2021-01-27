@@ -893,6 +893,7 @@ _add_executable(paltests
   threading/SetEvent/test2/test2.cpp
   threading/SetEvent/test3/test3.cpp
   threading/SetEvent/test4/test4.cpp
+  threading/SetThreadDescription/test1/test1.cpp
   threading/SignalObjectAndWait/SignalObjectAndWaitTest.cpp
   threading/Sleep/test1/Sleep.cpp
   threading/Sleep/test2/sleep.cpp

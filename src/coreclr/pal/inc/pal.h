@@ -2252,6 +2252,15 @@ SetThreadDescription(
     IN PCWSTR lpThreadDescription
 );
 
+PALIMPORT
+VOID
+PALAPI
+GetThreadDescription(
+    IN HANDLE hThread,
+    IN size_t length,
+    OUT char* name
+);
+
 #define TLS_OUT_OF_INDEXES ((DWORD)0xFFFFFFFF)
 
 PALIMPORT

@@ -1581,6 +1581,17 @@ GetThreadTimes(
     return (retval);
 }
 
+VOID
+PALAPI
+GetThreadDescription(
+    IN HANDLE hThread,
+    IN size_t length,
+    OUT char* name)
+{
+    CPalThread *pThread = InternalGetCurrentThread();
+    pthread_getname_np(pThread->GetPThreadSelf(), name, length);
+}
+
 HRESULT
 PALAPI
 SetThreadDescription(
@@ -1623,6 +1634,7 @@ CorUnix::InternalSetThreadDescription(
     CPalThread *pTargetThread = NULL;
     IPalObject *pobjThread = NULL;
     int error = 0;
+    int maxNameSize = 0;
     int nameSize;
     char *nameBuf = NULL;
 
@@ -1676,9 +1688,15 @@ CorUnix::InternalSetThreadDescription(
 
     // Null terminate early.
     // pthread_setname_np only accepts up to 16 chars.
-    if (nameSize > 15)
+    #if defined(__linux__)
+    maxNameSize = 15;
+    #else
+    maxNameSize = 63;
+    #endif
+
+    if (nameSize > maxNameSize)
     {
-        nameBuf[15] = '\0';
+        nameBuf[maxNameSize] = '\0';
     }
 
     #if defined(__Linux__)
@@ -1687,7 +1705,7 @@ CorUnix::InternalSetThreadDescription(
 
     #if defined(__APPLE__)
     //on macos, pthread_setname_np only works for the calling thread.
-    if(PlatformGetCurrentThreadId() == pTargetThread->GetThreadId()) 
+    if (PlatformGetCurrentThreadId() == pTargetThread->GetThreadId()) 
     {
         error = pthread_setname_np(nameBuf);
     }
