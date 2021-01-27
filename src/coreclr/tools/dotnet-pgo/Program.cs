@@ -26,6 +26,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.Diagnostics.CodeAnalysis;
 using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.Tools.Pgo;
+using Internal.Pgo;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -62,7 +63,38 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public double ExcludeEventsBefore { get; set; }
         public double ExcludeEventsAfter { get; set; }
         public bool Warnings { get; set; }
+        public bool Uncompressed { get; set; }
     }
+    class MethodChunks
+    {
+        public bool Done = false;
+        public List<byte[]> InstrumentationData = new List<byte[]>();
+        public int LastChunk = -1;
+    }
+
+    class PgoDataLoader : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown>
+    {
+        private TraceRuntimeDescToTypeSystemDesc _idParser;
+
+        public PgoDataLoader(TraceRuntimeDescToTypeSystemDesc idParser)
+        {
+            _idParser = idParser;
+        }
+
+        public TypeSystemEntityOrUnknown TypeFromLong(long input)
+        {
+            if (input == 0)
+                return new TypeSystemEntityOrUnknown(0);
+
+            TypeDesc type = _idParser.ResolveTypeHandle(input, false);
+            if (type != null)
+            {
+                return new TypeSystemEntityOrUnknown(type);
+            }
+            return new TypeSystemEntityOrUnknown(System.HashCode.Combine(input) | 0x7F000000);
+        }
+    }
+
 
     class Program
     {
@@ -177,6 +209,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 {
                     Description = "Generate Call Graph using sampling data",
                     Argument = new Argument<bool>(() => true)
+                },
+                new Option("--uncompressed")
+                {
+                    Description = "Generate Mibc file in an uncompressed format",
+                    Argument = new Argument<bool>(() => false)
                 }
             };
 
@@ -243,6 +280,7 @@ Example tracing commands used to generate the input to this tool:
                 Reason = reason;
                 WeightedCallData = null;
                 ExclusiveWeight = 0;
+                InstrumentationData = null;
             }
 
             public readonly double Millisecond;
@@ -250,6 +288,12 @@ Example tracing commands used to generate the input to this tool:
             public readonly string Reason;
             public Dictionary<MethodDesc, int> WeightedCallData;
             public int ExclusiveWeight;
+            public PgoSchemaElem[] InstrumentationData;
+
+            public override string ToString()
+            {
+                return Method.ToString();
+            }
         }
 
         struct InstructionPointerRange : IComparable<InstructionPointerRange>
@@ -704,6 +748,15 @@ Example tracing commands used to generate the input to this tool:
 
                         try
                         {
+                            byte[] image = File.ReadAllBytes(module.FilePath);
+                            using (FileStream fstream = new FileStream(module.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                            {
+                                var r2rCheckPEReader = new System.Reflection.PortableExecutable.PEReader(fstream, System.Reflection.PortableExecutable.PEStreamOptions.LeaveOpen);
+
+                                if (!ILCompiler.Reflection.ReadyToRun.ReadyToRunReader.IsReadyToRunImage(r2rCheckPEReader))
+                                    continue;
+                            }
+
                             var reader = new ILCompiler.Reflection.ReadyToRun.ReadyToRunReader(tsc, module.FilePath);
                             foreach (var methodEntry in reader.GetCustomMethodToRuntimeFunctionMapping<TypeDesc, MethodDesc, R2RSigProviderContext>(sigProvider))
                             {
@@ -823,6 +876,56 @@ Example tracing commands used to generate the input to this tool:
                     }
                 }
 
+                Dictionary<MethodDesc, MethodChunks> instrumentationDataByMethod = new Dictionary<MethodDesc, MethodChunks>();
+
+                foreach (var e in p.EventsInProcess.ByEventType<JitInstrumentationDataVerboseTraceData>())
+                {
+                    AddToInstrumentationData(e.ClrInstanceID, e.MethodID, e.MethodFlags, e.Data);
+                }
+                foreach (var e in p.EventsInProcess.ByEventType<JitInstrumentationDataTraceData>())
+                {
+                    AddToInstrumentationData(e.ClrInstanceID, e.MethodID, e.MethodFlags, e.Data);
+                }
+
+                // Local function used with the above two loops as the behavior is supposed to be identical
+                void AddToInstrumentationData(int eventClrInstanceId, long methodID, int methodFlags, byte[] data)
+                {
+                    if (eventClrInstanceId != clrInstanceId.Value)
+                    {
+                        return;
+                    }
+
+                    MethodDesc method = null;
+                    try
+                    {
+                        method = idParser.ResolveMethodID(methodID, commandLineOptions.VerboseWarnings);
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    if (method != null)
+                    {
+                        if (!instrumentationDataByMethod.TryGetValue(method, out MethodChunks perMethodChunks))
+                        {
+                            perMethodChunks = new MethodChunks();
+                            instrumentationDataByMethod.Add(method, perMethodChunks);
+                        }
+                        const int FinalChunkFlag = unchecked((int)0x80000000);
+                        int chunkIndex = methodFlags & ~FinalChunkFlag;
+                        if ((chunkIndex != (perMethodChunks.LastChunk + 1)) || perMethodChunks.Done)
+                        {
+                            instrumentationDataByMethod.Remove(method);
+                            return;
+                        }
+                        perMethodChunks.LastChunk = perMethodChunks.InstrumentationData.Count;
+                        perMethodChunks.InstrumentationData.Add(data);
+                        if ((methodFlags & FinalChunkFlag) == FinalChunkFlag)
+                            perMethodChunks.Done = true;
+                    }
+                }
+
+
                 if (commandLineOptions.DisplayProcessedEvents)
                 {
                     foreach (var entry in methodsToAttemptToPrepare)
@@ -843,6 +946,9 @@ Example tracing commands used to generate the input to this tool:
                 // Deduplicate entries
                 HashSet<MethodDesc> methodsInListAlready = new HashSet<MethodDesc>();
                 List<ProcessedMethodData> methodsUsedInProcess = new List<ProcessedMethodData>();
+
+                PgoDataLoader pgoDataLoader = new PgoDataLoader(idParser);
+
                 foreach (var entry in methodsToAttemptToPrepare)
                 {
                     if (methodsInListAlready.Add(entry.Value.Method))
@@ -853,19 +959,39 @@ Example tracing commands used to generate the input to this tool:
                             exclusiveSamples.TryGetValue(methodData.Method, out methodData.ExclusiveWeight);
                             callGraph.TryGetValue(methodData.Method, out methodData.WeightedCallData);
                         }
+                        if (instrumentationDataByMethod.TryGetValue(methodData.Method, out MethodChunks chunks))
+                        {
+                            int size = 0;
+                            foreach (byte[] arr in chunks.InstrumentationData)
+                            {
+                                size += arr.Length;
+                            }
+
+                            byte[] instrumentationData = new byte[size];
+                            int offset = 0;
+
+                            foreach (byte[] arr in chunks.InstrumentationData)
+                            {
+                                arr.CopyTo(instrumentationData, offset);
+                                offset += arr.Length;
+                            }
+
+                            var intDecompressor = new PgoProcessor.PgoEncodedCompressedIntParser(instrumentationData, 0);
+                            methodData.InstrumentationData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown>(pgoDataLoader, intDecompressor, true).ToArray();
+                        }
                         methodsUsedInProcess.Add(methodData);
                     }
                 }
 
-                if (commandLineOptions.PgoFileType.Value == PgoFileType.jittrace)
+                 if (commandLineOptions.PgoFileType.Value == PgoFileType.jittrace)
                     GenerateJittraceFile(commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.JitTraceOptions);
                 else if (commandLineOptions.PgoFileType.Value == PgoFileType.mibc)
-                    return GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.ValidateOutputFile);
+                    return GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
             }
             return 0;
         }
 
-        class MIbcGroup
+        class MIbcGroup : IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>
         {
             private static int s_emitCount = 0;
 
@@ -880,7 +1006,7 @@ Example tracing commands used to generate the input to this tool:
             private BlobBuilder _buffer;
             private InstructionEncoder _il;
             private string _name;
-            TypeSystemMetadataEmitter _emitter;
+            private TypeSystemMetadataEmitter _emitter;
 
             public void AddProcessedMethodData(ProcessedMethodData processedMethodData)
             {
@@ -902,6 +1028,10 @@ Example tracing commands used to generate the input to this tool:
                 // Repeat <Count of methods called times>
                 //  ldtoken <Method called from this method>
                 //  ldc.i4 <Weight associated with calling the <Method called from this method>>
+                //
+                // ldstr "InstrumentationDataStart"
+                // Encoded ints and longs, using ldc.i4, and ldc.i8 instructions as well as ldtoken <type> instructions
+                // ldstr "InstrumentationDataEnd" as a terminator
                 try
                 {
                     EntityHandle methodHandle = _emitter.GetMethodRef(method);
@@ -924,6 +1054,11 @@ Example tracing commands used to generate the input to this tool:
                             _il.LoadConstantI4(entry.Value);
                         }
                     }
+                    if (processedMethodData.InstrumentationData != null)
+                    {
+                        _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataStart"));
+                        PgoProcessor.EncodePgoData<TypeSystemEntityOrUnknown>(processedMethodData.InstrumentationData, this, true);
+                    }
                     _il.OpCode(ILOpCode.Pop);
                 }
                 catch (Exception ex)
@@ -942,6 +1077,36 @@ Example tracing commands used to generate the input to this tool:
                 string methodName = basicName + "_" + s_emitCount.ToString(CultureInfo.InvariantCulture);
                 return _emitter.AddGlobalMethod(methodName, _il, 8);
             }
+
+            bool IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitDone()
+            {
+                _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataEnd"));
+                return true;
+            }
+
+            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitLong(long value, long previousValue)
+            {
+                if ((value <= int.MaxValue) && (value >= int.MinValue))
+                {
+                    _il.LoadConstantI4(checked((int)value));
+                }
+                else
+                {
+                    _il.LoadConstantI8(value);
+                }
+            }
+
+            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitType(TypeSystemEntityOrUnknown type, TypeSystemEntityOrUnknown previousValue)
+            {
+                if (type.AsType != null)
+                {
+                    _il.OpCode(ILOpCode.Ldtoken);
+                    _il.Token(_emitter.GetTypeRef(type.AsType));
+                }
+                else
+                    _il.LoadConstantI4(type.AsUnknown);
+            }
+
         }
 
         private static void AddAssembliesAssociatedWithType(TypeDesc type, HashSet<string> assemblies, out string definingAssembly)
@@ -982,7 +1147,7 @@ Example tracing commands used to generate the input to this tool:
             }
         }
 
-        static int GenerateMibcFile(TraceTypeSystemContext tsc, FileInfo outputFileName, ICollection<ProcessedMethodData> methodsToAttemptToPlaceIntoProfileData, bool validate)
+        static int GenerateMibcFile(TraceTypeSystemContext tsc, FileInfo outputFileName, ICollection<ProcessedMethodData> methodsToAttemptToPlaceIntoProfileData, bool validate, bool uncompressed)
         {
             TypeSystemMetadataEmitter emitter = new TypeSystemMetadataEmitter(new AssemblyName(outputFileName.Name), tsc);
 
@@ -1046,12 +1211,22 @@ Example tracing commands used to generate the input to this tool:
                 outputFileName.Delete();
             }
 
-            using (ZipArchive file = ZipFile.Open(outputFileName.FullName, ZipArchiveMode.Create))
+            if (uncompressed)
             {
-                var entry = file.CreateEntry(outputFileName.Name + ".dll", CompressionLevel.Optimal);
-                using (Stream archiveStream = entry.Open())
+                using (FileStream file = new FileStream(outputFileName.FullName, FileMode.Create))
                 {
-                    peFile.CopyTo(archiveStream);
+                    peFile.CopyTo(file);
+                }
+            }
+            else
+            {
+                using (ZipArchive file = ZipFile.Open(outputFileName.FullName, ZipArchiveMode.Create))
+                {
+                    var entry = file.CreateEntry(outputFileName.Name + ".dll", CompressionLevel.Optimal);
+                    using (Stream archiveStream = entry.Open())
+                    {
+                        peFile.CopyTo(archiveStream);
+                    }
                 }
             }
 

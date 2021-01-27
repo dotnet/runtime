@@ -240,6 +240,8 @@ namespace ILCompiler
         private ProfileDataManager _profileData;
         private ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
 
+        public ProfileDataManager ProfileData => _profileData;
+
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
         private readonly int _customPESectionAlignment;
