@@ -96,13 +96,18 @@ namespace System.Net.Sockets.Tests
             {
                 foreach (bool sendPreAndPostBuffers in new[] { true, false })
                 {
-                    foreach (int bytesToSend in new[] { 512, 1024, 12345678 })
+                    foreach (int bytesToSend in new[] { 512, 1024 })
                     {
                         yield return new object[] { listenAt, sendPreAndPostBuffers, bytesToSend };
                     }
                 }
             }
         }
+
+        [OuterLoop("Creates a file of ~12MB, execution takes long.")]
+        [Theory]
+        [MemberData(nameof(Loopbacks))]
+        public Task IncludeFile_Success_LargeFile(IPAddress listenAt) => IncludeFile_Success(listenAt, true, 12_345_678);
 
         [Theory]
         [MemberData(nameof(SendFile_MemberData))]
