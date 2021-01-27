@@ -693,7 +693,7 @@ void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE*
     // Scan the statements and add class probes
     //
     int classSchemaIndex = block->bbClassSchemaIndex;
-    assert((classSchemaIndex >= 0) && (classSchemaIndex < schema.size()));
+    assert((classSchemaIndex >= 0) && (classSchemaIndex < (int)schema.size()));
 
     ClassProbeInserter                    insertProbes(schema, profileMemory, &classSchemaIndex, m_instrCount);
     ClassProbeVisitor<ClassProbeInserter> visitor(m_comp, insertProbes);
