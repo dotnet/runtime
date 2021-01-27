@@ -1737,7 +1737,7 @@ public:
             // Wait until the coreclr runtime (debuggee) starts up
             while (sem_wait(m_startupSem) != 0)
             {
-                if(EINTR == errno)
+                if (EINTR == errno)
                 {
                     TRACE("sem_wait() failed with EINTR; re-waiting");
                     continue;
@@ -1913,7 +1913,7 @@ PAL_NotifyRuntimeStarted()
     // Now wait until the debugger's runtime startup notification is finished
     while (sem_wait(continueSem) != 0)
     {
-        if(EINTR == errno)
+        if (EINTR == errno)
         {
             TRACE("sem_wait() failed with EINTR; re-waiting");
             continue;
@@ -4167,7 +4167,7 @@ PROCGetProcessStatus(
             // have to try again. A second legitimate cause is ECHILD, which
             // happens if we're trying to retrieve the status of a currently-
             // running process that isn't a child of this process.
-            if(EINTR == errno)
+            if (EINTR == errno)
             {
                 TRACE("waitpid() failed with EINTR; re-waiting");
                 continue;
