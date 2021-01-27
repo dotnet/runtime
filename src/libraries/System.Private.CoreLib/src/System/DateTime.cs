@@ -110,7 +110,6 @@ namespace System
 
         private const ulong TicksMask = 0x3FFFFFFFFFFFFFFF;
         private const ulong FlagsMask = 0xC000000000000000;
-        private const ulong LocalMask = 0x8000000000000000;
         private const long TicksCeiling = 0x4000000000000000;
         private const ulong KindUnspecified = 0x0000000000000000;
         private const ulong KindUtc = 0x4000000000000000;
@@ -163,11 +162,7 @@ namespace System
         private static void ThrowTicksOutOfRange() => throw new ArgumentOutOfRangeException("ticks", SR.ArgumentOutOfRange_DateTimeBadTicks);
         private static void ThrowInvalidKind() => throw new ArgumentException(SR.Argument_InvalidDateTimeKind, "kind");
         private static void ThrowMillisecondOutOfRange() => throw new ArgumentOutOfRangeException("millisecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
-
-        private static void ThrowDateArithmetic(int param)
-        {
-            throw new ArgumentOutOfRangeException(param switch { 0 => "value", 1 => "t", _ => "months" }, SR.ArgumentOutOfRange_DateArithmetic);
-        }
+        private static void ThrowDateArithmetic(int param) => throw new ArgumentOutOfRangeException(param switch { 0 => "value", 1 => "t", _ => "months" }, SR.ArgumentOutOfRange_DateArithmetic);
 
         // Constructs a DateTime from a given year, month, and day. The
         // time-of-day of the resulting DateTime is always midnight.
@@ -198,13 +193,8 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                WithLeapSecond(out this, year, month, day, hour, minute);
-                [MethodImpl(MethodImplOptions.NoInlining)]
-                static void WithLeapSecond(out DateTime t, int year, int month, int day, int hour, int minute)
-                {
-                    t = new DateTime(year, month, day, hour, minute, 59);
-                    t.ValidateLeapSecond();
-                }
+                this = new(year, month, day, hour, minute, 59);
+                ValidateLeapSecond();
             }
         }
 
@@ -220,13 +210,8 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                WithLeapSecond(out this, year, month, day, hour, minute, kind);
-                [MethodImpl(MethodImplOptions.NoInlining)]
-                static void WithLeapSecond(out DateTime t, int year, int month, int day, int hour, int minute, DateTimeKind kind)
-                {
-                    t = new DateTime(year, month, day, hour, minute, 59, kind);
-                    t.ValidateLeapSecond();
-                }
+                this = new(year, month, day, hour, minute, 59, kind);
+                ValidateLeapSecond();
             }
         }
 
@@ -245,13 +230,8 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                WithLeapSecond(out this, year, month, day, hour, minute, calendar);
-                [MethodImpl(MethodImplOptions.NoInlining)]
-                static void WithLeapSecond(out DateTime t, int year, int month, int day, int hour, int minute, Calendar calendar)
-                {
-                    t = new DateTime(year, month, day, hour, minute, 59, calendar);
-                    t.ValidateLeapSecond();
-                }
+                this = new(year, month, day, hour, minute, 59, calendar);
+                ValidateLeapSecond();
             }
         }
 
@@ -272,13 +252,8 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                WithLeapSecond(out this, year, month, day, hour, minute);
-                [MethodImpl(MethodImplOptions.NoInlining)]
-                static void WithLeapSecond(out DateTime t, int year, int month, int day, int hour, int minute)
-                {
-                    t = new DateTime(year, month, day, hour, minute, 59, 999);
-                    t.ValidateLeapSecond();
-                }
+                this = new(year, month, day, hour, minute, 59, 999);
+                ValidateLeapSecond();
             }
         }
 
@@ -297,13 +272,8 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                WithLeapSecond(out this, year, month, day, hour, minute, kind);
-                [MethodImpl(MethodImplOptions.NoInlining)]
-                static void WithLeapSecond(out DateTime t, int year, int month, int day, int hour, int minute, DateTimeKind kind)
-                {
-                    t = new DateTime(year, month, day, hour, minute, 59, 999, kind);
-                    t.ValidateLeapSecond();
-                }
+                this = new(year, month, day, hour, minute, 59, 999, kind);
+                ValidateLeapSecond();
             }
         }
 
@@ -322,13 +292,8 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                WithLeapSecond(out this, year, month, day, hour, minute, calendar);
-                [MethodImpl(MethodImplOptions.NoInlining)]
-                static void WithLeapSecond(out DateTime t, int year, int month, int day, int hour, int minute, Calendar calendar)
-                {
-                    t = new DateTime(year, month, day, hour, minute, 59, 999, calendar);
-                    t.ValidateLeapSecond();
-                }
+                this = new(year, month, day, hour, minute, 59, 999, calendar);
+                ValidateLeapSecond();
             }
         }
 
@@ -347,13 +312,8 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                WithLeapSecond(out this, year, month, day, hour, minute, calendar, kind);
-                [MethodImpl(MethodImplOptions.NoInlining)]
-                static void WithLeapSecond(out DateTime t, int year, int month, int day, int hour, int minute, Calendar calendar, DateTimeKind kind)
-                {
-                    t = new DateTime(year, month, day, hour, minute, 59, 999, calendar, kind);
-                    t.ValidateLeapSecond();
-                }
+                this = new(year, month, day, hour, minute, 59, 999, calendar, kind);
+                ValidateLeapSecond();
             }
         }
 
@@ -716,7 +676,7 @@ namespace System
 
         public static DateTime FromBinary(long dateData)
         {
-            if ((dateData & (unchecked((long)LocalMask))) != 0)
+            if (((ulong)dateData & KindLocal) != 0)
             {
                 // Local times need to be adjusted as you move from one time zone to another,
                 // just as they are when serializing in text. As such the format for local times
@@ -732,7 +692,7 @@ namespace System
                 // the UTC offset from MinValue and MaxValue to be consistent with Parse.
                 bool isAmbiguousLocalDst = false;
                 long offsetTicks;
-                if (ticks < 0)
+                if (ticks < MinTicks)
                 {
                     offsetTicks = TimeZoneInfo.GetLocalUtcOffset(MinValue, TimeZoneInfoOptions.NoThrowOnInvalidTime).Ticks;
                 }
@@ -829,7 +789,7 @@ namespace System
 
         public long ToBinary()
         {
-            if ((_dateData & LocalMask) != 0)
+            if ((_dateData & KindLocal) != 0)
             {
                 // Local times need to be adjusted as you move from one time zone to another,
                 // just as they are when serializing in text. As such the format for local times
@@ -848,7 +808,7 @@ namespace System
                 {
                     storedTicks = TicksCeiling + storedTicks;
                 }
-                return storedTicks | (unchecked((long)LocalMask));
+                return storedTicks | (unchecked((long)KindLocal));
             }
             else
             {
@@ -1242,7 +1202,7 @@ namespace System
         public long ToFileTimeUtc()
         {
             // Treats the input as universal if it is not specified
-            long ticks = ((_dateData & LocalMask) != 0) ? ToUniversalTime().InternalTicks : this.InternalTicks;
+            long ticks = ((_dateData & KindLocal) != 0) ? ToUniversalTime().InternalTicks : this.InternalTicks;
 
 #pragma warning disable 162 // Unrechable code on Unix
             if (s_systemSupportsLeapSeconds)
@@ -1262,7 +1222,7 @@ namespace System
 
         public DateTime ToLocalTime()
         {
-            if ((_dateData & LocalMask) != 0)
+            if ((_dateData & KindLocal) != 0)
             {
                 return this;
             }
