@@ -26,7 +26,8 @@ namespace System.Globalization
                     if (loaded == 0 && !OperatingSystem.IsBrowser())
                     {
                         string message = "Couldn't find a valid ICU package installed on the system. " +
-                                        "Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
+                                         "Please install libicu using your package manager and try again. " +
+                                         "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
                         Environment.FailFast(message);
                     }
 
