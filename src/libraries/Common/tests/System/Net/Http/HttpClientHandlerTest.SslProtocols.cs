@@ -126,6 +126,7 @@ namespace System.Net.Http.Functional.Tests
 #pragma warning restore 0618
                 }
 
+                // Use a different SNI for each connection to prevent TLS 1.3 renegotiation issue: https://github.com/dotnet/runtime/issues/47378
                 client.DefaultRequestHeaders.Host = getTestSNIName();
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
