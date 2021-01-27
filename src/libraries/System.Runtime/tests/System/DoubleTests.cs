@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
@@ -444,6 +443,7 @@ namespace System.Tests
                 yield return testData;
             }
 
+
             yield return new object[] { double.MinValue, "G", null, "-1.7976931348623157E+308" };
             yield return new object[] { double.MaxValue, "G", null, "1.7976931348623157E+308" };
 
@@ -451,6 +451,11 @@ namespace System.Tests
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { double.Epsilon, "G", invariantFormat, "5E-324" };
+            yield return new object[] { 32.5, "C100", invariantFormat, "¤32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5, "P100", invariantFormat, "3,250.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { 32.5, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { 32.5, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
         }
 
         [Fact]
@@ -494,6 +499,9 @@ namespace System.Tests
             double d = 123.0;
             Assert.Throws<FormatException>(() => d.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => d.ToString("Y", null)); // Invalid format
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => d.ToString("E" + intMaxPlus1String));
         }
 
         [Theory]
