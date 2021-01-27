@@ -8,7 +8,7 @@ namespace System.Globalization.Tests
 {
     public class GetCultureInfoTests
     {
-        public static bool PlatformSupportsFakeCulture => !PlatformDetection.IsWindows || (PlatformDetection.WindowsVersion >= 10 && !PlatformDetection.IsNetFramework);
+        public static bool PlatformSupportsFakeCulture => !PlatformDetection.IsWindows || (PlatformDetection.WindowsVersion >= 10 && !PlatformDetection.IsNetFramework) || !PlatformDetection.IsBrowser;
 
         public static IEnumerable<object[]> GetCultureInfoTestData()
         {

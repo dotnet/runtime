@@ -303,17 +303,11 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(ToLower_TestData))]
         public void ToLower(string name, string str, string expected)
         {
-            try{
-                TestToLower(name, str, expected);
-            }
-            catch (CultureNotFoundException)
-            {
-                return;
-            }
+            TestToLower(name, str, expected);
         }
 
         [Theory]
@@ -432,18 +426,11 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(ToUpper_TestData))]
         public void ToUpper(string name, string str, string expected)
         {
-            try
-            {
-                TestToUpper(name, str, expected);
-            }
-            catch (CultureNotFoundException)
-            {
-                return;
-            }
+            TestToUpper(name, str, expected);
         }
 
         [Theory]

@@ -13,35 +13,20 @@ namespace System.Globalization.Tests
 {
     public class CurrentCultureTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void CurrentCulture()
         {
-            CultureInfo newCulture;
-            try
+            var newCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
+            using (new ThreadCultureChange(newCulture))
             {
-                newCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
-                using (new ThreadCultureChange(newCulture))
-                {
-                    Assert.Equal(CultureInfo.CurrentCulture, newCulture);
-                }
-            }
-            catch (CultureNotFoundException)
-            {
-                return;
+                Assert.Equal(CultureInfo.CurrentCulture, newCulture);
             }
 
-            try
+            newCulture = new CultureInfo("de-DE_phoneb");
+            using (new ThreadCultureChange(newCulture))
             {
-                newCulture = new CultureInfo("de-DE_phoneb");
-                using (new ThreadCultureChange(newCulture))
-                {
-                    Assert.Equal(CultureInfo.CurrentCulture, newCulture);
-                    Assert.Equal("de-DE_phoneb", newCulture.CompareInfo.Name);
-                }
-            }
-            catch (CultureNotFoundException)
-            {
-                return;
+                Assert.Equal(CultureInfo.CurrentCulture, newCulture);
+                Assert.Equal("de-DE_phoneb", newCulture.CompareInfo.Name);
             }
         }
 
@@ -51,35 +36,20 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentCulture = null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void CurrentUICulture()
         {
-            CultureInfo newUICulture;
-            try
+            var newUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
+            using (new ThreadCultureChange(null, newUICulture))
             {
-                newUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
-                using (new ThreadCultureChange(null, newUICulture))
-                {
-                    Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
-                }
-            }
-            catch (CultureNotFoundException)
-            {
-                return;
+                Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
             }
 
-            try
+            newUICulture = new CultureInfo("de-DE_phoneb");
+            using (new ThreadCultureChange(null, newUICulture))
             {
-                newUICulture = new CultureInfo("de-DE_phoneb");
-                using (new ThreadCultureChange(null, newUICulture))
-                {
-                    Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
-                    Assert.Equal("de-DE_phoneb", newUICulture.CompareInfo.Name);
-                }
-            }
-            catch (CultureNotFoundException)
-            {
-                return;
+                Assert.Equal(CultureInfo.CurrentUICulture, newUICulture);
+                Assert.Equal("de-DE_phoneb", newUICulture.CompareInfo.Name);
             }
         }
 
