@@ -5248,7 +5248,7 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
 
     ICorJitInfo::ClassProfile* const classProfile = (ICorJitInfo::ClassProfile*) tableAddress;
     volatile unsigned* pCount = (volatile unsigned*) &classProfile->Count;
-    const unsigned count = *pCount++;
+    const unsigned count = (*pCount)++;
     const unsigned S = ICorJitInfo::ClassProfile::SIZE;
     const unsigned N = ICorJitInfo::ClassProfile::SAMPLE_INTERVAL;
     _ASSERTE(N >= S);

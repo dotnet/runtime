@@ -72,6 +72,7 @@ class ReadyToRunInfo
     NativeFormat::NativeArray       m_methodDefEntryPoints;
     NativeFormat::NativeHashtable   m_instMethodEntryPoints;
     NativeFormat::NativeHashtable   m_availableTypesHashtable;
+    NativeFormat::NativeHashtable   m_pgoInstrumentationDataHashtable;
 
     NativeFormat::NativeHashtable   m_pMetaDataHashtable;
     NativeFormat::NativeCuckooFilter m_attributesPresence;
@@ -104,6 +105,7 @@ public:
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
 
     PTR_MethodDesc GetMethodDescForEntryPoint(PCODE entryPoint);
+    bool GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocatedMemory, ICorJitInfo::PgoInstrumentationSchema**ppSchema, UINT *pcSchema, BYTE** pInstrumentationData);
 
     BOOL HasHashtableOfTypes();
     BOOL TryLookupTypeTokenFromName(const NameHandle *pName, mdToken * pFoundTypeToken);

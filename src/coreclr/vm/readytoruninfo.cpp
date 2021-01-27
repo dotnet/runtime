@@ -701,6 +701,22 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_availableTypesHashtable = NativeHashtable(parser);
     }
 
+    // For format version 4.1 and later, there is an optional table of instrumentation data
+#ifdef FEATURE_PGO
+    if (IsImageVersionAtLeast(5, 2))
+    {
+        IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
+        if (pPgoInstrumentationDataDir)
+        {
+            NativeParser parser = NativeParser(&m_nativeReader, pPgoInstrumentationDataDir->VirtualAddress);
+            m_pgoInstrumentationDataHashtable = NativeHashtable(parser);
+        }
+
+        // Force the Pgo manager infrastructure to be initialized
+        pModule->GetLoaderAllocator()->GetOrCreatePgoManager();
+    }
+#endif
+
     if (!m_isComponentAssembly)
     {
         // For component assemblies we don't initialize the reverse lookup map mapping entry points to MethodDescs;
@@ -812,6 +828,77 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pMod
 
     return true;
 }
+
+#ifndef CROSSGEN_COMPILE
+bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocatedMemory, ICorJitInfo::PgoInstrumentationSchema**ppSchema, UINT *pcSchema, BYTE** pInstrumentationData)
+{
+    STANDARD_VM_CONTRACT;
+
+    PCODE pEntryPoint = NULL;
+#ifndef CROSSGEN_COMPILE
+#ifdef PROFILING_SUPPORTED
+    BOOL fShouldSearchCache = TRUE;
+#endif // PROFILING_SUPPORTED
+#endif // CROSSGEN_COMPILE
+    mdToken token = pMD->GetMemberDef();
+    int rid = RidFromToken(token);
+    if (rid == 0)
+        return false;
+
+    // If R2R code is disabled for this module, simply behave as if it is never found
+    if (m_readyToRunCodeDisabled)
+        return false;
+
+    if (m_pgoInstrumentationDataHashtable.IsNull())
+        return false;
+
+    NativeHashtable::Enumerator lookup = m_pgoInstrumentationDataHashtable.Lookup(GetVersionResilientMethodHashCode(pMD));
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
+        SigPointer sig(pBlob);
+        if (SigMatchesMethodDesc(pMD, sig, m_pModule))
+        {
+            // Get the updated SigPointer location, so we can calculate the size of the blob,
+            // in order to skip the blob and find the entry point data.
+            entryParser = NativeParser(entryParser.GetNativeReader(), entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob));
+            uint32_t versionAndFlags = entryParser.GetUnsigned();
+            const uint32_t flagsMask = 0x3;
+            const uint32_t versionShift = 2;
+            uint32_t flags = versionAndFlags & flagsMask;
+            uint32_t version = versionAndFlags >> versionShift;
+
+            // Only version 0 is supported
+            if (version != 0)
+                return false;
+
+            uint offset = entryParser.GetOffset();
+
+            if (flags == 1)
+            {
+                // Offset is correct already
+            }
+            else if (flags == 3)
+            {
+                // Adjust offset as relative pointer
+                uint32_t val;
+                m_nativeReader.DecodeUnsigned(offset, &val);
+                offset -= val;
+            }
+
+            BYTE* instrumentationDataPtr = ((BYTE*)GetImage()->GetBase()) + offset;
+            IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
+            size_t maxSize = offset - pPgoInstrumentationDataDir->VirtualAddress + pPgoInstrumentationDataDir->Size;
+
+            return SUCCEEDED(PgoManager::getPgoInstrumentationResultsFromR2RFormat(this, m_pModule, m_pModule->GetNativeOrReadyToRunImage(), instrumentationDataPtr, maxSize, pAllocatedMemory, ppSchema, pcSchema, pInstrumentationData));
+        }
+    }
+
+    return false;
+}
+#endif // !CROSSGEN_COMPILE
+
 
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
 {

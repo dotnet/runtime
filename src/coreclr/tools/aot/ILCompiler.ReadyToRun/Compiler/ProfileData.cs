@@ -108,8 +108,10 @@ namespace ILCompiler
                                   ModuleDesc nonLocalGenericsHome,
                                   IReadOnlyList<string> mibcFiles,
                                   CompilerTypeSystemContext context,
-                                  ReadyToRunCompilationModuleGroupBase compilationGroup)
+                                  ReadyToRunCompilationModuleGroupBase compilationGroup,
+                                  bool embedPgoDataInR2RImage)
         {
+            EmbedPgoDataInR2RImage = embedPgoDataInR2RImage;
             _ibcParser = new IBCProfileParser(logger, possibleReferenceModules);
             _compilationGroup = compilationGroup;
             HashSet<ModuleDesc> versionBubble = new HashSet<ModuleDesc>(versionBubbleModules);
@@ -265,5 +267,7 @@ namespace ILCompiler
                 return profileData;
             }
         }
+
+        public bool EmbedPgoDataInR2RImage { get; }
     }
 }

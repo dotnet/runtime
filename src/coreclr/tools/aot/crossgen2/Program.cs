@@ -541,7 +541,8 @@ namespace ILCompiler
                         _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
                         mibcFiles,
                         _typeSystemContext,
-                        compilationGroup);
+                        compilationGroup,
+                        _commandLineOptions.EmbedPgoData);
 
                     if (_commandLineOptions.Partial)
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
