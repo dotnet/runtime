@@ -8156,9 +8156,10 @@ void DacHandleWalker::GetRefCountedHandleInfo(
     if (pIsPegged)
         *pIsPegged = FALSE;
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCWRAPPERS)
     if (uType == HNDTYPE_REFCOUNTED)
     {
+#if defined(FEATURE_COMINTEROP)
         // get refcount from the CCW
         PTR_ComCallWrapper pWrap = ComCallWrapper::GetWrapperForObject(oref);
         if (pWrap != NULL)
@@ -8171,8 +8172,12 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 
             return;
         }
+#endif
+#if defined(FEATURE_OBJCWRAPPERS)
+        // [TODO] FEATURE_OBJCWRAPPERS
+#endif // FEATURE_OBJCWRAPPERS
     }
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCWRAPPERS
 
     if (pRefCount)
         *pRefCount = 0;

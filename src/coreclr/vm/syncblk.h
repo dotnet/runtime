@@ -772,6 +772,9 @@ public:
     TADDR               m_pRCW;
 #endif
 
+#endif // FEATURE_COMINTEROP
+
+#if defined(FEATURE_COMWRAPPERS)
 public:
     bool TryGetManagedObjectComWrapper(_In_ INT64 wrapperId, _Out_ void** mocw)
     {
@@ -882,7 +885,7 @@ private:
 
     CrstExplicitInit m_managedObjectComWrapperLock;
     NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
 };
 
