@@ -251,11 +251,11 @@ void JitTls::SetCompiler(Compiler* compiler)
 // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases
 // method.  Usually that is where you want to go.
 
-CorJitResult CILJit::compileMethod(ICorJitInfo* compHnd,
+CorJitResult CILJit::compileMethod(ICorJitInfo*         compHnd,
                                    CORINFO_METHOD_INFO* methodInfo,
-                                   unsigned flags,
-                                   uint8_t** entryAddress,
-                                   uint32_t* nativeSizeOfCode)
+                                   unsigned             flags,
+                                   uint8_t**            entryAddress,
+                                   uint32_t*            nativeSizeOfCode)
 {
     JitFlags jitFlags;
 

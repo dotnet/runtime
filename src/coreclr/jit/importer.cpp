@@ -3881,7 +3881,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     // e.g. "Hello".Length => 5
                     int             length = -1;
                     const char16_t* str    = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd,
-                                                                                op1->AsStrCon()->gtSconCPX, &length);
+                                                                             op1->AsStrCon()->gtSconCPX, &length);
                     if (length >= 0)
                     {
                         retNode = gtNewIconNode(length);
