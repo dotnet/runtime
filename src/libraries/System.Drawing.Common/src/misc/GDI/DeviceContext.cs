@@ -14,7 +14,7 @@ namespace System.Drawing.Internal
     /// This class is divided into two files separating the code that needs to be compiled into retail builds and
     /// debugging code.
     /// </summary>
-    internal sealed partial class DeviceContext : MarshalByRefObject, IDeviceContext, IDisposable
+    internal sealed partial class DeviceContext : MarshalByRefObject, IDisposable
     {
         /// <summary>
         /// This class is a wrapper to a Win32 device context, and the Hdc property is the way to get a
@@ -184,20 +184,6 @@ namespace System.Drawing.Internal
             }
 
             DbgUtil.AssertFinalization(this, disposing);
-        }
-
-        /// <summary>
-        /// Explicit interface method implementation to hide them a bit for usability reasons so the object is seen as
-        /// a wrapper around an hdc that is always available, and for performance reasons since it caches the hdc if
-        /// used in this way.
-        /// </summary>
-        IntPtr IDeviceContext.GetHdc() => _hDC;
-
-        ///<summary>
-        /// If the object was created from a DC, this object doesn't 'own' the dc so we just ignore this call.
-        ///</summary>
-        void IDeviceContext.ReleaseHdc()
-        {
         }
 
         /// <summary>
