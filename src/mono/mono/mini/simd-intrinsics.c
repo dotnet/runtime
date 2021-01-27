@@ -261,10 +261,37 @@ get_vector_t_elem_type (MonoType *vector_type)
 	klass = mono_class_from_mono_type_internal (vector_type);
 	g_assert (
 		!strcmp (m_class_get_name (klass), "Vector`1") || 
+		!strcmp (m_class_get_name (klass), "Vector64`1") ||
 		!strcmp (m_class_get_name (klass), "Vector128`1") || 
 		!strcmp (m_class_get_name (klass), "Vector256`1"));
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	return etype;
+}
+
+static MonoInst *
+emit_arch_vector64_create_multi (MonoCompile *cfg, MonoMethodSignature *fsig, MonoClass *klass, MonoType *etype, MonoInst **args)
+{
+#if defined(TARGET_AMD64)
+	MonoInst *ins, *load;
+
+	// FIXME: Optimize this
+	MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+	ins->dreg = alloc_preg (cfg);
+	ins->inst_imm = 8;
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+	int store_opcode = mono_type_to_store_membase (cfg, etype);
+	for (int i = 0; i < fsig->param_count; ++i)
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, store_opcode, ins->dreg, i * esize, args [i]->dreg);
+
+	load = emit_simd_ins (cfg, klass, OP_SSE_LOADU, ins->dreg, -1);
+	load->inst_c0 = 8;
+	load->inst_c1 = get_underlying_type (etype);
+	return load;
+#else
+	return NULL;
+#endif
 }
 
 static MonoInst *
@@ -318,6 +345,65 @@ type_to_expand_op (MonoType *type)
 	default:
 		g_assert_not_reached ();
 	}
+}
+
+static guint16 vector_64_methods [] = {
+	SN_AsByte,
+	SN_AsDouble,
+	SN_AsInt16,
+	SN_AsInt32,
+	SN_AsInt64,
+	SN_AsSByte,
+	SN_AsSingle,
+	SN_AsUInt16,
+	SN_AsUInt32,
+	SN_AsUInt64,
+	SN_Create,
+	SN_CreateScalarUnsafe,
+};
+
+static MonoInst*
+emit_vector64 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	if (!COMPILE_LLVM (cfg))
+		return NULL;
+
+	MonoClass *klass = cmethod->klass;
+	int id = lookup_intrins (vector_64_methods, sizeof (vector_64_methods), cmethod);
+	if (id == -1)
+		return NULL;
+
+	if (!strcmp (m_class_get_name (cfg->method->klass), "Vector256"))
+		return NULL; // TODO: Fix Vector256.WithUpper/WithLower
+
+	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+
+	switch (id) {
+	case SN_AsByte:
+	case SN_AsDouble:
+	case SN_AsInt16:
+	case SN_AsInt32:
+	case SN_AsInt64:
+	case SN_AsSByte:
+	case SN_AsSingle:
+	case SN_AsUInt16:
+	case SN_AsUInt32:
+	case SN_AsUInt64:
+		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+	case SN_Create: {
+		MonoType *etype = get_vector_t_elem_type (fsig->ret);
+		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
+			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
+		else
+			return emit_arch_vector64_create_multi (cfg, fsig, klass, etype, args);
+	}
+	case SN_CreateScalarUnsafe:
+		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
+	default:
+		break;
+	}
+
+	return NULL;
 }
 
 static guint16 vector_128_methods [] = {
@@ -2242,6 +2328,8 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128"))
 			return emit_vector128 (cfg, cmethod, fsig, args);
+		if (!strcmp (class_name, "Vector64"))
+			return emit_vector64 (cfg, cmethod, fsig, args);
 	}
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
