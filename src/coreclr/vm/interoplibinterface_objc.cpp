@@ -12,11 +12,11 @@
 #include "interoplibinterface.h"
 
 BOOL QCALLTYPE ObjCWrappersNative::TrySetGlobalMessageSendCallbacks(
-    void* fptr_objc_msgSend,
-    void* fptr_objc_msgSend_fpret,
-    void* fptr_objc_msgSend_stret,
-    void* fptr_objc_msgSendSuper,
-    void* fptr_objc_msgSendSuper_stret)
+    _In_ void* fptr_objc_msgSend,
+    _In_ void* fptr_objc_msgSend_fpret,
+    _In_ void* fptr_objc_msgSend_stret,
+    _In_ void* fptr_objc_msgSendSuper,
+    _In_ void* fptr_objc_msgSendSuper_stret)
 {
     QCALL_CONTRACT;
 
@@ -41,8 +41,8 @@ namespace
 }
 
 void QCALLTYPE ObjCWrappersNative::GetLifetimeMethods(
-    void** allocImpl,
-    void** deallocImpl)
+    _Out_ void** allocImpl,
+    _Out_ void** deallocImpl)
 {
     QCALL_CONTRACT;
     _ASSERTE(allocImpl != NULL && deallocImpl != NULL);
