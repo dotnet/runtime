@@ -13,9 +13,9 @@ using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
-    public abstract class SendFileBase<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    public abstract class SendFile<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        protected SendFileBase(ITestOutputHelper output) : base(output)
+        protected SendFile(ITestOutputHelper output) : base(output)
         {
         }
 
@@ -382,27 +382,27 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendFile_SyncSpan : SendFileBase<SocketHelperSpanSync>
+    public sealed class SendFile_SyncSpan : SendFile<SocketHelperSpanSync>
     {
         public SendFile_SyncSpan(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendFile_SyncSpanForceNonBlocking : SendFileBase<SocketHelperSpanSyncForceNonBlocking>
+    public sealed class SendFile_SyncSpanForceNonBlocking : SendFile<SocketHelperSpanSyncForceNonBlocking>
     {
         public SendFile_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendFile_ArraySync : SendFileBase<SocketHelperArraySync>
+    public sealed class SendFile_ArraySync : SendFile<SocketHelperArraySync>
     {
         public SendFile_ArraySync(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendFile_SyncForceNonBlocking : SendFileBase<SocketHelperSyncForceNonBlocking>
+    public sealed class SendFile_SyncForceNonBlocking : SendFile<SocketHelperSyncForceNonBlocking>
     {
         public SendFile_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SendFile_Apm : SendFileBase<SocketHelperApm>
+    public sealed class SendFile_Apm : SendFile<SocketHelperApm>
     {
         public SendFile_Apm(ITestOutputHelper output) : base(output) { }
 
