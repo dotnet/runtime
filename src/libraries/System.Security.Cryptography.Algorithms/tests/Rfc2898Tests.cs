@@ -429,6 +429,18 @@ namespace System.Security.Cryptography.DeriveBytesTests
             }
         }
 
+        [Fact]
+        public static void Ctor_PasswordBytes_NotCleared()
+        {
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(TestPassword);
+            byte[] passwordBytesOriginal = passwordBytes.AsSpan().ToArray();
+
+            using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(passwordBytes, s_testSaltB, DefaultIterationCount))
+            {
+                Assert.Equal(passwordBytesOriginal, passwordBytes);
+            }
+        }
+
         private static void TestKnownValue(string password, byte[] salt, int iterationCount, byte[] expected)
         {
             byte[] output;

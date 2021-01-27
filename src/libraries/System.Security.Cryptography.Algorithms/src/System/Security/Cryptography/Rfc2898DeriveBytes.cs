@@ -37,25 +37,8 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
+            :this(password, salt, iterations, hashAlgorithm, clearPassword: false)
         {
-            if (salt == null)
-                throw new ArgumentNullException(nameof(salt));
-            if (salt.Length < MinimumSaltSize)
-                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, nameof(salt));
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
-            if (password == null)
-                throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
-
-            _salt = new byte[salt.Length + sizeof(uint)];
-            salt.AsSpan().CopyTo(_salt);
-            _iterations = (uint)iterations;
-            HashAlgorithm = hashAlgorithm;
-            _hmac = OpenHmac(password);
-            // _blockSize is in bytes, HashSize is in bits.
-            _blockSize = _hmac.HashSize >> 3;
-
-            Initialize();
         }
 
         public Rfc2898DeriveBytes(string password, byte[] salt)
@@ -69,7 +52,7 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
-            : this(Encoding.UTF8.GetBytes(password), salt, iterations, hashAlgorithm)
+            : this(Encoding.UTF8.GetBytes(password), salt, iterations, hashAlgorithm, clearPassword: true)
         {
         }
 
@@ -105,6 +88,34 @@ namespace System.Security.Cryptography
 
             Initialize();
         }
+
+        private Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword)
+        {
+            if (salt is null)
+                throw new ArgumentNullException(nameof(salt));
+            if (salt.Length < MinimumSaltSize)
+                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, nameof(salt));
+            if (iterations <= 0)
+                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            if (password is null)
+                throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
+
+            _salt = new byte[salt.Length + sizeof(uint)];
+            salt.AsSpan().CopyTo(_salt);
+            _iterations = (uint)iterations;
+            HashAlgorithm = hashAlgorithm;
+            _hmac = OpenHmac(password);
+
+            if (clearPassword)
+            {
+                CryptographicOperations.ZeroMemory(password);
+            }
+
+            // _blockSize is in bytes, HashSize is in bits.
+            _blockSize = _hmac.HashSize >> 3;
+            Initialize();
+        }
+
 
         public int IterationCount
         {
