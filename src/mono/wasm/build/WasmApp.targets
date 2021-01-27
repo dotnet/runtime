@@ -55,8 +55,10 @@
     <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
     <WasmNativeStrip>true</WasmNativeStrip>
+    <WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>
   </PropertyGroup>
 
+  <!-- Having this separate target allows users to cleanly add After/BeforeTargets for this -->
   <Target Name="WasmBuildApp" AfterTargets="$(WasmBuildAppAfterThisTarget)" />
 
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
@@ -99,6 +101,11 @@
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssemblies" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
+
+    <!-- Run mono-cil-strip on the assemblies -->
+    <!-- TODO: replace this with a linker task -->
+    <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
+    <Exec Condition="'$(WasmStripAOTAssemblies)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip -q %(_WasmAssemblies.Identity)" />
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">
@@ -174,16 +181,6 @@
     </WasmAppBuilder>
 
     <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'" />
-  </Target>
-
-  <Target Name="_AfterWasmBuildApp" AfterTargets="_WasmBuildApp">
-    <!-- Run mono-cil-strip on the assemblies -->
-    <!-- TODO: replace this with a linker task -->
-    <ItemGroup>
-      <_managedAppAssemblies Include="$(WasmAppDir)managed\*.dll"/>
-    </ItemGroup>
-    <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
-    <Exec Condition="'$(RunAOTCompilation)' == 'true' and '$(ArchiveTests)' != 'true'" Command="mono-cil-strip -q %(_managedAppAssemblies.Identity)" />
   </Target>
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_GenerateDriverGenC" Condition="'$(WasmBuildNative)' == 'true'">
