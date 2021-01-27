@@ -1610,14 +1610,26 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_GetSymbol (gpointer lib, 
 	native_library_lock ();
 
 	module = netcore_handle_lookup (lib);
-	if (!module)
+	if (!module) {
+#ifdef HOST_WIN32
+		// netcore calls NativeLibrary.GetExport on Windows system libraries loaded directly using Interop.Kernel32.LoadLibraryEx.
+		// Fallback accepting NativeLibrary.GetExport calls on libraries loaded directly by Interop.Kernel32.LoadLibraryEx.
+		// https://github.com/dotnet/runtime/pull/47013.
+		symbol = GetProcAddress ((HMODULE)lib, symbol_name);
+		if (!symbol)
+			mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%p: %s", lib, symbol_name);
+#else
 		mono_error_set_generic_error (error, "System", "DllNotFoundException", "%p: %s", lib, symbol_name);
+#endif
+	}
 	goto_if_nok (error, leave);
 
-	mono_dl_symbol (module, symbol_name, &symbol);
-	if (!symbol)
-		mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s: %s", module->full_name, symbol_name);
-	goto_if_nok (error, leave);
+	if (!symbol) {
+		mono_dl_symbol (module, symbol_name, &symbol);
+		if (!symbol)
+			mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s: %s", module->full_name, symbol_name);
+		goto_if_nok (error, leave);
+	}
 
 leave:
 	native_library_unlock ();
