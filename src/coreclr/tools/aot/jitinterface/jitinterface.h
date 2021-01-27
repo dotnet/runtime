@@ -29,6 +29,7 @@ struct JitInterfaceCallbacks
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult);
     CorInfoIntrinsics (* getIntrinsicID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, bool* pMustExpand);
     bool (* isIntrinsicType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE classHnd);
+    CorInfoCallConvExtension (* getUnmanagedCallConv)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, bool* pSuppressGCTransition);
     bool (* pInvokeMarshalingRequired)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
     bool (* satisfiesMethodConstraints)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
     bool (* isCompatibleDelegate)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE objCls, CORINFO_CLASS_HANDLE methodParentCls, CORINFO_METHOD_HANDLE method, CORINFO_CLASS_HANDLE delegateCls, bool* pfIsOpenDelegate);
@@ -173,8 +174,8 @@ struct JitInterfaceCallbacks
     bool (* logMsg)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned level, const char* fmt, va_list args);
     int (* doAssert)(void * thisHandle, CorInfoExceptionClass** ppException, const char* szFile, int iLine, const char* szExpr);
     void (* reportFatalError)(void * thisHandle, CorInfoExceptionClass** ppException, CorJitResult result);
-    JITINTERFACE_HRESULT (* getPgoInstrumentationResults)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, void** pSchema, uint32_t* pCountSchemaItems, uint8_t** pInstrumentationData);
-    JITINTERFACE_HRESULT (* allocPgoInstrumentationBySchema)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, void* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData);
+    JITINTERFACE_HRESULT (* getPgoInstrumentationResults)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t** pInstrumentationData);
+    JITINTERFACE_HRESULT (* allocPgoInstrumentationBySchema)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData);
     CORINFO_CLASS_HANDLE (* getLikelyClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, uint32_t ilOffset, uint32_t* pLikelihood, uint32_t* pNumberOfClasses);
     void (* recordCallSite)(void * thisHandle, CorInfoExceptionClass** ppException, uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
     void (* recordRelocation)(void * thisHandle, CorInfoExceptionClass** ppException, void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta);
@@ -371,6 +372,17 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->isIntrinsicType(_thisHandle, &pException, classHnd);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CorInfoCallConvExtension getUnmanagedCallConv(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_SIG_INFO* callSiteSig,
+          bool* pSuppressGCTransition)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CorInfoCallConvExtension temp = _callbacks->getUnmanagedCallConv(_thisHandle, &pException, method, callSiteSig, pSuppressGCTransition);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1760,7 +1772,7 @@ public:
 
     virtual JITINTERFACE_HRESULT getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
-          void** pSchema,
+          ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData)
 {
@@ -1772,7 +1784,7 @@ public:
 
     virtual JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,
-          void* pSchema,
+          ICorJitInfo::PgoInstrumentationSchema* pSchema,
           uint32_t countSchemaItems,
           uint8_t** pInstrumentationData)
 {

@@ -5338,7 +5338,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 
     // Instantiations aren't relevant here
     SigPointer sigPtr(pSig, cSig);
-    ULONG sigCallConv = 0;
+    uint32_t sigCallConv = 0;
     IfFailRet(sigPtr.GetCallingConvInfo(&sigCallConv)); // call conv
     if (sigCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
     {

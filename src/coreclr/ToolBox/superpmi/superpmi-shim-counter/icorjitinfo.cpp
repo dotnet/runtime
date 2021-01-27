@@ -162,6 +162,15 @@ bool interceptor_ICJI::isIntrinsicType(
     return original_ICorJitInfo->isIntrinsicType(classHnd);
 }
 
+CorInfoCallConvExtension interceptor_ICJI::getUnmanagedCallConv(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_SIG_INFO* callSiteSig,
+          bool* pSuppressGCTransition)
+{
+    mcs->AddCall("getUnmanagedCallConv");
+    return original_ICorJitInfo->getUnmanagedCallConv(method, callSiteSig, pSuppressGCTransition);
+}
+
 bool interceptor_ICJI::pInvokeMarshalingRequired(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig)
@@ -1311,7 +1320,7 @@ void interceptor_ICJI::reportFatalError(
 
 JITINTERFACE_HRESULT interceptor_ICJI::getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
-          PgoInstrumentationSchema** pSchema,
+          ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData)
 {
@@ -1321,7 +1330,7 @@ JITINTERFACE_HRESULT interceptor_ICJI::getPgoInstrumentationResults(
 
 JITINTERFACE_HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,
-          PgoInstrumentationSchema* pSchema,
+          ICorJitInfo::PgoInstrumentationSchema* pSchema,
           uint32_t countSchemaItems,
           uint8_t** pInstrumentationData)
 {

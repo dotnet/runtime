@@ -384,7 +384,7 @@ public:
 
     // get profile information to be used for optimizing a current method.  The format
     // of the buffer is the same as the format the JIT passes to allocPgoInstrumentationBySchema.
-    virtual HRESULT getPgoInstrumentationResults(
+    virtual JITINTERFACE_HRESULT getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
             PgoInstrumentationSchema **pSchema,                    // OUT: pointer to the schema table (array) which describes the instrumentation results
                                                                    // (pointer will not remain valid after jit completes).
@@ -404,7 +404,7 @@ public:
     //
     //  The intention here is that it becomes possible to describe a C data structure with the alignment for ease of use with 
     //  instrumentation helper functions
-    virtual HRESULT allocPgoInstrumentationBySchema(
+    virtual JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE     ftnHnd,
             PgoInstrumentationSchema *pSchema,                     // IN OUT: pointer to the schema table (array) which describes the instrumentation results. `Offset` field
                                                                    // is filled in by VM; other fields are set and passed in by caller.

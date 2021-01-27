@@ -191,6 +191,17 @@ bool WrapICorJitInfo::isIntrinsicType(
     return temp;
 }
 
+CorInfoCallConvExtension WrapICorJitInfo::getUnmanagedCallConv(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_SIG_INFO* callSiteSig,
+          bool* pSuppressGCTransition)
+{
+    API_ENTER(getUnmanagedCallConv);
+    CorInfoCallConvExtension temp = wrapHnd->getUnmanagedCallConv(method, callSiteSig, pSuppressGCTransition);
+    API_LEAVE(getUnmanagedCallConv);
+    return temp;
+}
+
 bool WrapICorJitInfo::pInvokeMarshalingRequired(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig)
@@ -1593,7 +1604,7 @@ void WrapICorJitInfo::reportFatalError(
 
 JITINTERFACE_HRESULT WrapICorJitInfo::getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
-          PgoInstrumentationSchema** pSchema,
+          ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData)
 {
@@ -1605,7 +1616,7 @@ JITINTERFACE_HRESULT WrapICorJitInfo::getPgoInstrumentationResults(
 
 JITINTERFACE_HRESULT WrapICorJitInfo::allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,
-          PgoInstrumentationSchema* pSchema,
+          ICorJitInfo::PgoInstrumentationSchema* pSchema,
           uint32_t countSchemaItems,
           uint8_t** pInstrumentationData)
 {

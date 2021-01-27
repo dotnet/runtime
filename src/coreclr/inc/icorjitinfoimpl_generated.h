@@ -99,6 +99,11 @@ CorInfoIntrinsics getIntrinsicID(
 bool isIntrinsicType(
           CORINFO_CLASS_HANDLE classHnd) override;
 
+CorInfoCallConvExtension getUnmanagedCallConv(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_SIG_INFO* callSiteSig,
+          bool* pSuppressGCTransition) override;
+
 bool pInvokeMarshalingRequired(
           CORINFO_METHOD_HANDLE method,
           CORINFO_SIG_INFO* callSiteSig) override;
@@ -672,13 +677,13 @@ void reportFatalError(
 
 JITINTERFACE_HRESULT getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
-          PgoInstrumentationSchema** pSchema,
+          ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData) override;
 
 JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,
-          PgoInstrumentationSchema* pSchema,
+          ICorJitInfo::PgoInstrumentationSchema* pSchema,
           uint32_t countSchemaItems,
           uint8_t** pInstrumentationData) override;
 

@@ -9765,7 +9765,7 @@ namespace
         STANDARD_VM_CONTRACT;
 
         SigParser parser(pSig, cbSig);
-        ULONG rawCallConv;
+        uint32_t rawCallConv;
         if (FAILED(parser.GetCallingConv(&rawCallConv)))
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
@@ -9813,7 +9813,7 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        ULONG methodCallConv;
+        uint32_t methodCallConv;
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;
         pMD->GetSig(&pSig, &cbSig);

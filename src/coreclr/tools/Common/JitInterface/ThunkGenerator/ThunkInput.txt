@@ -98,8 +98,8 @@ unsigned int*,ref uint
 
 CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_*
 
-PgoInstrumentationSchema**,ref PgoInstrumentationSchema*,void**
-PgoInstrumentationSchema*,PgoInstrumentationSchema*,void*
+ICorJitInfo::PgoInstrumentationSchema**,ref PgoInstrumentationSchema*
+ICorJitInfo::PgoInstrumentationSchema*,PgoInstrumentationSchema*
 
 ; Enums
 CorInfoClassId
@@ -115,7 +115,7 @@ CorInfoTailCall
 CorInfoType
 CorInfoHFAElemType
 CorInfoTypeWithMod
-CorInfoUnmanagedCallConv
+CorInfoCallConvExtension
 InfoAccessType
 CORINFO_LOOKUP_KIND
 CORINFO_ACCESS_FLAGS
@@ -313,8 +313,8 @@ FUNCTIONS
     bool logMsg(unsigned level, const char* fmt, va_list args)
     int doAssert(const char* szFile, int iLine, const char* szExpr)
     void reportFatalError(CorJitResult result)
-    JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t**pInstrumentationData)
-    JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData)
+    JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t**pInstrumentationData)
+    JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData)
     CORINFO_CLASS_HANDLE getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, uint32_t ilOffset, uint32_t* pLikelihood, uint32_t* pNumberOfClasses)
     void recordCallSite(uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
     void recordRelocation(void* location, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
