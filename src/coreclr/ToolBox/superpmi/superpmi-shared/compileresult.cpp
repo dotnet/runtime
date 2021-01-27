@@ -390,7 +390,7 @@ void CompileResult::repAllocGCInfo(size_t* size, void** retval)
         *retval = (void*)AllocGCInfo->GetBuffer(value.retval_offset);
 }
 
-void CompileResult::recCompileMethod(BYTE** nativeEntry, ULONG* nativeSizeOfCode, CorJitResult result)
+void CompileResult::recCompileMethod(uint8_t** nativeEntry, uint32_t* nativeSizeOfCode, CorJitResult result)
 {
     if (CompileMethod == nullptr)
         CompileMethod = new LightWeightMap<DWORD, Agnostic_CompileMethodResults>();

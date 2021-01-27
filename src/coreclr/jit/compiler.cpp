@@ -4389,7 +4389,7 @@ void Compiler::EndPhase(Phases phase)
 //
 //  Also called for inlinees, though they will only be run through the first few phases.
 //
-void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags)
+void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFlags* compileFlags)
 {
     // Prepare for importation
     //
@@ -5431,7 +5431,7 @@ bool Compiler::skipMethod()
 
 int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
                           void**                methodCodePtr,
-                          ULONG*                methodCodeSize,
+                          uint32_t*             methodCodeSize,
                           JitFlags*             compileFlags)
 {
     // compInit should have set these already.
@@ -5449,7 +5449,8 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         // Call into VM to get the config strings. FEATURE_JIT_METHOD_PERF is enabled for
         // retail builds. Do not call the regular Config helper here as it would pull
         // in a copy of the config parser into the clrjit.dll.
-        InterlockedCompareExchangeT(&Compiler::compJitTimeLogFilename, info.compCompHnd->getJitTimeLogFilename(), NULL);
+        InterlockedCompareExchangeT(&Compiler::compJitTimeLogFilename,
+                                    (LPCWSTR)info.compCompHnd->getJitTimeLogFilename(), NULL);
 
         // At a process or module boundary clear the file and start afresh.
         JitTimer::PrintCsvHeader();
@@ -5625,7 +5626,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         COMP_HANDLE           compHnd;
         CORINFO_METHOD_INFO*  methodInfo;
         void**                methodCodePtr;
-        ULONG*                methodCodeSize;
+        uint32_t*             methodCodeSize;
         JitFlags*             compileFlags;
 
         int result;
@@ -6050,7 +6051,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                                 COMP_HANDLE           compHnd,
                                 CORINFO_METHOD_INFO*  methodInfo,
                                 void**                methodCodePtr,
-                                ULONG*                methodCodeSize,
+                                uint32_t*             methodCodeSize,
                                 JitFlags*             compileFlags)
 {
     CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
@@ -6896,7 +6897,7 @@ int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                   COMP_HANDLE           compHnd,
                   CORINFO_METHOD_INFO*  methodInfo,
                   void**                methodCodePtr,
-                  ULONG*                methodCodeSize,
+                  uint32_t*             methodCodeSize,
                   JitFlags*             compileFlags,
                   void*                 inlineInfoPtr)
 {
@@ -6940,7 +6941,7 @@ START:
         COMP_HANDLE           compHnd;
         CORINFO_METHOD_INFO*  methodInfo;
         void**                methodCodePtr;
-        ULONG*                methodCodeSize;
+        uint32_t*             methodCodeSize;
         JitFlags*             compileFlags;
         InlineInfo*           inlineInfo;
 #if MEASURE_CLRAPI_CALLS

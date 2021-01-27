@@ -30,8 +30,8 @@ public:
 CorJitResult __stdcall compileMethod(ICorJitInfo*                comp,     /* IN */
                                      struct CORINFO_METHOD_INFO* info,     /* IN */
                                      unsigned /* code:CorJitFlag */ flags, /* IN */
-                                     BYTE** nativeEntry,                   /* OUT */
-                                     ULONG* nativeSizeOfCode               /* OUT */
+                                     uint8_t** nativeEntry,                /* OUT */
+                                     uint32_t* nativeSizeOfCode            /* OUT */
                                      );
 
 // Do any appropriate work at process shutdown.  Default impl is to do nothing.

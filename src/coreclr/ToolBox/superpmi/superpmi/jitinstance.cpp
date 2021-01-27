@@ -305,8 +305,8 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
     PAL_TRY(Param*, pParam, &param)
     {
-        BYTE* NEntryBlock    = nullptr;
-        ULONG NCodeSizeBlock = 0;
+        uint8_t* NEntryBlock    = nullptr;
+        uint32_t NCodeSizeBlock = 0;
 
         pParam->pThis->mc->repCompileMethod(&pParam->info, &pParam->flags);
         if (pParam->collectThroughput)
@@ -383,8 +383,8 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
 void JitInstance::timeResult(CORINFO_METHOD_INFO info, unsigned flags)
 {
-    BYTE* NEntryBlock    = nullptr;
-    ULONG NCodeSizeBlock = 0;
+    uint8_t* NEntryBlock    = nullptr;
+    uint32_t NCodeSizeBlock = 0;
 
     int sampleSize = 10;
     // Save 2 smallest times. To help reduce noise, we will look at the closest pair of these.

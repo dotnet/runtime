@@ -31,7 +31,7 @@ public:
     // This could use further abstraction
     CodeGen(Compiler* theCompiler);
 
-    virtual void genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode);
+    virtual void genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode);
 
     void genGenerateMachineCode();
     void genEmitMachineCode();
@@ -205,11 +205,11 @@ protected:
     // the current (pending) label ref, a label which has been referenced but not yet seen
     BasicBlock* genPendingCallLabel;
 
-    void**   codePtr;
-    ULONG*   nativeSizeOfCode;
-    unsigned codeSize;
-    void*    coldCodePtr;
-    void*    consPtr;
+    void**    codePtr;
+    uint32_t* nativeSizeOfCode;
+    unsigned  codeSize;
+    void*     coldCodePtr;
+    void*     consPtr;
 
 #ifdef DEBUG
     // Last instr we have displayed for dspInstrs

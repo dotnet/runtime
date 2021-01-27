@@ -7,11 +7,11 @@
 #include "icorjitcompiler.h"
 #include "icorjitinfo.h"
 
-CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*                comp,     /* IN */
-                                                       struct CORINFO_METHOD_INFO* info,     /* IN */
-                                                       unsigned /* code:CorJitFlag */ flags, /* IN */
-                                                       BYTE** nativeEntry,                   /* OUT */
-                                                       ULONG* nativeSizeOfCode               /* OUT */
+CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*                comp,            /* IN */
+                                                       struct CORINFO_METHOD_INFO* info,            /* IN */
+                                                       unsigned /* code:CorJitFlag */ flags,        /* IN */
+                                                       uint8_t**                   nativeEntry,     /* OUT */
+                                                       uint32_t*                   nativeSizeOfCode /* OUT */
                                                        )
 {
     interceptor_ICJI our_ICorJitInfo;

@@ -114,7 +114,7 @@ public:
     void dmpAllocGCInfo(DWORD key, const Agnostic_AllocGCInfo& value);
     void repAllocGCInfo(size_t* size, void** retval);
 
-    void recCompileMethod(BYTE** nativeEntry, ULONG* nativeSizeOfCode, CorJitResult result);
+    void recCompileMethod(uint8_t** nativeEntry, uint32_t* nativeSizeOfCode, CorJitResult result);
     void dmpCompileMethod(DWORD key, const Agnostic_CompileMethodResults& value);
     void repCompileMethod(BYTE** nativeEntry, ULONG* nativeSizeOfCode, CorJitResult* result);
 

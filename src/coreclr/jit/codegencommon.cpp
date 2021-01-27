@@ -2034,7 +2034,7 @@ void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
 //     codePtr [OUT] - address of generated code
 //     nativeSizeOfCode [OUT] - length of generated code in bytes
 //
-void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
+void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
 {
 
 #ifdef DEBUG

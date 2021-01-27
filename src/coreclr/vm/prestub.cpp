@@ -3083,7 +3083,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
                 pResult->indirectFirstOffset = 1;
             }
 
-            ULONG data;
+            uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[1] = sizeof(TypeHandle) * data;
 
@@ -3095,7 +3095,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
             pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
 
-            ULONG data;
+            uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[2] = sizeof(TypeHandle) * data;
 

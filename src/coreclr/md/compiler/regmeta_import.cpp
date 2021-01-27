@@ -253,11 +253,11 @@ STDMETHODIMP RegMeta::EnumInterfaceImpls(
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
+    RID                 ridStart;
+    RID                 ridEnd;
     HENUMInternal       *pEnum;
     InterfaceImplRec    *pRec;
-    ULONG               index;
+    RID                 index;
 
     LOG((LOGMD, "RegMeta::EnumInterfaceImpls(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             phEnum, td, rImpls, cMax, pcImpls));
@@ -325,11 +325,11 @@ STDMETHODIMP RegMeta::EnumGenericParams(HCORENUM *phEnum, mdToken tkOwner,
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
+    RID                 ridStart;
+    RID                 ridEnd;
     HENUMInternal       *pEnum;
     GenericParamRec     *pRec;
-    ULONG               index;
+    RID                 index;
     CMiniMdRW           *pMiniMd = NULL;
 
 
@@ -423,11 +423,11 @@ STDMETHODIMP RegMeta::EnumMethodSpecs(
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
+    RID                 ridStart;
+    RID                 ridEnd;
     HENUMInternal       *pEnum;
     MethodSpecRec       *pRec;
-    ULONG               index;
+    RID                 index;
     CMiniMdRW       *pMiniMd = NULL;
 
     LOG((LOGMD, "RegMeta::EnumMethodSpecs(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
@@ -528,11 +528,11 @@ STDMETHODIMP RegMeta::EnumGenericParamConstraints(
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
+    RID                 ridStart;
+    RID                 ridEnd;
     HENUMInternal       *pEnum;
     GenericParamConstraintRec     *pRec;
-    ULONG               index;
+    RID                 index;
     CMiniMdRW       *pMiniMd = NULL;
 
     LOG((LOGMD, "RegMeta::EnumGenericParamConstraints(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",

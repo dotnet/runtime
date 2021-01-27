@@ -8,26 +8,6 @@
 #include "dllexport.h"
 #include "jitinterface.h"
 
-typedef struct _GUID {
-    unsigned int Data1;
-    unsigned short Data2;
-    unsigned short Data3;
-    unsigned char Data4[8];
-} GUID;
-
-class CORJIT_FLAGS
-{
-public:
-    CORJIT_FLAGS(const CORJIT_FLAGS& other)
-    {
-        corJitFlags = other.corJitFlags;
-    }
-private:
-    uint64_t corJitFlags;
-};
-
-#include "../../../inc/jiteeversionguid.h"
-
 class Jit
 {
 public:
