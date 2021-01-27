@@ -1038,7 +1038,7 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 
 static
 gchar *
-g_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
 	char *inptr, *outbuf, *outptr;
 	size_t outlen = 0;
@@ -1131,13 +1131,13 @@ g_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glo
 gchar *
 g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return g_utf16_to_utf8_general (str, len, items_read, items_written, NULL, NULL, err);
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, NULL, NULL, err);
 }
 
 gchar *
 g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
-	return g_utf16_to_utf8_general (str, len, items_read, items_written, custom_alloc_func, custom_alloc_data, err);
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, custom_alloc_func, custom_alloc_data, err);
 }
 
 gunichar *
