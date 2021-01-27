@@ -36,57 +36,16 @@ namespace System.Linq
             Debug.Assert(startIndexValue >= 0);
             Debug.Assert(endIndexValue >= 0);
 
-            if (source is IPartition<TSource> partition)
+            if (!isStartIndexFromEnd && !isEndIndexFromEnd)
             {
-                if (!isStartIndexFromEnd && !isEndIndexFromEnd)
-                {
-                    return partition.Skip(startIndexValue).Take(endIndexValue - startIndexValue);
-                }
-
-                int count = partition.GetCount(onlyIfCheap: true);
-                if (count == 0)
-                {
-                    return Empty<TSource>();
-                }
-
-                if (count > 0)
-                {
-                    if (isStartIndexFromEnd)
+                return startIndexValue >= endIndexValue
+                    ? Empty<TSource>()
+                    : source switch
                     {
-                        startIndexValue = count - startIndexValue;
-                    }
-
-                    if (isEndIndexFromEnd)
-                    {
-                        endIndexValue = count - endIndexValue;
-                    }
-
-                    return partition.Skip(startIndexValue).Take(endIndexValue - startIndexValue);
-                }
-            }
-            else if (source is IList<TSource> list)
-            {
-                int count = list.Count;
-                if (count == 0)
-                {
-                    return Empty<TSource>();
-                }
-
-                Debug.Assert(count > 0);
-
-                if (isStartIndexFromEnd)
-                {
-                    startIndexValue = count - startIndexValue;
-                }
-
-                if (isEndIndexFromEnd)
-                {
-                    endIndexValue = count - endIndexValue;
-                }
-
-                return startIndexValue < endIndexValue && startIndexValue < count
-                    ? new ListPartition<TSource>(list, minIndexInclusive: startIndexValue, maxIndexInclusive: endIndexValue - 1)
-                    : Empty<TSource>();
+                        IPartition<TSource> partition => partition.Skip(startIndexValue).Take(endIndexValue - startIndexValue),
+                        IList<TSource> list => new ListPartition<TSource>(list, startIndexValue, endIndexValue - 1),
+                        _ => new EnumerablePartition<TSource>(source, startIndexValue, endIndexValue - 1)
+                    };
             }
 
             return TakeIterator(source, isStartIndexFromEnd, startIndexValue, isEndIndexFromEnd, endIndexValue);
