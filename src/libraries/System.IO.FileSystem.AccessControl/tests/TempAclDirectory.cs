@@ -16,8 +16,8 @@ namespace System.IO
     {
         protected override void DeleteDirectory()
         {
-            //try
-            //{
+            try
+            {
                 var identity = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
                 var accessRule = new FileSystemAccessRule(identity, FileSystemRights.FullControl, AccessControlType.Allow);
 
@@ -36,8 +36,8 @@ namespace System.IO
                 var rootDirInfo = new DirectoryInfo(Path);
                 rootDirInfo.SetAccessControl(new DirectorySecurity(Path, AccessControlSections.Access));
                 rootDirInfo.Delete(recursive: true);
-            //}
-            //catch { /* Do not throw because we call this on finalize */ }
+            }
+            catch { /* Do not throw because we call this on finalize */ }
         }
     }
 }
