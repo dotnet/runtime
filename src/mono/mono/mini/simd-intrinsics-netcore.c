@@ -955,27 +955,31 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_ADVSIMD) != 0;
 
 		switch (info -> id) {
-			case SN_Abs: {
-				SimdOp op = (SimdOp)0;
-				switch (get_underlying_type (fsig->params [0])) {
-				case MONO_TYPE_R8:
-					op = SIMD_OP_LLVM_DABS;
-				case MONO_TYPE_R4:
-					op = SIMD_OP_LLVM_FABS;
-					break;
-				case MONO_TYPE_I1:
-					op = SIMD_OP_LLVM_I8ABS;
-				case MONO_TYPE_I2:
-					op = SIMD_OP_LLVM_I16ABS;
-				case MONO_TYPE_I4:
-					op = SIMD_OP_LLVM_I32ABS;
-				case MONO_TYPE_I8:
-					op = SIMD_OP_LLVM_I64ABS;
-					break;
-				}
-
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
+		case SN_Abs: {
+			SimdOp op = (SimdOp)0;
+			switch (get_underlying_type (fsig->params [0])) {
+			case MONO_TYPE_R8:
+				op = SIMD_OP_LLVM_DABS;
+				break;
+			case MONO_TYPE_R4:
+				op = SIMD_OP_LLVM_FABS;
+				break;
+			case MONO_TYPE_I1:
+				op = SIMD_OP_LLVM_I8ABS;
+				break;
+			case MONO_TYPE_I2:
+				op = SIMD_OP_LLVM_I16ABS;
+				break;
+			case MONO_TYPE_I4:
+				op = SIMD_OP_LLVM_I32ABS;
+				break;
+			case MONO_TYPE_I8:
+				op = SIMD_OP_LLVM_I64ABS;
+				break;
 			}
+
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
+		}
 		}
 		
 	}
