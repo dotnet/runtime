@@ -1,0 +1,57 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
+
+  <PropertyGroup>
+    <WasmSkipBundleGeneration>true</WasmSkipBundleGeneration>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+  </PropertyGroup>
+
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
+    <Error Text="%24(RuntimeSrcDir) should be set" Condition="'$(RuntimeSrcDir)' == ''" />
+    <Error Text="%24(RuntimeConfig) should be set" Condition="'$(RuntimeConfig)' == ''" />
+
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackLocationToUse)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Using Runtime pack from: %(RuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+
+  <PropertyGroup Condition="'$(_WasmUseLocalRuntimeBuild)' == 'true'">
+    <MicrosoftNetCoreAppRuntimePackLocationToUse>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(RuntimeConfig)\</MicrosoftNetCoreAppRuntimePackLocationToUse>
+
+    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(_NetCoreAppToolCurrent)', 'publish'))</WasmAppBuilderDir>
+    <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(_NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(_NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_WasmUseLocalRuntimeBuild)' != 'true'">
+    <MicrosoftNetCoreAppRuntimePackLocationToUse>$(BuildBaseDir)microsoft.netcore.app.runtime.browser-wasm\</MicrosoftNetCoreAppRuntimePackLocationToUse>
+    <MonoAOTCompilerDir>$(BuildBaseDir)\MonoAOTCompiler\</MonoAOTCompilerDir>
+    <MonoAotCrossCompilerPath>$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(RuntimeIdentifier)\mono-aot-cross</MonoAotCrossCompilerPath>
+
+    <WasmAppBuilderDir>$(BuildBaseDir)\WasmAppBuilder\</WasmAppBuilderDir>
+    <WasmBuildTasksDir>$(BuildBaseDir)\WasmBuildTasks\</WasmBuildTasksDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(MicrosoftNetCoreAppRuntimePackLocationToUse)runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
+    <MonoAotCrossCompilerPath>$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(RuntimeIdentifier)\mono-aot-cross</MonoAotCrossCompilerPath>
+
+    <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
+    <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
+    <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
+  </PropertyGroup>
+</Project>

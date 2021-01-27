@@ -1,0 +1,34 @@
+<!--
+    WasmApp.LocalBuild* files are meant for projects that want to use
+    a local build of `dotnet/runtime` repo.
+
+    Required properties to be set:
+
+    $(RuntimeSrcDir)       - path to the runtime checkout. This should have already been
+                             built, and so should have `artifacts` directory.
+    $(RuntimeConfig)       - This is the config that the above checkout was built with.
+                             This can be different from the configuration for the user project.
+-->
+<Project>
+  <PropertyGroup>
+    <TargetArchitecture>wasm</TargetArchitecture>
+    <TargetOS>Browser</TargetOS>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <_NetCoreAppToolCurrent>net5.0</_NetCoreAppToolCurrent>
+    <_WasmUseLocalRuntimeBuild Condition="'$(RuntimeSrcDir)' != ''">true</_WasmUseLocalRuntimeBuild>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_WasmUseLocalRuntimeBuild)' == 'true'">
+    <ArtifactsBinDir>$(RuntimeSrcDir)\artifacts\bin\</ArtifactsBinDir>
+    <_WasmTargetsDir>$(RuntimeSrcDir)\src\mono\wasm\build\</_WasmTargetsDir>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$(RuntimeSrcDir)\src\mono\wasm\emsdk\</EMSDK_PATH>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_WasmUseLocalRuntimeBuild)' != 'true'">
+    <WasmBuildSupportDir Condition="'$(WasmBuildSupportDir)' == ''">$(MSBuildProjectDirectory)\build\</WasmBuildSupportDir>
+    <BuildBaseDir>$(WasmBuildSupportDir)\</BuildBaseDir>
+    <_WasmTargetsDir>$(WasmBuildSupportDir)</_WasmTargetsDir>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
+</Project>
