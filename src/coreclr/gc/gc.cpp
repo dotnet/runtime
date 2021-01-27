@@ -28518,12 +28518,6 @@ void gc_heap::relocate_survivors (int condemned_gen_number,
                     current_heap_segment = heap_segment_next_rw (current_heap_segment);
                     current_brick = brick_of (heap_segment_mem (current_heap_segment));
                     end_brick = brick_of (heap_segment_allocated (current_heap_segment)-1);
-                    if (heap_segment_mem (current_heap_segment) == heap_segment_allocated (current_heap_segment))
-                    {
-                        // the case of an empty region / segment - make sure
-                        // we don't relocate anything, but go to the next region / segment
-                        current_brick++;
-                    }
                     continue;
                 }
                 else
@@ -29446,12 +29440,6 @@ void gc_heap::compact_phase (int condemned_gen_number,
                     if (args.check_gennum_p)
                     {
                         args.src_gennum = ((current_heap_segment == ephemeral_heap_segment) ? -1 : 2);
-                    }
-                    if (heap_segment_mem (current_heap_segment) == heap_segment_allocated (current_heap_segment))
-                    {
-                        // the case of an empty region / segment - make sure
-                        // we don't compact anything, but go to the next region / segment
-                        current_brick++;
                     }
                     continue;
                 }
