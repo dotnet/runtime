@@ -82,9 +82,8 @@ namespace System.Threading
         {
             ThreadPool.GetMinThreads(out int min, out _);
             int maxParallelism = Math.Max(1, min - 1);
-            // Consume at most half of the ThreadCount increases;
-            // this allows HillClimbing to unblock the ThreadPool
-            maxParallelism = Math.Max(maxParallelism, ThreadPool.ThreadCount / 2);
+            // Always leave 1 thread free to process non-blocking work
+            maxParallelism = Math.Max(maxParallelism, ThreadPool.ThreadCount - 1);
 
             int count = Volatile.Read(ref _processingThreads);
             while (count < maxParallelism)
