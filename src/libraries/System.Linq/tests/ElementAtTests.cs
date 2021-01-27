@@ -79,5 +79,11 @@ namespace System.Linq.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(2));
         }
+
+        [Fact]
+        public void Index()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(2));
+        }
     }
 }

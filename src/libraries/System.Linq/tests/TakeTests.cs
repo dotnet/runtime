@@ -563,5 +563,264 @@ namespace System.Linq.Tests
             int expected = count <= 0 ? 0 : -1;
             Assert.Equal(expected, state);
         }
+
+
+        [Fact]
+        public void NonEmptySourceTests()
+        {
+            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+            // Multiple elements in the middle.
+            Assert.True(source.Take(^9..5).ToArray().SequenceEqual(source[^9..5]));
+            Assert.True(source.Take(2..7).ToArray().SequenceEqual(source[2..7]));
+            Assert.True(source.Take(2..^4).ToArray().SequenceEqual(source[2..^4]));
+            Assert.True(source.Take(^7..^4).ToArray().SequenceEqual(source[^7..^4]));
+
+            Assert.True(source.Hide().Take(^9..5).ToArray().SequenceEqual(source[^9..5]));
+            Assert.True(source.Hide().Take(2..7).ToArray().SequenceEqual(source[2..7]));
+            Assert.True(source.Hide().Take(2..^4).ToArray().SequenceEqual(source[2..^4]));
+            Assert.True(source.Hide().Take(^7..^4).ToArray().SequenceEqual(source[^7..^4]));
+
+            // Rang with one index.
+            Assert.True(source.Take(^9..).ToArray().SequenceEqual(source[^9..]));
+            Assert.True(source.Take(2..).ToArray().SequenceEqual(source[2..]));
+            Assert.True(source.Take(..^4).ToArray().SequenceEqual(source[..^4]));
+            Assert.True(source.Take(..6).ToArray().SequenceEqual(source[..6]));
+
+            Assert.True(source.Hide().Take(^9..).ToArray().SequenceEqual(source[^9..]));
+            Assert.True(source.Hide().Take(2..).ToArray().SequenceEqual(source[2..]));
+            Assert.True(source.Hide().Take(..^4).ToArray().SequenceEqual(source[..^4]));
+            Assert.True(source.Hide().Take(..6).ToArray().SequenceEqual(source[..6]));
+
+            // All.
+            Assert.True(source.Take(..).ToArray().SequenceEqual(source[..]));
+
+            Assert.True(source.Hide().Take(..).ToArray().SequenceEqual(source[..]));
+
+            // Single element in the middle.
+            Assert.True(source.Take(^9..2).ToArray().SequenceEqual(source[^9..2]));
+            Assert.True(source.Take(2..3).ToArray().SequenceEqual(source[2..3]));
+            Assert.True(source.Take(2..^7).ToArray().SequenceEqual(source[2..^7]));
+            Assert.True(source.Take(^5..^4).ToArray().SequenceEqual(source[^5..^4]));
+
+            Assert.True(source.Hide().Take(^9..2).ToArray().SequenceEqual(source[^9..2]));
+            Assert.True(source.Hide().Take(2..3).ToArray().SequenceEqual(source[2..3]));
+            Assert.True(source.Hide().Take(2..^7).ToArray().SequenceEqual(source[2..^7]));
+            Assert.True(source.Hide().Take(^5..^4).ToArray().SequenceEqual(source[^5..^4]));
+
+            // Single element at start.
+            Assert.True(source.Take(^10..1).ToArray().SequenceEqual(source[^10..1]));
+            Assert.True(source.Take(0..1).ToArray().SequenceEqual(source[0..1]));
+            Assert.True(source.Take(0..^9).ToArray().SequenceEqual(source[0..^9]));
+            Assert.True(source.Take(^10..^9).ToArray().SequenceEqual(source[^10..^9]));
+
+            Assert.True(source.Hide().Take(^10..1).ToArray().SequenceEqual(source[^10..1]));
+            Assert.True(source.Hide().Take(0..1).ToArray().SequenceEqual(source[0..1]));
+            Assert.True(source.Hide().Take(0..^9).ToArray().SequenceEqual(source[0..^9]));
+            Assert.True(source.Hide().Take(^10..^9).ToArray().SequenceEqual(source[^10..^9]));
+
+            // Single element at end.
+            Assert.True(source.Take(^1..10).ToArray().SequenceEqual(source[^1..10]));
+            Assert.True(source.Take(9..10).ToArray().SequenceEqual(source[9..10]));
+            Assert.True(source.Take(9..^0).ToArray().SequenceEqual(source[9..^0]));
+            Assert.True(source.Take(^1..^0).ToArray().SequenceEqual(source[^1..^0]));
+
+            Assert.True(source.Hide().Take(^1..10).ToArray().SequenceEqual(source[^1..10]));
+            Assert.True(source.Hide().Take(9..10).ToArray().SequenceEqual(source[9..10]));
+            Assert.True(source.Hide().Take(9..^0).ToArray().SequenceEqual(source[9..^0]));
+            Assert.True(source.Hide().Take(^1..^0).ToArray().SequenceEqual(source[^1..^0]));
+
+            // No element.
+            Assert.True(source.Take(3..3).ToArray().SequenceEqual(source[3..3]));
+            Assert.True(source.Take(6..^4).ToArray().SequenceEqual(source[6..^4]));
+            Assert.True(source.Take(3..^7).ToArray().SequenceEqual(source[3..^7]));
+            Assert.True(source.Take(^3..7).ToArray().SequenceEqual(source[^3..7]));
+            Assert.True(source.Take(^6..^6).ToArray().SequenceEqual(source[^6..^6]));
+
+            Assert.True(source.Hide().Take(3..3).ToArray().SequenceEqual(source[3..3]));
+            Assert.True(source.Hide().Take(6..^4).ToArray().SequenceEqual(source[6..^4]));
+            Assert.True(source.Hide().Take(3..^7).ToArray().SequenceEqual(source[3..^7]));
+            Assert.True(source.Hide().Take(^3..7).ToArray().SequenceEqual(source[^3..7]));
+            Assert.True(source.Hide().Take(^6..^6).ToArray().SequenceEqual(source[^6..^6]));
+
+            // Invalid range.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..2].ToArray());
+            Assert.False(source.Take(3..2).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[6..^5].ToArray());
+            Assert.False(source.Take(6..^5).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..^8].ToArray());
+            Assert.False(source.Take(3..^8).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^6..^7].ToArray());
+            Assert.False(source.Take(^6..^7).Any());
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..2].ToArray());
+            Assert.False(source.Hide().Take(3..2).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[6..^5].ToArray());
+            Assert.False(source.Hide().Take(6..^5).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..^8].ToArray());
+            Assert.False(source.Hide().Take(3..^8).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^6..^7].ToArray());
+            Assert.False(source.Hide().Take(^6..^7).Any());
+        }
+
+        [Fact]
+        public void EmptySourceTests()
+        {
+            int[] source = { };
+
+            // Multiple elements in the middle.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^9..5].ToArray());
+            Assert.False(source.Take(^9..5).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[2..7].ToArray());
+            Assert.False(source.Take(2..7).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[2..^4].ToArray());
+            Assert.False(source.Take(2..^4).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^7..^4].ToArray());
+            Assert.False(source.Take(^7..^4).Any());
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^9..5].ToArray());
+            Assert.False(source.Hide().Take(^9..5).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[2..7].ToArray());
+            Assert.False(source.Hide().Take(2..7).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[2..^4].ToArray());
+            Assert.False(source.Hide().Take(2..^4).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^7..^4].ToArray());
+            Assert.False(source.Hide().Take(^7..^4).Any());
+
+            // Rang with one index.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^9..].ToArray());
+            Assert.False(source.Take(^9..).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[2..].ToArray());
+            Assert.False(source.Take(2..).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[..^4].ToArray());
+            Assert.False(source.Take(..^4).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[..6].ToArray());
+            Assert.False(source.Take(..6).Any());
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^9..].ToArray());
+            Assert.False(source.Hide().Take(^9..).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[2..].ToArray());
+            Assert.False(source.Hide().Take(2..).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[..^4].ToArray());
+            Assert.False(source.Hide().Take(..^4).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[..6].ToArray());
+            Assert.False(source.Hide().Take(..6).Any());
+
+            // All.
+            var xx = source[..];
+            Assert.True(source.Take(..).ToArray().SequenceEqual(source[..]));
+
+            Assert.True(source.Hide().Take(..).ToArray().SequenceEqual(source[..]));
+
+            // Single element in the middle.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^9..2].ToArray());
+            Assert.False(source.Take(^9..2).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[2..3].ToArray());
+            Assert.False(source.Take(2..3).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[2..^7].ToArray());
+            Assert.False(source.Take(2..^7).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^5..^4].ToArray());
+            Assert.False(source.Take(^5..^4).Any());
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^9..2].ToArray());
+            Assert.False(source.Hide().Take(^9..2).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[2..3].ToArray());
+            Assert.False(source.Hide().Take(2..3).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[2..^7].ToArray());
+            Assert.False(source.Hide().Take(2..^7).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^5..^4].ToArray());
+            Assert.False(source.Hide().Take(^5..^4).Any());
+
+            // Single element at start.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^10..1].ToArray());
+            Assert.False(source.Take(^10..1).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[0..1].ToArray());
+            Assert.False(source.Take(0..1).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[0..^9].ToArray());
+            Assert.False(source.Take(0..^9).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^10..^9].ToArray());
+            Assert.False(source.Take(^10..^9).Any());
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^10..1].ToArray());
+            Assert.False(source.Hide().Take(^10..1).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[0..1].ToArray());
+            Assert.False(source.Hide().Take(0..1).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[0..^9].ToArray());
+            Assert.False(source.Hide().Take(0..^9).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^10..^9].ToArray());
+            Assert.False(source.Hide().Take(^10..^9).Any());
+
+            // Single element at end.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^1..10].ToArray());
+            Assert.False(source.Take(^1..^10).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[9..10].ToArray());
+            Assert.False(source.Take(9..10).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[9..^0].ToArray());
+            Assert.False(source.Take(9..^9).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^1..^0].ToArray());
+            Assert.False(source.Take(^1..^9).Any());
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^1..10].ToArray());
+            Assert.False(source.Hide().Take(^1..^10).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[9..10].ToArray());
+            Assert.False(source.Hide().Take(9..10).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[9..^0].ToArray());
+            Assert.False(source.Hide().Take(9..^9).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^1..^0].ToArray());
+            Assert.False(source.Hide().Take(^1..^9).Any());
+
+            // No element.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..3].ToArray());
+            Assert.False(source.Take(3..3).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[6..^4].ToArray());
+            Assert.False(source.Take(6..^4).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..^7].ToArray());
+            Assert.False(source.Take(3..^7).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^3..7].ToArray());
+            Assert.False(source.Take(^3..7).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^6..^6].ToArray());
+            Assert.False(source.Take(^6..^6).Any());
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..3].ToArray());
+            Assert.False(source.Hide().Take(3..3).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[6..^4].ToArray());
+            Assert.False(source.Hide().Take(6..^4).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..^7].ToArray());
+            Assert.False(source.Hide().Take(3..^7).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^3..7].ToArray());
+            Assert.False(source.Hide().Take(^3..7).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^6..^6].ToArray());
+            Assert.False(source.Hide().Take(^6..^6).Any());
+
+            // Invalid range.
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..2].ToArray());
+            Assert.False(source.Take(3..2).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[6..^5].ToArray());
+            Assert.False(source.Take(6..^5).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..^8].ToArray());
+            Assert.False(source.Take(3..^8).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^6..^7].ToArray());
+            Assert.False(source.Take(^6..^7).Any());
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..2].ToArray());
+            Assert.False(source.Hide().Take(3..2).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[6..^5].ToArray());
+            Assert.False(source.Hide().Take(6..^5).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[3..^8].ToArray());
+            Assert.False(source.Hide().Take(3..^8).Any());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => source[^6..^7].ToArray());
+            Assert.False(source.Hide().Take(^6..^7).Any());
+        }
+    }
+
+    public static class X
+    {
+        public static IEnumerable<T> Hide<T>(this IEnumerable<T> source)
+        {
+            foreach (T value in source)
+            {
+                yield return value;
+            }
+        }
     }
 }
