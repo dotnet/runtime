@@ -79,7 +79,7 @@ namespace System.Net.Security.Tests
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
             using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
             {
-                string serverHost = Guid.NewGuid().ToString("N") + "." + serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
+                string serverHost = getTestSNIName();
                 var clientCertificates = new X509CertificateCollection() { clientCertificate };
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
@@ -98,6 +98,16 @@ namespace System.Net.Security.Tests
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha512,
                         _clientStream.SslProtocol + " " + _clientStream.HashAlgorithm);
                 }
+            }
+
+            string getTestSNIName()
+            {
+                static string ProtocolToString(SslProtocols? protocol)
+                {
+                    return (protocol?.ToString() ?? "null").Replace(", ", "_");
+                }
+
+                return $"{nameof(ClientAndServer_OneOrBothUseDefault_Ok)}_{ProtocolToString(clientProtocols)}_{ProtocolToString(serverProtocols)}";
             }
         }
 
