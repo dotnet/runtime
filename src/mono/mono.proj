@@ -420,6 +420,8 @@
       <_MonoAOTCPPFLAGS Include="-DFD_SETSIZE=1024" />
       <_MonoAOTCPPFLAGS Include="-DNVALGRIND" />
 
+      <MonoAOTCMakeArgs Include="-DDISABLE_INTERPRETER=1" />
+
       <!-- Select generator platform for VS generator -->
       <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x64'" Include="-A x64" />
       <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x86'" Include="-A Win32" />
