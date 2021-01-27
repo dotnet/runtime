@@ -28,6 +28,12 @@
       - $(WasmAssemblySearchPaths)          - used for resolving assembly dependencies
       - $(WasmSkipMissingAssemblies)        - Don't fail on any missing dependencies
 
+      - $(WasmGenerateAppBundle)            - Controls whether an app bundle should be generated.
+                                              Defaults to true.
+                                              This is useful for projects that want to handle their own
+                                              packaging, or app bundle generation, eg. Blazor.
+
+
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
                                     (relative path can be set via %(TargetPath) metadata)
@@ -130,7 +136,9 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmBuildApp" BeforeTargets="WasmBuildApp" DependsOnTargets="$(WasmBuildAppDependsOn)">
+  <Target Name="_WasmCoreBuild" BeforeTargets="WasmBuildApp" DependsOnTargets="$(WasmBuildAppDependsOn)" />
+
+  <Target Name="_WasmGenerateAppBundle" Condition="'$(WasmGenerateAppBundle)' == 'true'">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <PropertyGroup>
