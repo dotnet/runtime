@@ -9071,6 +9071,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_ARM64_CRC32CH: id = INTRINS_AARCH64_CRC32CH; zext_last = TRUE; break;
 			case SIMD_OP_ARM64_CRC32CW: id = INTRINS_AARCH64_CRC32CW; zext_last = TRUE; break;
 			case SIMD_OP_ARM64_CRC32CX: id = INTRINS_AARCH64_CRC32CX; break;
+			case SIMD_OP_ARM64_SHA1SU1: id = INTRINS_AARCH64_SHA1SU1; break;
 			case SIMD_OP_ARM64_SHA256SU0: id = INTRINS_AARCH64_SHA256SU0; break;
 			default: g_assert_not_reached (); break;
 			}
@@ -9084,6 +9085,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XOP_X_X_X_X: {
 			IntrinsicId id = (IntrinsicId)0;
 			switch (ins->inst_c0) {
+			case SIMD_OP_ARM64_SHA1SU0: id = INTRINS_AARCH64_SHA1SU0; break;
 			case SIMD_OP_ARM64_SHA256H: id = INTRINS_AARCH64_SHA256H; break;
 			case SIMD_OP_ARM64_SHA256H2: id = INTRINS_AARCH64_SHA256H2; break;
 			case SIMD_OP_ARM64_SHA256SU1: id = INTRINS_AARCH64_SHA256SU1; break;
