@@ -1866,7 +1866,6 @@ namespace System.Diagnostics.Tracing
                         dataType = Enum.GetUnderlyingType(dataType);
 
                         if (dataType == typeof(byte) || dataType == typeof(sbyte)
-                            || dataType == typeof(bool) || dataType == typeof(char)
                             || dataType == typeof(ushort) || dataType == typeof(short))
                         {
                             dataType = typeof(int);
