@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Runtime.Versioning;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.ObjectiveC
 {
@@ -126,7 +127,22 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </remarks>
         public void RegisterAsGlobal()
         {
-            throw new NotImplementedException();
+            GetMessageSendCallbacks(
+                out IntPtr objc_msgSend,
+                out IntPtr objc_msgSend_fpret,
+                out IntPtr objc_msgSend_stret,
+                out IntPtr objc_msgSendSuper,
+                out IntPtr objc_msgSendSuper_stret);
+
+            if (!TrySetGlobalMessageSendCallbacks(
+                objc_msgSend,
+                objc_msgSend_fpret,
+                objc_msgSend_stret,
+                objc_msgSendSuper,
+                objc_msgSendSuper_stret))
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalObjectiveCMsgSend);
+            }
         }
 
         /// <summary>
@@ -161,7 +177,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out IntPtr allocImpl,
             out IntPtr deallocImpl)
         {
-            throw new NotImplementedException();
+            GetLifetimeMethodsInternal(out allocImpl, out deallocImpl);
         }
 
         /// <summary>
@@ -248,5 +264,18 @@ namespace System.Runtime.InteropServices.ObjectiveC
         {
             throw new NotImplementedException();
         }
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern bool TrySetGlobalMessageSendCallbacks(
+            IntPtr objc_msgSend,
+            IntPtr objc_msgSend_fpret,
+            IntPtr objc_msgSend_stret,
+            IntPtr objc_msgSendSuper,
+            IntPtr objc_msgSendSuper_stret);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern void GetLifetimeMethodsInternal(
+            out IntPtr allocImpl,
+            out IntPtr deallocImpl);
     }
 }

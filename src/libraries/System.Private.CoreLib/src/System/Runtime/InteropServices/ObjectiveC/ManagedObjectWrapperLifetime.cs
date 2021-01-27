@@ -19,5 +19,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// to use as needed. Will be initialized to nuint.MaxValue.
         /// </summary>
         public nuint Scratch;
+
+        // Internal fields
+        internal IntPtr GCHandle;
     }
 }

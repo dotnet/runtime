@@ -46,6 +46,10 @@ public: // COM activation
 public: // Unwrapping support
     static IUnknown* GetIdentityForObject(_In_ OBJECTREF* objectPROTECTED, _In_ REFIID riid, _Out_ INT64* wrapperId);
     static bool HasManagedObjectComWrapper(_In_ OBJECTREF object, _Out_ bool* isActive);
+
+public: // GC interaction
+    static void OnBackgroundGCStarted();
+    static void OnBackgroundGCFinished();
 };
 
 class GlobalComWrappersForMarshalling
@@ -69,7 +73,6 @@ public: // Functions operating on a registered global instance for marshalling
         _Out_ OBJECTREF* objRef);
 };
 
-
 class GlobalComWrappersForTrackerSupport
 {
 public:
@@ -91,6 +94,25 @@ public: // Functions operating on a registered global instance for tracker suppo
 };
 
 #endif // FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_OBJCWRAPPERS
+
+class ObjCWrappersNative
+{
+public:
+    static BOOL QCALLTYPE TrySetGlobalMessageSendCallbacks(
+        _In_ void* fptr_objc_msgSend,
+        _In_ void* fptr_objc_msgSend_fpret,
+        _In_ void* fptr_objc_msgSend_stret,
+        _In_ void* fptr_objc_msgSendSuper,
+        _In_ void* fptr_objc_msgSendSuper_stret);
+
+    static void QCALLTYPE GetLifetimeMethods(
+        _Out_ void** allocImpl,
+        _Out_ void** deallocImpl);
+};
+
+#endif // FEATURE_OBJCWRAPPERS
 
 class Interop
 {

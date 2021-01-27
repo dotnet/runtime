@@ -24,6 +24,11 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <returns>The managed instance</returns>
         public static unsafe T GetInstance<T>(Instance* instancePtr) where T : class
         {
+            // Access to the Objective-C object_getIndexedIvars API is needed here.
+            // var lifetimePtr = (ManagedObjectWrapperLifetime**)object_getIndexedIvars((nint)instancePtr);
+            // var gcHandle = GCHandle.FromIntPtr((*lifetimePtr)->GCHandle);
+            // return (T)gcHandle.Target;
+
             throw new NotImplementedException();
         }
     }
@@ -40,6 +45,15 @@ namespace System.Runtime.InteropServices.ObjectiveC
     [StructLayout(LayoutKind.Sequential)]
     public struct BlockLiteral
     {
+        internal IntPtr Isa;
+        internal int Flags;
+        internal int Reserved;
+        internal IntPtr Invoke; // delegate* unmanaged[Cdecl]<BlockLiteral* , ...args, ret>
+        internal unsafe BlockDescriptor* BlockDescriptor;
+
+        // Extension of ABI to handle .NET lifetime.
+        internal unsafe BlockLifetime* Lifetime;
+
         /// <summary>
         /// Get <typeparamref name="T"/> type from the supplied Block.
         /// </summary>
@@ -48,7 +62,28 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <returns>A delegate</returns>
         public static unsafe T GetDelegate<T>(BlockLiteral* block) where T : Delegate
         {
-            throw new NotImplementedException();
+            var gcHandle = GCHandle.FromIntPtr(block->Lifetime->GCHandle);
+            return (T)gcHandle.Target!;
         }
+    }
+
+    // Internal Block Descriptor data structure.
+    // http://clang.llvm.org/docs/Block-ABI-Apple.html#high-level
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct BlockDescriptor
+    {
+        public nint Reserved;
+        public nint Size;
+        public delegate* unmanaged[Cdecl]<BlockLiteral*, BlockLiteral*, void> Copy_helper;
+        public delegate* unmanaged[Cdecl]<BlockLiteral*, void> Dispose_helper;
+        public void* Signature;
+    }
+
+    // Internal data structure for managing Block lifetime.
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct BlockLifetime
+    {
+        public IntPtr GCHandle;
+        public int RefCount;
     }
 }
