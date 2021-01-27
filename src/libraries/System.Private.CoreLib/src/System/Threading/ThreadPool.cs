@@ -875,12 +875,7 @@ namespace System.Threading
 
     internal abstract class QueueUserWorkItemCallbackBase : IThreadPoolWorkItem
     {
-        protected internal readonly Delegate _delegate;
-
-        protected QueueUserWorkItemCallbackBase(Delegate deleg)
-        {
-            _delegate = deleg;
-        }
+        public abstract Delegate? Callback { get; }
 
 #if DEBUG
         private int executed;
@@ -920,7 +915,6 @@ namespace System.Threading
         };
 
         internal QueueUserWorkItemCallback(WaitCallback callback, object? state, ExecutionContext context)
-            : base (callback)
         {
             Debug.Assert(context != null);
 
@@ -928,6 +922,8 @@ namespace System.Threading
             _state = state;
             _context = context;
         }
+
+        public override Delegate? Callback => _callback;
 
         public override void Execute()
         {
@@ -944,7 +940,6 @@ namespace System.Threading
         private readonly ExecutionContext _context;
 
         internal QueueUserWorkItemCallback(Action<TState> callback, TState state, ExecutionContext context)
-            : base(callback)
         {
             Debug.Assert(callback != null);
 
@@ -952,6 +947,8 @@ namespace System.Threading
             _state = state;
             _context = context;
         }
+
+        public override Delegate? Callback => _callback;
 
         public override void Execute()
         {
@@ -971,13 +968,14 @@ namespace System.Threading
         private readonly object? _state;
 
         internal QueueUserWorkItemCallbackDefaultContext(WaitCallback callback, object? state)
-            : base(callback)
         {
             Debug.Assert(callback != null);
 
             _callback = callback;
             _state = state;
         }
+
+        public override Delegate? Callback => _callback;
 
         public override void Execute()
         {
@@ -1000,13 +998,14 @@ namespace System.Threading
         private readonly TState _state;
 
         internal QueueUserWorkItemCallbackDefaultContext(Action<TState> callback, TState state)
-            : base(callback)
         {
             Debug.Assert(callback != null);
 
             _callback = callback;
             _state = state;
         }
+
+        public override Delegate? Callback => _callback;
 
         public override void Execute()
         {

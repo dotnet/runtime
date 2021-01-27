@@ -184,7 +184,7 @@ namespace System.Threading
 
             return workItem switch
             {
-                QueueUserWorkItemCallbackBase quwi => quwi._delegate.GetMethodImpl(),
+                QueueUserWorkItemCallbackBase quwi => quwi.Callback?.GetMethodImpl(),
                  IAsyncStateMachineBox sm => sm.GetType(),
                  Task t => t.m_action?.GetMethodImpl(),
                  _ =>  workItem?.GetType()
