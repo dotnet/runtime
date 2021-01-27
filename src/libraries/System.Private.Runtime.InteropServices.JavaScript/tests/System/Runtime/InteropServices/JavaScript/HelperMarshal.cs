@@ -41,22 +41,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public struct CustomDate {
             public DateTime Date;
 
-            public static CustomDate JSToManaged (double d) {
-                Console.WriteLine($"CustomDate.JSToManaged({d})");
-                var unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)d);
+            public static CustomDate JSToManaged (string s) {
+                Console.WriteLine($"CustomDate.JSToManaged({s})");
                 return new CustomDate { 
-                    Date = unixTime.DateTime
+                    Date = DateTime.Parse(s)
                 };
             }
 
-            public static double ManagedToJS (CustomDate cd) {
-                Console.WriteLine($"CustomDate.ManagedToJS({cd})");
-                var dt = cd.Date;
-                if (dt.Kind == DateTimeKind.Local)
-                    dt = dt.ToUniversalTime();
-                else if (dt.Kind == DateTimeKind.Unspecified)
-                    dt = new DateTime(dt.Ticks, DateTimeKind.Utc);
-                return new DateTimeOffset(dt).ToUnixTimeMilliseconds();
+            public static string ManagedToJS (CustomDate cd) {
+                return cd.Date.ToString();
             }
         }
 
