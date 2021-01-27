@@ -9243,7 +9243,11 @@ uint8_t** gc_heap::equalize_mark_lists (size_t total_mark_list_size)
 NOINLINE
 size_t gc_heap::sort_mark_list()
 {
-    if (settings.condemned_generation >= max_generation)
+    if ((settings.condemned_generation >= max_generation)
+#ifdef USE_REGIONS
+      || (g_mark_list_piece == nullptr)
+#endif //USE_REGIONS
+        )
     {
         // fake a mark list overflow so merge_mark_lists knows to quit early
         mark_list_index = mark_list_end + 1;
