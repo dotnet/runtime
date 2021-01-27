@@ -237,7 +237,7 @@ namespace
         StackSString ssDllName;
         if ((wszDllPath == nullptr) || (wszDllPath[0] == W('\0')) || fIsDllPathPrefix)
         {
-#ifdef FEATURE_COMINTEROP
+#ifdef HOST_WINDOWS
             IfFailRet(Clr::Util::Com::FindInprocServer32UsingCLSID(rclsid, ssDllName));
 
             EX_TRY
@@ -256,9 +256,9 @@ namespace
             IfFailRet(hr);
 
             wszDllPath = ssDllName.GetUnicode();
-#else // FEATURE_COMINTEROP
+#else // HOST_WINDOWS
             return E_FAIL;
-#endif // FEATURE_COMINTEROP
+#endif // HOST_WINDOWS
         }
         _ASSERTE(wszDllPath != nullptr);
 
@@ -3032,7 +3032,7 @@ namespace Clr
 {
 namespace Util
 {
-#ifdef FEATURE_COMINTEROP
+#ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
     // https://docs.microsoft.com/en-us/windows/desktop/secauthz/client-impersonation
     class SuspendImpersonation
@@ -3273,7 +3273,7 @@ namespace Com
         return __imp::FindSubKeyDefaultValueForCLSID(rclsid, W("InprocServer32"), ssInprocServer32Name);
     }
 } // namespace Com
-#endif //  FEATURE_COMINTEROP
+#endif //  HOST_WINDOWS
 
 } // namespace Util
 } // namespace Clr
