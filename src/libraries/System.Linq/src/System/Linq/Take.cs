@@ -97,68 +97,11 @@ namespace System.Linq
             return TakeWhileIterator(source, predicate);
         }
 
-        private static IEnumerable<TSource> TakeWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, bool> predicate)
-        {
-            foreach (TSource element in source)
-            {
-                if (!predicate(element))
-                {
-                    break;
-                }
-
-                yield return element;
-            }
-        }
-
-        public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (predicate == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
-            }
-
-            return TakeWhileIterator(source, predicate);
-        }
-
-        private static IEnumerable<TSource> TakeWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
-        {
-            int index = -1;
-            foreach (TSource element in source)
-            {
-                checked
-                {
-                    index++;
-                }
-
-                if (!predicate(element, index))
-                {
-                    break;
-                }
-
-                yield return element;
-            }
-        }
-
-        public static IEnumerable<TSource> TakeLast<TSource>(this IEnumerable<TSource> source, int count)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            return count <= 0 ?
-                Empty<TSource>() :
-                TakeLastIterator(source, count);
-        }
-
         private static IEnumerable<TSource> TakeIterator<TSource>(IEnumerable<TSource> source, bool isStartIndexFromEnd, int startIndexValue, bool isEndIndexFromEnd, int endIndexValue)
         {
             Debug.Assert(source != null);
+            Debug.Assert(startIndexValue >= 0);
+            Debug.Assert(endIndexValue >= 0);
 
             using IEnumerator<TSource> e = source.GetEnumerator();
             int currentIndex = -1;
@@ -257,6 +200,65 @@ namespace System.Linq
                     }
                 }
             }
+        }
+
+        private static IEnumerable<TSource> TakeWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, bool> predicate)
+        {
+            foreach (TSource element in source)
+            {
+                if (!predicate(element))
+                {
+                    break;
+                }
+
+                yield return element;
+            }
+        }
+
+        public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (predicate == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            return TakeWhileIterator(source, predicate);
+        }
+
+        private static IEnumerable<TSource> TakeWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
+        {
+            int index = -1;
+            foreach (TSource element in source)
+            {
+                checked
+                {
+                    index++;
+                }
+
+                if (!predicate(element, index))
+                {
+                    break;
+                }
+
+                yield return element;
+            }
+        }
+
+        public static IEnumerable<TSource> TakeLast<TSource>(this IEnumerable<TSource> source, int count)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            return count <= 0 ?
+                Empty<TSource>() :
+                TakeLastIterator(source, count);
         }
 
         private static IEnumerable<TSource> TakeLastIterator<TSource>(IEnumerable<TSource> source, int count)
