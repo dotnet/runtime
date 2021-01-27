@@ -81,34 +81,32 @@ namespace ILCompiler.PEWriter
             CalculateCallInfo();
             using (StreamWriter writer = new StreamWriter(profileFileName))
             {
-                writer.WriteLine("Caller - callee pairs:    {0,8}", _callInfo.Count);
+                writer.WriteLine("CHARACTERISTIC            | PAIR COUNT | CALL COUNT | PERCENTAGE");
+                writer.WriteLine("----------------------------------------------------------------");
                 int callCount = _callInfo.Sum(info => info.CallCount);
-                writer.WriteLine("Number of calls recorded: {0,8}", callCount);
+                double percentFactor = 100.0 / Math.Max(callCount, 1);
+                writer.WriteLine("ENTRIES TOTAL             | {0,10} | {1,10} | {2,10:F2}", _callInfo.Count, callCount, callCount * percentFactor);
                 int resolvedPairCount = _callInfo.Sum(info => info.CallType == CrossPageCall.Unresolved ? 0 : 1);
-                writer.WriteLine("Resolved pairs:           {0,8} ({1,5:F1}%)", resolvedPairCount, resolvedPairCount * 100.0 / Math.Max(_callInfo.Count, 1));
                 int resolvedCallCount = _callInfo.Sum(info => info.CallType == CrossPageCall.Unresolved ? 0 : info.CallCount);
-                writer.WriteLine("Resolved call count:      {0,8} ({1,5:F1}%)", resolvedCallCount, resolvedCallCount * 100.0 / Math.Max(callCount, 1));
+                writer.WriteLine("RESOLVED ENTRIES          | {0,10} | {1,10} | {2,10:F2}", resolvedPairCount, resolvedCallCount, resolvedCallCount * percentFactor);
                 int unresolvedPairCount = _callInfo.Count - resolvedPairCount;
-                writer.WriteLine("Unresolved pairs:         {0,8} ({1,5:F1}%)", unresolvedPairCount, unresolvedPairCount * 100.0 / Math.Max(_callInfo.Count, 1));
                 int unresolvedCallCount = callCount - resolvedCallCount;
-                writer.WriteLine("Unresolved call count:    {0,8} ({1,5:F1}%)", unresolvedCallCount, unresolvedCallCount * 100.0 / Math.Max(callCount, 1));
+                writer.WriteLine("UNRESOLVED ENTRIES        | {0,10} | {1,10} | {2,10:F2}", unresolvedPairCount, unresolvedCallCount, unresolvedCallCount * percentFactor);
                 int nearPairCount = _callInfo.Sum(info => info.CallType == CrossPageCall.No ? 1 : 0);
-                writer.WriteLine("Co-located pairs:         {0,8} ({1,5:F1}%)", nearPairCount, nearPairCount * 100.0 / Math.Max(_callInfo.Count, 1));
                 int nearCallCount = _callInfo.Sum(info => info.CallType == CrossPageCall.No ? info.CallCount : 0);
-                writer.WriteLine("Near call count:          {0,8} ({1,5:F1}%)", nearCallCount, nearCallCount * 100.0 / Math.Max(callCount, 1));
+                writer.WriteLine("NEAR (INTRA-PAGE) CALLS   | {0,10} | {1,10} | {2,10:F2}", nearPairCount, nearCallCount, nearCallCount * percentFactor);
                 int farPairCount = _callInfo.Sum(info => info.CallType == CrossPageCall.Yes ? 1 : 0);
-                writer.WriteLine("Cross-page pairs:         {0,8} ({1,5:F1}%)", farPairCount, farPairCount * 100.0 / Math.Max(_callInfo.Count, 1));
                 int farCallCount = _callInfo.Sum(info => info.CallType == CrossPageCall.Yes ? info.CallCount : 0);
-                writer.WriteLine("Cross-page call count:    {0,8} ({1,5:F1}%)", farCallCount, farCallCount * 100.0 / Math.Max(callCount, 1));
+                writer.WriteLine("FAR (CROSS-PAGE) CALLS    | {0,10} | {1,10} | {2,10:F2}", farPairCount, farCallCount, farCallCount * percentFactor);
 
                 writer.WriteLine();
-                writer.WriteLine("CALLER RVA | CALLER LEN | CALLEE RVA | CALLEE LEN |      COUNT | CALLER -> CALLEE: CROSS-PAGE CALLS");
-                writer.WriteLine("----------------------------------------------------------------------------------------------");
+                writer.WriteLine("CALLER RVA | CALLER LEN | CALLEE RVA | CALLEE LEN |      COUNT | FAR (CROSS-PAGE) CALLS (CALLER -> CALLEE)");
+                writer.WriteLine("----------------------------------------------------------------------------------------------------------");
                 DumpCallInfo(writer, _callInfo.Where(info => info.CallType == CrossPageCall.Yes).OrderByDescending(info => info.CallCount));
 
                 writer.WriteLine();
-                writer.WriteLine("CALLER RVA | CALLER LEN | CALLEE RVA | CALLEE LEN |      COUNT | CALLER -> CALLEE: INTRA-PAGE CALLS");
-                writer.WriteLine("----------------------------------------------------------------------------------------------");
+                writer.WriteLine("CALLER RVA | CALLER LEN | CALLEE RVA | CALLEE LEN |      COUNT | NEAR (INTRA-PAGE) CALLS (CALLER -> CALLEE)");
+                writer.WriteLine("-----------------------------------------------------------------------------------------------------------");
                 DumpCallInfo(writer, _callInfo.Where(info => info.CallType == CrossPageCall.No).OrderByDescending(info => info.CallCount));
             }
         }
