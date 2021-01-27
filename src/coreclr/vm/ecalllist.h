@@ -1110,9 +1110,9 @@ FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
 FCClassElement("ComWrappers", "System.Runtime.InteropServices", gComWrappersFuncs)
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)
