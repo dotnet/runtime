@@ -33,6 +33,9 @@ namespace System.Linq
             bool isEndIndexFromEnd = end.IsFromEnd;
             int startIndexValue = start.Value;
             int endIndexValue = end.Value;
+            Debug.Assert(startIndexValue >= 0);
+            Debug.Assert(endIndexValue >= 0);
+
             if (source is IPartition<TSource> partition)
             {
                 if (!isStartIndexFromEnd && !isEndIndexFromEnd)
@@ -64,7 +67,6 @@ namespace System.Linq
             else if (source is IList<TSource> list)
             {
                 int count = list.Count;
-
                 if (count == 0)
                 {
                     return Empty<TSource>();
@@ -72,10 +74,18 @@ namespace System.Linq
 
                 Debug.Assert(count > 0);
 
-                int minIndexInclusive = isStartIndexFromEnd ? count - startIndexValue : startIndexValue;
-                int maxIndexInclusive = (isEndIndexFromEnd ? count - endIndexValue : endIndexValue) - 1;
-                return minIndexInclusive <= maxIndexInclusive
-                    ? new ListPartition<TSource>(list, minIndexInclusive, maxIndexInclusive)
+                if (isStartIndexFromEnd)
+                {
+                    startIndexValue = count - startIndexValue;
+                }
+
+                if (isEndIndexFromEnd)
+                {
+                    endIndexValue = count - endIndexValue;
+                }
+
+                return startIndexValue < endIndexValue && startIndexValue < count
+                    ? new ListPartition<TSource>(list, minIndexInclusive: startIndexValue, maxIndexInclusive: endIndexValue - 1)
                     : Empty<TSource>();
             }
 
@@ -107,40 +117,45 @@ namespace System.Linq
             int currentIndex = -1;
             if (isStartIndexFromEnd)
             {
-                if (e.MoveNext())
+                if (!e.MoveNext())
                 {
-                    Queue<TSource> queue = new();
-                    queue.Enqueue(e.Current);
+                    yield break;
+                }
+
+                currentIndex++;
+                Queue<TSource> queue = new();
+                queue.Enqueue(e.Current);
+
+                while (e.MoveNext())
+                {
                     currentIndex++;
-
-                    int takeLastCount = startIndexValue;
-                    while (e.MoveNext())
+                    if (queue.Count == startIndexValue)
                     {
-                        if (queue.Count == takeLastCount)
-                        {
-                            queue.Dequeue();
-                        }
-
-                        queue.Enqueue(e.Current);
-                        currentIndex++;
+                        queue.Dequeue();
                     }
 
-                    if (queue.Count < takeLastCount)
-                    {
-                        yield break;
-                    }
+                    queue.Enqueue(e.Current);
+                }
 
-                    int minIndexInclusive = currentIndex + 1 - takeLastCount;
-                    int maxIndexInclusive = isEndIndexFromEnd ? currentIndex - endIndexValue : endIndexValue - 1;
-                    for (int index = minIndexInclusive; index <= maxIndexInclusive; index++)
-                    {
-                        yield return queue.Dequeue();
-                    }
+                if (queue.Count < startIndexValue)
+                {
+                    yield break;
+                }
+
+                int count = currentIndex + 1;
+                startIndexValue = count - startIndexValue;
+                if (isEndIndexFromEnd)
+                {
+                    endIndexValue = count - endIndexValue;
+                }
+
+                for (int index = startIndexValue; index < endIndexValue; index++)
+                {
+                    yield return queue.Dequeue();
                 }
             }
             else
             {
-                int minIndexInclusive = startIndexValue;
                 if (!e.MoveNext())
                 {
                     yield break;
@@ -148,25 +163,24 @@ namespace System.Linq
 
                 currentIndex++;
 
-                while (currentIndex < minIndexInclusive && e.MoveNext())
+                while (currentIndex < startIndexValue && e.MoveNext())
                 {
                     currentIndex++;
                 }
 
-                if (currentIndex != minIndexInclusive)
+                if (currentIndex != startIndexValue)
                 {
                     yield break;
                 }
 
                 if (isEndIndexFromEnd)
                 {
-                    int skipLastCount = endIndexValue;
-                    if (skipLastCount > 0)
+                    if (endIndexValue > 0)
                     {
                         Queue<TSource> queue = new();
                         do
                         {
-                            if (queue.Count == skipLastCount)
+                            if (queue.Count == endIndexValue)
                             {
                                 yield return queue.Dequeue();
                             }
@@ -186,16 +200,14 @@ namespace System.Linq
                 }
                 else
                 {
-                    int maxIndexInclusive = endIndexValue - 1;
-                    if (maxIndexInclusive < minIndexInclusive)
+                    if (startIndexValue >= endIndexValue)
                     {
                         yield break;
                     }
 
                     yield return e.Current;
-                    while (currentIndex < maxIndexInclusive && e.MoveNext())
+                    while (++currentIndex < endIndexValue && e.MoveNext())
                     {
-                        currentIndex++;
                         yield return e.Current;
                     }
                 }
