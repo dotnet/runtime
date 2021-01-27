@@ -261,6 +261,7 @@
 #define g_usleep monoeg_g_usleep
 #define g_utf16_to_ucs4 monoeg_g_utf16_to_ucs4
 #define g_utf16_to_utf8 monoeg_g_utf16_to_utf8
+#define g_utf16_to_utf8_custom_alloc monoeg_g_utf16_to_utf8_custom_alloc
 #define g_utf16_ascii_equal monoeg_g_utf16_ascii_equal
 #define g_utf16_asciiz_equal monoeg_g_utf16_asciiz_equal
 #define g_utf8_jump_table monoeg_g_utf8_jump_table
@@ -272,6 +273,7 @@
 #define g_utf8_strup monoeg_g_utf8_strup
 #define g_utf8_to_ucs4_fast monoeg_g_utf8_to_ucs4_fast
 #define g_utf8_to_utf16 monoeg_g_utf8_to_utf16
+#define g_utf8_to_utf16_custom_alloc monoeg_g_utf8_to_utf16_custom_alloc
 #define g_utf8_validate monoeg_g_utf8_validate
 #define g_unichar_to_utf8 monoeg_g_unichar_to_utf8
 #define g_unichar_is_space monoeg_g_unichar_is_space

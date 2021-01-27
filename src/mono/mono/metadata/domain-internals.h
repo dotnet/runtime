@@ -668,7 +668,7 @@ MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer add
 typedef void (*MonoJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
 
 void
-jit_info_table_foreach (MonoDomain *domain, MonoJitInfoFunc func, gpointer user_data);
+mono_jit_info_table_foreach_internal (MonoDomain *domain, MonoJitInfoFunc func, gpointer user_data);
 
 void mono_enable_debug_domain_unload (gboolean enable);
 

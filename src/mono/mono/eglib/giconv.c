@@ -919,7 +919,7 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 	
 error:
 	if (errno == ENOMEM) {
-		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ALLOC_FAILED,
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_MEMORY,
 			     "Allocation failed.");
 	} else if (errno == EILSEQ) {
 		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
@@ -1103,7 +1103,7 @@ g_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glo
 		outptr = outbuf = custom_alloc_func (outlen + 1, custom_alloc_data);
 
 	if (G_UNLIKELY (custom_alloc_func && !outbuf)) {
-		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ALLOC_FAILED, "Allocation failed.");
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_MEMORY, "Allocation failed.");
 		if (items_written)
 			*items_written = 0;
 		return NULL;

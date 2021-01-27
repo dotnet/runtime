@@ -338,7 +338,7 @@ mono_jit_info_table_find (MonoDomain *domain, gpointer addr)
 }
 
 void
-jit_info_table_foreach (MonoDomain *domain, MonoJitInfoFunc func, gpointer user_data)
+mono_jit_info_table_foreach_internal (MonoDomain *domain, MonoJitInfoFunc func, gpointer user_data)
 {
 	MonoJitInfoTable *table;
 	MonoJitInfo *ji;
