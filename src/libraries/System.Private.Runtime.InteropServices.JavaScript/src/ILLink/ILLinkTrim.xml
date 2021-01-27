@@ -5,7 +5,7 @@
     <!--
     Preserve System.Delegate.DynamicInvoke which is called from javascript
     -->
-    <assembly fullname="System.Private.CoreLib">
+    <assembly fullname="mscorlib">
       <type fullname="System.Delegate">
         <method signature="System.Object DynamicInvoke(System.Object[])" />
       </type>
