@@ -5328,7 +5328,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		/* Fall through */
 		handle_vtype:
 	case MONO_TYPE_VALUETYPE:
-		if (type == MONO_TYPE_OBJECT) {
+		if (type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
 			/* Boxed vtype */
 			int objid = decode_objid (buf, &buf, limit);
 			ErrorCode err;
@@ -6733,15 +6733,13 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		tls->pending_invoke->endp = tls->pending_invoke->p + (end - p);
 		tls->pending_invoke->suspend_count = suspend_count;
 		tls->pending_invoke->nmethods = nmethods;
-		if (!CHECK_PROTOCOL_VERSION (3, 0)) { //on icordbg they send a resume after calling an invoke method
-			if (flags & INVOKE_FLAG_SINGLE_THREADED) {
-				resume_thread(THREAD_TO_INTERNAL(thread));
-			}
-			else {
-				count = suspend_count;
-				for (i = 0; i < count; ++i)
-					resume_vm();
-			}
+		if (flags & INVOKE_FLAG_SINGLE_THREADED) {
+			resume_thread(THREAD_TO_INTERNAL(thread));
+		}
+		else {
+			count = suspend_count;
+			for (i = 0; i < count; ++i)
+				resume_vm();
 		}
 		break;
 	}
@@ -7215,6 +7213,12 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			mono_error_cleanup (error);
 			return ERR_INVALID_OBJECT;
 		}
+		
+		if (CHECK_PROTOCOL_VERSION(3, 0)) {
+			buffer_add_byte(buf, 1);
+			buffer_add_byte(buf, MONO_TYPE_STRING);
+		}
+
 		buffer_add_objid (buf, (MonoObject*)o);
 		break;
 	}
@@ -8724,6 +8728,18 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_long (buf, (long)mono_stopwatch_elapsed_ms (&tls->step_time));
 		break;
 	}
+	case MDBGPROT_CMD_THREAD_GET_APPDOMAIN: {
+		DebuggerTlsData* tls;
+		mono_loader_lock ();
+		tls = (DebuggerTlsData*)mono_g_hash_table_lookup (thread_to_tls, thread);
+		mono_loader_unlock ();
+		if (tls == NULL)
+			return ERR_UNLOADED;
+		if (tls->frame_count <= 0)
+			return ERR_UNLOADED;
+		buffer_add_domainid (buf, tls->frames[0]->de.domain);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -9455,7 +9471,6 @@ command_set_to_string (CommandSet command_set)
 }
 
 static const char* vm_cmds_str [] = {
-	"",
 	"VERSION",
 	"ALL_THREADS",
 	"SUSPEND",

@@ -683,6 +683,7 @@ endif()
 ### End of OS specific checks
 
 add_subdirectory(mono)
+add_subdirectory(dbi)
 
 configure_file(cmake/config.h.in config.h)
 configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)  # TODO: eglib-config.h is not needed, we're using hardcoded eglib-config.hw
