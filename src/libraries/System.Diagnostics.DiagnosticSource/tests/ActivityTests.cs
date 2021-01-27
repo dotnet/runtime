@@ -140,12 +140,12 @@ namespace System.Diagnostics.Tests
             Assert.Equal("5", a.GetBaggageItem("5"));
 
             // Check not added item
-            Assert.Null(a.GetBaggageItem("6")); 
+            Assert.Null(a.GetBaggageItem("6"));
 
             // Adding none existing key with null value is no-op
             a.SetBaggage("6", null);
             Assert.Equal(5, a.Baggage.Count());
-            Assert.Null(a.GetBaggageItem("6")); 
+            Assert.Null(a.GetBaggageItem("6"));
 
             // Check updated item
             a.SetBaggage("5", "5.1");
@@ -166,7 +166,7 @@ namespace System.Diagnostics.Tests
             // Now Remove second item
             a.SetBaggage("5", null);
             Assert.Equal(4, a.Baggage.Count());
-            Assert.Null(a.GetBaggageItem("5")); 
+            Assert.Null(a.GetBaggageItem("5"));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1605,6 +1605,57 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(tags[i].Value, tagObjects[i].Value);
             }
         }
+
+        [Fact]
+        public void TestGetTagItem()
+        {
+            Activity a = new Activity("GetTagItem");
+
+            // Test empty tags list
+            Assert.Equal(0, a.TagObjects.Count());
+            Assert.Null(a.GetTagItem("tag1"));
+
+            // Test adding first tag
+            a.AddTag("tag1", "value1");
+            Assert.Equal(1, a.TagObjects.Count());
+            Assert.Equal("value1", a.GetTagItem("tag1"));
+            Assert.Null(a.GetTagItem("tag2"));
+
+            // Test adding one more key
+            a.AddTag("tag2", "value2");
+            Assert.Equal(2, a.TagObjects.Count());
+            Assert.Equal("value1", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            // Test adding duplicate key
+            a.AddTag("tag1", "value1-d");
+            Assert.Equal(3, a.TagObjects.Count());
+            Assert.Equal("value1", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            // Test setting the key (overwrite the value)
+            a.SetTag("tag1", "value1-O");
+            Assert.Equal(3, a.TagObjects.Count());
+            Assert.Equal("value1-O", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            // Test removing the key
+            a.SetTag("tag1", null);
+            Assert.Equal(2, a.TagObjects.Count());
+            Assert.Equal("value1-d", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            a.SetTag("tag1", null);
+            Assert.Equal(1, a.TagObjects.Count());
+            Assert.Null(a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            a.SetTag("tag2", null);
+            Assert.Equal(0, a.TagObjects.Count());
+            Assert.Null(a.GetTagItem("tag1"));
+            Assert.Null(a.GetTagItem("tag2"));
+        }
+
 
         [Theory]
         [InlineData("key1", null, true,  1)]
