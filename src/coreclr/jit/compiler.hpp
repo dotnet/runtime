@@ -3449,11 +3449,18 @@ inline var_types Compiler::LoopDsc::lpIterOperType()
     VERIFY_lpIterTree();
 
     var_types type = lpIterTree->TypeGet();
-    assert(genActualType(type) == TYP_INT);
+    assert((genActualType(type) == TYP_INT) || (genActualType(type) == TYP_I_IMPL));
 
-    if ((lpIterTree->gtFlags & GTF_UNSIGNED) && type == TYP_INT)
+    if (lpIterTree->gtFlags & GTF_UNSIGNED)
     {
-        type = TYP_UINT;
+        if (type == TYP_INT)
+        {
+            type = TYP_UINT;
+        }
+        else if (type == TYP_I_IMPL)
+        {
+            type = TYP_U_IMPL;
+        }
     }
 
     return type;
@@ -3487,6 +3494,13 @@ inline void Compiler::LoopDsc::VERIFY_lpTestTree()
         // one of the nodes has to be the iterator
         assert(false);
     }
+
+#ifdef TARGET_64BIT
+    if (limit->OperIs(GT_CAST) && limit->TypeIs(TYP_I_IMPL))
+    {
+        limit = limit->gtGetOp1();
+    }
+#endif // TARGET_64BIT
 
     if (lpFlags & LPFLG_CONST_LIMIT)
     {
@@ -3571,6 +3585,14 @@ inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index)
     assert(lpFlags & LPFLG_ARRLEN_LIMIT);
 
     GenTree* limit = lpLimit();
+
+#ifdef TARGET_64BIT
+    if (limit->OperIs(GT_CAST) && limit->TypeIs(TYP_I_IMPL))
+    {
+        limit = limit->gtGetOp1();
+    }
+#endif // TARGET_64BIT
+
     assert(limit->OperGet() == GT_ARR_LENGTH);
 
     // Check if we have a.length or a[i][j].length

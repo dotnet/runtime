@@ -718,7 +718,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, GenTree* init, unsigned ite
 
     // RHS can be constant or local var.
     // TODO-CQ: CLONE: Add arr length for descending loops.
-    if (rhs->gtOper == GT_CNS_INT && rhs->TypeGet() == TYP_INT)
+    if (rhs->OperIs(GT_CNS_INT) && rhs->TypeIs(TYP_INT, TYP_I_IMPL))
     {
         optLoopTable[loopInd].lpFlags |= LPFLG_CONST_INIT;
         optLoopTable[loopInd].lpConstInit = (int)rhs->AsIntCon()->gtIconVal;
@@ -792,13 +792,20 @@ bool Compiler::optCheckIterInLoopTest(
         return false;
     }
 
-    if (iterOp->gtType != TYP_INT)
+    if (!iterOp->TypeIs(TYP_INT, TYP_I_IMPL))
     {
         return false;
     }
 
     // Mark the iterator node.
     iterOp->gtFlags |= GTF_VAR_ITERATOR;
+
+#ifdef TARGET_64BIT
+    if (limitOp->OperIs(GT_CAST) && limitOp->TypeIs(TYP_I_IMPL))
+    {
+        limitOp = limitOp->gtGetOp1();
+    }
+#endif // TARGET_64BIT
 
     // Check what type of limit we have - constant, variable or arr-len.
     if (limitOp->gtOper == GT_CNS_INT)
@@ -864,7 +871,7 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
 
         // Increment should be by a const int.
         // TODO-CQ: CLONE: allow variable increments.
-        if ((incrVal->gtOper != GT_CNS_INT) || (incrVal->TypeGet() != TYP_INT))
+        if (!incrVal->OperIs(GT_CNS_INT) || !incrVal->TypeIs(TYP_INT, TYP_I_IMPL))
         {
             return BAD_VAR_NUM;
         }
@@ -3027,6 +3034,10 @@ bool jitIterSmallOverflow(int iterAtExit, var_types incrType)
 
         case TYP_UINT: // Detected by checking for 32bit ....
         case TYP_INT:
+#if TARGET_64BIT
+        case TYP_I_IMPL:
+        case TYP_U_IMPL:
+#endif                    // TARGET_64BIT
             return false; // ... overflow same as done for TYP_INT
 
         default:
@@ -3068,6 +3079,10 @@ bool jitIterSmallUnderflow(int iterAtExit, var_types decrType)
 
         case TYP_UINT: // Detected by checking for 32bit ....
         case TYP_INT:
+#if TARGET_64BIT
+        case TYP_I_IMPL:
+        case TYP_U_IMPL:
+#endif                    // TARGET_64BIT
             return false; // ... underflow same as done for TYP_INT
 
         default:
@@ -3100,7 +3115,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
                                  bool       dupCond,
                                  unsigned*  iterCount)
 {
-    noway_assert(genActualType(iterOperType) == TYP_INT);
+    noway_assert((genActualType(iterOperType) == TYP_INT) || (genActualType(iterOperType) == TYP_I_IMPL));
 
     __int64 constInitX;
     __int64 constLimitX;
@@ -3143,6 +3158,10 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
         case TYP_INT:
         case TYP_UINT:
+#if TARGET_64BIT
+        case TYP_I_IMPL:
+        case TYP_U_IMPL:
+#endif // TARGET_64BIT
             if (unsTest)
             {
                 constInitX = (unsigned int)constInit;
@@ -8373,28 +8392,48 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     {
         return false;
     }
+
     GenTree* before = tree->gtGetOp1();
     if (before->gtOper != GT_ARR_BOUNDS_CHECK)
     {
         return false;
     }
+
     GenTreeBoundsChk* arrBndsChk = before->AsBoundsChk();
-    if (arrBndsChk->gtIndex->gtOper != GT_LCL_VAR)
+    GenTree*          gtIndex    = arrBndsChk->gtIndex;
+#ifdef TARGET_64BIT
+    if (gtIndex->OperIs(GT_CAST) && gtIndex->TypeIs(TYP_I_IMPL))
+    {
+        gtIndex = gtIndex->gtGetOp1();
+    }
+#endif // TARGET_64BIT
+
+    if (!gtIndex->OperIs(GT_LCL_VAR))
     {
         return false;
     }
 
+    GenTree* gtArrLen = arrBndsChk->gtArrLen;
+#ifdef TARGET_64BIT
+    if (gtArrLen->OperIs(GT_CAST) && gtArrLen->TypeIs(TYP_I_IMPL))
+    {
+        gtArrLen = gtArrLen->gtGetOp1();
+    }
+#endif // TARGET_64BIT
+
     // For span we may see gtArrLen is a local var or local field or constant.
     // We won't try and extract those.
-    if (arrBndsChk->gtArrLen->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
+    if (gtArrLen->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_INT))
     {
         return false;
     }
-    if (arrBndsChk->gtArrLen->gtGetOp1()->gtOper != GT_LCL_VAR)
+
+    if (!gtArrLen->gtGetOp1()->OperIs(GT_LCL_VAR))
     {
         return false;
     }
-    unsigned arrLcl = arrBndsChk->gtArrLen->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+
+    unsigned arrLcl = gtArrLen->gtGetOp1()->AsLclVarCommon()->GetLclNum();
     if (lhsNum != BAD_VAR_NUM && arrLcl != lhsNum)
     {
         return false;
@@ -8424,49 +8463,57 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     {
         return false;
     }
+
     GenTree* base = sibo->gtGetOp1();
     GenTree* sio  = sibo->gtGetOp2(); // sio == scale*index + offset
     if (base->OperGet() != GT_LCL_VAR || base->AsLclVarCommon()->GetLclNum() != arrLcl)
     {
         return false;
     }
+
     if (sio->gtOper != GT_ADD)
     {
         return false;
     }
+
     GenTree* ofs = sio->gtGetOp2();
     GenTree* si  = sio->gtGetOp1(); // si = scale*index
     if (ofs->gtOper != GT_CNS_INT)
     {
         return false;
     }
+
     if (si->gtOper != GT_LSH)
     {
         return false;
     }
+
     GenTree* scale = si->gtGetOp2();
     GenTree* index = si->gtGetOp1();
     if (scale->gtOper != GT_CNS_INT)
     {
         return false;
     }
+
+    GenTree* indexVar = index;
 #ifdef TARGET_64BIT
-    if (index->gtOper != GT_CAST)
+    if (!indexVar->OperIs(GT_CAST))
     {
         return false;
     }
-    GenTree* indexVar = index->gtGetOp1();
-#else
-    GenTree* indexVar = index;
-#endif
+    indexVar = indexVar->gtGetOp1();
+#endif // TARGET_64BIT
+
     if (indexVar->gtOper != GT_LCL_VAR || indexVar->AsLclVarCommon()->GetLclNum() != indLcl)
     {
         return false;
     }
+
     if (lhsNum == BAD_VAR_NUM)
     {
         result->arrLcl = arrLcl;
     }
+
     result->indLcls.Push(indLcl);
     result->bndsChks.Push(tree);
     result->useBlock = compCurBB;
