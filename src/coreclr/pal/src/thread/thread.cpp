@@ -91,6 +91,11 @@ typedef cpuset_t cpu_set_t;
 
 using namespace CorUnix;
 
+#ifdef __APPLE__
+#define MAX_THREAD_NAME_SIZE 63
+#else
+#define MAX_THREAD_NAME_SIZE 15
+#endif
 
 /* ------------------- Definitions ------------------------------*/
 
@@ -1581,15 +1586,32 @@ GetThreadTimes(
     return (retval);
 }
 
-VOID
+HRESULT
 PALAPI
 GetThreadDescription(
     IN HANDLE hThread,
     IN size_t length,
     OUT char* name)
 {
-    CPalThread *pThread = InternalGetCurrentThread();
-    pthread_getname_np(pThread->GetPThreadSelf(), name, length);
+    PAL_ERROR palError = NO_ERROR;
+    CPalThread *pCurrentThread;
+    CPalThread *pTargetThread;
+    IPalObject *pobjThread = NULL;
+    pCurrentThread = InternalGetCurrentThread();
+
+    palError = InternalGetThreadDataFromHandle(
+        pCurrentThread,
+        hThread,
+        &pTargetThread,
+        &pobjThread
+        );
+    
+    if (palError == NO_ERROR)
+    {
+        pthread_getname_np(pTargetThread->GetPThreadSelf(), name, length);
+    }
+
+    return HRESULT_FROM_WIN32(palError);
 }
 
 HRESULT
@@ -1687,24 +1709,19 @@ CorUnix::InternalSetThreadDescription(
     }
 
     // Null terminate early.
-    // pthread_setname_np only accepts up to 16 chars.
-    #if defined(__linux__)
-    maxNameSize = 15;
-    #else
-    maxNameSize = 63;
-    #endif
-
-    if (nameSize > maxNameSize)
+    // pthread_setname_np only accepts up to 16 chars on Linux and
+    // 64 chars on MacOS.
+    if (nameSize > MAX_THREAD_NAME_SIZE)
     {
-        nameBuf[maxNameSize] = '\0';
+        nameBuf[MAX_THREAD_NAME_SIZE] = '\0';
     }
-
-    #if defined(__Linux__)
+    
+    #if defined(__linux__)
     error = pthread_setname_np(pTargetThread->GetPThreadSelf(), nameBuf);
     #endif
 
     #if defined(__APPLE__)
-    // on macos, pthread_setname_np only works for the calling thread.
+    // on MacOS, pthread_setname_np only works for the calling thread.
     if (PlatformGetCurrentThreadId() == pTargetThread->GetThreadId()) 
     {
         error = pthread_setname_np(nameBuf);

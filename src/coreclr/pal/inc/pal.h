@@ -2253,7 +2253,7 @@ SetThreadDescription(
 );
 
 PALIMPORT
-VOID
+HRESULT
 PALAPI
 GetThreadDescription(
     IN HANDLE hThread,
