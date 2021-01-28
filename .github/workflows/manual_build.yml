@@ -1,0 +1,10 @@
+name: Manual build
+on: [workflow_dispatch]
+jobs:
+    build:
+       runs-on: ubuntu-latest
+       steps:
+          - name: Clone repository
+            uses: actions/checkout@v2
+          - name: Build
+            run: git status 
