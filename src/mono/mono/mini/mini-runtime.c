@@ -4914,6 +4914,7 @@ register_icalls (void)
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mini_llvmonly_pop_lmf, mono_icall_sig_void_ptr, TRUE);
+	register_icall (mini_llvmonly_get_interp_entry, mono_icall_sig_ptr_ptr, TRUE);
 
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);
