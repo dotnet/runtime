@@ -122,6 +122,9 @@ namespace System.Linq.Expressions.Interpreter
 #endif
         }
 
+        [DynamicDependency("GetValue", typeof(Array))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "The GetValue methods will be preserved by the DynamicDependency.")]
         private static CallInstruction GetArrayAccessor(MethodInfo info, int argumentCount)
         {
             Type arrayType = info.DeclaringType!;

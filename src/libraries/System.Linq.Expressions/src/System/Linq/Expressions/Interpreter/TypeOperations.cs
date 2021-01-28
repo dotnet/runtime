@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -152,8 +153,12 @@ namespace System.Linq.Expressions.Interpreter
                 _defaultValueType = mi.ReturnType;
             }
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
+                Justification = "_defaultValueType is a ValueType, so it will always have a default constructor.")]
             public override int Run(InterpretedFrame frame)
             {
+                Debug.Assert(_defaultValueType.IsValueType, "Nullable only allows on value types.");
+
                 if (frame.Peek() == null)
                 {
                     frame.Pop();
