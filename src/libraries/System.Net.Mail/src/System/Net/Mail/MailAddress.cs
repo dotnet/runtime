@@ -121,11 +121,19 @@ namespace System.Net.Mail
         {
             if (address == null)
             {
-                throw new ArgumentNullException(nameof(address));
+                if(throwExceptionIfFail)
+                    throw new ArgumentNullException(nameof(address));
+
+                parsedData = default;
+                return false;
             }
             if (address.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(address)), nameof(address));
+                if(throwExceptionIfFail)
+                    throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(address)), nameof(address));
+
+                parsedData = default;
+                return false;
             }
 
             displayNameEncoding ??= Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
