@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -604,7 +605,7 @@ namespace System
         }
 
         // Determines whether two strings match.
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (object.ReferenceEquals(this, obj))
                 return true;
@@ -619,7 +620,7 @@ namespace System
         }
 
         // Determines whether two strings match.
-        public bool Equals(string? value)
+        public bool Equals([NotNullWhen(true)] string? value)
         {
             if (object.ReferenceEquals(this, value))
                 return true;
@@ -637,7 +638,7 @@ namespace System
             return EqualsHelper(this, value);
         }
 
-        public bool Equals(string? value, StringComparison comparisonType)
+        public bool Equals([NotNullWhen(true)] string? value, StringComparison comparisonType)
         {
             if (object.ReferenceEquals(this, value))
             {

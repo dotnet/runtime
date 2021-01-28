@@ -537,7 +537,7 @@ namespace System.Security.AccessControl
             return GenericAce.CreateFromBinaryForm(binaryForm, 0);
         }
 
-        public sealed override bool Equals(object? o)
+        public sealed override bool Equals([NotNullWhen(true)] object? o)
         {
             GenericAce? ace = (o as GenericAce);
 

@@ -394,7 +394,7 @@ namespace System
         // if the given object is a boxed Decimal and its value is equal to the
         // value of this Decimal. Returns false otherwise.
         //
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is decimal other &&
             DecCalc.VarDecCmp(in this, in other) == 0;
 

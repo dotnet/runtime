@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -68,7 +69,7 @@ namespace System
             info.AddValue("value", ToUInt64());
         }
 
-        public override unsafe bool Equals(object? obj)
+        public override unsafe bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is UIntPtr)
             {
@@ -208,13 +209,13 @@ namespace System
         public static UIntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (UIntPtr)nuint_t.Parse(s, style, provider);
         public static UIntPtr Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (UIntPtr)nuint_t.Parse(s, style, provider);
 
-        public static bool TryParse(string? s, out UIntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out UIntPtr result)
         {
             Unsafe.SkipInit(out result);
             return nuint_t.TryParse(s, out Unsafe.As<UIntPtr, nuint_t>(ref result));
         }
 
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out UIntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out UIntPtr result)
         {
             Unsafe.SkipInit(out result);
             return nuint_t.TryParse(s, style, provider, out Unsafe.As<UIntPtr, nuint_t>(ref result));

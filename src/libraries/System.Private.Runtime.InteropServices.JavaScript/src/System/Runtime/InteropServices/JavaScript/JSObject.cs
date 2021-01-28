@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices.JavaScript
             FreeGCHandle();
         }
 
-        public override bool Equals(object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 
         public override int GetHashCode() => JSHandle;
 

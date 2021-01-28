@@ -1082,7 +1082,7 @@ namespace System.Text
 
         private static Encoding BigEndianUTF32 => UTF32Encoding.s_bigEndianDefault;
 
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is Encoding that &&
             (_codePage == that._codePage) &&
             (EncoderFallback.Equals(that.EncoderFallback)) &&
