@@ -950,7 +950,7 @@ public:
             }
 
             BYTE* pTypeHandleData = (BYTE*)&typeHandleData;
-            for (int i = 0; i < sizeof(intptr_t); i++)
+            for (size_t i = 0; i < sizeof(intptr_t); i++)
             {
                 instrumentationData.Append(pTypeHandleData[i]);
             }
