@@ -616,7 +616,7 @@ struct BasicBlock : private LIR::Range
             this->bbFlags &= ~BBF_PROF_WEIGHT;
         }
 
-        if (this->bbWeight == 0)
+        if (this->bbWeight == BB_ZERO_WEIGHT)
         {
             this->bbFlags |= BBF_RUN_RARELY;
         }

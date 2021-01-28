@@ -6193,20 +6193,10 @@ public:
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
     PhaseStatus optFindLoops();      // Finds loops and records them in the loop table
 
-    // Optionally clone loops in the loop table.
     void optCloneLoops();
-
-    // Clone loop "loopInd" in the loop table.
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
-
-    // Ensure that loop "loopInd" has a unique head block.  (If the existing entry has
-    // non-loop predecessors other than the head entry, create a new, empty block that goes (only) to the entry,
-    // and redirects the preds of the entry to this new block.)  Sets the weight of the newly created block to
-    // "ambientWeight".
     void optEnsureUniqueHead(unsigned loopInd, BasicBlock::weight_t ambientWeight);
-
     void optUnrollLoops(); // Unrolls loops (needs to have cost info)
-
     void optRemoveRedundantZeroInits();
 
 protected:
@@ -6476,8 +6466,6 @@ protected:
     // iff "l2" is not NOT_IN_LOOP, and "l1" contains "l2".
     bool optLoopContains(unsigned l1, unsigned l2);
 
-    // Requires "loopInd" to be a valid index into the loop table.
-
     // Updates the loop table by changing loop "loopInd", whose head is required
     // to be "from", to be "to".  Also performs this transformation for any
     // loop nested in "loopInd" that shares the same head as "loopInd".
@@ -6489,10 +6477,13 @@ protected:
 
     // Marks the containsCall information to "lnum" and any parent loops.
     void AddContainsCallAllContainingLoops(unsigned lnum);
+
     // Adds the variable liveness information from 'blk' to "lnum" and any parent loops.
     void AddVariableLivenessAllContainingLoops(unsigned lnum, BasicBlock* blk);
+
     // Adds "fldHnd" to the set of modified fields of "lnum" and any parent loops.
     void AddModifiedFieldAllContainingLoops(unsigned lnum, CORINFO_FIELD_HANDLE fldHnd);
+
     // Adds "elemType" to the set of modified array element types of "lnum" and any parent loops.
     void AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLASS_HANDLE elemType);
 
@@ -7397,7 +7388,7 @@ public:
     void optObtainLoopCloningOpts(LoopCloneContext* context);
     bool optIsLoopClonable(unsigned loopInd);
 
-    bool optCanCloneLoops();
+    bool optLoopCloningEnabled();
 
 #ifdef DEBUG
     void optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore);

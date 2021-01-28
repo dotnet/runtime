@@ -4870,7 +4870,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
 
         // Clone loops with optimization opportunities, and
-        // choose the one based on dynamic condition evaluation.
+        // choose one based on dynamic condition evaluation.
         //
         DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
 
