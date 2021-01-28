@@ -199,7 +199,7 @@ namespace System
         public unsafe string ToString(IFormatProvider? provider) => ((nuint_t)_value).ToString(provider);
         public unsafe string ToString(string? format, IFormatProvider? provider) => ((nuint_t)_value).ToString(format, provider);
 
-        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nuint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
         public static UIntPtr Parse(string s) => (UIntPtr)nuint_t.Parse(s);
