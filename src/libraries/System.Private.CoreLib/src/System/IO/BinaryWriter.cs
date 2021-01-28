@@ -415,18 +415,6 @@ namespace System.IO
             WriteCharsCommonWithoutLengthPrefix(chars, useThisWriteOverride: true);
         }
 
-        // dispatches to the virtual BinaryWriter.Write(byte[], int, int) method
-        private static void WriteToBinaryWriter(BinaryWriter sink, byte[] buffer, int offset, int count)
-        {
-            sink.Write(buffer, offset, count);
-        }
-
-        // dispatches to the virtual Stream.Write(byte[], int, int) method
-        private static void WriteToOutStream(BinaryWriter sink, byte[] buffer, int offset, int count)
-        {
-            sink.OutStream.Write(buffer, offset, count);
-        }
-
         private void WriteCharsCommonWithoutLengthPrefix(ReadOnlySpan<char> chars, bool useThisWriteOverride)
         {
             // If our input is truly enormous, the call to GetMaxByteCount might overflow,
