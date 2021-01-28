@@ -39,7 +39,7 @@ bool           g_jitInitialized = false;
 
 /*****************************************************************************/
 
-extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* jitHost)
+extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
 {
     if (g_jitInitialized)
     {
@@ -164,7 +164,7 @@ void* __cdecl operator new(size_t, const CILJitSingletonAllocator&)
     return CILJitBuff;
 }
 
-DLLEXPORT ICorJitCompiler* __stdcall getJit()
+DLLEXPORT ICorJitCompiler* getJit()
 {
     if (!g_jitInitialized)
     {

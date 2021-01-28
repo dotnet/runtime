@@ -61,10 +61,10 @@ namespace Internal.JitInterface
 
         private ExceptionDispatchInfo _lastException;
 
-        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)] // stdcall in CoreCLR!
+        [DllImport(JitLibrary, CallingConvention = CallingConvention.Cdecl)]
         private extern static IntPtr jitStartup(IntPtr host);
 
-        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(JitLibrary, CallingConvention = CallingConvention.Cdecl)]
         private extern static IntPtr getJit();
 
         [DllImport(JitSupportLibrary)]
