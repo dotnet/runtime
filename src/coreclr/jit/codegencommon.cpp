@@ -7100,36 +7100,25 @@ void CodeGen::genFnProlog()
     }
 #endif // TARGET_ARM
 
-#if defined(TARGET_XARCH)
-    if (compiler->compLclFrameSize >= compiler->getVeryLargeFrameSize())
-    {
-        // We currently must use REG_EAX on x86 here
-        // because the loop's backwards branch depends upon the size of EAX encodings
-        assert(initReg == REG_EAX);
-    }
-    else
-#endif // TARGET_XARCH
-    {
-        tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
+    tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
 
+    if (tempMask != RBM_NONE)
+    {
+        // We will use one of the registers that we were planning to zero init anyway.
+        // We pick the lowest register number.
+        tempMask = genFindLowestBit(tempMask);
+        initReg  = genRegNumFromMask(tempMask);
+    }
+    // Next we prefer to use one of the unused argument registers.
+    // If they aren't available we use one of the caller-saved integer registers.
+    else
+    {
+        tempMask = regSet.rsGetModifiedRegsMask() & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
         if (tempMask != RBM_NONE)
         {
-            // We will use one of the registers that we were planning to zero init anyway.
-            // We pick the lowest register number.
+            // We pick the lowest register number
             tempMask = genFindLowestBit(tempMask);
             initReg  = genRegNumFromMask(tempMask);
-        }
-        // Next we prefer to use one of the unused argument registers.
-        // If they aren't available we use one of the caller-saved integer registers.
-        else
-        {
-            tempMask = regSet.rsGetModifiedRegsMask() & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
-            if (tempMask != RBM_NONE)
-            {
-                // We pick the lowest register number
-                tempMask = genFindLowestBit(tempMask);
-                initReg  = genRegNumFromMask(tempMask);
-            }
         }
     }
 
