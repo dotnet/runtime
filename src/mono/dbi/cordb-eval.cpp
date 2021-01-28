@@ -20,16 +20,12 @@ CordbEval::CordbEval(Connection *conn, CordbThread *thread)
   this->thread = thread;
   ppValue = NULL;
   cmdId = -1;
-  //send a suspend because after the eval icordebug will send a resume
-  MdbgProtBuffer localbuf;
-  m_dbgprot_buffer_init(&localbuf, 128);
-  conn->send_event(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_SUSPEND, &localbuf);
-  m_dbgprot_buffer_free(&localbuf);
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(
     ICorDebugFunction *pFunction, ULONG32 nTypeArgs,
     ICorDebugType *ppTypeArgs[], ULONG32 nArgs, ICorDebugValue *ppArgs[]) {
+  this->thread->ppProcess->Stop(false);
   DEBUG_PRINTF(1, "CordbEval - CallParameterizedFunction - IMPLEMENTED\n");
 
   MdbgProtBuffer localbuf;
@@ -118,6 +114,7 @@ CordbEval::NewParameterizedArray(ICorDebugType *pElementType, ULONG32 rank,
 
 HRESULT STDMETHODCALLTYPE CordbEval::NewStringWithLength(LPCWSTR string,
                                                          UINT uiLength) {
+  this->thread->ppProcess->Stop(false);
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
   m_dbgprot_buffer_add_id(&localbuf, thread->thread_id);

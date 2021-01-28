@@ -243,8 +243,10 @@ void Connection::receive() {
     int iResult =
         recv(connect_socket, (char *)recvbuf_header.buf, HEADER_LENGTH, 0);
 
-    if (iResult == -1)
-      break;
+    if (iResult == -1) {
+        ppCordb->pCallback->ExitProcess(static_cast<ICorDebugProcess*>(ppProcess));
+        break;
+    }
     while (iResult == 0) {
       DEBUG_PRINTF(1,
                    "[dbg] transport_recv () sleep returned %d, expected %d.\n",
@@ -333,42 +335,44 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
     switch (etype) {
     case MDBGPROT_EVENT_KIND_VM_START: {
       ppProcess->suspended = true;
-      ppCordb->pCallback->CreateProcess(
-          static_cast<ICorDebugProcess *>(ppProcess));
-    } break;
+      ppCordb->pCallback->CreateProcess(static_cast<ICorDebugProcess *>(ppProcess));
+    }
+    break;
+    case MDBGPROT_EVENT_KIND_VM_DEATH: {
+        ppCordb->pCallback->ExitProcess(static_cast<ICorDebugProcess*>(ppProcess));
+    }
+    break;
     case MDBGPROT_EVENT_KIND_THREAD_START: {
       DEBUG_PRINTF(1, "criei a thread certinha pelo MDBGPROT_EVENT_KIND_THREAD_START\n");
       CordbThread *thread = new CordbThread(this, ppProcess, thread_id);
       g_ptr_array_add(ppCordb->threads, thread);
       ppCordb->pCallback->CreateThread(pCorDebugAppDomain, thread);
-    } break;
+    }
+    break;
     case MDBGPROT_EVENT_KIND_APPDOMAIN_CREATE: {
 
-    } break;
+    }
+    break;
     case MDBGPROT_EVENT_KIND_ASSEMBLY_LOAD: {
       // all the callbacks call a resume, in this case that we are faking 2
       // callbacks without receive command, we should not send the continue
       int assembly_id = m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
       if (pCorDebugAppDomain == NULL) {
-        pCorDebugAppDomain = new CordbAppDomain(
-            this, static_cast<ICorDebugProcess *>(ppProcess));
+        pCorDebugAppDomain = new CordbAppDomain(this, static_cast<ICorDebugProcess *>(ppProcess));
         ppProcess->Stop(false);
-        ppCordb->pCallback->CreateAppDomain(
-            static_cast<ICorDebugProcess *>(ppProcess), pCorDebugAppDomain);
+        ppCordb->pCallback->CreateAppDomain(static_cast<ICorDebugProcess *>(ppProcess), pCorDebugAppDomain);
       }
       DEBUG_PRINTF(1, "Recebi assembly load - %d\n", assembly_id);
-      ICorDebugAssembly *pAssembly =
-          new CordbAssembly(this, ppProcess, pCorDebugAppDomain, assembly_id);
+      ICorDebugAssembly *pAssembly = new CordbAssembly(this, ppProcess, pCorDebugAppDomain, assembly_id);
       ppProcess->Stop(false);
       ppCordb->pCallback->LoadAssembly(pCorDebugAppDomain, pAssembly);
 
       ppProcess->suspended = true;
-      ICorDebugModule *pModule = new CordbModule(
-          this, ppProcess, (CordbAssembly *)pAssembly, assembly_id);
-      g_hash_table_insert(ppCordb->modules, GINT_TO_POINTER(assembly_id),
-                          pModule);
+      ICorDebugModule *pModule = new CordbModule(this, ppProcess, (CordbAssembly *)pAssembly, assembly_id);
+      g_hash_table_insert(ppCordb->modules, GINT_TO_POINTER(assembly_id), pModule);
       ppCordb->pCallback->LoadModule(pCorDebugAppDomain, pModule);
-    } break;
+    }
+    break;
     case MDBGPROT_EVENT_KIND_BREAKPOINT: {
       int method_id = m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
       long offset = m_dbgprot_decode_long(recvbuf->buf, &recvbuf->buf, recvbuf->end);
@@ -383,18 +387,15 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
       int i = 0;
       CordbFunctionBreakpoint *breakpoint;
       while (i < ppCordb->breakpoints->len) {
-        breakpoint = (CordbFunctionBreakpoint *)g_ptr_array_index(
-            ppCordb->breakpoints, i);
-        if (breakpoint->offset == offset &&
-            breakpoint->code->func->id == method_id) {
-          ppCordb->pCallback->Breakpoint(
-              pCorDebugAppDomain, thread,
-              static_cast<ICorDebugFunctionBreakpoint *>(breakpoint));
+        breakpoint = (CordbFunctionBreakpoint *)g_ptr_array_index(ppCordb->breakpoints, i);
+        if (breakpoint->offset == offset && breakpoint->code->func->id == method_id) {
+          ppCordb->pCallback->Breakpoint(pCorDebugAppDomain, thread, static_cast<ICorDebugFunctionBreakpoint *>(breakpoint));
           break;
         }
         i++;
       }
-    } break;
+    }
+    break;
     case MDBGPROT_EVENT_KIND_STEP: {
       int method_id = m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
       long offset = m_dbgprot_decode_long(recvbuf->buf, &recvbuf->buf, recvbuf->end);
@@ -410,14 +411,9 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
         ppProcess->Stop(false);
         ppCordb->pCallback->CreateThread(pCorDebugAppDomain, thread);
       }
-      ppProcess->suspended = true;
-      if (!thread->stepper->isComplete) {
-          ppProcess->Stop(false);
-          ppCordb->pCallback->StepComplete(pCorDebugAppDomain, thread,
-              thread->stepper, STEP_NORMAL);
-      }
-      thread->stepper->isComplete = true;
-    } break;
+      ppCordb->pCallback->StepComplete(pCorDebugAppDomain, thread, thread->stepper, STEP_NORMAL);
+    }
+    break;
     }
   }
   // m_dbgprot_buffer_free(&recvbuf);
@@ -442,8 +438,8 @@ void Connection::process_packet_from_queue() {
   }
   while (i < pending_eval->len) {
     CordbEval *eval = (CordbEval *)g_ptr_array_index(pending_eval, i);
-    MdbgProtBuffer *recvbuf = get_answer(eval->cmdId);
-    eval->EvalComplete(recvbuf);
+    ReceivedReplyPacket *recvbuf = get_answer_with_error(eval->cmdId);
+    eval->EvalComplete(recvbuf->buf);
     dbg_lock();
     g_ptr_array_remove_index_fast(pending_eval, i);
     dbg_unlock();
@@ -466,6 +462,7 @@ void Connection::loop_send_receive() {
   enable_event(MDBGPROT_EVENT_KIND_APPDOMAIN_UNLOAD);
   enable_event(MDBGPROT_EVENT_KIND_USER_BREAK);
   enable_event(MDBGPROT_EVENT_KIND_USER_LOG);
+  enable_event(MDBGPROT_EVENT_KIND_VM_DEATH);
 
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);

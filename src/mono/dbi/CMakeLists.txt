@@ -188,29 +188,28 @@ addprefix(MDRUNTIMERW_HEADERS ${PROJECT_SOURCE_DIR}/../../coreclr/ "${MDRUNTIMER
 addprefix(eglib_sources ../mono/eglib/ "${eglib_sources}")
 
 add_library(mscordbi SHARED "${eglib_sources};${mscorbi_sources};${PROJECT_SOURCE_DIR}/../mono/mini/debugger-protocol.c;${PROJECT_SOURCE_DIR}/../../coreclr/pal/prebuilt/idl/xcordebug_i.cpp;${PROJECT_SOURCE_DIR}/../../coreclr/pal/prebuilt/idl/cordebug_i.cpp")
-
 add_library(mdruntimerw-dbi STATIC "${MDRUNTIMERW_SOURCES};${MDRUNTIMERW_HEADERS}")
 add_library(utilcode STATIC "${UTILCODE_COMMON_SOURCES}")
 
 
 target_link_libraries(mscordbi mdruntimerw-dbi utilcode ${OS_LIBS})
-
-set(TARGET_AMD64 1)
-add_compile_definitions(TARGET_AMD64)
-add_compile_definitions(DBI_COMPONENT)
-add_compile_definitions(HOST_WINDOWS)
-add_compile_definitions(HOST_64BIT)
-add_compile_definitions(FEATURE_COMINTEROP)
-add_compile_definitions(SELF_NO_HOST)
-
-
 target_precompile_headers(mdruntimerw-dbi PRIVATE ${PROJECT_SOURCE_DIR}/../../coreclr/md/enc/stdafx.h)
 target_precompile_headers(utilcode PRIVATE ${PROJECT_SOURCE_DIR}/../../coreclr/utilcode/stdafx.h)
 
+if(HOST_AMD64)
+  add_compile_definitions(TARGET_AMD64)
+  add_compile_definitions(HOST_64BIT)
+endif(HOST_AMD64)
 
 if(HOST_WIN32)
-target_compile_definitions(utilcode PRIVATE _CRTIMP=)
+  add_compile_definitions(HOST_WINDOWS)
+  target_compile_definitions(utilcode PRIVATE _CRTIMP=)
 endif(HOST_WIN32)
+
+add_compile_definitions(DBI_COMPONENT)
+add_compile_definitions(FEATURE_COMINTEROP)
+add_compile_definitions(SELF_NO_HOST)
+
 
 SET(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})
 SET_TARGET_PROPERTIES(mdruntimerw-dbi PROPERTIES LINKER_LANGUAGE CXX)

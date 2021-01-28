@@ -14,6 +14,7 @@ class CordbStepper : public CordbBaseMono,
                      public ICorDebugStepper2 {
   CordbThread *thread;
   boolean hasStepped;
+  int eventId;
 
 public:
   boolean isComplete;

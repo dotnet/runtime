@@ -20,6 +20,7 @@ CordbStepper::CordbStepper(Connection *conn, CordbThread *thread)
   this->thread = thread;
   hasStepped = false;
   isComplete = false;
+  eventId = -1;
 }
 
 HRESULT STDMETHODCALLTYPE CordbStepper::IsActive(BOOL *pbActive) {
@@ -28,8 +29,14 @@ HRESULT STDMETHODCALLTYPE CordbStepper::IsActive(BOOL *pbActive) {
 }
 
 HRESULT STDMETHODCALLTYPE CordbStepper::Deactivate(void) {
-  DEBUG_PRINTF(1, "CordbStepper - Deactivate - NOT IMPLEMENTED\n");
-  return E_NOTIMPL;
+  DEBUG_PRINTF(1, "CordbStepper - Deactivate - IMPLEMENTED\n");
+  MdbgProtBuffer sendbuf;
+  int buflen = 128;
+  m_dbgprot_buffer_init(&sendbuf, buflen);
+  m_dbgprot_buffer_add_byte(&sendbuf, MDBGPROT_EVENT_KIND_STEP);
+  m_dbgprot_buffer_add_int(&sendbuf, eventId);
+  conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_CLEAR, &sendbuf);
+  return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE
@@ -67,8 +74,10 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepRange(BOOL bStepIn,
   m_dbgprot_buffer_add_int(&sendbuf, bStepIn ? MDBGPROT_STEP_DEPTH_INTO : MDBGPROT_STEP_DEPTH_OVER);
   m_dbgprot_buffer_add_int(&sendbuf, MDBGPROT_STEP_FILTER_NONE);
 
-  conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
+  int cmdId = conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
   m_dbgprot_buffer_free(&sendbuf);
+  MdbgProtBuffer* bAnswer = conn->get_answer(cmdId);
+  eventId = m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
 
   DEBUG_PRINTF(1, "CordbStepper - StepRange - IMPLEMENTED\n");
   return S_OK;
@@ -90,8 +99,11 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepOut(void) {
   m_dbgprot_buffer_add_int(&sendbuf, MDBGPROT_STEP_DEPTH_OUT);
   m_dbgprot_buffer_add_int(&sendbuf, MDBGPROT_STEP_FILTER_NONE);
 
-  conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
+  int cmdId = conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
   m_dbgprot_buffer_free(&sendbuf);
+
+  m_dbgprot_buffer_free(&sendbuf);
+  MdbgProtBuffer* bAnswer = conn->get_answer(cmdId);
 
   DEBUG_PRINTF(1, "CordbStepper - StepOut - IMPLEMENTED\n");
   return S_OK;
