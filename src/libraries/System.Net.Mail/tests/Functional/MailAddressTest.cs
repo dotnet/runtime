@@ -36,14 +36,14 @@ namespace System.Net.Mail.Tests
         public void TestConstructorWithNullString()
         {
             Assert.Throws<ArgumentNullException>(() => new MailAddress(null));
-            Assert.Throws<ArgumentNullException>(() => _ = MailAddress.TryCreate(null, out MailAddress _));
+            Assert.False(MailAddress.TryCreate(null, out MailAddress _));
         }
 
         [Fact]
         public void TestConstructorWithEmptyString()
         {
             AssertExtensions.Throws<ArgumentException>("address", () => new MailAddress(""));
-            AssertExtensions.Throws<ArgumentException>("address", () => _ = MailAddress.TryCreate("", out MailAddress _));
+            Assert.False(MailAddress.TryCreate("", out MailAddress _));
         }
 
         public static IEnumerable<object[]> GetInvalid_Address()
@@ -58,6 +58,8 @@ namespace System.Net.Mail.Tests
             yield return new object[] { "\"MrFo@Bar\"<>" };
             yield return new object[] { " " };
             yield return new object[] { "forbar" };
+            yield return new object[] { "" };
+            yield return new object[] { null };
         }
 
         [Theory]
