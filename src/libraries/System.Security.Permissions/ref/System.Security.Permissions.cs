@@ -1942,43 +1942,6 @@ namespace System.Security.Policy
         public System.Security.SecurityElement ToXml() { throw null; }
         public System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level) { throw null; }
     }
-    public sealed partial class Evidence : System.Collections.ICollection, System.Collections.IEnumerable
-    {
-        public Evidence() { }
-        [System.ObsoleteAttribute]
-        public Evidence(object[] hostEvidence, object[] assemblyEvidence) { }
-        public Evidence(System.Security.Policy.Evidence evidence) { }
-        public Evidence(System.Security.Policy.EvidenceBase[] hostEvidence, System.Security.Policy.EvidenceBase[] assemblyEvidence) { }
-        [System.ObsoleteAttribute]
-        public int Count { get { throw null; } }
-        public bool IsReadOnly { get { throw null; } }
-        public bool IsSynchronized { get { throw null; } }
-        public bool Locked { get { throw null; } set { } }
-        public object SyncRoot { get { throw null; } }
-        [System.ObsoleteAttribute]
-        public void AddAssembly(object id) { }
-        public void AddAssemblyEvidence<T>(T evidence) where T : System.Security.Policy.EvidenceBase { }
-        [System.ObsoleteAttribute]
-        public void AddHost(object id) { }
-        public void AddHostEvidence<T>(T evidence) where T : System.Security.Policy.EvidenceBase { }
-        public void Clear() { }
-        public System.Security.Policy.Evidence Clone() { throw null; }
-        [System.ObsoleteAttribute]
-        public void CopyTo(System.Array array, int index) { }
-        public System.Collections.IEnumerator GetAssemblyEnumerator() { throw null; }
-        public T GetAssemblyEvidence<T>() where T : System.Security.Policy.EvidenceBase { throw null; }
-        [System.ObsoleteAttribute]
-        public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        public System.Collections.IEnumerator GetHostEnumerator() { throw null; }
-        public T GetHostEvidence<T>() where T : System.Security.Policy.EvidenceBase { throw null; }
-        public void Merge(System.Security.Policy.Evidence evidence) { }
-        public void RemoveType(System.Type t) { }
-    }
-    public abstract partial class EvidenceBase
-    {
-        protected EvidenceBase() { }
-        public virtual System.Security.Policy.EvidenceBase Clone() { throw null; }
-    }
 #if NET50_OBSOLETIONS
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
