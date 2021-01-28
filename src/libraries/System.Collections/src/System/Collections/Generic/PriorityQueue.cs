@@ -44,7 +44,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// The binary logarithm of <see cref="Arity" />.
         /// </summary>
-        private const int ArityLog2 = 2;
+        private const int Log2Arity = 2;
 
         /// <summary>
         /// Creates an empty priority queue.
@@ -142,7 +142,7 @@ namespace System.Collections.Generic
             // Virtually add the node at the end of the underlying array.
             // Note that the node being enqueued does not need to be physically placed
             // there at this point, as such an assignment would be redundant.
-            var node = (element, priority);
+            (TElement Element, TPriority Priority) node = (element, priority);
             _size++;
             _version++;
 
@@ -157,14 +157,12 @@ namespace System.Collections.Generic
         /// <exception cref="InvalidOperationException">The queue is empty.</exception>
         public TElement Peek()
         {
-            if (TryPeek(out TElement? element, out _))
-            {
-                return element;
-            }
-            else
+            if (_size == 0)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
             }
+
+            return _nodes[RootIndex].Element;
         }
 
         /// <summary>
@@ -173,14 +171,14 @@ namespace System.Collections.Generic
         /// <exception cref="InvalidOperationException">The queue is empty.</exception>
         public TElement Dequeue()
         {
-            if (TryDequeue(out TElement? element, out _))
-            {
-                return element;
-            }
-            else
+            if (_size == 0)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
             }
+
+            TElement element = _nodes[RootIndex].Element;
+            Remove(RootIndex);
+            return element;
         }
 
         /// <summary>
@@ -227,7 +225,7 @@ namespace System.Collections.Generic
         /// </summary>
         public TElement EnqueueDequeue(TElement element, TPriority priority)
         {
-            var root = _nodes[RootIndex];
+            (TElement Element, TPriority Priority) root = _nodes[RootIndex];
 
             if (Comparer.Compare(priority, root.Priority) <= 0)
             {
@@ -235,7 +233,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                var newRoot = (element, priority);
+                (TElement Element, TPriority Priority) newRoot = (element, priority);
                 _nodes[RootIndex] = newRoot;
 
                 MoveDown(newRoot, RootIndex);
@@ -266,7 +264,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                foreach (var (element, priority) in items)
+                foreach ((TElement element, TPriority priority) in items)
                 {
                     Enqueue(element, priority);
                 }
@@ -285,18 +283,18 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
-                using (var eumerator = elements.GetEnumerator())
+                using (IEnumerator<TElement> enumerator = elements.GetEnumerator())
                 {
-                    if (eumerator.MoveNext())
+                    if (enumerator.MoveNext())
                     {
                         _nodes = new (TElement, TPriority)[MinimumElementsToGrowBy];
-                        _nodes[0] = (eumerator.Current, priority);
+                        _nodes[0] = (enumerator.Current, priority);
                         _size = 1;
 
-                        while (eumerator.MoveNext())
+                        while (enumerator.MoveNext())
                         {
                             EnsureEnoughCapacityBeforeAddingNode();
-                            _nodes[_size++] = (eumerator.Current, priority);
+                            _nodes[_size++] = (enumerator.Current, priority);
                         }
                     }
                 }
@@ -308,7 +306,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                foreach (var element in elements)
+                foreach (TElement element in elements)
                 {
                     Enqueue(element, priority);
                 }
@@ -421,10 +419,10 @@ namespace System.Collections.Generic
             // node and shorten the array by one.
 
             int lastNodeIndex = GetLastNodeIndex();
-            var lastNode = _nodes[lastNodeIndex];
+            (TElement Element, TPriority Priority) lastNode = _nodes[lastNodeIndex];
+            _nodes[lastNodeIndex] = default;
             _size--;
             _version++;
-            _nodes[lastNodeIndex] = default;
 
             // In case we wanted to remove the node that was the last one,
             // we are done.
@@ -439,7 +437,7 @@ namespace System.Collections.Generic
             // wanted to remove. After that operation, we will need
             // to restore the heap property (in general).
 
-            var nodeToRemove = _nodes[indexOfNodeToRemove];
+            (TElement Element, TPriority Priority) nodeToRemove = _nodes[indexOfNodeToRemove];
 
             int relation = Comparer.Compare(lastNode.Priority, nodeToRemove.Priority);
             _nodes[indexOfNodeToRemove] = lastNode;
@@ -462,7 +460,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the index of an element's parent.
         /// </summary>
-        private int GetParentIndex(int index) => (index - 1) >> ArityLog2;
+        private int GetParentIndex(int index) => (index - 1) >> Log2Arity;
 
         /// <summary>
         /// Gets the index of the first child of an element.
@@ -499,7 +497,7 @@ namespace System.Collections.Generic
             while (nodeIndex > 0)
             {
                 int parentIndex = GetParentIndex(nodeIndex);
-                var parent = _nodes[parentIndex];
+                (TElement Element, TPriority Priority) parent = _nodes[parentIndex];
 
                 if (Comparer.Compare(node.priority, parent.Priority) < 0)
                 {
@@ -529,13 +527,13 @@ namespace System.Collections.Generic
             {
                 // Check if the current node (pointed by 'nodeIndex') should really be extracted
                 // first, or maybe one of its children should be extracted earlier.
-                var topChild = _nodes[i];
+                (TElement Element, TPriority Priority) topChild = _nodes[i];
                 int childrenIndexesLimit = Math.Min(i + Arity, _size);
                 int topChildIndex = i;
 
                 while (++i < childrenIndexesLimit)
                 {
-                    var child = _nodes[i];
+                    (TElement Element, TPriority Priority) child = _nodes[i];
                     if (Comparer.Compare(child.Priority, topChild.Priority) < 0)
                     {
                         topChild = child;
@@ -574,7 +572,7 @@ namespace System.Collections.Generic
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
+                if (array is null)
                 {
                     throw new ArgumentNullException(nameof(array));
                 }
