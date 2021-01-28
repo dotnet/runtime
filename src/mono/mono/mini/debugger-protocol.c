@@ -101,7 +101,7 @@ m_dbgprot_decode_byte_array (uint8_t *buf, uint8_t **endbuf, uint8_t *limit, uin
 	*len = m_dbgprot_decode_int (buf, &buf, limit);
 	uint8_t* s;
 
-	if (len < 0) {
+	if (*len < 0) {
 		*endbuf = buf;
 		return NULL;
 	}
