@@ -99,6 +99,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47561")]
         public async Task ClosedDuringOperation_Throws_ObjectDisposedExceptionOrSocketException(bool closeOrDispose)
         {
             if (UsesSync && PlatformDetection.IsOSX)
