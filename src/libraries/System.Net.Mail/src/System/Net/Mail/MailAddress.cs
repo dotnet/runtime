@@ -121,7 +121,7 @@ namespace System.Net.Mail
         {
             if (address == null)
             {
-                if(throwExceptionIfFail)
+                if (throwExceptionIfFail)
                     throw new ArgumentNullException(nameof(address));
 
                 parsedData = default;
@@ -129,7 +129,7 @@ namespace System.Net.Mail
             }
             if (address.Length == 0)
             {
-                if(throwExceptionIfFail)
+                if (throwExceptionIfFail)
                     throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(address)), nameof(address));
 
                 parsedData = default;
