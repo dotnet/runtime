@@ -3046,16 +3046,30 @@ Function
 
 (no return value)
 --*/
-__attribute__((destructor))
 VOID
-PROCNotifyProcessShutdown()
+PROCNotifyProcessShutdown(bool isExecutingOnAltStack)
 {
     // Call back into the coreclr to clean up the debugger transport pipes
     PSHUTDOWN_CALLBACK callback = InterlockedExchangePointer(&g_shutdownCallback, NULL);
     if (callback != NULL)
     {
-        callback();
+        callback(isExecutingOnAltStack);
     }
+}
+
+/*++
+Function
+  PROCNotifyProcessShutdownDestructor
+
+  Called at process exit, invokes process shutdown notification
+
+(no return value)
+--*/
+__attribute__((destructor))
+VOID
+PROCNotifyProcessShutdownDestructor()
+{
+    PROCNotifyProcessShutdown(/* isExecutingOnAltStack */ false);
 }
 
 /*++

@@ -418,7 +418,7 @@ PALAPI
 PAL_TerminateEx(
     int exitCode);
 
-typedef VOID (*PSHUTDOWN_CALLBACK)(void);
+typedef VOID (*PSHUTDOWN_CALLBACK)(bool isExecutingOnAltStack);
 
 PALIMPORT
 VOID
