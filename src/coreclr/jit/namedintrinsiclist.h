@@ -35,7 +35,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Log10,
     NI_System_Math_Pow,
     NI_System_Math_Round,
-    NI_System_Math_ScaleB,
     NI_System_Math_Sin,
     NI_System_Math_Sinh,
     NI_System_Math_Sqrt,

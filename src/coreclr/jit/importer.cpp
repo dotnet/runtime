@@ -4429,7 +4429,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log10:
             case NI_System_Math_Pow:
             case NI_System_Math_Round:
-            case NI_System_Math_ScaleB:
             case NI_System_Math_Sin:
             case NI_System_Math_Sinh:
             case NI_System_Math_Sqrt:
@@ -4810,10 +4809,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "Round") == 0)
             {
                 result = NI_System_Math_Round;
-            }
-            else if (strcmp(methodName, "ScaleB") == 0)
-            {
-                result = NI_System_Math_ScaleB;
             }
             else if (strcmp(methodName, "Sin") == 0)
             {
@@ -20679,7 +20674,6 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Log10:
         case NI_System_Math_Pow:
         case NI_System_Math_Round:
-        case NI_System_Math_ScaleB:
         case NI_System_Math_Sin:
         case NI_System_Math_Sinh:
         case NI_System_Math_Sqrt:

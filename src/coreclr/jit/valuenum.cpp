@@ -4978,14 +4978,6 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_ScaleB:
-                {
-                    assert(TYP_INT == TypeOfVN(arg1VN));
-                    int arg1Val = GetConstantInt32(arg1VN);
-                    res         = scalbn(arg0Val, arg1Val);
-                    break;
-                }
-
                 default:
                     // the above are the only binary math intrinsics at the time of this writing.
                     unreached();
@@ -5027,14 +5019,6 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_ScaleB:
-                {
-                    assert(TYP_INT == TypeOfVN(arg1VN));
-                    int arg1Val = GetConstantInt32(arg1VN);
-                    res         = scalbnf(arg0Val, arg1Val);
-                    break;
-                }
-
                 default:
                     // the above are the only binary math intrinsics at the time of this writing.
                     unreached();
@@ -5059,10 +5043,6 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 
             case NI_System_Math_Pow:
                 vnf = VNF_Pow;
-                break;
-
-            case NI_System_Math_ScaleB:
-                vnf = VNF_ScaleB;
                 break;
 
             default:

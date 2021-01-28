@@ -3729,7 +3729,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             case NI_System_Math_Log10:
                             case NI_System_Math_Pow:
                             case NI_System_Math_Round:
-                            case NI_System_Math_ScaleB:
                             case NI_System_Math_Sin:
                             case NI_System_Math_Sinh:
                             case NI_System_Math_Sqrt:
@@ -11653,9 +11652,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                         break;
                     case NI_System_Math_Round:
                         printf(" round");
-                        break;
-                    case NI_System_Math_ScaleB:
-                        printf(" scaleb");
                         break;
                     case NI_System_Math_Sin:
                         printf(" sin");
