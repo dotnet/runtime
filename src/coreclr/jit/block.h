@@ -726,8 +726,16 @@ struct BasicBlock : private LIR::Range
     };
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
-    unsigned bbStkTempsIn;   // base# for input stack temps
-    unsigned bbStkTempsOut;  // base# for output stack temps
+
+    union {
+        unsigned bbStkTempsIn;       // base# for input stack temps
+        int      bbCountSchemaIndex; // schema index for count instrumentation
+    };
+
+    union {
+        unsigned bbStkTempsOut;      // base# for output stack temps
+        int      bbClassSchemaIndex; // schema index for class instrumentation
+    };
 
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)
 
