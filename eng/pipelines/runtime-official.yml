@@ -146,6 +146,7 @@ stages:
       buildConfig: release
       platforms:
       - Linux_x64
+      - Windows_x64
       jobParameters:
         buildArgs: -s mono+packs -c $(_BuildConfig)
                    /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
