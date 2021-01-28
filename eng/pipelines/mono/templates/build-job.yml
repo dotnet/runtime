@@ -157,10 +157,10 @@ jobs:
 
     # Build packages
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(ninjaArg) -pack $(OutputRidArg)
         displayName: Build nupkg
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) -pack $(OutputRidArg)
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(ninjaArg) -pack $(OutputRidArg)
         displayName: Build nupkg
 
     # Publish official build
