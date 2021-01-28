@@ -645,7 +645,7 @@ namespace ILCompiler.DependencyAnalysis
                 graph.AddRoot(FilterFuncletPersonalityRoutine, "Filter funclet personality routine is faster to root early rather than referencing it from each unwind info");
             }
 
-            if (ProfileDataManager != null)
+            if ((ProfileDataManager != null) && (ProfileDataManager.EmbedPgoDataInR2RImage))
             {
                 // Profile instrumentation data attaches here
                 HashSet<MethodDesc> methodsToInsertInstrumentationDataFor = new HashSet<MethodDesc>();
