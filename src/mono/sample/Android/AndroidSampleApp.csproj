@@ -23,6 +23,10 @@
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  
+  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
+  </PropertyGroup>
 
   <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
@@ -39,6 +43,8 @@
       </AotInputAssemblies>
     </ItemGroup>
 
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)" 
+             Condition="'$(RunAOTCompilation)' == 'true'"/>
     <RemoveDir Directories="$(ApkDir)" />
 
     <PropertyGroup>
@@ -62,6 +68,7 @@
     <MonoAOTCompiler
         Condition="'$(ForceAOT)' == 'true'"
         CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\android-$(TargetArchitecture)\mono-aot-cross"
+        OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
@@ -72,13 +79,14 @@
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
-        SourceDir="$(PublishDir)"
         ProjectName="HelloAndroid"
         ForceInterpreter="$(MonoForceInterpreter)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
+        Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(AssemblyName).dll"
         StripDebugSymbols="$(StripDebugSymbols)"
-        OutputDir="$(ApkDir)">
+        OutputDir="$(ApkDir)"
+        AppDir="$(PublishDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
