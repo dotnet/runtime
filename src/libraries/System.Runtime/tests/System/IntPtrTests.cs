@@ -831,7 +831,7 @@ namespace System.Tests
         {
             foreach (object[] inputs in Parse_Valid_TestData())
             {
-                yield return new object[] { inputs[0], (IntPtr)0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
+                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
             }
 
             NumberFormatInfo samePositiveNegativeFormat = new NumberFormatInfo()
@@ -844,18 +844,18 @@ namespace System.Tests
             NumberFormatInfo emptyNegativeFormat = new NumberFormatInfo() { NegativeSign = "" };
 
             // None
-            yield return new object[] { "2147483647", (IntPtr)1, (IntPtr)9, NumberStyles.None, null, (IntPtr)147483647 };
-            yield return new object[] { "2147483647", (IntPtr)1, (IntPtr)1, NumberStyles.None, null, (IntPtr)1 };
-            yield return new object[] { "123\0\0", (IntPtr)2, (IntPtr)2, NumberStyles.None, null, (IntPtr)3 };
+            yield return new object[] { "2147483647", 1, 9, NumberStyles.None, null, (IntPtr)147483647 };
+            yield return new object[] { "2147483647", 1, 1, NumberStyles.None, null, (IntPtr)1 };
+            yield return new object[] { "123\0\0", 2, 2, NumberStyles.None, null, (IntPtr)3 };
 
             // Hex
-            yield return new object[] { "abc", (IntPtr)0, (IntPtr)1, NumberStyles.HexNumber, null, (IntPtr)0xa };
-            yield return new object[] { "ABC", (IntPtr)1, (IntPtr)1, NumberStyles.HexNumber, null, (IntPtr)0xB };
-            yield return new object[] { "FFFFFFFF", (IntPtr)6, (IntPtr)2, NumberStyles.HexNumber, null, (IntPtr)0xFF };
-            yield return new object[] { "FFFFFFFF", (IntPtr)0, (IntPtr)1, NumberStyles.HexNumber, null, (IntPtr)0xF };
+            yield return new object[] { "abc", 0, 1, NumberStyles.HexNumber, null, (IntPtr)0xa };
+            yield return new object[] { "ABC", 1, 1, NumberStyles.HexNumber, null, (IntPtr)0xB };
+            yield return new object[] { "FFFFFFFF", 6, 2, NumberStyles.HexNumber, null, (IntPtr)0xFF };
+            yield return new object[] { "FFFFFFFF", 0, 1, NumberStyles.HexNumber, null, (IntPtr)0xF };
 
             // Currency
-            yield return new object[] { "-$1000", (IntPtr)1, (IntPtr)5, NumberStyles.Currency, new NumberFormatInfo()
+            yield return new object[] { "-$1000", 1, 5, NumberStyles.Currency, new NumberFormatInfo()
             {
                 CurrencySymbol = "$",
                 CurrencyGroupSeparator = "|",
@@ -863,8 +863,8 @@ namespace System.Tests
             }, (IntPtr)1000 };
 
             NumberFormatInfo emptyCurrencyFormat = new NumberFormatInfo() { CurrencySymbol = "" };
-            yield return new object[] { "100", (IntPtr)1, (IntPtr)2, NumberStyles.Currency, emptyCurrencyFormat, (IntPtr)0 };
-            yield return new object[] { "100", (IntPtr)0, (IntPtr)1, NumberStyles.Currency, emptyCurrencyFormat, (IntPtr)1 };
+            yield return new object[] { "100", 1, 2, NumberStyles.Currency, emptyCurrencyFormat, (IntPtr)0 };
+            yield return new object[] { "100", 0, 1, NumberStyles.Currency, emptyCurrencyFormat, (IntPtr)1 };
 
             // If CurrencySymbol and Negative are the same, NegativeSign is preferred
             NumberFormatInfo sameCurrencyNegativeSignFormat = new NumberFormatInfo()
@@ -872,23 +872,23 @@ namespace System.Tests
                 NegativeSign = "|",
                 CurrencySymbol = "|"
             };
-            yield return new object[] { "1000", (IntPtr)1, (IntPtr)3, NumberStyles.AllowCurrencySymbol | NumberStyles.AllowLeadingSign, sameCurrencyNegativeSignFormat, (IntPtr)0 };
-            yield return new object[] { "|1000", (IntPtr)0, (IntPtr)2, NumberStyles.AllowCurrencySymbol | NumberStyles.AllowLeadingSign, sameCurrencyNegativeSignFormat, -1 };
+            yield return new object[] { "1000", 1, 3, NumberStyles.AllowCurrencySymbol | NumberStyles.AllowLeadingSign, sameCurrencyNegativeSignFormat, (IntPtr)0 };
+            yield return new object[] { "|1000", 0, 2, NumberStyles.AllowCurrencySymbol | NumberStyles.AllowLeadingSign, sameCurrencyNegativeSignFormat, (IntPtr)(-1) };
 
             // Any
-            yield return new object[] { "123", (IntPtr)0, (IntPtr)2, NumberStyles.Any, null, (IntPtr)12 };
+            yield return new object[] { "123", 0, 2, NumberStyles.Any, null, (IntPtr)12 };
 
             // AllowLeadingSign
-            yield return new object[] { "-2147483648", (IntPtr)0, (IntPtr)10, NumberStyles.AllowLeadingSign, null, -214748364 };
+            yield return new object[] { "-2147483648", 0, 10, NumberStyles.AllowLeadingSign, null, (IntPtr)(-214748364) };
 
             // AllowTrailingSign
-            yield return new object[] { "123-", (IntPtr)0, (IntPtr)3, NumberStyles.AllowTrailingSign, null, (IntPtr)123 };
+            yield return new object[] { "123-", 0, 3, NumberStyles.AllowTrailingSign, null, (IntPtr)123 };
 
             // AllowExponent
-            yield return new object[] { "1E2", (IntPtr)0, (IntPtr)1, NumberStyles.AllowExponent, null, (IntPtr)1 };
-            yield return new object[] { "1E+2", (IntPtr)3, (IntPtr)1, NumberStyles.AllowExponent, null, (IntPtr)2 };
-            yield return new object[] { "(1E2)", (IntPtr)1, (IntPtr)3, NumberStyles.AllowExponent | NumberStyles.AllowParentheses, null, (IntPtr)1E2 };
-            yield return new object[] { "-1E2", (IntPtr)1, (IntPtr)3, NumberStyles.AllowExponent | NumberStyles.AllowLeadingSign, null, (IntPtr)1E2 };
+            yield return new object[] { "1E2", 0, 1, NumberStyles.AllowExponent, null, (IntPtr)1 };
+            yield return new object[] { "1E+2", 3, 1, NumberStyles.AllowExponent, null, (IntPtr)2 };
+            yield return new object[] { "(1E2)", 1, 3, NumberStyles.AllowExponent | NumberStyles.AllowParentheses, null, (IntPtr)1E2 };
+            yield return new object[] { "-1E2", 1, 3, NumberStyles.AllowExponent | NumberStyles.AllowLeadingSign, null, (IntPtr)1E2 };
         }
 
         [Theory]

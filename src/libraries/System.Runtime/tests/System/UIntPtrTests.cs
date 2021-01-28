@@ -456,8 +456,8 @@ namespace System.Tests
 
             yield return new object[] { "123", 0, 2, NumberStyles.Integer, null, (UIntPtr)12 };
             yield return new object[] { "123", 1, 2, NumberStyles.Integer, null, (UIntPtr)23 };
-            yield return new object[] { "4294967295", 0, 1, NumberStyles.Integer, null, 4 };
-            yield return new object[] { "4294967295", 9, 1, NumberStyles.Integer, null, 5 };
+            yield return new object[] { "4294967295", 0, 1, NumberStyles.Integer, null, (UIntPtr)4 };
+            yield return new object[] { "4294967295", 9, 1, NumberStyles.Integer, null, (UIntPtr)5 };
             yield return new object[] { "12", 0, 1, NumberStyles.HexNumber, null, (UIntPtr)0x1 };
             yield return new object[] { "12", 1, 1, NumberStyles.HexNumber, null, (UIntPtr)0x2 };
             yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (UIntPtr)10 };
