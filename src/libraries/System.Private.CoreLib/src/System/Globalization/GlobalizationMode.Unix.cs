@@ -28,7 +28,8 @@ namespace System.Globalization
                         // This can't go into resources, because a resource lookup requires globalization, which requires ICU
                         string message = "Couldn't find a valid ICU package installed on the system. " +
                                          "Please install libicu using your package manager and try again. " +
-                                         "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.";
+                                         "Alternatively you can set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support. " +
+                                         "Please see https://aka.ms/AAaz0rt for more information.";
                         Environment.FailFast(message);
                     }
 
