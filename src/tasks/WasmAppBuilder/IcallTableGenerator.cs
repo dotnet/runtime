@@ -118,7 +118,7 @@ public class IcallTableGenerator : Task
                 string func = icall_j.GetProperty ("func").GetString ()!;
                 bool handles = icall_j.GetProperty ("handles").GetBoolean ();
 
-                icallClass.Icalls [name] = new Icall (name, func, handles);
+                icallClass.Icalls.Add (name, new Icall (name, func, handles));
             }
         }
     }
@@ -140,8 +140,7 @@ public class IcallTableGenerator : Task
             Icall? icall = null;
 
             // Try name first
-            if (icallClass.Icalls.ContainsKey (method.Name))
-                icall = icallClass.Icalls [method.Name];
+            icallClass.Icalls.TryGetValue (method.Name, out icall);
             if (icall == null)
             {
                 // Then with signature
@@ -219,18 +218,21 @@ public class IcallTableGenerator : Task
 
     private static string MapType (Type t)
     {
-        if (t.Name == "Void")
+        switch (t.Name)
+        {
+        case "Void":
             return "void";
-        else if (t.Name == "Double")
+        case "Double":
             return "double";
-        else if (t.Name == "Single")
+        case "Single":
             return "float";
-        else if (t.Name == "Int64")
+        case "Int64":
             return "int64_t";
-        else if (t.Name == "UInt64")
+        case "UInt64":
             return "uint64_t";
-        else
+        default:
             return "int";
+        }
     }
 
     private static string GenIcallDecl (Icall icall)

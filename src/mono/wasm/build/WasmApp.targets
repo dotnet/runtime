@@ -51,8 +51,8 @@
     <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
     <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
-    <WasmNativeStrip>true</WasmNativeStrip>
-    <_CrossCompilerPath>$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross</_CrossCompilerPath>
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+    <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross</MonoAotCrossCompilerPath>
   </PropertyGroup>
 
   <Target Name="WasmBuildApp" AfterTargets="Publish" />
@@ -78,7 +78,6 @@
     <PropertyGroup>
       <AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">AotInterp</AOTMode>
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
-      <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross</MonoAotCrossCompilerPath>
     </PropertyGroup>
 
     <MonoAOTCompiler
@@ -219,11 +218,11 @@
      OutputPath="$(_WasmIntermediateOutputPath)pinvoke-table.h" />
 
    <!-- ICall table generation -->
-   <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command="$(_CrossCompilerPath) --print-icall-table > $(WasmBuildDir)/runtime-icall-table.h" />
+   <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command="$(MonoAotCrossCompilerPath) --print-icall-table > $(_WasmIntermediateOutputPath)/runtime-icall-table.h" />
    <IcallTableGenerator Condition="'$(WasmLinkIcalls)' == 'true'"
-     RuntimeIcallTableFile="$(WasmBuildDir)/runtime-icall-table.h"
-     Assemblies="@(_WasmPInvokeAssemblies)"
-     OutputPath="$(WasmBuildDir)/icall-table.h" />
+     RuntimeIcallTableFile="$(_WasmIntermediateOutputPath)/runtime-icall-table.h"
+     Assemblies="@(_WasmAssemblies)"
+     OutputPath="$(_WasmIntermediateOutputPath)/icall-table.h" />
    <PropertyGroup>
      <EmccFlags Condition="'$(WasmLinkIcalls)' == 'true'">$(EmccFlags) -DLINK_ICALLS=1</EmccFlags>
    </PropertyGroup>
