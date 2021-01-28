@@ -1013,10 +1013,41 @@ typedef struct wasm_method_signature_info {
 					"parameters": parms
 				};
 
-				Module._free(infoPtr);
+				Module._free (infoPtr);
 				this._method_signature_info_table.set (methodPtr, result);
 				// console.log(methodPtr, JSON.stringify(result));
 			}
+			return result;
+		},
+
+		_compile_pre_filter: function (classPtr, boundConverter, js) {
+			if (!js)
+				return boundConverter;
+			
+			var closure = { 
+				MONO: MONO,
+				BINDING: this,
+				classPtr: classPtr, 
+				// (js_obj, method, parmIdx) => value
+				boundConverter: boundConverter 
+			};
+			var body = [
+				"var filteredValue = null;",
+				"console.log(`preFilter(${value})`);",
+				`{ filteredValue = ${js}; }`,
+				"console.log(`preFilter === ${filteredValue}`);",
+				"var convertedResult = boundConverter (filteredValue, method, parmIdx);",
+				"console.log(`convertedResult === ${convertedResult}`);",
+				"return convertedResult;"
+			];
+			
+			var bodyJs = body.join ("\r\n");
+			var result = this._create_named_function(
+				"pre_filtered_converter_for_class" + classPtr, 
+				["value", "method", "parmIdx"], bodyJs, closure
+			);
+
+			console.log("compile result", result);
 			return result;
 		},
 
@@ -1024,7 +1055,20 @@ typedef struct wasm_method_signature_info {
 			if (!this._automatic_converter_table)
 				this._automatic_converter_table = new Map ();
 			if (!this._automatic_converter_table.has (classPtr)) {
-				var convMethod = this.find_method(classPtr, "JSToManaged", 1);
+				var preFilterGetter = this.find_method(classPtr, "JSToManaged_PreFilter", 0);
+				var postFilterGetter = this.find_method(classPtr, "ManagedToJS_PostFilter", 0);
+
+				var preFilter = preFilterGetter 
+					? this.call_method (preFilterGetter, 0, "", [])
+					: null;
+				var postFilter = postFilterGetter 
+					? this.call_method (postFilterGetter, 0, "", [])
+					: null;
+
+				console.log ("preFilter", preFilter);
+				console.log ("postFilter", postFilter);
+
+				var convMethod = this.find_method (classPtr, "JSToManaged", 1);
 				// FIXME
 				var signature = Module.mono_method_get_call_signature (convMethod);
 				// Return unboxed so it can go directly into the arguments list
@@ -1032,7 +1076,9 @@ typedef struct wasm_method_signature_info {
 				var boundConverter = this.bind_method (
 					convMethod, 0, signature, "JSToManaged_class" + classPtr
 				);
-				this._automatic_converter_table.set (classPtr, boundConverter);
+
+				var result = this._compile_pre_filter (classPtr, boundConverter, preFilter);
+				this._automatic_converter_table.set (classPtr, result);
 			}
 			return this._automatic_converter_table.get (classPtr);
 		},
@@ -1068,7 +1114,7 @@ typedef struct wasm_method_signature_info {
 		},
 
 		_create_converter_for_marshal_string: function (method, args_marshal) {
-			var sigInfo = this.get_method_signature_info(method);
+			var sigInfo = this.get_method_signature_info (method);
 
 			var primitiveConverters = this._primitive_converters;
 			if (!primitiveConverters)
@@ -1139,15 +1185,23 @@ typedef struct wasm_method_signature_info {
 				this._signature_converters = new Map();
 
 			var converter = this._signature_converters.get (args_marshal);
-			if (converter && converter.method && (converter.method !== method)) {
-				// FIXME
-				console.warn(`Not using cached converter for signature '${args_marshal}' because it was compiled for a different method. This will be very slow!`);
-				return this._create_converter_for_marshal_string (method, args_marshal);
+			var map = null;
+			if (converter instanceof Map) {
+				map = converter;
+				converter = map.get (method);
+				console.log (`method-keyed converter map for signature '${args_marshal}' result for method ${method}:`, converter);
 			}
 
 			if (!converter) {
 				converter = this._create_converter_for_marshal_string (method, args_marshal);
-				this._signature_converters.set (args_marshal, converter);
+				if (converter.method) {
+					if (!map)
+						this._signature_converters.set (args_marshal, map = new Map ());
+					console.log (`compiled converter for signature '${args_marshal}' and method '${method}'`);
+					map.set (converter.method, converter);
+				} else {
+					this._signature_converters.set (args_marshal, converter);
+				}
 			}
 
 			return converter;

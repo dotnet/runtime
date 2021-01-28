@@ -13,12 +13,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public class CustomClass {
             public double D;
 
-            public static CustomClass JSToManaged (double d) {
+            private static CustomClass JSToManaged (double d) {
                 Console.WriteLine("CustomClass.JSToManaged {0}", d);
                 return new CustomClass { D = d };
             }
 
-            public static double ManagedToJS (CustomClass ct) {
+            private static double ManagedToJS (CustomClass ct) {
                 Console.WriteLine("CustomClass.ManagedToJS {0}", ct?.D);
                 return ct?.D ?? -1;
             }
@@ -27,12 +27,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public struct CustomStruct {
             public double D;
 
-            public static CustomStruct JSToManaged (double d) {
+            private static CustomStruct JSToManaged (double d) {
                 Console.WriteLine("CustomStruct.JSToManaged {0}", d);
                 return new CustomStruct { D = d };
             }
 
-            public static double ManagedToJS (CustomStruct ct) {
+            private static double ManagedToJS (CustomStruct ct) {
                 Console.WriteLine("CustomStruct.ManagedToJS {0}", ct.D);
                 return ct.D;
             }
@@ -41,15 +41,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public struct CustomDate {
             public DateTime Date;
 
-            public static CustomDate JSToManaged (string s) {
+            private static string JSToManaged_PreFilter () => "value.toISOString()";
+            private static string ManagedToJS_PostFilter () => "Date.parse(value)";
+
+            private static CustomDate JSToManaged (string s) {
                 Console.WriteLine($"CustomDate.JSToManaged({s})");
                 return new CustomDate { 
-                    Date = DateTime.Parse(s)
+                    Date = DateTime.Parse(s).ToUniversalTime()
                 };
             }
 
-            public static string ManagedToJS (CustomDate cd) {
-                return cd.Date.ToString();
+            private static string ManagedToJS (CustomDate cd) {
+                var result = cd.Date.ToString("o");
+                Console.WriteLine($"CustomDate.ManagedToJS === {result}");
+                return result;
             }
         }
 
