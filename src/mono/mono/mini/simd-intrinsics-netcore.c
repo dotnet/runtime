@@ -807,6 +807,7 @@ emit_invalid_operation (MonoCompile *cfg, const char* message)
 static SimdIntrinsic armbase_methods [] = {
 	{SN_LeadingSignCount},
 	{SN_LeadingZeroCount},
+	{SN_MultiplyHigh},
 	{SN_ReverseElementBits},
 	{SN_get_IsSupported}
 };
@@ -874,6 +875,9 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 			return emit_simd_ins_for_sig (cfg, klass, arg0_i32 ? OP_LZCNT32 : OP_LZCNT64, 0, arg0_type, fsig, args);
 		case SN_LeadingSignCount:
 			return emit_simd_ins_for_sig (cfg, klass, arg0_i32 ? OP_LSCNT32 : OP_LSCNT64, 0, arg0_type, fsig, args);
+		case SN_MultiplyHigh:
+			return emit_simd_ins_for_sig (cfg, klass,
+				(arg0_type == MONO_TYPE_I8 ? OP_ARM64_SMULH : OP_ARM64_UMULH), 0, arg0_type, fsig, args);
 		case SN_ReverseElementBits:
 			return emit_simd_ins_for_sig (cfg, klass,
 				(is_64bit ? OP_XOP_I8_I8 : OP_XOP_I4_I4),

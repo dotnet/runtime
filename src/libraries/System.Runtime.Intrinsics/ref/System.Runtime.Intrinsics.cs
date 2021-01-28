@@ -2563,6 +2563,8 @@ namespace System.Runtime.Intrinsics.Arm
             public static int LeadingSignCount(long value) { throw null; }
             public static int LeadingZeroCount(long value) { throw null; }
             public static int LeadingZeroCount(ulong value) { throw null; }
+            public static long MultiplyHigh(long left, long right) { throw null; }
+            public static ulong MultiplyHigh(ulong left, ulong right) { throw null; }
             public static long ReverseElementBits(long value) { throw null; }
             public static ulong ReverseElementBits(ulong value) { throw null; }
         }
