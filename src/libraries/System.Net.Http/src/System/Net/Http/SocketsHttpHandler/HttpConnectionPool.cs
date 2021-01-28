@@ -257,7 +257,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
-        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol };
+        private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
 
