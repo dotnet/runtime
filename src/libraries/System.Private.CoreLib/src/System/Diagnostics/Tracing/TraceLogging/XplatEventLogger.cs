@@ -44,6 +44,54 @@ namespace System.Diagnostics.Tracing
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
 
+        [DllImport(RuntimeHelpers.QCall)]
+        public static extern void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        public static extern void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        public static extern void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        public static extern void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        public static extern void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, NativeRuntimeEventSource.ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern void LogThreadPoolWorkerThreadAdjustmentStats(
+            double Duration,
+            double Throughput,
+            double ThreadPoolWorkerThreadWait,
+            double ThroughputWave,
+            double ThroughputErrorEstimate,
+            double AverageThroughputErrorEstimate,
+            double ThroughputRatio,
+            double COnfidence,
+            double NewControlSetting,
+            ushort NewThreadWaveMagnitude,
+            ushort ClrInstanceID);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        public static extern void LogThreadPoolIOEnqueue(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            bool MultiDequeues,
+            ushort ClrInstanceID);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        public static extern void LogThreadPoolIODequeue(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID);
+
+        [DllImport(RuntimeHelpers.QCall)]
+        public static extern void LogThreadPoolWorkingThreadCount(
+            uint Count,
+            ushort ClrInstanceID
+        );
+
         private static readonly List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
         private static readonly Dictionary<char, string> seq_mapping = new Dictionary<char, string>()
         {
@@ -161,10 +209,10 @@ namespace System.Diagnostics.Tracing
         protected internal override void OnEventSourceCreated(EventSource eventSource)
         {
             // Don't enable forwarding of NativeRuntimeEventSource events.`
-            if (eventSource.GetType() == typeof(NativeRuntimeEventSource))
+            /*if (eventSource.GetType() == typeof(NativeRuntimeEventSource))
             {
                 return;
-            }
+            }*/
 
             string? eventSourceFilter = eventSourceNameFilter.Value;
             if (string.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.IndexOf(eventSourceFilter, StringComparison.OrdinalIgnoreCase) >= 0))
