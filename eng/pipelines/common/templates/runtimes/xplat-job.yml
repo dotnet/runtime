@@ -8,6 +8,7 @@ parameters:
   container: ''
   crossBuild: false
   crossrootfsDir: ''
+  stagedBuild: false
   strategy: ''
   pool: ''
 
@@ -91,6 +92,12 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource
         value: ci/dotnet/runtime/$(Build.SourceBranch)
+
+    - name: crossArg
+      value: ''
+    - ${{ if eq(parameters.crossBuild, true) }}:
+      - name: crossArg
+        value: '-cross'
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
