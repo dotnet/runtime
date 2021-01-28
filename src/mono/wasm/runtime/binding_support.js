@@ -1033,11 +1033,11 @@ typedef struct wasm_method_signature_info {
 			};
 			var body = [
 				"var filteredValue = null;",
-				"console.log(`preFilter(${value})`);",
+				// "console.log(`preFilter(${value})`);",
 				`{ filteredValue = ${js}; }`,
-				"console.log(`preFilter === ${filteredValue}`);",
+				// "console.log(`preFilter === ${filteredValue}`);",
 				"var convertedResult = boundConverter (filteredValue, method, parmIdx);",
-				"console.log(`convertedResult === ${convertedResult}`);",
+				// "console.log(`convertedResult === ${convertedResult}`);",
 				"return convertedResult;"
 			];
 			
@@ -1047,7 +1047,7 @@ typedef struct wasm_method_signature_info {
 				["value", "method", "parmIdx"], bodyJs, closure
 			);
 
-			console.log("compile result", result);
+			// console.log("compile result", result);
 			return result;
 		},
 
@@ -1065,8 +1065,8 @@ typedef struct wasm_method_signature_info {
 					? this.call_method (postFilterGetter, 0, "", [])
 					: null;
 
-				console.log ("preFilter", preFilter);
-				console.log ("postFilter", postFilter);
+				// console.log ("preFilter", preFilter);
+				// console.log ("postFilter", postFilter);
 
 				var convMethod = this.find_method (classPtr, "JSToManaged", 1);
 				// FIXME
@@ -1104,12 +1104,12 @@ typedef struct wasm_method_signature_info {
 					; // FIXME: Fall-through
 				default:
 					// FIXME
-					console.log("found no automatic converter for mtype", paramRecord.marshalType);
+					// console.log("found no automatic converter for mtype", paramRecord.marshalType);
 					result.convert = this.js_to_mono_obj.bind(this);
 					break;
 			}
 
-			console.log(JSON.stringify(result));
+			// console.log(JSON.stringify(result));
 			return result;
 		},
 
@@ -1189,7 +1189,7 @@ typedef struct wasm_method_signature_info {
 			if (converter instanceof Map) {
 				map = converter;
 				converter = map.get (method);
-				console.log (`method-keyed converter map for signature '${args_marshal}' result for method ${method}:`, converter);
+				// console.log (`method-keyed converter map for signature '${args_marshal}' result for method ${method}:`, converter);
 			}
 
 			if (!converter) {
@@ -1197,7 +1197,7 @@ typedef struct wasm_method_signature_info {
 				if (converter.method) {
 					if (!map)
 						this._signature_converters.set (args_marshal, map = new Map ());
-					console.log (`compiled converter for signature '${args_marshal}' and method '${method}'`);
+					// console.log (`compiled converter for signature '${args_marshal}' and method '${method}'`);
 					map.set (converter.method, converter);
 				} else {
 					this._signature_converters.set (args_marshal, converter);
