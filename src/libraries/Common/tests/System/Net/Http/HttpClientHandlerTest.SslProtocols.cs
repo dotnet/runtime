@@ -133,8 +133,8 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                       server.AcceptConnectionSendResponseAndCloseAsync(),
-                       client.GetAsync(url));
+                      server.AcceptConnectionSendResponseAndCloseAsync(),
+                      client.GetAsync(url));
                 }, options);
 
                 Assert.Equal(1, count);
