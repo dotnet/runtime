@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 
 #if MS_IO_REDIST
 using Microsoft.IO.Enumeration;
@@ -49,7 +50,7 @@ namespace System.IO
         }
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
-        public static bool Exists(string? path)
+        public static bool Exists([NotNullWhen(true)] string? path)
         {
             try
             {
