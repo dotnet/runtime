@@ -1588,34 +1588,6 @@ GetThreadTimes(
 
 HRESULT
 PALAPI
-GetThreadDescription(
-    IN HANDLE hThread,
-    IN size_t length,
-    OUT char* name)
-{
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pCurrentThread;
-    CPalThread *pTargetThread;
-    IPalObject *pobjThread = NULL;
-    pCurrentThread = InternalGetCurrentThread();
-
-    palError = InternalGetThreadDataFromHandle(
-        pCurrentThread,
-        hThread,
-        &pTargetThread,
-        &pobjThread
-        );
-    
-    if (palError == NO_ERROR)
-    {
-        pthread_getname_np(pTargetThread->GetPThreadSelf(), name, length);
-    }
-
-    return HRESULT_FROM_WIN32(palError);
-}
-
-HRESULT
-PALAPI
 SetThreadDescription(
     IN HANDLE hThread,
     IN PCWSTR lpThreadDescription)
@@ -1661,7 +1633,7 @@ CorUnix::InternalSetThreadDescription(
     char *nameBuf = NULL;
 
 // The exact API of pthread_setname_np varies very wildly depending on OS.
-// For now, only Linux and MacOS are implemented.
+// For now, only Linux and macOS are implemented.
 #if defined(__linux__) || defined(__APPLE__)
 
     palError = InternalGetThreadDataFromHandle(
@@ -1710,7 +1682,7 @@ CorUnix::InternalSetThreadDescription(
 
     // Null terminate early.
     // pthread_setname_np only accepts up to 16 chars on Linux and
-    // 64 chars on MacOS.
+    // 64 chars on macOS.
     if (nameSize > MAX_THREAD_NAME_SIZE)
     {
         nameBuf[MAX_THREAD_NAME_SIZE] = '\0';
@@ -1721,7 +1693,7 @@ CorUnix::InternalSetThreadDescription(
     #endif
 
     #if defined(__APPLE__)
-    // on MacOS, pthread_setname_np only works for the calling thread.
+    // on macOS, pthread_setname_np only works for the calling thread.
     if (PlatformGetCurrentThreadId() == pTargetThread->GetThreadId()) 
     {
         error = pthread_setname_np(nameBuf);

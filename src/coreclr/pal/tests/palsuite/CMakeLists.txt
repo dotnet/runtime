@@ -32,6 +32,13 @@ if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)
 endif(FEATURE_EVENT_TRACE)
 
+if (CLR_CMAKE_TARGET_OSX OR (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ALPINE_LINUX))
+   set(PALSUITE_THREAD_NAME_SOURCES
+     threading/SetThreadDescription/test1/pthread_helpers.cpp
+     threading/SetThreadDescription/test1/test1.cpp
+   )
+ endif()
+
 _add_executable(paltests
   paltests.cpp
   common/palsuite.cpp
@@ -893,7 +900,6 @@ _add_executable(paltests
   threading/SetEvent/test2/test2.cpp
   threading/SetEvent/test3/test3.cpp
   threading/SetEvent/test4/test4.cpp
-  threading/SetThreadDescription/test1/test1.cpp
   threading/SignalObjectAndWait/SignalObjectAndWaitTest.cpp
   threading/Sleep/test1/Sleep.cpp
   threading/Sleep/test2/sleep.cpp
@@ -921,7 +927,7 @@ _add_executable(paltests
   threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
   threading/WaitForSingleObject/WFSOThreadTest/WFSOThreadTest.cpp
   threading/YieldProcessor/test1/test1.cpp
-
+  ${PALSUITE_THREAD_NAME_SOURCES}
 )
 
 add_dependencies(paltests coreclrpal)

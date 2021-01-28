@@ -12,23 +12,23 @@
 **=========================================================*/
 
 #include <palsuite.h>
+#include "pthread_helpers.hpp"
 
-char * threadName = NULL;
-char * expectedThreadName = NULL;
-char * actualThreadName = new char[256];
+char * threadName;
+char * expectedThreadName;
+char * actualThreadName;
 
 DWORD PALAPI SetThreadDescriptionTestThread(LPVOID lpParameter) 
 {
-    HRESULT result;
     HANDLE palThread = GetCurrentThread();
     WCHAR wideThreadName[256];
 
     MultiByteToWideChar(CP_ACP, 0, threadName, strlen(threadName)+1, wideThreadName, 256);
     SetThreadDescription(palThread, wideThreadName);
-    result = GetThreadDescription(palThread, 256, actualThreadName);
+    actualThreadName = GetThreadName();
+
     return 0;
 }
-
 
 BOOL SetThreadDescriptionTest(char* name, char* expected)
 {
@@ -65,29 +65,24 @@ BOOL SetThreadDescriptionTests()
     if (!SetThreadDescriptionTest("Hello, World", "Hello, World"))
     {
         Trace("Setting thread name failed");
-        return false;
+        return FAIL;
     }
     
-    // verify that thread name truncations works correctly on linux on macos
-    char * threadName;
+    // verify that thread name truncations works correctly on linux on macOS.
+    char * threadName = "aaaaaaa_15chars_aaaaaaa_31chars_aaaaaaaaaaaaaaaaaaaaaaa_63chars_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     char * expected;
-    #if defined(__linux__)
-    threadName = "linuxstring15characters";
-    expected = "linuxstring15ch";
-    #endif
-
     #if defined(__APPLE__)
-    threadName = "appplestring63charactersappplestring63charactersappplestring63characters";
-    expected = "appplestring63charactersappplestring63charactersappplestring63c";
+    expected = "aaaaaaa_15chars_aaaaaaa_31chars_aaaaaaaaaaaaaaaaaaaaaaa_63chars";
+    #else
+    expected = "aaaaaaa_15chars";
     #endif
-
+    
     if (!SetThreadDescriptionTest(threadName, expected))
     {
-        Trace("Setting thread name truncation failed");
-        return false;
+        return PASS;
     }
 
-    return true;
+    return FAIL;
 }
 
 PALTEST(threading_SetThreadDescription_test1_paltest_setthreaddescription_test1, "threading/SetThreadDescription/test1/paltest_setthreaddescription_test1")
@@ -97,13 +92,13 @@ PALTEST(threading_SetThreadDescription_test1_paltest_setthreaddescription_test1,
         return FAIL;
     }
 
-    if (!SetThreadDescriptionTests())
+    BOOL result = SetThreadDescriptionTests();
+    if(actualThreadName) free(actualThreadName);
+    if (!result)
     {
-        delete[] actualThreadName;
         Fail("Test Failed");
     }
     
-    delete[] actualThreadName;
     PAL_Terminate();
     return PASS;
 } 
