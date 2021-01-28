@@ -1367,7 +1367,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
   }
   ```
 
-#### `IL2092` Trim analysis: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 'parameter' of method 'method' don't match overridden parameter 'parameter' of method 'base method'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+#### `IL2092`: Trim analysis: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 'parameter' of method 'method' don't match overridden parameter 'parameter' of method 'base method'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
 
 - All overrides of a virtual method including the base method must have the same `DynamicallyAccessedMemberAttribute` usage on all it's components (return value, parameters and generic parameters).
 
@@ -1384,7 +1384,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
   }
   ```
 
-#### `IL2093` Trim analysis: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'method' don't match overridden return value of method 'base method'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+#### `IL2093`: Trim analysis: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'method' don't match overridden return value of method 'base method'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
 
 - All overrides of a virtual method including the base method must have the same `DynamicallyAccessedMemberAttribute` usage on all it's components (return value, parameters and generic parameters).
 
@@ -1452,7 +1452,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
   }
   ```
 
-#### 'IL2097': Trim analysis: Field 'field' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to fields of type 'System.Type' or 'System.String'
+#### `IL2097`: Trim analysis: Field 'field' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to fields of type 'System.Type' or 'System.String'
 
 - `DynamicallyAccessedMembersAttribute` is only applicable to items of type `System.Type` or `System.String` (or derived), on all other types the attribute will be ignored. Using the attribute on any other type is likely incorrect and unintentional.
 
@@ -1462,7 +1462,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
   object _valueField;
   ```
 
-#### 'IL2098': Trim analysis: Parameter 'parameter' of method 'method' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to parameters of type 'System.Type' or 'System.String'
+#### `IL2098`: Trim analysis: Parameter 'parameter' of method 'method' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to parameters of type 'System.Type' or 'System.String'
 
 - `DynamicallyAccessedMembersAttribute` is only applicable to items of type `System.Type` or `System.String` (or derived), on all other types the attribute will be ignored. Using the attribute on any other type is likely incorrect and unintentional.
 
@@ -1474,7 +1474,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
   }
   ```
 
-#### 'IL2099': Trim analysis: Property 'property' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'
+#### `IL2099`: Trim analysis: Property 'property' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'
 
 - `DynamicallyAccessedMembersAttribute` is only applicable to items of type `System.Type` or `System.String` (or derived), on all other types the attribute will be ignored. Using the attribute on any other type is likely incorrect and unintentional.
 
@@ -1484,7 +1484,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
   object TestProperty { get; set; }
   ```
 
-### 'IL2100': XML contains unsupported wildcard for assembly "fullname" attribute
+#### `IL2100`: XML contains unsupported wildcard for assembly "fullname" attribute
 
 - A wildcard "fullname" for an assembly in XML is only valid for link attribute XML on the command-line, not for descriptor or substitution XML or for embedded attribute XML. Specify a specific assembly name instead.
 
@@ -1497,7 +1497,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
   </linker>
   ```
 
-### 'IL2101': Embedded XML in assembly 'assembly' contains assembly "fullname" attribute for another assembly 'assembly'
+#### `IL2101`: Embedded XML in assembly 'assembly' contains assembly "fullname" attribute for another assembly 'assembly'
 
 - Embedded attribute or substitution XML may only contain elements that apply to the containing assembly. Attempting to modify another assembly will not have any effect.
 
