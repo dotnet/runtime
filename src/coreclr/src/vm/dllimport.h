@@ -150,7 +150,8 @@ enum NDirectStubFlags
 #ifdef FEATURE_COMINTEROP
     NDIRECTSTUB_FL_FIELDGETTER              = 0x00002000, // COM->CLR field getter
     NDIRECTSTUB_FL_FIELDSETTER              = 0x00004000, // COM->CLR field setter
-    // unused                               = 0x00008000,
+#endif // FEATURE_COMINTEROP
+    NDIRECTSTUB_FL_SUPPRESSGCTRANSITION     = 0x00008000,
     // unused                               = 0x00010000,
     // unused                               = 0x00020000,
     // unused                               = 0x00080000,
@@ -158,7 +159,6 @@ enum NDirectStubFlags
     // unused                               = 0x00200000,
     // unused                               = 0x00400000,
     // unused                               = 0x00800000,
-#endif // FEATURE_COMINTEROP
 
     // internal flags -- these won't ever show up in an NDirectStubHashBlob
     NDIRECTSTUB_FL_FOR_NUMPARAMBYTES        = 0x10000000,   // do just enough to return the right value from Marshal.NumParamBytes
