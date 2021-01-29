@@ -154,7 +154,9 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>The current implementation of this method has no functionality.</summary>
+        /// <summary>If the stream is not disposed, and the compression mode is set to compress, writes all the remaining encoder's data into this stream.</summary>
+        /// <exception cref="InvalidDataException">The encoder ran into invalid data.</exception>
+        /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         public override void Flush()
         {
             EnsureNotDisposed();
