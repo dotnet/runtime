@@ -346,7 +346,7 @@ protected:
     void genPushCalleeSavedRegisters();
 #endif
 
-    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
+    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed);
 
 #if defined(TARGET_ARM)
 

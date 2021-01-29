@@ -7223,7 +7223,7 @@ void CodeGen::genFnProlog()
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genAllocLclFrame(compiler->compLclFrameSize, initReg, &initRegZeroed, intRegState.rsCalleeRegArgMaskLiveIn);
+        genAllocLclFrame(compiler->compLclFrameSize, initReg, &initRegZeroed);
     }
 #endif // !TARGET_ARM64
 
@@ -8438,26 +8438,12 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     bool isFilter = (block->bbCatchTyp == BBCT_FILTER);
 
-    regMaskTP maskArgRegsLiveIn;
-    if (isFilter)
-    {
-        maskArgRegsLiveIn = RBM_R0 | RBM_R1;
-    }
-    else if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
-    {
-        maskArgRegsLiveIn = RBM_NONE;
-    }
-    else
-    {
-        maskArgRegsLiveIn = RBM_R0;
-    }
-
     regNumber initReg       = REG_R3; // R3 is never live on entry to a funclet, so it can be trashed
     bool      initRegZeroed = false;
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegZeroed, maskArgRegsLiveIn);
+        genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegZeroed);
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
@@ -8744,20 +8730,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // Callee saved int registers are pushed to stack.
     genPushCalleeSavedRegisters();
 
-    regMaskTP maskArgRegsLiveIn;
-    if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
-    {
-        maskArgRegsLiveIn = RBM_ARG_0;
-    }
-    else
-    {
-        maskArgRegsLiveIn = RBM_ARG_0 | RBM_ARG_2;
-    }
-
     regNumber initReg       = REG_EBP; // We already saved EBP, so it can be trashed
     bool      initRegZeroed = false;
 
-    genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegZeroed, maskArgRegsLiveIn);
+    genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegZeroed);
 
     // Callee saved float registers are copied to stack in their assigned stack slots
     // after allocating space for them as part of funclet frame.

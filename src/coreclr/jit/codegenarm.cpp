@@ -1827,12 +1827,11 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 //      initReg           - register to use as a scratch register.
 //      pInitRegZeroed    - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
 //                          this call sets 'initReg' to a non-zero value.
-//      maskArgRegsLiveIn - incoming argument registers that are currently live.
 //
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
 
