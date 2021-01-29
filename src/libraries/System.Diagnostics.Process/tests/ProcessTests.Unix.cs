@@ -802,6 +802,25 @@ namespace System.Diagnostics.Tests
             Assert.True(foundRecycled);
         }
 
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("/dev/stdin")]
+        [InlineData("/dev/stdout")]
+        [InlineData("/dev/stderr")]
+        public void ChildProcessRedirectedIO_FilePathOpenShouldSucceed(string filename)
+        {
+            var options = new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, RedirectStandardInput = true, RedirectStandardError = true }};
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(ExecuteChildProcess, filename, options))
+            { }
+
+            static void ExecuteChildProcess(string filename)
+            {
+                int flags = filename == "/dev/stdin" ? /* O_WRONLY */ 1 : /* O_RDONLY */ 0;
+                int result = open(filename, flags);
+                Assert.True(result >= 0);
+            }
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
@@ -940,6 +959,9 @@ namespace System.Diagnostics.Tests
 
         [DllImport("libc", SetLastError = true)]
         private static extern int kill(int pid, int sig);
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int open(string pathname, int flags);
 
         private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
 
