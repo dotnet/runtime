@@ -54,8 +54,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         public async Task ReceiveSent_UDP_Success(bool ipv4)
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/47637")]
-            int offset = UsesSync || !PlatformDetection.IsWindows ? 10 : 0;
+            const int Offset = 10;
             const int DatagramSize = 256;
             const int DatagramsToSend = 16;
 
@@ -71,9 +70,9 @@ namespace System.Net.Sockets.Tests
             sender.BindToAnonymousPort(address);
 
             byte[] sendBuffer = new byte[DatagramSize];
-            var receiveInternalBuffer = new byte[DatagramSize + offset];
-            var emptyBuffer = new byte[offset];
-            ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(receiveInternalBuffer, offset, DatagramSize);
+            var receiveInternalBuffer = new byte[DatagramSize + Offset];
+            var emptyBuffer = new byte[Offset];
+            ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(receiveInternalBuffer, Offset, DatagramSize);
 
             Random rnd = new Random(0);
 
@@ -88,8 +87,8 @@ namespace System.Net.Sockets.Tests
                 IPPacketInformation packetInformation = result.PacketInformation;
 
                 Assert.Equal(DatagramSize, result.ReceivedBytes);
-                AssertExtensions.SequenceEqual(emptyBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, 0, offset));
-                AssertExtensions.SequenceEqual(sendBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, offset, DatagramSize));
+                AssertExtensions.SequenceEqual(emptyBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, 0, Offset));
+                AssertExtensions.SequenceEqual(sendBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, Offset, DatagramSize));
                 Assert.Equal(sender.LocalEndPoint, result.RemoteEndPoint);
                 Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, packetInformation.Address);
             }
