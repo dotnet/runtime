@@ -25,7 +25,7 @@ CordbClass::CordbClass(Connection *conn, mdToken token, int module_id)
 }
 
 HRESULT STDMETHODCALLTYPE CordbClass::GetModule(ICorDebugModule **pModule) {
-  DEBUG_PRINTF(1, "CordbClass - GetModule - IMPLEMENTED - %d\n", module_id);
+  LOG((LF_CORDB, LL_INFO1000000, "CordbClass - GetModule - IMPLEMENTED\n"));
   if (pModule) {
     *pModule = (ICorDebugModule *)g_hash_table_lookup(
         conn->ppCordb->modules, GINT_TO_POINTER(module_id));
@@ -34,15 +34,15 @@ HRESULT STDMETHODCALLTYPE CordbClass::GetModule(ICorDebugModule **pModule) {
 }
 
 HRESULT STDMETHODCALLTYPE CordbClass::GetToken(mdTypeDef *pTypeDef) {
-  DEBUG_PRINTF(1, "CordbClass - GetToken - IMPLEMENTED - %d\n", module_id);
+  LOG((LF_CORDB, LL_INFO1000000, "CordbClass - GetToken - IMPLEMENTED\n"));
   *pTypeDef = token;
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbClass::GetStaticFieldValue(
     mdFieldDef fieldDef, ICorDebugFrame *pFrame, ICorDebugValue **ppValue) {
-  DEBUG_PRINTF(1, "CordbClass - GetStaticFieldValue - NOT IMPLEMENTED - %d\n",
-               fieldDef);
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbClass - GetStaticFieldValue - NOT IMPLEMENTED\n"));
   CordbContent content_value;
   content_value.booleanValue = 0;
   CordbValue *value =
@@ -74,11 +74,13 @@ ULONG STDMETHODCALLTYPE CordbClass::Release(void) { return 0; }
 HRESULT STDMETHODCALLTYPE CordbClass::GetParameterizedType(
     CorElementType elementType, ULONG32 nTypeArgs, ICorDebugType *ppTypeArgs[],
     ICorDebugType **ppType) {
-  DEBUG_PRINTF(1, "CordbClass - GetParameterizedType - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbClass - GetParameterizedType - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbClass::SetJMCStatus(BOOL bIsJustMyCode) {
-  DEBUG_PRINTF(1, "CordbClass - SetJMCStatus - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbClass - SetJMCStatus - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }

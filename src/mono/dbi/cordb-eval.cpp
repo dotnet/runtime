@@ -11,9 +11,9 @@
 #include <cordb-value.h>
 #include <cordb.h>
 
-#include "stdafx.h"
 #include "corerror.h"
 #include "rwutil.h"
+#include "stdafx.h"
 
 CordbEval::CordbEval(Connection *conn, CordbThread *thread)
     : CordbBaseMono(conn) {
@@ -26,7 +26,8 @@ HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(
     ICorDebugFunction *pFunction, ULONG32 nTypeArgs,
     ICorDebugType *ppTypeArgs[], ULONG32 nArgs, ICorDebugValue *ppArgs[]) {
   this->thread->ppProcess->Stop(false);
-  DEBUG_PRINTF(1, "CordbEval - CallParameterizedFunction - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000,
+       "CordbEval - CallParameterizedFunction - IMPLEMENTED\n"));
 
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
@@ -41,34 +42,35 @@ HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(
     ppArgs[i]->GetAddress((CORDB_ADDRESS *)&cc);
     m_dbgprot_buffer_add_byte(&localbuf, ty);
     switch (ty) {
-      case MONO_TYPE_BOOLEAN:
-      case MONO_TYPE_I1:
-      case MONO_TYPE_U1:
-        m_dbgprot_buffer_add_int(&localbuf, cc->booleanValue);
-        break;
-      case MONO_TYPE_CHAR:
-      case MONO_TYPE_I2:
-      case MONO_TYPE_U2:
-        m_dbgprot_buffer_add_int(&localbuf, cc->charValue);
-        break;
-      case MONO_TYPE_I4:
-      case MONO_TYPE_U4:
-      case MONO_TYPE_R4:
-        m_dbgprot_buffer_add_int(&localbuf, cc->intValue);
-        break;
-      case MONO_TYPE_I8:
-      case MONO_TYPE_U8:
-      case MONO_TYPE_R8:
-        m_dbgprot_buffer_add_long(&localbuf, cc->longValue);
-        break;
-      case MONO_TYPE_CLASS:
-      case MONO_TYPE_SZARRAY:
-      case MONO_TYPE_STRING:
-          m_dbgprot_buffer_add_id(&localbuf, cc->intValue);
-          break;
+    case MONO_TYPE_BOOLEAN:
+    case MONO_TYPE_I1:
+    case MONO_TYPE_U1:
+      m_dbgprot_buffer_add_int(&localbuf, cc->booleanValue);
+      break;
+    case MONO_TYPE_CHAR:
+    case MONO_TYPE_I2:
+    case MONO_TYPE_U2:
+      m_dbgprot_buffer_add_int(&localbuf, cc->charValue);
+      break;
+    case MONO_TYPE_I4:
+    case MONO_TYPE_U4:
+    case MONO_TYPE_R4:
+      m_dbgprot_buffer_add_int(&localbuf, cc->intValue);
+      break;
+    case MONO_TYPE_I8:
+    case MONO_TYPE_U8:
+    case MONO_TYPE_R8:
+      m_dbgprot_buffer_add_long(&localbuf, cc->longValue);
+      break;
+    case MONO_TYPE_CLASS:
+    case MONO_TYPE_SZARRAY:
+    case MONO_TYPE_STRING:
+      m_dbgprot_buffer_add_id(&localbuf, cc->intValue);
+      break;
     }
   }
-  cmdId = conn->send_event(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_INVOKE_METHOD, &localbuf);
+  cmdId = conn->send_event(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_INVOKE_METHOD,
+                           &localbuf);
   m_dbgprot_buffer_free(&localbuf);
   g_ptr_array_add(conn->pending_eval, this);
   return S_OK;
@@ -87,28 +89,31 @@ void CordbEval::EvalComplete(MdbgProtBuffer *bAnswer) {
 
 HRESULT STDMETHODCALLTYPE
 CordbEval::CreateValueForType(ICorDebugType *pType, ICorDebugValue **ppValue) {
-  DEBUG_PRINTF(1, "CordbEval - CreateValueForType - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbEval - CreateValueForType - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::NewParameterizedObject(
     ICorDebugFunction *pConstructor, ULONG32 nTypeArgs,
     ICorDebugType *ppTypeArgs[], ULONG32 nArgs, ICorDebugValue *ppArgs[]) {
-  DEBUG_PRINTF(1, "CordbEval - NewParameterizedObject - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbEval - NewParameterizedObject - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::NewParameterizedObjectNoConstructor(
     ICorDebugClass *pClass, ULONG32 nTypeArgs, ICorDebugType *ppTypeArgs[]) {
-  DEBUG_PRINTF(
-      1, "CordbEval - NewParameterizedObjectNoConstructor - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbEval - NewParameterizedObjectNoConstructor - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE
 CordbEval::NewParameterizedArray(ICorDebugType *pElementType, ULONG32 rank,
                                  ULONG32 dims[], ULONG32 lowBounds[]) {
-  DEBUG_PRINTF(1, "CordbEval - NewParameterizedArray - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbEval - NewParameterizedArray - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
@@ -118,25 +123,28 @@ HRESULT STDMETHODCALLTYPE CordbEval::NewStringWithLength(LPCWSTR string,
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
   m_dbgprot_buffer_add_id(&localbuf, thread->thread_id);
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_APPDOMAIN, &localbuf);
+  int cmdId = conn->send_event(MDBGPROT_CMD_SET_THREAD,
+                               MDBGPROT_CMD_THREAD_GET_APPDOMAIN, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
   MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
   int domainId = m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
 
-  LPSTR       szString;
+  LPSTR szString;
   UTF8STR(string, szString);
 
   m_dbgprot_buffer_init(&localbuf, 128);
   m_dbgprot_buffer_add_id(&localbuf, domainId);
   m_dbgprot_buffer_add_string(&localbuf, szString);
-  this->cmdId = conn->send_event(MDBGPROT_CMD_SET_APPDOMAIN, MDBGPROT_CMD_APPDOMAIN_CREATE_STRING, &localbuf);
+  this->cmdId =
+      conn->send_event(MDBGPROT_CMD_SET_APPDOMAIN,
+                       MDBGPROT_CMD_APPDOMAIN_CREATE_STRING, &localbuf);
   g_ptr_array_add(conn->pending_eval, this);
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::RudeAbort(void) {
-  DEBUG_PRINTF(1, "CordbEval - RudeAbort - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbEval - RudeAbort - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -164,25 +172,27 @@ CordbEval::QueryInterface(REFIID id,
 HRESULT STDMETHODCALLTYPE CordbEval::CallFunction(ICorDebugFunction *pFunction,
                                                   ULONG32 nArgs,
                                                   ICorDebugValue *ppArgs[]) {
-  DEBUG_PRINTF(1, "CordbEval - CallFunction - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbEval - CallFunction - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::NewObject(ICorDebugFunction *pConstructor,
                                                ULONG32 nArgs,
                                                ICorDebugValue *ppArgs[]) {
-  DEBUG_PRINTF(1, "CordbEval - NewObject - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbEval - NewObject - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE
 CordbEval::NewObjectNoConstructor(ICorDebugClass *pClass) {
-  DEBUG_PRINTF(1, "CordbEval - NewObjectNoConstructor - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbEval - NewObjectNoConstructor - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::NewString(LPCWSTR string) {
-  DEBUG_PRINTF(1, "CordbEval - NewString - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbEval - NewString - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
@@ -190,28 +200,28 @@ HRESULT STDMETHODCALLTYPE CordbEval::NewArray(CorElementType elementType,
                                               ICorDebugClass *pElementClass,
                                               ULONG32 rank, ULONG32 dims[],
                                               ULONG32 lowBounds[]) {
-  DEBUG_PRINTF(1, "CordbEval - NewArray - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbEval - NewArray - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::IsActive(BOOL *pbActive) {
-  DEBUG_PRINTF(1, "CordbEval - IsActive - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbEval - IsActive - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::Abort(void) {
-  DEBUG_PRINTF(1, "CordbEval - Abort - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbEval - Abort - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::GetResult(ICorDebugValue **ppResult) {
   *ppResult = ppValue;
-  DEBUG_PRINTF(1, "CordbEval - GetResult - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "CordbEval - GetResult - IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::GetThread(ICorDebugThread **ppThread) {
-  DEBUG_PRINTF(1, "CordbEval - GetThread - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbEval - GetThread - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
@@ -223,7 +233,7 @@ HRESULT STDMETHODCALLTYPE CordbEval::CreateValue(CorElementType elementType,
   CordbValue *value =
       new CordbValue(conn, elementType, content_value,
                      convert_mono_type_2_icordbg_size(elementType));
-  DEBUG_PRINTF(1, "CordbEval - CreateValue - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "CordbEval - CreateValue - IMPLEMENTED\n"));
   value->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
   return S_OK;
 }

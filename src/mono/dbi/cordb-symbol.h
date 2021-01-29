@@ -107,10 +107,10 @@ public:
       const void **ppbPublicKey, // [OUT] Pointer to the public key.
       ULONG *pcbPublicKey,       // [OUT] Count of bytes in the public key.
       ULONG *pulHashAlgId,       // [OUT] Hash Algorithm.
-      _Out_writes_to_opt_(cchName, *pchName)
-          LPWSTR szName, // [OUT] MdbgProtBuffer to fill with assembly's simply name.
-      ULONG cchName,     // [IN] Size of buffer in wide chars.
-      ULONG *pchName,    // [OUT] Actual # of wide chars in name.
+      _Out_writes_to_opt_(cchName, *pchName) LPWSTR
+          szName, // [OUT] MdbgProtBuffer to fill with assembly's simply name.
+      ULONG cchName,               // [IN] Size of buffer in wide chars.
+      ULONG *pchName,              // [OUT] Actual # of wide chars in name.
       ASSEMBLYMETADATA *pMetaData, // [OUT] Assembly MetaData.
       DWORD *pdwAssemblyFlags);    // [OUT] Flags.
 

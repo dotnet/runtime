@@ -24,35 +24,38 @@ CordbStepper::CordbStepper(Connection *conn, CordbThread *thread)
 }
 
 HRESULT STDMETHODCALLTYPE CordbStepper::IsActive(BOOL *pbActive) {
-  DEBUG_PRINTF(1, "CordbStepper - IsActive - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbStepper - IsActive - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbStepper::Deactivate(void) {
-  DEBUG_PRINTF(1, "CordbStepper - Deactivate - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "CordbStepper - Deactivate - IMPLEMENTED\n"));
   MdbgProtBuffer sendbuf;
   int buflen = 128;
   m_dbgprot_buffer_init(&sendbuf, buflen);
   m_dbgprot_buffer_add_byte(&sendbuf, MDBGPROT_EVENT_KIND_STEP);
   m_dbgprot_buffer_add_int(&sendbuf, eventId);
-  conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_CLEAR, &sendbuf);
+  conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST,
+                   MDBGPROT_CMD_EVENT_REQUEST_CLEAR, &sendbuf);
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE
 CordbStepper::SetInterceptMask(CorDebugIntercept mask) {
-  DEBUG_PRINTF(1, "CordbStepper - SetInterceptMask - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbStepper - SetInterceptMask - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE
 CordbStepper::SetUnmappedStopMask(CorDebugUnmappedStop mask) {
-  DEBUG_PRINTF(1, "CordbStepper - SetUnmappedStopMask - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbStepper - SetUnmappedStopMask - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbStepper::Step(BOOL bStepIn) {
-  DEBUG_PRINTF(1, "CordbStepper - Step - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbStepper - Step - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
@@ -71,15 +74,17 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepRange(BOOL bStepIn,
 
   m_dbgprot_buffer_add_id(&sendbuf, thread->thread_id);
   m_dbgprot_buffer_add_int(&sendbuf, MDBGPROT_STEP_SIZE_MIN);
-  m_dbgprot_buffer_add_int(&sendbuf, bStepIn ? MDBGPROT_STEP_DEPTH_INTO : MDBGPROT_STEP_DEPTH_OVER);
+  m_dbgprot_buffer_add_int(&sendbuf, bStepIn ? MDBGPROT_STEP_DEPTH_INTO
+                                             : MDBGPROT_STEP_DEPTH_OVER);
   m_dbgprot_buffer_add_int(&sendbuf, MDBGPROT_STEP_FILTER_NONE);
 
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
+  int cmdId = conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST,
+                               MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
   m_dbgprot_buffer_free(&sendbuf);
-  MdbgProtBuffer* bAnswer = conn->get_answer(cmdId);
+  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
   eventId = m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
 
-  DEBUG_PRINTF(1, "CordbStepper - StepRange - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "CordbStepper - StepRange - IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -99,38 +104,41 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepOut(void) {
   m_dbgprot_buffer_add_int(&sendbuf, MDBGPROT_STEP_DEPTH_OUT);
   m_dbgprot_buffer_add_int(&sendbuf, MDBGPROT_STEP_FILTER_NONE);
 
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
+  int cmdId = conn->send_event(MDBGPROT_CMD_SET_EVENT_REQUEST,
+                               MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
   m_dbgprot_buffer_free(&sendbuf);
 
   m_dbgprot_buffer_free(&sendbuf);
-  MdbgProtBuffer* bAnswer = conn->get_answer(cmdId);
+  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
 
-  DEBUG_PRINTF(1, "CordbStepper - StepOut - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "CordbStepper - StepOut - IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbStepper::SetRangeIL(BOOL bIL) {
-  DEBUG_PRINTF(1, "CordbStepper - SetRangeIL - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbStepper - SetRangeIL - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbStepper::QueryInterface(REFIID riid,
                                                        void **ppvObject) {
-  DEBUG_PRINTF(1, "CordbStepper - QueryInterface - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbStepper - QueryInterface - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 ULONG STDMETHODCALLTYPE CordbStepper::AddRef(void) {
-  DEBUG_PRINTF(1, "CordbStepper - AddRef - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbStepper - AddRef - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 ULONG STDMETHODCALLTYPE CordbStepper::Release(void) {
-  DEBUG_PRINTF(1, "CordbStepper - Release - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbStepper - Release - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbStepper::SetJMC(BOOL fIsJMCStepper) {
-  DEBUG_PRINTF(1, "CordbStepper - SetJMC - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbStepper - SetJMC - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }

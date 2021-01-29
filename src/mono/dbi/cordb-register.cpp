@@ -19,8 +19,8 @@
 using namespace std;
 
 HRESULT __stdcall CordbRegisteSet::GetRegistersAvailable(ULONG64 *pAvailable) {
-  DEBUG_PRINTF(1,
-               "CordbRegisteSet - GetRegistersAvailable - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbRegisteSet - GetRegistersAvailable - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
@@ -32,13 +32,15 @@ CordbRegisteSet::CordbRegisteSet(Connection *conn, guint8 *ctx, guint32 ctx_len)
 
 HRESULT __stdcall CordbRegisteSet::QueryInterface(REFIID id,
                                                   void **pInterface) {
-  DEBUG_PRINTF(1, "CordbRegisteSet - QueryInterface - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbRegisteSet - QueryInterface - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT __stdcall CordbRegisteSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
                                                 CORDB_REGISTER regBuffer[]) {
-  DEBUG_PRINTF(1, "CordbRegisteSet - GetRegisters - NOT IMPLEMENTED");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbRegisteSet - GetRegisters - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
@@ -50,20 +52,23 @@ HRESULT STDMETHODCALLTYPE CordbRegisteSet::SetRegisters(
     /* [in] */ ULONG64 mask,
     /* [in] */ ULONG32 regCount,
     /* [size_is][in] */ CORDB_REGISTER regBuffer[]) {
-  DEBUG_PRINTF(1, "CordbRegisteSet - SetRegisters - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbRegisteSet - SetRegisters - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbRegisteSet::GetThreadContext(
     /* [in] */ ULONG32 contextSize,
     /* [size_is][length_is][out][in] */ BYTE context[]) {
-  DEBUG_PRINTF(1, "CordbRegisteSet - GetThreadContext - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbRegisteSet - GetThreadContext - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbRegisteSet::SetThreadContext(
     /* [in] */ ULONG32 contextSize,
     /* [size_is][length_is][in] */ BYTE context[]) {
-  DEBUG_PRINTF(1, "CordbRegisteSet - SetThreadContext - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbRegisteSet - SetThreadContext - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }

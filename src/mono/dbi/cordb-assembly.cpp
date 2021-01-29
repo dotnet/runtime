@@ -27,20 +27,23 @@ CordbAssembly::CordbAssembly(Connection *conn, CordbProcess *process,
 
 HRESULT CordbAssembly::IsFullyTrusted(/* [out] */ BOOL *pbFullyTrusted) {
   *pbFullyTrusted = true;
-  DEBUG_PRINTF(1, "CorDebugAssembly - IsFullyTrusted - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CorDebugAssembly - IsFullyTrusted - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbAssembly::GetAppDomain(
     /* [out] */ ICorDebugAppDomain **ppAppDomain) {
-  DEBUG_PRINTF(1, "CorDebugAssembly - GetAppDomain - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000,
+       "CorDebugAssembly - GetAppDomain - IMPLEMENTED\n"));
   *ppAppDomain = static_cast<ICorDebugAppDomain *>(pAppDomain);
   return S_OK;
 }
 
 HRESULT CordbAssembly::EnumerateModules(
     /* [out] */ ICorDebugModuleEnum **ppModules) {
-  DEBUG_PRINTF(1, "CorDebugAssembly - EnumerateModules - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CorDebugAssembly - EnumerateModules - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -48,7 +51,8 @@ HRESULT CordbAssembly::GetCodeBase(
     /* [in] */ ULONG32 cchName,
     /* [out] */ ULONG32 *pcchName,
     /* [length_is][size_is][out] */ WCHAR szName[]) {
-  DEBUG_PRINTF(1, "CorDebugAssembly - GetCodeBase - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CorDebugAssembly - GetCodeBase - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -56,7 +60,8 @@ HRESULT CordbAssembly::GetName(
     /* [in] */ ULONG32 cchName,
     /* [out] */ ULONG32 *pcchName,
     /* [length_is][size_is][out] */ WCHAR szName[]) {
-  DEBUG_PRINTF(1, "CorDebugAssembly - GetName - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CorDebugAssembly - GetName - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -71,8 +76,6 @@ HRESULT CordbAssembly::QueryInterface(
     *ppInterface =
         static_cast<IUnknown *>(static_cast<ICorDebugAssembly *>(this));
   else {
-    DEBUG_PRINTF(1, "CordbAssembly - QueryInterface - E_NOTIMPL\n");
-
     *ppInterface = NULL;
     return E_NOINTERFACE;
   }
@@ -106,8 +109,6 @@ HRESULT CordbModule::QueryInterface(REFIID id, void **pInterface) {
   } else if (id == IID_IUnknown) {
     *pInterface = static_cast<IUnknown *>(static_cast<ICorDebugModule *>(this));
   } else {
-    DEBUG_PRINTF(1, "CordbModule - QueryInterface - E_NOTIMPL\n");
-
     *pInterface = NULL;
     return E_NOINTERFACE;
   }
@@ -121,15 +122,16 @@ ULONG CordbModule::Release(void) { return S_OK; }
 HRESULT CordbModule::IsMappedLayout(
     /* [out] */ BOOL *pIsMapped) {
   *pIsMapped = FALSE;
-  DEBUG_PRINTF(1, "CordbModule - IsMappedLayout - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000,
+       "CordbModule - IsMappedLayout - IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::CreateReaderForInMemorySymbols(
     /* [in] */ REFIID riid,
     /* [iid_is][out] */ void **ppObj) {
-  DEBUG_PRINTF(
-      1, "CordbModule - CreateReaderForInMemorySymbols - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - CreateReaderForInMemorySymbols - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -137,7 +139,8 @@ HRESULT CordbModule::SetJMCStatus(
     /* [in] */ BOOL bIsJustMyCode,
     /* [in] */ ULONG32 cTokens,
     /* [size_is][in] */ mdToken pTokens[]) {
-  DEBUG_PRINTF(1, "CordbModule - SetJMCStatus - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - SetJMCStatus - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -146,34 +149,39 @@ HRESULT CordbModule::ApplyChanges(
     /* [size_is][in] */ BYTE pbMetadata[],
     /* [in] */ ULONG cbIL,
     /* [size_is][in] */ BYTE pbIL[]) {
-  DEBUG_PRINTF(1, "CordbModule - ApplyChanges - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - ApplyChanges - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::SetJITCompilerFlags(
     /* [in] */ DWORD dwFlags) {
   this->dwFlags = dwFlags;
-  DEBUG_PRINTF(1, "CordbModule - SetJITCompilerFlags - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - SetJITCompilerFlags - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::GetJITCompilerFlags(
     /* [out] */ DWORD *pdwFlags) {
   *pdwFlags = dwFlags;
-  DEBUG_PRINTF(1, "CordbModule - GetJITCompilerFlags - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - GetJITCompilerFlags - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::ResolveAssembly(
     /* [in] */ mdToken tkAssemblyRef,
     /* [out] */ ICorDebugAssembly **ppAssembly) {
-  DEBUG_PRINTF(1, "CordbModule - ResolveAssembly - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - ResolveAssembly - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::GetProcess(
     /* [out] */ ICorDebugProcess **ppProcess) {
-  DEBUG_PRINTF(1, "CordbModule - GetProcess - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - GetProcess - NOT IMPLEMENTED\n"));
   // *ppProcess = pProcess;
   return S_OK;
 }
@@ -183,15 +191,17 @@ HRESULT CordbModule::GetBaseAddress(
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
   m_dbgprot_buffer_add_id(&localbuf, id);
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_METADATA_BLOB,
-                               &localbuf);
+  int cmdId =
+      conn->send_event(MDBGPROT_CMD_SET_ASSEMBLY,
+                       MDBGPROT_CMD_ASSEMBLY_GET_METADATA_BLOB, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
   MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
   assembly_metadata_blob = m_dbgprot_decode_byte_array(
       bAnswer->buf, &bAnswer->buf, bAnswer->end, &assembly_metadata_len);
 
-  DEBUG_PRINTF(1, "CordbModule - GetBaseAddress\n");
+  LOG((LF_CORDB, LL_INFO1000000,
+       "CordbModule - GetBaseAddress - IMPLEMENTED\n"));
 
   *pAddress = (CORDB_ADDRESS)assembly_metadata_blob;
   return S_OK;
@@ -201,19 +211,17 @@ HRESULT CordbModule::GetName(
     /* [in] */ ULONG32 cchName,
     /* [out] */ ULONG32 *pcchName,
     /* [length_is][size_is][out] */ WCHAR szName[]) {
-  DEBUG_PRINTF(1, "CordbModule - GetName - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetName - IMPLEMENTED\n"));
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
   m_dbgprot_buffer_add_id(&localbuf, id);
-  int cmdId =
-      conn->send_event(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_LOCATION, &localbuf);
+  int cmdId = conn->send_event(MDBGPROT_CMD_SET_ASSEMBLY,
+                               MDBGPROT_CMD_ASSEMBLY_GET_LOCATION, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
   MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
   char *assembly_name =
       m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-
-  DEBUG_PRINTF(1, "CordbModule - assembly_name - %d - %s\n", id, assembly_name);
 
   if (cchName < strlen(assembly_name) + 1) {
     *pcchName = strlen(assembly_name) + 1;
@@ -229,13 +237,15 @@ HRESULT CordbModule::GetName(
 HRESULT CordbModule::EnableJITDebugging(
     /* [in] */ BOOL bTrackJITInfo,
     /* [in] */ BOOL bAllowJitOpts) {
-  DEBUG_PRINTF(1, "CordbModule - EnableJITDebugging - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - EnableJITDebugging - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::EnableClassLoadCallbacks(
     /* [in] */ BOOL bClassLoadCallbacks) {
-  DEBUG_PRINTF(1, "CordbModule - EnableClassLoadCallbacks - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - EnableClassLoadCallbacks - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -243,13 +253,15 @@ HRESULT CordbModule::GetFunctionFromToken(
     /* [in] */ mdMethodDef methodDef,
     /* [out] */ ICorDebugFunction **ppFunction) {
   // check in a cache before talk to mono runtime to get info
-  DEBUG_PRINTF(1, "CordbModule - GetFunctionFromToken - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000,
+       "CordbModule - GetFunctionFromToken - IMPLEMENTED\n"));
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
   m_dbgprot_buffer_add_id(&localbuf, id);
   m_dbgprot_buffer_add_int(&localbuf, methodDef);
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_ASSEMBLY,
-                               MDBGPROT_CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN, &localbuf);
+  int cmdId =
+      conn->send_event(MDBGPROT_CMD_SET_ASSEMBLY,
+                       MDBGPROT_CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
   MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
@@ -267,7 +279,8 @@ HRESULT CordbModule::GetFunctionFromToken(
 HRESULT CordbModule::GetFunctionFromRVA(
     /* [in] */ CORDB_ADDRESS rva,
     /* [out] */ ICorDebugFunction **ppFunction) {
-  DEBUG_PRINTF(1, "CordbModule - GetFunctionFromRVA - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - GetFunctionFromRVA - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -281,14 +294,15 @@ HRESULT CordbModule::GetClassFromToken(
 
 HRESULT CordbModule::CreateBreakpoint(
     /* [out] */ ICorDebugModuleBreakpoint **ppBreakpoint) {
-  DEBUG_PRINTF(1, "CordbModule - CreateBreakpoint - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - CreateBreakpoint - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::GetEditAndContinueSnapshot(
     /* [out] */ ICorDebugEditAndContinueSnapshot **ppEditAndContinueSnapshot) {
-  DEBUG_PRINTF(1,
-               "CordbModule - GetEditAndContinueSnapshot - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - GetEditAndContinueSnapshot - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -298,38 +312,40 @@ HRESULT CordbModule::GetMetaDataInterface(
   if (pCordbSymbol == NULL)
     pCordbSymbol = new RegMeta(pAssembly, this);
   pCordbSymbol->QueryInterface(riid, (void **)ppObj);
-  DEBUG_PRINTF(1, "CordbModule - GetMetaDataInterface - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000,
+       "CordbModule - GetMetaDataInterface - IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::GetToken(
     /* [out] */ mdModule *pToken) {
-  DEBUG_PRINTF(1, "CordbModule - GetToken - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbModule - GetToken - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::IsDynamic(
     /* [out] */ BOOL *pDynamic) {
-  DEBUG_PRINTF(1, "CordbModule - IsDynamic - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "CordbModule - IsDynamic - IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::GetGlobalVariableValue(
     /* [in] */ mdFieldDef fieldDef,
     /* [out] */ ICorDebugValue **ppValue) {
-  DEBUG_PRINTF(1, "CordbModule - GetGlobalVariableValue - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbModule - GetGlobalVariableValue - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT CordbModule::GetSize(
     /* [out] */ ULONG32 *pcBytes) {
-  DEBUG_PRINTF(1, "CordbModule - GetSize -IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbModule - GetSize -IMPLEMENTED\n"));
   *pcBytes = assembly_metadata_len;
   return S_OK;
 }
 
 HRESULT CordbModule::IsInMemory(
     /* [out] */ BOOL *pInMemory) {
-  DEBUG_PRINTF(1, "CordbModule - IsInMemory - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "CordbModule - IsInMemory - IMPLEMENTED\n"));
   return S_OK;
 }

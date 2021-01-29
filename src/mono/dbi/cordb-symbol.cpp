@@ -6,30 +6,28 @@
 
 #include <mono/utils/atomic.h>
 
-#include "stdafx.h"
 #include "corerror.h"
-#include "rwutil.h"
 #include "mdlog.h"
-#include "switches.h"
 #include "posterror.h"
-#include "stgio.h"
+#include "rwutil.h"
 #include "sstring.h"
+#include "stdafx.h"
+#include "stgio.h"
+#include "switches.h"
 
-#include "mdinternalrw.h"
 #include "importhelper.h"
-
+#include "mdinternalrw.h"
 
 #include <metamodelrw.h>
 
-#include <cordb.h>
+#include <cordb-assembly.h>
 #include <cordb-frame.h>
-#include <cordb-thread.h>
+#include <cordb-function.h>
+#include <cordb-process.h>
 #include <cordb-stepper.h>
 #include <cordb-symbol.h>
-#include <cordb-assembly.h>
-#include <cordb-process.h>
-#include <cordb-function.h>
-
+#include <cordb-thread.h>
+#include <cordb.h>
 
 using namespace std;
 
@@ -224,8 +222,8 @@ HRESULT RegMeta::EnumGenericParamConstraints(
         rGenericParamConstraints[], // [OUT] Put GenericParamConstraints here.
     ULONG cMax,                     // [IN] Max GenericParamConstraints to put.
     ULONG *pcGenericParamConstraints) {
-  DEBUG_PRINTF(1,
-               "CordbSymbol - EnumGenericParamConstraints - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumGenericParamConstraints - NOT IMPLEMENTED\n"));
   return S_OK;
 } // [OUT] Put # put here.
 
@@ -233,8 +231,8 @@ HRESULT RegMeta::GetGenericParamConstraintProps( // S_OK or error.
     mdGenericParamConstraint gpc,                // [IN] GenericParamConstraint
     mdGenericParam *ptGenericParam, // [OUT] GenericParam that is constrained
     mdToken *ptkConstraintType) {
-  DEBUG_PRINTF(
-      1, "CordbSymbol - GetGenericParamConstraintProps - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetGenericParamConstraintProps - NOT IMPLEMENTED\n"));
   return S_OK;
 } // [OUT] TypeDef/Ref/Spec constraint
 
@@ -297,7 +295,8 @@ HRESULT RegMeta::EnumMethodSpecs(
     mdMethodSpec rMethodSpecs[], // [OUT] Put MethodSpecs here.
     ULONG cMax,                  // [IN] Max tokens to put.
     ULONG *pcMethodSpecs) {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumMethodSpecs - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumMethodSpecs - NOT IMPLEMENTED\n"));
   return S_OK;
 } // [OUT] Put actual count here.
 
@@ -306,10 +305,10 @@ HRESULT RegMeta::GetAssemblyProps( // S_OK or error.
     const void **ppbPublicKey, // [OUT] Pointer to the public key.
     ULONG *pcbPublicKey,       // [OUT] Count of bytes in the public key.
     ULONG *pulHashAlgId,       // [OUT] Hash Algorithm.
-    _Out_writes_to_opt_(cchName, *pchName)
-        LPWSTR szName, // [OUT] MdbgProtBuffer to fill with assembly's simply name.
-    ULONG cchName,     // [IN] Size of buffer in wide chars.
-    ULONG *pchName,    // [OUT] Actual # of wide chars in name.
+    _Out_writes_to_opt_(cchName, *pchName) LPWSTR
+        szName,     // [OUT] MdbgProtBuffer to fill with assembly's simply name.
+    ULONG cchName,  // [IN] Size of buffer in wide chars.
+    ULONG *pchName, // [OUT] Actual # of wide chars in name.
     ASSEMBLYMETADATA *pMetaData, // [OUT] Assembly MetaData.
     DWORD *pdwAssemblyFlags) {
   HRESULT hr = S_OK;
@@ -423,7 +422,8 @@ HRESULT RegMeta::GetFileProps( // S_OK or error.
     const void **ppbHashValue, // [OUT] Pointer to the Hash Value Blob.
     ULONG *pcbHashValue,       // [OUT] Count of bytes in the Hash Value Blob.
     DWORD *pdwFileFlags) {
-  DEBUG_PRINTF(1, "CordbSymbol - GetFileProps - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetFileProps - NOT IMPLEMENTED\n"));
   return S_OK;
 } // [OUT] Flags.
 
@@ -504,7 +504,8 @@ HRESULT RegMeta::GetManifestResourceProps( // S_OK or error.
     DWORD *pdwOffset, // [OUT] Offset to the beginning of the resource within
                       // the file.
     DWORD *pdwResourceFlags) {
-  DEBUG_PRINTF(1, "CordbSymbol - GetManifestResourceProps - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetManifestResourceProps - NOT IMPLEMENTED\n"));
   return S_OK;
 } // [OUT] Flags.
 
@@ -513,7 +514,8 @@ HRESULT RegMeta::EnumAssemblyRefs( // S_OK or error
     mdAssemblyRef rAssemblyRefs[], // [OUT] Put AssemblyRefs here.
     ULONG cMax,                    // [IN] Max AssemblyRefs to put.
     ULONG *pcTokens) {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumAssemblyRefs - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumAssemblyRefs - NOT IMPLEMENTED\n"));
   return S_OK;
 } // [OUT] Put # put here.
 
@@ -607,7 +609,8 @@ HRESULT RegMeta::EnumManifestResources( // S_OK or error
         rManifestResources[], // [OUT] Put ManifestResources here.
     ULONG cMax,               // [IN] Max Resources to put.
     ULONG *pcTokens) {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumManifestResources - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumManifestResources - NOT IMPLEMENTED\n"));
   return S_OK;
 } // [OUT] Put # put here.
 
@@ -615,15 +618,16 @@ HRESULT RegMeta::FindExportedTypeByName( // S_OK or error
     LPCWSTR szName,                      // [IN] Name of the ExportedType.
     mdToken mdtExportedType, // [IN] ExportedType for the enclosing class.
     mdExportedType *ptkExportedType) {
-  DEBUG_PRINTF(1, "CordbSymbol - FindExportedTypeByName - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - FindExportedTypeByName - NOT IMPLEMENTED\n"));
   return S_OK;
 } // [OUT] Put the ExportedType token here.
 
 HRESULT RegMeta::FindManifestResourceByName( // S_OK or error
     LPCWSTR szName, // [IN] Name of the ManifestResource.
     mdManifestResource *ptkManifestResource) {
-  DEBUG_PRINTF(1,
-               "CordbSymbol - FindManifestResourceByName - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - FindManifestResourceByName - NOT IMPLEMENTED\n"));
   return S_OK;
 } // [OUT] Put the ManifestResource token here.
 
@@ -635,7 +639,8 @@ HRESULT RegMeta::FindAssembliesByName( // S_OK or error
     IUnknown *ppIUnk[],     // [OUT] put IMetaDataAssemblyImport pointers here
     ULONG cMax,             // [IN] The max number to put
     ULONG *pcAssemblies) {
-  DEBUG_PRINTF(1, "CordbSymbol - FindAssembliesByName - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - FindAssembliesByName - NOT IMPLEMENTED\n"));
   return S_OK;
 } // [OUT] The number of assemblies returned.
 
@@ -703,7 +708,7 @@ ErrExit:
 }
 
 HRESULT RegMeta::ResetEnum(HCORENUM hEnum, ULONG ulPos) {
-  DEBUG_PRINTF(1, "CordbSymbol - ResetEnum - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbSymbol - ResetEnum - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -789,7 +794,8 @@ ErrExit:
 
 HRESULT RegMeta::EnumTypeRefs(HCORENUM *phEnum, mdTypeRef rTypeRefs[],
                               ULONG cMax, ULONG *pcTypeRefs) {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumTypeRefs - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumTypeRefs - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -853,7 +859,8 @@ ErrExit:
 HRESULT RegMeta::GetModuleFromScope( // S_OK.
     mdModule *pmd)                   // [OUT] Put mdModule token here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetModuleFromScope - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetModuleFromScope - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1040,7 +1047,8 @@ ErrExit:
 
 HRESULT RegMeta::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown **ppIScope,
                                 mdTypeDef *ptd) {
-  DEBUG_PRINTF(1, "CordbSymbol - ResolveTypeRef - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - ResolveTypeRef - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1051,7 +1059,8 @@ HRESULT RegMeta::EnumMembers( // S_OK, S_FALSE, or error.
     ULONG cMax,               // [IN] Max MemberDefs to put.
     ULONG *pcTokens)          // [OUT] Put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumMembers - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumMembers - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1063,7 +1072,8 @@ HRESULT RegMeta::EnumMembersWithName( // S_OK, S_FALSE, or error.
     ULONG cMax,         // [IN] Max MemberDefs to put.
     ULONG *pcTokens)    // [OUT] Put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumMembersWithName - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumMembersWithName - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1147,7 +1157,8 @@ HRESULT RegMeta::EnumMethodsWithName( // S_OK, S_FALSE, or error.
     ULONG cMax,             // [IN] Max MethodDefs to put.
     ULONG *pcTokens)        // [OUT] Put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumMethodsWithName - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumMethodsWithName - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1355,7 +1366,8 @@ HRESULT RegMeta::EnumMemberRefs( // S_OK, S_FALSE, or error.
     ULONG cMax,                  // [IN] Max MemberRefs to put.
     ULONG *pcTokens)             // [OUT] Put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumMemberRefs - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumMemberRefs - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1367,7 +1379,8 @@ HRESULT RegMeta::EnumMethodImpls( // S_OK, S_FALSE, or error
     ULONG cMax,                   // [IN] Max tokens to put.
     ULONG *pcTokens)              // [OUT] Put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumMethodImpls - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumMethodImpls - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1379,7 +1392,8 @@ HRESULT RegMeta::EnumPermissionSets( // S_OK, S_FALSE, or error.
     ULONG cMax,                 // [IN] Max Permissions to put.
     ULONG *pcTokens)            // [OUT] Put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumPermissionSets - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumPermissionSets - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1390,7 +1404,8 @@ HRESULT RegMeta::FindMember(
     ULONG cbSigBlob,           // [IN] count of bytes in the signature blob
     mdToken *pmb)              // [OUT] matching memberdef
 {
-  DEBUG_PRINTF(1, "CordbSymbol - FindMember - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - FindMember - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1401,7 +1416,8 @@ HRESULT RegMeta::FindMethod(
     ULONG cbSigBlob,           // [IN] count of bytes in the signature blob
     mdMethodDef *pmb)          // [OUT] matching memberdef
 {
-  DEBUG_PRINTF(1, "CordbSymbol - FindMethod - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - FindMethod - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1412,7 +1428,7 @@ HRESULT RegMeta::FindField(
     ULONG cbSigBlob,           // [IN] count of bytes in the signature blob
     mdFieldDef *pmb)           // [OUT] matching memberdef
 {
-  DEBUG_PRINTF(1, "CordbSymbol - FindField - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbSymbol - FindField - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1423,7 +1439,8 @@ HRESULT RegMeta::FindMemberRef(
     ULONG cbSigBlob,           // [IN] count of bytes in the signature blob
     mdMemberRef *pmr)          // [OUT] matching memberref
 {
-  DEBUG_PRINTF(1, "CordbSymbol - FindMemberRef - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - FindMemberRef - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1809,7 +1826,8 @@ HRESULT RegMeta::EnumMethodSemantics( // S_OK, S_FALSE, or error.
     ULONG cMax,           // [IN] Max properties to put.
     ULONG *pcEventProp)   // [OUT] Put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumMethodSemantics - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumMethodSemantics - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1819,7 +1837,8 @@ HRESULT RegMeta::GetMethodSemantics( // S_OK, S_FALSE, or error.
     DWORD *
         pdwSemanticsFlags) // [OUT] the role flags for the method/propevent pair
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetMethodSemantics - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetMethodSemantics - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1924,7 +1943,8 @@ HRESULT RegMeta::GetFieldMarshal(
     PCCOR_SIGNATURE *ppvNativeType, // [OUT] native type of this field
     ULONG *pcbNativeType) // [OUT] the count of bytes of *ppvNativeType
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetFieldMarshal - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetFieldMarshal - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1933,7 +1953,7 @@ HRESULT RegMeta::GetRVA( // S_OK or error.
     ULONG *pulCodeRVA,   // The offset
     DWORD *pdwImplFlags) // the implementation flags
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetRVA - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbSymbol - GetRVA - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1943,7 +1963,8 @@ HRESULT RegMeta::GetPermissionSetProps(
     void const **ppvPermission, // [OUT] permission blob.
     ULONG *pcbPermission)       // [OUT] count of bytes of pvPermission.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetPermissionSetProps - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetPermissionSetProps - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1975,7 +1996,8 @@ HRESULT RegMeta::GetModuleRefProps( // S_OK or error.
     ULONG cchName,     // [IN] size of szName in wide characters.
     ULONG *pchName)    // [OUT] actual count of characters in the name.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetModuleRefProps - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetModuleRefProps - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -1985,7 +2007,8 @@ HRESULT RegMeta::EnumModuleRefs( // S_OK or error.
     ULONG cmax,                  // [IN] max memberrefs to put.
     ULONG *pcModuleRefs)         // [OUT] put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumModuleRefs - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumModuleRefs - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2014,7 +2037,8 @@ HRESULT RegMeta::GetNameFromToken( // Not Recommended! May be removed!
     mdToken tk, // [IN] Token to get name from.  Must have a name.
     MDUTF8CSTR *pszUtf8NamePtr) // [OUT] Return pointer to UTF8 name in heap.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetNameFromToken - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetNameFromToken - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2024,7 +2048,8 @@ HRESULT RegMeta::EnumUnresolvedMethods( // S_OK, S_FALSE, or error.
     ULONG cMax,                         // [IN] Max MemberDefs to put.
     ULONG *pcTokens)                    // [OUT] Put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumUnresolvedMethods - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumUnresolvedMethods - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2089,7 +2114,8 @@ HRESULT RegMeta::GetPinvokeMap( // S_OK or error.
     ULONG *pchImportName,      // [OUT] Actual number of characters stored.
     mdModuleRef *pmrImportDLL) // [OUT] ModuleRef token for the target DLL.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetPinvokeMap - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetPinvokeMap - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2099,7 +2125,8 @@ HRESULT RegMeta::EnumSignatures( // S_OK or error.
     ULONG cmax,                  // [IN] max signatures to put.
     ULONG *pcSignatures)         // [OUT] put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumSignatures - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumSignatures - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2109,7 +2136,8 @@ HRESULT RegMeta::EnumTypeSpecs( // S_OK or error.
     ULONG cmax,                 // [IN] max TypeSpecs to put.
     ULONG *pcTypeSpecs)         // [OUT] put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumTypeSpecs - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumTypeSpecs - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2119,7 +2147,8 @@ HRESULT RegMeta::EnumUserStrings( // S_OK or error.
     ULONG cmax,                   // [IN] max Strings to put.
     ULONG *pcStrings)             // [OUT] put # put here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - EnumUserStrings - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - EnumUserStrings - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2128,7 +2157,8 @@ HRESULT RegMeta::GetParamForMethodIndex( // S_OK or error.
     ULONG ulParamSeq,                    // [IN] Parameter sequence.
     mdParamDef *ppd)                     // [IN] Put Param token here.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetParamForMethodIndex - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetParamForMethodIndex - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2298,7 +2328,8 @@ HRESULT RegMeta::FindTypeRef(
     LPCWSTR szName,            // [IN] TypeRef Name.
     mdTypeRef *ptr)            // [OUT] matching TypeRef.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - FindTypeRef - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - FindTypeRef - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2320,7 +2351,8 @@ HRESULT RegMeta::GetMemberProps(
     ULONG *
         pcchValue) // [OUT] size of constant string in chars, 0 for non-strings.
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetMemberProps - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetMemberProps - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2738,7 +2770,8 @@ HRESULT RegMeta::GetNativeCallConvFromSig( // S_OK or error.
     ULONG cbSig,                           // [IN] Count of signature bytes.
     ULONG *pCallConv) // [OUT] Put calling conv here (see CorPinvokemap).
 {
-  DEBUG_PRINTF(1, "CordbSymbol - GetNativeCallConvFromSig - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbSymbol - GetNativeCallConvFromSig - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -2747,6 +2780,6 @@ HRESULT RegMeta::IsGlobal( // S_OK or error.
     int *pbGlobal)         // [OUT] Put 1 if global, 0 otherwise.
 
 {
-  DEBUG_PRINTF(1, "CordbSymbol - IsGlobal - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "CordbSymbol - IsGlobal - NOT IMPLEMENTED\n"));
   return S_OK;
 }

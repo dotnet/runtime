@@ -55,29 +55,20 @@ HRESULT __stdcall CordbFunction::GetModule(ICorDebugModule **ppModule) {
     MdbgProtBuffer localbuf;
     m_dbgprot_buffer_init(&localbuf, 128);
     m_dbgprot_buffer_add_id(&localbuf, id);
-    int cmdId =
-        conn->send_event(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_ASSEMBLY, &localbuf);
+    int cmdId = conn->send_event(MDBGPROT_CMD_SET_METHOD,
+                                 MDBGPROT_CMD_METHOD_ASSEMBLY, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-
-    DEBUG_PRINTF(
-        1, "CordbFunction - GetModule - IMPLEMENTED - ENTREI NO 0.1 - %d\n",
-        id);
 
     MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
 
-    int module_id = m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-
-    DEBUG_PRINTF(
-        1, "CordbFunction - GetModule - IMPLEMENTED - ENTREI NO 0.2 - %d\n",
-        module_id);
+    int module_id =
+        m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
 
     module = (CordbModule *)g_hash_table_lookup(conn->ppCordb->modules,
                                                 GINT_TO_POINTER(module_id));
   }
 
   *ppModule = static_cast<ICorDebugModule *>(this->module);
-  DEBUG_PRINTF(1, "CordbFunction - GetModule - IMPLEMENTED - %p\n",
-               this->module);
 
   if (!*ppModule)
     return S_FALSE;
@@ -85,29 +76,26 @@ HRESULT __stdcall CordbFunction::GetModule(ICorDebugModule **ppModule) {
 }
 
 HRESULT __stdcall CordbFunction::GetClass(ICorDebugClass **ppClass) {
-  DEBUG_PRINTF(1, "CordbFunction - GetClass - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbFunction - GetClass - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT __stdcall CordbFunction::GetToken(mdMethodDef *pMethodDef) {
   if (this->token == 0) {
-    DEBUG_PRINTF(
-        1, "CordbFunction - GetToken - IMPLEMENTED - ENTREI NO 0 - %d\n", id);
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetToken - IMPLEMENTED\n"));
     MdbgProtBuffer localbuf;
     m_dbgprot_buffer_init(&localbuf, 128);
     m_dbgprot_buffer_add_id(&localbuf, id);
-    int cmdId = conn->send_event(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_TOKEN, &localbuf);
+    int cmdId = conn->send_event(MDBGPROT_CMD_SET_METHOD,
+                                 MDBGPROT_CMD_METHOD_TOKEN, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-
-    DEBUG_PRINTF(
-        1, "CordbFunction - GetToken - IMPLEMENTED - ENTREI NO 0.1 - %d\n", id);
-
     MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
 
-    this->token = m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+    this->token =
+        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
   }
   *pMethodDef = this->token;
-  DEBUG_PRINTF(1, "CordbFunction - GetToken - IMPLEMENTED - %d\n", *pMethodDef);
   return S_OK;
 }
 
@@ -115,65 +103,74 @@ HRESULT __stdcall CordbFunction::GetILCode(ICorDebugCode **ppCode) {
   if (code == NULL)
     code = new CordbCode(conn, this);
   *ppCode = static_cast<ICorDebugCode *>(code);
-  DEBUG_PRINTF(1, "CordbFunction - GetILCode - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "CordbFunction - GetILCode - IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT __stdcall CordbFunction::GetNativeCode(ICorDebugCode **ppCode) {
   *ppCode = static_cast<ICorDebugCode *>(code);
-  DEBUG_PRINTF(1, "CordbFunction - GetNativeCode - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000,
+       "CordbFunction - GetNativeCode - IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT __stdcall CordbFunction::CreateBreakpoint(
     ICorDebugFunctionBreakpoint **ppBreakpoint) {
-  DEBUG_PRINTF(1, "CordbFunction - CreateBreakpoint - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbFunction - CreateBreakpoint - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT __stdcall CordbFunction::GetLocalVarSigToken(mdSignature *pmdSig) {
-  DEBUG_PRINTF(1, "CordbFunction - GetLocalVarSigToken - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbFunction - GetLocalVarSigToken - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT __stdcall CordbFunction::GetCurrentVersionNumber(
     ULONG32 *pnCurrentVersion) {
   *pnCurrentVersion = 1;
-  DEBUG_PRINTF(1, "CordbFunction - GetCurrentVersionNumber - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000,
+       "CordbFunction - GetCurrentVersionNumber - IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT __stdcall CordbFunction::SetJMCStatus(BOOL bIsJustMyCode) {
-  DEBUG_PRINTF(1, "CordbFunction - SetJMCStatus - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbFunction - SetJMCStatus - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT __stdcall CordbFunction::GetJMCStatus(BOOL *pbIsJustMyCode) {
-  DEBUG_PRINTF(1, "CordbFunction - GetJMCStatus - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbFunction - GetJMCStatus - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT __stdcall CordbFunction::EnumerateNativeCode(
     ICorDebugCodeEnum **ppCodeEnum) {
-  DEBUG_PRINTF(1, "CordbFunction - EnumerateNativeCode - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbFunction - EnumerateNativeCode - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT __stdcall CordbFunction::GetVersionNumber(ULONG32 *pnVersion) {
   *pnVersion = 1;
-  DEBUG_PRINTF(1, "CordbFunction - GetVersionNumber - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000,
+       "CordbFunction - GetVersionNumber - IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT __stdcall CordbFunction::GetActiveReJitRequestILCode(
     ICorDebugILCode **ppReJitedILCode) {
-  DEBUG_PRINTF(
-      1, "CordbFunction - GetActiveReJitRequestILCode - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbFunction - GetActiveReJitRequestILCode - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT __stdcall CordbFunction::CreateNativeBreakpoint(
     ICorDebugFunctionBreakpoint **ppBreakpoint) {
-  DEBUG_PRINTF(1, "CordbFunction - CreateNativeBreakpoint - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "CordbFunction - CreateNativeBreakpoint - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
