@@ -1701,7 +1701,6 @@
   ],
   "catalyst": [
     "catalyst",
-    "linux",
     "unix",
     "any",
     "base"
@@ -1709,8 +1708,6 @@
   "catalyst-arm64": [
     "catalyst-arm64",
     "catalyst",
-    "linux-arm64",
-    "linux",
     "unix-arm64",
     "unix",
     "any",
@@ -1719,8 +1716,6 @@
   "catalyst-x64": [
     "catalyst-x64",
     "catalyst",
-    "linux-x64",
-    "linux",
     "unix-x64",
     "unix",
     "any",
@@ -1729,7 +1724,6 @@
   "catalyst.13": [
     "catalyst.13",
     "catalyst",
-    "linux",
     "unix",
     "any",
     "base"
@@ -1739,8 +1733,6 @@
     "catalyst.13",
     "catalyst-arm64",
     "catalyst",
-    "linux-arm64",
-    "linux",
     "unix-arm64",
     "unix",
     "any",
@@ -1751,8 +1743,6 @@
     "catalyst.13",
     "catalyst-x64",
     "catalyst",
-    "linux-x64",
-    "linux",
     "unix-x64",
     "unix",
     "any",
@@ -1762,7 +1752,6 @@
     "catalyst.14",
     "catalyst.13",
     "catalyst",
-    "linux",
     "unix",
     "any",
     "base"
@@ -1774,8 +1763,6 @@
     "catalyst.13",
     "catalyst-arm64",
     "catalyst",
-    "linux-arm64",
-    "linux",
     "unix-arm64",
     "unix",
     "any",
@@ -1788,8 +1775,6 @@
     "catalyst.13",
     "catalyst-x64",
     "catalyst",
-    "linux-x64",
-    "linux",
     "unix-x64",
     "unix",
     "any",

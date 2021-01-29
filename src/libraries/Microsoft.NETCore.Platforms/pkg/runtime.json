@@ -562,19 +562,19 @@
     },
     "catalyst": {
       "#import": [
-        "linux"
+        "unix"
       ]
     },
     "catalyst-arm64": {
       "#import": [
         "catalyst",
-        "linux-arm64"
+        "unix-arm64"
       ]
     },
     "catalyst-x64": {
       "#import": [
         "catalyst",
-        "linux-x64"
+        "unix-x64"
       ]
     },
     "catalyst.13": {
