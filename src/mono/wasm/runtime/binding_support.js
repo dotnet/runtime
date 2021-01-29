@@ -476,6 +476,7 @@ var BindingSupportLib = {
 					return (Module.HEAP32[this._unbox_buffer / 4]) !== 0;
 				case 28: // char
 					return String.fromCharCode(Module.HEAP32[this._unbox_buffer / 4]);
+				// TODO: Embed class ptr into unbox buffer so we can pass it directly to the unbox API
 				default:
 					return this._unbox_mono_obj_rooted_with_known_nonprimitive_type (mono_obj, type);
 			}
@@ -1042,9 +1043,9 @@ typedef struct wasm_method_signature_info {
 			};
 			var body = [
 				"var value = boundConverter (js_value), filteredValue = null;",
-				"console.log(`value === ${value}`);",
+				// "console.log(`value === ${value}`);",
 				`{ filteredValue = ${js}; }`,
-				"console.log(`filteredValue === ${filteredValue}`);",
+				// "console.log(`filteredValue === ${filteredValue}`);",
 				"return filteredValue;"
 			];
 			
@@ -1054,35 +1055,38 @@ typedef struct wasm_method_signature_info {
 				["js_value"], bodyJs, closure
 			);
 
-			console.log("compile result", result);
+			// console.log("compile result", result);
 			return result;
 		},
 
 		_try_get_converter_for_managed_class: function (klass) {
-			console.log (`klass ${klass}`);
+			// console.log (`klass ${klass}`);
 
-			var convMethod = this.find_method (klass, "ManagedToJS", 1);
-			if (!convMethod)
-				return null;
+			if (!this._class_converter_cache)
+				this._class_converter_cache = new Map ();
 
-			// HACK
-			var sigInfo = this.get_method_signature_info (convMethod);
-			var signature = "m";
-			var boundConverter = this.bind_method (
-				convMethod, 0, signature, "ManagedToJS_class" + klass
-			);
+			if (!this._class_converter_cache.has (klass)) {
+				var convMethod = this.find_method (klass, "ManagedToJS", 1);
+				if (!convMethod)
+					this._class_converter_cache.set (klass, null);
+				else {
+					var sigInfo = this.get_method_signature_info (convMethod);
+					var signature = "m";
+					var boundConverter = this.bind_method (
+						convMethod, 0, signature, "ManagedToJS_class" + klass
+					);
 
-			// FIXME: Optimize this
-			var postFilterGetter = this.find_method (klass, "ManagedToJS_PostFilter", 0);
-			var postFilter = postFilterGetter 
-				? this.call_method (postFilterGetter, 0, "", [])
-				: null;
+					// FIXME: Optimize this
+					var postFilterGetter = this.find_method (klass, "ManagedToJS_PostFilter", 0);
+					var postFilter = postFilterGetter 
+						? this.call_method (postFilterGetter, 0, "", [])
+						: null;
 
-			console.log ("postFilter", postFilter);
+					this._class_converter_cache.set (klass, this._compile_post_filter (klass, boundConverter, postFilter));
+				}
+			}
 
-			var result = this._compile_post_filter (klass, boundConverter, postFilter);
-			// this._automatic_converter_table.set (classPtr, result);
-			return result;
+			return this._class_converter_cache.get (klass);
 		},
 
 		_pick_result_chara_for_marshal_type: function (mtype) {
@@ -1109,30 +1113,39 @@ typedef struct wasm_method_signature_info {
 			var classPtr = Module.HEAP32[((unbox_buffer / 4) | 0) + 1];
 			var dataOffset = unbox_buffer + 8;
 
-			console.log (`objSize ${objSize} classPtr ${classPtr} dataOffset ${dataOffset}`);
+			// console.log (`objSize ${objSize} classPtr ${classPtr} dataOffset ${dataOffset}`);
 
-			// FIXME: Optimize this
-			var postFilterGetter = this.find_method (classPtr, "ManagedToJS_PostFilter", 0);
-			var postFilter = postFilterGetter 
-				? this.call_method (postFilterGetter, 0, "", [])
-				: null;
+			if (!this._struct_unboxer_cache)
+				this._struct_unboxer_cache = new Map ();
 
-			console.log ("postFilter", postFilter);
+			if (!this._struct_unboxer_cache.has (classPtr)) {
+				var postFilterGetter = this.find_method (classPtr, "ManagedToJS_PostFilter", 0);
+				var postFilter = postFilterGetter 
+					? this.call_method (postFilterGetter, 0, "", [])
+					: null;
 
-			var convMethod = this.find_method (classPtr, "ManagedToJS", 1);
-			if (!convMethod)
-				throw new Error ("No ManagedToJS method found");
-			// HACK
-			var sigInfo = this.get_method_signature_info (convMethod);
-			var signature = "m";
-			var boundConverter = this.bind_method (
-				convMethod, 0, signature, "ManagedToJS_class" + classPtr
-			);
+				// console.log ("postFilter", postFilter);
 
-			var result = this._compile_post_filter (classPtr, boundConverter, postFilter);
-			// this._automatic_converter_table.set (classPtr, result);
+				var convMethod = this.find_method (classPtr, "ManagedToJS", 1);
+				if (!convMethod)
+					this._struct_unboxer_cache.set (classPtr, null);
+				else {
+					var sigInfo = this.get_method_signature_info (convMethod);
+					var signature = "m";
+					var boundConverter = this.bind_method (
+						convMethod, 0, signature, "ManagedToJS_class" + classPtr
+					);
+
+					this._struct_unboxer_cache.set (classPtr, this._compile_post_filter (classPtr, boundConverter, postFilter));
+				}
+			}
+
+			var unboxer = this._struct_unboxer_cache.get (classPtr);
+			if (!unboxer)
+				throw new Error ("No managed-to-js converter found for struct type " + classPtr);
+
 			// FIXME: Pass a ReadOnlySpan or ReadOnlyMemory instead of a bare pointer
-			return result (dataOffset);
+			return unboxer (dataOffset);
 		},
 
 		_compile_pre_filter: function (classPtr, boundConverter, js) {
@@ -1183,7 +1196,7 @@ typedef struct wasm_method_signature_info {
 				var sigInfo = this.get_method_signature_info (convMethod);
 				// Return unboxed so it can go directly into the arguments list
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
-				console.log("jstm signature", signature);
+				// console.log("jstm signature", signature);
 				var boundConverter = this.bind_method (
 					convMethod, 0, signature, "JSToManaged_class" + classPtr
 				);
@@ -1767,6 +1780,7 @@ typedef struct wasm_method_signature_info {
 				"        result = (Module.HEAP32[unbox_buffer / 4]) !== 0; break;",
 				"    case 28:", // char
 				"        result = String.fromCharCode(Module.HEAP32[unbox_buffer / 4]); break;",
+					// TODO: Embed class ptr into unbox buffer so we can pass it directly to the unbox API
 				"    default:",
 				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType); break;",
 				"    }",

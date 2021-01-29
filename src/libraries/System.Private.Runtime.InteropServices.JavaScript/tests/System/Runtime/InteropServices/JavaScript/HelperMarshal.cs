@@ -14,12 +14,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             public double D;
 
             private static CustomClass JSToManaged (double d) {
-                Console.WriteLine("CustomClass.JSToManaged {0}", d);
+                // Console.WriteLine("CustomClass.JSToManaged {0}", d);
                 return new CustomClass { D = d };
             }
 
             private static double ManagedToJS (CustomClass ct) {
-                Console.WriteLine("CustomClass.ManagedToJS {0}", ct?.D);
+                // Console.WriteLine("CustomClass.ManagedToJS {0}", ct?.D);
                 return ct?.D ?? -1;
             }
         }
@@ -28,14 +28,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             public double D;
 
             private static CustomStruct JSToManaged (double d) {
-                Console.WriteLine("CustomStruct.JSToManaged {0}", d);
+                // Console.WriteLine("CustomStruct.JSToManaged {0}", d);
                 return new CustomStruct { D = d };
             }
 
             private static unsafe double ManagedToJS (ref CustomStruct ct) {
-                Console.WriteLine("CustomStruct.ManagedToJS {0}", ct.D);
+                // Console.WriteLine("CustomStruct.ManagedToJS {0}", ct.D);
+                /*
                 fixed (CustomStruct *pCt = &ct)
                     Console.WriteLine("arg ptr {0}", (uint)(UIntPtr)pCt);
+                */
                 return ct.D;
             }
         }
@@ -47,7 +49,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             private static string ManagedToJS_PostFilter () => "new Date(value)";
 
             private static CustomDate JSToManaged (string s) {
-                Console.WriteLine($"CustomDate.JSToManaged({s})");
+                // Console.WriteLine($"CustomDate.JSToManaged({s})");
                 return new CustomDate { 
                     Date = DateTime.Parse(s).ToUniversalTime()
                 };
@@ -55,7 +57,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             private static string ManagedToJS (ref CustomDate cd) {
                 var result = cd.Date.ToString("o");
-                Console.WriteLine($"CustomDate.ManagedToJS === {result}");
+                // Console.WriteLine($"CustomDate.ManagedToJS === {result}");
                 return result;
             }
         }
@@ -65,7 +67,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static CustomClass _ccValue;
         private static void InvokeCustomClass(CustomClass cc)
         {
-            Console.WriteLine("InvokeCustomClass got argument cc.D == {0}", cc?.D);
+            // Console.WriteLine("InvokeCustomClass got argument cc.D == {0}", cc?.D);
             _ccValue = cc;
         }
         private static CustomClass ReturnCustomClass(CustomClass cc)
@@ -76,7 +78,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static CustomStruct _csValue;
         private static void InvokeCustomStruct(CustomStruct cs)
         {
-            Console.WriteLine("InvokeCustomStruct got argument cs.D == {0}", cs.D);
+            // Console.WriteLine("InvokeCustomStruct got argument cs.D == {0}", cs.D);
             _csValue = cs;
         }
         private static CustomStruct ReturnCustomStruct(CustomStruct cs)
