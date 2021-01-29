@@ -4180,6 +4180,8 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
+            // TODO: Stop passing isRecompute once we are sure that this assert is never hit.
+            assert(!m_isRecompute);
             m_compiler->lvaMarkLclRefs(*use, m_block, m_stmt, m_isRecompute);
             return WALK_CONTINUE;
         }
@@ -4439,7 +4441,12 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 
         // Set initial value for lvSingleDef for explicit and implicit
         // argument locals as they are "defined" on entry.
-        varDsc->lvSingleDef = varDsc->lvIsParam;
+        // However, if we are just recomputing the ref counts, retain the value
+        // that was set by past phases.
+        if (!isRecompute)
+        {
+            varDsc->lvSingleDef = varDsc->lvIsParam;
+        }
     }
 
     // Remember current state of generic context use, and prepare
@@ -7316,7 +7323,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("V");
         }
-        if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr && varDsc->lvSingleDef)
+        if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
             printf("H");
         }
