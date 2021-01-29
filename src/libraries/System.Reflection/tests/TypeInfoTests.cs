@@ -1565,6 +1565,23 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, type.GetTypeInfo().IsSZArray);
         }
 
+        [Fact]
+        public void GetMemberFromGenericMemberDefinition()
+        {
+            //System.Diagnostics.Debugger.Launch();
+            Type openGenericType = typeof(TI_GenericTypeWithAllMembers<>);
+            Type closedGenericType = typeof(TI_GenericTypeWithAllMembers<int>);
+
+            BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            foreach (MemberInfo openGenericMember in openGenericType.GetMembers(all))
+            {
+                MemberInfo closedGenericMember = closedGenericType.GetMemberFromGenericMemberDefinition(openGenericMember);
+                Assert.True(closedGenericMember != null, openGenericMember.Name + " is null");
+                Assert.NotNull(closedGenericMember);
+                Assert.True(closedGenericMember.HasSameMetadataDefinitionAs(openGenericMember));
+            }
+        }
+
 #pragma warning disable 0067, 0169
         public static class ClassWithStaticConstructor
         {
@@ -1815,6 +1832,39 @@ namespace System.Reflection.Tests
         public abstract class AbstractSubClass : AbstractBaseClass { }
         public class AbstractSubSubClass : AbstractSubClass { }
     }
+
+    public class TI_GenericTypeWithAllMembers<T>
+    {
+        private static event EventHandler<T> PrivateStaticEvent;
+        private static T PrivateStaticField;
+        private static T PrivateStaticProperty { get; set; }
+        private static T PrivateStaticMethod(T t) => default;
+        private static T PrivateStaticMethod(T t, T t2) => default;
+
+        public static event EventHandler<T> PublicStaticEvent;
+        public static T PublicStaticField;
+        public static T PublicStaticProperty { get; set; }
+        public static T PublicStaticMethod(T t) => default;
+        public static T PublicStaticMethod(T t, T t2) => default;
+
+        static TI_GenericTypeWithAllMembers() { }
+
+        public TI_GenericTypeWithAllMembers(T t) { }
+        private TI_GenericTypeWithAllMembers() { }
+
+        public event EventHandler<T> PublicInstanceEvent;
+        public T PublicInstanceField;
+        public T PublicInstanceProperty { get; set; }
+        public T PublicInstanceMethod(T t) => default;
+        public T PublicInstanceMethod(T t, T t2) => default;
+
+        private event EventHandler<T> PrivateInstanceEvent;
+        private T PrivateInstanceField;
+        private T PrivateInstanceProperty { get; set; }
+        private T PrivateInstanceMethod(T t) => default;
+        private T PrivateInstanceMethod(T t1, T t2) => default;
+    }
+
 #pragma warning restore 0067, 0169
 
     public class OutsideTypeInfoTests

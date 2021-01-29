@@ -3068,6 +3068,101 @@ namespace System
 
             return compressMembers;
         }
+
+        public override MemberInfo? GetMemberFromGenericMemberDefinition(MemberInfo member)
+        {
+            if (member is null) throw new ArgumentNullException(nameof(member));
+
+            return member.MemberType switch
+            {
+                MemberTypes.Method => GetMethodFromGenericMemberDefinition(member),
+                MemberTypes.Constructor => GetConstructorFromGenericMemberDefinition(member),
+                MemberTypes.Property => GetPropertyFromGenericMemberDefinition(member),
+                MemberTypes.Field => GetFieldFromGenericMemberDefinition(member),
+                MemberTypes.Event => GetEventFromGenericMemberDefinition(member),
+                _ => null
+            };
+        }
+
+        private MemberInfo? GetMethodFromGenericMemberDefinition(MemberInfo method)
+        {
+            RuntimeMethodInfo[] cache = Cache.GetMethodList(MemberListType.CaseSensitive, method.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeMethodInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(method))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private MemberInfo? GetConstructorFromGenericMemberDefinition(MemberInfo constructor)
+        {
+            RuntimeConstructorInfo[] cache = Cache.GetConstructorList(MemberListType.CaseSensitive, constructor.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeConstructorInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(constructor))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private MemberInfo? GetPropertyFromGenericMemberDefinition(MemberInfo property)
+        {
+            RuntimePropertyInfo[] cache = Cache.GetPropertyList(MemberListType.CaseSensitive, property.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimePropertyInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(property))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private MemberInfo? GetFieldFromGenericMemberDefinition(MemberInfo field)
+        {
+            RuntimeFieldInfo[] cache = Cache.GetFieldList(MemberListType.CaseSensitive, field.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeFieldInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(field))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private MemberInfo? GetEventFromGenericMemberDefinition(MemberInfo eventInfo)
+        {
+            RuntimeEventInfo[] cache = Cache.GetEventList(MemberListType.CaseSensitive, eventInfo.Name);
+
+            for (int i = 0; i < cache.Length; i++)
+            {
+                RuntimeEventInfo candidate = cache[i];
+                if (candidate.HasSameMetadataDefinitionAs(eventInfo))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
         #endregion
 
         #region Identity
