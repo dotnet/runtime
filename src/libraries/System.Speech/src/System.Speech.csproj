@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp2.1-windows;netstandard2.0</TargetFrameworks>
@@ -36,7 +36,7 @@
     <Compile Include="Internal\Helpers.cs" />
     <Compile Include="Internal\HGlobalSafeHandle.cs" />
     <Compile Include="Internal\PhonemeConverter.cs" />
-    <Compile Include="Internal\RedBlackList.cs" />
+    <Compile Include="Internal\RBList.cs" />
     <Compile Include="Internal\ResourceLoader.cs" />
     <Compile Include="Internal\SapiAttributeParser.cs" />
     <Compile Include="Internal\SeekableReadStream.cs" />
