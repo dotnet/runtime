@@ -26,7 +26,7 @@ namespace System.Text.Json
                 matchingProperty,
                 options);
 
-            Debug.Assert(parameterInfo.ParameterType == matchingProperty.DeclaredPropertyType);
+            Debug.Assert(parameterInfo.ParameterType.IsAssignableFrom(matchingProperty.DeclaredPropertyType));
 
             if (parameterInfo.HasDefaultValue)
             {

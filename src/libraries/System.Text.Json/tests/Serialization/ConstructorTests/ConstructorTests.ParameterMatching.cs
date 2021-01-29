@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -1124,20 +1126,25 @@ namespace System.Text.Json.Serialization.Tests
 
         private class AgePoco
         {
-            public AgePoco(int age)
+            public AgePoco(int age, string Age, bool aGe)
             {
                 this.age = age;
+                this.Age = Age;
+                this.aGe = aGe;
             }
 
             public int age { get; set; }
             public string Age { get; set; }
+            public bool aGe { get; set; }
         }
 
         [Fact]
         public void PocoWithSamePropertyNameDifferentTypes()
         {
-            AgePoco obj = JsonSerializer.Deserialize<AgePoco>(@"{""age"":1}");
+            AgePoco obj = JsonSerializer.Deserialize<AgePoco>(@"{""age"":1, ""Age"":""42"", ""aGe"":true }");
             Assert.Equal(1, obj.age);
+            Assert.Equal("42", obj.Age);
+            Assert.True(obj.aGe);
         }
 
         [Theory]
@@ -1183,6 +1190,28 @@ namespace System.Text.Json.Serialization.Tests
 
             var options = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault };
             Assert.Equal(json, JsonSerializer.Serialize(obj, options));
+        }
+
+        [Fact]
+        public void ClassWithConstructorArgumentTypeThatIsAssignableFromImmutablePropertyType()
+        {
+            string json = @"{""Values"":[1,1,3,5,8]}";
+            var beforeSerializationObject = new ClassWithConstructorArgumentTypeThatIsAssignableFromImmutablePropertyType(new[] { 1, 1, 3, 5, 8 });
+            var serialized = JsonSerializer.Serialize(beforeSerializationObject);
+            Assert.Equal(json, serialized);
+            var afterDeserializedObject = JsonSerializer.Deserialize<ClassWithConstructorArgumentTypeThatIsAssignableFromImmutablePropertyType>(json);
+            Assert.True(beforeSerializationObject.Values.SequenceEqual(afterDeserializedObject.Values));
+        }
+
+        [Fact]
+        public void ClassUsingObservableCollections()
+        {
+            string json = @"{""Values"":[1,1,3,5,8]}";
+            var beforeSerializationObject = new ClassUsingObservableCollections(new ObservableCollection<int>(new[] { 1, 1, 3, 5, 8 }));
+            var serialized = JsonSerializer.Serialize(beforeSerializationObject);
+            Assert.Equal(json, serialized);
+            var afterDeserializedObject = JsonSerializer.Deserialize<ClassUsingObservableCollections>(json);
+            Assert.True(beforeSerializationObject.Values.SequenceEqual(afterDeserializedObject.Values));
         }
 
         private class TypeWithUri

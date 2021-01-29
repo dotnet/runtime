@@ -289,47 +289,11 @@ namespace System.Text.Json
             }
         }
 
-        private sealed class ParameterLookupKey
-        {
-            public ParameterLookupKey(string name, Type type)
-            {
-                Name = name;
-                Type = type;
-            }
-
-            public string Name { get; }
-            public Type Type { get; }
-
-            public override int GetHashCode()
-            {
-                return StringComparer.OrdinalIgnoreCase.GetHashCode(Name);
-            }
-
-            public override bool Equals(object? obj)
-            {
-                Debug.Assert(obj is ParameterLookupKey);
-
-                ParameterLookupKey other = (ParameterLookupKey)obj;
-                return Type == other.Type && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        private sealed class ParameterLookupValue
-        {
-            public ParameterLookupValue(JsonPropertyInfo jsonPropertyInfo)
-            {
-                JsonPropertyInfo = jsonPropertyInfo;
-            }
-
-            public string? DuplicateName { get; set; }
-            public JsonPropertyInfo JsonPropertyInfo { get; }
-        }
-
         private void InitializeConstructorParameters(ConstructorInfo constructorInfo)
         {
-            ParameterInfo[] parameters = constructorInfo.GetParameters();
+            ParameterInfo[] constructorParameters = constructorInfo.GetParameters();
             var parameterCache = new Dictionary<string, JsonParameterInfo>(
-                parameters.Length, Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
+                constructorParameters.Length, Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
 
             static Type GetMemberType(MemberInfo memberInfo)
             {
@@ -345,46 +309,59 @@ namespace System.Text.Json
             // record types or anonymous types are used.
             // The property name key does not use [JsonPropertyName] or PropertyNamingPolicy since we only bind
             // the parameter name to the object property name and do not use the JSON version of the name here.
-            var nameLookup = new Dictionary<ParameterLookupKey, ParameterLookupValue>(PropertyCacheArray!.Length);
+            var nameLookup = new Dictionary<string, List<JsonPropertyInfo>>(PropertyCacheArray!.Length, StringComparer.OrdinalIgnoreCase);
 
             foreach (JsonPropertyInfo jsonProperty in PropertyCacheArray!)
             {
                 string propertyName = jsonProperty.MemberInfo!.Name;
-                var key = new ParameterLookupKey(propertyName, GetMemberType(jsonProperty.MemberInfo));
-                var value= new ParameterLookupValue(jsonProperty);
-                if (!JsonHelpers.TryAdd(nameLookup, key, value))
+                if (!JsonHelpers.TryAdd(nameLookup, propertyName, new List<JsonPropertyInfo> { jsonProperty }))
                 {
-                    // More than one property has the same case-insensitive name and Type.
-                    // Remember so we can throw a nice exception if this property is used as a parameter name.
-                    ParameterLookupValue existing = nameLookup[key];
-                    existing!.DuplicateName = propertyName;
+                    Debug.Assert(nameLookup.TryGetValue(propertyName, out var existingProperties) && existingProperties != null);
+                    nameLookup[propertyName].Add(jsonProperty);
                 }
             }
 
-            foreach (ParameterInfo parameterInfo in parameters)
+            foreach (ParameterInfo consutrctorParameterInfo in constructorParameters)
             {
-                var paramToCheck = new ParameterLookupKey(parameterInfo.Name!, parameterInfo.ParameterType);
-
-                if (nameLookup.TryGetValue(paramToCheck, out ParameterLookupValue? matchingEntry))
+                if (nameLookup.TryGetValue(consutrctorParameterInfo.Name!, out List<JsonPropertyInfo>? possibleJsonPropertyInfoEntries))
                 {
-                    if (matchingEntry.DuplicateName != null)
+                    JsonPropertyInfo? jsonPropertyInfoBoundToConstructorParameter = null;
+
+                    foreach (var possibleJsonPropertyInfo in possibleJsonPropertyInfoEntries)
                     {
-                        // Multiple object properties cannot bind to the same constructor parameter.
-                        ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
-                            Type,
-                            parameterInfo.Name!,
-                            matchingEntry.JsonPropertyInfo.NameAsString,
-                            matchingEntry.DuplicateName,
-                            constructorInfo);
+                        if (consutrctorParameterInfo.ParameterType.IsAssignableFrom(GetMemberType(possibleJsonPropertyInfo.MemberInfo!)))
+                        {
+                            if (jsonPropertyInfoBoundToConstructorParameter != null)
+                            {
+                                // Multiple object properties cannot bind to the same constructor parameter.
+                                ThrowHelper.ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
+                                    Type,
+                                    consutrctorParameterInfo.Name!,
+                                    jsonPropertyInfoBoundToConstructorParameter.NameAsString,
+                                    possibleJsonPropertyInfo.NameAsString,
+                                    constructorInfo);
+                            }
+
+                            jsonPropertyInfoBoundToConstructorParameter = possibleJsonPropertyInfo;
+
+                            // If JSON info property type is exactly the same as the constructor argument property type
+                            // then we will use that JSON info property references.
+                            // If it isn't (say the property is List<int> where the constructor wants IEnumerable<int>
+                            // then we manufacture a new JSON property info using the member information from the JSON property
+                            // but the type from the constructor parameter.
+                            JsonPropertyInfo jsonPropertyInfo =
+                                consutrctorParameterInfo.ParameterType == possibleJsonPropertyInfo.DeclaredPropertyType ?
+                                possibleJsonPropertyInfo :
+                                AddProperty(possibleJsonPropertyInfo.MemberInfo!, consutrctorParameterInfo.ParameterType, Type, GetNumberHandlingForType(Type), Options);
+
+                            JsonParameterInfo jsonParameterInfo = AddConstructorParameter(consutrctorParameterInfo, jsonPropertyInfo, Options);
+
+                            parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
+
+                            // Remove property from deserialization cache to reduce the number of JsonPropertyInfos considered during JSON matching.
+                            PropertyCache!.Remove(jsonPropertyInfo.NameAsString);
+                        }
                     }
-
-                    Debug.Assert(matchingEntry.JsonPropertyInfo != null);
-                    JsonPropertyInfo jsonPropertyInfo = matchingEntry.JsonPropertyInfo;
-                    JsonParameterInfo jsonParameterInfo = AddConstructorParameter(parameterInfo, jsonPropertyInfo, Options);
-                    parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
-
-                    // Remove property from deserialization cache to reduce the number of JsonPropertyInfos considered during JSON matching.
-                    PropertyCache!.Remove(jsonPropertyInfo.NameAsString);
                 }
             }
 
@@ -396,8 +373,9 @@ namespace System.Text.Json
             }
 
             ParameterCache = parameterCache;
-            ParameterCount = parameters.Length;
+            ParameterCount = constructorParameters.Length;
         }
+
         private static bool PropertyIsOverridenAndIgnored(MemberInfo currentMember, Dictionary<string, MemberInfo>? ignoredMembers)
         {
             if (ignoredMembers == null || !ignoredMembers.TryGetValue(currentMember.Name, out MemberInfo? ignoredProperty))

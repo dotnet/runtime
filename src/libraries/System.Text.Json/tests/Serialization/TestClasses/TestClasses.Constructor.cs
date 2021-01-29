@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Xunit;
 
@@ -2326,5 +2327,27 @@ namespace System.Text.Json.Serialization.Tests
 
         [JsonConstructor]
         public StructWithFourArgs(int w, int x, int y, int z) => (W, X, Y, Z) = (w, x, y, z);
+    }
+
+    public class ClassUsingObservableCollections
+    {
+        public ObservableCollection<int> Values { get; }
+
+        public ClassUsingObservableCollections(ObservableCollection<int> values)
+        {
+            this.Values = values;
+        }
+    }
+
+    public class ClassWithConstructorArgumentTypeThatIsAssignableFromImmutablePropertyType
+    {
+        public ReadOnlyObservableCollection<int> Values { get; }
+        private readonly ObservableCollection<int> valueCollection;
+
+        public ClassWithConstructorArgumentTypeThatIsAssignableFromImmutablePropertyType(IEnumerable<int> values)
+        {
+            this.valueCollection = new ObservableCollection<int>(values);
+            this.Values = new ReadOnlyObservableCollection<int>(this.valueCollection);
+        }
     }
 }
