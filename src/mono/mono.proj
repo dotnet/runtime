@@ -66,7 +66,7 @@
 
   <!-- CI specific build options -->    
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true')">
-    <_MonoCMakeArgs Include="-DENABLE_WERROR:BOOL=true"/>
+    <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
   </ItemGroup>
 
   <!-- Sanity checks -->
@@ -208,12 +208,12 @@
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,logging,remoting,shared_perfcounters,sgen_debug_helpers,sgen_binary_protocol,soft_debug,interpreter,cleanup,mdb,gac,threads,eventpipe,qcalls$(_MonoMinimal)"/>
-      <_MonoCMakeArgs Include="-DENABLE_INTERP_LIB:BOOL=true"/>
-      <_MonoCMakeArgs Include="-DDISABLE_ICALL_TABLES:BOOL=true"/>
-      <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING:BOOL=true"/>
-      <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT:BOOL=true"/>
-      <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION:BOOL=true"/>
-      <_MonoCMakeArgs Include="-DENABLE_LLVM_RUNTIME:BOOL=true"/>
+      <_MonoCMakeArgs Include="-DENABLE_INTERP_LIB=1"/>
+      <_MonoCMakeArgs Include="-DDISABLE_ICALL_TABLES=1"/>
+      <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
+      <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
+      <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
+      <_MonoCMakeArgs Include="-DENABLE_LLVM_RUNTIME=1"/>
       <_MonoCFLAGS Include="-fexceptions"/>
       <_MonoCXXFLAGS Include="-fexceptions"/>
       <_MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/include"/>
@@ -250,9 +250,9 @@
     <!-- iOS device specific options -->
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,com,jit,portability,assembly_remapping,attach,verifier,appdomains,security,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,remoting,shared_perfcounters,gac" />
-      <_MonoCMakeArgs Include="-DENABLE_VISIBILITY_HIDDEN:BOOL=true"/>
-      <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION:BOOL=true"/>
-      <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK:BOOL=false"/>
+      <_MonoCMakeArgs Include="-DENABLE_VISIBILITY_HIDDEN=1"/>
+      <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
+      <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=0"/>
       <_MonoCFLAGS Include="-Werror=partial-availability" />
       <_MonoCFLAGS Include="-fexceptions" />
       <_MonoCPPFLAGS Include="-DSMALL_CONFIG" />
@@ -273,9 +273,9 @@
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DCMAKE_ANDROID_ARCH_ABI=x86" />
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DCMAKE_ANDROID_ARCH_ABI=x86_64" />
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,portability,attach,verifier,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,security,shared_handles,gac,cfgdir_config" />
-      <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK:BOOL=true"/>
-      <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING:BOOL=true"/>
-      <_MonoCMakeArgs Include="-DENABLE_PERFTRACING:BOOL=false"/>
+      <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=1"/>
+      <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
+      <_MonoCMakeArgs Include="-DENABLE_PERFTRACING=0"/>
 
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-mtune=cortex-a8" />
@@ -325,7 +325,7 @@
     <!-- Experimental features -->
     <ItemGroup Condition="'$(MonoMetadataUpdate)' == 'true'">
       <!-- FIXME: Add sanity check that the interpreter is enabled -->
-      <_MonoCMakeArgs Include="-DENABLE_METADATA_UPDATE:BOOL=true" />
+      <_MonoCMakeArgs Include="-DENABLE_METADATA_UPDATE=1" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -420,7 +420,7 @@
       <_MonoAOTCPPFLAGS Include="-DFD_SETSIZE=1024" />
       <_MonoAOTCPPFLAGS Include="-DNVALGRIND" />
 
-      <MonoAOTCMakeArgs Include="-DDISABLE_INTERPRETER:BOOL=true" />
+      <MonoAOTCMakeArgs Include="-DDISABLE_INTERPRETER=1" />
 
       <!-- Select generator platform for VS generator -->
       <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x64'" Include="-A x64" />
@@ -469,16 +469,16 @@
       <MonoAOTCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
       <!-- FIXME: Disable more -->
       <MonoAOTCMakeArgs Include="-DENABLE_MINIMAL=com,remoting" />
-      <MonoAOTCMakeArgs Include="-DENABLE_ICALL_SYMBOL_MAP:BOOL=true" />
-      <MonoAOTCMakeArgs Include="-DDISABLE_SHARED_LIBS:BOOL=true" />
-      <MonoAOTCMakeArgs Include="-DDISABLE_LIBS:BOOL=true" />
+      <MonoAOTCMakeArgs Include="-DENABLE_ICALL_SYMBOL_MAP=1" />
+      <MonoAOTCMakeArgs Include="-DDISABLE_SHARED_LIBS=1" />
+      <MonoAOTCMakeArgs Include="-DDISABLE_LIBS=1" />
       <MonoAOTCMakeArgs Condition="'$(MonoAotOffsetsFile)' != ''" Include="-DAOT_OFFSETS_FILE=&quot;$(MonoAotOffsetsFile)&quot;" />
       <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
       <!-- Experimental features -->
       <!-- FIXME: Add sanity check that the interpreter is enabled -->
-      <MonoAOTCMakeArgs Condition="'$(MonoMetadataUpdate)' == 'true'" Include="-DENABLE_METADATA_UPDATE:BOOL=true" />
+      <MonoAOTCMakeArgs Condition="'$(MonoMetadataUpdate)' == 'true'" Include="-DENABLE_METADATA_UPDATE=1" />
 
       <!-- thread suspend -->
       <MonoAOTCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
@@ -487,6 +487,7 @@
     <PropertyGroup>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoProjectRoot)</_MonoAotCMakeConfigureCommand>
+      <_MonoAotCMakeConfigureCommand Condition="'$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoAotCMakeBuildCommand) --verbose</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoAotCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoAotCMakeBuildCommand>
@@ -502,6 +503,8 @@
     <!-- configure -->
     <Message Text="Running '$(_MonoAotCMakeConfigureCommand)' in '$(MonoObjDir)/cross'" Importance="High" />
     <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross"/>
+<Message Text="DEBUG DEBUG DEBUG" Importance="High" />
+<Exec Condition="'$(OS)' == 'Windows_NT'" Command="type build.ninja"  IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross" />
     <!-- build -->
     <Message Text="Running '$(_MonoAotCMakeBuildCommand)' in '$(MonoObjDir)/cross'" Importance="High" />
     <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross"/>
