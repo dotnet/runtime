@@ -69,15 +69,15 @@ namespace System.Drawing
 
         internal static CocoaContext GetCGContextForNSView(IntPtr handle)
         {
-            IntPtr graphicsContext = get_currentContext(objc_getClass("NSGraphicsContext"), sel_registerName("currentContext"));
-            IntPtr ctx = get_graphicsPort(graphicsContext, sel_registerName("graphicsPort"));
+            IntPtr graphicsContext = intptr_objc_msgSend(objc_getClass("NSGraphicsContext"), sel_registerName("currentContext"));
+            IntPtr ctx = intptr_objc_msgSend(graphicsContext, sel_registerName("graphicsPort"));
             Rect bounds = default;
 
             CGContextSaveGState(ctx);
 
-            get_bounds(ref bounds, handle, sel_registerName("bounds"));
+            void_objc_msgSend_stret_rrect(ref bounds, handle, sel_registerName("bounds"));
 
-            var isFlipped = get_isFlipped(handle, sel_registerName("isFlipped"));
+            var isFlipped = bool_objc_msgSend(handle, sel_registerName("isFlipped"));
             if (isFlipped)
             {
                 CGContextTranslateCTM(ctx, bounds.origin.x, bounds.size.height);
@@ -212,13 +212,12 @@ namespace System.Drawing
         [DllImport("libobjc.dylib")]
         public static extern IntPtr objc_getClass(string className);
         [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
-        public static extern IntPtr get_currentContext(IntPtr basePtr, IntPtr selector);
-        [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
-        public static extern IntPtr get_graphicsPort(IntPtr basePtr, IntPtr selector);
+        public static extern IntPtr intptr_objc_msgSend(IntPtr basePtr, IntPtr selector);
         [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend_stret")]
-        public static extern void get_bounds(ref Rect arect, IntPtr basePtr, IntPtr selector);
+        public static extern void void_objc_msgSend_stret_rrect(ref Rect arect, IntPtr basePtr, IntPtr selector);
         [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
-        public static extern bool get_isFlipped(IntPtr handle, IntPtr selector);
+        [return:MarshalAs(UnmanagedType.U1)]
+        public static extern bool bool_objc_msgSend(IntPtr handle, IntPtr selector);
         [DllImport("libobjc.dylib")]
         public static extern IntPtr sel_registerName(string selectorName);
         #endregion
