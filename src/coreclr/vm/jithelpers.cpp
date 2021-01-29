@@ -5445,12 +5445,16 @@ void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnterTrackTransitions, ReversePInvoke
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
         {
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress());
+            // If we're in an IL stub, we want to trace the address of the target method,
+            // not the next instruction in the stub.
+            JIT_ReversePInvokeEnterRare2(frame, pMD->IsILStub() && secretArg != NULL ? (void*)frame->pMD->GetMultiCallableAddrOfCode() : _ReturnAddress());
         }
     }
     else
     {
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress());
+        // If we're in an IL stub, we want to trace the address of the target method,
+        // not the next instruction in the stub.
+        JIT_ReversePInvokeEnterRare(frame, pMD->IsILStub() && secretArg != NULL ? (void*)frame->pMD->GetMultiCallableAddrOfCode() : _ReturnAddress());
     }
 
 #ifndef FEATURE_EH_FUNCLETS
