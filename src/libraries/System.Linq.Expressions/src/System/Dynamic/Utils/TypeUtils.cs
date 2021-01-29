@@ -891,7 +891,7 @@ namespace System.Dynamic.Utils
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "ILLinker will never remove the Invoke method from delegates.")]
+            Justification = "The trimmer will never remove the Invoke method from delegates.")]
         public static MethodInfo GetInvokeMethod(this Type delegateType)
         {
             Debug.Assert(typeof(Delegate).IsAssignableFrom(delegateType));

@@ -122,9 +122,6 @@ namespace System.Linq.Expressions.Interpreter
 #endif
         }
 
-        [DynamicDependency("GetValue", typeof(Array))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "The GetValue methods will be preserved by the DynamicDependency.")]
         private static CallInstruction GetArrayAccessor(MethodInfo info, int argumentCount)
         {
             Type arrayType = info.DeclaringType!;
@@ -135,19 +132,19 @@ namespace System.Linq.Expressions.Interpreter
             {
                 case 1:
                     alternativeMethod = isGetter ?
-                        arrayType.GetMethod("GetValue", new[] { typeof(int) }) :
+                        typeof(Array).GetMethod("GetValue", new[] { typeof(int) }) :
                         typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter1));
                     break;
 
                 case 2:
                     alternativeMethod = isGetter ?
-                        arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
+                        typeof(Array).GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
                         typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter2));
                     break;
 
                 case 3:
                     alternativeMethod = isGetter ?
-                        arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
+                        typeof(Array).GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
                         typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter3));
                     break;
             }

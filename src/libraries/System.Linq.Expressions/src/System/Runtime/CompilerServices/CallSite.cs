@@ -357,7 +357,7 @@ namespace System.Runtime.CompilerServices
 #endif
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "CallSiteOps methods don't have ILLink annotations.")]
+            Justification = "CallSiteOps methods don't have trimming annotations.")]
         private T CreateCustomUpdateDelegate(MethodInfo invoke)
         {
             Type returnType = invoke.GetReturnType();
