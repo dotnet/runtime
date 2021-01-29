@@ -558,8 +558,7 @@ eventpipe_walk_managed_stack_for_thread (
 	ep_rt_thread_handle_t thread,
 	EventPipeStackContents *stack_contents)
 {
-	g_assert_checked (thread != NULL);
-	g_assert_checked (stack_contents != NULL);
+	g_assert (thread != NULL && stack_contents != NULL);
 
 	if (thread == ep_rt_thread_get_handle ())
 		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (eventpipe_walk_managed_stack_for_thread_func, NULL, MONO_UNWIND_SIGNAL_SAFE, stack_contents);
@@ -586,11 +585,7 @@ eventpipe_method_get_simple_assembly_name (
 	if (!assembly_name)
 		return FALSE;
 
-	size_t assembly_name_len = strlen (assembly_name) + 1;
-	size_t to_copy = assembly_name_len < name_len ? assembly_name_len : name_len;
-	memcpy (name, assembly_name, to_copy);
-	name [to_copy - 1] = 0;
-
+	g_strlcpy (name, assembly_name, name_len);
 	return TRUE;
 }
 
@@ -608,10 +603,7 @@ evetpipe_method_get_full_name (
 	if (!full_method_name)
 		return FALSE;
 
-	size_t full_method_name_len = strlen (full_method_name) + 1;
-	size_t to_copy = full_method_name_len < name_len ? full_method_name_len : name_len;
-	memcpy (name, full_method_name, to_copy);
-	name [to_copy - 1] = 0;
+	g_strlcpy (name, full_method_name, name_len);
 
 	g_free (full_method_name);
 	return TRUE;
