@@ -2906,6 +2906,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
                     case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
                         fgPgoClassProfiles++;
+                        break;
+
+                    default:
+                        break;
                 }
             }
 
