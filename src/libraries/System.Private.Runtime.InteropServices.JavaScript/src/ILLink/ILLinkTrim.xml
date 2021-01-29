@@ -2,12 +2,4 @@
     <assembly fullname="System.Private.Runtime.InteropServices.JavaScript">
         <type fullname="System.Runtime.InteropServices.JavaScript.Runtime" />
     </assembly>
-    <!--
-    Preserve System.Delegate.DynamicInvoke which is called from javascript
-    -->
-    <assembly fullname="mscorlib">
-      <type fullname="System.Delegate">
-        <method signature="System.Object DynamicInvoke(System.Object[])" />
-      </type>
-    </assembly>
 </linker>
