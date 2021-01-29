@@ -504,7 +504,7 @@
     <Message Text="Running '$(_MonoAotCMakeConfigureCommand)' in '$(MonoObjDir)/cross'" Importance="High" />
     <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeConfigureCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross"/>
 <Message Text="DEBUG DEBUG DEBUG" Importance="High" />
-<Exec Command="type build.ninja"  IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross" />
+<Exec Condition="'$(OS)' == 'Windows_NT'" Command="type build.ninja"  IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross" />
     <!-- build -->
     <Message Text="Running '$(_MonoAotCMakeBuildCommand)' in '$(MonoObjDir)/cross'" Importance="High" />
     <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)/cross"/>
