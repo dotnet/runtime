@@ -5447,14 +5447,14 @@ void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnterTrackTransitions, ReversePInvoke
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, pMD->IsILStub() && secretArg != NULL ? (void*)frame->pMD->GetMultiCallableAddrOfCode() : _ReturnAddress());
+            JIT_ReversePInvokeEnterRare2(frame, pMD->IsILStub() && secretArg != NULL ? (void*)((UMEntryThunk*)secretArg)->GetManagedTarget() : _ReturnAddress());
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, pMD->IsILStub() && secretArg != NULL ? (void*)frame->pMD->GetMultiCallableAddrOfCode() : _ReturnAddress());
+        JIT_ReversePInvokeEnterRare(frame, pMD->IsILStub() && secretArg != NULL ? (void*)((UMEntryThunk*)secretArg)->GetManagedTarget() : _ReturnAddress());
     }
 
 #ifndef FEATURE_EH_FUNCLETS
