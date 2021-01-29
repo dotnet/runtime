@@ -2880,58 +2880,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoData                    = nullptr;
     fgPgoSchemaCount             = 0;
     fgProfileData_ILSizeMismatch = false;
-    fgNumProfileRuns             = 0;
-    fgPgoBlockCounts             = 0;
-    fgPgoClassProfiles           = 0;
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         HRESULT hr;
         hr = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
                                                             &fgPgoData);
 
-        if (SUCCEEDED(hr))
-        {
-            fgNumProfileRuns = 0;
-            for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
-            {
-                switch (fgPgoSchema[iSchema].InstrumentationKind)
-                {
-                    case ICorJitInfo::PgoInstrumentationKind::NumRuns:
-                        fgNumProfileRuns += fgPgoSchema[iSchema].Other;
-                        break;
-
-                    case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
-                        fgPgoBlockCounts++;
-                        break;
-
-                    case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
-                        fgPgoClassProfiles++;
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-
-            if (fgNumProfileRuns == 0)
-                fgNumProfileRuns = 1;
-        }
-
-        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; schema at %p, counts at %p, %d schema "
-                "elements, %d runs\n",
-                info.compFullName, hr, dspPtr(fgPgoSchema), dspPtr(fgPgoData), fgPgoSchemaCount, fgNumProfileRuns);
-
-        if (fgPgoBlockCounts > 0)
-        {
-            JITDUMP(" [%d blockCounts]", fgPgoBlockCounts);
-        }
-
-        if (fgPgoClassProfiles > 0)
-        {
-            JITDUMP(" [%d classProfiles]", fgPgoClassProfiles);
-        }
-
-        JITDUMP("\n");
+        JITDUMP(
+            "BBOPT set; query for profile data returned hr %0x, schema at %p, counts at %p, schema element count %d\n",
+            hr, dspPtr(fgPgoSchema), dspPtr(fgPgoData), fgPgoSchemaCount);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches

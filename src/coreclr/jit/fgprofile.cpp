@@ -886,7 +886,41 @@ PhaseStatus Compiler::fgInstrumentMethod()
 PhaseStatus Compiler::fgIncorporateProfileData()
 {
     assert(fgHaveProfileData());
+
+    // Summarize profile data
+    //
+    fgNumProfileRuns = 0;
+    for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
+    {
+        switch (fgPgoSchema[iSchema].InstrumentationKind)
+        {
+            case ICorJitInfo::PgoInstrumentationKind::NumRuns:
+                fgNumProfileRuns += fgPgoSchema[iSchema].Other;
+                break;
+
+            case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+                fgPgoBlockCounts++;
+                break;
+
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+                fgPgoClassProfiles++;
+                break;
+
+            default:
+                break;
+        }
+    }
+
     assert(fgPgoBlockCounts > 0);
+
+    if (fgNumProfileRuns == 0)
+    {
+        fgNumProfileRuns = 1;
+    }
+
+    JITDUMP("Profile summary: %d runs, %d block probes, %d class profiles\n", fgNumProfileRuns, fgPgoBlockCounts,
+            fgPgoClassProfiles);
+
     fgIncorporateBlockCounts();
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -930,7 +964,7 @@ void Compiler::fgIncorporateBlockCounts()
 
             block->setBBProfileWeight(profileWeight);
 
-            if (profileWeight == 0)
+            if (profileWeight == BB_ZERO_WEIGHT)
             {
                 block->bbSetRunRarely();
             }
