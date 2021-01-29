@@ -347,10 +347,6 @@ namespace System.Collections.Immutable
                 if (priorCollection.TryGetValue(key, out oldValue!))
                 {
                     newValue = updateValueFactory(key, oldValue);
-                    if (priorCollection.ValueComparer.Equals(oldValue, newValue))
-                    {
-                        return oldValue;
-                    }
                 }
                 else
                 {
@@ -358,6 +354,10 @@ namespace System.Collections.Immutable
                 }
 
                 var updatedCollection = priorCollection.SetItem(key, newValue);
+				if (object.ReferenceEquals(priorCollection, updatedCollection))
+				{
+					return oldValue;
+				}
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
                 successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
@@ -394,10 +394,6 @@ namespace System.Collections.Immutable
                 if (priorCollection.TryGetValue(key, out oldValue!))
                 {
                     newValue = updateValueFactory(key, oldValue);
-                    if (priorCollection.ValueComparer.Equals(oldValue, newValue))
-                    {
-                        return oldValue;
-                    }
                 }
                 else
                 {
@@ -405,6 +401,10 @@ namespace System.Collections.Immutable
                 }
 
                 var updatedCollection = priorCollection.SetItem(key, newValue);
+				if (object.ReferenceEquals(priorCollection, updatedCollection))
+				{
+					return oldValue;
+				}
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
                 successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
@@ -459,8 +459,8 @@ namespace System.Collections.Immutable
         /// <returns><c>true</c> if the key and comparison value were present in the dictionary and the update was made; <c>false</c> otherwise.</returns>
         public static bool TryUpdate<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, TValue newValue, TValue comparisonValue) where TKey : notnull
         {
-            var valueComparer = EqualityComparer<TValue>.Default;
             var priorCollection = Volatile.Read(ref location);
+            var valueComparer = priorCollection.ValueComparer;
             bool successful;
             do
             {
