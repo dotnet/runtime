@@ -32,6 +32,11 @@ static MonoNativeTlsKey exposed_generation_id;
 #define UPDATE_DEBUG(stmt) /*empty */
 #endif
 
+/*
+ * set to non-zero if at least one update has been published.
+ */
+int mono_metadata_update_has_updates_private;
+
 /* For each delta image, for each table:
  * - the total logical number of rows for the previous generation
  * - the number of modified rows in the current generation
@@ -172,6 +177,7 @@ metadata_update_local_generation (MonoImage *base, MonoImage *delta);
 void
 mono_metadata_update_init (void)
 {
+	mono_metadata_update_has_updates_private = 0;
 	table_to_image_init ();
 	mono_native_tls_alloc (&exposed_generation_id, NULL);
 }
@@ -232,6 +238,15 @@ thread_set_exposed_generation (uint32_t value)
 	mono_native_tls_set_value (exposed_generation_id, GUINT_TO_POINTER((guint)value));
 }
 
+/**
+ * LOCKING: assumes the publish_lock is held
+ */
+static void
+metadata_update_set_has_updates (void)
+{
+	mono_metadata_update_has_updates_private = 1;
+}
+
 uint32_t
 mono_metadata_update_prepare (MonoDomain *domain) {
 	mono_lazy_initialize (&metadata_update_lazy_init, initialize);
@@ -240,6 +255,8 @@ mono_metadata_update_prepare (MonoDomain *domain) {
 	 */
 	publish_lock ();
 	uint32_t alloc_gen = ++update_alloc_frontier;
+	/* Have to set this here so the updater starts using the slow path of metadata lookups */
+	metadata_update_set_has_updates ();
 	/* Expose the alloc frontier to the updater thread */
 	thread_set_exposed_generation (alloc_gen);
 	return alloc_gen;
@@ -320,6 +337,7 @@ mono_image_append_delta (MonoImage *base, MonoImage *delta)
 		return;
 	}
 	g_assert (((MonoImage*)base->delta_image_last->data)->generation < delta->generation);
+	/* FIXME: g_list_append returns the previous end of the list, not the newly appended element! */
 	base->delta_image_last = g_list_append (base->delta_image_last, delta);
 }
 

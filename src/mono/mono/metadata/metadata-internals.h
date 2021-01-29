@@ -910,20 +910,37 @@ void
 mono_image_append_class_to_reflection_info_set (MonoClass *klass);
 
 #ifndef ENABLE_METADATA_UPDATE
+static inline gboolean
+mono_metadata_has_updates (void)
+{
+	return FALSE;
+}
+
 static inline void
 mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
 }
 #else /* ENABLE_METADATA_UPDATE */
+extern int mono_metadata_update_has_updates_private;
+
+/* returns TRUE if there's at least one update */
+static inline gboolean
+mono_metadata_has_updates (void)
+{
+	return mono_metadata_update_has_updates_private != 0;
+}
+
 void
 mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
 
 static inline void
 mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
-	if (G_LIKELY (*idx < (*t)->rows))
-		return;
-	mono_image_effective_table_slow (t, idx);
+	if (G_UNLIKELY (mono_metadata_has_updates ())) {
+		if (G_UNLIKELY (*idx >= (*t)->rows)) {
+			mono_image_effective_table_slow (t, idx);
+		}
+	}
 }
 
 int
