@@ -1028,11 +1028,6 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
     *pInstrumentationData = NULL;
     *pCountSchemaItems = 0;
 
-    if (pMD->GetModule()->IsReadyToRun() && pMD->GetModule()->GetReadyToRunInfo()->GetPgoInstrumentationData(pMD, pAllocatedData, ppSchema, pCountSchemaItems, pInstrumentationData))
-    {
-        return S_OK;
-    }
-
     HeaderList *found;
 
     if (pMD->IsDynamicMethod())
@@ -1048,6 +1043,13 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
 
     if (found == NULL)
     {
+        // Prefer live collected data over data from pgo input, but if live data isn't present, use the data from the R2R file
+        // Consider merging this data with the live data instead in the future
+        if (pMD->GetModule()->IsReadyToRun() && pMD->GetModule()->GetReadyToRunInfo()->GetPgoInstrumentationData(pMD, pAllocatedData, ppSchema, pCountSchemaItems, pInstrumentationData))
+        {
+            return S_OK;
+        }
+
         return E_NOTIMPL;
     }
 
@@ -1175,7 +1177,6 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
                 {
                     // Find maximum entry and return it
                     //
-                    unsigned maxCount = 0;
                     unsigned maxKnownIndex = 0;
                     unsigned maxKnownCount = 0;
 
@@ -1186,16 +1187,11 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
                             maxKnownIndex = m;
                             maxKnownCount = h.m_histogram[m].m_count;
                         }
-                        if (h.m_histogram[m].m_count > maxCount)
-                        {
-                            maxCount = h.m_histogram[m].m_count;
-                        }
                     }
 
-                    UINT32 maxKnownLikelihood = (100 * maxKnownCount) / h.m_totalCount;
-                    if ((maxKnownCount > 0) && ((maxKnownCount == maxCount) || (maxKnownLikelihood > 33)))
+                    if (maxKnownCount > 0)
                     {
-                        *pLikelihood = maxKnownLikelihood;
+                        *pLikelihood = (100 * maxKnownCount) / h.m_totalCount;;
                         return (CORINFO_CLASS_HANDLE)h.m_histogram[maxKnownIndex].m_mt;
                     }
 
