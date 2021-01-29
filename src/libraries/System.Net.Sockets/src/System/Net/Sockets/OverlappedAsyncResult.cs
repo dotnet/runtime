@@ -19,15 +19,4 @@ namespace System.Net.Sockets
             set { _socketAddress = value; }
         }
     }
-
-    // !!! DELETEME!!!
-    internal sealed class OriginalAddressOverlappedAsyncResult : OverlappedAsyncResult
-    {
-        internal OriginalAddressOverlappedAsyncResult(Socket socket, object? asyncState, AsyncCallback? asyncCallback) :
-            base(socket, asyncState, asyncCallback)
-        {
-        }
-
-        internal Internals.SocketAddress? SocketAddressOriginal { get; set; }
-    }
 }
