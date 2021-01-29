@@ -1757,7 +1757,7 @@ namespace System
             return ParsingStatus.OK;
         }
 
-        internal static bool SpanStartsWith(ReadOnlySpan<char> span, char c) => span.Length > 0 && span[0] == c;
+        internal static bool SpanStartsWith(ReadOnlySpan<char> span, char c) => !span.IsEmpty && span[0] == c;
 
         internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
         {
@@ -2003,7 +2003,7 @@ namespace System
         private static unsafe char* MatchNegativeSignChars(char* p, char* pEnd, NumberFormatInfo info)
         {
             char *ret = MatchChars(p, pEnd, info.NegativeSign);
-            if (ret == null && info.AllowHyphenDuringParsing && p <= pEnd && *p == '-')
+            if (ret == null && info.AllowHyphenDuringParsing && p < pEnd && *p == '-')
             {
                 ret = p + 1;
             }

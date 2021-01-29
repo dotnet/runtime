@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Globalization
 {
     /// <remarks>
@@ -73,8 +71,8 @@ namespace System.Globalization
 
         private bool _hasInvariantNumberSigns = true;
 
-        // When _allowHyphenDuringParsing is set to true, will allow the number parser to accept the hyphen `-` U+002D as a negative sign even if the culture
-        // negative sign is not the hyphen. Good example of that is Swedish culture (e.g. "sv-SE") which has U+2212 as negative sign.
+        // When _allowHyphenDuringParsing is set to true, we'll allow the number parser to accept the hyphen `-` U+002D as a negative sign even if the culture
+        // negative sign is not the hyphen. For example, the Swedish culture (e.g. "sv-SE") has U+2212 as the negative sign.
         private bool _allowHyphenDuringParsing;
 
         public NumberFormatInfo()
@@ -163,10 +161,13 @@ namespace System.Globalization
         internal bool HasInvariantNumberSigns => _hasInvariantNumberSigns;
         internal bool AllowHyphenDuringParsing => _allowHyphenDuringParsing;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void InitializeInvariantAndNegativeSignFlags()
         {
             _hasInvariantNumberSigns = _positiveSign == "+" && _negativeSign == "-";
+
+            // The list of the Minus characters are picked up from the CLDR parse lenient data.
+            // e.g. https://github.com/unicode-org/cldr/blob/feb602b06bd18ba7333464bd648b68292e8aa54d/common/main/sw.xml#L1001
+
             _allowHyphenDuringParsing = _negativeSign.Length == 1 &&
                                         _negativeSign[0] switch {
                                             '\u2012' or         // Figure Dash

@@ -350,7 +350,7 @@ namespace System.Globalization
             private static unsafe char* MatchNegativeSignChars(char* p, char* pEnd, string negativeSign, bool allowHyphenDuringParsing)
             {
                 char *ret = MatchChars(p, pEnd, negativeSign);
-                if (ret == null && allowHyphenDuringParsing && p <= pEnd && *p == '-')
+                if (ret == null && allowHyphenDuringParsing && p < pEnd && *p == '-')
                 {
                     ret = p + 1;
                 }
