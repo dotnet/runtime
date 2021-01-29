@@ -409,7 +409,7 @@ var BindingSupportLib = {
 			return requiredObject;
 		},
 
-		_unbox_mono_obj_rooted_with_known_nonprimitive_type: function (mono_obj, type) {
+		_unbox_mono_obj_rooted_with_known_nonprimitive_type: function (mono_obj, type, klass) {
 			//See MARSHAL_TYPE_ defines in driver.c
 			switch (type) {
 				case 26: // int64
@@ -426,7 +426,7 @@ var BindingSupportLib = {
 				case 6: // Task
 					return this._unbox_task_rooted (mono_obj);
 				case 7: // ref type
-					return this.extract_js_obj (mono_obj);
+					return this.extract_js_obj_with_possible_converter (mono_obj, klass);
 				case 10: // arrays
 				case 11:
 				case 12:
@@ -476,9 +476,9 @@ var BindingSupportLib = {
 					return (Module.HEAP32[this._unbox_buffer / 4]) !== 0;
 				case 28: // char
 					return String.fromCharCode(Module.HEAP32[this._unbox_buffer / 4]);
-				// TODO: Embed class ptr into unbox buffer so we can pass it directly to the unbox API
 				default:
-					return this._unbox_mono_obj_rooted_with_known_nonprimitive_type (mono_obj, type);
+					var klass = Module.HEAPU32[this._unbox_buffer / 4];
+					return this._unbox_mono_obj_rooted_with_known_nonprimitive_type (mono_obj, type, klass);
 			}
 		},
 
@@ -848,6 +848,17 @@ var BindingSupportLib = {
 			return result;
 		},
 
+		extract_js_obj_with_possible_converter: function (mono_obj, klass) {
+			if (mono_obj == 0)
+				return null;
+
+			var converter = this._try_get_converter_for_managed_class (klass);
+			if (converter)
+				return converter (mono_obj);
+
+			return this.extract_js_obj (mono_obj);
+		},
+
 		extract_js_obj: function (mono_obj) {
 			if (mono_obj == 0)
 				return null;
@@ -855,11 +866,6 @@ var BindingSupportLib = {
 			var js_id = this.wasm_get_js_id (mono_obj);
 			if (js_id > 0)
 				return this.mono_wasm_require_handle(js_id);
-
-			var klass = this.mono_wasm_get_obj_class (mono_obj);
-			var converter = this._try_get_converter_for_managed_class (klass);
-			if (converter)
-				return converter (mono_obj);
 
 			var gcHandle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
 			var js_obj = {
@@ -1780,9 +1786,9 @@ typedef struct wasm_method_signature_info {
 				"        result = (Module.HEAP32[unbox_buffer / 4]) !== 0; break;",
 				"    case 28:", // char
 				"        result = String.fromCharCode(Module.HEAP32[unbox_buffer / 4]); break;",
-					// TODO: Embed class ptr into unbox buffer so we can pass it directly to the unbox API
 				"    default:",
-				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType); break;",
+				"        var klass = Module.HEAPU32[unbox_buffer / 4];",
+				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType, klass); break;",
 				"    }",
 				"}",
 				"",

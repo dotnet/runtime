@@ -1064,6 +1064,9 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 			// If we failed to do a fast unboxing, return the original type information so
 			//  that the caller can do a proper, slow unboxing later
 			*resultL = 0;
+			// HACK: Store the class pointer into the result buffer so our caller doesn't
+			//  have to call back into the native runtime later to get it
+			*resultI = klass;
 			obj = NULL;
 			return mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
 	}
