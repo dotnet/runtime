@@ -44,7 +44,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             public DateTime Date;
 
             private static string JSToManaged_PreFilter () => "value.toISOString()";
-            private static string ManagedToJS_PostFilter () => "Date.parse(value)";
+            private static string ManagedToJS_PostFilter () => "new Date(value)";
 
             private static CustomDate JSToManaged (string s) {
                 Console.WriteLine($"CustomDate.JSToManaged({s})");

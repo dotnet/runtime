@@ -1031,11 +1031,11 @@ typedef struct wasm_method_signature_info {
 				MONO: MONO,
 				BINDING: this,
 				classPtr: classPtr, 
-				// (mono_obj) => js_value
+				// (value) => filtered_value
 				boundConverter: boundConverter 
 			};
 			var body = [
-				"var value = boundConverter (mono_obj), filteredValue = null;",
+				"var value = boundConverter (js_value), filteredValue = null;",
 				"console.log(`value === ${value}`);",
 				`{ filteredValue = ${js}; }`,
 				"console.log(`filteredValue === ${filteredValue}`);",
@@ -1045,7 +1045,7 @@ typedef struct wasm_method_signature_info {
 			var bodyJs = body.join ("\r\n");
 			var result = this._create_named_function(
 				"post_filtered_converter_for_class" + classPtr, 
-				["mono_obj"], bodyJs, closure
+				["js_value"], bodyJs, closure
 			);
 
 			console.log("compile result", result);
@@ -1091,16 +1091,15 @@ typedef struct wasm_method_signature_info {
 				throw new Error ("No ManagedToJS method found");
 			// HACK
 			var sigInfo = this.get_method_signature_info (convMethod);
-			var argumentCh = this._pick_result_chara_for_marshal_type (sigInfo.result.marshalType);
-			var signature = "m" + argumentCh;
+			var signature = "m";
 			var boundConverter = this.bind_method (
 				convMethod, 0, signature, "ManagedToJS_class" + classPtr
 			);
 
-			// var result = this._compile_pre_filter (classPtr, boundConverter, preFilter);
+			var result = this._compile_post_filter (classPtr, boundConverter, postFilter);
 			// this._automatic_converter_table.set (classPtr, result);
 			// FIXME: Pass a ReadOnlySpan or ReadOnlyMemory instead of a bare pointer
-			return boundConverter (dataOffset);
+			return result (dataOffset);
 		},
 
 		_compile_pre_filter: function (classPtr, boundConverter, js) {
@@ -1148,9 +1147,10 @@ typedef struct wasm_method_signature_info {
 
 				var convMethod = this.find_method (classPtr, "JSToManaged", 1);
 				// FIXME
-				var signature = Module.mono_method_get_call_signature (convMethod);
+				var sigInfo = this.get_method_signature_info (convMethod);
 				// Return unboxed so it can go directly into the arguments list
-				signature += "!";
+				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
+				console.log("jstm signature", signature);
 				var boundConverter = this.bind_method (
 					convMethod, 0, signature, "JSToManaged_class" + classPtr
 				);
