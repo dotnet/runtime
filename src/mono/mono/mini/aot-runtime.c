@@ -2139,6 +2139,77 @@ method_address_resolve (guint8 *code_addr) {
 }
 #endif
 
+#ifdef HOST_WASM
+static void
+register_methods_in_jinfo (MonoAotModule *amodule)
+{
+	MonoAssembly *assembly = amodule->assembly;
+	int i;
+	static MonoBitSet *registered;
+	static int registered_len;
+
+	/*
+	 * Register the methods in AMODULE in the jit info table. There are 2 issues:
+	 * - emscripten could reorder code so methods from different aot images are intermixed.
+	 * - if linkonce linking is used, multiple aot images could refer to the same method.
+	 */
+
+	sort_methods (amodule);
+
+	if (amodule->sorted_methods_len == 0)
+		return;
+
+	mono_aot_lock ();
+
+	/* The 'registered' bitset contains whenever we have already registered a method in the jit info table */
+	int max = -1;
+	for (i = 0; i < amodule->sorted_methods_len; ++i)
+		max = MAX (max, GPOINTER_TO_INT (amodule->sorted_methods [i]));
+	g_assert (max != -1);
+	if (registered == NULL) {
+		registered = mono_bitset_new (max, 0);
+		registered_len = max;
+	} else if (max > registered_len) {
+		MonoBitSet *new_registered = mono_bitset_clone (registered, max);
+		mono_bitset_free (registered);
+		registered = new_registered;
+		registered_len = max;
+	}
+
+#if 0
+	for (i = 0; i < amodule->sorted_methods_len; ++i) {
+		printf ("%s %d\n", amodule->assembly->aname.name, amodule->sorted_methods [i]);
+	}
+#endif
+
+	int start = 0;
+	while (start < amodule->sorted_methods_len) {
+		/* Find beginning of interval */
+		int start_method = GPOINTER_TO_INT (amodule->sorted_methods [start]);
+		if (mono_bitset_test_fast (registered, start_method)) {
+			start ++;
+			continue;
+		}
+		/* Find end of interval */
+		int end = start + 1;
+		while (end < amodule->sorted_methods_len && GPOINTER_TO_INT (amodule->sorted_methods [end]) == GPOINTER_TO_INT (amodule->sorted_methods [end - 1]) + 1 && !mono_bitset_test_fast (registered, GPOINTER_TO_INT (amodule->sorted_methods [end])))
+			end ++;
+		int end_method = GPOINTER_TO_INT (amodule->sorted_methods [end - 1]);
+		//printf ("%s [%d %d]\n", amodule->assembly->aname.name, start_method, end_method);
+		/* The 'end' parameter is exclusive */
+		mono_jit_info_add_aot_module (assembly->image, GINT_TO_POINTER (start_method), GINT_TO_POINTER (end_method + 1));
+
+		for (int j = GINT_TO_POINTER (start_method); j < GINT_TO_POINTER (end_method + 1); ++j)
+			g_assert (!mono_bitset_test_fast (registered, GPOINTER_TO_INT (j)));
+		start = end;
+	}
+	for (i = 0; i < amodule->sorted_methods_len; ++i)
+		mono_bitset_set_fast (registered, GPOINTER_TO_INT (amodule->sorted_methods [i]));
+
+	mono_aot_unlock ();
+}
+#endif
+
 static void
 load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error)
 {
@@ -2498,32 +2569,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	init_amodule_got (amodule, TRUE);
 
 #ifdef HOST_WASM
-	/*
-	 * Emscripten could reorder code so methods from different aot images are intermixed. Compute the continuous
-	 * regions of code and register each of them separately.
-	 */
-	sort_methods (amodule);
-	gpointer start = NULL;
-
-#if 0
-	for (i = 0; i < amodule->sorted_methods_len; ++i) {
-		printf ("%s %d\n", amodule->assembly->aname.name, amodule->sorted_methods [i]);
-	}
-#endif
-
-	for (i = 0; i < amodule->sorted_methods_len; ++i) {
-		if (start == NULL)
-			start = amodule->sorted_methods [i];
-		if (i > 0 && GPOINTER_TO_UINT (amodule->sorted_methods [i - 1]) + 1 != GPOINTER_TO_UINT (amodule->sorted_methods [i])) {
-			//printf ("%s %d %d\n", amodule->assembly->aname.name, start, amodule->sorted_methods [i - 1]);
-			mono_jit_info_add_aot_module (assembly->image, start, (guint8*)amodule->sorted_methods [i - 1] + 1);
-			start = amodule->sorted_methods [i];
-		}
-	}
-	if (start != amodule->sorted_methods [amodule->sorted_methods_len - 1]) {
-		//printf ("%s %d %d\n", amodule->assembly->aname.name, start, amodule->sorted_methods [amodule->sorted_methods_len - 1]);
-		mono_jit_info_add_aot_module (assembly->image, start, (guint8*)amodule->sorted_methods [amodule->sorted_methods_len - 1] + 1);
-	}
+	register_methods_in_jinfo (amodule);
 #else
 	if (amodule->jit_code_start)
 		mono_jit_info_add_aot_module (assembly->image, amodule->jit_code_start, amodule->jit_code_end);
@@ -4608,6 +4654,9 @@ mono_aot_can_dedup (MonoMethod *method)
 			info->subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR ||
 			info->subtype == WRAPPER_SUBTYPE_INTERP_LMF ||
 			info->subtype == WRAPPER_SUBTYPE_AOT_INIT)
+			return FALSE;
+		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
+			/* Handled using linkonce */
 			return FALSE;
 		return TRUE;
 	}

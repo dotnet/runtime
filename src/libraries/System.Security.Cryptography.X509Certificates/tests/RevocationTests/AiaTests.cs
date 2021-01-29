@@ -42,6 +42,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47492", TestPlatforms.OSX)]
         public static void DisableAiaOptionWorks()
         {
             CertificateAuthority.BuildPrivatePki(

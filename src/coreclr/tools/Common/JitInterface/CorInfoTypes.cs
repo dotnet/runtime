@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.Pgo;
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
@@ -83,6 +84,7 @@ namespace Internal.JitInterface
     { }
 
     public enum HRESULT {
+        S_OK = 0,
         E_NOTIMPL = -2147467263
     }
 
@@ -304,35 +306,6 @@ namespace Internal.JitInterface
         public int ILOffset;
         public int Count;
         public int Other;
-    }
-
-    public enum PgoInstrumentationKind
-    {
-        // Schema data types
-        None = 0,
-        FourByte = 1,
-        EightByte = 2,
-        TypeHandle = 3,
-
-        // Mask of all schema data types
-        MarshalMask = 0xF,
-
-        // ExcessAlignment
-        Align4Byte = 0x10,
-        Align8Byte = 0x20,
-        AlignPointer = 0x30,
-
-        // Mask of all schema data types
-        AlignMask = 0x30,
-
-        DescriptorMin = 0x40,
-
-        Done = None, // All instrumentation schemas must end with a record which is "Done"
-        BasicBlockIntCount = DescriptorMin | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
-        TypeHandleHistogramCount = (DescriptorMin * 1) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
-        TypeHandleHistogramTypeHandle = (DescriptorMin * 1) | TypeHandle, // TypeHandle that is part of a type histogram
-        Version = (DescriptorMin * 2) | None, // Version is encoded in the Other field of the schema
-        NumRuns = (DescriptorMin * 3) | None, // Number of runs is encoded in the Other field of the schema
     }
 
     // Flags computed by a runtime compiler

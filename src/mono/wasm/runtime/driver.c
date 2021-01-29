@@ -354,14 +354,24 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 
 	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
 
-#ifdef ICALL_TABLE_mscorlib
-	if (!strcmp (image_name, "mscorlib") || !strcmp (image_name, "System.Private.CoreLib")) {
+#if defined(ICALL_TABLE_mscorlib)
+	if (!strcmp (image_name, "mscorlib")) {
 		indexes = mscorlib_icall_indexes;
 		indexes_size = sizeof (mscorlib_icall_indexes) / 4;
 		handles = mscorlib_icall_handles;
 		funcs = mscorlib_icall_funcs;
 		assert (sizeof (mscorlib_icall_indexes [0]) == 4);
 	}
+#endif
+#if defined(ICALL_TABLE_corlib)
+	if (!strcmp (image_name, "System.Private.CoreLib")) {
+		indexes = corlib_icall_indexes;
+		indexes_size = sizeof (corlib_icall_indexes) / 4;
+		handles = corlib_icall_handles;
+		funcs = corlib_icall_funcs;
+		assert (sizeof (corlib_icall_indexes [0]) == 4);
+	}
+#endif
 #ifdef ICALL_TABLE_System
 	if (!strcmp (image_name, "System")) {
 		indexes = System_icall_indexes;
@@ -385,7 +395,6 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
 
 	return funcs [idx];
-#endif
 }
 
 static const char*
@@ -418,7 +427,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	int len;
 
 	assert (strlen (name) < 100);
-	sprintf (key, "%s_%s_%s", name, class_name, method_name);
+	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
 	len = strlen (key);
 	for (int i = 0; i < len; ++i) {
 		if (key [i] == '.')
@@ -661,10 +670,10 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 	/*
 	 * If the entry point looks like a compiler generated wrapper around
-	 * an async method in the form "<Name>" then try to look up the async method
-	 * "Name" it is wrapping.  We do this because the generated sync wrapper will
-	 * call task.GetAwaiter().GetResult() when we actually want to yield
-	 * to the host runtime.
+	 * an async method in the form "<Name>" then try to look up the async methods
+	 * "<Name>$" and "Name" it could be wrapping.  We do this because the generated
+	 * sync wrapper will call task.GetAwaiter().GetResult() when we actually want
+	 * to yield to the host runtime.
 	 */
 	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */) {
 		const char *name = mono_method_get_name (method);
@@ -674,12 +683,21 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 			return method;
 
 		MonoClass *klass = mono_method_get_class (method);
-		char *async_name = strdup (name);
+		char *async_name = malloc (name_length + 2);
+		snprintf (async_name, name_length + 2, "%s$", name);
 
-		async_name [name_length - 1] = '\0';
-
+		// look for "<Name>$"
 		MonoMethodSignature *sig = mono_method_get_signature (method, image, mono_method_get_token (method));
-		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
+		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name, mono_signature_get_param_count (sig));
+		if (async_method != NULL) {
+			free (async_name);
+			return async_method;
+		}
+
+		// look for "Name" by trimming the first and last character of "<Name>"
+		async_name [name_length - 1] = '\0';
+		async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
+
 		free (async_name);
 		if (async_method != NULL)
 			return async_method;

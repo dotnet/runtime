@@ -174,7 +174,7 @@ ds_process_info_payload_init (
 	payload->process_id = process_id;
 
 	if (runtime_cookie)
-		memcpy (&payload->runtime_cookie, runtime_cookie, EP_ACTIVITY_ID_SIZE);
+		memcpy (&payload->runtime_cookie, runtime_cookie, EP_GUID_SIZE);
 
 	return payload;
 }

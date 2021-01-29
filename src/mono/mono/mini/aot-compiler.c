@@ -8229,6 +8229,8 @@ parse_cpu_features (const gchar *attr)
 		feature = MONO_CPU_ARM64_BASE;
 	else if (!strcmp (attr + prefix, "crc"))
 		feature = MONO_CPU_ARM64_CRC;
+	else if (!strcmp (attr + prefix, "simd"))
+		feature = MONO_CPU_ARM64_ADVSIMD;
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
@@ -9541,6 +9543,9 @@ append_mangled_wrapper_subtype (GString *s, WrapperSubtype subtype)
 	case WRAPPER_SUBTYPE_AOT_INIT:
 		label = "aot_init";
 		break;
+	case WRAPPER_SUBTYPE_LLVM_FUNC:
+		label = "llvm_func";
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -9680,6 +9685,8 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 		append_mangled_wrapper_subtype (s, info->subtype);
 		if (info->subtype == WRAPPER_SUBTYPE_VIRTUAL_STELEMREF)
 			g_string_append_printf (s, "%d", info->d.virtual_stelemref.kind);
+		else if (info->subtype == WRAPPER_SUBTYPE_LLVM_FUNC)
+			g_string_append_printf (s, "%d", info->d.llvm_func.subtype);
 		break;
 	}
 	case MONO_WRAPPER_OTHER: {

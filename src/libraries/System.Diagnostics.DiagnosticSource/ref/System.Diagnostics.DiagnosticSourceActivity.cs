@@ -46,6 +46,8 @@ namespace System.Diagnostics
         public string? RootId { get { throw null; } }
         public System.Diagnostics.ActivitySpanId SpanId { get { throw null; } }
         public System.DateTime StartTimeUtc { get { throw null; } }
+        public System.Diagnostics.ActivityStatusCode Status { get { throw null; } }
+        public string? StatusDescription  { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> Tags { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> TagObjects { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityEvent> Events { get { throw null; } }
@@ -59,11 +61,13 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity SetTag(string key, object? value) { throw null; }
         public System.Diagnostics.Activity SetBaggage(string key, string? value) { throw null; }
         public string? GetBaggageItem(string key) { throw null; }
+        public object? GetTagItem(string key) { throw null; }
         public System.Diagnostics.Activity SetEndTime(System.DateTime endTimeUtc) { throw null; }
         public System.Diagnostics.Activity SetIdFormat(System.Diagnostics.ActivityIdFormat format) { throw null; }
         public System.Diagnostics.Activity SetParentId(System.Diagnostics.ActivityTraceId traceId, System.Diagnostics.ActivitySpanId spanId, System.Diagnostics.ActivityTraceFlags activityTraceFlags = System.Diagnostics.ActivityTraceFlags.None) { throw null; }
         public System.Diagnostics.Activity SetParentId(string parentId) { throw null; }
         public System.Diagnostics.Activity SetStartTime(System.DateTime startTimeUtc) { throw null; }
+        public System.Diagnostics.Activity SetStatus(System.Diagnostics.ActivityStatusCode code, string? description = null) { throw null; }
         public System.Diagnostics.Activity Start() { throw null; }
         public void Stop() { throw null; }
         public void Dispose()  { throw null; }
@@ -102,6 +106,12 @@ namespace System.Diagnostics
             public bool MoveNext() { throw null; }
             void System.Collections.IEnumerator.Reset() { throw null; }
         }
+    }
+    public enum ActivityStatusCode
+    {
+        Unset = 0,
+        Ok = 1,
+        Error = 2
     }
     public enum ActivityIdFormat
     {

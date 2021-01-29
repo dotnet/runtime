@@ -16,6 +16,13 @@ LEAF_ENTRY GetCurrentSP, _TEXT
     ret lr
 LEAF_END GetCurrentSP, _TEXT
 
+// DWORD64 __stdcall GetDataCacheZeroIDReg(void)
+LEAF_ENTRY GetDataCacheZeroIDReg, _TEXT
+    mrs     x0, dczid_el0
+    and     x0, x0, 31
+    ret     lr
+LEAF_END GetDataCacheZeroIDReg, _TEXT
+
 //-----------------------------------------------------------------------------
 // This routine captures the machine state. It is used by helper method frame
 //-----------------------------------------------------------------------------
