@@ -593,13 +593,18 @@ do { \
 
 #ifndef CROSSGEN_COMPILE
 #ifdef TARGET_UNIX
-void EESocketCleanupHelper()
+void EESocketCleanupHelper(bool isExecutingOnAltStack)
 {
     CONTRACTL
     {
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
+
+    if (isExecutingOnAltStack)
+    {
+        GetThread()->SetExecutingOnAltStack();
+    }
 
     // Close the debugger transport socket first
     if (g_pDebugInterface != NULL)

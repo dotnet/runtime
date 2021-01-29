@@ -237,7 +237,6 @@
 #define IDS_EE_STRUCTARRAYTOOLARGE              0x1a05
 #define IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER  0x1a06
 #define IDS_EE_NAME_UNKNOWN                     0x1a07
-#define IDS_EE_NAME_INMEMORYMODULE              0x1a08
 #define IDS_EE_THREAD_NOTSTARTED                0x1a0a
 #define IDS_EE_NO_BACKING_CLASS_FACTORY         0x1a0b
 #define IDS_EE_NAME_UNKNOWN_UNQ                 0x1a0c
