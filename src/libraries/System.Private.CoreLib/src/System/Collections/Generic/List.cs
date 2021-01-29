@@ -400,6 +400,11 @@ namespace System.Collections.Generic
         /// <param name="capacity">The minimum capacity to ensure</param>
         public int EnsureCapacity(int capacity)
         {
+            if (capacity < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
             if (_items.Length < capacity)
             {
                 int newCapacity = _items.Length == 0 ? DefaultCapacity : _items.Length * 2;
