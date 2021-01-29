@@ -28,8 +28,8 @@ internal static partial class Interop
         private static extern IntPtr objc_getClass(string className);
         [DllImport(Libraries.libobjc)]
         private static extern IntPtr sel_getUid(string selector);
-        [DllImport(Libraries.libobjc)]
-        private static extern IntPtr objc_msgSend(IntPtr basePtr, IntPtr selector);
+        [DllImport(Libraries.libobjc, EntryPoint = "objc_msgSend")]
+        private static extern IntPtr get_ProcessInfo(IntPtr basePtr, IntPtr selector);
 
         internal static Version GetOperatingSystemVersion()
         {
@@ -37,7 +37,7 @@ internal static partial class Interop
             int minor = 0;
             int patch = 0;
 
-            IntPtr processInfo = objc_msgSend(objc_getClass("NSProcessInfo"), sel_getUid("processInfo"));
+            IntPtr processInfo = get_ProcessInfo(objc_getClass("NSProcessInfo"), sel_getUid("processInfo"));
 
             if (processInfo != IntPtr.Zero)
             {
