@@ -1,17 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public abstract class SendToBase<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    public abstract class SendTo<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        private static readonly IPEndPoint ValidUdpRemoteEndpoint = new IPEndPoint(IPAddress.Parse("10.20.30.40"), 1234);
+        protected static readonly IPEndPoint ValidUdpRemoteEndpoint = new IPEndPoint(IPAddress.Parse("10.20.30.40"), 1234);
 
-        protected SendToBase(ITestOutputHelper output) : base(output)
+        protected SendTo(ITestOutputHelper output) : base(output)
         {
         }
 
@@ -80,59 +84,77 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
             Assert.Null(socket.LocalEndPoint);
         }
+
+        [Fact]
+        public async Task Disposed_Throws()
+        {
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.Dispose();
+
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => SendToAsync(socket, new byte[1], ValidUdpRemoteEndpoint));
+        }
     }
 
-    public static class SendTo
+    public sealed class SendTo_SyncSpan : SendTo<SocketHelperSpanSync>
     {
-        public static class Sync
+        public SendTo_SyncSpan(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendTo_SyncSpanForceNonBlocking : SendTo<SocketHelperSpanSyncForceNonBlocking>
+    {
+        public SendTo_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendTo_ArraySync : SendTo<SocketHelperArraySync>
+    {
+        public SendTo_ArraySync(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendTo_SyncForceNonBlocking : SendTo<SocketHelperSyncForceNonBlocking>
+    {
+        public SendTo_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class SendTo_Apm : SendTo<SocketHelperApm>
+    {
+        public SendTo_Apm(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class SendTo_Eap : SendTo<SocketHelperEap>
+    {
+        public SendTo_Eap(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class SendTo_Task : SendTo<SocketHelperTask>
+    {
+        public SendTo_Task(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendTo_CancellableTask : SendTo<SocketHelperCancellableTask>
+    {
+        public SendTo_CancellableTask(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task PreCanceled_Throws()
         {
-            public sealed class Span : SendToBase<SocketHelperSpanSync>
-            {
-                public Span(ITestOutputHelper output) : base(output) { }
-            }
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
 
-            public sealed class SpanForceNonBlocking : SendToBase<SocketHelperSpanSyncForceNonBlocking>
-            {
-                public SpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
-            }
+            OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => sender.SendToAsync(new byte[1], SocketFlags.None, ValidUdpRemoteEndpoint, cts.Token).AsTask());
 
-            public sealed class MemoryArrayTask : SendToBase<SocketHelperMemoryArrayTask>
-            {
-                public MemoryArrayTask(ITestOutputHelper output) : base(output) { }
-            }
-
-            public sealed class MemoryNativeTask : SendToBase<SocketHelperMemoryNativeTask>
-            {
-                public MemoryNativeTask(ITestOutputHelper output) : base(output) { }
-            }
-
-            public sealed class ArraySync : SendToBase<SocketHelperArraySync>
-            {
-                public ArraySync(ITestOutputHelper output) : base(output) { }
-            }
-
-            public sealed class ArrayForceNonBlocking : SendToBase<SocketHelperSyncForceNonBlocking>
-            {
-                public ArrayForceNonBlocking(ITestOutputHelper output) : base(output) {}
-            }
+            Assert.Equal(cts.Token, ex.CancellationToken);
         }
+    }
 
-        public static class Async
-        {
-            public sealed class Apm : SendToBase<SocketHelperApm>
-            {
-                public Apm(ITestOutputHelper output) : base(output) {}
-            }
+    public sealed class SendTo_MemoryArrayTask : SendTo<SocketHelperMemoryArrayTask>
+    {
+        public SendTo_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
+    }
 
-            public sealed class Task : SendToBase<SocketHelperTask>
-            {
-                public Task(ITestOutputHelper output) : base(output) {}
-            }
-
-            public sealed class Eap : SendToBase<SocketHelperEap>
-            {
-                public Eap(ITestOutputHelper output) : base(output) {}
-            }
-        }
+    public sealed class SendTo_MemoryNativeTask : SendTo<SocketHelperMemoryNativeTask>
+    {
+        public SendTo_MemoryNativeTask(ITestOutputHelper output) : base(output) { }
     }
 }

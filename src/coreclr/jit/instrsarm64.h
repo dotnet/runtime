@@ -1572,6 +1572,9 @@ INST1(dmb,         "dmb",          0,      IF_SI_0B,  0xD50330BF)
 INST1(isb,         "isb",          0,      IF_SI_0B,  0xD50330DF)
                                    //  isb     barrierKind          SI_0B  1101010100000011 0011bbbb11011111   D503 30DF   imm4 - barrier kind
 
+INST1(dczva,       "dczva",        0,      IF_SR_1A,  0xD50B7420)
+                                   //  dc      zva,Rt               SR_1A  1101010100001011 01110100001ttttt   D50B 7420   Rt
+
 INST1(umov,        "umov",         0,      IF_DV_2B,  0x0E003C00)
                                    //  umov    Rd,Vn[]              DV_2B  0Q001110000iiiii 001111nnnnnddddd   0E00 3C00   Rd,Vn[]
 

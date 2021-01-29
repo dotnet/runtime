@@ -88,7 +88,7 @@ namespace System.Net.Http.Functional.Tests
                     while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false)));
                     Assert.Equal(numBytes, await connection.ReadBlockAsync(postData, 0, numBytes));
 
-                    await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);
+                    await connection.WriteStringAsync(responseText).ConfigureAwait(false);
                     connection.Socket.Shutdown(SocketShutdown.Send);
                 });
 

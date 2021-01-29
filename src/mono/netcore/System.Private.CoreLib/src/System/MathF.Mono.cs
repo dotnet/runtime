@@ -83,9 +83,6 @@ namespace System
         public static extern float Log2(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float ScaleB(float x, int n);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern float FMod(float x, float y);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

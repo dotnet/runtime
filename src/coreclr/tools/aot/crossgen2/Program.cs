@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Text;
 
 using Internal.CommandLine;
 using Internal.IL;
@@ -607,6 +608,9 @@ namespace ILCompiler
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(_optimizationMode);
 
+                    if (_commandLineOptions.PrintReproInstructions)
+                        builder.UsePrintReproInstructions(CreateReproArgumentString);
+
                     compilation = builder.ToCompilation();
 
                 }
@@ -722,35 +726,41 @@ namespace ILCompiler
             return method;
         }
 
+        private static string CreateReproArgumentString(MethodDesc method)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)method.Context.SystemModule);
+
+            sb.Append($"--singlemethodtypename \"{formatter.FormatName(method.OwningType, true)}\"");
+            sb.Append($" --singlemethodname {method.Name}");
+            {
+                int curIndex = 0;
+                foreach (var searchMethod in method.OwningType.GetMethods())
+                {
+                    if (searchMethod.Name != method.Name)
+                        continue;
+
+                    curIndex++;
+                    if (searchMethod == method.GetMethodDefinition())
+                    {
+                        sb.Append($" --singlemethodindex {curIndex}");
+                    }
+                }
+            }
+
+            for (int i = 0; i < method.Instantiation.Length; i++)
+                sb.Append($" --singlemethodgenericarg \"{formatter.FormatName(method.Instantiation[i], true)}\"");
+
+            return sb.ToString();
+        }
+
         private static bool DumpReproArguments(CodeGenerationFailedException ex)
         {
             Console.WriteLine(SR.DumpReproInstructions);
 
             MethodDesc failingMethod = ex.Method;
-
-            var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)failingMethod.Context.SystemModule);
-
-            Console.Write($"--singlemethodtypename \"{formatter.FormatName(failingMethod.OwningType, true)}\"");
-            Console.Write($" --singlemethodname {failingMethod.Name}");
-            {
-                int curIndex = 0;
-                foreach (var searchMethod in failingMethod.OwningType.GetMethods())
-                {
-                    if (searchMethod.Name != failingMethod.Name)
-                        continue;
-
-                    curIndex++;
-                    if (searchMethod == failingMethod.GetMethodDefinition())
-                    {
-                        Console.Write($" --singlemethodindex {curIndex}");
-                    }
-                }
-            }
-
-            for (int i = 0; i < failingMethod.Instantiation.Length; i++)
-                Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");
-
-            Console.WriteLine();
+            Console.WriteLine(CreateReproArgumentString(failingMethod));
             return false;
         }
 
