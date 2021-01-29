@@ -464,7 +464,7 @@ var BindingSupportLib = {
 				case 1: // int
 					return Module.HEAP32[this._unbox_buffer / 4];
 				case 4: // struct
-					throw new Error ("JS side of struct unbox not implemented");
+					return this._unbox_struct_rooted (this._unbox_buffer, mono_obj);
 				case 25: // uint32
 					return Module.HEAPU32[this._unbox_buffer / 4];
 				case 24: // float32
@@ -1052,8 +1052,55 @@ typedef struct wasm_method_signature_info {
 			return result;
 		},
 
-		_unbox_struct_rooted: function (mono_obj) {
-			throw new Error ("no idea on how to unbox value types");
+		_pick_result_chara_for_marshal_type: function (mtype) {
+			var signatureChForMtype = {
+				1: 'i',
+				2: 'd',
+				3: 's',
+				7: 'o',
+				9: 'j',
+				22: 'u', // FIXME
+				24: 'f',
+				25: 'i',
+				26: 'l',
+				27: 'l',
+				28: 'i', // FIXME
+			};
+			if (mtype === 4)
+				throw new Error ("ManagedToJS cannot return a struct");
+			return signatureChForMtype[mtype] || 'a';
+		},
+
+		_unbox_struct_rooted: function (unbox_buffer, mono_obj) {
+			var objSize = Module.HEAP32[(unbox_buffer / 4) | 0];
+			var classPtr = Module.HEAP32[((unbox_buffer / 4) | 0) + 1];
+			var dataOffset = unbox_buffer + 8;
+
+			console.log (`objSize ${objSize} classPtr ${classPtr} dataOffset ${dataOffset}`);
+
+			// FIXME: Optimize this
+			var postFilterGetter = this.find_method (classPtr, "ManagedToJS_PostFilter", 0);
+			var postFilter = postFilterGetter 
+				? this.call_method (postFilterGetter, 0, "", [])
+				: null;
+
+			console.log ("postFilter", postFilter);
+
+			var convMethod = this.find_method (classPtr, "ManagedToJS", 1);
+			if (!convMethod)
+				throw new Error ("No ManagedToJS method found");
+			// HACK
+			var sigInfo = this.get_method_signature_info (convMethod);
+			var argumentCh = this._pick_result_chara_for_marshal_type (sigInfo.result.marshalType);
+			var signature = "m" + argumentCh;
+			var boundConverter = this.bind_method (
+				convMethod, 0, signature, "ManagedToJS_class" + classPtr
+			);
+
+			// var result = this._compile_pre_filter (classPtr, boundConverter, preFilter);
+			// this._automatic_converter_table.set (classPtr, result);
+			// FIXME: Pass a ReadOnlySpan or ReadOnlyMemory instead of a bare pointer
+			return boundConverter (dataOffset);
 		},
 
 		_compile_pre_filter: function (classPtr, boundConverter, js) {
@@ -1092,17 +1139,12 @@ typedef struct wasm_method_signature_info {
 				this._automatic_converter_table = new Map ();
 			if (!this._automatic_converter_table.has (classPtr)) {
 				var preFilterGetter = this.find_method(classPtr, "JSToManaged_PreFilter", 0);
-				var postFilterGetter = this.find_method(classPtr, "ManagedToJS_PostFilter", 0);
 
 				var preFilter = preFilterGetter 
 					? this.call_method (preFilterGetter, 0, "", [])
 					: null;
-				var postFilter = postFilterGetter 
-					? this.call_method (postFilterGetter, 0, "", [])
-					: null;
 
 				// console.log ("preFilter", preFilter);
-				// console.log ("postFilter", postFilter);
 
 				var convMethod = this.find_method (classPtr, "JSToManaged", 1);
 				// FIXME
@@ -1675,22 +1717,23 @@ typedef struct wasm_method_signature_info {
 				//  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
 				//  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
 				//  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-				"    var resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, buffer);",
+				"    var unbox_buffer = binding_support._unbox_buffer;",
+				"    var resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, unbox_buffer, binding_support._unbox_buffer_size);",
 				"    switch (resultType) {",
 				"    case 1:", // int
-				"        result = Module.HEAP32[buffer / 4]; break;",
+				"        result = Module.HEAP32[unbox_buffer / 4]; break;",
 				"    case 4:", // struct
-				"        throw new Error('js side of struct unbox not implemented'); break;",
+				"        result = binding_support._unbox_struct_rooted (unbox_buffer, resultPtr); break;",
 				"    case 25:", // uint32
-				"        result = Module.HEAPU32[buffer / 4]; break;",
+				"        result = Module.HEAPU32[unbox_buffer / 4]; break;",
 				"    case 24:", // float32
-				"        result = Module.HEAPF32[buffer / 4]; break;",
+				"        result = Module.HEAPF32[unbox_buffer / 4]; break;",
 				"    case 2:", // float64
-				"        result = Module.HEAPF64[buffer / 8]; break;",
+				"        result = Module.HEAPF64[unbox_buffer / 8]; break;",
 				"    case 8:", // boolean
-				"        result = (Module.HEAP32[buffer / 4]) !== 0; break;",
+				"        result = (Module.HEAP32[unbox_buffer / 4]) !== 0; break;",
 				"    case 28:", // char
-				"        result = String.fromCharCode(Module.HEAP32[buffer / 4]); break;",
+				"        result = String.fromCharCode(Module.HEAP32[unbox_buffer / 4]); break;",
 				"    default:",
 				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType); break;",
 				"    }",

@@ -32,8 +32,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 return new CustomStruct { D = d };
             }
 
-            private static double ManagedToJS (CustomStruct ct) {
+            private static unsafe double ManagedToJS (ref CustomStruct ct) {
                 Console.WriteLine("CustomStruct.ManagedToJS {0}", ct.D);
+                fixed (CustomStruct *pCt = &ct)
+                    Console.WriteLine("arg ptr {0}", (uint)(UIntPtr)pCt);
                 return ct.D;
             }
         }
@@ -51,7 +53,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 };
             }
 
-            private static string ManagedToJS (CustomDate cd) {
+            private static string ManagedToJS (ref CustomDate cd) {
                 var result = cd.Date.ToString("o");
                 Console.WriteLine($"CustomDate.ManagedToJS === {result}");
                 return result;
@@ -188,6 +190,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static void InvokeCustomDate(CustomDate cd)
         {
             _dateTimeValue = cd.Date;
+        }
+        private static CustomDate ReturnCustomDate(CustomDate cd)
+        {
+            return cd;
         }
 
         internal static System.Uri _uriValue;

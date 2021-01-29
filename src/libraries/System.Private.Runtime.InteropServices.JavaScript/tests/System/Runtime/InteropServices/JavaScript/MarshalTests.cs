@@ -975,5 +975,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             );
             Assert.Equal(4.13, HelperMarshal._csValue.D);
         }
+
+        [Fact]
+        public static void ReturnCustomDate()
+        {
+            HelperMarshal._dateTimeValue = default(DateTime);
+            Runtime.InvokeJS(
+                $"var dt = new Date('{ExpectedDateString}');\r\n" +
+                @"var cd = App.call_test_method ('ReturnCustomDate', [ dt ], 'a');" +
+                @"App.call_test_method ('InvokeCustomDate', [ cd ], 'a');"
+            );
+            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
+        }
     }
 }

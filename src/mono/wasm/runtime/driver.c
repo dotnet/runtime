@@ -956,6 +956,9 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 	float *resultF = result;
 	double *resultD = result;
 
+	if (!result)
+		return MARSHAL_BUFFER_TOO_SMALL;
+
 	if (result_capacity < 16) {
 		if (result_capacity >= sizeof (int64_t))
 			*resultL = 0;
@@ -1037,6 +1040,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 					*resultL = 0;
 					return MARSHAL_BUFFER_TOO_SMALL;
 				}
+				
 				// Store a header before the struct data with the size of the data and its class
 				*resultI = obj_size;
 				MonoClass ** resultClass = (MonoClass **)(resultI + 1);
