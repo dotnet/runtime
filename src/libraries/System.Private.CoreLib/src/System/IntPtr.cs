@@ -207,13 +207,14 @@ namespace System
         public unsafe string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
         public unsafe string ToString(string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
 
-        unsafe bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
         public static IntPtr Parse(string s) => (IntPtr)nint_t.Parse(s);
         public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint_t.Parse(s, style);
         public static IntPtr Parse(string s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
         public static IntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, style, provider);
+        public static IntPtr Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (IntPtr)nint_t.Parse(s, style, provider);
 
         public static bool TryParse(string? s, out IntPtr result)
         {
@@ -222,6 +223,18 @@ namespace System
         }
 
         public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> s, out IntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
         {
             Unsafe.SkipInit(out result);
             return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));

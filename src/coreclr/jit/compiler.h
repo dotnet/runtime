@@ -5561,7 +5561,7 @@ protected:
     bool fgHaveProfileData();
     void fgComputeProfileScale();
     bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weight);
-    void fgInstrumentMethod();
+    PhaseStatus fgInstrumentMethod();
 
 public:
     // fgIsUsingProfileWeights - returns true if we have real profile data for this method
@@ -5586,6 +5586,7 @@ public:
 #endif
 
 public:
+    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
     Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree);
     Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
@@ -5593,8 +5594,6 @@ public:
 private:
     void fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt);
     void fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt);
-    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
-
     void fgInsertStmtAfter(BasicBlock* block, Statement* insertionPoint, Statement* stmt);
 
 public:

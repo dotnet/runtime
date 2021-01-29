@@ -48,7 +48,7 @@
 FCIMPL1_V(double, COMDouble::Abs, double x)
     FCALL_CONTRACT;
 
-    return (double)fabs(x);
+    return fabs(x);
 FCIMPLEND
 
 /*=====================================Acos=====================================
@@ -57,7 +57,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Acos, double x)
     FCALL_CONTRACT;
 
-    return (double)acos(x);
+    return acos(x);
 FCIMPLEND
 
 /*=====================================Acosh====================================
@@ -66,7 +66,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Acosh, double x)
     FCALL_CONTRACT;
 
-    return (double)acosh(x);
+    return acosh(x);
 FCIMPLEND
 
 /*=====================================Asin=====================================
@@ -75,7 +75,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Asin, double x)
     FCALL_CONTRACT;
 
-    return (double)asin(x);
+    return asin(x);
 FCIMPLEND
 
 /*=====================================Asinh====================================
@@ -84,7 +84,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Asinh, double x)
     FCALL_CONTRACT;
 
-    return (double)asinh(x);
+    return asinh(x);
 FCIMPLEND
 
 /*=====================================Atan=====================================
@@ -93,7 +93,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Atan, double x)
     FCALL_CONTRACT;
 
-    return (double)atan(x);
+    return atan(x);
 FCIMPLEND
 
 /*=====================================Atanh====================================
@@ -102,7 +102,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Atanh, double x)
     FCALL_CONTRACT;
 
-    return (double)atanh(x);
+    return atanh(x);
 FCIMPLEND
 
 /*=====================================Atan2====================================
@@ -111,7 +111,7 @@ FCIMPLEND
 FCIMPL2_VV(double, COMDouble::Atan2, double y, double x)
     FCALL_CONTRACT;
 
-    return (double)atan2(y, x);
+    return atan2(y, x);
 FCIMPLEND
 
 /*====================================Cbrt======================================
@@ -120,7 +120,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Cbrt, double x)
     FCALL_CONTRACT;
 
-    return (double)cbrt(x);
+    return cbrt(x);
 FCIMPLEND
 
 #if defined(_MSC_VER) && defined(TARGET_AMD64)
@@ -136,7 +136,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Ceil, double x)
     FCALL_CONTRACT;
 
-    return (double)ceil(x);
+    return ceil(x);
 FCIMPLEND
 
 #if defined(_MSC_VER) && defined(TARGET_AMD64)
@@ -149,7 +149,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Cos, double x)
     FCALL_CONTRACT;
 
-    return (double)cos(x);
+    return cos(x);
 FCIMPLEND
 
 /*=====================================Cosh=====================================
@@ -158,7 +158,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Cosh, double x)
     FCALL_CONTRACT;
 
-    return (double)cosh(x);
+    return cosh(x);
 FCIMPLEND
 
 /*=====================================Exp======================================
@@ -167,7 +167,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Exp, double x)
     FCALL_CONTRACT;
 
-    return (double)exp(x);
+    return exp(x);
 FCIMPLEND
 
 #if defined(_MSC_VER) && defined(TARGET_X86)
@@ -183,7 +183,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Floor, double x)
     FCALL_CONTRACT;
 
-    return (double)floor(x);
+    return floor(x);
 FCIMPLEND
 
 #if defined(_MSC_VER) && defined(TARGET_X86)
@@ -196,7 +196,7 @@ FCIMPLEND
 FCIMPL2_VV(double, COMDouble::FMod, double x, double y)
     FCALL_CONTRACT;
 
-    return (double)fmod(x, y);
+    return fmod(x, y);
 FCIMPLEND
 
 /*=====================================FusedMultiplyAdd==========================
@@ -205,7 +205,7 @@ FCIMPLEND
 FCIMPL3_VVV(double, COMDouble::FusedMultiplyAdd, double x, double y, double z)
     FCALL_CONTRACT;
 
-    return (double)fma(x, y, z);
+    return fma(x, y, z);
 FCIMPLEND
 
 /*=====================================Ilog2====================================
@@ -214,7 +214,7 @@ FCIMPLEND
 FCIMPL1_V(int, COMDouble::ILogB, double x)
     FCALL_CONTRACT;
 
-    return (int)ilogb(x);
+    return ilogb(x);
 FCIMPLEND
 
 /*=====================================Log======================================
@@ -223,7 +223,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Log, double x)
     FCALL_CONTRACT;
 
-    return (double)log(x);
+    return log(x);
 FCIMPLEND
 
 /*=====================================Log2=====================================
@@ -232,7 +232,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Log2, double x)
     FCALL_CONTRACT;
 
-    return (double)log2(x);
+    return log2(x);
 FCIMPLEND
 
 /*====================================Log10=====================================
@@ -241,7 +241,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Log10, double x)
     FCALL_CONTRACT;
 
-    return (double)log10(x);
+    return log10(x);
 FCIMPLEND
 
 /*=====================================ModF=====================================
@@ -250,7 +250,7 @@ FCIMPLEND
 FCIMPL2_VI(double, COMDouble::ModF, double x, double* intptr)
     FCALL_CONTRACT;
 
-    return (double)modf(x, intptr);
+    return modf(x, intptr);
 FCIMPLEND
 
 /*=====================================Pow======================================
@@ -259,7 +259,7 @@ FCIMPLEND
 FCIMPL2_VV(double, COMDouble::Pow, double x, double y)
     FCALL_CONTRACT;
 
-    return (double)pow(x, y);
+    return pow(x, y);
 FCIMPLEND
 
 /*=====================================Sin======================================
@@ -268,7 +268,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Sin, double x)
     FCALL_CONTRACT;
 
-    return (double)sin(x);
+    return sin(x);
 FCIMPLEND
 
 /*====================================SinCos====================================
@@ -292,7 +292,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Sinh, double x)
     FCALL_CONTRACT;
 
-    return (double)sinh(x);
+    return sinh(x);
 FCIMPLEND
 
 /*=====================================Sqrt=====================================
@@ -301,7 +301,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Sqrt, double x)
     FCALL_CONTRACT;
 
-    return (double)sqrt(x);
+    return sqrt(x);
 FCIMPLEND
 
 /*=====================================Tan======================================
@@ -310,7 +310,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Tan, double x)
     FCALL_CONTRACT;
 
-    return (double)tan(x);
+    return tan(x);
 FCIMPLEND
 
 /*=====================================Tanh=====================================
@@ -319,7 +319,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Tanh, double x)
     FCALL_CONTRACT;
 
-    return (double)tanh(x);
+    return tanh(x);
 FCIMPLEND
 
 #ifdef _MSC_VER

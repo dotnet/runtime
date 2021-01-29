@@ -1204,8 +1204,19 @@ void MethodContext::recResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWOR
     key = SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
 
     ResolveTokenValue value;
-    value.tokenOut      = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, ResolveToken);
-    value.exceptionCode = (DWORD)exceptionCode;
+    if (exceptionCode != ERROR_SUCCESS)
+    {
+        // The output token memory might be corrupt or uninitialized, so just zero it out.
+        // (Set indexes to -1, indicating no buffer).
+        ZeroMemory(&value.tokenOut, sizeof(value.tokenOut));
+        value.tokenOut.pTypeSpec_Index   = (DWORD)-1;
+        value.tokenOut.pMethodSpec_Index = (DWORD)-1;
+    }
+    else
+    {
+        value.tokenOut = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, ResolveToken);
+    }
+    value.exceptionCode = exceptionCode;
 
     ResolveToken->Add(key, value);
     DEBUG_REC(dmpResolveToken(key, value));

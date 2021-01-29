@@ -232,7 +232,9 @@ inline void SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(
 {
     unsigned handleInstIndex;
 
-    if (handleInstCount > 0)
+    // We shouldn't need to check (handleInstArray != nullptr), but often, crossgen2 sets (leaves?)
+    // handleInstCount > 0 and handleInstArray == nullptr.
+    if ((handleInstCount > 0) && (handleInstArray != nullptr))
     {
         if (handleMap == nullptr)
             handleMap = new DenseLightWeightMap<DWORDLONG>(); // this updates the caller
@@ -254,6 +256,13 @@ inline void SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(
     }
     else
     {
+        if (handleInstCount > 0)
+        {
+            // This is really a VM/crossgen bug.
+            LogVerbose("(handleInstCount > 0) but (handleInstArray == nullptr)!");
+            handleInstCount = 0;
+        }
+
         handleInstIndex = (DWORD)-1;
     }
 
