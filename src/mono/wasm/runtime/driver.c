@@ -929,6 +929,15 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_wasm_get_obj_class (MonoObject *obj)
+{
+	if (!obj)
+		return 0;
+
+	return mono_object_get_class (obj);
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_wasm_get_obj_type (MonoObject *obj)
 {
 	if (!obj)
@@ -1040,7 +1049,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 					*resultL = 0;
 					return MARSHAL_BUFFER_TOO_SMALL;
 				}
-				
+
 				// Store a header before the struct data with the size of the data and its class
 				*resultI = obj_size;
 				MonoClass ** resultClass = (MonoClass **)(resultI + 1);

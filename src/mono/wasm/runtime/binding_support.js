@@ -59,6 +59,7 @@ var BindingSupportLib = {
 			this.invoke_method = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']);
 			this.mono_string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'number', ['number']);
 			this.mono_wasm_string_from_utf16 = Module.cwrap ('mono_wasm_string_from_utf16', 'number', ['number', 'number']);
+			this.mono_wasm_get_obj_class = Module.cwrap ('mono_wasm_get_obj_class', 'number', ['number']);
 			this.mono_get_obj_type = Module.cwrap ('mono_wasm_get_obj_type', 'number', ['number']);
 			this.mono_array_length = Module.cwrap ('mono_wasm_array_length', 'number', ['number']);
 			this.mono_array_get = Module.cwrap ('mono_wasm_array_get', 'number', ['number', 'number']);
@@ -854,6 +855,11 @@ var BindingSupportLib = {
 			if (js_id > 0)
 				return this.mono_wasm_require_handle(js_id);
 
+			var klass = this.mono_wasm_get_obj_class (mono_obj);
+			var converter = this._try_get_converter_for_managed_class (klass);
+			if (converter)
+				return converter (mono_obj);
+
 			var gcHandle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
 			var js_obj = {
 				__mono_gchandle__: this.wasm_bind_existing(mono_obj, gcHandle + 1),
@@ -1049,6 +1055,33 @@ typedef struct wasm_method_signature_info {
 			);
 
 			console.log("compile result", result);
+			return result;
+		},
+
+		_try_get_converter_for_managed_class: function (klass) {
+			console.log (`klass ${klass}`);
+
+			var convMethod = this.find_method (klass, "ManagedToJS", 1);
+			if (!convMethod)
+				return null;
+
+			// HACK
+			var sigInfo = this.get_method_signature_info (convMethod);
+			var signature = "m";
+			var boundConverter = this.bind_method (
+				convMethod, 0, signature, "ManagedToJS_class" + klass
+			);
+
+			// FIXME: Optimize this
+			var postFilterGetter = this.find_method (klass, "ManagedToJS_PostFilter", 0);
+			var postFilter = postFilterGetter 
+				? this.call_method (postFilterGetter, 0, "", [])
+				: null;
+
+			console.log ("postFilter", postFilter);
+
+			var result = this._compile_post_filter (klass, boundConverter, postFilter);
+			// this._automatic_converter_table.set (classPtr, result);
 			return result;
 		},
 
