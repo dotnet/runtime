@@ -2,18 +2,24 @@
     WasmApp.LocalBuild* files are meant for projects that want to use
     a local build of `dotnet/runtime` repo.
 
-    Required properties to be set:
+    Two ways to use this:
 
-    $(RuntimeSrcDir)       - path to the runtime checkout. This should have already been
-                             built, and so should have `artifacts` directory.
-    $(RuntimeConfig)       - This is the config that the above checkout was built with.
-                             This can be different from the configuration for the user project.
+    1. Use a local runtime build from the source directory:
+        Required properties to be set:
+
+        $(RuntimeSrcDir)       - path to the runtime checkout. This should have already been
+                                 built, and so should have `artifacts` directory.
+
+        $(RuntimeConfig)       - This is the config that the above checkout was built with.
+                                 This can be different from the configuration for the user project.
+
+    2. Use a local directory which has all the tasks, targets, runtimepack available
+
+        Required properties to be set:
+        $(WasmBuildSupportDir) - directory which has all the tasks, targets, and runtimepack
 -->
 <Project>
   <PropertyGroup>
-    <TargetArchitecture>wasm</TargetArchitecture>
-    <TargetOS>Browser</TargetOS>
-    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <_NetCoreAppToolCurrent>net5.0</_NetCoreAppToolCurrent>
   </PropertyGroup>
 
@@ -33,7 +39,6 @@
 
     <MicrosoftNetCoreAppRuntimePackLocationToUse>$(BuildBaseDir)microsoft.netcore.app.runtime.browser-wasm\</MicrosoftNetCoreAppRuntimePackLocationToUse>
     <MonoAOTCompilerDir>$(BuildBaseDir)\MonoAOTCompiler\</MonoAOTCompilerDir>
-    <MonoAotCrossCompilerPath>$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(RuntimeIdentifier)\mono-aot-cross</MonoAotCrossCompilerPath>
     <WasmAppBuilderDir>$(BuildBaseDir)\WasmAppBuilder\</WasmAppBuilderDir>
     <WasmBuildTasksDir>$(BuildBaseDir)\WasmBuildTasks\</WasmBuildTasksDir>
   </PropertyGroup>
