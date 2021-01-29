@@ -55,7 +55,7 @@ namespace System.Net.Sockets.Tests
         public async Task ReceiveSent_UDP_Success(bool ipv4)
         {
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/47637")]
-            int offset = UsesSync ? 10 : 0;
+            int offset = UsesSync || !PlatformDetection.IsWindows ? 10 : 0;
             const int DatagramSize = 256;
             const int DatagramsToSend = 16;
 
