@@ -1015,6 +1015,10 @@ class SuperPMICollect:
                     # 1. <runtime_root>\dotnet.cmd/sh
                     # 2. "dotnet" on PATH
 
+                    # Work around https://github.com/dotnet/runtime/issues/47554: crossgen2 doesn't like EnableExtraSuperPmiQueries
+                    crossgen2_complus_env = complus_env.copy()
+                    del crossgen2_complus_env["EnableExtraSuperPmiQueries"]
+
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
                         rsp_write_handle.write(assembly + "\n")
@@ -1023,8 +1027,9 @@ class SuperPMICollect:
                         rsp_write_handle.write("-r:" + os.path.join(self.core_root, "Microsoft.*.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(self.core_root, "mscorlib.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
+                        rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
-                        for var, value in complus_env.items():
+                        for var, value in crossgen2_complus_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
                     # Log what is in the response file
@@ -1080,12 +1085,12 @@ class SuperPMICollect:
                 old_env = os.environ.copy()
                 os.environ.update(crossgen2_command_env)
 
-                # Note: crossgen2 compiles in parallel, so we don't need to use per-assembly parallelism here.
-                # If we ever want to use parallelism in this script instead, remove the "subproc_count=1"
-                # argument to the AsyncSubprocessHelper constructor below, and pass "--parallelism:1" to
-                # the crossgen2 process, above.
-                # We still use the same code pattern here as for PMI and crossgen1 collections, for consistency.
-                helper = AsyncSubprocessHelper(assemblies, subproc_count=1, verbose=True)
+                # Note: crossgen2 compiles in parallel by default. However, it seems to lead to sharing violations
+                # in SuperPMI collection, accessing the MC file. So, disable crossgen2 parallism by using
+                # the "--parallelism:1" switch, and allowing coarse-grained (per-assembly) parallelism here.
+                # It turns out this works better anyway, as there is a lot of non-parallel time between
+                # crossgen2 parallel compilations.
+                helper = AsyncSubprocessHelper(assemblies, verbose=True)
                 helper.run_to_completion(run_crossgen2, self)
 
                 # Review: does this delete the items that weren't there before we updated with the crossgen2 variables?
