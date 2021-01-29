@@ -2,8 +2,8 @@ TOP=../../../../
 DOTNET:=$(TOP)./dotnet.sh
 DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 
-MONO_CONFIG ?=Debug
-MONO_ARCH=arm64
+MONO_CONFIG ?=Release
+MONO_ARCH=x64
 
 OS := $(shell uname -s)
 ifeq ($(OS),Darwin)
