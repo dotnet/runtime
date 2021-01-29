@@ -188,26 +188,26 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Android)] // OOM on Android could be uncatchable & kill the test runner
         public unsafe void WriteChars_VeryLargeArray_DoesNotOverflow()
         {
             const nuint INPUT_LEN_IN_CHARS = 1_500_000_000;
             const nuint OUTPUT_LEN_IN_BYTES = 3_500_000_000; // overallocate
 
-            SafeBuffer unmanagedInputBuffer;
-            SafeBuffer unmanagedOutputBufer;
+            SafeBuffer unmanagedInputBuffer = null;
+            SafeBuffer unmanagedOutputBufer = null;
             try
             {
-                unmanagedInputBuffer = SafeBufferUtil.CreateSafeBuffer(INPUT_LEN_IN_CHARS * sizeof(char));
-                unmanagedOutputBufer = SafeBufferUtil.CreateSafeBuffer(OUTPUT_LEN_IN_BYTES * sizeof(byte));
-            }
-            catch (OutOfMemoryException)
-            {
-                return; // skip test in low-mem conditions
-            }
+                try
+                {
+                    unmanagedInputBuffer = SafeBufferUtil.CreateSafeBuffer(INPUT_LEN_IN_CHARS * sizeof(char));
+                    unmanagedOutputBufer = SafeBufferUtil.CreateSafeBuffer(OUTPUT_LEN_IN_BYTES * sizeof(byte));
+                }
+                catch (OutOfMemoryException)
+                {
+                    return; // skip test in low-mem conditions
+                }
 
-            using (unmanagedInputBuffer)
-            using (unmanagedOutputBufer)
-            {
                 Span<char> inputSpan = new Span<char>((char*)unmanagedInputBuffer.DangerousGetHandle(), (int)INPUT_LEN_IN_CHARS);
                 inputSpan.Fill('\u0224'); // LATIN CAPITAL LETTER Z WITH HOOK
                 Stream outStream = new UnmanagedMemoryStream(unmanagedOutputBufer, 0, (long)unmanagedOutputBufer.ByteLength, FileAccess.ReadWrite);
@@ -216,6 +216,11 @@ namespace System.IO.Tests
                 writer.Write(inputSpan); // will write 3 billion bytes to the output
 
                 Assert.Equal(3_000_000_000, outStream.Position);
+            }
+            finally
+            {
+                unmanagedInputBuffer?.Dispose();
+                unmanagedOutputBufer?.Dispose();
             }
         }
 
