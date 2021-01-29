@@ -128,16 +128,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _jsAddAsFunctionResult = (int)func.Call(null, 20, 30);
         }
 
-        internal static int _functionResultValue;
-        private static Func<int, int, int> CreateFunctionDelegate()
-        {
-            return (a, b) =>
-            {
-                _functionResultValue = a + b;
-                return _functionResultValue;
-            };
-        }
-
         internal static int _intValue;
         private static void InvokeInt(int value)
         {
@@ -381,6 +371,30 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static UInt64 GetUInt64()
         {
             return UInt64.MaxValue;
+        }
+
+        internal static int _functionResultValue;
+        private static Func<int, int, int> CreateFunctionDelegate()
+        {
+            return (a, b) =>
+            {
+                _functionResultValue = a + b;
+                return _functionResultValue;
+            };
+        }
+
+        internal static int _functionActionResultValue;
+        internal static int _functionActionResultValueOfAction;
+        private static Func<int, int, Action<int,int>> CreateFunctionDelegateWithAction()
+        {
+            return (a, b) =>
+            {
+                _functionActionResultValue = a + b;
+                return (i1, i2) =>
+                {
+                    _functionActionResultValueOfAction = i1 + i2;
+                };
+            };
         }
     }
 

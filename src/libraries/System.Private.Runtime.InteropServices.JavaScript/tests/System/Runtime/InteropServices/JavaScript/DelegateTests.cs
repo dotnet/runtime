@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public static class DelegateTests
     {
         [Fact]
-        public static void MarshalDelegate()
+        public static void MarshalFunction()
         {
             HelperMarshal._object1 = null;
             Runtime.InvokeJS(@"
@@ -22,5 +22,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(30, HelperMarshal._functionResultValue);
             Assert.Equal(60, HelperMarshal._i32Value);
         }
+
+        [Fact]
+        public static void MarshalFunctionReturnAction()
+        {
+            HelperMarshal._object1 = null;
+            Runtime.InvokeJS(@"
+                var funcDelegate = App.call_test_method (""CreateFunctionDelegateWithAction"", [  ]);
+                var actionDelegate = funcDelegate (10, 20);
+                actionDelegate(30,40);
+            ");
+
+            Assert.Equal(30, HelperMarshal._functionActionResultValue);
+            Assert.Equal(70, HelperMarshal._functionActionResultValueOfAction);
+        }
+
     }
 }
