@@ -7032,7 +7032,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 //
 void CodeGen::genIntrinsic(GenTree* treeNode)
 {
-    // Right now only Sqrt/Abs are treated as math intrinsics.
+    // Handle intrinsics that can be implemented by target-specific instructions
     switch (treeNode->AsIntrinsic()->gtIntrinsicName)
     {
         case NI_System_Math_Abs:
