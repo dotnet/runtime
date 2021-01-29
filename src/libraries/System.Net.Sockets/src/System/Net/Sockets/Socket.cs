@@ -2230,26 +2230,6 @@ namespace System.Net.Sockets
             EndSendFileInternal(asyncResult);
         }
 
-        // Routine Description:
-        //
-        //    BeginSendTo - Async implementation of SendTo,
-        //
-        //    This routine may go pending at which time,
-        //    but any case the callback Delegate will be called upon completion
-        //
-        // Arguments:
-        //
-        //    WriteBuffer - Buffer to transmit
-        //    Index - Offset into WriteBuffer to begin sending from
-        //    Size - Size of Buffer to transmit
-        //    Flags - Specific Socket flags to pass to winsock
-        //    remoteEP - EndPoint to transmit To
-        //    Callback - Delegate function that holds callback, called on completion of I/O
-        //    State - State used to track callback, set by caller, not required
-        //
-        // Return Value:
-        //
-        //    IAsyncResult - Async result used to retrieve result
         public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
             ThrowIfDisposed();
@@ -2259,113 +2239,14 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(remoteEP));
             }
 
-            Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
-
-            // Set up the async result and indicate to flow the context.
-            OverlappedAsyncResult asyncResult = new OverlappedAsyncResult(this, state, callback);
-            asyncResult.StartPostingAsyncOp(false);
-
-            // Post the send.
-            DoBeginSendTo(buffer, offset, size, socketFlags, remoteEP, socketAddress, asyncResult);
-
-            // Finish, possibly posting the callback.  The callback won't be posted before this point is reached.
-            asyncResult.FinishPostingAsyncOp(ref Caches.SendClosureCache);
-
-            return asyncResult;
+            Task<int> task = SendToAsync(buffer.AsMemory().Slice(offset, size), socketFlags, remoteEP).AsTask();
+            return TaskToApm.Begin(task, callback, state);
         }
 
-        private void DoBeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint endPointSnapshot, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size}");
-
-            EndPoint? oldEndPoint = _rightEndPoint;
-
-            // Guarantee to call CheckAsyncCallOverlappedResult if we call SetUnamangedStructures with a cache in order to
-            // avoid a Socket leak in case of error.
-            SocketError errorCode = SocketError.SocketError;
-            try
-            {
-                if (_rightEndPoint == null)
-                {
-                    _rightEndPoint = endPointSnapshot;
-                }
-
-                errorCode = SocketPal.SendToAsync(_handle, buffer, offset, size, socketFlags, socketAddress, asyncResult);
-
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SendToAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
-            }
-            catch (ObjectDisposedException)
-            {
-                _rightEndPoint = oldEndPoint;
-                _localEndPoint = null;
-                throw;
-            }
-
-            // Throw an appropriate SocketException if the native call fails synchronously.
-            if (!CheckErrorAndUpdateStatus(errorCode))
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                // Update the internal state of this socket according to the error before throwing.
-                _rightEndPoint = oldEndPoint;
-                _localEndPoint = null;
-
-                throw new SocketException((int)errorCode);
-            }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size} returning AsyncResult:{asyncResult}");
-        }
-
-        // Routine Description:
-        //
-        //    EndSendTo -  Called by user code after I/O is done or the user wants to wait.
-        //                 until Async completion, needed to retrieve error result from call
-        //
-        // Arguments:
-        //
-        //    AsyncResult - the AsyncResult Returned from BeginSend call
-        //
-        // Return Value:
-        //
-        //    int - Number of bytes transferred
         public int EndSendTo(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-
-            // Validate input parameters.
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-
-            OverlappedAsyncResult? castedAsyncResult = asyncResult as OverlappedAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndSendTo"));
-            }
-
-            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
-            castedAsyncResult.EndCalled = true;
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
-
-            // Throw an appropriate SocketException if the native call failed asynchronously.
-            SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-            if (errorCode != SocketError.Success)
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-            else if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesSent(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
-            }
-
-            return bytesTransferred;
+            return TaskToApm.End<int>(asyncResult);
         }
 
         public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)

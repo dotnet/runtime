@@ -22,6 +22,7 @@ namespace System.Net.Sockets
             return s_resultObjectSentinel; // return sentinel rather than boxing numBytes
         }
 
+        // DELETEME
         // Used instead of the base InternalWaitForCompletion when storing an Int32 result
         internal int InternalWaitForCompletionInt32Result()
         {

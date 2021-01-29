@@ -3,10 +3,7 @@
 
 namespace System.Net.Sockets
 {
-    // OverlappedAsyncResult
-    //
-    // This class is used to take care of storage for async Socket operation
-    // from the BeginSend, BeginSendTo, BeginReceive, BeginReceiveFrom calls.
+    // !!! DELETEME!!!
     internal partial class OverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         private Internals.SocketAddress? _socketAddress;
@@ -23,6 +20,7 @@ namespace System.Net.Sockets
         }
     }
 
+    // !!! DELETEME!!!
     internal sealed class OriginalAddressOverlappedAsyncResult : OverlappedAsyncResult
     {
         internal OriginalAddressOverlappedAsyncResult(Socket socket, object? asyncState, AsyncCallback? asyncCallback) :
