@@ -37,6 +37,13 @@ namespace System.IO.Compression
             WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
+        /// <summary>
+        /// Writes a byte to the current position in the stream and advances the position within the stream by one byte.
+        /// </summary>
+        /// <param name="value">The byte to write to the stream.</param>
+        /// <exception cref="InvalidOperationException">Cannot perform write operations on a <see cref="BrotliStream" /> constructed with <see cref="CompressionMode.Decompress" />.
+        /// -or-
+        /// The encoder ran into invalid data.</exception>
         public override void WriteByte(byte value)
         {
             WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
