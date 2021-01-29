@@ -779,6 +779,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 	return klass;
 }
 
+#define MARSHAL_TYPE_NULL 0
 #define MARSHAL_TYPE_INT 1
 #define MARSHAL_TYPE_FP64 2
 #define MARSHAL_TYPE_STRING 3
@@ -811,6 +812,9 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_CHAR 28
 #define MARSHAL_TYPE_STRING_INTERNED 29
 #define MARSHAL_TYPE_VOID 30
+
+// errors
+#define MARSHAL_BUFFER_TOO_SMALL 512
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -952,9 +956,15 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 	float *resultF = result;
 	double *resultD = result;
 
-	if ((!obj) || (result_capacity < 16)) {
+	if (result_capacity < 16) {
+		if (result_capacity >= sizeof (int64_t))
+			*resultL = 0;
+		return MARSHAL_BUFFER_TOO_SMALL;
+	}
+
+	if (!obj) {
 		*resultL = 0;
-		return 0;
+		return MARSHAL_TYPE_NULL;
 	}
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
@@ -1011,24 +1021,26 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 			break;
 		case MONO_TYPE_VALUETYPE:
 			{
+				int obj_size = mono_object_get_size (obj), 
+					required_size = (sizeof (int)) + (sizeof (MonoClass *)) + obj_size;
+
 				// Check whether this struct has special-case marshaling
+				// FIXME: Do we need to null out obj before this?
 				int marshal_type = mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
 				if (marshal_type != MARSHAL_TYPE_VT) {
 					*resultL = 0;
-					return 0;
+					return marshal_type;
 				}
 
 				// Check whether the result buffer is big enough for the struct and padding
-				int obj_size = mono_object_get_size (obj), 
-					required_size = (sizeof (int)) + (sizeof (MonoClass *)) + obj_size;
 				if (result_capacity < required_size) {
 					*resultL = 0;
-					return 0;
+					return MARSHAL_BUFFER_TOO_SMALL;
 				}
 				// Store a header before the struct data with the size of the data and its class
 				*resultI = obj_size;
 				MonoClass ** resultClass = (MonoClass **)(resultI + 1);
-				*resultClass = mono_type_get_class (type);
+				*resultClass = klass;
 				void * resultVoid = (resultI + 2);
 				void * unboxed = mono_object_unbox (obj);
 				memcpy (resultVoid, unboxed, obj_size);
