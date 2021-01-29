@@ -10508,6 +10508,9 @@ heap_segment* gc_heap::get_free_region (int gen_number)
             }
         }
 #endif //BACKGROUND_GC
+        // we need to initialize the 1st brick - see expand_heap and relocate_pre_plug_info.
+        size_t first_brick = brick_of(heap_segment_mem(region));
+        set_brick(first_brick, ((gen_number <= max_generation) ? -1 : 0));
     }
 
     // do we need to initialize the 1st brick??? see expand_heap and relocate_pre_plug_info.
@@ -27390,7 +27393,6 @@ void gc_heap::make_free_lists (int condemned_gen_number)
         }
 
         // We need to get a new region for the new gen0.
-        assert (num_free_regions > 0);
         generation* gen_gen0 = generation_of (0);
         heap_segment* gen0_region = get_free_region (0);
         thread_start_region (gen_gen0, gen0_region);
@@ -35386,16 +35388,9 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
 
         dd_surv (dd) = cst;
 
-#ifdef SIMPLE_DPRINTF
         dprintf (1, ("h%d g%d surv: %Id current: %Id alloc: %Id (%d%%) f: %d%% new-size: %Id new-alloc: %Id",
                     heap_number, gen_number, out, current_size, (dd_desired_allocation (dd) - dd_gc_new_allocation (dd)),
                     (int)(cst*100), (int)(f*100), current_size + new_allocation, new_allocation));
-#else
-        dprintf (1,("gen: %d in: %Id out: %Id ", gen_number, generation_allocation_size (generation_of (gen_number)), out));
-        dprintf (1,("current: %Id alloc: %Id ", current_size, (dd_desired_allocation (dd) - dd_gc_new_allocation (dd))));
-        dprintf (1,(" surv: %d%% f: %d%% new-size: %Id new-alloc: %Id",
-                    (int)(cst*100), (int)(f*100), current_size + new_allocation, new_allocation));
-#endif //SIMPLE_DPRINTF
 
         return new_allocation_ret;
     }
