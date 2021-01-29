@@ -98,6 +98,10 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
                 WriteThreadEvent(50, ActiveWorkerThreadCount);
+
+#if FEATURE_EVENTSOURCE_XPLAT
+                XplatEventLogger.LogThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+#endif // FEATURE_EVENTSOURCE_XPLAT
             }
         }
 
@@ -110,6 +114,9 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
                 WriteThreadEvent(51, ActiveWorkerThreadCount);
+#if FEATURE_EVENTSOURCE_XPLAT
+                XplatEventLogger.LogThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+#endif
             }
         }
 
@@ -123,6 +130,9 @@ namespace System.Diagnostics.Tracing
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
                 WriteThreadEvent(57, ActiveWorkerThreadCount);
+#if FEATURE_EVENTSOURCE_XPLAT
+                XplatEventLogger.LogThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+#endif
             }
         }
 
@@ -172,6 +182,10 @@ namespace System.Diagnostics.Tracing
             data[3].Size = sizeof(ushort);
             data[3].Reserved = 0;
             WriteEventCore(55, 4, data);
+
+#if FEATURE_EVENTSOURCE_XPLAT
+            XplatEventLogger.LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
+#endif
         }
 
         [Event(56, Level = EventLevel.Verbose, Message = Messages.WorkerThreadAdjustmentStats, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Stats, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -228,6 +242,9 @@ namespace System.Diagnostics.Tracing
             data[10].Size = sizeof(ushort);
             data[10].Reserved = 0;
             WriteEventCore(56, 11, data);
+#if FEATURE_EVENTSOURCE_XPLAT
+            XplatEventLogger.LogThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID);
+#endif // FEATURE_EVENTSOURCE_XPLAT
         }
 
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
@@ -253,6 +270,9 @@ namespace System.Diagnostics.Tracing
             data[3].Size = sizeof(ushort);
             data[3].Reserved = 0;
             WriteEventCore(63, 4, data);
+#if FEATURE_EVENTSOURCE_XPLAT
+            XplatEventLogger.LogThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
+#endif // FEATURE_EVENTSOURCE_XPLAT
         }
 
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
@@ -284,6 +304,9 @@ namespace System.Diagnostics.Tracing
             data[2].Size = sizeof(ushort);
             data[2].Reserved = 0;
             WriteEventCore(64, 3, data);
+#if FEATURE_EVENTSOURCE_XPLAT
+            XplatEventLogger.LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
+#endif
         }
 
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
@@ -314,6 +337,9 @@ namespace System.Diagnostics.Tracing
             data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
             WriteEventCore(60, 2, data);
+#if FEATURE_EVENTSOURCE_XPLAT
+            XplatEventLogger.LogThreadPoolWorkingThreadCount(Count, ClrInstanceID);
+#endif // FEATURE_EVENTSOURCE_XPLAT
         }
     }
 }
