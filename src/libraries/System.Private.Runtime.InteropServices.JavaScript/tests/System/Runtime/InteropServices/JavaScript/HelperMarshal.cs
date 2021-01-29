@@ -66,12 +66,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Console.WriteLine("InvokeCustomClass got argument cc.D == {0}", cc?.D);
             _ccValue = cc;
         }
+        private static CustomClass ReturnCustomClass(CustomClass cc)
+        {
+            return cc;
+        }
 
         internal static CustomStruct _csValue;
         private static void InvokeCustomStruct(CustomStruct cs)
         {
             Console.WriteLine("InvokeCustomStruct got argument cs.D == {0}", cs.D);
             _csValue = cs;
+        }
+        private static CustomStruct ReturnCustomStruct(CustomStruct cs)
+        {
+            return cs;
         }
 
         internal static int _i32Value;

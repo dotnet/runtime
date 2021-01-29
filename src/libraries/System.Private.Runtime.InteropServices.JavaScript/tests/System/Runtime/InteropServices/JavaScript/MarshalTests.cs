@@ -953,5 +953,27 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             );
             Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
         }
+
+        [Fact]
+        public static void ReturnCustomClass()
+        {
+            HelperMarshal._ccValue = new HelperMarshal.CustomClass ();
+            Runtime.InvokeJS(
+                @"var cc = App.call_test_method ('ReturnCustomClass', [ 4.13 ], 'a');" +
+                @"App.call_test_method ('InvokeCustomClass', [ cc ], 'a');"
+            );
+            Assert.Equal(4.13, HelperMarshal._ccValue?.D);
+        }
+
+        [Fact]
+        public static void ReturnCustomStruct()
+        {
+            HelperMarshal._csValue = default(HelperMarshal.CustomStruct);
+            Runtime.InvokeJS(
+                @"var cs = App.call_test_method ('ReturnCustomStruct', [ 4.13 ], 'a');" +
+                @"App.call_test_method ('InvokeCustomStruct', [ cs ], 'a');"
+            );
+            Assert.Equal(4.13, HelperMarshal._csValue.D);
+        }
     }
 }

@@ -945,14 +945,14 @@ mono_wasm_get_obj_type (MonoObject *obj)
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
+mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int result_capacity)
 {
 	int *resultI = result;
 	int64_t *resultL = result;
 	float *resultF = result;
 	double *resultD = result;
 
-	if (!obj) {
+	if ((!obj) || (result_capacity < 16)) {
 		*resultL = 0;
 		return 0;
 	}
@@ -1008,6 +1008,32 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 			// FIXME: At present the javascript side of things can't handle this,
 			//  but there's no reason not to future-proof this API
 			*resultL = *(int64_t*)mono_object_unbox (obj);
+			break;
+		case MONO_TYPE_VALUETYPE:
+			{
+				// Check whether this struct has special-case marshaling
+				int marshal_type = mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
+				if (marshal_type != MARSHAL_TYPE_VT) {
+					*resultL = 0;
+					return 0;
+				}
+
+				// Check whether the result buffer is big enough for the struct and padding
+				int obj_size = mono_object_get_size (obj), 
+					required_size = (sizeof (int)) + (sizeof (MonoClass *)) + obj_size;
+				if (result_capacity < required_size) {
+					*resultL = 0;
+					return 0;
+				}
+				// Store a header before the struct data with the size of the data and its class
+				*resultI = obj_size;
+				MonoClass ** resultClass = (MonoClass **)(resultI + 1);
+				*resultClass = mono_type_get_class (type);
+				void * resultVoid = (resultI + 2);
+				void * unboxed = mono_object_unbox (obj);
+				memcpy (resultVoid, unboxed, obj_size);
+				return MARSHAL_TYPE_VT;
+			}
 			break;
 		default:
 			// If we failed to do a fast unboxing, return the original type information so

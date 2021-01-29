@@ -65,7 +65,7 @@ var BindingSupportLib = {
 			this.mono_obj_array_new = Module.cwrap ('mono_wasm_obj_array_new', 'number', ['number']);
 			this.mono_obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 			this.mono_wasm_register_bundled_satellite_assemblies = Module.cwrap ('mono_wasm_register_bundled_satellite_assemblies', 'void', [ ]);
-			this.mono_wasm_try_unbox_primitive_and_get_type = Module.cwrap ('mono_wasm_try_unbox_primitive_and_get_type', 'number', ['number', 'number']);
+			this.mono_wasm_try_unbox_primitive_and_get_type = Module.cwrap ('mono_wasm_try_unbox_primitive_and_get_type', 'number', ['number', 'number', 'number']);
 			this.mono_wasm_box_primitive = Module.cwrap ('mono_wasm_box_primitive', 'number', ['number', 'number', 'number']);
 			this.mono_wasm_intern_string = Module.cwrap ('mono_wasm_intern_string', 'number', ['number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
@@ -74,8 +74,9 @@ var BindingSupportLib = {
 			this.mono_wasm_create_method_signature_info = Module.cwrap ('mono_wasm_create_method_signature_info', 'number', ['number']);
 			this.mono_wasm_unbox_rooted = Module.cwrap ('mono_wasm_unbox_rooted', 'number', ['number']);
 
-			this._box_buffer = Module._malloc(16);
-			this._unbox_buffer = Module._malloc(16);
+			this._box_buffer = Module._malloc(32);
+			this._unbox_buffer_size = 65536;
+			this._unbox_buffer = Module._malloc(this._unbox_buffer_size);
 			this._class_int32 = this.find_corlib_class ("System", "Int32");
 			this._class_uint32 = this.find_corlib_class ("System", "UInt32");
 			this._class_double = this.find_corlib_class ("System", "Double");
@@ -363,7 +364,7 @@ var BindingSupportLib = {
 				root.release();
 			}
 		},
-
+		
 		_unbox_delegate_rooted: function (mono_obj) {
 			var obj = this.extract_js_obj (mono_obj);
 			obj.__mono_delegate_alive__ = true;
@@ -418,7 +419,7 @@ var BindingSupportLib = {
 				case 29: // interned string
 					return this.conv_string (mono_obj);
 				case 4: //vts
-					throw new Error ("no idea on how to unbox value types");
+					return this._unbox_struct_rooted (mono_obj);
 				case 5: // delegate
 					return this._unbox_delegate_rooted (mono_obj);
 				case 6: // Task
@@ -458,10 +459,12 @@ var BindingSupportLib = {
 			if (mono_obj === 0)
 				return undefined;
 
-			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, this._unbox_buffer);
+			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, this._unbox_buffer, this._unbox_buffer_size);
 			switch (type) {
 				case 1: // int
 					return Module.HEAP32[this._unbox_buffer / 4];
+				case 4: // struct
+					throw new Error ("JS side of struct unbox not implemented");
 				case 25: // uint32
 					return Module.HEAPU32[this._unbox_buffer / 4];
 				case 24: // float32
@@ -1018,6 +1021,39 @@ typedef struct wasm_method_signature_info {
 				// console.log(methodPtr, JSON.stringify(result));
 			}
 			return result;
+		},
+
+		_compile_post_filter: function (classPtr, boundConverter, js) {
+			if (!js)
+				return boundConverter;
+			
+			var closure = { 
+				MONO: MONO,
+				BINDING: this,
+				classPtr: classPtr, 
+				// (mono_obj) => js_value
+				boundConverter: boundConverter 
+			};
+			var body = [
+				"var value = boundConverter (mono_obj), filteredValue = null;",
+				"console.log(`value === ${value}`);",
+				`{ filteredValue = ${js}; }`,
+				"console.log(`filteredValue === ${filteredValue}`);",
+				"return filteredValue;"
+			];
+			
+			var bodyJs = body.join ("\r\n");
+			var result = this._create_named_function(
+				"post_filtered_converter_for_class" + classPtr, 
+				["mono_obj"], bodyJs, closure
+			);
+
+			console.log("compile result", result);
+			return result;
+		},
+
+		_unbox_struct_rooted: function (mono_obj) {
+			throw new Error ("no idea on how to unbox value types");
 		},
 
 		_compile_pre_filter: function (classPtr, boundConverter, js) {
@@ -1643,6 +1679,8 @@ typedef struct wasm_method_signature_info {
 				"    switch (resultType) {",
 				"    case 1:", // int
 				"        result = Module.HEAP32[buffer / 4]; break;",
+				"    case 4:", // struct
+				"        throw new Error('js side of struct unbox not implemented'); break;",
 				"    case 25:", // uint32
 				"        result = Module.HEAPU32[buffer / 4]; break;",
 				"    case 24:", // float32
