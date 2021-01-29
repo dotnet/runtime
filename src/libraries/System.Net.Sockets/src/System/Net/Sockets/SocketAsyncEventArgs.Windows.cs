@@ -563,7 +563,7 @@ namespace System.Net.Sockets
                     Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
                     _singleBufferHandleState = SingleBufferHandleState.InProcess;
 
-                    _wsaRecvMsgWSABufferArrayPinned[0].Pointer = (IntPtr)bufferPtr;
+                    _wsaRecvMsgWSABufferArrayPinned[0].Pointer = (IntPtr)bufferPtr + _offset;
                     _wsaRecvMsgWSABufferArrayPinned[0].Length = _count;
                     wsaRecvMsgWSABufferArray = _wsaRecvMsgWSABufferArrayPinned;
                     wsaRecvMsgWSABufferCount = 1;
