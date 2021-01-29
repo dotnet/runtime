@@ -6512,10 +6512,8 @@ void CodeGen::genFinalizeFrame()
 #endif // TARGET_X86
 
 #ifdef TARGET_ARM
-    // Make sure that callee-saved registers used by call to a stack probing helper generated for very large stack
-    // frames
-    // (see `getVeryLargeFrameSize`) are pushed on stack.
-    if (compiler->compLclFrameSize >= compiler->getVeryLargeFrameSize())
+    // Make sure that callee-saved registers used by call to a stack probing helper generated are pushed on stack.
+    if (compiler->compLclFrameSize >= compiler->eeGetPageSize())
     {
         regSet.rsSetRegsModified(RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
                                  RBM_STACK_PROBE_HELPER_TRASH);
