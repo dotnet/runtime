@@ -9,7 +9,7 @@ namespace System.Tests
     public static class MovableTests
     {
         [Fact]
-        public void TestMovable()
+        public static void TestMovable()
         {
             MockDisposable mockDisposable = new MockDisposable();
             AssertExtensions.Throws<ArgumentNullException>("nullableType", () => new Movable<MockDisposable>(null));
