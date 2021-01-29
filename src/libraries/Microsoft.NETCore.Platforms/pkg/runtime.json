@@ -560,6 +560,57 @@
         "browser"
       ]
     },
+    "catalyst": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "catalyst-arm64": {
+      "#import": [
+        "catalyst",
+        "linux-arm64"
+      ]
+    },
+    "catalyst-x64": {
+      "#import": [
+        "catalyst",
+        "linux-x64"
+      ]
+    },
+    "catalyst.13": {
+      "#import": [
+        "catalyst"
+      ]
+    },
+    "catalyst.13-arm64": {
+      "#import": [
+        "catalyst.13",
+        "catalyst-arm64"
+      ]
+    },
+    "catalyst.13-x64": {
+      "#import": [
+        "catalyst.13",
+        "catalyst-x64"
+      ]
+    },
+    "catalyst.14": {
+      "#import": [
+        "catalyst.13"
+      ]
+    },
+    "catalyst.14-arm64": {
+      "#import": [
+        "catalyst.14",
+        "catalyst.13-arm64"
+      ]
+    },
+    "catalyst.14-x64": {
+      "#import": [
+        "catalyst.14",
+        "catalyst.13-x64"
+      ]
+    },
     "centos": {
       "#import": [
         "rhel"

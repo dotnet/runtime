@@ -1699,6 +1699,102 @@
     "any",
     "base"
   ],
+  "catalyst": [
+    "catalyst",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "catalyst-arm64": [
+    "catalyst-arm64",
+    "catalyst",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "catalyst-x64": [
+    "catalyst-x64",
+    "catalyst",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "catalyst.13": [
+    "catalyst.13",
+    "catalyst",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "catalyst.13-arm64": [
+    "catalyst.13-arm64",
+    "catalyst.13",
+    "catalyst-arm64",
+    "catalyst",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "catalyst.13-x64": [
+    "catalyst.13-x64",
+    "catalyst.13",
+    "catalyst-x64",
+    "catalyst",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "catalyst.14": [
+    "catalyst.14",
+    "catalyst.13",
+    "catalyst",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "catalyst.14-arm64": [
+    "catalyst.14-arm64",
+    "catalyst.14",
+    "catalyst.13-arm64",
+    "catalyst.13",
+    "catalyst-arm64",
+    "catalyst",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "catalyst.14-x64": [
+    "catalyst.14-x64",
+    "catalyst.14",
+    "catalyst.13-x64",
+    "catalyst.13",
+    "catalyst-x64",
+    "catalyst",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "centos": [
     "centos",
     "rhel",
