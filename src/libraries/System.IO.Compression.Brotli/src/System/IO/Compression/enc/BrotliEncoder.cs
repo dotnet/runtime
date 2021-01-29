@@ -103,10 +103,10 @@ namespace System.IO.Compression
         }
 
         /// <summary>Gets the maximum expected compressed length for the provided input size.</summary>
-        /// <param name="inputSize">The input size to get the maximum expected compressed length from. Must be greater or equal than 0 and less or equal than <see cref="System.Int32.MaxValue" /> - 515.</param>
+        /// <param name="inputSize">The input size to get the maximum expected compressed length from. Must be greater or equal than 0 and less or equal than <see cref="int.MaxValue" /> - 515.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
         /// <remarks>Returns 1 if <paramref name="inputSize" /> is 0.</remarks>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="inputSize" /> is less than 0, the minimum allowed input size, or greater than <see cref="System.Int32.MaxValue" /> - 515, the maximum allowed input size.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="inputSize" /> is less than 0, the minimum allowed input size, or greater than <see cref="int.MaxValue" /> - 515, the maximum allowed input size.</exception>
         public static int GetMaxCompressedLength(int inputSize)
         {
             if (inputSize < 0 || inputSize > BrotliUtils.MaxInputSize)

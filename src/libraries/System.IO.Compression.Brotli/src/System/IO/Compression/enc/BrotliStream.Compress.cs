@@ -28,7 +28,7 @@ namespace System.IO.Compression
 
         /// <summary>Writes compressed bytes to the underlying stream from the specified byte array.</summary>
         /// <param name="buffer">The buffer containing the data to compress.</param>
-        /// <param name="offset">The byte offset in <paramref name="array" /> from which the bytes will be read.</param>
+        /// <param name="offset">The byte offset in <paramref name="buffer" /> from which the bytes will be read.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <exception cref="System.ObjectDisposedException">The write operation cannot be performed because the stream is closed.</exception>
         public override void Write(byte[] buffer, int offset, int count)
@@ -44,7 +44,7 @@ namespace System.IO.Compression
 
         /// <summary>Writes a sequence of bytes to the current Brotli stream from a read-only byte span and advances the current position within this Brotli stream by the number of bytes written.</summary>
         /// <param name="buffer">A region of memory. This method copies the contents of this region to the current Brotli stream.</param>
-        /// <remarks>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing. Use the <see cref="System.IO.Compression.BrotliStream.WriteAsync" /> method to write asynchronously to the current stream.
+        /// <remarks>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing. Use the <see langword="System.IO.Compression.BrotliStream.WriteAsync" /> method to write asynchronously to the current stream.
         /// If the write operation is successful, the position within the Brotli stream advances by the number of bytes written. If an exception occurs, the position within the Brotli stream remains unchanged.</remarks>
         public override void Write(ReadOnlySpan<byte> buffer)
         {
@@ -73,9 +73,9 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Begins an asynchronous write operation. (Consider using the <see cref="System.IO.Stream.WriteAsync(System.Byte[],System.Int32,System.Int32)" /> method instead.)</summary>
+        /// <summary>Begins an asynchronous write operation. (Consider using the <see cref="System.IO.Stream.WriteAsync(byte[],int,int)" /> method instead.)</summary>
         /// <param name="buffer">The buffer from which data will be written.</param>
-        /// <param name="offset">The byte offset in <paramref name="array" /> at which to begin writing data from the stream.</param>
+        /// <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin writing data from the stream.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <param name="asyncCallback">An optional asynchronous callback, to be called when the write operation is complete.</param>
         /// <param name="asyncState">A user-provided object that distinguishes this particular asynchronous write request from other requests.</param>
@@ -88,7 +88,7 @@ namespace System.IO.Compression
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
-        /// <summary>Handles the end of an asynchronous write operation. (Consider using the <see cref="System.IO.Stream.WriteAsync(System.Byte[],System.Int32,System.Int32)" /> method instead.)</summary>
+        /// <summary>Handles the end of an asynchronous write operation. (Consider using the <see cref="System.IO.Stream.WriteAsync(byte[],int,int)" /> method instead.)</summary>
         /// <param name="asyncResult">The object that represents the asynchronous call.</param>
         /// <exception cref="System.InvalidOperationException">The underlying stream is closed or <see langword="null" />.</exception>
         public override void EndWrite(IAsyncResult asyncResult) =>
