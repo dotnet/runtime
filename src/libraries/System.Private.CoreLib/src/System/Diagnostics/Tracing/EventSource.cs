@@ -1696,9 +1696,16 @@ namespace System.Diagnostics.Tracing
                     {
                         dataType = Enum.GetUnderlyingType(dataType);
 
-                        int dataTypeSize = System.Runtime.InteropServices.Marshal.SizeOf(dataType);
-                        if (dataTypeSize < sizeof(int))
-                            dataType = typeof(int);
+                        // Enums less than 4 bytes in size should be treated as int.
+                        switch (Type.GetTypeCode(dataType))
+                        {
+                            case TypeCode.Byte:
+                            case TypeCode.SByte:
+                            case TypeCode.Int16:
+                            case TypeCode.UInt16:
+                                dataType = typeof(int);
+                                break;
+                        }
                         goto Again;
                     }
 
