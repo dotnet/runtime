@@ -32,6 +32,13 @@ namespace System.IO.Compression
             return Read(new Span<byte>(buffer, offset, count));
         }
 
+        /// <summary>
+        /// Reads a byte from the stream and advances the position within the stream by one byte, or returns -1 if at the end of the stream.
+        /// </summary>
+        /// <returns>The unsigned byte cast to an <see cref="int"/>, or -1 if at the end of the stream.</returns>
+        /// <exception cref="InvalidOperationException">Cannot perform read operations on a <see cref="BrotliStream" /> constructed with <see cref="CompressionMode.Compress" />.
+        /// -or-
+        /// <see cref="BaseStream" /> returned more bytes than requested in read.</exception>
         public override int ReadByte()
         {
             byte b = default;
