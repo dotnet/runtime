@@ -12680,7 +12680,7 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
 
         // If we're a reverse IL stub, we need to use the TrackTransitions variant
         // so we have the target MethodDesc entrypoint to tell the debugger about.
-        if (CORProfilerTrackTransitions() || flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB))
+        if (CORProfilerTrackTransitions() || ftn->IsILStub())
         {
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
         }
