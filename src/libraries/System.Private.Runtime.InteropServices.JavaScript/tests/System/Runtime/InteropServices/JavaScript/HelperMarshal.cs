@@ -396,6 +396,61 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 };
             };
         }
+
+        internal static int _actionResultValue;
+        private static Action<int,int> CreateActionDelegate()
+        {
+            return (a1, a2) =>
+            {
+                _actionResultValue = a1 + a2;
+            };
+        }
+
+        private static bool AreEqual(int a, int b)
+        {
+            return a == b;
+        }
+
+        private static string TestString1(string a)
+        {
+            return "Received: " + a;
+        }
+
+        private static void SetTestString1(string a)
+        {
+            _delMethodStringResultValue = a;
+        }
+
+        private static int TestInt2(int a, int b)
+        {
+            return a+b;
+        }
+
+        // Create a method for a delegate.
+        public static void DelegateMethod(string message)
+        {
+            _delMethodResultValue = message;
+            Console.WriteLine(message);
+        }
+
+        delegate void Del(string message);
+        internal static string _delMethodResultValue;
+        private static Del CreateDelegateMethod()
+        {
+            // Instantiate the delegate.
+            Del handler = DelegateMethod;
+            return handler;
+        }
+
+        delegate string Del2(string message);
+        internal static string _delMethodStringResultValue;
+        private static Del2 CreateDelegateMethodReturnString()
+        {
+            // Instantiate the delegate.
+            Del2 handler = TestString1;
+            return handler;
+        }
+
     }
 
     public enum TestEnum : uint {
