@@ -408,13 +408,6 @@ case "$host" in
 		host_sunos=yes
 		;;
 	*-*-darwin*)
-		# Temporary workaround for Apple Silicon
-		# config.guess returns arm-apple-darwin20.0.0
-		if test $ac_cv_host = arm-apple-darwin20.0.0 -o $ac_cv_target = arm-apple-darwin20.0.0; then
-		   echo "You are running on Apple Silicon, but using an old config.guess, invoke configure like this:"
-		   echo "Run configure using ./configure --host=aarch64-apple-darwin20.0.0 --target=aarch64-apple-darwin20.0.0"
-		   exit 1
-		fi
 		parallel_mark="Disabled_Currently_Hangs_On_MacOSX"
 		host_darwin=yes
 		target_mach=yes
@@ -1262,7 +1255,7 @@ if test "x$enable_cxx" = "xyes"; then
 	CXX_REMOVE_CFLAGS=-std=gnu99
 	# These give warnings and should be removed. They are C-only.
 	# i.e. C++ never allows these, they are always errors and their warningness is not controllable.
-	CXX_REMOVE_CFLAGS="$CXX_REMOVE_CFLAGS -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs"
+	CXX_REMOVE_CFLAGS="$CXX_REMOVE_CFLAGS -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wc++-compat"
 	# Likewise with CentOS 6 gcc 4.4.
 	CXX_REMOVE_CFLAGS="$CXX_REMOVE_CFLAGS -Werror-implicit-function-declaration"
 

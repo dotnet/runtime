@@ -9,6 +9,7 @@
 #include <config.h>
 #include <glib.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/marshal.h>
 
 MonoObjectHandle
 mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error);
@@ -42,5 +43,8 @@ typedef enum {
 
 void
 mono_marshal_noilgen_init (void);
+
+void
+mono_marshal_noilgen_init_blittable (MonoMarshalCallbacks *cb);
 
 #endif /* __MONO_METADATA_MARSHAL_INTERNALS_H__ */

@@ -18,7 +18,6 @@ namespace System.Net.Tests
         {
         }
 
-        [OuterLoop]
         [Fact]
         public async Task HttpWebRequest_ContinueDelegateProperty_Success()
         {
@@ -34,7 +33,6 @@ namespace System.Net.Tests
             });
         }
 
-        [OuterLoop]
         [Fact]
         public async Task HttpHeader_Set_Success()
         {
@@ -48,19 +46,29 @@ namespace System.Net.Tests
                 using (WebResponse response = await getResponse)
                 {
                     HttpWebResponse httpResponse = (HttpWebResponse)response;
+
                     Assert.Equal("UTF-8", httpResponse.CharacterSet);
+                    Assert.Equal("", httpResponse.ContentEncoding);
+                    Assert.Equal(5, httpResponse.ContentLength);
+                    Assert.Equal(5, int.Parse(httpResponse.GetResponseHeader("Content-Length")));
+                    Assert.Equal("application/json; charset=UTF-8", httpResponse.ContentType);
+                    Assert.False(httpResponse.IsFromCache);
+                    Assert.False(httpResponse.IsMutuallyAuthenticated);
+                    Assert.Equal("GET", httpResponse.Method);
+                    Assert.Equal(HttpVersion.Version11, httpResponse.ProtocolVersion);
+                    Assert.Equal(url, httpResponse.ResponseUri);
+                    Assert.Equal("", httpResponse.Server);
                     Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
                     Assert.Equal("OK", httpResponse.StatusDescription);
+                    Assert.True(httpResponse.SupportsHeaders);
+
                     CookieCollection cookieCollection = new CookieCollection();
                     httpResponse.Cookies = cookieCollection;
                     Assert.Equal(cookieCollection, httpResponse.Cookies);
-                    Assert.Equal(5,httpResponse.ContentLength);
-                    Assert.Equal(5, int.Parse(httpResponse.GetResponseHeader("Content-Length")));
                 }
             });
         }
 
-        [OuterLoop]
         [Fact]
         public async Task HttpWebResponse_Close_Success()
         {

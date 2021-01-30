@@ -327,6 +327,10 @@ Crst StubCache
     AcquiredBefore LoaderHeap
 End
 
+Crst ManagedObjectWrapperMap
+    AcquiredBefore HandleTable
+End
+
 Crst Module
     AcquiredBefore LoaderHeap UniqueStack
 End
@@ -571,4 +575,8 @@ Crst NativeImageEagerFixups
 End
 
 Crst NativeImageLoad
+End
+
+Crst PgoData
+    AcquiredBefore LoaderHeap
 End

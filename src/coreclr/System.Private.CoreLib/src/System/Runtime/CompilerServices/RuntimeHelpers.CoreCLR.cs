@@ -408,7 +408,7 @@ namespace System.Runtime.CompilerServices
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
-        private const uint enum_flag_HasTypeEquivalence = 0x00004000;
+        private const uint enum_flag_HasTypeEquivalence = 0x02000000;
         // Types that require non-trivial interface cast have this bit set in the category
         private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
                                                              | 0x40000000 // enum_flag_ComObject

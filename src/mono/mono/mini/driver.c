@@ -2008,11 +2008,14 @@ switch_arch (char* argv[], const char* target_arch)
 static void
 apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_domain_configuration_file)
 {
+#ifndef ENABLE_NETCORE
 	g_assert (domain->setup == NULL || domain->setup->configuration_file == NULL);
 	g_assert (!domain->assembly_bindings_parsed);
 
 	mono_domain_parse_assembly_bindings (domain, 0, 0, root_domain_configuration_file);
-
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 static void

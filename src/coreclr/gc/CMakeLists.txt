@@ -118,6 +118,7 @@ if(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 add_definitions(-DBUILD_AS_STANDALONE)
+add_definitions(-DVERIFY_HEAP)
 if(CLR_CMAKE_HOST_OSX)
   # The implementation of GCToOSInterface on MacOS makes use of non-POSIX
   # pthreads APIs, which by default are not included in the pthreads header

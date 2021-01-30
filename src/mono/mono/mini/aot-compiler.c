@@ -4114,6 +4114,18 @@ add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index, gboo
 		g_ptr_array_add (acfg->methods, method);
 		g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index + 1));
 		acfg->nmethods = acfg->methods->len + 1;
+
+		while (acfg->nmethods >= acfg->cfgs_size) {
+			MonoCompile **new_cfgs;
+			int new_size;
+
+			new_size = acfg->cfgs_size ? acfg->cfgs_size * 2 : 128;
+			new_cfgs = g_new0 (MonoCompile*, new_size);
+			memcpy (new_cfgs, acfg->cfgs, sizeof (MonoCompile*) * acfg->cfgs_size);
+			g_free (acfg->cfgs);
+			acfg->cfgs = new_cfgs;
+			acfg->cfgs_size = new_size;
+		}
 	}
 
 	if (method->wrapper_type || extra) {
@@ -4566,7 +4578,7 @@ add_wrappers (MonoAotCompile *acfg)
 		if ((sig->ret->type == MONO_TYPE_PTR) ||
 			(sig->ret->type == MONO_TYPE_TYPEDBYREF))
 			skip = TRUE;
-		if (mono_class_is_open_constructed_type (sig->ret))
+		if (mono_class_is_open_constructed_type (sig->ret) || m_class_is_byreflike (mono_class_from_mono_type_internal (sig->ret)))
 			skip = TRUE;
 
 		for (j = 0; j < sig->param_count; j++) {
@@ -8217,6 +8229,8 @@ parse_cpu_features (const gchar *attr)
 		feature = MONO_CPU_ARM64_BASE;
 	else if (!strcmp (attr + prefix, "crc"))
 		feature = MONO_CPU_ARM64_CRC;
+	else if (!strcmp (attr + prefix, "simd"))
+		feature = MONO_CPU_ARM64_ADVSIMD;
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
@@ -9150,17 +9164,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	//printf ("Compile:           %s\n", mono_method_full_name (method, TRUE));
 
-	while (index >= acfg->cfgs_size) {
-		MonoCompile **new_cfgs;
-		int new_size;
-
-		new_size = acfg->cfgs_size * 2;
-		new_cfgs = g_new0 (MonoCompile*, new_size);
-		memcpy (new_cfgs, acfg->cfgs, sizeof (MonoCompile*) * acfg->cfgs_size);
-		g_free (acfg->cfgs);
-		acfg->cfgs = new_cfgs;
-		acfg->cfgs_size = new_size;
-	}
 	acfg->cfgs [index] = cfg;
 
 	g_hash_table_insert (acfg->method_to_cfg, cfg->orig_method, cfg);
@@ -9540,6 +9543,9 @@ append_mangled_wrapper_subtype (GString *s, WrapperSubtype subtype)
 	case WRAPPER_SUBTYPE_AOT_INIT:
 		label = "aot_init";
 		break;
+	case WRAPPER_SUBTYPE_LLVM_FUNC:
+		label = "llvm_func";
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -9679,6 +9685,8 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 		append_mangled_wrapper_subtype (s, info->subtype);
 		if (info->subtype == WRAPPER_SUBTYPE_VIRTUAL_STELEMREF)
 			g_string_append_printf (s, "%d", info->d.virtual_stelemref.kind);
+		else if (info->subtype == WRAPPER_SUBTYPE_LLVM_FUNC)
+			g_string_append_printf (s, "%d", info->d.llvm_func.subtype);
 		break;
 	}
 	case MONO_WRAPPER_OTHER: {
@@ -14028,9 +14036,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		for (l = acfg->profile_data; l; l = l->next)
 			add_profile_instances (acfg, (ProfileData*)l->data);
 	}
-
-	acfg->cfgs_size = acfg->methods->len + 32;
-	acfg->cfgs = g_new0 (MonoCompile*, acfg->cfgs_size);
 
 	/* PLT offset 0 is reserved for the PLT trampoline */
 	acfg->plt_offset = 1;

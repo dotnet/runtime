@@ -5,7 +5,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Net.Sockets;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -752,31 +751,16 @@ namespace System.Diagnostics
             return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
         }
 
-        /// <summary>Opens a stream around the specified socket file descriptor and with the specified access.</summary>
-        /// <param name="fd">The socket file descriptor.</param>
+        /// <summary>Opens a stream around the specified file descriptor and with the specified access.</summary>
+        /// <param name="fd">The file descriptor.</param>
         /// <param name="access">The access mode.</param>
         /// <returns>The opened stream.</returns>
-        private static Stream OpenStream(int fd, FileAccess access)
+        private static FileStream OpenStream(int fd, FileAccess access)
         {
             Debug.Assert(fd >= 0);
-            var socketHandle = new SafeSocketHandle((IntPtr)fd, ownsHandle: true);
-            var socket = new Socket(socketHandle);
-
-            if (!socket.Connected)
-            {
-                // WSL1 workaround -- due to issues with sockets syscalls
-                // socket pairs fd's are erroneously inferred as not connected.
-                // Fall back to using FileStream instead.
-
-                GC.SuppressFinalize(socket);
-                GC.SuppressFinalize(socketHandle);
-
-                return new FileStream(
-                    new SafeFileHandle((IntPtr)fd, ownsHandle: true),
-                    access, StreamBufferSize, isAsync: false);
-            }
-
-            return new NetworkStream(socket, access, ownsSocket: true);
+            return new FileStream(
+                new SafeFileHandle((IntPtr)fd, ownsHandle: true),
+                access, StreamBufferSize, isAsync: false);
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>

@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.FileProviders
             {
                 if (_fileWatcher != null)
                 {
-                    throw new InvalidOperationException($"Cannot modify {nameof(UsePollingFileWatcher)} once file watcher has been initialized.");
+                    throw new InvalidOperationException(SR.Format(SR.CannotModifyWhenFileWatcherInitialized, nameof(UsePollingFileWatcher)));
                 }
                 _usePollingFileWatcher = value;
             }

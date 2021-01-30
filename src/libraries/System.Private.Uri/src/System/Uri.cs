@@ -4,6 +4,7 @@
 using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -34,6 +35,7 @@ namespace System
         public static readonly string UriSchemeNetPipe = UriParser.NetPipeUri.SchemeName;
         public static readonly string SchemeDelimiter = "://";
 
+        internal const int StackallocThreshold = 512;
 
         internal const int c_MaxUriBufferSize = 0xFFF0;
         private const int c_MaxUriSchemeName = 1024;
@@ -1019,7 +1021,7 @@ namespace System
                 {
                     // suspecting not compressed path
                     // For a dos path we won't compress the "x:" part if found /../ sequences
-                    result = Compress(result, (ushort)(IsDosPath ? pathStart + 2 : pathStart), ref count, _syntax);
+                    Compress(result, IsDosPath ? pathStart + 2 : pathStart, ref count, _syntax);
                 }
 
                 // We don't know whether all slashes were the back ones
@@ -1184,7 +1186,7 @@ namespace System
                     else if (hostType == Flags.BasicHostType && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical))
                     {
                         // Unescape everything
-                        ValueStringBuilder dest = new ValueStringBuilder(stackalloc char[256]);
+                        var dest = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
 
                         UriHelper.UnescapeString(host, 0, host.Length, ref dest,
                             c_DummyChar, c_DummyChar, c_DummyChar,
@@ -1467,7 +1469,7 @@ namespace System
         //  Syntax is:
         //      scheme = alpha *(alpha | digit | '+' | '-' | '.')
         //
-        public static bool CheckSchemeName(string? schemeName)
+        public static bool CheckSchemeName([NotNullWhen(true)] string? schemeName)
         {
             if (string.IsNullOrEmpty(schemeName) || !UriHelper.IsAsciiLetter(schemeName[0]))
             {
@@ -1618,7 +1620,7 @@ namespace System
         // Throws:
         //  Nothing
         //
-        public override bool Equals(object? comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             if (comparand is null)
             {
@@ -2631,28 +2633,24 @@ namespace System
         private string ReCreateParts(UriComponents parts, ushort nonCanonical, UriFormat formatAs)
         {
             EnsureHostString(false);
-            string stemp = (parts & UriComponents.Host) == 0 ? string.Empty : _info.Host!;
-            // we reserve more space than required because a canonical Ipv6 Host
-            // may take more characters than in original _string
-            // Also +3 is for :// and +1 is for absent first slash
-            // Also we may escape every character, hence multiplying by 12
-            // UTF-8 can use up to 4 bytes per char * 3 chars per byte (%A4) = 12 encoded chars
-            int count = (_info.Offset.End - _info.Offset.User) * (formatAs == UriFormat.UriEscaped ? 12 : 1);
-            char[] chars = new char[stemp.Length + count + _syntax.SchemeName.Length + 3 + 1];
-            count = 0;
+
+            string str = _string;
+
+            var dest = str.Length <= StackallocThreshold
+                ? new ValueStringBuilder(stackalloc char[StackallocThreshold])
+                : new ValueStringBuilder(str.Length);
 
             //Scheme and slashes
             if ((parts & UriComponents.Scheme) != 0)
             {
-                _syntax.SchemeName.CopyTo(0, chars, count, _syntax.SchemeName.Length);
-                count += _syntax.SchemeName.Length;
+                dest.Append(_syntax.SchemeName);
                 if (parts != UriComponents.Scheme)
                 {
-                    chars[count++] = ':';
+                    dest.Append(':');
                     if (InFact(Flags.AuthorityFound))
                     {
-                        chars[count++] = '/';
-                        chars[count++] = '/';
+                        dest.Append('/');
+                        dest.Append('/');
                     }
                 }
             }
@@ -2660,6 +2658,8 @@ namespace System
             //UserInfo
             if ((parts & UriComponents.UserInfo) != 0 && InFact(Flags.HasUserInfo))
             {
+                ReadOnlySpan<char> slice = str.AsSpan(_info.Offset.User, _info.Offset.Host - _info.Offset.User);
+
                 if ((nonCanonical & (ushort)UriComponents.UserInfo) != 0)
                 {
                     switch (formatAs)
@@ -2667,10 +2667,7 @@ namespace System
                         case UriFormat.UriEscaped:
                             if (NotAny(Flags.UserEscaped))
                             {
-                                chars = UriHelper.EscapeString(
-                                    _string.AsSpan(_info.Offset.User, _info.Offset.Host - _info.Offset.User),
-                                    chars, ref count,
-                                    checkExistingEscaped: true, '?', '#');
+                                UriHelper.EscapeString(slice, ref dest, checkExistingEscaped: true, '?', '#');;
                             }
                             else
                             {
@@ -2678,265 +2675,209 @@ namespace System
                                 {
                                     // We should throw here but currently just accept user input known as invalid
                                 }
-                                _string.CopyTo(_info.Offset.User, chars, count, _info.Offset.Host - _info.Offset.User);
-                                count += (_info.Offset.Host - _info.Offset.User);
+                                dest.Append(slice);
                             }
                             break;
 
                         case UriFormat.SafeUnescaped:
-                            chars = UriHelper.UnescapeString(_string, _info.Offset.User, _info.Offset.Host - 1,
-                                chars, ref count, '@', '/', '\\', InFact(Flags.UserEscaped) ? UnescapeMode.Unescape :
-                                UnescapeMode.EscapeUnescape, _syntax, false);
-                            chars[count++] = '@';
+                            UriHelper.UnescapeString(slice[..^1],
+                                ref dest, '@', '/', '\\',
+                                InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape,
+                                _syntax, isQuery: false);
+                            dest.Append('@');
                             break;
 
                         case UriFormat.Unescaped:
-                            chars = UriHelper.UnescapeString(_string, _info.Offset.User, _info.Offset.Host, chars,
-                                ref count, c_DummyChar, c_DummyChar, c_DummyChar,
-                                UnescapeMode.Unescape | UnescapeMode.UnescapeAll, _syntax, false);
+                            UriHelper.UnescapeString(slice,
+                                ref dest, c_DummyChar, c_DummyChar, c_DummyChar,
+                                UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
+                                _syntax, isQuery: false);
                             break;
 
                         default: //V1ToStringUnescape
-                            chars = UriHelper.UnescapeString(_string, _info.Offset.User, _info.Offset.Host, chars,
-                                ref count, c_DummyChar, c_DummyChar, c_DummyChar, UnescapeMode.CopyOnly, _syntax,
-                                false);
+                            dest.Append(slice);
                             break;
                     }
                 }
                 else
                 {
-                    UriHelper.UnescapeString(_string, _info.Offset.User, _info.Offset.Host, chars, ref count,
-                        c_DummyChar, c_DummyChar, c_DummyChar, UnescapeMode.CopyOnly, _syntax, false);
+                    dest.Append(slice);
                 }
+
                 if (parts == UriComponents.UserInfo)
                 {
                     //strip '@' delimiter
-                    --count;
+                    dest.Length--;
                 }
             }
 
             // Host
-            if ((parts & UriComponents.Host) != 0 && stemp.Length != 0)
+            if ((parts & UriComponents.Host) != 0)
             {
-                UnescapeMode mode;
-                if (formatAs != UriFormat.UriEscaped && HostType == Flags.BasicHostType
-                    && (nonCanonical & (ushort)UriComponents.Host) != 0)
+                string host = _info.Host!;
+
+                if (host.Length != 0)
                 {
-                    // only Basic host could be in the escaped form
-                    mode = formatAs == UriFormat.Unescaped
-                        ? (UnescapeMode.Unescape | UnescapeMode.UnescapeAll) :
-                            (InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape);
-                }
-                else
-                {
-                    mode = UnescapeMode.CopyOnly;
-                }
-                // NormalizedHost
-                if ((parts & UriComponents.NormalizedHost) != 0)
-                {
-                    unsafe
+                    UnescapeMode mode;
+                    if (formatAs != UriFormat.UriEscaped && HostType == Flags.BasicHostType
+                        && (nonCanonical & (ushort)UriComponents.Host) != 0)
                     {
-                        fixed (char* hostPtr = stemp)
+                        // only Basic host could be in the escaped form
+                        mode = formatAs == UriFormat.Unescaped
+                            ? (UnescapeMode.Unescape | UnescapeMode.UnescapeAll) :
+                                (InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape);
+                    }
+                    else
+                    {
+                        mode = UnescapeMode.CopyOnly;
+                    }
+
+                    var hostBuilder = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+
+                    // NormalizedHost
+                    if ((parts & UriComponents.NormalizedHost) != 0)
+                    {
+                        host = UriHelper.StripBidiControlCharacters(host, host);
+
+                        // Upconvert any punycode to unicode, xn--pck -> ?
+                        if (!DomainNameHelper.TryGetUnicodeEquivalent(host, ref hostBuilder))
                         {
-                            bool allAscii = false;
-                            bool atLeastOneValidIdn = false;
-                            try
-                            {
-                                // Upconvert any punycode to unicode, xn--pck -> ?
-                                stemp = DomainNameHelper.UnicodeEquivalent(
-                                    hostPtr, 0, stemp.Length, ref allAscii, ref atLeastOneValidIdn)!;
-                            }
-                            // The host may be invalid punycode (www.xn--?-pck.com),
-                            // but we shouldn't throw after the constructor.
-                            catch (UriFormatException) { }
+                            hostBuilder.Length = 0;
                         }
                     }
-                }
-                chars = UriHelper.UnescapeString(stemp, 0, stemp.Length, chars, ref count, '/', '?', '#', mode,
-                    _syntax, false);
 
-                // A fix up only for SerializationInfo and IpV6 host with a scopeID
-                if ((parts & UriComponents.SerializationInfoString) != 0 && HostType == Flags.IPv6HostType &&
-                    _info.ScopeId is not null)
-                {
-                    _info.ScopeId.CopyTo(0, chars, count - 1, _info.ScopeId.Length);
-                    count += _info.ScopeId.Length;
-                    chars[count - 1] = ']';
+                    UriHelper.UnescapeString(hostBuilder.Length == 0 ? host : hostBuilder.AsSpan(),
+                        ref dest, '/', '?', '#',
+                        mode,
+                        _syntax, isQuery: false);
+
+                    hostBuilder.Dispose();
+
+                    // A fix up only for SerializationInfo and IpV6 host with a scopeID
+                    if ((parts & UriComponents.SerializationInfoString) != 0 && HostType == Flags.IPv6HostType && _info.ScopeId != null)
+                    {
+                        dest.Length--;
+                        dest.Append(_info.ScopeId);
+                        dest.Append(']');
+                    }
                 }
             }
 
             //Port (always wants a ':' delimiter if got to this method)
-            if ((parts & UriComponents.Port) != 0)
+            if ((parts & UriComponents.Port) != 0 &&
+                (InFact(Flags.NotDefaultPort) || ((parts & UriComponents.StrongPort) != 0 && _syntax.DefaultPort != UriParser.NoDefaultPort)))
             {
-                if ((nonCanonical & (ushort)UriComponents.Port) == 0)
-                {
-                    //take it from _string
-                    if (InFact(Flags.NotDefaultPort))
-                    {
-                        int start = _info.Offset.Path;
-                        while (_string[--start] != ':')
-                        {
-                            ;
-                        }
-                        _string.CopyTo(start, chars, count, _info.Offset.Path - start);
-                        count += (_info.Offset.Path - start);
-                    }
-                    else if ((parts & UriComponents.StrongPort) != 0 && _syntax.DefaultPort != UriParser.NoDefaultPort)
-                    {
-                        chars[count++] = ':';
-                        stemp = _info.Offset.PortValue.ToString(CultureInfo.InvariantCulture);
-                        stemp.CopyTo(0, chars, count, stemp.Length);
-                        count += stemp.Length;
-                    }
-                }
-                else if (InFact(Flags.NotDefaultPort) || ((parts & UriComponents.StrongPort) != 0 &&
-                    _syntax.DefaultPort != UriParser.NoDefaultPort))
-                {
-                    // recreate string from port value
-                    chars[count++] = ':';
-                    stemp = _info.Offset.PortValue.ToString(CultureInfo.InvariantCulture);
-                    stemp.CopyTo(0, chars, count, stemp.Length);
-                    count += stemp.Length;
-                }
-            }
+                dest.Append(':');
 
-            int delimiterAwareIndex;
+                const int MaxUshortLength = 5;
+                bool success = _info.Offset.PortValue.TryFormat(dest.AppendSpan(MaxUshortLength), out int charsWritten);
+                Debug.Assert(success);
+                dest.Length -= MaxUshortLength - charsWritten;
+            }
 
             //Path
             if ((parts & UriComponents.Path) != 0)
             {
-                chars = GetCanonicalPath(chars, ref count, formatAs);
+                GetCanonicalPath(ref dest, formatAs);
 
                 // (possibly strip the leading '/' delimiter)
                 if (parts == UriComponents.Path)
                 {
-                    if (InFact(Flags.AuthorityFound) && count != 0 && chars[0] == '/')
+                    int offset;
+                    if (InFact(Flags.AuthorityFound) && dest.Length != 0 && dest[0] == '/')
                     {
-                        delimiterAwareIndex = 1; --count;
+                        offset = 1;
                     }
                     else
                     {
-                        delimiterAwareIndex = 0;
+                        offset = 0;
                     }
-                    return count == 0 ? string.Empty : new string(chars, delimiterAwareIndex, count);
+
+                    string result = dest.AsSpan(offset).ToString();
+                    dest.Dispose();
+                    return result;
                 }
             }
 
             //Query (possibly strip the '?' delimiter)
             if ((parts & UriComponents.Query) != 0 && _info.Offset.Query < _info.Offset.Fragment)
             {
-                delimiterAwareIndex = (_info.Offset.Query + 1);
+                int offset = (_info.Offset.Query + 1);
                 if (parts != UriComponents.Query)
-                    chars[count++] = '?';   //see Fragment+1 below
+                    dest.Append('?');
+
+                UnescapeMode mode = UnescapeMode.CopyOnly;
 
                 if ((nonCanonical & (ushort)UriComponents.Query) != 0)
                 {
-                    switch (formatAs)
+                    if (formatAs == UriFormat.UriEscaped)
                     {
-                        case UriFormat.UriEscaped:
-                            //Can Assert IsImplicitfile == false
-                            if (NotAny(Flags.UserEscaped))
-                            {
-                                chars = UriHelper.EscapeString(
-                                    _string.AsSpan(delimiterAwareIndex, _info.Offset.Fragment - delimiterAwareIndex),
-                                    chars, ref count,
-                                    checkExistingEscaped: true, '#');
-                            }
-                            else
-                            {
-                                UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.Fragment, chars,
-                                    ref count, c_DummyChar, c_DummyChar, c_DummyChar, UnescapeMode.CopyOnly, _syntax,
-                                    true);
-                            }
-                            break;
+                        if (NotAny(Flags.UserEscaped))
+                        {
+                            UriHelper.EscapeString(
+                                str.AsSpan(offset, _info.Offset.Fragment - offset),
+                                ref dest, checkExistingEscaped: true, '#');
 
-                        case V1ToStringUnescape:
-
-                            chars = UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.Fragment, chars,
-                                ref count, '#', c_DummyChar, c_DummyChar, (InFact(Flags.UserEscaped) ?
-                                UnescapeMode.Unescape : UnescapeMode.EscapeUnescape) | UnescapeMode.V1ToStringFlag,
-                                _syntax, true);
-                            break;
-
-                        case UriFormat.Unescaped:
-
-                            chars = UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.Fragment, chars,
-                                ref count, '#', c_DummyChar, c_DummyChar,
-                                (UnescapeMode.Unescape | UnescapeMode.UnescapeAll), _syntax, true);
-                            break;
-
-                        default: // UriFormat.SafeUnescaped
-
-                            chars = UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.Fragment, chars,
-                                ref count, '#', c_DummyChar, c_DummyChar, (InFact(Flags.UserEscaped) ?
-                                UnescapeMode.Unescape : UnescapeMode.EscapeUnescape), _syntax, true);
-                            break;
+                            goto AfterQuery;
+                        }
+                    }
+                    else
+                    {
+                        mode = formatAs switch
+                        {
+                            V1ToStringUnescape => (InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape) | UnescapeMode.V1ToStringFlag,
+                            UriFormat.Unescaped => UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
+                            _ => InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape
+                        };
                     }
                 }
-                else
-                {
-                    UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.Fragment, chars, ref count,
-                        c_DummyChar, c_DummyChar, c_DummyChar, UnescapeMode.CopyOnly, _syntax, true);
-                }
+
+                UriHelper.UnescapeString(str, offset, _info.Offset.Fragment,
+                    ref dest, '#', c_DummyChar, c_DummyChar,
+                    mode, _syntax, isQuery: true);
             }
+        AfterQuery:
 
             //Fragment (possibly strip the '#' delimiter)
             if ((parts & UriComponents.Fragment) != 0 && _info.Offset.Fragment < _info.Offset.End)
             {
-                delimiterAwareIndex = _info.Offset.Fragment + 1;
+                int offset = _info.Offset.Fragment + 1;
                 if (parts != UriComponents.Fragment)
-                    chars[count++] = '#';   //see Fragment+1 below
+                    dest.Append('#');
+
+                UnescapeMode mode = UnescapeMode.CopyOnly;
 
                 if ((nonCanonical & (ushort)UriComponents.Fragment) != 0)
                 {
-                    switch (formatAs)
+                    if (formatAs == UriFormat.UriEscaped)
                     {
-                        case UriFormat.UriEscaped:
-                            if (NotAny(Flags.UserEscaped))
-                            {
-                                chars = UriHelper.EscapeString(
-                                    _string.AsSpan(delimiterAwareIndex, _info.Offset.End - delimiterAwareIndex),
-                                    chars, ref count,
-                                    checkExistingEscaped: true);
-                            }
-                            else
-                            {
-                                UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.End, chars,
-                                    ref count, c_DummyChar, c_DummyChar, c_DummyChar, UnescapeMode.CopyOnly, _syntax,
-                                    false);
-                            }
-                            break;
+                        if (NotAny(Flags.UserEscaped))
+                        {
+                            UriHelper.EscapeString(
+                                str.AsSpan(offset, _info.Offset.End - offset),
+                                ref dest, checkExistingEscaped: true);
 
-                        case V1ToStringUnescape:
-
-                            chars = UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.End, chars,
-                                ref count, '#', c_DummyChar, c_DummyChar, (InFact(Flags.UserEscaped) ?
-                                UnescapeMode.Unescape : UnescapeMode.EscapeUnescape) | UnescapeMode.V1ToStringFlag,
-                                _syntax, false);
-                            break;
-                        case UriFormat.Unescaped:
-
-                            chars = UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.End, chars,
-                                ref count, '#', c_DummyChar, c_DummyChar,
-                                UnescapeMode.Unescape | UnescapeMode.UnescapeAll, _syntax, false);
-                            break;
-
-                        default: // UriFormat.SafeUnescaped
-
-                            chars = UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.End, chars,
-                                ref count, '#', c_DummyChar, c_DummyChar, (InFact(Flags.UserEscaped) ?
-                                UnescapeMode.Unescape : UnescapeMode.EscapeUnescape), _syntax, false);
-                            break;
+                            goto AfterFragment;
+                        }
+                    }
+                    else
+                    {
+                        mode = formatAs switch
+                        {
+                            V1ToStringUnescape => (InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape) | UnescapeMode.V1ToStringFlag,
+                            UriFormat.Unescaped => UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
+                            _ => InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape
+                        };
                     }
                 }
-                else
-                {
-                    UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.End, chars, ref count,
-                        c_DummyChar, c_DummyChar, c_DummyChar, UnescapeMode.CopyOnly, _syntax, false);
-                }
-            }
 
-            return new string(chars, 0, count);
+                UriHelper.UnescapeString(str, offset, _info.Offset.End,
+                    ref dest, '#', c_DummyChar, c_DummyChar,
+                    mode, _syntax, isQuery: false);
+            }
+        AfterFragment:
+
+            return dest.ToString();
         }
 
         //
@@ -4439,15 +4380,15 @@ namespace System
         // the passed array must be long enough to hold at least
         // canonical unescaped path representation (allocated by the caller)
         //
-        private unsafe char[] GetCanonicalPath(char[] dest, ref int pos, UriFormat formatAs)
+        private unsafe void GetCanonicalPath(ref ValueStringBuilder dest, UriFormat formatAs)
         {
             if (InFact(Flags.FirstSlashAbsent))
-                dest[pos++] = '/';
+                dest.Append('/');
 
             if (_info.Offset.Path == _info.Offset.Query)
-                return dest;
+                return;
 
-            int end = pos;
+            int start = dest.Length;
 
             int dosPathIdx = SecuredPathIndex;
 
@@ -4458,8 +4399,7 @@ namespace System
             {
                 if (InFact(Flags.ShouldBeCompressed))
                 {
-                    _string.CopyTo(_info.Offset.Path, dest, end, _info.Offset.Query - _info.Offset.Path);
-                    end += (_info.Offset.Query - _info.Offset.Path);
+                    dest.Append(_string.AsSpan(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path));
 
                     // If the path was found as needed compression and contains escaped characters, unescape only
                     // interesting characters (safe)
@@ -4469,8 +4409,10 @@ namespace System
                     {
                         fixed (char* pdest = dest)
                         {
-                            UnescapeOnly(pdest, pos, ref end, '.', '/',
+                            int end = dest.Length;
+                            UnescapeOnly(pdest, start, ref end, '.', '/',
                                 _syntax.InFact(UriSyntaxFlags.ConvertPathSlashes) ? '\\' : c_DummyChar);
+                            dest.Length = end;
                         }
                     }
                 }
@@ -4488,29 +4430,37 @@ namespace System
                             str = str.Insert(dosPathIdx + _info.Offset.Path - 1, ":");
                         }
 
-                        dest = UriHelper.EscapeString(
+                        UriHelper.EscapeString(
                             str.AsSpan(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path),
-                            dest, ref end,
-                            checkExistingEscaped: !IsImplicitFile, '?', '#');
+                            ref dest, checkExistingEscaped: !IsImplicitFile, '?', '#');
                     }
                     else
                     {
-                        _string.CopyTo(_info.Offset.Path, dest, end, _info.Offset.Query - _info.Offset.Path);
-                        end += (_info.Offset.Query - _info.Offset.Path);
+                        dest.Append(_string.AsSpan(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path));
                     }
                 }
 
                 // On Unix, escape '\\' in path of file uris to '%5C' canonical form.
                 if (!IsWindowsSystem && InFact(Flags.BackslashInPath) && _syntax.NotAny(UriSyntaxFlags.ConvertPathSlashes) && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && !IsImplicitFile)
                 {
-                    dest = UriHelper.EscapeString(new string(dest, pos, end - pos), dest, ref pos, checkExistingEscaped: true, '\\');
-                    end = pos;
+                    // We can't do an in-place escape, create a copy
+                    var copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                    copy.Append(dest.AsSpan(start, dest.Length - start));
+
+                    dest.Length = start;
+
+                    // CS8350 & CS8352: We can't pass `copy` and `dest` as arguments together as that could leak the scope of the above stackalloc
+                    // As a workaround, re-create the Span in a way that avoids analysis
+                    ReadOnlySpan<char> copySpan = MemoryMarshal.CreateReadOnlySpan(ref copy.GetPinnableReference(), copy.Length);
+                    UriHelper.EscapeString(copySpan, ref dest, checkExistingEscaped: true, '\\');
+                    start = dest.Length;
+
+                    copy.Dispose();
                 }
             }
             else
             {
-                _string.CopyTo(_info.Offset.Path, dest, end, _info.Offset.Query - _info.Offset.Path);
-                end += (_info.Offset.Query - _info.Offset.Path);
+                dest.Append(_string.AsSpan(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path));
 
                 if (InFact(Flags.ShouldBeCompressed))
                 {
@@ -4522,8 +4472,10 @@ namespace System
                     {
                         fixed (char* pdest = dest)
                         {
-                            UnescapeOnly(pdest, pos, ref end, '.', '/',
+                            int end = dest.Length;
+                            UnescapeOnly(pdest, start, ref end, '.', '/',
                                 _syntax.InFact(UriSyntaxFlags.ConvertPathSlashes) ? '\\' : c_DummyChar);
+                            dest.Length = end;
                         }
                     }
                 }
@@ -4537,77 +4489,82 @@ namespace System
             //
             // (path is already  >= 3 chars if recognized as a DOS-like)
             //
-            if (dosPathIdx != 0 && dest[dosPathIdx + pos - 1] == '|')
-                dest[dosPathIdx + pos - 1] = ':';
+            int offset = start + dosPathIdx;
+            if (dosPathIdx != 0 && dest[offset - 1] == '|')
+                dest[offset - 1] = ':';
 
-            if (InFact(Flags.ShouldBeCompressed))
+            if (InFact(Flags.ShouldBeCompressed) && dest.Length - offset > 0)
             {
                 // It will also convert back slashes if needed
-                dest = Compress(dest, (ushort)(pos + dosPathIdx), ref end, _syntax);
-                if (dest[pos] == '\\')
-                    dest[pos] = '/';
+                dest.Length = offset + Compress(dest.RawChars.Slice(offset, dest.Length - offset), _syntax);
+                if (dest[start] == '\\')
+                    dest[start] = '/';
 
                 // Escape path if requested and found as not fully escaped
                 if (formatAs == UriFormat.UriEscaped && NotAny(Flags.UserEscaped) && InFact(Flags.E_PathNotCanonical))
                 {
                     //Note: Flags.UserEscaped check is solely based on trusting the user
-                    dest = UriHelper.EscapeString(new string(dest, pos, end - pos), dest, ref pos, checkExistingEscaped: !IsImplicitFile, '?', '#');
-                    end = pos;
+
+                    // We can't do an in-place escape, create a copy
+                    var copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                    copy.Append(dest.AsSpan(start, dest.Length - start));
+
+                    dest.Length = start;
+
+                    // CS8350 & CS8352: We can't pass `copy` and `dest` as arguments together as that could leak the scope of the above stackalloc
+                    // As a workaround, re-create the Span in a way that avoids analysis
+                    ReadOnlySpan<char> copySpan = MemoryMarshal.CreateReadOnlySpan(ref copy.GetPinnableReference(), copy.Length);
+                    UriHelper.EscapeString(copySpan, ref dest, checkExistingEscaped: !IsImplicitFile, '?', '#');
+                    start = dest.Length;
+
+                    copy.Dispose();
                 }
-            }
-            else if (_syntax.InFact(UriSyntaxFlags.ConvertPathSlashes) && InFact(Flags.BackslashInPath))
-            {
-                for (int i = pos; i < end; ++i)
-                    if (dest[i] == '\\') dest[i] = '/';
             }
 
             if (formatAs != UriFormat.UriEscaped && InFact(Flags.PathNotCanonical))
             {
                 UnescapeMode mode;
-                if (InFact(Flags.PathNotCanonical))
+                switch (formatAs)
                 {
-                    switch (formatAs)
+                    case V1ToStringUnescape:
+
+                        mode = (InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape)
+                            | UnescapeMode.V1ToStringFlag;
+                        if (IsImplicitFile)
+                            mode &= ~UnescapeMode.Unescape;
+                        break;
+
+                    case UriFormat.Unescaped:
+                        mode = IsImplicitFile ? UnescapeMode.CopyOnly
+                            : UnescapeMode.Unescape | UnescapeMode.UnescapeAll;
+                        break;
+
+                    default: // UriFormat.SafeUnescaped
+
+                        mode = InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape;
+                        if (IsImplicitFile)
+                            mode &= ~UnescapeMode.Unescape;
+                        break;
+                }
+
+                if (mode != UnescapeMode.CopyOnly)
+                {
+                    // We can't do an in-place unescape, create a copy
+                    var copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                    copy.Append(dest.AsSpan(start, dest.Length - start));
+
+                    dest.Length = start;
+                    fixed (char* pCopy = copy)
                     {
-                        case V1ToStringUnescape:
-
-                            mode = (InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape)
-                                | UnescapeMode.V1ToStringFlag;
-                            if (IsImplicitFile)
-                                mode &= ~UnescapeMode.Unescape;
-                            break;
-
-                        case UriFormat.Unescaped:
-                            mode = IsImplicitFile ? UnescapeMode.CopyOnly
-                                : UnescapeMode.Unescape | UnescapeMode.UnescapeAll;
-                            break;
-
-                        default: // UriFormat.SafeUnescaped
-
-                            mode = InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape;
-                            if (IsImplicitFile)
-                                mode &= ~UnescapeMode.Unescape;
-                            break;
+                        UriHelper.UnescapeString(pCopy, 0, copy.Length,
+                            ref dest, '?', '#', c_DummyChar,
+                            mode,
+                            _syntax, isQuery: false);
                     }
-                }
-                else
-                {
-                    mode = UnescapeMode.CopyOnly;
-                }
 
-                char[] dest1 = new char[dest.Length];
-                Buffer.BlockCopy(dest, 0, dest1, 0, end * sizeof(char));
-                fixed (char* pdest = dest1)
-                {
-                    dest = UriHelper.UnescapeString(pdest, pos, end, dest, ref pos, '?', '#', c_DummyChar, mode,
-                        _syntax, false);
+                    copy.Dispose();
                 }
             }
-            else
-            {
-                pos = end;
-            }
-
-            return dest;
         }
 
         // works only with ASCII characters, used to partially unescape path before compressing
@@ -4678,147 +4635,132 @@ namespace System
             end -= (int)(pch - pnew);
         }
 
+        private static void Compress(char[] dest, int start, ref int destLength, UriParser syntax)
+        {
+            destLength = start + Compress(dest.AsSpan(start, destLength - start), syntax);
+        }
+
         //
         // This will compress any "\" "/../" "/./" "///" "/..../" /XXX.../, etc found in the input
         //
         // The passed syntax controls whether to use aggressive compression or the one specified in RFC 2396
         //
-        private static char[] Compress(char[] dest, int start, ref int destLength, UriParser syntax)
+        private static int Compress(Span<char> span, UriParser syntax)
         {
-            ushort slashCount = 0;
-            ushort lastSlash = 0;
-            ushort dotCount = 0;
-            ushort removeSegments = 0;
+            int slashCount = 0;
+            int lastSlash = 0;
+            int dotCount = 0;
+            int removeSegments = 0;
 
-            unchecked
+            for (int i = span.Length - 1; i >= 0; i--)
             {
-                //ushort i == -1 and start == -1 overflow is ok here
-                ushort i = (ushort)((ushort)destLength - (ushort)1);
-                start = (ushort)(start - 1);
-
-                for (; i != start; --i)
+                char ch = span[i];
+                if (ch == '\\' && syntax.InFact(UriSyntaxFlags.ConvertPathSlashes))
                 {
-                    char ch = dest[i];
-                    if (ch == '\\' && syntax.InFact(UriSyntaxFlags.ConvertPathSlashes))
-                    {
-                        dest[i] = ch = '/';
-                    }
-
-                    //
-                    // compress multiple '/' for file URI
-                    //
-                    if (ch == '/')
-                    {
-                        ++slashCount;
-                    }
-                    else
-                    {
-                        if (slashCount > 1)
-                        {
-                            // else preserve repeated slashes
-                            lastSlash = (ushort)(i + 1);
-                        }
-                        slashCount = 0;
-                    }
-
-                    if (ch == '.')
-                    {
-                        ++dotCount;
-                        continue;
-                    }
-                    else if (dotCount != 0)
-                    {
-                        bool skipSegment = syntax.NotAny(UriSyntaxFlags.CanonicalizeAsFilePath)
-                            && (dotCount > 2 || ch != '/' || i == start);
-
-                        //
-                        // Cases:
-                        // /./                  = remove this segment
-                        // /../                 = remove this segment, mark next for removal
-                        // /....x               = DO NOT TOUCH, leave as is
-                        // x.../                = DO NOT TOUCH, leave as is, except for V2 legacy mode
-                        //
-                        if (!skipSegment && ch == '/')
-                        {
-                            if ((lastSlash == i + dotCount + 1 // "/..../"
-                                    || (lastSlash == 0 && i + dotCount + 1 == destLength)) // "/..."
-                                && (dotCount <= 2))
-                            {
-                                //
-                                //  /./ or /.<eos> or /../ or /..<eos>
-                                //
-                                // just reusing a variable slot we perform //dest.Remove(i+1, dotCount + (lastSlash==0?0:1));
-                                lastSlash = (ushort)(i + 1 + dotCount + (lastSlash == 0 ? 0 : 1));
-                                Buffer.BlockCopy(dest, lastSlash * sizeof(char), dest, (i + 1) * sizeof(char), (destLength - lastSlash) * sizeof(char));
-                                destLength -= (lastSlash - i - 1);
-
-                                lastSlash = i;
-                                if (dotCount == 2)
-                                {
-                                    //
-                                    // We have 2 dots in between like /../ or /..<eos>,
-                                    // Mark next segment for removal and remove this /../ or /..
-                                    //
-                                    ++removeSegments;
-                                }
-                                dotCount = 0;
-                                continue;
-                            }
-                        }
-                        // .NET 4.5 no longer removes trailing dots in a path segment x.../  or  x...<eos>
-                        dotCount = 0;
-
-                        //
-                        // Here all other cases go such as
-                        // x.[..]y or /.[..]x or (/x.[...][/] && removeSegments !=0)
-                    }
-
-                    //
-                    // Now we may want to remove a segment because of previous /../
-                    //
-                    if (ch == '/')
-                    {
-                        if (removeSegments != 0)
-                        {
-                            --removeSegments;
-
-                            // just reusing a variable slot we perform //dest.Remove(i+1, lastSlash - i);
-                            lastSlash = (ushort)(lastSlash + 1);
-                            Buffer.BlockCopy(dest, lastSlash * sizeof(char), dest, (i + 1) * sizeof(char), (destLength - lastSlash) * sizeof(char));
-                            destLength -= (lastSlash - i - 1);
-                        }
-                        lastSlash = i;
-                    }
+                    span[i] = ch = '/';
                 }
 
-                start = (ushort)((ushort)start + (ushort)1);
-            } //end of unchecked
+                // compress multiple '/' for file URI
+                if (ch == '/')
+                {
+                    ++slashCount;
+                }
+                else
+                {
+                    if (slashCount > 1)
+                    {
+                        // else preserve repeated slashes
+                        lastSlash = i + 1;
+                    }
+                    slashCount = 0;
+                }
 
-            if ((ushort)destLength > start && syntax.InFact(UriSyntaxFlags.CanonicalizeAsFilePath))
+                if (ch == '.')
+                {
+                    ++dotCount;
+                    continue;
+                }
+                else if (dotCount != 0)
+                {
+                    bool skipSegment = syntax.NotAny(UriSyntaxFlags.CanonicalizeAsFilePath)
+                        && (dotCount > 2 || ch != '/');
+
+                    // Cases:
+                    // /./                  = remove this segment
+                    // /../                 = remove this segment, mark next for removal
+                    // /....x               = DO NOT TOUCH, leave as is
+                    // x.../                = DO NOT TOUCH, leave as is, except for V2 legacy mode
+                    if (!skipSegment && ch == '/')
+                    {
+                        if ((lastSlash == i + dotCount + 1 // "/..../"
+                                || (lastSlash == 0 && i + dotCount + 1 == span.Length)) // "/..."
+                            && (dotCount <= 2))
+                        {
+                            //  /./ or /.<eos> or /../ or /..<eos>
+
+                            // span.Remove(i + 1, dotCount + (lastSlash == 0 ? 0 : 1));
+                            lastSlash = i + 1 + dotCount + (lastSlash == 0 ? 0 : 1);
+                            span.Slice(lastSlash).CopyTo(span.Slice(i + 1));
+                            span = span.Slice(0, span.Length - (lastSlash - i - 1));
+
+                            lastSlash = i;
+                            if (dotCount == 2)
+                            {
+                                // We have 2 dots in between like /../ or /..<eos>,
+                                // Mark next segment for removal and remove this /../ or /..
+                                ++removeSegments;
+                            }
+                            dotCount = 0;
+                            continue;
+                        }
+                    }
+                    // .NET 4.5 no longer removes trailing dots in a path segment x.../  or  x...<eos>
+                    dotCount = 0;
+
+                    // Here all other cases go such as
+                    // x.[..]y or /.[..]x or (/x.[...][/] && removeSegments !=0)
+                }
+
+                // Now we may want to remove a segment because of previous /../
+                if (ch == '/')
+                {
+                    if (removeSegments != 0)
+                    {
+                        --removeSegments;
+
+                        span.Slice(lastSlash + 1).CopyTo(span.Slice(i + 1));
+                        span = span.Slice(0, span.Length - (lastSlash - i));
+                    }
+                    lastSlash = i;
+                }
+            }
+
+            if (span.Length != 0 && syntax.InFact(UriSyntaxFlags.CanonicalizeAsFilePath))
             {
                 if (slashCount <= 1)
                 {
-                    if (removeSegments != 0 && dest[start] != '/')
+                    if (removeSegments != 0 && span[0] != '/')
                     {
                         //remove first not rooted segment
-                        lastSlash = (ushort)(lastSlash + 1);
-                        Buffer.BlockCopy(dest, lastSlash * sizeof(char), dest, start * sizeof(char), (destLength - lastSlash) * sizeof(char));
-                        destLength -= lastSlash;
+                        lastSlash++;
+                        span.Slice(lastSlash).CopyTo(span);
+                        return span.Length - lastSlash;
                     }
                     else if (dotCount != 0)
                     {
                         // If final string starts with a segment looking like .[...]/ or .[...]<eos>
                         // then we remove this first segment
-                        if (lastSlash == dotCount + 1 || (lastSlash == 0 && dotCount + 1 == destLength))
+                        if (lastSlash == dotCount || (lastSlash == 0 && dotCount == span.Length))
                         {
-                            dotCount = (ushort)(dotCount + (lastSlash == 0 ? 0 : 1));
-                            Buffer.BlockCopy(dest, dotCount * sizeof(char), dest, start * sizeof(char), (destLength - dotCount) * sizeof(char));
-                            destLength -= dotCount;
+                            dotCount += lastSlash == 0 ? 0 : 1;
+                            span.Slice(dotCount).CopyTo(span);
+                            return span.Length - dotCount;
                         }
                     }
                 }
             }
-            return dest;
+
+            return span.Length;
         }
 
         //
@@ -5023,7 +4965,7 @@ namespace System
                     if (basePart.IsDosPath)
                     {
                         // The FILE DOS path comes as /c:/path, we have to exclude first 3 chars from compression
-                        path = Compress(path, 3, ref length, basePart.Syntax);
+                        Compress(path, 3, ref length, basePart.Syntax);
                         return string.Concat(path.AsSpan(1, length - 1), extra);
                     }
                     else if (!IsWindowsSystem && basePart.IsUnixPath)
@@ -5041,7 +4983,7 @@ namespace System
                 }
             }
             //compress the path
-            path = Compress(path, basePart.SecuredPathIndex, ref length, basePart.Syntax);
+            Compress(path, basePart.SecuredPathIndex, ref length, basePart.Syntax);
             return string.Concat(left, path.AsSpan(0, length), extra);
         }
 

@@ -1239,6 +1239,10 @@ bool IsGcCoverageInterrupt(LPVOID ip)
 
 void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageInfo* gcCover, DWORD offset)
 {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
 #ifdef TARGET_ARM
         if (GetARMInstructionLength(savedInstrPtr) == 2)
             *(WORD *)instrPtr  = *(WORD *)savedInstrPtr;

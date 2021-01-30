@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
+
+  <PropertyGroup>
+    <Configuration>Release</Configuration>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+
+    <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <EnableDefaultItems>false</EnableDefaultItems>
+
+    <!-- Important - deltas don't support trimming! -->
+    <PublishTrimmed>false</PublishTrimmed>
+
+    <WasmBuildAppDependsOn>PrepareDeltasForWasmApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeltaHelper\DeltaHelper.csproj" />
+  </ItemGroup>
+
+  <Target Name="PrepareDeltasForWasmApp" DependsOnTargets="Build;CompileDiff;ComputeDeltaFileOutputNames">
+    <ItemGroup>
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
+      <WasmFilesToIncludeInFileSystem Include="@(_DeltaFileForPublish)">
+        <TargetPath>\%(_DeltaFileForPublish.Filename)%(_DeltaFileForPublish.Extension)</TargetPath>
+      </WasmFilesToIncludeInFileSystem>
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs"/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <DeltaScript>deltascript.json</DeltaScript>
+    <DeltaCount>2</DeltaCount>
+  </PropertyGroup>
+
+  <!-- Set RoslynILDiffFullPath property to the path of roslynildiff -->
+  <Import Project="..\DeltaHelper.targets" />
+  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.targets" />
+</Project>

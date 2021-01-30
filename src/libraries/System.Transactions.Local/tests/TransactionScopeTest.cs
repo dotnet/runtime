@@ -505,7 +505,7 @@ namespace System.Transactions.Tests
             Assert.Null(Transaction.Current);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop] // 30 second timeout
         public void RMFail2()
         {

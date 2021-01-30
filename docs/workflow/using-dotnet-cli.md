@@ -104,7 +104,7 @@ static void Main(string[] args)
 Now is the time to publish. The publish step will trigger restore and build. You can iterate on build by calling `dotnet build` as
 needed.
 
-```bat
+```cmd
 dotnet publish
 ```
 
@@ -179,7 +179,7 @@ So the steps are:
 
 ### 1. Build the package again
 
-```bat
+```cmd
 build.cmd clr+libs+host+packs -c release
 ``` 
 
@@ -187,13 +187,13 @@ If you only changed libraries, `build.cmd libs+host+packs -c release` is a littl
 
 ### 2. Delete your local package cache
 
-```bat
+```cmd
 rd /s /q c:\localcache
 ```
 
 ### 3. Publish again
 
-```bat
+```cmd
 dotnet publish
 ```
 

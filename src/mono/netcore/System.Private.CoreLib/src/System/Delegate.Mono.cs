@@ -88,7 +88,7 @@ namespace System
             };
         }
 
-        protected Delegate([DynamicallyAccessedMembers(AllMethods)] Type target, string method)
+        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
         {
             if (target is null)
                 throw new ArgumentNullException(nameof(target));
@@ -183,7 +183,7 @@ namespace System
             return CreateDelegate_internal(type, target, info, throwOnBindFailure);
         }
 
-        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
+        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
@@ -214,7 +214,9 @@ namespace System
             return CreateDelegate_internal(type, null, info, throwOnBindFailure);
         }
 
-        private static MethodInfo? GetCandidateMethod(RuntimeType type, [DynamicallyAccessedMembers(AllMethods)] Type target, string method, BindingFlags bflags, bool ignoreCase)
+        // GetCandidateMethod is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
+        // on a base type of methodType. Using All is currently the only way ILLinker will preserve these methods.
+        private static MethodInfo? GetCandidateMethod(RuntimeType type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, BindingFlags bflags, bool ignoreCase)
         {
             MethodInfo? invoke = GetDelegateInvokeMethod(type);
             if (invoke is null)
@@ -496,7 +498,7 @@ namespace System
             return _method.Invoke(target, args);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is Delegate d) || !InternalEqualTypes(this, obj))
                 return false;

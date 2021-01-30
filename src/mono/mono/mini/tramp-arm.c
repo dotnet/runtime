@@ -455,7 +455,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	tramp = mono_get_trampoline_code (tramp_type);
 
 	if (mem_manager) {
-		code = buf = mono_mem_manager_code_reserve_align (mem_manager, size, 4);
+		code = buf = (guint8 *)mono_mem_manager_code_reserve_align (mem_manager, size, 4);
 		if ((short_branch = branch_for_target_reachable (code + 4, tramp))) {
 			size = 12;
 			mono_mem_manager_code_commit (mem_manager, code, SPEC_TRAMP_SIZE, size);

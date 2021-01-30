@@ -10,6 +10,7 @@
 
 #include "runtimedetails.h"
 #include "lightweightmap.h"
+#include "agnostic.h"
 
 // MemoryTracker: a very simple allocator and tracker of allocated memory, so it can be deleted when needed.
 class MemoryTracker
@@ -55,141 +56,6 @@ private:
 class CompileResult
 {
 public:
-#pragma pack(push, 1)
-    struct Agnostic_RecordRelocation
-    {
-        DWORDLONG location;
-        DWORDLONG target;
-        DWORD     fRelocType;
-        DWORD     slotNum;
-        DWORD     addlDelta;
-    };
-    struct Capture_AllocMemDetails
-    {
-        ULONG              hotCodeSize;
-        ULONG              coldCodeSize;
-        ULONG              roDataSize;
-        ULONG              xcptnsCount;
-        CorJitAllocMemFlag flag;
-        void*              hotCodeBlock;
-        void*              coldCodeBlock;
-        void*              roDataBlock;
-    };
-    struct allocGCInfoDetails
-    {
-        size_t size;
-        void*  retval;
-    };
-    struct Agnostic_AddressMap
-    {
-        DWORDLONG Address;
-        DWORD     size;
-    };
-    struct Agnostic_AllocGCInfo
-    {
-        DWORDLONG size;
-        DWORD     retval_offset;
-    };
-    struct Agnostic_AllocMemDetails
-    {
-        DWORD     hotCodeSize;
-        DWORD     coldCodeSize;
-        DWORD     roDataSize;
-        DWORD     xcptnsCount;
-        DWORD     flag;
-        DWORD     hotCodeBlock_offset;
-        DWORD     coldCodeBlock_offset;
-        DWORD     roDataBlock_offset;
-        DWORDLONG hotCodeBlock;
-        DWORDLONG coldCodeBlock;
-        DWORDLONG roDataBlock;
-    };
-    struct Agnostic_AllocUnwindInfo
-    {
-        DWORDLONG pHotCode;
-        DWORDLONG pColdCode;
-        DWORD     startOffset;
-        DWORD     endOffset;
-        DWORD     unwindSize;
-        DWORD     pUnwindBlock_index;
-        DWORD     funcKind;
-    };
-    struct Agnostic_CompileMethodResults
-    {
-        DWORDLONG nativeEntry;
-        DWORD     nativeSizeOfCode;
-        DWORD     CorJitResult;
-    };
-    struct Agnostic_ReportInliningDecision
-    {
-        DWORDLONG inlinerHnd;
-        DWORDLONG inlineeHnd;
-        DWORD     inlineResult;
-        DWORD     reason_offset;
-    };
-    struct Agnostic_ReportTailCallDecision
-    {
-        DWORDLONG callerHnd;
-        DWORDLONG calleeHnd;
-        DWORD     fIsTailPrefix;
-        DWORD     tailCallResult;
-        DWORD     reason_index;
-    };
-    struct Agnostic_ReserveUnwindInfo
-    {
-        DWORD isFunclet;
-        DWORD isColdCode;
-        DWORD unwindSize;
-    };
-    struct Agnostic_SetBoundaries
-    {
-        DWORDLONG ftn;
-        DWORD     cMap;
-        DWORD     pMap_offset;
-    };
-    struct Agnostic_SetVars
-    {
-        DWORDLONG ftn;
-        DWORD     cVars;
-        DWORD     vars_offset;
-    };
-    struct Agnostic_SetPatchpointInfo
-    {
-        DWORD     index;
-    };
-    struct Agnostic_CORINFO_EH_CLAUSE2
-    {
-        DWORD Flags;
-        DWORD TryOffset;
-        DWORD TryLength;
-        DWORD HandlerOffset;
-        DWORD HandlerLength;
-        DWORD ClassToken; // one view of symetric union
-    };
-    struct Agnostic_CORINFO_SIG_INFO2
-    {
-        DWORD     callConv;
-        DWORDLONG retTypeClass;
-        DWORDLONG retTypeSigClass;
-        DWORD     retType;
-        DWORD     flags;
-        DWORD     numArgs;
-        DWORD     sigInst_classInstCount;
-        DWORD     sigInst_classInst_Index;
-        DWORD     sigInst_methInstCount;
-        DWORD     sigInst_methInst_Index;
-        DWORDLONG args;
-        DWORD     pSig_Index;
-        DWORD     cbSig;
-        DWORDLONG scope;
-        DWORD     token;
-    };
-    struct Agnostic_RecordCallSite
-    {
-        Agnostic_CORINFO_SIG_INFO2 callSig;
-        DWORDLONG                  methodHandle;
-    };
-#pragma pack(pop)
 
     CompileResult();
     ~CompileResult();
@@ -270,7 +136,7 @@ public:
     ULONG repSetEHcount();
 
     void recSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause);
-    void dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE2& value);
+    void dmpSetEHinfo(DWORD key, const Agnostic_CORINFO_EH_CLAUSE& value);
     void repSetEHinfo(unsigned EHnumber,
                       ULONG*   flags,
                       ULONG*   tryOffset,
@@ -328,6 +194,8 @@ public:
     void repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
     bool fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO* pCallSig);
     bool fndRecordCallSiteMethodHandle(ULONG instrOffset, CORINFO_METHOD_HANDLE* pMethodHandle);
+
+    void dmpCrSigInstHandleMap(DWORD key, DWORDLONG value);
 
     DOUBLE    secondsToCompile;
     ULONGLONG clockCyclesToCompile;

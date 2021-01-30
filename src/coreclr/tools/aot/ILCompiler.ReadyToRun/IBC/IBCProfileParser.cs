@@ -141,7 +141,7 @@ namespace ILCompiler.IBC
                     {
                         if (methodsFoundInData.Add(associatedMethod))
                         {
-                            methodProfileData.Add(new MethodProfileData(associatedMethod, (MethodProfilingDataFlags)entry.Flags, 0, null, scenarioMask));
+                            methodProfileData.Add(new MethodProfileData(associatedMethod, (MethodProfilingDataFlags)entry.Flags, 0, null, scenarioMask, null));
                         }
                         else
                         {

@@ -7,7 +7,7 @@
     <ArchiveName>dotnet-targeting-pack</ArchiveName>
     <InstallerName>dotnet-targeting-pack</InstallerName>
     <VSInsertionShortComponentName>NetCore.TargetingPack</VSInsertionShortComponentName>
-    <Description>A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.</Description>
+    <PackageDescription>A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.</PackageDescription>
   </PropertyGroup>
 
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesToPackage">

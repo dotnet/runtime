@@ -139,11 +139,9 @@ ICALL_EXPORT float ves_icall_System_Math_Abs_single (float);
 #if ENABLE_NETCORE
 ICALL_EXPORT gint32 ves_icall_System_Math_ILogB (double);
 ICALL_EXPORT double ves_icall_System_Math_Log2 (double);
-ICALL_EXPORT double ves_icall_System_Math_ScaleB (double, gint32);
 ICALL_EXPORT double ves_icall_System_Math_FusedMultiplyAdd (double, double, double);
 ICALL_EXPORT gint32 ves_icall_System_MathF_ILogB (float);
 ICALL_EXPORT float ves_icall_System_MathF_Log2 (float);
-ICALL_EXPORT float ves_icall_System_MathF_ScaleB (float, gint32);
 ICALL_EXPORT float ves_icall_System_MathF_FusedMultiplyAdd (float, float, float);
 #endif
 ICALL_EXPORT gint ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData (void);
@@ -306,6 +304,10 @@ ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseIn
 
 #if defined(ENABLE_NETCORE) && defined(TARGET_AMD64)
 ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int function_id, int subfunction_id);
+#endif
+
+#if defined(ENABLE_NETCORE) && defined(ENABLE_METADATA_UPDATE)
+ICALL_EXPORT void ves_icall_Mono_Runtime_LoadMetadataUpdate (MonoAssembly *assm, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dil_bytes, int32_t dil_len);
 #endif
 
 #endif // __MONO_METADATA_ICALL_DECL_H__

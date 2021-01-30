@@ -92,7 +92,7 @@ namespace System.Xml.Xsl.Qil
         /// Override Equals() so that the QilName can be used as a key in the hashtable.
         /// </summary>
         /// <remarks>Does not compare their prefixes (if any).</remarks>
-        public override bool Equals(object? other)
+        public override bool Equals([NotNullWhen(true)] object? other)
         {
             QilName? name = other as QilName;
             if (name == null)

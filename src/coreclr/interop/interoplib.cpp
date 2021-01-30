@@ -35,7 +35,7 @@ namespace InteropLib
             HRESULT hr;
 
             // Convert input to appropriate types.
-            auto vtables = static_cast<ABI::ComInterfaceEntry*>(vtablesRaw);
+            auto vtables = static_cast<::ABI::ComInterfaceEntry*>(vtablesRaw);
 
             ManagedObjectWrapper* mow;
             RETURN_IF_FAILED(ManagedObjectWrapper::Create(flags, instance, vtableCount, vtables, &mow));
@@ -73,8 +73,6 @@ namespace InteropLib
             if (mow == nullptr)
                 return E_INVALIDARG;
 
-            (void)mow->AddRef();
-
             *object = mow->Target;
             return S_OK;
         }
@@ -98,12 +96,13 @@ namespace InteropLib
             return wrapper->IsSet(CreateComInterfaceFlagsEx::IsComActivated) ? S_OK : S_FALSE;
         }
 
-        HRESULT GetIdentityForCreateWrapperForExternal(
+        HRESULT DetermineIdentityAndInnerForExternal(
             _In_ IUnknown* external,
             _In_ enum CreateObjectFlags flags,
-            _Outptr_ IUnknown** identity) noexcept
+            _Outptr_ IUnknown** identity,
+            _Inout_ IUnknown** innerMaybe) noexcept
         {
-            _ASSERTE(external != nullptr && identity != nullptr);
+            _ASSERTE(external != nullptr && identity != nullptr && innerMaybe != nullptr);
 
             IUnknown* checkForIdentity = external;
 
@@ -129,7 +128,22 @@ namespace InteropLib
                     checkForIdentity = trackerObject.p;
             }
 
-            return checkForIdentity->QueryInterface(identity);
+            HRESULT hr;
+
+            IUnknown* identityLocal;
+            RETURN_IF_FAILED(checkForIdentity->QueryInterface(&identityLocal));
+
+            // Set the inner if scenario dictates an update.
+            if (*innerMaybe == nullptr          // User didn't supply inner - .NET 5 API scenario sanity check.
+                && checkForIdentity != external // Target of check was changed - .NET 5 API scenario sanity check.
+                && external != identityLocal    // The supplied object doesn't match the computed identity.
+                && refTrackerInnerScenario)     // The appropriate flags were set.
+            {
+                *innerMaybe = external;
+            }
+
+            *identity = identityLocal;
+            return S_OK;
         }
 
         HRESULT CreateWrapperForExternal(

@@ -1621,10 +1621,10 @@ void CheckForRudeAbort(Thread* pThread, bool fIsFirstPass)
     if (fIsFirstPass && pThread->IsRudeAbort())
     {
         GCX_COOP();
-        OBJECTREF rudeAbortThrowable = CLRException::GetPreallocatedRudeThreadAbortException();
-        if (pThread->GetThrowable() != rudeAbortThrowable)
+        OBJECTREF throwable = pThread->GetThrowable();
+        if (throwable == NULL || !IsExceptionOfType(kThreadAbortException, &throwable))
         {
-            pThread->SafeSetThrowables(rudeAbortThrowable);
+            pThread->SafeSetThrowables(CLRException::GetBestThreadAbortException());
         }
 
         if (!pThread->IsRudeAbortInitiated())

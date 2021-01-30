@@ -1,7 +1,8 @@
 MONO_CONFIG=Debug
 MONO_ARCH=x64
 DOTNET := ../../../../.././dotnet.sh
-USE_LLVM=True
+USE_LLVM=true
+AOT=false
 
 all: runtimepack run
 
@@ -15,7 +16,7 @@ runtimepack:
 
 run: clean appbuilder
 	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLLVM=$(USE_LLVM) /p:ForceAOT=false
+	/p:UseLLVM=$(USE_LLVM) /p:ForceAOT=$(AOT)
 
 clean:
 	rm -rf bin

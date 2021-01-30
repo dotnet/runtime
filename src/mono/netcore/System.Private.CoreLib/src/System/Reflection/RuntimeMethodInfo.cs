@@ -427,7 +427,7 @@ namespace System.Reflection
                 if (arg == Type.Missing)
                 {
                     if (pi.DefaultValue == DBNull.Value)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_VarMissNull"), "parameters");
+                        throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
 
                     args[i] = pi.DefaultValue;
                     continue;

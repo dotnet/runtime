@@ -52,7 +52,7 @@ public:
         JIT_FLAG_MAKEFINALCODE           = 18, // Use the final code generator, i.e., not the interpreter.
         JIT_FLAG_READYTORUN              = 19, // Use version-resilient code generation
         JIT_FLAG_PROF_ENTERLEAVE         = 20, // Instrument prologues/epilogues
-        JIT_FLAG_PROF_REJIT_NOPS         = 21, // Insert NOPs to ensure code is re-jitable
+        JIT_FLAG_UNUSED11                = 21,
         JIT_FLAG_PROF_NO_PINVOKE_INLINE  = 22, // Disables PInvoke inlining
         JIT_FLAG_SKIP_VERIFICATION       = 23, // (lazy) skip verification - determined without doing a full resolve. See comment below
         JIT_FLAG_PREJIT                  = 24, // jit or prejit is the execution engine.
@@ -63,45 +63,45 @@ public:
         JIT_FLAG_BBINSTR                 = 29, // Collect basic block profile information
         JIT_FLAG_BBOPT                   = 30, // Optimize method based on profile information
         JIT_FLAG_FRAMED                  = 31, // All methods have an EBP frame
-        JIT_FLAG_ALIGN_LOOPS             = 32, // add NOPs before loops to align them at 16 byte boundaries
+        JIT_FLAG_UNUSED12                = 32,
         JIT_FLAG_PUBLISH_SECRET_PARAM    = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
-        JIT_FLAG_UNUSED11                = 34,
+        JIT_FLAG_UNUSED13                = 34,
         JIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         JIT_FLAG_USE_PINVOKE_HELPERS     = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         JIT_FLAG_REVERSE_PINVOKE         = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        JIT_FLAG_UNUSED12                = 38,
+        JIT_FLAG_TRACK_TRANSITIONS       = 38, // The JIT should insert the helper variants that track transitions.
         JIT_FLAG_TIER0                   = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         JIT_FLAG_TIER1                   = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
 
 #if defined(TARGET_ARM)
         JIT_FLAG_RELATIVE_CODE_RELOCS    = 41, // JIT should generate PC-relative address computations instead of EE relocation records
 #else // !defined(TARGET_ARM)
-        JIT_FLAG_UNUSED13                = 41,
+        JIT_FLAG_UNUSED15                = 41,
 #endif // !defined(TARGET_ARM)
 
         JIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
 
-        JIT_FLAG_UNUSED14                = 43,
-        JIT_FLAG_UNUSED15                = 44,
-        JIT_FLAG_UNUSED16                = 45,
-        JIT_FLAG_UNUSED17                = 46,
-        JIT_FLAG_UNUSED18                = 47,
-        JIT_FLAG_UNUSED19                = 48,
-        JIT_FLAG_UNUSED20                = 49,
-        JIT_FLAG_UNUSED21                = 50,
-        JIT_FLAG_UNUSED22                = 51,
-        JIT_FLAG_UNUSED23                = 52,
-        JIT_FLAG_UNUSED24                = 53,
-        JIT_FLAG_UNUSED25                = 54,
-        JIT_FLAG_UNUSED26                = 55,
-        JIT_FLAG_UNUSED27                = 56,
-        JIT_FLAG_UNUSED28                = 57,
-        JIT_FLAG_UNUSED29                = 58,
-        JIT_FLAG_UNUSED30                = 59,
-        JIT_FLAG_UNUSED31                = 60,
-        JIT_FLAG_UNUSED32                = 61,
-        JIT_FLAG_UNUSED33                = 62,
-        JIT_FLAG_UNUSED34                = 63
+        JIT_FLAG_UNUSED16                = 43,
+        JIT_FLAG_UNUSED17                = 44,
+        JIT_FLAG_UNUSED18                = 45,
+        JIT_FLAG_UNUSED19                = 46,
+        JIT_FLAG_UNUSED20                = 47,
+        JIT_FLAG_UNUSED21                = 48,
+        JIT_FLAG_UNUSED22                = 49,
+        JIT_FLAG_UNUSED23                = 50,
+        JIT_FLAG_UNUSED24                = 51,
+        JIT_FLAG_UNUSED25                = 52,
+        JIT_FLAG_UNUSED26                = 53,
+        JIT_FLAG_UNUSED27                = 54,
+        JIT_FLAG_UNUSED28                = 55,
+        JIT_FLAG_UNUSED29                = 56,
+        JIT_FLAG_UNUSED30                = 57,
+        JIT_FLAG_UNUSED31                = 58,
+        JIT_FLAG_UNUSED32                = 59,
+        JIT_FLAG_UNUSED33                = 60,
+        JIT_FLAG_UNUSED34                = 61,
+        JIT_FLAG_UNUSED35                = 62,
+        JIT_FLAG_UNUSED36                = 63
 
     };
     // clang-format on
@@ -191,7 +191,6 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE, JIT_FLAG_MAKEFINALCODE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN, JIT_FLAG_READYTORUN);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE, JIT_FLAG_PROF_ENTERLEAVE);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_REJIT_NOPS, JIT_FLAG_PROF_REJIT_NOPS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE, JIT_FLAG_PROF_NO_PINVOKE_INLINE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION, JIT_FLAG_SKIP_VERIFICATION);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PREJIT, JIT_FLAG_PREJIT);
@@ -202,7 +201,6 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR, JIT_FLAG_BBINSTR);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBOPT, JIT_FLAG_BBOPT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FRAMED, JIT_FLAG_FRAMED);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALIGN_LOOPS, JIT_FLAG_ALIGN_LOOPS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM, JIT_FLAG_PUBLISH_SECRET_PARAM);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND, JIT_FLAG_SAMPLING_JIT_BACKGROUND);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_PINVOKE_HELPERS, JIT_FLAG_USE_PINVOKE_HELPERS);

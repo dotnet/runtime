@@ -39,6 +39,20 @@
     <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
   </PropertyGroup>
 
+  <!-- 
+    hostpolicy and hostfxr aren't in the platform manifest in the ref pack and cannot be without breaking things upstack.
+    We add the entries here to ensure that we don't fail the validation that every file included in the runtime pack is in the platform manifest
+    without adding the entries to the manifest in the ref pack.
+  -->
+  <ItemGroup>
+    <PlatformManifestFileEntry Include="hostpolicy.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libhostpolicy.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libhostpolicy.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="hostfxr.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libhostfxr.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libhostfxr.dylib" IsNative="true" />
+  </ItemGroup>
+
   <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
     <ItemGroup>
       <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
@@ -63,7 +77,7 @@
 
       <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="@(MonoCrossFiles)">
-        <TargetPath>runtimes/$(RuntimeIdentifier)/native/cross</TargetPath>
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/cross/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
       <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="@(MonoIncludeFiles)"
@@ -71,6 +85,7 @@
         <TargetPath>runtimes/$(RuntimeIdentifier)/native/include/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
 
+      <CoreCLRCrossTargetFiles PackOnly="true" />
       <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
         <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
         </CoreCLRCrossTargetFiles>

@@ -83,7 +83,7 @@ OBJECTREF CLRException::GetThrowable()
     Thread *pThread = GetThread();
 
     if (pThread->IsRudeAbortInitiated()) {
-        return GetPreallocatedRudeThreadAbortException();
+        return GetBestThreadAbortException();
     }
 
     if ((IsType(CLRLastThrownObjectException::GetType()) &&
@@ -122,13 +122,10 @@ OBJECTREF CLRException::GetThrowable()
             }
             else if (GetInstanceType() == EEException::GetType() && GetHR() == COR_E_THREADABORTED)
             {
-                // If creating a normal ThreadAbortException fails, due to OOM or StackOverflow,
-                // use a pre-created one.
-                // We do not won't to change a ThreadAbortException into OOM or StackOverflow, because
-                // it will cause recursive call when escalation policy is on:
-                // Creating ThreadAbortException fails, we throw OOM.  Escalation leads to ThreadAbort.
-                // The cycle repeats.
-                throwable = GetPreallocatedThreadAbortException();
+                // the only use for thread abort in coreclr is when debugger needs to tear down
+                // a runaway expression evaluation.
+                // it would not escalate OOM into another abort, so OOM in low memory case is appropriate.
+                throwable = GetBestThreadAbortException();
             }
             else
             {
@@ -147,7 +144,7 @@ OBJECTREF CLRException::GetThrowable()
 
                 // We didn't recognize it, so use the preallocated System.Exception instance.
                 STRESS_LOG0(LF_EH, LL_INFO100, "CLRException::GetThrowable: Recursion! Translating to preallocated System.Exception.\n");
-                throwable = GetPreallocatedBaseException();
+                throwable = GetBestBaseException(); 
             }
         }
     }
@@ -203,13 +200,10 @@ OBJECTREF CLRException::GetThrowable()
 
             if (GetHR() == COR_E_THREADABORTED)
             {
-                // If creating a normal ThreadAbortException fails, due to OOM or StackOverflow,
-                // use a pre-created one.
-                // We do not won't to change a ThreadAbortException into OOM or StackOverflow, because
-                // it will cause recursive call when escalation policy is on:
-                // Creating ThreadAbortException fails, we throw OOM.  Escalation leads to ThreadAbort.
-                // The cycle repeats.
-                throwable = GetPreallocatedThreadAbortException();
+                // the only use for thread abort in coreclr is when debugger needs to tear down
+                // a runaway expression evaluation.
+                // it would not escalate OOM into another abort, so OOM in low memory case is appropriate.
+                throwable = GetBestThreadAbortException();
             }
             else
             {
@@ -433,12 +427,6 @@ void CLRException::GetMessage(SString &result)
 }
 
 #ifndef CROSSGEN_COMPILE
-OBJECTREF CLRException::GetPreallocatedBaseException()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(g_pPreallocatedBaseException != NULL);
-    return ObjectFromHandle(g_pPreallocatedBaseException);
-}
 
 OBJECTREF CLRException::GetPreallocatedOutOfMemoryException()
 {
@@ -461,55 +449,11 @@ OBJECTREF CLRException::GetPreallocatedExecutionEngineException()
     return ObjectFromHandle(g_pPreallocatedExecutionEngineException);
 }
 
-OBJECTREF CLRException::GetPreallocatedRudeThreadAbortException()
-{
-    WRAPPER_NO_CONTRACT;
-    // When we are hosted, we pre-create this exception.
-    // This function should be called only if the exception has been created.
-    _ASSERTE(g_pPreallocatedRudeThreadAbortException);
-    return ObjectFromHandle(g_pPreallocatedRudeThreadAbortException);
-}
-
-OBJECTREF CLRException::GetPreallocatedThreadAbortException()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(g_pPreallocatedThreadAbortException);
-    return ObjectFromHandle(g_pPreallocatedThreadAbortException);
-}
-
-OBJECTHANDLE CLRException::GetPreallocatedOutOfMemoryExceptionHandle()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(g_pPreallocatedOutOfMemoryException != NULL);
-    return g_pPreallocatedOutOfMemoryException;
-}
-
-OBJECTHANDLE CLRException::GetPreallocatedThreadAbortExceptionHandle()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(g_pPreallocatedThreadAbortException != NULL);
-    return g_pPreallocatedThreadAbortException;
-}
-
-OBJECTHANDLE CLRException::GetPreallocatedRudeThreadAbortExceptionHandle()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(g_pPreallocatedRudeThreadAbortException != NULL);
-    return g_pPreallocatedRudeThreadAbortException;
-}
-
 OBJECTHANDLE CLRException::GetPreallocatedStackOverflowExceptionHandle()
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(g_pPreallocatedStackOverflowException != NULL);
     return g_pPreallocatedStackOverflowException;
-}
-
-OBJECTHANDLE CLRException::GetPreallocatedExecutionEngineExceptionHandle()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(g_pPreallocatedExecutionEngineException != NULL);
-    return g_pPreallocatedExecutionEngineException;
 }
 
 //
@@ -526,24 +470,9 @@ BOOL CLRException::IsPreallocatedExceptionObject(OBJECTREF o)
     }
     CONTRACTL_END;
 
-    if ((o == ObjectFromHandle(g_pPreallocatedBaseException)) ||
-        (o == ObjectFromHandle(g_pPreallocatedOutOfMemoryException)) ||
+    if ((o == ObjectFromHandle(g_pPreallocatedOutOfMemoryException)) ||
         (o == ObjectFromHandle(g_pPreallocatedStackOverflowException)) ||
         (o == ObjectFromHandle(g_pPreallocatedExecutionEngineException)))
-    {
-        return TRUE;
-    }
-
-    // The preallocated rude thread abort exception is not always preallocated.
-    if ((g_pPreallocatedRudeThreadAbortException != NULL) &&
-        (o == ObjectFromHandle(g_pPreallocatedRudeThreadAbortException)))
-    {
-        return TRUE;
-    }
-
-    // The preallocated rude thread abort exception is not always preallocated.
-    if ((g_pPreallocatedThreadAbortException != NULL) &&
-        (o == ObjectFromHandle(g_pPreallocatedThreadAbortException)))
     {
         return TRUE;
     }
@@ -565,18 +494,9 @@ BOOL CLRException::IsPreallocatedExceptionHandle(OBJECTHANDLE h)
     }
     CONTRACTL_END;
 
-    if ((h == g_pPreallocatedBaseException) ||
-        (h == g_pPreallocatedOutOfMemoryException) ||
+    if ((h == g_pPreallocatedOutOfMemoryException) ||
         (h == g_pPreallocatedStackOverflowException) ||
-        (h == g_pPreallocatedExecutionEngineException) ||
-        (h == g_pPreallocatedThreadAbortException))
-    {
-        return TRUE;
-    }
-
-    // The preallocated rude thread abort exception is not always preallocated.
-    if ((g_pPreallocatedRudeThreadAbortException != NULL) &&
-        (h == g_pPreallocatedRudeThreadAbortException))
+        (h == g_pPreallocatedExecutionEngineException))
     {
         return TRUE;
     }
@@ -599,11 +519,7 @@ OBJECTHANDLE CLRException::GetPreallocatedHandleForObject(OBJECTREF o)
     }
     CONTRACTL_END;
 
-    if (o == ObjectFromHandle(g_pPreallocatedBaseException))
-    {
-        return g_pPreallocatedBaseException;
-    }
-    else if (o == ObjectFromHandle(g_pPreallocatedOutOfMemoryException))
+    if (o == ObjectFromHandle(g_pPreallocatedOutOfMemoryException))
     {
         return g_pPreallocatedOutOfMemoryException;
     }
@@ -615,23 +531,12 @@ OBJECTHANDLE CLRException::GetPreallocatedHandleForObject(OBJECTREF o)
     {
         return g_pPreallocatedExecutionEngineException;
     }
-    else if (o == ObjectFromHandle(g_pPreallocatedThreadAbortException))
-    {
-        return g_pPreallocatedThreadAbortException;
-    }
-
-    // The preallocated rude thread abort exception is not always preallocated.
-    if ((g_pPreallocatedRudeThreadAbortException != NULL) &&
-        (o == ObjectFromHandle(g_pPreallocatedRudeThreadAbortException)))
-    {
-        return g_pPreallocatedRudeThreadAbortException;
-    }
 
     return NULL;
 }
 
-// Prefer a new OOM exception if we can make one.  If we cannot, then give back the pre-allocated one.
-OBJECTREF CLRException::GetBestOutOfMemoryException()
+// Prefer a new exception if we can make one.  If we cannot, then give back the pre-allocated OOM.
+OBJECTREF CLRException::GetBestException(HRESULT hr, PTR_MethodTable mt)
 {
     CONTRACTL
     {
@@ -646,8 +551,8 @@ OBJECTREF CLRException::GetBestOutOfMemoryException()
     {
         FAULT_NOT_FATAL();
 
-        EXCEPTIONREF pOutOfMemory = (EXCEPTIONREF)AllocateObject(g_pOutOfMemoryExceptionClass);
-        pOutOfMemory->SetHResult(COR_E_OUTOFMEMORY);
+        EXCEPTIONREF pOutOfMemory = (EXCEPTIONREF)AllocateObject(mt);
+        pOutOfMemory->SetHResult(hr);
         pOutOfMemory->SetXCode(EXCEPTION_COMPLUS);
 
         retVal = pOutOfMemory;
@@ -663,6 +568,47 @@ OBJECTREF CLRException::GetBestOutOfMemoryException()
     return retVal;
 }
 
+OBJECTREF CLRException::GetBestOutOfMemoryException()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    return GetBestException(COR_E_OUTOFMEMORY, g_pOutOfMemoryExceptionClass);
+}
+
+OBJECTREF CLRException::GetBestBaseException()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    return GetBestException(COR_E_EXCEPTION, g_pOutOfMemoryExceptionClass);
+}
+
+// thread abort is generally not supported in coreclr
+// FX is not hardened to handle thread aborts and it may cause corruptions and deadlocks
+// the only permitted scenario is when debugger needs to tear down a runaway expression evaluation.
+// while unsafe, practically it is better than debuggee termination.
+// For the same reasons, in a rare case if ThreadAbortException cannot be obtained,
+// throwing OOM could be a good enough substitute that may still work.
+OBJECTREF CLRException::GetBestThreadAbortException()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    return GetBestException(COR_E_THREADABORTED, g_pThreadAbortExceptionClass);
+}
 
 // Works on non-CLRExceptions as well
 // static function
@@ -828,8 +774,8 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                     // Hence, we return preallocated System.Exception instance.
                     if (oRetVal == NULL)
                     {
-                        oRetVal = GetPreallocatedBaseException();
-                        STRESS_LOG0(LF_EH, LL_INFO100, "CLRException::GetThrowableFromException: Unknown Exception creating throwable; getting preallocated System.Exception.\n");
+                        oRetVal = GetBestBaseException();
+                        STRESS_LOG0(LF_EH, LL_INFO100, "CLRException::GetThrowableFromException: Unknown Exception creating throwable; getting System.Exception.\n");
                     }
                 }
 

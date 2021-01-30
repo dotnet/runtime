@@ -491,7 +491,7 @@ namespace System.Reflection.Emit
 
         public override Type MakeGenericType(params Type[] typeArguments)
         {
-            throw new InvalidOperationException(Environment.GetResourceString("Arg_NotGenericTypeDefinition"));
+            throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
         }
 
         public override Type MakePointerType()

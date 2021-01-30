@@ -63,4 +63,4 @@ else()
     _install (FILES $<TARGET_PDB_FILE:superpmi-shim-collector> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
-_install (TARGETS superpmi-shim-collector DESTINATION .)
+_install (PROGRAMS $<TARGET_FILE:superpmi-shim-collector> DESTINATION .)

@@ -51,11 +51,11 @@ These tests are run with `xharness wasm test-browser`, for running on the browse
 The wrapper script used to actually run these tests, accepts:
 
 `$XHARNESS_COMMAND`, which defaults to `test`.
-`$XHARNESS_CLI_COMMAND` (see next section)
+`$XHARNESS_CLI_PATH` (see next section)
 
 ### Using a local build of xharness
 
-* set `XHARNESS_CLI_COMMAND=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/netcoreapp3.1/Microsoft.DotNet.XHarness.CLI.dll`
+* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/netcoreapp3.1/Microsoft.DotNet.XHarness.CLI.dll`
 
 ### Note: Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 

@@ -293,6 +293,7 @@ TESTS_CS_SRC=		\
 	assemblyresolve_event4.cs	\
 	assemblyresolve_event5.cs	\
 	assemblyresolve_event6.cs	\
+	assemblyresolve_event7.cs	\
 	checked.cs		\
 	char-isnumber.cs	\
 	field-layout.cs		\
@@ -1690,7 +1691,8 @@ CI_DISABLED_TESTS = \
 	main-returns-background-abort-resetabort.exe	\
 	assemblyresolve_event3.exe \
 	finally_guard.exe \
-	generic-xdomain.2.exe
+	generic-xdomain.2.exe \
+	localloc-noinit.exe
 
 # failing tests which we temporarily disable for PRs
 # so they don't interfere with other people's work

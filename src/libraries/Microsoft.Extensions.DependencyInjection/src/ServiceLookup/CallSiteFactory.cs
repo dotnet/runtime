@@ -221,7 +221,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
                 else
                 {
-                    throw new InvalidOperationException("Invalid service descriptor");
+                    throw new InvalidOperationException(SR.InvalidServiceDescriptor);
                 }
 
                 return callSite;
@@ -285,7 +285,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
 
                     parameterCallSites = CreateArgumentCallSites(
-                        serviceType,
                         implementationType,
                         callSiteChain,
                         parameters,
@@ -304,7 +303,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ParameterInfo[] parameters = constructors[i].GetParameters();
 
                     ServiceCallSite[] currentParameterCallSites = CreateArgumentCallSites(
-                        serviceType,
                         implementationType,
                         callSiteChain,
                         parameters,
@@ -324,19 +322,24 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                             if (bestConstructorParameterTypes == null)
                             {
-                                bestConstructorParameterTypes = new HashSet<Type>(
-                                    bestConstructor.GetParameters().Select(p => p.ParameterType));
+                                bestConstructorParameterTypes = new HashSet<Type>();
+                                foreach (ParameterInfo p in bestConstructor.GetParameters())
+                                {
+                                    bestConstructorParameterTypes.Add(p.ParameterType);
+                                }
                             }
 
-                            if (!bestConstructorParameterTypes.IsSupersetOf(parameters.Select(p => p.ParameterType)))
+                            foreach (ParameterInfo p in parameters)
                             {
-                                // Ambiguous match exception
-                                string message = string.Join(
-                                    Environment.NewLine,
-                                    SR.Format(SR.AmbiguousConstructorException, implementationType),
-                                    bestConstructor,
-                                    constructors[i]);
-                                throw new InvalidOperationException(message);
+                                if (!bestConstructorParameterTypes.Contains(p.ParameterType))
+                                {
+                                    // Ambiguous match exception
+                                    throw new InvalidOperationException(string.Join(
+                                        Environment.NewLine,
+                                        SR.Format(SR.AmbiguousConstructorException, implementationType),
+                                        bestConstructor,
+                                        constructors[i]));
+                                }
                             }
                         }
                     }
@@ -360,7 +363,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         private ServiceCallSite[] CreateArgumentCallSites(
-            Type serviceType,
             Type implementationType,
             CallSiteChain callSiteChain,
             ParameterInfo[] parameters,
@@ -469,7 +471,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                 }
 
-                throw new InvalidOperationException("Requested service descriptor doesn't exist.");
+                throw new InvalidOperationException(SR.ServiceDescriptorNotExist);
             }
 
             public ServiceDescriptorCacheItem Add(ServiceDescriptor descriptor)

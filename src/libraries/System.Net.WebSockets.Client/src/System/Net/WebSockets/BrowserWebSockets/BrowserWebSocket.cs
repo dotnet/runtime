@@ -463,24 +463,39 @@ namespace System.Net.WebSockets
             Dispose();
         }
 
-        public override async Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
+        public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             _writeBuffer = null;
             ThrowIfNotConnected();
-            await CloseAsyncCore(closeStatus, statusDescription, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
-        }
-
-        private async Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
-        {
-            ThrowOnInvalidState(State, WebSocketState.Connecting, WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent);
 
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
-            _tcsClose = new TaskCompletionSource();
-            _innerWebSocketCloseStatus = closeStatus;
-            _innerWebSocketCloseStatusDescription = statusDescription;
-            _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
-            await _tcsClose.Task.ConfigureAwait(continueOnCapturedContext: true);
+            try
+            {
+                ThrowOnInvalidState(State, WebSocketState.Connecting, WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent);
+            }
+            catch (Exception exc)
+            {
+                return Task.FromException(exc);
+            }
+
+            return CloseAsyncCore(closeStatus, statusDescription, cancellationToken);
+        }
+
+        private Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
+        {
+            try
+            {
+                _tcsClose = new TaskCompletionSource();
+                _innerWebSocketCloseStatus = closeStatus;
+                _innerWebSocketCloseStatusDescription = statusDescription;
+                _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
+                return _tcsClose.Task;
+            }
+            catch (Exception exc)
+            {
+                return Task.FromException(exc);
+            }
         }
 
         public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();

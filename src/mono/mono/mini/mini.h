@@ -314,8 +314,9 @@ enum {
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
 #ifdef TARGET_ARM64
-// FIXME: enable for Arm64
-#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
+// SIMD is only supported on arm64 when using the LLVM backend. When not using
+// the LLVM backend, treat SIMD datatypes as regular value types.
+#define MONO_CLASS_IS_SIMD(cfg, klass) ( ((cfg)->opt & MONO_OPT_SIMD) && ( COMPILE_LLVM (cfg) ) && m_class_is_simd_type (klass) )
 #else
 #define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass))
 #endif
@@ -1457,6 +1458,7 @@ typedef struct {
 	guint            self_init : 1;
 	guint            domainvar_inited : 1;
 	guint            code_exec_only : 1;
+	guint            interp_entry_only : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -2870,6 +2872,8 @@ typedef enum {
 #ifdef TARGET_ARM64
 	MONO_CPU_ARM64_BASE   = 1 << 1,
 	MONO_CPU_ARM64_CRC    = 1 << 2,
+	MONO_CPU_ARM64_CRYPTO = 1 << 3,
+	MONO_CPU_ARM64_ADVSIMD = 1 << 4,
 #endif
 } MonoCPUFeatures;
 
@@ -2897,6 +2901,12 @@ enum {
 
 /* SIMD operations */
 typedef enum {
+	SIMD_OP_LLVM_FABS,
+	SIMD_OP_LLVM_DABS,
+	SIMD_OP_LLVM_I8ABS,
+	SIMD_OP_LLVM_I16ABS,
+	SIMD_OP_LLVM_I32ABS,
+	SIMD_OP_LLVM_I64ABS,
 	SIMD_OP_SSE_CVTSS2SI,
 	SIMD_OP_SSE_CVTTSS2SI,
 	SIMD_OP_SSE_CVTSS2SI64,
@@ -2985,7 +2995,17 @@ typedef enum {
 	SIMD_OP_ARM64_CRC32CW,
 	SIMD_OP_ARM64_CRC32CX,
 	SIMD_OP_ARM64_RBIT32,
-	SIMD_OP_ARM64_RBIT64
+	SIMD_OP_ARM64_RBIT64,
+	SIMD_OP_ARM64_SHA1C,
+	SIMD_OP_ARM64_SHA1H,
+	SIMD_OP_ARM64_SHA1M,
+	SIMD_OP_ARM64_SHA1P,
+	SIMD_OP_ARM64_SHA1SU0,
+	SIMD_OP_ARM64_SHA1SU1,
+	SIMD_OP_ARM64_SHA256H,
+	SIMD_OP_ARM64_SHA256H2,
+	SIMD_OP_ARM64_SHA256SU0,
+	SIMD_OP_ARM64_SHA256SU1
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);
@@ -2994,7 +3014,6 @@ MonoCPUFeatures mono_arch_get_cpu_features (void);
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 void        mono_simd_simplify_indirection (MonoCompile *cfg);
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
-void        mono_simd_decompose_intrinsics (MonoCompile *cfg);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);

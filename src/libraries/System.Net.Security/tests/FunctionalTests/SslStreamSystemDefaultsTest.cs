@@ -79,7 +79,8 @@ namespace System.Net.Security.Tests
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
             using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
             {
-                string serverHost = serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
+                // Use a different SNI for each connection to prevent TLS 1.3 renegotiation issue: https://github.com/dotnet/runtime/issues/47378
+                string serverHost = getTestSNIName();
                 var clientCertificates = new X509CertificateCollection() { clientCertificate };
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
@@ -98,6 +99,16 @@ namespace System.Net.Security.Tests
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha512,
                         _clientStream.SslProtocol + " " + _clientStream.HashAlgorithm);
                 }
+            }
+
+            string getTestSNIName()
+            {
+                static string ProtocolToString(SslProtocols? protocol)
+                {
+                    return (protocol?.ToString() ?? "null").Replace(", ", "_");
+                }
+
+                return $"{nameof(ClientAndServer_OneOrBothUseDefault_Ok)}_{ProtocolToString(clientProtocols)}_{ProtocolToString(serverProtocols)}";
             }
         }
 
@@ -130,6 +141,7 @@ namespace System.Net.Security.Tests
                 case SslPolicyErrors.None:
                 case SslPolicyErrors.RemoteCertificateChainErrors:
                 case SslPolicyErrors.RemoteCertificateNameMismatch:
+                case SslPolicyErrors.RemoteCertificateChainErrors | SslPolicyErrors.RemoteCertificateNameMismatch:
                     return true;
                 case SslPolicyErrors.RemoteCertificateNotAvailable:
                 default:

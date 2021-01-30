@@ -3592,6 +3592,9 @@
   <data name="InvalidOperation_ResetGlobalComWrappersInstance" xml:space="preserve">
     <value>Attempt to update previously set global instance.</value>
   </data>
+  <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
+    <value>Supplying a non-null inner should also be marked as Aggregated.</value>
+  </data>
   <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
     <value>Length of items must be same as length of keys.</value>
   </data>
@@ -3669,5 +3672,8 @@
   </data>
   <data name="Activator_CannotCreateInstance" xml:space="preserve">
     <value>Cannot dynamically create an instance of type '{0}'. Reason: {1}</value>
+  </data>
+  <data name="Argv_IncludeDoubleQuote" xml:space="preserve">
+    <value>The argv[0] argument cannot include a double quote.</value>
   </data>
 </root>

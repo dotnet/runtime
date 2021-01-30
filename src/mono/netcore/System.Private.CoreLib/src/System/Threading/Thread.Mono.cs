@@ -34,9 +34,6 @@ namespace System.Threading
         private IntPtr debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
         private UIntPtr static_data; /* GC-tracked */
         private IntPtr runtime_thread_info;
-        /* current System.Runtime.Remoting.Contexts.Context instance
-           keep as an object to avoid triggering its class constructor when not needed */
-        private object? current_appcontext;
         private object? root_domain_thread;
         internal byte[]? _serialized_principal;
         internal int _serialized_principal_version;
@@ -74,9 +71,7 @@ namespace System.Threading
 #pragma warning restore 169, 414, 649
 
         private string? _name;
-        private Delegate? m_start;
-        private object? m_start_arg;
-        private CultureInfo? culture, ui_culture;
+        private StartHelper? _startHelper;
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
 
@@ -178,14 +173,6 @@ namespace System.Threading
 
         public ThreadState ThreadState => GetState(this);
 
-        private void Create(ThreadStart start) => SetStartHelper((Delegate)start, 0); // 0 will setup Thread with default stackSize
-
-        private void Create(ThreadStart start, int maxStackSize) => SetStartHelper((Delegate)start, maxStackSize);
-
-        private void Create(ParameterizedThreadStart start) => SetStartHelper((Delegate)start, 0);
-
-        private void Create(ParameterizedThreadStart start, int maxStackSize) => SetStartHelper((Delegate)start, maxStackSize);
-
         public ApartmentState GetApartmentState() => ApartmentState.Unknown;
 
         public void DisableComObjectEagerCleanup()
@@ -218,18 +205,12 @@ namespace System.Threading
             return JoinInternal(this, millisecondsTimeout);
         }
 
-        private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
+        private void Initialize()
         {
-            if (uiCulture)
-                ui_culture = value;
-            else
-                culture = value;
-        }
+            InitInternal(this);
 
-        private void SetStartHelper(Delegate start, int maxStackSize)
-        {
-            m_start = start;
-            stack_size = maxStackSize;
+            // TODO: This can go away once the mono/mono mirror is disabled
+            stack_size = _startHelper!._maxStackSize;
         }
 
         public static void SpinWait(int iterations)
@@ -251,101 +232,28 @@ namespace System.Threading
 
         internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
-#if !TARGET_BROWSER
-        [UnsupportedOSPlatform("browser")]
-        public void Start()
-        {
-            _executionContext = ExecutionContext.Capture();
-            StartInternal(this);
-        }
-
-        [UnsupportedOSPlatform("browser")]
-        public void Start(object parameter)
-        {
-            if (m_start is ThreadStart)
-                throw new InvalidOperationException(SR.InvalidOperation_ThreadWrongThreadStart);
-
-            m_start_arg = parameter;
-            Start();
-        }
-
-        [UnsupportedOSPlatform("browser")]
-        internal void UnsafeStart()
-        {
-            StartInternal(this);
-        }
-
-        [UnsupportedOSPlatform("browser")]
-        internal void UnsafeStart(object parameter)
-        {
-            Debug.Assert(m_start is ThreadStart);
-
-            m_start_arg = parameter;
-            UnsafeStart();
-        }
-
         // Called from the runtime
         internal void StartCallback()
         {
-            ExecutionContext? context = _executionContext;
-            _executionContext = null;
-            if (context != null && !context.IsDefault)
-            {
-                ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
-            }
-            else
-            {
-                StartCallbackWorker();
-            }
-        }
+            StartHelper? startHelper = _startHelper;
+            Debug.Assert(startHelper != null);
+            _startHelper = null;
 
-        private static readonly ContextCallback s_threadStartContextCallback = new ContextCallback(StartCallback_Context);
-
-        private static void StartCallback_Context(object? state)
-        {
-            Debug.Assert(state is Thread);
-            ((Thread)state).StartCallbackWorker();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // otherwise an unnecessary long-lived stack frame in many threads
-        private void StartCallbackWorker()
-        {
-            if (culture != null)
-            {
-                CultureInfo.CurrentCulture = culture;
-                culture = null;
-            }
-
-            if (ui_culture != null)
-            {
-                CultureInfo.CurrentUICulture = ui_culture;
-                ui_culture = null;
-            }
-
-            if (m_start is ThreadStart del)
-            {
-                m_start = null;
-                del();
-            }
-            else
-            {
-                Debug.Assert(m_start is ParameterizedThreadStart);
-                var pdel = (ParameterizedThreadStart)m_start!;
-                object? arg = m_start_arg;
-                m_start = null;
-                m_start_arg = null;
-                pdel(arg);
-            }
+            startHelper.Run();
         }
 
         // Called from the runtime
         internal static void ThrowThreadStartException(Exception ex) => throw new ThreadStartException(ex);
 
+        private void StartCore()
+        {
+             StartInternal(this);
+        }
+
         [DynamicDependency(nameof(StartCallback))]
         [DynamicDependency(nameof(ThrowThreadStartException))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void StartInternal(Thread runtime_thread);
-#endif
 
         partial void ThreadNameChanged(string? value)
         {
@@ -432,9 +340,6 @@ namespace System.Threading
         private static void SpinWait_nop()
         {
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Thread CreateInternal();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool JoinInternal(Thread thread, int millisecondsTimeout);

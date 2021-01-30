@@ -58,11 +58,6 @@
     <Compile Include="Mono\TimeSpanValidatorTest.cs" />
     <Compile Include="Mono\TypeNameConverterTest.cs" />
     <Compile Include="Mono\WhiteSpaceTrimStringConverterTest.cs" />
-    <Compile Include="Resources\Strings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
     <Compile Include="System\Configuration\ApplicationSettingsBaseTests.cs" />
     <Compile Include="System\Configuration\AppSettingsReaderTests.cs" />
     <Compile Include="System\Configuration\AppSettingsTests.cs" />

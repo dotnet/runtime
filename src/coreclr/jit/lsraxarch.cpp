@@ -1822,17 +1822,10 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             internalFloatDef = buildInternalFloatRegisterDefForNode(tree, internalFloatRegCandidates());
             break;
 
-#ifdef TARGET_X86
-        case NI_System_Math_Cos:
-        case NI_System_Math_Sin:
-            NYI_X86("Math intrinsics Cos and Sin");
-            break;
-#endif // TARGET_X86
-
-        case NI_System_Math_Sqrt:
-        case NI_System_Math_Round:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
             break;
 
         default:

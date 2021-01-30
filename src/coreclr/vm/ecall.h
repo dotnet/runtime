@@ -116,7 +116,6 @@ class ECall
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorSBytePtrManaged,               NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorSBytePtrStartLengthManaged,    NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorSBytePtrStartLengthEncodingManaged, NULL) \
-    DYNAMICALLY_ASSIGNED_FCALL_IMPL(InternalGetCurrentThread,          NULL) \
 
 #define DYNAMICALLY_ASSIGNED_FCALLS() _DYNAMICALLY_ASSIGNED_FCALLS_BASE()
 

@@ -148,12 +148,12 @@ namespace System
                 0;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return Equals(obj as Version);
         }
 
-        public bool Equals(Version? obj)
+        public bool Equals([NotNullWhen(true)] Version? obj)
         {
             return object.ReferenceEquals(obj, this) ||
                 (!(obj is null) &&

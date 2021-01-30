@@ -152,12 +152,6 @@
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclrtraceptprovider.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="hostpolicy.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libhostpolicy.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libhostpolicy.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="hostfxr.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libhostfxr.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libhostfxr.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.x86.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.amd64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />

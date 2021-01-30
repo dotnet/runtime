@@ -1614,7 +1614,6 @@ public:
 
         assert(GetByteSize() > TARGET_POINTER_SIZE * numRegs);
         const unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
-        assert(IsSplit() || ((stackByteSize % m_byteAlignment) == 0));
         return stackByteSize;
     }
 
@@ -1798,24 +1797,48 @@ public:
         return m_byteOffset;
     }
 
-    void SetByteSize(unsigned byteSize, unsigned byteAlignment)
+    void SetByteSize(unsigned byteSize, bool isStruct, bool isFloatHfa)
     {
-        assert(byteAlignment != 0);
-        const unsigned alignedByteSize = roundUp(byteSize, byteAlignment);
+
+#ifdef OSX_ARM64_ABI
+        unsigned roundedByteSize;
+        // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
+        if (isStruct && !isFloatHfa)
+        {
+            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+        }
+        else
+        {
+            roundedByteSize = byteSize;
+        }
+#else  // OSX_ARM64_ABI
+        unsigned roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+#endif // OSX_ARM64_ABI
+
+#if !defined(TARGET_ARM)
+        // Arm32 could have a struct with 8 byte alignment
+        // which rounded size % 8 is not 0.
+        assert(m_byteAlignment != 0);
+        assert(roundedByteSize % m_byteAlignment == 0);
+#endif // TARGET_ARM
 
 #if defined(DEBUG_ARG_SLOTS)
         if (!isStruct)
         {
-            assert(alignedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
+            assert(roundedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
         }
 #endif
-        m_byteSize      = alignedByteSize;
-        m_byteAlignment = byteAlignment;
+        m_byteSize = roundedByteSize;
     }
 
     unsigned GetByteSize() const
     {
         return m_byteSize;
+    }
+
+    void SetByteAlignment(unsigned byteAlignment)
+    {
+        m_byteAlignment = byteAlignment;
     }
 
     unsigned GetByteAlignment() const
@@ -1947,6 +1970,7 @@ public:
                              unsigned          byteSize,
                              unsigned          byteAlignment,
                              bool              isStruct,
+                             bool              isFloatHfa,
                              bool              isVararg = false);
 
 #ifdef UNIX_AMD64_ABI
@@ -1958,6 +1982,7 @@ public:
                              unsigned                                                         byteSize,
                              unsigned                                                         byteAlignment,
                              const bool                                                       isStruct,
+                             const bool                                                       isFloatHfa,
                              const bool                                                       isVararg,
                              const regNumber                                                  otherRegNum,
                              const unsigned                                                   structIntRegs,
@@ -1972,6 +1997,7 @@ public:
                              unsigned          byteSize,
                              unsigned          byteAlignment,
                              bool              isStruct,
+                             bool              isFloatHfa,
                              bool              isVararg = false);
 
     void RemorphReset();
@@ -2500,7 +2526,9 @@ public:
     unsigned ehFuncletCount(); // Return the count of funclets in the function
 
     unsigned bbThrowIndex(BasicBlock* blk); // Get the index to use as the cache key for sharing throw blocks
-#else                                       // !FEATURE_EH_FUNCLETS
+
+#else  // !FEATURE_EH_FUNCLETS
+
     bool ehAnyFunclets()
     {
         return false;
@@ -2514,7 +2542,7 @@ public:
     {
         return blk->bbTryIndex;
     } // Get the index to use as the cache key for sharing throw blocks
-#endif                                      // !FEATURE_EH_FUNCLETS
+#endif // !FEATURE_EH_FUNCLETS
 
     // Returns a flowList representing the "EH predecessors" of "blk".  These are the normal predecessors of
     // "blk", plus one special case: if "blk" is the first block of a handler, considers the predecessor(s) of the first
@@ -4619,6 +4647,8 @@ public:
     bool     fgPrintInlinedMethods;
 #endif
 
+    jitstd::vector<flowList*>* fgPredListSortVector;
+
     //-------------------------------------------------------------------------
 
     void fgInit();
@@ -5015,6 +5045,10 @@ public:
 
     // Convert a BYTE which represents the VM's CorInfoGCtype to the JIT's var_types
     var_types getJitGCType(BYTE gcType);
+
+    // Returns true if the provided type should be treated as a primitive type
+    // for the unmanaged calling conventions.
+    bool isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd);
 
     enum structPassingKind
     {
@@ -5501,10 +5535,13 @@ protected:
 
     void fgAdjustForAddressExposedOrWrittenThis();
 
-    bool                      fgProfileData_ILSizeMismatch;
-    ICorJitInfo::BlockCounts* fgBlockCounts;
-    UINT32                    fgBlockCountsCount;
-    UINT32                    fgNumProfileRuns;
+    bool                                   fgProfileData_ILSizeMismatch;
+    ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
+    BYTE*                                  fgPgoData;
+    UINT32                                 fgPgoSchemaCount;
+    UINT32                                 fgNumProfileRuns;
+    UINT32                                 fgPgoBlockCounts;
+    UINT32                                 fgPgoClassProfiles;
 
     unsigned fgStressBBProf()
     {
@@ -5526,7 +5563,9 @@ protected:
     bool fgHaveProfileData();
     void fgComputeProfileScale();
     bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weight);
-    void fgInstrumentMethod();
+    PhaseStatus fgInstrumentMethod();
+    PhaseStatus fgIncorporateProfileData();
+    void        fgIncorporateBlockCounts();
 
 public:
     // fgIsUsingProfileWeights - returns true if we have real profile data for this method
@@ -5551,6 +5590,7 @@ public:
 #endif
 
 public:
+    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
     Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree);
     Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
@@ -5558,8 +5598,6 @@ public:
 private:
     void fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt);
     void fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt);
-    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
-
     void fgInsertStmtAfter(BasicBlock* block, Statement* insertionPoint, Statement* stmt);
 
 public:
@@ -6337,6 +6375,8 @@ protected:
 
     void optFindNaturalLoops();
 
+    void optIdentifyLoopsForAlignment();
+
     // Ensures that all the loops in the loop nest rooted at "loopInd" (an index into the loop table) are 'canonical' --
     // each loop has a unique "top."  Returns "true" iff the flowgraph has been modified.
     bool optCanonicalizeLoopNest(unsigned char loopInd);
@@ -6832,6 +6872,8 @@ public:
     //
     PhaseStatus optRedundantBranches();
     bool optRedundantBranch(BasicBlock* const block);
+    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock);
+    bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock);
 
 #if ASSERTION_PROP
     /**************************************************************************
@@ -8015,6 +8057,21 @@ private:
 #endif
     }
 
+    bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        return info.compCompHnd->isIntrinsicType(clsHnd);
+    }
+
+    const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
+    {
+        return info.compCompHnd->getClassNameFromMetadata(cls, namespaceName);
+    }
+
+    CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
+    {
+        return info.compCompHnd->getTypeInstantiationArgument(cls, index);
+    }
+
 #ifdef FEATURE_SIMD
 
     // Should we support SIMD intrinsics?
@@ -8231,21 +8288,6 @@ private:
             return strcmp(namespaceName, "System.Numerics") == 0;
         }
         return false;
-    }
-
-    bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
-    {
-        return info.compCompHnd->isIntrinsicType(clsHnd);
-    }
-
-    const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
-    {
-        return info.compCompHnd->getClassNameFromMetadata(cls, namespaceName);
-    }
-
-    CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
-    {
-        return info.compCompHnd->getTypeInstantiationArgument(cls, index);
     }
 
     bool isSIMDClass(typeInfo* pTypeInfo)
@@ -9006,6 +9048,43 @@ public:
         bool dspGCtbls;       // Display the GC tables
 #endif
 
+// Default numbers used to perform loop alignment. All the numbers are choosen
+// based on experimenting with various benchmarks.
+
+// Default minimum loop block weight required to enable loop alignment.
+#define DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT 4
+
+// By default a loop will be aligned at 32B address boundary to get better
+// performance as per architecture manuals.
+#define DEFAULT_ALIGN_LOOP_BOUNDARY 0x20
+
+// For non-adaptive loop alignment, by default, only align a loop whose size is
+// at most 3 times the alignment block size. If the loop is bigger than that, it is most
+// likely complicated enough that loop alignment will not impact performance.
+#define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
+
+#ifdef DEBUG
+        // Loop alignment variables
+
+        // If set, for non-adaptive alignment, ensure loop jmps are not on or cross alignment boundary.
+        bool compJitAlignLoopForJcc;
+#endif
+        // For non-adaptive alignment, minimum loop size (in bytes) for which alignment will be done.
+        unsigned short compJitAlignLoopMaxCodeSize;
+
+        // Minimum weight needed for the first block of a loop to make it a candidate for alignment.
+        unsigned short compJitAlignLoopMinBlockWeight;
+
+        // For non-adaptive alignment, address boundary (power of 2) at which loop alignment should
+        // be done. By default, 32B.
+        unsigned short compJitAlignLoopBoundary;
+
+        // Padding limit to align a loop.
+        unsigned short compJitAlignPaddingLimit;
+
+        // If set, perform adaptive loop alignment that limits number of padding based on loop size.
+        bool compJitAlignLoopAdaptive;
+
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler
 #endif                     // LATE_DISASM
@@ -9303,6 +9382,8 @@ public:
                                       // current number of EH clauses (after additions like synchronized
         // methods and funclets, and removals like unreachable code deletion).
 
+        Target::ArgOrder compArgOrder;
+
         bool compMatchedVM; // true if the VM is "matched": either the JIT is a cross-compiler
                             // and the VM expects that, or the JIT is a "self-host" compiler
                             // (e.g., x86 hosted targeting x86) and the VM expects that.
@@ -9382,6 +9463,14 @@ public:
             return (info.compRetBuffArg != BAD_VAR_NUM);
         }
 #endif // TARGET_WINDOWS && TARGET_ARM64
+        // 4. x86 unmanaged calling conventions require the address of RetBuff to be returned in eax.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_X86)
+        if (info.compCallConv != CorInfoCallConvExtension::Managed)
+        {
+            return (info.compRetBuffArg != BAD_VAR_NUM);
+        }
+#endif
 
         return false;
 #endif // TARGET_AMD64
