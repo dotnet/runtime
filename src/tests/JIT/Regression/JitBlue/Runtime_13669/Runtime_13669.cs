@@ -18,7 +18,7 @@ class Program
 
         return (result == 0) ? 100 : -1;
     }
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static ReadOnlySpan<char> TrimSourceCopied(ReadOnlySpan<char> span)
     {
