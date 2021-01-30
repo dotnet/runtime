@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -34,8 +33,8 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
                 // Get a list of all processes
                 snapshotHandle = CreateToolhelp32Snapshot(SnapshotFlags.Process, 0);
 
-                PROCESSENTRY32 procEntry = new PROCESSENTRY32();
-                procEntry.dwSize = (UInt32)Marshal.SizeOf(typeof(PROCESSENTRY32));
+                PROCESSENTRY32 procEntry = default(PROCESSENTRY32);
+                procEntry.dwSize = Marshal.SizeOf(typeof(PROCESSENTRY32));
                 if (Process32First(snapshotHandle, ref procEntry))
                 {
                     var currentProcessId = Process.GetCurrentProcess().Id;
@@ -76,16 +75,16 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         private struct PROCESSENTRY32
         {
-            const int MAX_PATH = 260;
-            internal UInt32 dwSize;
-            internal UInt32 cntUsage;
-            internal UInt32 th32ProcessID;
+            internal const int MAX_PATH = 260;
+            internal int dwSize;
+            internal int cntUsage;
+            internal int th32ProcessID;
             internal IntPtr th32DefaultHeapID;
-            internal UInt32 th32ModuleID;
-            internal UInt32 cntThreads;
-            internal UInt32 th32ParentProcessID;
-            internal Int32 pcPriClassBase;
-            internal UInt32 dwFlags;
+            internal int th32ModuleID;
+            internal int cntThreads;
+            internal int th32ParentProcessID;
+            internal int pcPriClassBase;
+            internal int dwFlags;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_PATH)]
             internal string szExeFile;
         }

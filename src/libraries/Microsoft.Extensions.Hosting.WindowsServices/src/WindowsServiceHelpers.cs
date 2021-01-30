@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -13,7 +12,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
     public static class WindowsServiceHelpers
     {
         /// <summary>
-        /// Check if the current process is hosted as a Windows Service. 
+        /// Check if the current process is hosted as a Windows Service.
         /// </summary>
         /// <returns><c>True</c> if the current process is hosted as a Windows Service, otherwise <c>false</c>.</returns>
         public static bool IsWindowsService()
@@ -32,4 +31,3 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
     }
 }
-
