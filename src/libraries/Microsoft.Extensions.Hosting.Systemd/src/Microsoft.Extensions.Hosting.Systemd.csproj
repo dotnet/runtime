@@ -2,17 +2,12 @@
 
   <PropertyGroup>
     <Description>.NET hosting infrastructure for Systemd Services.</Description>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageTags>hosting</PackageTags>
-    <IsPackable>true</IsPackable>
-    <IsShipping>true</IsShipping>
-    <!-- This project is not included in the shared framework -->
-    <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
+    <TargetFrameworks>netstandard2.1</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Hosting" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
   </ItemGroup>
 
 </Project>
