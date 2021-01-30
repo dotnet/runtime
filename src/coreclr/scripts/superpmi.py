@@ -1015,10 +1015,6 @@ class SuperPMICollect:
                     # 1. <runtime_root>\dotnet.cmd/sh
                     # 2. "dotnet" on PATH
 
-                    # Work around https://github.com/dotnet/runtime/issues/47554: crossgen2 doesn't like EnableExtraSuperPmiQueries
-                    crossgen2_complus_env = complus_env.copy()
-                    del crossgen2_complus_env["EnableExtraSuperPmiQueries"]
-
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
                         rsp_write_handle.write(assembly + "\n")
@@ -1029,7 +1025,7 @@ class SuperPMICollect:
                         rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
-                        for var, value in crossgen2_complus_env.items():
+                        for var, value in complus_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
                     # Log what is in the response file
