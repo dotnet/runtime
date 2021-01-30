@@ -119,18 +119,15 @@ namespace System.Net.Mail
 
         private static bool TryParse(string address, string? displayName, Encoding? displayNameEncoding, out (string displayName, string user, string host, Encoding displayNameEncoding) parsedData, bool throwExceptionIfFail)
         {
-            if (address == null)
+            if (string.IsNullOrEmpty(address))
             {
                 if (throwExceptionIfFail)
-                    throw new ArgumentNullException(nameof(address));
-
-                parsedData = default;
-                return false;
-            }
-            if (address.Length == 0)
-            {
-                if (throwExceptionIfFail)
-                    throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(address)), nameof(address));
+                {
+                    if (address is null)
+                        throw new ArgumentNullException(nameof(address));
+                    else
+                        throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(address)), nameof(address));
+                }
 
                 parsedData = default;
                 return false;

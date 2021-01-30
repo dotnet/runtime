@@ -165,7 +165,13 @@ namespace System.Net.Mail.Tests
         [MemberData(nameof(GetInvalidEmailTestData))]
         public void TestInvalidEmailAddresses(string address)
         {
-            Assert.Throws<FormatException>(() => { new MailAddress(address); });
+            Action act = () => new MailAddress(address);
+            if (address is null)
+                Assert.Throws<ArgumentNullException>(act);
+            else if (address == string.Empty)
+                Assert.Throws<ArgumentException>(act);
+            else
+                Assert.Throws<FormatException>(act);
         }
     }
 }
