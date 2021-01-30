@@ -282,7 +282,7 @@ namespace ILCompiler.DependencyAnalysis
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section);
                     lastWrittenObjectNode = node;
 
-                    if ((_generatePdbFile || _generatePerfMapFile) && node is MethodWithGCInfo methodNode)
+                    if (_outputInfoBuilder != null && node is MethodWithGCInfo methodNode)
                     {
                         _outputInfoBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
                     }
