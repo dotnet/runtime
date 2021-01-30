@@ -113,12 +113,21 @@ public: // Functions operating on a registered global instance for tracker suppo
 class ObjCWrappersNative
 {
 public:
-    static BOOL QCALLTYPE TrySetGlobalMessageSendCallbacks(
-        _In_ void* fptr_objc_msgSend,
-        _In_ void* fptr_objc_msgSend_fpret,
-        _In_ void* fptr_objc_msgSend_stret,
-        _In_ void* fptr_objc_msgSendSuper,
-        _In_ void* fptr_objc_msgSendSuper_stret);
+    // See MsgSendFunction in Bridge.cs
+    enum MsgSendFunction
+    {
+        MsgSendFunction_ObjCMsgSend = 0,
+        MsgSendFunction_ObjCMsgSendFpret = 1,
+        MsgSendFunction_ObjCMsgSendStret = 2,
+        MsgSendFunction_ObjCMsgSendSuper = 3,
+        MsgSendFunction_ObjCMsgSendSuperStret = 4,
+        Last = MsgSendFunction_ObjCMsgSendSuperStret,
+    };
+
+public: // static
+    static BOOL QCALLTYPE TrySetGlobalMessageSendCallback(
+        _In_ MsgSendFunction msgSendFunction,
+        _In_ void* fptr);
 
     static void QCALLTYPE GetLifetimeMethods(
         _Out_ void** allocImpl,
