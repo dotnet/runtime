@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>.NET hosting infrastructure for Systemd Services.</Description>
     <TargetFrameworks>netstandard2.1</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>

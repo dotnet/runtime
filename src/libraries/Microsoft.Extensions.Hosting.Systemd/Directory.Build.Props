@@ -1,6 +1,6 @@
 <Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <PackageDescription>.NET hosting infrastructure for Windows Services.</PackageDescription>
+    <PackageDescription>.NET hosting infrastructure for Systemd Services.</PackageDescription>
   </PropertyGroup>
 </Project>
