@@ -123,10 +123,9 @@ namespace System.Net.Mail
             {
                 if (throwExceptionIfFail)
                 {
-                    if (address is null)
-                        throw new ArgumentNullException(nameof(address));
-                    else
-                        throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(address)), nameof(address));
+                    throw address is null ?
+                        new ArgumentNullException(nameof(address)) :
+                        new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(address)), nameof(address));
                 }
 
                 parsedData = default;
