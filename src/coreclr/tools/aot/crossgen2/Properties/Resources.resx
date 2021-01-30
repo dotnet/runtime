@@ -330,4 +330,10 @@
   <data name="PerfMapFilePathOption" xml:space="preserve">
     <value>Explicit specification of the PerfMap file path</value>
   </data>
+  <data name="CallChainOptimizationMethod" xml:space="preserve">
+    <value>Callchain optimization method: none (default) or sort</value>
+  </data>
+  <data name="UnsupportedCallChainOptimizationMethod" xml:space="preserve">
+    <value>Unsupported callchain optimization method: '{0}'</value>
+  </data>
 </root>

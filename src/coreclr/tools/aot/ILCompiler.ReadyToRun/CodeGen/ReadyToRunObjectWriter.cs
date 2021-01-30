@@ -101,6 +101,12 @@ namespace ILCompiler.DependencyAnalysis
         private string _perfMapPath;
 
         /// <summary>
+        /// Profile data manager is used to access callchain profile data
+        /// used to optimize method ordering in the output executable.
+        /// </summary>
+        private ProfileDataManager _profileData;
+
+        /// <summary>
         /// If non-zero, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB.
         /// This is used to support loading via large pages on Linux.
         /// </summary>
@@ -136,7 +142,7 @@ namespace ILCompiler.DependencyAnalysis
             bool generatePerfMapFile,
             string perfMapPath,
             bool generateProfileFile,
-            CallChainProfile callChainProfile,
+            ProfileDataManager profileData,
             int customPESectionAlignment)
         {
             _objectFilePath = objectFilePath;
@@ -150,6 +156,7 @@ namespace ILCompiler.DependencyAnalysis
             _pdbPath = pdbPath;
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
+            _profileData = profileData;
 
             bool generateMap = (generateMapFile || generateMapCsvFile);
             bool generateSymbols = (generatePdbFile || generatePerfMapFile);
@@ -170,7 +177,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (generateProfileFile)
                 {
-                    _profileFileBuilder = new ProfileFileBuilder(_outputInfoBuilder, callChainProfile, _nodeFactory.Target);
+                    _profileFileBuilder = new ProfileFileBuilder(_outputInfoBuilder, _profileData.CallChainProfile, _nodeFactory.Target);
                 }
             }
         }
@@ -228,12 +235,23 @@ namespace ILCompiler.DependencyAnalysis
                 ObjectNode lastWrittenObjectNode = null;
 
                 int nodeIndex = -1;
+
+                foreach (MethodWithGCInfo methodNode in _profileData.CalculateMethodOrdering(EnumerateMethodNodes()))
+                {
+                    ++nodeIndex;
+                    ObjectData nodeContents = methodNode.GetData(_nodeFactory, relocsOnly: false);
+                    string name = GetNodeNameForMapFile(methodNode);
+                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, methodNode.Section);
+                    lastWrittenObjectNode = methodNode;
+                    _outputInfoBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
+                }
+
                 foreach (var depNode in _nodes)
                 {
                     ++nodeIndex;
                     ObjectNode node = depNode as ObjectNode;
 
-                    if (node == null)
+                    if (node == null || node is MethodWithGCInfo)
                     {
                         continue;
                     }
@@ -262,23 +280,7 @@ namespace ILCompiler.DependencyAnalysis
                         lastImportThunk = importThunkNode;
                     }
 
-                    string name = null;
-
-                    if (_mapFileBuilder != null)
-                    {
-                        name = depNode.GetType().ToString();
-                        int firstGeneric = name.IndexOf('[');
-                        if (firstGeneric < 0)
-                        {
-                            firstGeneric = name.Length;
-                        }
-                        int lastDot = name.LastIndexOf('.', firstGeneric - 1, firstGeneric);
-                        if (lastDot > 0)
-                        {
-                            name = name.Substring(lastDot + 1);
-                        }
-                    }
-
+                    string name = GetNodeNameForMapFile(depNode);
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section);
                     lastWrittenObjectNode = node;
 
@@ -424,6 +426,41 @@ namespace ILCompiler.DependencyAnalysis
             r2rPeBuilder.AddObjectData(data, section, name, _outputInfoBuilder);
         }
 
+        private IEnumerable<MethodWithGCInfo> EnumerateMethodNodes()
+        {
+            foreach (IDependencyNode node in _nodes)
+            {
+                if (node is ObjectNode objectNode
+                    && !objectNode.ShouldSkipEmittingObjectNode(_nodeFactory)
+                    && objectNode is MethodWithGCInfo methodWithGCInfo)
+                {
+                    yield return methodWithGCInfo;
+                }
+            }
+        }
+
+        private string GetNodeNameForMapFile(DependencyNode depNode)
+        {
+            string name = null;
+
+            if (_mapFileBuilder != null)
+            {
+                name = depNode.GetType().ToString();
+                int firstGeneric = name.IndexOf('[');
+                if (firstGeneric < 0)
+                {
+                    firstGeneric = name.Length;
+                }
+                int lastDot = name.LastIndexOf('.', firstGeneric - 1, firstGeneric);
+                if (lastDot > 0)
+                {
+                    name = name.Substring(lastDot + 1);
+                }
+            }
+
+            return name;
+        }
+
         public static void EmitObject(
             string objectFilePath,
             EcmaModule componentModule,
@@ -436,7 +473,7 @@ namespace ILCompiler.DependencyAnalysis
             bool generatePerfMapFile,
             string perfMapPath,
             bool generateProfileFile,
-            CallChainProfile callChainProfile,
+            ProfileDataManager profileData,
             int customPESectionAlignment)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
@@ -452,7 +489,7 @@ namespace ILCompiler.DependencyAnalysis
                 generatePerfMapFile: generatePerfMapFile,
                 perfMapPath: perfMapPath,
                 generateProfileFile: generateProfileFile,
-                callChainProfile,
+                profileData,
                 customPESectionAlignment);
             objectWriter.EmitPortableExecutable();
         }
