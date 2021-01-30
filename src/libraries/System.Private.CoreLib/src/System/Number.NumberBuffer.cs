@@ -70,6 +70,28 @@ namespace System
 
                 Debug.Assert(numDigits == DigitsCount, "Null terminator found in unexpected location in Number");
                 Debug.Assert(numDigits < Digits.Length, "Null terminator not found in Number");
+
+                uint totalDigits = (uint)(DigitsCount);
+                uint positiveExponent = (uint)(Math.Max(0, Scale));
+                uint integerDigitsPresent = Math.Min(positiveExponent, totalDigits);
+                uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
+
+                // Verify that the fractional part does not have any trailing zeros
+                int numberOfTrailingZeros = 0;
+                for (int i = DigitsCount - (int)fractionalDigitsPresent; i < DigitsCount; i++)
+                {
+                    byte digit = Digits[i];
+                    if (digit == 0)
+                    {
+                        numberOfTrailingZeros++;
+                    }
+                    else
+                    {
+                        numberOfTrailingZeros = 0;
+                    }
+                }
+                Debug.Assert(numberOfTrailingZeros == 0, "Fractional part should not have trailing zeros");
+
 #endif // DEBUG
             }
 

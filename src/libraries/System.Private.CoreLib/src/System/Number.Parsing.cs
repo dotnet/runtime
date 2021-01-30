@@ -324,6 +324,7 @@ namespace System
             int digCount = 0;
             int digEnd = 0;
             int maxDigCount = number.Digits.Length - 1;
+            int numberOfTrailingZeros = 0;
 
             while (true)
             {
@@ -357,6 +358,18 @@ namespace System
                         {
                             number.Scale++;
                         }
+                        else
+                        {
+                            // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part, so we keep a count of the numer of trailing zeros and update digCount later
+                            if (ch == '0')
+                            {
+                                numberOfTrailingZeros++;
+                            }
+                            else
+                            {
+                                numberOfTrailingZeros = 0;
+                            }
+                        }
                         state |= StateNonZero;
                     }
                     else if ((state & StateDecimal) != 0)
@@ -381,8 +394,16 @@ namespace System
             }
 
             bool negExp = false;
-            number.DigitsCount = digEnd;
+            number.DigitsCount = digEnd - numberOfTrailingZeros;
             number.Digits[digEnd] = (byte)('\0');
+            // Technically we don't have to clean up the number buffer below. Just doing it to avoid potential future bugs
+            if (numberOfTrailingZeros != 0)
+            {
+                for (int i = digEnd - numberOfTrailingZeros; i < digEnd; i++)
+                {
+                    number.Digits[i] = (byte)('\0');
+                }
+            }
             if ((state & StateDigits) != 0)
             {
                 if ((ch == 'E' || ch == 'e') && ((styles & NumberStyles.AllowExponent) != 0))
