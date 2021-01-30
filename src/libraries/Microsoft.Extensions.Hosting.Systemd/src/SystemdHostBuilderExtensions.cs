@@ -41,7 +41,6 @@ namespace Microsoft.Extensions.Hosting
                     });
 
                     services.AddSingleton<ISystemdNotifier, SystemdNotifier>();
-
                     services.AddSingleton<IHostLifetime, SystemdLifetime>();
                 });
             }
