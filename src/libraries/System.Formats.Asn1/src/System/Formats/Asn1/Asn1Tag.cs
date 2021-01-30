@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Formats.Asn1
 {
@@ -393,7 +394,7 @@ namespace System.Formats.Asn1
         ///   <see langword="false"/> if <paramref name="obj"/> is not an <see cref="Asn1Tag"/>,
         ///   <see cref="Equals(Asn1Tag)"/> otherwise.
         /// </returns>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is Asn1Tag tag && Equals(tag);
         }

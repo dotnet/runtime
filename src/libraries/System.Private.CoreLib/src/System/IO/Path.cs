@@ -295,7 +295,7 @@ namespace System.IO
         /// Tests if a path's file name includes a file extension. A trailing period
         /// is not considered an extension.
         /// </summary>
-        public static bool HasExtension(string? path)
+        public static bool HasExtension([NotNullWhen(true)] string? path)
         {
             if (path != null)
             {

@@ -65,7 +65,7 @@ namespace System
         //   Equals: two multicast delegates are equal if their base is equal
         //   and their invocations list is equal.
         // </remarks>
-        public sealed override bool Equals(object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!base.Equals(obj))
                 return false;
