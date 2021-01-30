@@ -4,14 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
-using Internal.Pgo;
 using Internal.Runtime;
 
 namespace ILCompiler.Reflection.ReadyToRun
@@ -238,232 +236,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
     }
 
-    public class PgoInfoKey : IEquatable<PgoInfoKey>
-    {
-        /// <summary>
-        /// The type that the method belongs to
-        /// </summary>
-        public string DeclaringType { get; }
-
-        public string Name { get; }
-
-        /// <summary>
-        /// The method metadata handle
-        /// </summary>
-        public EntityHandle MethodHandle { get; }
-
-        public IAssemblyMetadata ComponentReader { get; }
-
-        public MethodSignature<string> Signature { get; }
-
-        /// <summary>
-        /// The signature with format: namespace.class.methodName<S, T, ...>(S, T, ...)
-        /// </summary>
-        public string SignatureString { get; }
-
-        public PgoInfoKey(IAssemblyMetadata componentReader, string owningType, EntityHandle methodHandle, string[] instanceArgs)
-        {
-            ComponentReader = componentReader;
-            EntityHandle owningTypeHandle;
-            DisassemblingGenericContext genericContext = new DisassemblingGenericContext(typeParameters: Array.Empty<string>(), methodParameters: instanceArgs);
-            DisassemblingTypeProvider typeProvider = new DisassemblingTypeProvider();
-            MethodHandle = methodHandle;
-
-            // get the method signature from the method handle
-            switch (MethodHandle.Kind)
-            {
-                case HandleKind.MethodDefinition:
-                    {
-                        MethodDefinition methodDef = componentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
-                        Name = componentReader.MetadataReader.GetString(methodDef.Name);
-                        Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
-                        owningTypeHandle = methodDef.GetDeclaringType();
-                    }
-                    break;
-
-                case HandleKind.MemberReference:
-                    {
-                        MemberReference memberRef = componentReader.MetadataReader.GetMemberReference((MemberReferenceHandle)MethodHandle);
-                        Name = componentReader.MetadataReader.GetString(memberRef.Name);
-                        Signature = memberRef.DecodeMethodSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
-                        owningTypeHandle = memberRef.Parent;
-                    }
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
-            if (owningType != null)
-            {
-                DeclaringType = owningType;
-            }
-            else
-            {
-                DeclaringType = MetadataNameFormatter.FormatHandle(componentReader.MetadataReader, owningTypeHandle);
-            }
-
-            StringBuilder sb = new StringBuilder();
-            sb.Append(Signature.ReturnType);
-            sb.Append(" ");
-            sb.Append(DeclaringType);
-            sb.Append(".");
-            sb.Append(Name);
-
-            if (Signature.GenericParameterCount != 0)
-            {
-                sb.Append("<");
-                for (int i = 0; i < Signature.GenericParameterCount; i++)
-                {
-                    if (i > 0)
-                    {
-                        sb.Append(", ");
-                    }
-                    if (instanceArgs != null && instanceArgs.Length > i)
-                    {
-                        sb.Append(instanceArgs[i]);
-                    }
-                    else
-                    {
-                        sb.Append("!");
-                        sb.Append(i);
-                    }
-                }
-                sb.Append(">");
-            }
-
-            sb.Append("(");
-            for (int i = 0; i < Signature.ParameterTypes.Length; i++)
-            {
-                if (i > 0)
-                {
-                    sb.Append(", ");
-                }
-                sb.AppendFormat($"{Signature.ParameterTypes[i]}");
-            }
-            sb.Append(")");
-
-            SignatureString = sb.ToString();
-        }
-
-        public override string ToString() => SignatureString;
-        public override int GetHashCode() => SignatureString.GetHashCode();
-        public override bool Equals(object obj) => obj is PgoInfoKey other && other.Equals(this);
-
-        // Equality check. This isn't precisely accurate, but it should be good enough
-        public bool Equals(PgoInfoKey other)
-        {
-            return SignatureString.Equals(other.SignatureString);
-        }
-
-        public static PgoInfoKey FromReadyToRunMethod(ReadyToRunMethod method)
-        {
-            var key = new PgoInfoKey(method.ComponentReader, method.DeclaringType, method.MethodHandle, method.InstanceArgs);
-            Debug.Assert(key.SignatureString == method.SignatureString);
-            return key;
-        }
-    }
-
-    public class PgoInfo
-    {
-        public PgoInfoKey Key { get; }
-        public int Offset { get; }
-        public int PgoFormatVersion { get; }
-        public byte[] Image { get; }
-        private ReadyToRunReader _r2rReader;
-
-        public PgoInfo(PgoInfoKey key, ReadyToRunReader r2rReader, int pgoFormatVersion, byte[] image, int offset)
-        {
-            PgoFormatVersion = pgoFormatVersion;
-            Key = key;
-            Offset = offset;
-            Image = image;
-            _r2rReader = r2rReader;
-        }
-
-        PgoSchemaElem[] _pgoData;
-        int _size;
-
-        class PgoDataLoader : IPgoSchemaDataLoader<string>
-        {
-            ReadyToRunReader _r2rReader;
-            SignatureFormattingOptions _formatOptions;
-
-            public PgoDataLoader(ReadyToRunReader r2rReader, SignatureFormattingOptions formatOptions)
-            {
-                _formatOptions = formatOptions;
-                _r2rReader = r2rReader;
-            }
-
-            string IPgoSchemaDataLoader<string>.TypeFromLong(long input)
-            {
-                int tableIndex = checked((int)(input & 0xF));
-                int fixupIndex = checked((int)(input >> 4));
-                if (tableIndex == 0xF)
-                {
-                    return $"Unknown type {fixupIndex}";
-                }
-                else
-                {
-                    return _r2rReader.ImportSections[tableIndex].Entries[fixupIndex].Signature.ToString(_formatOptions);
-                }
-            }
-        }
-
-        void EnsurePgoData()
-        {
-            if (_pgoData == null)
-            {
-                var compressedIntParser = new PgoProcessor.PgoEncodedCompressedIntParser(Image, Offset);
-
-                SignatureFormattingOptions formattingOptions = new SignatureFormattingOptions();
-
-                _pgoData = PgoProcessor.ParsePgoData<string>(new PgoDataLoader(_r2rReader, formattingOptions), compressedIntParser, true).ToArray();
-                _size = compressedIntParser.Offset - Offset;
-            }
-        }
-
-        public PgoSchemaElem[] PgoData
-        {
-            get
-            {
-                EnsurePgoData();
-                return _pgoData;
-            }
-        }
-
-        public int Size
-        {
-            get
-            {
-                EnsurePgoData();
-                return _size;
-            }
-        }
-
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            foreach (PgoSchemaElem elem in PgoData)
-            {
-                sb.AppendLine($"ILOffset: {elem.ILOffset} InstrumentationKind: {elem.InstrumentationKind} Other: {elem.Other} Count: {elem.Count}");
-                if (elem.DataHeldInDataLong)
-                {
-                    sb.AppendLine(elem.DataLong.ToString());
-                }
-                else
-                {
-                    foreach (object o in elem.DataObject)
-                    {
-                        sb.AppendLine(o.ToString());
-                    }
-                }
-            }
-
-            return sb.ToString();
-        }
-    }
-
     public class ReadyToRunMethod
     {
         private const int _mdtMethodDef = 0x06000000;
@@ -560,11 +332,13 @@ namespace ILCompiler.Reflection.ReadyToRun
             get
             {
                 EnsureInitialized();
-                return _pgoInfo as PgoInfo;
+                if (_pgoInfo == PgoInfo.EmptySingleton)
+                    return null;
+                return _pgoInfo;
             }
         }
 
-        private object _pgoInfo;
+        private PgoInfo _pgoInfo;
 
         private ReadyToRunReader _readyToRunReader;
         private List<FixupCell> _fixupCells;
@@ -718,7 +492,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 _pgoInfo = _readyToRunReader.GetPgoInfoByKey(PgoInfoKey.FromReadyToRunMethod(this));
                 if (_pgoInfo == null)
                 {
-                    _pgoInfo = new object();
+                    _pgoInfo = PgoInfo.EmptySingleton;
                 }
             }
         }
