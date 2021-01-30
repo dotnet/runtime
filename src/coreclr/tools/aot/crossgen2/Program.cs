@@ -540,6 +540,7 @@ namespace ILCompiler
                         versionBubbleModules,
                         _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
                         mibcFiles,
+                        jsonProfile,
                         _typeSystemContext,
                         compilationGroup,
                         _commandLineOptions.EmbedPgoData);
@@ -594,6 +595,7 @@ namespace ILCompiler
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)
                         .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath)
+                        .UseProfileFile(jsonProfile != null)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)
                         .FileLayoutAlgorithms(_methodLayout, _fileLayout)

@@ -1458,6 +1458,7 @@ typedef struct {
 	guint            self_init : 1;
 	guint            domainvar_inited : 1;
 	guint            code_exec_only : 1;
+	guint            interp_entry_only : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -2872,6 +2873,7 @@ typedef enum {
 	MONO_CPU_ARM64_BASE   = 1 << 1,
 	MONO_CPU_ARM64_CRC    = 1 << 2,
 	MONO_CPU_ARM64_CRYPTO = 1 << 3,
+	MONO_CPU_ARM64_ADVSIMD = 1 << 4,
 #endif
 } MonoCPUFeatures;
 
@@ -2899,6 +2901,12 @@ enum {
 
 /* SIMD operations */
 typedef enum {
+	SIMD_OP_LLVM_FABS,
+	SIMD_OP_LLVM_DABS,
+	SIMD_OP_LLVM_I8ABS,
+	SIMD_OP_LLVM_I16ABS,
+	SIMD_OP_LLVM_I32ABS,
+	SIMD_OP_LLVM_I64ABS,
 	SIMD_OP_SSE_CVTSS2SI,
 	SIMD_OP_SSE_CVTTSS2SI,
 	SIMD_OP_SSE_CVTSS2SI64,
@@ -2988,6 +2996,12 @@ typedef enum {
 	SIMD_OP_ARM64_CRC32CX,
 	SIMD_OP_ARM64_RBIT32,
 	SIMD_OP_ARM64_RBIT64,
+	SIMD_OP_ARM64_SHA1C,
+	SIMD_OP_ARM64_SHA1H,
+	SIMD_OP_ARM64_SHA1M,
+	SIMD_OP_ARM64_SHA1P,
+	SIMD_OP_ARM64_SHA1SU0,
+	SIMD_OP_ARM64_SHA1SU1,
 	SIMD_OP_ARM64_SHA256H,
 	SIMD_OP_ARM64_SHA256H2,
 	SIMD_OP_ARM64_SHA256SU0,

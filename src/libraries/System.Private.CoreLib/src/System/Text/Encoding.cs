@@ -956,6 +956,9 @@ namespace System.Text
 
         public virtual int CodePage => _codePage;
 
+        // Quick accessor for "is UTF8?"
+        internal bool IsUTF8CodePage => CodePage == CodePageUTF8;
+
         // IsAlwaysNormalized
         // Returns true if the encoding is always normalized for the specified encoding form
         public bool IsAlwaysNormalized() =>

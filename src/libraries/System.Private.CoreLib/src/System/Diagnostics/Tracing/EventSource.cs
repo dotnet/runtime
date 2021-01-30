@@ -182,10 +182,16 @@ using System.Security.Permissions;
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
+{
 #else
 namespace System.Diagnostics.Tracing
-#endif
 {
+    [AttributeUsage(AttributeTargets.Class)]
+    internal sealed class EventSourceAutoGenerateAttribute : Attribute
+    {
+    }
+
+#endif
     /// <summary>
     /// This class is meant to be inherited by a user-defined event source in order to define a managed
     /// ETW provider.   Please See DESIGN NOTES above for the internal architecture.
@@ -1471,9 +1477,14 @@ namespace System.Diagnostics.Tracing
                 m_activityTracker = ActivityTracker.Instance;
 
 #if FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
-                // Create and register our provider traits.  We do this early because it is needed to log errors
-                // In the self-describing event case.
-                this.InitializeProviderMetadata();
+#if !DEBUG
+                if (ProviderMetadata.Length == 0)
+#endif
+                {
+                    // Create and register our provider traits.  We do this early because it is needed to log errors
+                    // In the self-describing event case.
+                    InitializeProviderMetadata();
+                }
 #endif
 #if FEATURE_MANAGED_ETW
                 // Register the provider with ETW
@@ -1504,12 +1515,13 @@ namespace System.Diagnostics.Tracing
                 if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
 #endif
                 {
-                    fixed (byte* providerMetadata = this.providerMetadata)
+                    var providerMetadata = ProviderMetadata;
+                    fixed (byte* pMetadata = providerMetadata)
                     {
                         m_etwProvider.SetInformation(
                             Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
-                            providerMetadata,
-                            (uint)this.providerMetadata.Length);
+                            pMetadata,
+                            (uint)providerMetadata.Length);
                     }
                 }
 #endif // TARGET_WINDOWS
@@ -1696,9 +1708,16 @@ namespace System.Diagnostics.Tracing
                     {
                         dataType = Enum.GetUnderlyingType(dataType);
 
-                        int dataTypeSize = System.Runtime.InteropServices.Marshal.SizeOf(dataType);
-                        if (dataTypeSize < sizeof(int))
-                            dataType = typeof(int);
+                        // Enums less than 4 bytes in size should be treated as int.
+                        switch (Type.GetTypeCode(dataType))
+                        {
+                            case TypeCode.Byte:
+                            case TypeCode.SByte:
+                            case TypeCode.Int16:
+                            case TypeCode.UInt16:
+                                dataType = typeof(int);
+                                break;
+                        }
                         goto Again;
                     }
 
