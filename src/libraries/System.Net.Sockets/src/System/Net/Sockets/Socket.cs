@@ -1603,6 +1603,33 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
+        /// <summary>
+        /// Receives the specified number of bytes of data into the specified location of the data buffer,
+        /// using the specified <paramref name="socketFlags"/>, and stores the endpoint and packet information.
+        /// </summary>
+        /// <param name="buffer">
+        /// An <see cref="Span{T}"/> of type <see cref="byte"/> that is the storage location for received data.
+        /// </param>
+        /// <param name="socketFlags">
+        /// A bitwise combination of the <see cref="SocketFlags"/> values.
+        /// </param>
+        /// <param name="remoteEP">
+        /// An <see cref="EndPoint"/>, passed by reference, that represents the remote server.
+        /// </param>
+        /// <param name="ipPacketInformation">
+        /// An <see cref="IPPacketInformation"/> holding address and interface information.
+        /// </param>
+        /// <returns>
+        /// The number of bytes received.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> object has been closed.</exception>
+        /// <exception cref="ArgumentNullException">The <see cref="EndPoint"/> remoteEP is null.</exception>
+        /// <exception cref="ArgumentException">The <see cref="AddressFamily"/> of the <see cref="EndPoint"/> used in
+        /// <see cref="Socket.ReceiveMessageFrom(Span{byte}, ref SocketFlags, ref EndPoint, out IPPacketInformation)"/>
+        /// needs to match the <see cref="AddressFamily"/> of the <see cref="EndPoint"/> used in SendTo.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// <para>The <see cref="Socket"/> object is not in blocking mode and cannot accept this synchronous call.</para>
+        /// <para>You must call the Bind method before performing this operation.</para></exception>
         public int ReceiveMessageFrom(Span<byte> buffer, ref SocketFlags socketFlags, ref EndPoint remoteEP, out IPPacketInformation ipPacketInformation)
         {
             ThrowIfDisposed();
