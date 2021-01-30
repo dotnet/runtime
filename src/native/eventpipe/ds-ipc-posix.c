@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef FEATURE_PERFTRACING_C_LIB_STANDALONE_PAL
 #define EP_NO_RT_DEPENDENCY
+#endif
 
 #include "ds-rt-config.h"
 
@@ -27,6 +29,9 @@
 #include <sys/poll.h>
 #endif // __GNUC__
 
+#ifndef FEATURE_PERFTRACING_C_LIB_STANDALONE_PAL
+#include "ds-rt.h"
+#else
 #ifdef FEATURE_CORECLR
 #include <pal.h>
 #include "processdescriptor.h"
@@ -79,6 +84,7 @@ ep_rt_object_array_free (void *ptr)
 	if (ptr)
 		free (ptr);
 }
+#endif /* !FEATURE_PERFTRACING_C_LIB_STANDALONE_PAL */
 
 #ifdef __APPLE__
 #define APPLICATION_CONTAINER_BASE_PATH_SUFFIX "/Library/Group Containers/"
@@ -155,7 +161,15 @@ ipc_transport_get_default_name (
 	ep_char8_t *name,
 	int32_t name_len)
 {
-#ifdef FEATURE_CORECLR
+#ifndef FEATURE_PERFTRACING_C_LIB_STANDALONE_PAL
+	return ds_rt_transport_get_default_name (
+		name,
+		name_len,
+		"dotnet-diagnostic",
+		ep_rt_current_process_get_id (),
+		NULL,
+		"socket");
+#elif defined (FEATURE_PERFTRACING_C_LIB_STANDALONE_PAL) && defined (FEATURE_CORECLR)
 	// generate the default socket name in TMP Path
 	const ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
 	PAL_GetTransportName(
