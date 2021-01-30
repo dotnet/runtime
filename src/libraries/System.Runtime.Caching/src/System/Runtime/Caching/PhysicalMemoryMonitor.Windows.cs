@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.Caching.Configuration;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -10,6 +11,8 @@ namespace System.Runtime.Caching
 {
     internal sealed partial class PhysicalMemoryMonitor : MemoryMonitor
     {
+        internal static bool IsSupported() => true;
+
         protected override unsafe int GetCurrentPressure()
         {
             Interop.Kernel32.MEMORYSTATUSEX memoryStatus = default;
