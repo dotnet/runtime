@@ -187,4 +187,4 @@ void AssertOnJNIExceptions(JNIEnv* env);
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 JNIEnv* GetJNIEnv(void);
-int GetEnumAsInt(JNIEnv *env, jobject enumObj, bool releaseEnumObj);
+int GetEnumAsInt(JNIEnv *env, jobject enumObj);

@@ -251,11 +251,10 @@ JNIEnv* GetJNIEnv()
     return env;
 }
 
-int GetEnumAsInt(JNIEnv *env, jobject enumObj, bool releaseEnumObj)
+int GetEnumAsInt(JNIEnv *env, jobject enumObj)
 {
     int value = (*env)->CallIntMethod(env, enumObj, g_EnumOrdinal);
-    if (releaseEnumObj)
-        (*env)->DeleteLocalRef(env, enumObj);
+    (*env)->DeleteLocalRef(env, enumObj);
     return value;
 }
 
