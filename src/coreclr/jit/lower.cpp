@@ -1577,8 +1577,12 @@ void Lowering::LowerCall(GenTree* node)
                 break;
 
             case GTF_CALL_VIRT_VTABLE:
-                // stub dispatching is off or this is not a virtual call (could be a tailcall)
-                controlExpr = LowerVirtualVtableCall(call);
+                assert(call->IsVirtualVtable());
+                if (comp->opts.compExpandCallsEarly == false)
+                {
+                    assert(call->gtControlExpr == nullptr);
+                    controlExpr = LowerVirtualVtableCall(call);
+                }
                 break;
 
             case GTF_CALL_NONVIRT:

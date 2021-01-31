@@ -2968,15 +2968,28 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // CheckTreeId: Check that this tree was not visit before and memorize it as visited.
+    // CheckTreeId: Check that this tree was not visited before and memorize it as visited.
     //
     // Arguments:
     //    gtTreeID - identificator of GenTree.
     //
+    // Note:
+    //    This method causes an assert failure when we find a duplicated node in our tree
+    //
     void CheckTreeId(unsigned gtTreeID)
     {
-        assert(!BitVecOps::IsMember(&nodesVecTraits, uniqueNodes, gtTreeID));
-        BitVecOps::AddElemD(&nodesVecTraits, uniqueNodes, gtTreeID);
+        if (BitVecOps::IsMember(&nodesVecTraits, uniqueNodes, gtTreeID))
+        {
+            if (comp->verbose)
+            {
+                printf("Duplicate gtTreeID was found: %d\n", gtTreeID);
+            }
+            assert(!"Duplicate gtTreeID was found");
+        }
+        else
+        {
+            BitVecOps::AddElemD(&nodesVecTraits, uniqueNodes, gtTreeID);
+        }
     }
 
 private:

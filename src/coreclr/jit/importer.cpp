@@ -8244,6 +8244,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, nullptr, ilOffset);
                 call->gtFlags |= GTF_CALL_VIRT_VTABLE;
+
+                // Should we expand virtual call targets early for this method?
+                //
+                if (opts.compExpandCallsEarly == true)
+                {
+                    // Mark this method to expand the virtual call target early in fgMorpgCall
+                    call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPANDED_EARLY;
+                }
                 break;
             }
 

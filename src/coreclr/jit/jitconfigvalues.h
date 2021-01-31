@@ -183,6 +183,7 @@ CONFIG_METHODSET(JitNoProcedureSplittingEH, W("JitNoProcedureSplittingEH")) // D
                                                                             // exception handling
 CONFIG_METHODSET(JitStressOnly, W("JitStressOnly")) // Internal Jit stress mode: stress only the specified method(s)
 CONFIG_METHODSET(JitUnwindDump, W("JitUnwindDump")) // Dump the unwind codes for the method
+CONFIG_METHODSET(JitExpandCallsEarly, W("JitExpandCallsEarly")) // Expand Call targets early for specified method
 ///
 /// NGEN
 ///
