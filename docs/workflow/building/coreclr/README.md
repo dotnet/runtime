@@ -1,30 +1,30 @@
 # Building
 
-To build just CoreCLR, use the `-subset` flag to the `build.sh` (or `build.cmd`) script at the repo root:
+To build just CoreCLR, use the implicit `-subset` flag to the `build.sh` (or `build.cmd`) script at the repo root:
 
 For Linux:
 ```
-./build.sh -subset clr
+./build.sh clr
 ```
 
 For Windows:
 ```
-build.cmd -subset clr
+build.cmd clr
 ```
 
 By default, build generates a 'debug' build type, that includes asserts and is easier for some people to debug. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version (which does not have these checks) by adding the flag `-configuration release` (or `-c release`), for example:
 ```
-./build.sh -subset clr -configuration release
+./build.sh clr -configuration release
 ```
 
 CoreCLR also supports a 'checked' build type which has asserts enabled like 'debug', but is built with the native compiler optimizer enabled, so it runs much faster. This is the usual mode used for running tests in the CI system. You can build that using, for example:
 ```
-./build.sh -subset clr -configuration checked
+./build.sh clr -configuration checked
 ```
 
 If you want to use Ninja to drive the native build instead of Visual Studio MSBuild (on Windows) or Make (on non-Windows), you can pass the `-ninja` flag to the build script as follows:
 ```
-./build.cmd -subset clr -ninja
+./build.cmd clr -ninja
 ```
 
 We recommend using Ninja for building the project on Windows since it more efficiently uses the build machine's resources for the native runtime build in comparison to Visual Studio's MSBuild.
