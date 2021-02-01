@@ -75,7 +75,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
              Link="Common\Interop\Unix\Interop.Stat.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs"
              Link="System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs" />

@@ -386,19 +386,26 @@ if (CLR_CMAKE_HOST_UNIX)
 
   # Specify the minimum supported version of macOS
   if(CLR_CMAKE_HOST_OSX)
-    if(CLR_CMAKE_HOST_ARCH_ARM64)
-      # 'pthread_jit_write_protect_np' is only available on macOS 11.0 or newer
-      set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=11.0)
-      add_compile_options(-arch arm64)
-    elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-      set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
-      add_compile_options(-arch x86_64)
+    # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
+    if(CLR_CMAKE_TARGET_CATALYST)
+      add_compile_options(-target x86_64-apple-ios13.2-macabi)
+      add_link_options(-target x86_64-apple-ios13.2-macabi)
     else()
-      clr_unknown_arch()
-    endif()
-    add_compile_options(${MACOS_VERSION_MIN_FLAGS})
-    add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
+      if(CLR_CMAKE_HOST_ARCH_ARM64)
+        # 'pthread_jit_write_protect_np' is only available on macOS 11.0 or newer
+        set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=11.0)
+        add_compile_options(-arch arm64)
+      elseif(CLR_CMAKE_HOST_ARCH_AMD64)
+        set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
+        add_compile_options(-arch x86_64)
+      else()
+        clr_unknown_arch()
+      endif()
+      add_compile_options(${MACOS_VERSION_MIN_FLAGS})
+      add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
+    endif(CLR_CMAKE_TARGET_CATALYST)
   endif(CLR_CMAKE_HOST_OSX)
+
 endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_TARGET_UNIX)

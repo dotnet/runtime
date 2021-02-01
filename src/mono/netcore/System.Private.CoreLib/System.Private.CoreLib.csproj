@@ -268,7 +268,7 @@
 
       <Compile Include="$(BclSourcesRoot)\System\IO\MonoIOError.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetsCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />
       <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
         <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>

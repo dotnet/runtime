@@ -204,7 +204,6 @@
     </ItemGroup>
     <!-- Mac Catalyst specific options -->
     <ItemGroup Condition="'$(TargetsCatalyst)' == 'true'">
-      <_MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=MAC_CATALYST" />
       <_MonoCFlags Include="-target x86_64-apple-ios13.2-macabi" />
       <_MonoCFlags Include="-DMAC_CATALYST" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
