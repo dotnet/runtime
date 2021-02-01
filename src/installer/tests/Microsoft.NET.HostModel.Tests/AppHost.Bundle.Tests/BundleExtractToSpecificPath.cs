@@ -34,7 +34,7 @@ namespace AppHost.Bundle.Tests
             // Verify expected files in the bundle directory
             var bundleDir = BundleHelper.GetBundleDir(fixture);
             bundleDir.Should().HaveFile(hostName);
-            bundleDir.Should().NotHaveFiles(BundleHelper.GetBundledFiles(fixture)); 
+            bundleDir.Should().NotHaveFiles(BundleHelper.GetBundledFiles(fixture));
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
@@ -61,19 +61,23 @@ namespace AppHost.Bundle.Tests
         [InlineData("../foo", BundleOptions.None)]
         [InlineData("foo", BundleOptions.None)]
         [InlineData("foo/bar", BundleOptions.None)]
+        [InlineData("foo\\bar", BundleOptions.None)]
         [InlineData("./foo", BundleOptions.BundleNativeBinaries)]
         [InlineData("../foo", BundleOptions.BundleNativeBinaries)]
         [InlineData("foo", BundleOptions.BundleNativeBinaries)]
         [InlineData("foo/bar", BundleOptions.BundleNativeBinaries)]
+        [InlineData("foo\\bar", BundleOptions.BundleNativeBinaries)]
         [InlineData("./foo", BundleOptions.BundleSymbolFiles)]
         [InlineData("../foo", BundleOptions.BundleSymbolFiles)]
         [InlineData("foo", BundleOptions.BundleSymbolFiles)]
         [InlineData("foo/bar", BundleOptions.BundleSymbolFiles)]
+        [InlineData("foo\\bar", BundleOptions.BundleSymbolFiles)]
         [Theory]
-        private void Bundle_Extraction_To_Relative_Path_Succeeds (string relativePath, BundleOptions bundleOptions)
+        private void Bundle_Extraction_To_Relative_Path_Succeeds(string relativePath, BundleOptions bundleOptions)
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            var singleFile = BundleSelfContainedApp(fixture, bundleOptions);
+            UseSingleFileSelfContainedHost(fixture);
+            var bundler = BundleHelper.BundleApp(fixture, out var singleFile, bundleOptions);
 
             // Run the bundled app (extract files to <path>)
             Command.Create(singleFile)
@@ -85,6 +89,14 @@ namespace AppHost.Bundle.Tests
                 .Pass()
                 .And
                 .HaveStdOutContaining("Hello World");
+
+            var extractedFiles = BundleHelper.GetExtractedFiles(fixture);
+            var extractedDir = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(singleFile),
+                relativePath,
+                fixture.TestProject.ProjectName,
+                bundler.BundleManifest.BundleID));
+
+            extractedDir.Should().HaveFiles(extractedFiles);
         }
 
         [Fact]
@@ -148,7 +160,7 @@ namespace AppHost.Bundle.Tests
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
-            
+
 
             // Run the bunded app for the first time, and extract files to 
             // $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/bundle-id

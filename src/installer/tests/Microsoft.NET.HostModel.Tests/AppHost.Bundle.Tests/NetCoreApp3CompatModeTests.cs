@@ -25,6 +25,7 @@ namespace AppHost.Bundle.Tests
         [InlineData("./extract")]
         [InlineData("../extract")]
         [InlineData("extract")]
+        [InlineData("extract/foo")]
         [InlineData("extract\\foo")]
         [Theory]
         private void Bundle_Extraction_To_Relative_Path(string relativePath)
@@ -33,7 +34,6 @@ namespace AppHost.Bundle.Tests
             UseSingleFileSelfContainedHost(fixture);
             Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleAllContent);
 
-            var currentDir = Directory.GetCurrentDirectory();
             var cmd = Command.Create(singleFile);
             cmd.WorkingDirectory(Path.GetDirectoryName(singleFile))
                 .CaptureStdErr()

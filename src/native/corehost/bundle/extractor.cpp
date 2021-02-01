@@ -33,16 +33,22 @@ pal::string_t& extractor_t::extraction_dir()
         pal::string_t host_name = strip_executable_ext(get_filename(m_bundle_path));
         if (!pal::is_path_rooted(m_extraction_dir))
         {
-            pal::string_t current_dir = _X(".");
+            pal::string_t cwd;
             pal::string_t relative_path(m_extraction_dir);
-            if (!pal::realpath(&current_dir))
+            if (_X('/') != DIR_SEPARATOR)
+            {
+                replace_char(&relative_path, _X('/'), DIR_SEPARATOR);
+            }
+
+            if (!pal::getcwd(&cwd))
             {
                 trace::error(_X("Failure processing application bundle."));
-                trace::error(_X("Failed to obtain the current directory for extracting bundled files to relative path [%s]."), m_extraction_dir.c_str());
+                trace::error(_X("Failed to obtain current working dir."));
+                assert(cwd.empty());
                 throw StatusCode::BundleExtractionFailure;
             }
 
-            m_extraction_dir = current_dir;
+            m_extraction_dir = cwd;
             append_path(&m_extraction_dir, relative_path.c_str());
         }
 
