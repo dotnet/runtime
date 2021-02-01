@@ -12677,7 +12677,10 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
             COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(ftn);
 
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
-        if (CORProfilerTrackTransitions())
+
+        // If we're a reverse IL stub, we need to use the TrackTransitions variant
+        // so we have the target MethodDesc entrypoint to tell the debugger about.
+        if (CORProfilerTrackTransitions() || ftn->IsILStub())
         {
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
         }
