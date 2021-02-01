@@ -67,18 +67,18 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void AddressFamilyDoesNotMatch_Throws_ArgumentException()
+        public async Task AddressFamilyDoesNotMatch_Throws_ArgumentException()
         {
             using var ipv4Socket = CreateSocket();
             EndPoint ipV6Endpoint = GetGetDummyTestEndpoint(AddressFamily.InterNetworkV6);
-            Assert.ThrowsAsync<ArgumentException>(RemoteEndPointArgumentName, () => ReceiveMessageFromAsync(ipv4Socket, new byte[1], ipV6Endpoint));
+            await Assert.ThrowsAsync<ArgumentException>(RemoteEndPointArgumentName, () => ReceiveMessageFromAsync(ipv4Socket, new byte[1], ipV6Endpoint));
         }
 
         [Fact]
-        public void NotBound_Throws_InvalidOperationException()
+        public async Task NotBound_Throws_InvalidOperationException()
         {
             using Socket socket = CreateSocket();
-            Assert.ThrowsAsync<InvalidOperationException>(() => ReceiveMessageFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => ReceiveMessageFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
@@ -266,7 +266,7 @@ namespace System.Net.Sockets.Tests
     {
         public ReceiveMessageFrom_Apm(ITestOutputHelper output) : base(output) { }
 
-        protected override string RemoteEndPointArgumentName => "remoteEndPoint";
+        protected override string RemoteEndPointArgumentName => "remoteEP";
 
         [Fact]
         public void EndReceiveMessageFrom_NullAsyncResult_Throws_ArgumentNullException()
@@ -288,7 +288,7 @@ namespace System.Net.Sockets.Tests
             socket.BindToAnonymousPort(IPAddress.Loopback);
             IAsyncResult iar = socket.BeginReceiveMessageFrom(new byte[1], 0, 1, SocketFlags.None, ref validEndPoint, null, null);
 
-            Assert.Throws<ArgumentNullException>(RemoteEndPointArgumentName, () => socket.EndReceiveMessageFrom(iar, ref socketFlags, ref invalidEndPoint, out _));
+            Assert.Throws<ArgumentNullException>("endPoint", () => socket.EndReceiveMessageFrom(iar, ref socketFlags, ref invalidEndPoint, out _));
         }
 
         [Fact]
@@ -301,7 +301,7 @@ namespace System.Net.Sockets.Tests
             socket.BindToAnonymousPort(IPAddress.Loopback);
             IAsyncResult iar = socket.BeginReceiveMessageFrom(new byte[1], 0, 1, SocketFlags.None, ref validEndPoint, null, null);
 
-            Assert.Throws<ArgumentException>(RemoteEndPointArgumentName, () => socket.EndReceiveMessageFrom(iar, ref socketFlags, ref invalidEndPoint, out _));
+            Assert.Throws<ArgumentException>("endPoint", () => socket.EndReceiveMessageFrom(iar, ref socketFlags, ref invalidEndPoint, out _));
         }
 
         [Fact]

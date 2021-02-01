@@ -1540,18 +1540,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
-            if (remoteEP == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEP));
-            }
-            if (!CanTryAddressFamily(remoteEP.AddressFamily))
-            {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEP.AddressFamily, _addressFamily), nameof(remoteEP));
-            }
-            if (_rightEndPoint == null)
-            {
-                throw new InvalidOperationException(SR.net_sockets_mustbind);
-            }
+            ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
             SocketPal.CheckDualModeReceiveSupport(this);
             ValidateBlockingMode();
@@ -1609,19 +1598,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
-            if (remoteEP == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEP));
-            }
-            if (!CanTryAddressFamily(remoteEP.AddressFamily))
-            {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily,
-                    remoteEP.AddressFamily, _addressFamily), nameof(remoteEP));
-            }
-            if (_rightEndPoint == null)
-            {
-                throw new InvalidOperationException(SR.net_sockets_mustbind);
-            }
+            ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
             SocketPal.CheckDualModeReceiveSupport(this);
 
@@ -2333,6 +2310,7 @@ namespace System.Net.Sockets
 
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
+            ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
             Task<SocketReceiveMessageFromResult> t = ReceiveMessageFromAsync(new Memory<byte>(buffer, offset, size), socketFlags, remoteEP).AsTask();
             if (t.IsCompletedSuccessfully)
@@ -2371,6 +2349,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
+            ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
             Task<SocketReceiveFromResult> t = ReceiveFromAsync(new Memory<byte>(buffer, offset, size), socketFlags, remoteEP).AsTask();
             if (t.IsCompletedSuccessfully)
@@ -3687,6 +3666,24 @@ namespace System.Net.Sockets
 
             UpdateStatusAfterSocketError(errorCode);
             return false;
+        }
+
+        // Called in Receive(Message)From variants to validate 'remoteEndPoint',
+        // and check whether the socket is bound.
+        private void ValidateReceiveFromEndpointAndState(EndPoint remoteEndPoint, string remoteEndPointArgumentName)
+        {
+            if (remoteEndPoint == null)
+            {
+                throw new ArgumentNullException(remoteEndPointArgumentName);
+            }
+            if (!CanTryAddressFamily(remoteEndPoint.AddressFamily))
+            {
+                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEndPoint.AddressFamily, _addressFamily), remoteEndPointArgumentName);
+            }
+            if (_rightEndPoint == null)
+            {
+                throw new InvalidOperationException(SR.net_sockets_mustbind);
+            }
         }
 
         // ValidateBlockingMode - called before synchronous calls to validate
