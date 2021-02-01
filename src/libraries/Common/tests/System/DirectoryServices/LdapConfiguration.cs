@@ -8,10 +8,10 @@ namespace System.DirectoryServices.Tests
 {
     internal class LdapConfiguration
     {
-        private LdapConfiguration(string serverName, string domain, string userName, string password, string port, AuthenticationTypes at)
+        private LdapConfiguration(string serverName, string searchDn, string userName, string password, string port, AuthenticationTypes at)
         {
             ServerName = serverName;
-            Domain = domain;
+            SearchDn = searchDn;
             UserName = userName;
             Password = password;
             Port = port;
@@ -26,9 +26,9 @@ namespace System.DirectoryServices.Tests
         internal string UserName { get; set; }
         internal string Password { get; set; }
         internal string Port { get; set; }
-        internal string Domain { get; set; }
+        internal string SearchDn { get; set; }
         internal AuthenticationTypes AuthenticationTypes { get; set; }
-        internal string LdapPath => string.IsNullOrEmpty(Port) ? $"LDAP://{ServerName}/{Domain}" : $"LDAP://{ServerName}:{Port}/{Domain}";
+        internal string LdapPath => string.IsNullOrEmpty(Port) ? $"LDAP://{ServerName}/{SearchDn}" : $"LDAP://{ServerName}:{Port}/{SearchDn}";
         internal string RootDSEPath => string.IsNullOrEmpty(Port) ? $"LDAP://{ServerName}/rootDSE" : $"LDAP://{ServerName}:{Port}/rootDSE";
         internal string UserNameWithNoDomain
         {
@@ -48,7 +48,7 @@ namespace System.DirectoryServices.Tests
 
         internal string GetLdapPath(string prefix) // like "ou=something"
         {
-            return string.IsNullOrEmpty(Port) ? $"LDAP://{ServerName}/{prefix},{Domain}" : $"LDAP://{ServerName}:{Port}/{prefix},{Domain}";
+            return string.IsNullOrEmpty(Port) ? $"LDAP://{ServerName}/{prefix},{SearchDn}" : $"LDAP://{ServerName}:{Port}/{prefix},{SearchDn}";
         }
 
         private const string LDAP_CAP_ACTIVE_DIRECTORY_OID = "1.2.840.113556.1.4.800";
@@ -83,7 +83,7 @@ namespace System.DirectoryServices.Tests
             try
             {
                 string serverName = "";
-                string domain = "";
+                string searchDn = "";
                 string port = "";
                 string user = "";
                 string password = "";
@@ -96,9 +96,9 @@ namespace System.DirectoryServices.Tests
                     if (child != null)
                         serverName = child.Value;
 
-                    child = config.Element("Domain");
+                    child = config.Element("SearchDN");
                     if (child != null)
-                        domain = child.Value;
+                        searchDn = child.Value;
 
                     child = config.Element("Port");
                     if (child != null)
@@ -110,7 +110,14 @@ namespace System.DirectoryServices.Tests
 
                     child = config.Element("Password");
                     if (child != null)
-                        password = child.Value;
+                    {
+                        string val = child.Value;
+                        if (val.StartsWith("%") && val.EndsWith("%"))
+                        {
+                            val = Environment.GetEnvironmentVariable(val.Substring(1, val.Length - 2));
+                        }
+                        password = val;
+                    }
 
                     child = config.Element("AuthenticationTypes");
                     if (child != null)
@@ -142,12 +149,14 @@ namespace System.DirectoryServices.Tests
                         }
                     }
 
-                    ldapConfig = new LdapConfiguration(serverName, domain, user, password, port, at);
+                    ldapConfig = new LdapConfiguration(serverName, searchDn, user, password, port, at);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Couldn't read the configurations, usually we'll skip the tests which depend on that
+                // This runs within a test filter; if it throws, the test just skips. Instead we want to stop
+                // so that it's quite clear that the server configuration is malformed.
+                Environment.FailFast(ex.ToString());
             }
             return ldapConfig;
         }

@@ -1,18 +1,84 @@
-<!--
-    To enable the tests marked with [ConditionalFact(nameof(IsLdapConfigurationExist))], need to setup LDAP server and provide the needed server info here.
-    The easiest way to get LDAP server is to download and install OpenDJ https://backstage.forgerock.com/downloads/OpenDJ/Directory%20Services/5.0.0#browse.
-
-    Download "DS zip" file then extract it. you can set it up by running a command like that following:
-    /setup directory-server --sampleData 2 --rootUserDN "cn=Directory Manager" --rootUserPassword password --hostname localhost.localdomain --ldapPort 1389 --ldapsPort 1636 --httpPort 8080 --httpsPort 8443 --adminConnectorPort 4444 --baseDN dc=example,dc=com --acceptLicense –-enableStartTls
-
-    After that delete this comment and have the following contents in this Xml file:
-
 <Configuration>
-    <ServerName>server machine name</ServerName>
-    <Domain>DC=example,DC=com</Domain>
+    <CommentThatAllowsDoubleHyphens>
+To enable the tests marked with [ConditionalFact(nameof(IsLdapConfigurationExist))], you need to setup an LDAP server and provide the needed server info here.
+
+To ship, we should test on both an Active Directory LDAP server, and at least one other server, as behaviors are a little different. However for local testing, it is easiest to connect to an OpenDJ LDAP server in a docker container (eg., in WSL2).
+
+OPENDJ SERVER
+=============
+
+    docker run -p 1389:1389 -e ROOT_USER_DN='cn=admin,dc=example,dc=com' -e BASE_DN='dc=example,dc=com' -e ROOT_PASSWORD=password --name opendj01 -d openidentityplatform/opendj
+
+test it with this command - it should return some results in WSL2
+
+    ldapsearch -h localhost -p 1389 -D 'cn=admin,dc=example,dc=com' -x -w password
+
+this command views the status
+
+    docker exec -it opendj01 /bin/bash /opt/opendj/bin/status -D 'cn=admin,dc=example,dc=com' -w password
+
+to run our tests against this server, use settings like this
+
+<!--
+    <ServerName>localhost</ServerName>
+    <SearchDN>DC=example,DC=com</SearchDN>
     <Port>1389</Port>
-    <User>cn=Directory Manager</User>
+    <User>cn=admin,dc=example,dc=com</User>
+    <Password>password</Password>
+    <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+-->
+
+SLAPD OPENLDAP SERVER
+=====================
+
+    docker run -p:390:389 -e LDAP_DOMAIN=example.com -e LDAP_ROOTPASS=password --name slapd01 -d nickstenning/slapd
+
+and to test and view status
+
+    ldapsearch -h localhost -p 390 -D 'cn=admin,dc=example,dc=com' -x -w password
+
+    docker exec -it slapd01 slapcat
+
+to run our tests against this server, use settings like this (only the port is changed)
+
+<!--
+    <ServerName>localhost</ServerName>
+    <SearchDN>DC=example,DC=com</SearchDN>
+    <Port>390</Port>
+    <User>cn=admin,dc=example,dc=com</User>
+    <Password>password</Password>
+    <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+-->
+
+ACTIVE DIRECTORY
+================
+
+For Active Directory, it is necessary to set up a VM that is a Domain Controller. Typical settings look like this, depending on the values you choose during the setup wizard (observe the default port is different, and user is prefixed by the AD user domain):
+
+<!--
+    <ServerName>danmose-ldap</ServerName>
+    <SearchDN>DC=danmose-ldap,DC=com</SearchDN>
+    <Port>389</Port>
+    <User>DANMOSE-LDAP0\Administrator</User>
+    <Password>%TESTPASSWORD%</Password>
+    <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+-->
+
+When running against Active Directory from a Windows client, you should not see any tests marked `[ConditionalFact(nameof(IsActiveDirectoryServer))]` skip. At the moment, that means that there are zero skipped test cases when you run against Active Directory using tests on Windows.
+
+If you are running your AD server as a VM on the same machine that you are running WSL2, you must execute this command to bridge the two Hyper-V networks:
+`Get-NetIPInterface | where {$_.InterfaceAlias -eq 'vEthernet (WSL)' -or $_.InterfaceAlias -eq 'vEthernet (Default Switch)'} | Set-NetIPInterface -Forwarding Enabled`
+The WSL2 VM should now be able to see the AD VM by IP address.
+
+Note:
+    `Password` is read from the environment if it is surrounded by %, eg %TESTPASSWORD%
+
+    </CommentThatAllowsDoubleHyphens>
+
+    <ServerName>localhost</ServerName>
+    <SearchDN>DC=example,DC=com</SearchDN>
+    <Port>1389</Port>
+    <User>cn=admin,dc=example,dc=com</User>
     <Password>password</Password>
     <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
 </Configuration>
--->
