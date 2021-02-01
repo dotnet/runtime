@@ -15,6 +15,7 @@ using static System.Runtime.InteropServices.ObjectiveC.Bridge;
 namespace System.Runtime.InteropServices.Tests
 {
     [PlatformSpecific(TestPlatforms.OSX)]
+    [SkipOnMono("Not currently implemented on Mono")]
     public unsafe class MessageSendTests
     {
         private static int s_count = 1;
