@@ -18,7 +18,7 @@
 namespace
 {
     BOOL s_msgSendOverridden = FALSE;
-    void* s_msgSendOverrides[ObjCWrappersNative::MsgSendFunction::Last + 1] = {0};
+    void* s_msgSendOverrides[ObjCWrappersNative::MsgSendFunction::Last + 1] = {};
 
     const char* ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
     const char* MsgSendEntryPoints[ObjCWrappersNative::MsgSendFunction::Last + 1] =
@@ -30,7 +30,7 @@ namespace
         OBJC_MSGSEND "Super_stret",
     };
 
-    const void* MessageSendPInvokeOverride(const char* libraryName, const char* entrypointName)
+    const void* STDMETHODCALLTYPE MessageSendPInvokeOverride(_In_z_ const char* libraryName, _In_z_ const char* entrypointName)
     {
         // All overrides are in libobjc
         if (strcmp(libraryName, ObjectiveCLibrary) != 0)
@@ -39,7 +39,7 @@ namespace
         // All overrides start with objc_msgSend
         if (strncmp(entrypointName, OBJC_MSGSEND, _countof(OBJC_MSGSEND) -1) != 0)
             return nullptr;
-        
+
         for (int i = 0; i < _countof(MsgSendEntryPoints); ++i)
         {
             void* funcMaybe = s_msgSendOverrides[i];
@@ -64,9 +64,10 @@ BOOL QCALLTYPE ObjCWrappersNative::TrySetGlobalMessageSendCallback(
 
     BEGIN_QCALL;
 
+    _ASSERTE(msgSendFunction >= 0 && msgSendFunction < _countof(s_msgSendOverrides));
     success = FastInterlockCompareExchangePointer(&s_msgSendOverrides[msgSendFunction], fptr, NULL) == NULL;
 
-    // Set override if we haven't already
+    // Set P/Invoke override callback if we haven't already
     if (success && FALSE == FastInterlockCompareExchange((LONG*)&s_msgSendOverridden, TRUE, FALSE))
         PInvokeOverride::SetPInvokeOverride(&MessageSendPInvokeOverride, PInvokeOverride::Source::ObjectiveCInterop);
 

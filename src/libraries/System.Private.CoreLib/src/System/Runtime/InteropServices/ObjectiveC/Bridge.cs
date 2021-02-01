@@ -33,12 +33,13 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// Providing an override can enable support for Objective-C
         /// exception propagation and variadic argument support.
         /// </remarks>
-        public static void SetMessageSendCallback(
-            MsgSendFunction msgSendFunction,
-            IntPtr func)
+        public static void SetMessageSendCallback(MsgSendFunction msgSendFunction, IntPtr func)
         {
             if (func == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(func));
+
+            if (!Enum.IsDefined<MsgSendFunction>(msgSendFunction))
+                throw new ArgumentOutOfRangeException(nameof(msgSendFunction));
 
             if (!TrySetGlobalMessageSendCallback(msgSendFunction, func))
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalObjectiveCMsgSend);
