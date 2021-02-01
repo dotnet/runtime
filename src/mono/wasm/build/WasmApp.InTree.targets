@@ -10,7 +10,7 @@
         <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)</PackageDirectory>
       </RuntimePack>
     </ItemGroup>
-    <Message Text="RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="high" />
+    <Message Text="Using RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="Low" />
   </Target>
 
   <Target Name="RebuildWasmAppBuilder">

@@ -19,7 +19,7 @@ namespace System
         {
         }
 
-        protected MulticastDelegate([DynamicallyAccessedMembers(AllMethods)] Type target, string method)
+        protected MulticastDelegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
             : base(target, method)
         {
         }
@@ -65,7 +65,7 @@ namespace System
         //   Equals: two multicast delegates are equal if their base is equal
         //   and their invocations list is equal.
         // </remarks>
-        public sealed override bool Equals(object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!base.Equals(obj))
                 return false;

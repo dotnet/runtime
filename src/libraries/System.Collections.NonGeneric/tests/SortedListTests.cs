@@ -1537,7 +1537,7 @@ namespace System.Collections.Tests
         private SortedList _sortListGrandDaughter;
         private const int NumberOfElements = 100;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public void GetSyncRootBasic()
         {

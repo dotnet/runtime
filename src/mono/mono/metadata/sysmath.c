@@ -207,12 +207,6 @@ ves_icall_System_Math_Log2 (gdouble x)
 }
 
 gdouble
-ves_icall_System_Math_ScaleB (gdouble x, gint32 n)
-{
-	return scalbn (x, n);
-}
-
-gdouble
 ves_icall_System_Math_FusedMultiplyAdd (gdouble x, gdouble y, gdouble z)
 {
 	return fma (x, y, z);
@@ -373,12 +367,6 @@ float
 ves_icall_System_MathF_Log2 (float x)
 {
 	return log2f (x);
-}
-
-float
-ves_icall_System_MathF_ScaleB (float x, gint32 n)
-{
-	return scalbnf (x, n);
 }
 
 float

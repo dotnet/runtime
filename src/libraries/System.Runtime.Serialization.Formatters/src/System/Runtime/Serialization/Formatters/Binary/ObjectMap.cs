@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
@@ -22,7 +22,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal int _objectId;
         internal BinaryAssemblyInfo _assemblyInfo;
 
-        internal ObjectMap(string objectName, Type objectType, string[] memberNames, ObjectReader objectReader, int objectId, BinaryAssemblyInfo assemblyInfo)
+        internal ObjectMap(
+            string objectName,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType,
+            string[] memberNames,
+            ObjectReader objectReader,
+            int objectId,
+            BinaryAssemblyInfo assemblyInfo)
         {
             _objectName = objectName;
             _objectType = objectType;
@@ -45,6 +51,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         internal ObjectMap(string objectName, string[] memberNames, BinaryTypeEnum[] binaryTypeEnumA, object?[] typeInformationA, int[] memberAssemIds, ObjectReader objectReader, int objectId, BinaryAssemblyInfo assemblyInfo, SizedArray assemIdToAssemblyTable)
         {
             _objectName = objectName;
@@ -99,11 +106,16 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         // No member type information
         internal static ObjectMap Create(
-            string name, Type objectType, string[] memberNames, ObjectReader objectReader,
-            int objectId, BinaryAssemblyInfo assemblyInfo) =>
+            string name,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType,
+            string[] memberNames,
+            ObjectReader objectReader,
+            int objectId,
+            BinaryAssemblyInfo assemblyInfo) =>
             new ObjectMap(name, objectType, memberNames, objectReader, objectId, assemblyInfo);
 
         // Member type information
+        [RequiresUnreferencedCode("Types might be removed")]
         internal static ObjectMap Create(
             string name, string[] memberNames, BinaryTypeEnum[] binaryTypeEnumA, object?[] typeInformationA,
             int[] memberAssemIds, ObjectReader objectReader, int objectId, BinaryAssemblyInfo assemblyInfo, SizedArray assemIdToAssemblyTable) =>

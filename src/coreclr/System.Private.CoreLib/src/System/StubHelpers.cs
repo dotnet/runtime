@@ -183,24 +183,13 @@ namespace System.StubHelpers
 
         internal static unsafe string ConvertFixedToManaged(IntPtr cstr, int length)
         {
-            int allocSize = length + 2;
-            if (allocSize < length)
+            int end = SpanHelpers.IndexOf(ref *(byte*)cstr, 0, length);
+            if (end != -1)
             {
-                throw new OutOfMemoryException();
+                length = end;
             }
-            Span<sbyte> originalBuffer = new Span<sbyte>((byte*)cstr, length);
 
-            Span<sbyte> tempBuf = stackalloc sbyte[allocSize];
-
-            originalBuffer.CopyTo(tempBuf);
-            tempBuf[length - 1] = 0;
-            tempBuf[length] = 0;
-            tempBuf[length + 1] = 0;
-
-            fixed (sbyte* buffer = tempBuf)
-            {
-                return new string(buffer, 0, string.strlen((byte*)buffer));
-            }
+            return new string((sbyte*)cstr, 0, length);
         }
     }  // class CSTRMarshaler
 

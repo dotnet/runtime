@@ -92,18 +92,11 @@ add_library(System.Globalization.Native-Static
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
-
-if (GEN_SHARED_LIB)
-    # this builds with libs to check for libs-level warnings
-    install (TARGETS System.Globalization.Native-Static DESTINATION .)
-else()
-    # this one builds with coreclr and used by singlefilehost.
-    # it needs to build with coreclr in order to be linkable with it on Windows
-    # coreclr and static libraries must match because linker does not permit mixing modules
-    # with different C runtimes (i.e. Debug vs. Release)
-    install (TARGETS System.Globalization.Native-Static DESTINATION lib)
+if(CLR_CMAKE_TARGET_UNIX)
+    set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 endif()
+
+install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
 
 if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     if (GEN_SHARED_LIB)

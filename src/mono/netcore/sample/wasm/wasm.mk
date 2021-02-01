@@ -16,7 +16,7 @@ build:
 	EMSDK_PATH=$(realpath $(TOP)/src/mono/wasm/emsdk) $(DOTNET) publish $(DOTNET_Q_ARGS) $(WASM_DEFAULT_BUILD_ARGS) $(MSBUILD_ARGS) $(PROJECT_NAME)
 
 clean:
-	rm -rf bin $(TOP)/artifacts/obj/mono/$(PROJECT_NAME)
+	rm -rf bin $(TOP)/artifacts/obj/mono/$(PROJECT_NAME:%.csproj=%)
 
 run-browser:
 	if ! $(DOTNET) tool list --global | grep dotnet-serve; then \

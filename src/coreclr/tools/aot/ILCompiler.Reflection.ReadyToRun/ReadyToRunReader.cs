@@ -374,6 +374,24 @@ namespace ILCompiler.Reflection.ReadyToRun
             Initialize(metadata: null);
         }
 
+        public static bool IsReadyToRunImage(PEReader peReader)
+        {
+            if (peReader.PEHeaders == null)
+                return false;
+
+            if (peReader.PEHeaders.CorHeader == null)
+                return false;
+
+            if ((peReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
+            {
+                return TryLocateNativeReadyToRunHeader(peReader, out _);
+            }
+            else
+            {
+                return peReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory.Size != 0;
+            }
+        }
+
         private unsafe void Initialize(IAssemblyMetadata metadata)
         {
             _assemblyCache = new List<IAssemblyMetadata>();
@@ -479,24 +497,18 @@ namespace ILCompiler.Reflection.ReadyToRun
             return customMethods;
         }
 
+        private static bool TryLocateNativeReadyToRunHeader(PEReader reader, out int readyToRunHeaderRVA)
+        {
+            PEExportTable exportTable = reader.GetExportTable();
+
+            return exportTable.TryGetValue("RTR_HEADER", out readyToRunHeaderRVA);
+        }
+
         private bool TryLocateNativeReadyToRunHeader()
         {
-            try
-            {
-                PEExportTable exportTable = CompositeReader.GetExportTable();
-                if (exportTable.TryGetValue("RTR_HEADER", out _readyToRunHeaderRVA))
-                {
-                    _composite = true;
-                    return true;
-                }
-            }
-            catch (BadImageFormatException)
-            {
-                // MSIL assemblies with no ready-to-run payload typically have no export table
-                return false;
-            }
+            _composite = TryLocateNativeReadyToRunHeader(CompositeReader, out _readyToRunHeaderRVA);
 
-            return false;
+            return _composite;
         }
 
         private IAssemblyMetadata GetSystemModuleMetadataReader()

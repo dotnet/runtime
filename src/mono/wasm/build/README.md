@@ -47,3 +47,5 @@ The various task inputs correspond to properties as:
     - To control it's generation use `$(WasmGenerateRunV8Script)` (false by default)
 
 This should be a step towards eventually having this build as a sdk.
+
+Refer to `WasmApp.targets` for more information about the properties/items used as inputs to the process.

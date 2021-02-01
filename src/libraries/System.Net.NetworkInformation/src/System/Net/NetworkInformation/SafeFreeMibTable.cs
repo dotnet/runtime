@@ -5,7 +5,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.NetworkInformation
 {
-    internal class SafeFreeMibTable : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class SafeFreeMibTable : SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeFreeMibTable() : base(true) { }
 

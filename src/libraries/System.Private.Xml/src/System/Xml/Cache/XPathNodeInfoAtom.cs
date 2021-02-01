@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Xml.XPath;
 
@@ -280,7 +281,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Return true if this InfoAtom has the same values as another InfoAtom.
         /// </summary>
-        public override bool Equals(object? other)
+        public override bool Equals([NotNullWhen(true)] object? other)
         {
             return Equals(other as XPathNodeInfoAtom);
         }

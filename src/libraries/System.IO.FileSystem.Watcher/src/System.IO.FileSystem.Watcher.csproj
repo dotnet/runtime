@@ -118,10 +118,8 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
-    <Reference Include="System.Threading.Thread" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Collections" />
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

@@ -593,13 +593,18 @@ do { \
 
 #ifndef CROSSGEN_COMPILE
 #ifdef TARGET_UNIX
-void EESocketCleanupHelper()
+void EESocketCleanupHelper(bool isExecutingOnAltStack)
 {
     CONTRACTL
     {
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
+
+    if (isExecutingOnAltStack)
+    {
+        GetThread()->SetExecutingOnAltStack();
+    }
 
     // Close the debugger transport socket first
     if (g_pDebugInterface != NULL)
@@ -1228,6 +1233,17 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     // Used later for a callback.
     CEEInfo ceeInf;
 
+#ifdef FEATURE_PGO
+    EX_TRY
+    {
+        PgoManager::Shutdown();
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+#endif
+
     if (!fIsDllUnloading)
     {
         ETW::EnumerationLog::ProcessShutdown();
@@ -1339,10 +1355,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 #ifdef FEATURE_PERFMAP
         // Flush and close the perf map file.
         PerfMap::Destroy();
-#endif
-
-#ifdef FEATURE_PGO
-        PgoManager::Shutdown();
 #endif
 
         {
