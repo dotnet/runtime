@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Runtime.InteropServices
 {
     public readonly struct OSPlatform : IEquatable<OSPlatform>
@@ -42,7 +44,7 @@ namespace System.Runtime.InteropServices
             return string.Equals(Name, other, StringComparison.OrdinalIgnoreCase);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is OSPlatform osPlatform && Equals(osPlatform);
         }

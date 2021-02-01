@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
@@ -1949,7 +1950,7 @@ namespace System.Net.Http
             }
 
             public bool Equals(CachedConnection other) => ReferenceEquals(other._connection, _connection);
-            public override bool Equals(object? obj) => obj is CachedConnection && Equals((CachedConnection)obj);
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is CachedConnection && Equals((CachedConnection)obj);
             public override int GetHashCode() => _connection?.GetHashCode() ?? 0;
         }
     }

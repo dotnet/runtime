@@ -22,7 +22,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     }
     CONTRACTL_END;
 
-    CONTEXT                         ctx;
+    CONTEXT                         ctx = { 0 };
     KNONVOLATILE_CONTEXT_POINTERS   nonVolRegPtrs;
 
     ctx.Rip = baseState->m_CaptureRip;

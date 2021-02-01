@@ -46,6 +46,7 @@
   <PropertyGroup>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview1.21054.10</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.8.0-4.20503.2</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>3.8.0</MicrosoftCodeAnalysisCSharpVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21062.10</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>6.0.0-beta.21062.10</MicrosoftDotNetBuildTasksFeedVersion>
@@ -153,7 +154,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.0-alpha.1.21076.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.0-alpha.1.21079.1</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-alpha.1.21061.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->

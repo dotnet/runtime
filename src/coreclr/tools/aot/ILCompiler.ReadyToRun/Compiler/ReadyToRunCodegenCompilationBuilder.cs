@@ -29,6 +29,7 @@ namespace ILCompiler
         private string _pdbPath;
         private bool _generatePerfMapFile;
         private string _perfMapPath;
+        private bool _generateProfileFile;
         private int _parallelism;
         Func<MethodDesc, string> _printReproInstructions;
         private InstructionSetSupport _instructionSetSupport;
@@ -150,6 +151,12 @@ namespace ILCompiler
         {
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseProfileFile(bool generateProfileFile)
+        {
+            _generateProfileFile = generateProfileFile;
             return this;
         }
 
@@ -282,6 +289,7 @@ namespace ILCompiler
                 pdbPath: _pdbPath,
                 generatePerfMapFile: _generatePerfMapFile,
                 perfMapPath: _perfMapPath,
+                generateProfileFile: _generateProfileFile,
                 _parallelism,
                 _profileData,
                 _r2rMethodLayoutAlgorithm,

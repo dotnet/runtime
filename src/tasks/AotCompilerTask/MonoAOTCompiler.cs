@@ -141,6 +141,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new ArgumentException($"'{nameof(Assemblies)}' is required.", nameof(Assemblies));
         }
 
+        if (!Path.IsPathRooted(OutputDir))
+            OutputDir = Path.GetFullPath(OutputDir);
+
         if (!Directory.Exists(OutputDir))
         {
             Log.LogError($"OutputDir={OutputDir} doesn't exist");

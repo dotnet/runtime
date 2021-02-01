@@ -57,7 +57,7 @@ namespace System.Net.Http.Headers
             return _name + "/" + _version;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             ProductHeaderValue? other = obj as ProductHeaderValue;
 
