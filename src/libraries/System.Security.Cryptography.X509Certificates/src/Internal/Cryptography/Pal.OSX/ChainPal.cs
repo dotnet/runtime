@@ -615,7 +615,7 @@ namespace Internal.Cryptography.Pal
             // There is no way to independently enable or disable online revocation checking
             // and AIA fetching. If the caller specifies they want Online revocation checking,
             // then we need to allow network operations (including AIA fetching.)
-            bool revocationRequiresNetwork = revocationMode == X509RevocationMode.Online;
+            bool revocationRequiresNetwork = revocationMode != X509RevocationMode.NoCheck;
 
             try
             {
