@@ -1799,6 +1799,20 @@ namespace System.Runtime.InteropServices.ComTypes
 namespace System.Runtime.InteropServices.ObjectiveC
 {
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [System.CLSCompliantAttribute(false)]
+    public static class Bridge
+    {
+        public enum MsgSendFunction
+        {
+            ObjCMsgSend,
+            ObjCMsgSendFpret,
+            ObjCMsgSendStret,
+            ObjCMsgSendSuper,
+            ObjCMsgSendSuperStret,
+        }
+        public static void SetMessageSendCallback(MsgSendFunction msgSendFunction, IntPtr func) => throw null;
+    }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
     [System.Flags]
     public enum RegisterInstanceFlags
     {

@@ -1,54 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace ObjectiveCInteropTest
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ObjectiveC;
+
+using Microsoft.DotNet.RemoteExecutor;
+using Xunit;
+
+using static System.Runtime.InteropServices.ObjectiveC.Bridge;
+
+namespace System.Runtime.InteropServices.Tests
 {
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using System.Runtime.InteropServices.ObjectiveC;
-
-    using TestLibrary;
-
-    using Console = Internal.Console;
-    using static System.Runtime.InteropServices.ObjectiveC.Bridge;
-
-    unsafe class MessageSendTest
+    [PlatformSpecific(TestPlatforms.OSX)]
+    public unsafe class MessageSendTests
     {
-        private static class libobjc
-        {
-            private const string LibName = "/usr/lib/libobjc.dylib";
-
-            [DllImport(LibName)]
-            public static extern IntPtr objc_msgSend(IntPtr self, IntPtr selector);
-
-            [DllImport(LibName)]
-            public static extern IntPtr objc_msgSend_fpret(IntPtr self, IntPtr selector);
-
-            [DllImport(LibName)]
-            public static extern void objc_msgSend_stret(out IntPtr ret, IntPtr self, IntPtr selector);
-
-            [DllImport(LibName)]
-            public static extern IntPtr objc_msgSendSuper(IntPtr super, IntPtr selector);
-
-            [DllImport(LibName)]
-            public static extern void objc_msgSendSuper_stret(out IntPtr ret, IntPtr super, IntPtr selector);
-
-            [DllImport(LibName)]
-            public static extern IntPtr objc_getClass(string className);
-
-            [DllImport(LibName)]
-            public static extern IntPtr sel_getUid(string selector);
-
-            // https://developer.apple.com/documentation/objectivec/objc_super
-            [StructLayout(LayoutKind.Sequential)]
-            public struct objc_super
-            {
-                public IntPtr receiver;
-                public IntPtr super_class;
-            }
-        }
-
         private static int s_count = 1;
         private static bool s_callbackInvoked = false;
 
@@ -82,6 +50,55 @@ namespace ObjectiveCInteropTest
             (MsgSendFunction.ObjCMsgSendSuperStret, (IntPtr)(delegate* unmanaged<IntPtr*, IntPtr, IntPtr, void>)&ObjCMsgSendSuperStret),
         };
 
+        [Fact]
+        public void SetMessageSendCallback_NullCallback()
+        {
+            Assert.Throws<ArgumentNullException>(() => Bridge.SetMessageSendCallback(MsgSendFunction.ObjCMsgSend, IntPtr.Zero));
+        }
+
+        [Fact]
+        public void SetMessageSendCallback_InvalidMsgSendFunction()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => Bridge.SetMessageSendCallback((MsgSendFunction)100, msgSendOverrides[0].Func));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SetMessageSendCallback_AlreadySet()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                var (msgSend, func) = msgSendOverrides[0];
+                Bridge.SetMessageSendCallback(msgSend, func);
+                Assert.Throws<InvalidOperationException>(() => Bridge.SetMessageSendCallback(msgSend, func));
+            }).Dispose();
+        }
+
+        public static IEnumerable<object[]> MsgSendFunctionsToOverride()
+        {
+            yield return new[] { (MsgSendFunction[])Enum.GetValues<MsgSendFunction>() };
+            yield return new[] { new MsgSendFunction[]{ MsgSendFunction.ObjCMsgSend, MsgSendFunction.ObjCMsgSendStret } };
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(MsgSendFunctionsToOverride))]
+        public void SetMessageSendCallback(MsgSendFunction[] funcsToOverride)
+        {
+            // Pass functions to override as a string for remote execution
+            RemoteExecutor.Invoke((string funcsToOverrideAsStr) =>
+            {
+                string[] msgSendStrArray = funcsToOverrideAsStr.Split(';');
+                MsgSendFunction[] msgSendArray = new MsgSendFunction[msgSendStrArray.Length];
+                for (int i = 0; i < msgSendStrArray.Length; i++)
+                {
+                    MsgSendFunction msgSend = Enum.Parse<MsgSendFunction>(msgSendStrArray[i]);
+                    Assert.True(Enum.IsDefined<MsgSendFunction>(msgSend));
+                    msgSendArray[i] = msgSend;
+                }
+
+                SetMessageSendCallbackImpl(msgSendArray);
+            }, string.Join(';', funcsToOverride)).Dispose();
+        }
+
         private static IntPtr CallPInvoke(MsgSendFunction msgSend, IntPtr inst, IntPtr sel)
         {
             switch (msgSend)
@@ -109,14 +126,11 @@ namespace ObjectiveCInteropTest
             }
         }
 
-        private static void SetMessageSendCallback(MsgSendFunction[] funcsToOverride)
+        private static void SetMessageSendCallbackImpl(MsgSendFunction[] funcsToOverride)
         {
-            Console.WriteLine($"Validating {nameof(SetMessageSendCallback)}");
-
             foreach (var (msgSend, func) in msgSendOverrides)
             {
                 bool shouldOverride = Array.IndexOf(funcsToOverride, msgSend) >= 0;
-                Console.WriteLine($" Validating {msgSend} ({(shouldOverride ? "":"no ")}override)");
 
                 IntPtr expected;
                 IntPtr inst = IntPtr.Zero;
@@ -125,12 +139,6 @@ namespace ObjectiveCInteropTest
                 {
                     // Override message send function
                     Bridge.SetMessageSendCallback(msgSend, func);
-
-                    // Try to override message send function again
-                    Assert.Throws<InvalidOperationException>(
-                        () => Bridge.SetMessageSendCallback(msgSend, func),
-                        "Setting message send callback multiple times should fail");
-
                     expected = (IntPtr)(s_count + (int)msgSend);
                 }
                 else
@@ -154,46 +162,46 @@ namespace ObjectiveCInteropTest
                 // Call message send function through P/Invoke
                 IntPtr ret = CallPInvoke(msgSend, inst, sel);
 
-                Assert.AreEqual(shouldOverride, s_callbackInvoked);
-                Assert.AreEqual(expected, ret);
+                Assert.Equal(shouldOverride, s_callbackInvoked);
+                Assert.Equal(expected, ret);
 
                 s_count++;
                 s_callbackInvoked = false;
             }
         }
 
-        static int Main(string[] args)
+        private static class libobjc
         {
-            try
+            private const string LibName = "/usr/lib/libobjc.dylib";
+
+            [DllImport(LibName)]
+            public static extern IntPtr objc_msgSend(IntPtr self, IntPtr selector);
+
+            [DllImport(LibName)]
+            public static extern IntPtr objc_msgSend_fpret(IntPtr self, IntPtr selector);
+
+            [DllImport(LibName)]
+            public static extern void objc_msgSend_stret(out IntPtr ret, IntPtr self, IntPtr selector);
+
+            [DllImport(LibName)]
+            public static extern IntPtr objc_msgSendSuper(IntPtr super, IntPtr selector);
+
+            [DllImport(LibName)]
+            public static extern void objc_msgSendSuper_stret(out IntPtr ret, IntPtr super, IntPtr selector);
+
+            [DllImport(LibName)]
+            public static extern IntPtr objc_getClass(string className);
+
+            [DllImport(LibName)]
+            public static extern IntPtr sel_getUid(string selector);
+
+            // https://developer.apple.com/documentation/objectivec/objc_super
+            [StructLayout(LayoutKind.Sequential)]
+            public struct objc_super
             {
-                MsgSendFunction[] funcsToOverride;
-                if (args.Length > 0)
-                {
-                    funcsToOverride = new MsgSendFunction[args.Length];
-                    for (int i = 0; i < args.Length; i++)
-                    {
-                        MsgSendFunction msgSend = Enum.Parse<MsgSendFunction>(args[i]);
-                        if (!Enum.IsDefined<MsgSendFunction>(msgSend))
-                            throw new ArgumentException($"Invalid argument: {args[i]}");
-
-                        funcsToOverride[i] = msgSend;
-                    }
-                }
-                else
-                {
-                    // Override all possible message send functions
-                    funcsToOverride = (MsgSendFunction[])Enum.GetValues<MsgSendFunction>();
-                }
-
-                SetMessageSendCallback(funcsToOverride);
+                public IntPtr receiver;
+                public IntPtr super_class;
             }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Test Failure: {e}");
-                return 101;
-            }
-
-            return 100;
         }
     }
 }
