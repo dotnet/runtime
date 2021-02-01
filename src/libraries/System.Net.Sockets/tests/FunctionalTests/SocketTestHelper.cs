@@ -39,6 +39,8 @@ namespace System.Net.Sockets.Tests
         public virtual bool ValidatesArrayArguments => true;
         public virtual bool UsesSync => false;
         public virtual bool UsesApm => false;
+        public virtual bool UsesEap => false;
+        public virtual bool UsesTasks => false;
         public virtual bool DisposeDuringOperationResultsInDisposedException => false;
         public virtual bool ConnectAfterDisconnectResultsInInvalidOperationException => false;
         public virtual bool SupportsMultiConnect => true;
@@ -209,6 +211,7 @@ namespace System.Net.Sockets.Tests
 
     public class SocketHelperTask : SocketHelperBase
     {
+        public override bool UsesTasks => true;
         public override Task<Socket> AcceptAsync(Socket s) =>
             s.AcceptAsync();
         public override Task<(Socket socket, byte[] buffer)> AcceptAsync(Socket s, int receiveSize)
@@ -240,6 +243,7 @@ namespace System.Net.Sockets.Tests
     // Same as above, but call the CancellationToken overloads where possible
     public class SocketHelperCancellableTask : SocketHelperBase
     {
+        public override bool UsesTasks => true;
         // Use a cancellable CancellationToken that we never cancel so that implementations can't just elide handling the CancellationToken.
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         // This variant is typically working with Memory<T> overloads.
@@ -275,6 +279,7 @@ namespace System.Net.Sockets.Tests
 
     public sealed class SocketHelperEap : SocketHelperBase
     {
+        public override bool UsesEap => true;
         public override bool ValidatesArrayArguments => false;
         public override bool SupportsAcceptReceive => true;
 
@@ -423,6 +428,8 @@ namespace System.Net.Sockets.Tests
         public bool ValidatesArrayArguments => _socketHelper.ValidatesArrayArguments;
         public bool UsesSync => _socketHelper.UsesSync;
         public bool UsesApm => _socketHelper.UsesApm;
+        public bool UsesEap => _socketHelper.UsesEap;
+        public bool UsesTask => _socketHelper.UsesTasks;
         public bool DisposeDuringOperationResultsInDisposedException => _socketHelper.DisposeDuringOperationResultsInDisposedException;
         public bool ConnectAfterDisconnectResultsInInvalidOperationException => _socketHelper.ConnectAfterDisconnectResultsInInvalidOperationException;
         public bool SupportsMultiConnect => _socketHelper.SupportsMultiConnect;
