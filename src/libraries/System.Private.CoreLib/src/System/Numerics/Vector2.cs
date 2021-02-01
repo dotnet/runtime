@@ -147,7 +147,7 @@ namespace System.Numerics
             );
         }
 
-        /// <summary>Multiples the specified vector by the specified scalar value.</summary>
+        /// <summary>Multiplies the specified vector by the specified scalar value.</summary>
         /// <param name="left">The vector.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
@@ -158,7 +158,7 @@ namespace System.Numerics
             return left * new Vector2(right);
         }
 
-        /// <summary>Multiples the scalar value by the specified vector.</summary>
+        /// <summary>Multiplies the scalar value by the specified vector.</summary>
         /// <param name="left">The vector.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
