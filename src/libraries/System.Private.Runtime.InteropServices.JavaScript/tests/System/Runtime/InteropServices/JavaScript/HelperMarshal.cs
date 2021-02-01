@@ -430,7 +430,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void DelegateMethod(string message)
         {
             _delMethodResultValue = message;
-            Console.WriteLine(message);
         }
 
         delegate void Del(string message);
@@ -448,6 +447,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             // Instantiate the delegate.
             Del2 handler = TestString1;
+            return handler;
+        }
+
+        internal static string _delAnonMethodStringResultValue;
+        private static Del CreateDelegateAnonMethodReturnString()
+        {
+            // Instantiate the delegate.
+            Del handler = delegate(string name) { _delAnonMethodStringResultValue = $"Notification received for: {name}"; };
+            return handler;
+        }
+
+        internal static string _delLambdaMethodStringResultValue;
+        private static Del CreateDelegateLambdaMethodReturnString()
+        {
+            // Instantiate the delegate.
+            Del handler = (string name) => { _delLambdaMethodStringResultValue = $"Notification received for: {name}"; };
             return handler;
         }
 

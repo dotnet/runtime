@@ -118,6 +118,31 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public static void MarshalAnonDelegateMethod()
+        {
+            HelperMarshal._delAnonMethodStringResultValue = string.Empty;
+            Runtime.InvokeJS(@"
+                var del = App.call_test_method (""CreateDelegateAnonMethodReturnString"", [  ]);
+                del(""Hic sunt dracones"");
+            ");
+
+            Assert.Equal("Notification received for: Hic sunt dracones", HelperMarshal._delAnonMethodStringResultValue);
+        }
+
+
+        [Fact]
+        public static void MarshalLambdaDelegateMethod()
+        {
+            HelperMarshal._delLambdaMethodStringResultValue = string.Empty;
+            Runtime.InvokeJS(@"
+                var del = App.call_test_method (""CreateDelegateLambdaMethodReturnString"", [  ]);
+                del(""Hic sunt dracones"");
+            ");
+
+            Assert.Equal("Notification received for: Hic sunt dracones", HelperMarshal._delLambdaMethodStringResultValue);
+        }
+
+        [Fact]
         public static void MarshalDelegateMethodReturnString()
         {
             HelperMarshal._delMethodStringResultValue = string.Empty;
