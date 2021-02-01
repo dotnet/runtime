@@ -146,18 +146,17 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class GetValueOrDefault : NullableMethodCallInstruction
         {
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             private readonly Type _defaultValueType;
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:UnrecognizedReflectionPattern",
-                Justification = "_defaultValueType is a ValueType, so you can always create an instance of it.")]
             public GetValueOrDefault(MethodInfo mi)
             {
-                Debug.Assert(mi.ReturnType.IsValueType, "Nullable only allows on value types.");
+                Debug.Assert(mi.ReturnType.IsValueType, "Nullable is only allowed on value types.");
 
                 _defaultValueType = mi.ReturnType;
             }
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
+                Justification = "_defaultValueType is a ValueType. You can always create an instance of a ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 if (frame.Peek() == null)
