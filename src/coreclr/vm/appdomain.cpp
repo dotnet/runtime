@@ -166,7 +166,7 @@ LargeHeapHandleBucket::~LargeHeapHandleBucket()
 
     if (m_hndHandleArray)
     {
-        DestroyPinningHandle(m_hndHandleArray);
+        DestroyStrongHandle(m_hndHandleArray);
         m_hndHandleArray = NULL;
     }
 }
