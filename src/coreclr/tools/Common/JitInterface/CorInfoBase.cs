@@ -61,7 +61,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getMethodInfo(ftn, info) ? 1 : 0;
+                return _this.getMethodInfo(ftn, info) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -105,7 +105,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.canTailCall(callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix != 0) ? 1 : 0;
+                return _this.canTailCall(callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix != 0) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -192,7 +192,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.resolveVirtualMethod(info) ? 1 : 0;
+                return _this.resolveVirtualMethod(info) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -266,7 +266,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isIntrinsicType(classHnd) ? 1 : 0;
+                return _this.isIntrinsicType(classHnd) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -296,7 +296,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.pInvokeMarshalingRequired(method, callSiteSig) ? 1 : 0;
+                return _this.pInvokeMarshalingRequired(method, callSiteSig) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -311,7 +311,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.satisfiesMethodConstraints(parent, method) ? 1 : 0;
+                return _this.satisfiesMethodConstraints(parent, method) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -326,7 +326,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, ref *pfIsOpenDelegate) ? 1 : 0;
+                return _this.isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, ref *pfIsOpenDelegate) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -427,7 +427,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.tryResolveToken(ref *pResolvedToken) ? 1 : 0;
+                return _this.tryResolveToken(ref *pResolvedToken) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -485,7 +485,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isValidToken(module, metaTOK) ? 1 : 0;
+                return _this.isValidToken(module, metaTOK) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -500,7 +500,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isValidStringRef(module, metaTOK) ? 1 : 0;
+                return _this.isValidStringRef(module, metaTOK) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -605,7 +605,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isValueClass(cls) ? 1 : 0;
+                return _this.isValueClass(cls) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -650,7 +650,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isStructRequiringStackAllocRetBuf(cls) ? 1 : 0;
+                return _this.isStructRequiringStackAllocRetBuf(cls) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -784,7 +784,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.canAllocateOnStack(cls) ? 1 : 0;
+                return _this.canAllocateOnStack(cls) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -859,7 +859,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.checkMethodModifier(hMethod, modifier, fOptional != 0) ? 1 : 0;
+                return _this.checkMethodModifier(hMethod, modifier, fOptional != 0) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -979,7 +979,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getReadyToRunHelper(ref *pResolvedToken, ref *pGenericLookupKind, id, ref *pLookup) ? 1 : 0;
+                return _this.getReadyToRunHelper(ref *pResolvedToken, ref *pGenericLookupKind, id, ref *pLookup) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1097,7 +1097,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.canCast(child, parent) ? 1 : 0;
+                return _this.canCast(child, parent) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1112,7 +1112,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.areTypesEquivalent(cls1, cls2) ? 1 : 0;
+                return _this.areTypesEquivalent(cls1, cls2) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1172,7 +1172,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isMoreSpecificType(cls1, cls2) ? 1 : 0;
+                return _this.isMoreSpecificType(cls1, cls2) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1217,7 +1217,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.satisfiesClassConstraints(cls) ? 1 : 0;
+                return _this.satisfiesClassConstraints(cls) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1232,7 +1232,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isSDArray(cls) ? 1 : 0;
+                return _this.isSDArray(cls) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1366,7 +1366,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isFieldStatic(fldHnd) ? 1 : 0;
+                return _this.isFieldStatic(fldHnd) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1613,7 +1613,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.runWithErrorTrap(function, parameter) ? 1 : 0;
+                return _this.runWithErrorTrap(function, parameter) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1732,7 +1732,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr) ? 1 : 0;
+                return _this.getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -1982,7 +1982,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.canGetCookieForPInvokeCalliSig(szMetaSig) ? 1 : 0;
+                return _this.canGetCookieForPInvokeCalliSig(szMetaSig) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2040,7 +2040,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.canAccessFamily(hCaller, hInstanceType) ? 1 : 0;
+                return _this.canAccessFamily(hCaller, hInstanceType) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2055,7 +2055,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.isRIDClassDomainID(cls) ? 1 : 0;
+                return _this.isRIDClassDomainID(cls) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2130,7 +2130,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.canGetVarArgsHandle(pSig) ? 1 : 0;
+                return _this.canGetVarArgsHandle(pSig) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2247,7 +2247,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getTailCallHelpers(ref *callToken, sig, flags, ref *pResult) ? 1 : 0;
+                return _this.getTailCallHelpers(ref *callToken, sig, flags, ref *pResult) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2262,7 +2262,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.convertPInvokeCalliToCall(ref *pResolvedToken, mustConvert != 0) ? 1 : 0;
+                return _this.convertPInvokeCalliToCall(ref *pResolvedToken, mustConvert != 0) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2277,7 +2277,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.notifyInstructionSetUsage(instructionSet, supportEnabled != 0) ? 1 : 0;
+                return _this.notifyInstructionSetUsage(instructionSet, supportEnabled != 0) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2377,7 +2377,7 @@ namespace Internal.JitInterface
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.logMsg(level, fmt, args) ? 1 : 0;
+                return _this.logMsg(level, fmt, args) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
