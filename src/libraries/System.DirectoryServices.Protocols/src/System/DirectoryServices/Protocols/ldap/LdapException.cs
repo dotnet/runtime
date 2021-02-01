@@ -100,7 +100,8 @@ namespace System.DirectoryServices.Protocols
 
         public LdapException(string message, Exception inner) : base(message, inner) { }
 
-        public LdapException(int errorCode) : base(SR.DefaultLdapError)
+        public LdapException(int errorCode)
+                : base(SR.Format(SR.DefaultLdapError, LdapErrorMappings.NormalizeResultCode(errorCode)))
         {
             ErrorCode = errorCode;
         }
