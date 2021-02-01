@@ -1,44 +1,37 @@
 trigger:
   branches:
     include:
-    - master
-    - release/*.*
+      - master
+      - release/*.*
 
 pr: ["*"]
 
 variables:
-- template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/common/variables.yml
 
-stages:
-- stage: Build
-  jobs:
-  #
-  # Checkout repository
-  #
-  - template: /eng/pipelines/common/checkout-job.yml
-
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: debug
-      platforms:
+jobs:
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: debug
+    platforms:
       - Windows_NT_x64
-      jobParameters:
-        enableRichCodeNavigation: true
-        richCodeNavigationEnvironment: 'production'
-        richCodeNavigationLanguage: 'csharp'
-        timeoutInMinutes: 240
-        buildArgs: -s libs.ref+libs.src -c debug -allConfigurations
+    jobParameters:
+      enableRichCodeNavigation: true
+      richCodeNavigationEnvironment: "production"
+      richCodeNavigationLanguage: "csharp"
+      timeoutInMinutes: 240
+      buildArgs: -s libs.ref+libs.src -c debug -allConfigurations
 
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: debug
-      platforms:
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: debug
+    platforms:
       - Windows_NT_x64
-      jobParameters:
-        enableRichCodeNavigation: true
-        nameSuffix: Mono
-        richCodeNavigationEnvironment: 'production'
-        richCodeNavigationLanguage: 'csharp,cpp'
-        buildArgs: -s mono -c debug
+    jobParameters:
+      enableRichCodeNavigation: true
+      nameSuffix: Mono
+      richCodeNavigationEnvironment: "production"
+      richCodeNavigationLanguage: "csharp,cpp"
+      buildArgs: -s mono -c debug
