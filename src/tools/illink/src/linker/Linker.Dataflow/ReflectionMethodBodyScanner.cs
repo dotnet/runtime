@@ -513,8 +513,8 @@ namespace Mono.Linker.Dataflow
 				return false;
 
 			var callingMethodDefinition = callingMethodBody.Method;
-			bool shouldEnableReflectionWarnings = ShouldEnableReflectionPatternReporting (callingMethodDefinition);
-			var reflectionContext = new ReflectionPatternContext (_context, shouldEnableReflectionWarnings, callingMethodDefinition, calledMethod.Resolve (), operation);
+			var reflectionContext = new ReflectionPatternContext (_context,
+				ShouldEnableReflectionPatternReporting (callingMethodDefinition), callingMethodDefinition, calledMethod.Resolve (), operation);
 
 			DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = 0;
 
@@ -1330,19 +1330,6 @@ namespace Mono.Linker.Dataflow
 						reflectionContext.RecordHandledPattern ();
 					}
 
-					if (shouldEnableReflectionWarnings &&
-						_context.Annotations.TryGetLinkerAttribute (calledMethodDefinition, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode)) {
-						string message =
-							$"Calling '{calledMethodDefinition.GetDisplayName ()}' which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
-							$"{requiresUnreferencedCode.Message}.";
-
-						if (requiresUnreferencedCode.Url != null) {
-							message += " " + requiresUnreferencedCode.Url;
-						}
-
-						_context.LogWarning (message, 2026, callingMethodDefinition, operation.Offset, MessageSubCategory.TrimAnalysis);
-					}
-
 					// To get good reporting of errors we need to track the origin of the value for all method calls
 					// but except Newobj as those are special.
 					if (calledMethodDefinition.ReturnType.MetadataType != MetadataType.Void) {
@@ -1711,23 +1698,23 @@ namespace Mono.Linker.Dataflow
 			foreach (var member in typeDefinition.GetDynamicallyAccessedMembers (requiredMemberTypes)) {
 				switch (member) {
 				case MethodDefinition method:
-					MarkMethod (ref reflectionContext, method);
+					MarkMethod (ref reflectionContext, method, DependencyKind.DynamicallyAccessedMember);
 					break;
 				case FieldDefinition field:
-					MarkField (ref reflectionContext, field);
+					MarkField (ref reflectionContext, field, DependencyKind.DynamicallyAccessedMember);
 					break;
 				case TypeDefinition nestedType:
-					MarkNestedType (ref reflectionContext, nestedType);
+					MarkNestedType (ref reflectionContext, nestedType, DependencyKind.DynamicallyAccessedMember);
 					break;
 				case PropertyDefinition property:
-					MarkProperty (ref reflectionContext, property);
+					MarkProperty (ref reflectionContext, property, DependencyKind.DynamicallyAccessedMember);
 					break;
 				case EventDefinition @event:
-					MarkEvent (ref reflectionContext, @event);
+					MarkEvent (ref reflectionContext, @event, DependencyKind.DynamicallyAccessedMember);
 					break;
 				case null:
 					var source = reflectionContext.Source;
-					reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseTypes: true, new DependencyInfo (DependencyKind.AccessedViaReflection, source), source));
+					reflectionContext.RecordRecognizedPattern (typeDefinition, () => _markStep.MarkEntireType (typeDefinition, includeBaseTypes: true, includeInterfaceTypes: true, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, source), source));
 					break;
 				}
 			}
@@ -1739,28 +1726,28 @@ namespace Mono.Linker.Dataflow
 			reflectionContext.RecordRecognizedPattern (typeReference?.Resolve (), () => _markStep.MarkTypeVisibleToReflection (typeReference, new DependencyInfo (DependencyKind.AccessedViaReflection, source), source));
 		}
 
-		void MarkMethod (ref ReflectionPatternContext reflectionContext, MethodDefinition method)
+		void MarkMethod (ref ReflectionPatternContext reflectionContext, MethodDefinition method, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
 			var source = reflectionContext.Source;
-			reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, source), source));
+			reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (dependencyKind, source), source));
 		}
 
-		void MarkNestedType (ref ReflectionPatternContext reflectionContext, TypeDefinition nestedType)
+		void MarkNestedType (ref ReflectionPatternContext reflectionContext, TypeDefinition nestedType, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
 			var source = reflectionContext.Source;
-			reflectionContext.RecordRecognizedPattern (nestedType, () => _markStep.MarkTypeVisibleToReflection (nestedType, new DependencyInfo (DependencyKind.AccessedViaReflection, source), source));
+			reflectionContext.RecordRecognizedPattern (nestedType, () => _markStep.MarkTypeVisibleToReflection (nestedType, new DependencyInfo (dependencyKind, source), source));
 		}
 
-		void MarkField (ref ReflectionPatternContext reflectionContext, FieldDefinition field)
+		void MarkField (ref ReflectionPatternContext reflectionContext, FieldDefinition field, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
 			var source = reflectionContext.Source;
-			reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (DependencyKind.AccessedViaReflection, source)));
+			reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (dependencyKind, source)));
 		}
 
-		void MarkProperty (ref ReflectionPatternContext reflectionContext, PropertyDefinition property)
+		void MarkProperty (ref ReflectionPatternContext reflectionContext, PropertyDefinition property, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
 			var source = reflectionContext.Source;
-			var dependencyInfo = new DependencyInfo (DependencyKind.AccessedViaReflection, source);
+			var dependencyInfo = new DependencyInfo (dependencyKind, source);
 			reflectionContext.RecordRecognizedPattern (property, () => {
 				// Marking the property itself actually doesn't keep it (it only marks its attributes and records the dependency), we have to mark the methods on it
 				_markStep.MarkProperty (property, dependencyInfo);
@@ -1773,10 +1760,10 @@ namespace Mono.Linker.Dataflow
 			});
 		}
 
-		void MarkEvent (ref ReflectionPatternContext reflectionContext, EventDefinition @event)
+		void MarkEvent (ref ReflectionPatternContext reflectionContext, EventDefinition @event, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
 			var source = reflectionContext.Source;
-			var dependencyInfo = new DependencyInfo (DependencyKind.AccessedViaReflection, reflectionContext.Source);
+			var dependencyInfo = new DependencyInfo (dependencyKind, reflectionContext.Source);
 			reflectionContext.RecordRecognizedPattern (@event, () => {
 				// MarkEvent actually marks the add/remove/invoke methods as well, so no need to mark those explicitly
 				_markStep.MarkEvent (@event, dependencyInfo);

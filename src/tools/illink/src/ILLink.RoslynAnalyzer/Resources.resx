@@ -121,7 +121,7 @@
     <value>RequiresUnreferencedCodeAnalyzer</value>
   </data>
   <data name="RequiresUnreferencedCodeAnalyzerMessage" xml:space="preserve">
-    <value>Calling '{0}' which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. {1}. {2}</value>
+    <value>Using method '{0}' which has 'RequiresUnreferencedCodeAttribute' which can break functionality when trimming application code. {1}. {2}</value>
   </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>

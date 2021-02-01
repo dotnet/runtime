@@ -23,8 +23,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RequiresUnreferencedCodeAnalyzerMessage">
-        <source>Calling '{0}' which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. {1}. {2}</source>
-        <target state="new">Calling '{0}' which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. {1}. {2}</target>
+        <source>Using method '{0}' which has 'RequiresUnreferencedCodeAttribute' which can break functionality when trimming application code. {1}. {2}</source>
+        <target state="new">Using method '{0}' which has 'RequiresUnreferencedCodeAttribute' which can break functionality when trimming application code. {1}. {2}</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresUnreferencedCodeAnalyzerTitle">

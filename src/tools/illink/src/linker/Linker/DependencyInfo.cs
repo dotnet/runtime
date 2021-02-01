@@ -116,20 +116,21 @@ namespace Mono.Linker
 		PreservedMethod = 69, // type/method -> preserved method (explicitly preserved in Annotations by XML or other steps)
 		TypePreserve = 70, // type -> field/method preserved for the type (explicitly set in Annotations by XML or other steps)
 		DisablePrivateReflection = 71, // type/method -> DisablePrivateReflection attribute added by linkerf
+		DynamicallyAccessedMember = 72, // DynamicallyAccessedMember attribute -> member
 
 		// Built-in knowledge of special runtime/diagnostic subsystems
 		// XmlSchemaProvider, DebuggerDisplay, DebuggerTypeProxy, SoapHeader, TypeDescriptionProvider
-		ReferencedBySpecialAttribute = 72, // attribute -> referenced members
-		KeptForSpecialAttribute = 73, // attribute -> kept members (used when the members are not explicitly referenced)
-		SerializationMethodForType = 74, // type -> method required for serialization
-		EventSourceProviderField = 75, // EventSource derived type -> fields on nested Keywords/Tasks/Opcodes provider classes
-		MethodForSpecialType = 76, // type -> methods kept (currently used for MulticastDelegate)
+		ReferencedBySpecialAttribute = 73, // attribute -> referenced members
+		KeptForSpecialAttribute = 74, // attribute -> kept members (used when the members are not explicitly referenced)
+		SerializationMethodForType = 75, // type -> method required for serialization
+		EventSourceProviderField = 76, // EventSource derived type -> fields on nested Keywords/Tasks/Opcodes provider classes
+		MethodForSpecialType = 77, // type -> methods kept (currently used for MulticastDelegate)
 
 		// Linker internals, requirements for certain optimizations
-		UnreachableBodyRequirement = 77, // method -> well-known type required for unreachable bodies optimization
-		DisablePrivateReflectionRequirement = 78, // null -> DisablePrivateReflectionAttribute type/methods (note that no specific source is reported)
-		DynamicInterfaceCastableImplementation = 79, // type -> type is marked with IDynamicInterfaceCastableImplementationAttribute and implements the provided interface
-		AlreadyMarked = 80, // null -> member that has already been marked for a particular reason (used to propagate reasons internally, not reported)
+		UnreachableBodyRequirement = 78, // method -> well-known type required for unreachable bodies optimization
+		DisablePrivateReflectionRequirement = 79, // null -> DisablePrivateReflectionAttribute type/methods (note that no specific source is reported)
+		DynamicInterfaceCastableImplementation = 80, // type -> type is marked with IDynamicInterfaceCastableImplementationAttribute and implements the provided interface
+		AlreadyMarked = 82, // null -> member that has already been marked for a particular reason (used to propagate reasons internally, not reported)
 	}
 
 	public readonly struct DependencyInfo : IEquatable<DependencyInfo>
