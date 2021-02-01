@@ -21,7 +21,6 @@ namespace System.Diagnostics.Tracing
     //   enable the provider by default when the Threading or other ThreadPool-related keywords are specified for the runtime
     //   provider, and update PerfView with a trace event parser for the new provider so that it knows about the events and may
     //   use them to identify thread pool threads.
-    [EventSourceAutoGenerate]
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
@@ -70,10 +69,6 @@ namespace System.Diagnostics.Tracing
             Starvation,
             ThreadTimedOut
         }
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private NativeRuntimeEventSource(int _) { }
 
         [NonEvent]
         private unsafe void WriteThreadEvent(int eventId, uint numExistingThreads)
