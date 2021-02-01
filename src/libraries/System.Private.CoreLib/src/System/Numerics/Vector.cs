@@ -797,8 +797,8 @@ namespace System.Numerics
 
         /// <summary>Widens a <c>Vector&lt;Byte&gt;</c> into two <c>Vector&lt;UInt16&gt;</c> instances.</summary>
         /// <param name="source">The source vector whose elements are widened into the outputs.</param>
-        /// <param name="dest1">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
-        /// <param name="dest2">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
         [CLSCompliant(false)]
         [Intrinsic]
         public static unsafe void Widen(Vector<byte> source, out Vector<ushort> low, out Vector<ushort> high)
@@ -821,8 +821,8 @@ namespace System.Numerics
 
         /// <summary>Widens a <c>Vector&lt;UInt16&gt;</c> into two <c>Vector&lt;UInt32&gt;</c> instances.</summary>
         /// <param name="source">The source vector whose elements are widened into the outputs.</param>
-        /// <param name="dest1">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
-        /// <param name="dest2">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
         [CLSCompliant(false)]
         [Intrinsic]
         public static unsafe void Widen(Vector<ushort> source, out Vector<uint> low, out Vector<uint> high)
@@ -845,8 +845,8 @@ namespace System.Numerics
 
         /// <summary>Widens a <c>Vector&lt;UInt32&gt;</c> into two <c>Vector&lt;UInt64&gt;</c> instances.</summary>
         /// <param name="source">The source vector whose elements are widened into the outputs.</param>
-        /// <param name="dest1">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
-        /// <param name="dest2">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
         [CLSCompliant(false)]
         [Intrinsic]
         public static unsafe void Widen(Vector<uint> source, out Vector<ulong> low, out Vector<ulong> high)
@@ -869,8 +869,8 @@ namespace System.Numerics
 
         /// <summary>Widens a <c>Vector&lt;SByte&gt;</c> into two <c>Vector&lt;Int16&gt;</c> instances.</summary>
         /// <param name="source">The source vector whose elements are widened into the outputs.</param>
-        /// <param name="dest1">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
-        /// <param name="dest2">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
         [CLSCompliant(false)]
         [Intrinsic]
         public static unsafe void Widen(Vector<sbyte> source, out Vector<short> low, out Vector<short> high)
@@ -893,8 +893,8 @@ namespace System.Numerics
 
         /// <summary>Widens a <c>Vector&lt;Int16&gt;</c> into two <c>Vector&lt;Int32&gt;</c> instances.</summary>
         /// <param name="source">The source vector whose elements are widened into the outputs.</param>
-        /// <param name="dest1">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
-        /// <param name="dest2">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
         [Intrinsic]
         public static unsafe void Widen(Vector<short> source, out Vector<int> low, out Vector<int> high)
         {
@@ -916,8 +916,8 @@ namespace System.Numerics
 
         /// <summary>Widens a <c>Vector&lt;Int32&gt;</c> into two <c>Vector&lt;Int64&gt;</c> instances.</summary>
         /// <param name="source">The source vector whose elements are widened into the outputs.</param>
-        /// <param name="dest1">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
-        /// <param name="dest2">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
         [Intrinsic]
         public static unsafe void Widen(Vector<int> source, out Vector<long> low, out Vector<long> high)
         {
@@ -939,8 +939,8 @@ namespace System.Numerics
 
         /// <summary>Widens a <c>Vector&lt;Single&gt;</c> into two <c>Vector&lt;Double&gt;</c> instances.</summary>
         /// <param name="source">The source vector whose elements are widened into the outputs.</param>
-        /// <param name="dest1">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
-        /// <param name="dest2">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
         [Intrinsic]
         public static unsafe void Widen(Vector<float> source, out Vector<double> low, out Vector<double> high)
         {
@@ -961,8 +961,8 @@ namespace System.Numerics
         }
 
         /// <summary>Narrows two <c>Vector&lt;UInt16&gt;</c> instances into one <c>Vector&lt;Byte&gt;</c>.</summary>
-        /// <param name="source1">The first source vector, whose elements become the lower-index elements of the return value.</param>
-        /// <param name="source2">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
         /// <returns>A <c>Vector&lt;Byte&gt;</c> containing elements narrowed from the source vectors.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
@@ -983,8 +983,8 @@ namespace System.Numerics
         }
 
         /// <summary>Narrows two <c>Vector&lt;UInt32&gt;</c> instances into one <c>Vector&lt;UInt16&gt;</c>.</summary>
-        /// <param name="source1">The first source vector, whose elements become the lower-index elements of the return value.</param>
-        /// <param name="source2">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
         /// <returns>A <c>Vector&lt;UInt16&gt;</c> containing elements narrowed from the source vectors.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
@@ -1005,8 +1005,8 @@ namespace System.Numerics
         }
 
         /// <summary>Narrows two <c>Vector&lt;UInt64&gt;</c> instances into one <c>Vector&lt;UInt32&gt;</c>.</summary>
-        /// <param name="source1">The first source vector, whose elements become the lower-index elements of the return value.</param>
-        /// <param name="source2">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
         /// <returns>A <c>Vector&lt;UInt32&gt;</c> containing elements narrowed from the source vectors.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
@@ -1027,8 +1027,8 @@ namespace System.Numerics
         }
 
         /// <summary>Narrows two <c>Vector&lt;Int16&gt;</c> instances into one <c>Vector&lt;SByte&gt;</c>.</summary>
-        /// <param name="source1">The first source vector, whose elements become the lower-index elements of the return value.</param>
-        /// <param name="source2">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
         /// <returns>A <c>Vector&lt;SByte&gt;</c> containing elements narrowed from the source vectors.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
@@ -1049,8 +1049,8 @@ namespace System.Numerics
         }
 
         /// <summary>Narrows two <c>Vector&lt;Int32&gt;</c> instances into one <c>Vector&lt;Int16&gt;</c>.</summary>
-        /// <param name="source1">The first source vector, whose elements become the lower-index elements of the return value.</param>
-        /// <param name="source2">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
         /// <returns>A <c>Vector&lt;Int16&gt;</c> containing elements narrowed from the source vectors.</returns>
         [Intrinsic]
         public static unsafe Vector<short> Narrow(Vector<int> low, Vector<int> high)
@@ -1070,8 +1070,8 @@ namespace System.Numerics
         }
 
         /// <summary>Narrows two <c>Vector&lt;Int64&gt;</c> instances into one <c>Vector&lt;Int32&gt;</c>.</summary>
-        /// <param name="source1">The first source vector, whose elements become the lower-index elements of the return value.</param>
-        /// <param name="source2">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
         /// <returns>A <c>Vector&lt;Int32&gt;</c> containing elements narrowed from the source vectors.</returns>
         [Intrinsic]
         public static unsafe Vector<int> Narrow(Vector<long> low, Vector<long> high)
@@ -1091,8 +1091,8 @@ namespace System.Numerics
         }
 
         /// <summary>Narrows two <c>Vector&lt;Double&gt;</c> instances into one <c>Vector&lt;Single&gt;</c>.</summary>
-        /// <param name="source1">The first source vector, whose elements become the lower-index elements of the return value.</param>
-        /// <param name="source2">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
         /// <returns>A <c>Vector&lt;Single&gt;</c> containing elements narrowed from the source vectors.</returns>
         [Intrinsic]
         public static unsafe Vector<float> Narrow(Vector<double> low, Vector<double> high)
