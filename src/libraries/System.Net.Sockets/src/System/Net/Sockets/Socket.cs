@@ -2333,97 +2333,14 @@ namespace System.Net.Sockets
 
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
-            if (remoteEP == null)
+
+            Task<SocketReceiveMessageFromResult> t = ReceiveMessageFromAsync(new Memory<byte>(buffer, offset, size), socketFlags, remoteEP).AsTask();
+            if (t.IsCompletedSuccessfully)
             {
-                throw new ArgumentNullException(nameof(remoteEP));
+                EndPoint resultEp = t.Result.RemoteEndPoint;
+                if (!remoteEP.Equals(resultEp)) remoteEP = resultEp;
             }
-            if (!CanTryAddressFamily(remoteEP.AddressFamily))
-            {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEP.AddressFamily, _addressFamily), nameof(remoteEP));
-            }
-            if (_rightEndPoint == null)
-            {
-                throw new InvalidOperationException(SR.net_sockets_mustbind);
-            }
-
-            SocketPal.CheckDualModeReceiveSupport(this);
-
-            // Set up the result and set it to collect the context.
-            ReceiveMessageOverlappedAsyncResult asyncResult = new ReceiveMessageOverlappedAsyncResult(this, state, callback);
-            asyncResult.StartPostingAsyncOp(false);
-
-            // Start the ReceiveFrom.
-            EndPoint oldEndPoint = _rightEndPoint;
-
-            // We don't do a CAS demand here because the contents of remoteEP aren't used by
-            // WSARecvMsg; all that matters is that we generate a unique-to-this-call SocketAddress
-            // with the right address family
-            Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
-
-            // Guarantee to call CheckAsyncCallOverlappedResult if we call SetUnamangedStructures with a cache in order to
-            // avoid a Socket leak in case of error.
-            SocketError errorCode = SocketError.SocketError;
-            try
-            {
-                // Save a copy of the original EndPoint in the asyncResult.
-                asyncResult.SocketAddressOriginal = IPEndPointExtensions.Serialize(remoteEP);
-
-                SetReceivingPacketInformation();
-
-                if (_rightEndPoint == null)
-                {
-                    _rightEndPoint = remoteEP;
-                }
-
-                errorCode = SocketPal.ReceiveMessageFromAsync(this, _handle, buffer, offset, size, socketFlags, socketAddress, asyncResult);
-
-                if (errorCode != SocketError.Success)
-                {
-                    // WSARecvMsg() will never return WSAEMSGSIZE directly, since a completion is queued in this case.  We wouldn't be able
-                    // to handle this easily because of assumptions OverlappedAsyncResult makes about whether there would be a completion
-                    // or not depending on the error code.  If WSAEMSGSIZE would have been normally returned, it returns WSA_IO_PENDING instead.
-                    // That same map is implemented here just in case.
-                    if (errorCode == SocketError.MessageSize)
-                    {
-                        Debug.Fail("Returned WSAEMSGSIZE!");
-                        errorCode = SocketError.IOPending;
-                    }
-                }
-
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ReceiveMessageFromAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
-            }
-            catch (ObjectDisposedException)
-            {
-                _rightEndPoint = oldEndPoint;
-                _localEndPoint = null;
-                throw;
-            }
-
-            // Throw an appropriate SocketException if the native call fails synchronously.
-            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred: 0);
-            if (!CheckErrorAndUpdateStatus(errorCode))
-            {
-                // Update the internal state of this socket according to the error before throwing.
-                _rightEndPoint = oldEndPoint;
-                _localEndPoint = null;
-
-                throw new SocketException((int)errorCode);
-            }
-
-            // Capture the context, maybe call the callback, and return.
-            asyncResult.FinishPostingAsyncOp(ref Caches.ReceiveClosureCache);
-
-            if (asyncResult.CompletedSynchronously && !asyncResult.SocketAddressOriginal.Equals(asyncResult.SocketAddress))
-            {
-                try
-                {
-                    remoteEP = remoteEP.Create(asyncResult.SocketAddress!);
-                }
-                catch
-                {
-                }
-            }
-
+            IAsyncResult asyncResult = TaskToApm.Begin(t, callback, state);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"size:{size} returning AsyncResult:{asyncResult}");
             return asyncResult;
         }
@@ -2439,59 +2356,15 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, endPoint.AddressFamily, _addressFamily), nameof(endPoint));
             }
-            if (asyncResult == null)
+
+            SocketReceiveMessageFromResult result = TaskToApm.End<SocketReceiveMessageFromResult>(asyncResult);
+            if (!endPoint.Equals(result.RemoteEndPoint))
             {
-                throw new ArgumentNullException(nameof(asyncResult));
+                endPoint = result.RemoteEndPoint;
             }
-
-            ReceiveMessageOverlappedAsyncResult? castedAsyncResult = asyncResult as ReceiveMessageOverlappedAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndReceiveMessageFrom"));
-            }
-
-            Internals.SocketAddress socketAddressOriginal = Serialize(ref endPoint);
-
-            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
-            castedAsyncResult.EndCalled = true;
-
-            // Update socket address size.
-            castedAsyncResult.SocketAddress!.InternalSize = castedAsyncResult.GetSocketAddressSize();
-
-            if (!socketAddressOriginal.Equals(castedAsyncResult.SocketAddress))
-            {
-                try
-                {
-                    endPoint = endPoint.Create(castedAsyncResult.SocketAddress);
-                }
-                catch
-                {
-                }
-            }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
-
-            SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
-            // Throw an appropriate SocketException if the native call failed asynchronously.
-            if (errorCode != SocketError.Success && errorCode != SocketError.MessageSize)
-            {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-            else if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-                if (errorCode == SocketError.Success && SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
-            }
-
-            socketFlags = castedAsyncResult.SocketFlags;
-            ipPacketInformation = castedAsyncResult.IPPacketInformation;
-
-            return bytesTransferred;
+            socketFlags = result.SocketFlags;
+            ipPacketInformation = result.PacketInformation;
+            return result.ReceivedBytes;
         }
 
         public IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback? callback, object? state)
@@ -2500,9 +2373,10 @@ namespace System.Net.Sockets
             ValidateBufferArguments(buffer, offset, size);
 
             Task<SocketReceiveFromResult> t = ReceiveFromAsync(new Memory<byte>(buffer, offset, size), socketFlags, remoteEP).AsTask();
-            if (t.IsCompleted)
+            if (t.IsCompletedSuccessfully)
             {
-                remoteEP = t.Result.RemoteEndPoint;
+                EndPoint resultEp = t.Result.RemoteEndPoint;
+                if (!remoteEP.Equals(resultEp)) remoteEP = resultEp;
             }
 
             return TaskToApm.Begin(t, callback, state);
