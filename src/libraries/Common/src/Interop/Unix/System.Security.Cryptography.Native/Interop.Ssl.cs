@@ -69,10 +69,10 @@ internal static partial class Interop
             return result;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite", SetLastError = true)]
         internal static extern int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead", SetLastError = true)]
         internal static extern unsafe int SslRead(SafeSslHandle ssl, byte* buf, int num);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslRenegotiatePending")]
@@ -88,7 +88,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static extern void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
         internal static extern int SslDoHandshake(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslStateOK")]
@@ -368,7 +368,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private SafeSslHandle() : base(IntPtr.Zero, true)
+        public SafeSslHandle() : base(IntPtr.Zero, true)
         {
         }
 

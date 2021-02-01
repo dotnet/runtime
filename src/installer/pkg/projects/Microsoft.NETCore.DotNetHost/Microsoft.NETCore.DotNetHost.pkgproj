@@ -2,13 +2,12 @@
 
   <PropertyGroup>
     <VersionProp>HostVersion</VersionProp>
-
     <InstallerName>dotnet-host</InstallerName>
-    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
+    <PackageDescription>Provides an executable implementation of the Microsoft DotNet Framework and SDK launcher module</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-    <NativeBinary Include="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)" />
+    <NativeBinary Include="$(DotNetHostBinDir)/dotnet$(ExeSuffix)" />
     <File Include="@(NativeBinary)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       <IsNative>true</IsNative>

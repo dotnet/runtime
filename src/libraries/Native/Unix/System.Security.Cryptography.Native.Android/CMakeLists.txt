@@ -2,6 +2,7 @@ project(System.Security.Cryptography.Native.Android C)
 
 add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
 add_compile_options(-Wno-unused-parameter)
+add_compile_options(-Wno-unused-function)
 
 set(NATIVECRYPTO_SOURCES
     pal_jni.c
@@ -10,6 +11,9 @@ set(NATIVECRYPTO_SOURCES
     pal_evp_cipher.c
     pal_hmac.c
     pal_bignum.c
+    pal_ssl.c
+    pal_rsa.c
+    pal_err.c
 )
 
 add_library(System.Security.Cryptography.Native.Android
@@ -31,6 +35,7 @@ target_link_libraries(System.Security.Cryptography.Native.Android
 
 # TODO: Use "System.Security.Cryptography.Native.Android" name (will require a lot of csproj changes here and there)
 set_target_properties(System.Security.Cryptography.Native.Android PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.OpenSsl")
+set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.OpenSsl")
 
 install_with_stripped_symbols (System.Security.Cryptography.Native.Android PROGRAMS .)
 install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION .)

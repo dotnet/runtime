@@ -41,7 +41,7 @@
 
     <Error Condition="'$(CORE_ROOT)' == ''" Text="CORE_ROOT is not set." />
     <PropertyGroup>
-      <XunitConsoleRunner>$(CORE_ROOT)\xunit.console.dll</XunitConsoleRunner>
+      <XunitConsoleRunner>$(CORE_ROOT)\xunit\xunit.console.dll</XunitConsoleRunner>
 
       <XunitArgs Condition="'$(TargetOS)' == 'Android'">-parallel none</XunitArgs>
       <XunitArgs Condition="'$(TargetOS)' != 'Android'">-parallel $(ParallelRun)</XunitArgs>

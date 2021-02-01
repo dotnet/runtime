@@ -609,7 +609,7 @@ namespace System.Net.Sockets.Tests
 
                 if (nlh.nlmsg_type == NLMSG_ERROR)
                 {
-                    MemoryMarshal.TryRead<nlmsgerr>(response.AsSpan().Slice(sizeof(nlmsghdr)), out nlmsgerr err);
+                    MemoryMarshal.TryRead<nlmsgerr>(response.AsSpan(sizeof(nlmsghdr)), out nlmsgerr err);
                     _output.WriteLine("Netlink request failed with {0}", err.error);
                 }
 

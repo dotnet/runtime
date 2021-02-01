@@ -189,7 +189,7 @@ namespace System
 #region Match method by parameter type
                 for (j = 0; j < argsToCheck; j++)
                 {
-#region Classic argument coersion checks
+#region Classic argument coercion checks
                     // get the formal type
                     pCls = par[j].ParameterType;
 

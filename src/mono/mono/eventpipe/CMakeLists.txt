@@ -1,73 +1,43 @@
-
-set(eventpipe_sources_base
-	ds-dump-protocol.c
-	ds-dump-protocol.h
-	ds-eventpipe-protocol.c
-	ds-eventpipe-protocol.h
-	ds-getter-setter.h
-	ds-ipc.c
-	ds-ipc.h
-	ds-ipc-posix.c
-	ds-ipc-posix.h
-	ds-process-protocol.c
-	ds-process-protocol.h
-	ds-profiler-protocol.c
-	ds-profiler-protocol.h
-	ds-protocol.c
-	ds-protocol.h
-	ds-rt.h
-	ds-rt-config.h
-	ds-rt-mono.c
-	ds-rt-mono.h
-	ds-rt-types.h
-	ds-rt-types-mono.h
-	ds-server.c
-	ds-server.h
-	ds-types.h
-	ep.c
-	ep.h
-	ep-block.c
-	ep-block.h
-	ep-buffer.c
-	ep-buffer.h
-	ep-buffer-manager.c
-	ep-buffer-manager.h
-	ep-config.c
-	ep-config.h
-	ep-config-internals.h
-	ep-event.c
-	ep-event.h
-	ep-event-instance.h
-	ep-event-instance.c
-	ep-event-payload.c
-	ep-event-payload.h
-	ep-event-source.c
-	ep-event-source.h
-	ep-file.c
-	ep-file.h
-	ep-getter-setter.h
-	ep-metadata-generator.c
-	ep-metadata-generator.h
-	ep-provider.c
-	ep-provider.h
-	ep-provider-internals.h
-	ep-rt.h
-	ep-rt-config.h
-	ep-rt-config-mono.h
-	ep-rt-mono.c
-	ep-rt-mono.h
-	ep-rt-types.h
-	ep-rt-types-mono.h
-	ep-thread.c
-	ep-thread.h
-	ep-types.h
-	ep-session.c
-	ep-session.h
-	ep-session-provider.c
-	ep-stack-contents.c
-	ep-stack-contents.h
-	ep-stream.c
-	ep-stream.h)
 if(ENABLE_PERFTRACING)
-  addprefix(eventpipe_sources ../eventpipe  "${eventpipe_sources_base}")
-endif()
+
+    include (${SHARED_EVENTPIPE_SOURCE_PATH}CMakeLists.txt)
+
+    set(MONO_EVENTPIPE_SHIM_SOURCES "")
+    set(MONO_EVENTPIPE_SHIM_HEADERS "")
+
+    list(APPEND MONO_EVENTPIPE_SHIM_SOURCES
+        ds-rt-mono.c
+        ep-rt-mono.c
+    )
+
+    list(APPEND MONO_EVENTPIPE_SHIM_HEADERS
+        ds-rt-mono.h
+        ds-rt-types-mono.h
+        ep-rt-config-mono.h
+        ep-rt-mono.h
+        ep-rt-types-mono.h
+    )
+
+    set(shared_eventpipe_sources_base "")
+    set(mono_eventpipe_shim_sources_base "")
+
+    list(APPEND shared_eventpipe_sources_base
+        ${SHARED_EVENTPIPE_SOURCES}
+        ${SHARED_EVENTPIPE_HEADERS}
+        ${SHARED_DIAGNOSTIC_SERVER_SOURCES}
+        ${SHARED_DIAGNOSTIC_SERVER_HEADERS}
+        ${SHARED_DIAGNOSTIC_SERVER_PAL_SOURCES}
+        ${SHARED_DIAGNOSTIC_SERVER_PAL_HEADERS}
+    )
+
+    list(APPEND mono_eventpipe_shim_sources_base
+        ${MONO_EVENTPIPE_SHIM_SOURCES}
+        ${MONO_EVENTPIPE_SHIM_HEADERS}
+    )
+
+    addprefix(shared_eventpipe_sources_base ${SHARED_EVENTPIPE_SOURCE_PATH} "${shared_eventpipe_sources_base}")
+    addprefix(mono_eventpipe_shim_sources_base ${MONO_EVENTPIPE_SHIM_SOURCE_PATH} "${mono_eventpipe_shim_sources_base}")
+
+    set(eventpipe_sources ${shared_eventpipe_sources_base} ${mono_eventpipe_shim_sources_base})
+
+endif(ENABLE_PERFTRACING)

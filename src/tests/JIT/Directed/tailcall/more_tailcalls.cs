@@ -191,6 +191,8 @@ internal class Program
         a[99] = 1;
         Test(() => InstantiatingStub1(0, 0, "string", a), a.Length + 1, "Instantiating stub direct");
 
+        Test(() => VirtCallThisHasSideEffects(), 1, "Virtual call where computing \"this\" has side effects");
+
         if (result)
             Console.WriteLine("All tailcall-via-help succeeded");
         else
@@ -729,6 +731,48 @@ internal class Program
             IL.Emit.Call(new MethodRef(typeof(Program), nameof(InstantiatingStub1)).MakeGenericMethod(typeof(T)));
             return IL.Return<int>();
         }
+    }
+
+    class GenericInstance<T>
+    {
+        private GenericInstanceFactory factory;
+
+        public GenericInstance(GenericInstanceFactory factory)
+        {
+            this.factory = factory;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public virtual int NumberOfInstances()
+        {
+            return factory.counter;
+        }
+    }
+
+    class GenericInstanceFactory
+    {
+        public int counter = 0;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public GenericInstance<string> CreateInstance()
+        {
+            counter++;
+            return new GenericInstance<string>(this);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int VirtCallThisHasSideEffects()
+    {
+        IL.Push(1000);
+        IL.Emit.Localloc();
+        IL.Emit.Pop();
+        GenericInstanceFactory fact = new GenericInstanceFactory();
+        IL.Push(fact);
+        IL.Emit.Call(new MethodRef(typeof(GenericInstanceFactory), nameof(GenericInstanceFactory.CreateInstance)));
+        IL.Emit.Tail();
+        IL.Emit.Callvirt(new MethodRef(typeof(GenericInstance<string>), nameof(GenericInstance<string>.NumberOfInstances)));
+        return IL.Return<int>();
     }
 }
 

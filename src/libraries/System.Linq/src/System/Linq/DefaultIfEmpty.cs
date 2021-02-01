@@ -9,7 +9,7 @@ namespace System.Linq
     public static partial class Enumerable
     {
         public static IEnumerable<TSource?> DefaultIfEmpty<TSource>(this IEnumerable<TSource> source) =>
-            DefaultIfEmpty(source, default!);
+            DefaultIfEmpty(source, default);
 
         public static IEnumerable<TSource> DefaultIfEmpty<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
         {

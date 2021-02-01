@@ -48,6 +48,7 @@ void mono_icall_table_init (void);
 void mono_aot_register_module (void **aot_info);
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
+int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
@@ -318,15 +319,6 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	return NULL;
 }
 
-#ifdef ENABLE_NETCORE
-/* Missing System.Native symbols */
-int SystemNative_CloseNetworkChangeListenerSocket (int a) { return 0; }
-int SystemNative_CreateNetworkChangeListenerSocket (int a) { return 0; }
-void SystemNative_ReadEvents (int a,int b) {}
-int SystemNative_SchedGetAffinity (int a,int b) { return 0; }
-int SystemNative_SchedSetAffinity (int a,int b) { return 0; }
-#endif
-
 #if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
 #define NEED_INTERP 1
 #ifndef LINK_ICALLS
@@ -362,14 +354,24 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 
 	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
 
-#ifdef ICALL_TABLE_mscorlib
-	if (!strcmp (image_name, "mscorlib") || !strcmp (image_name, "System.Private.CoreLib")) {
+#if defined(ICALL_TABLE_mscorlib)
+	if (!strcmp (image_name, "mscorlib")) {
 		indexes = mscorlib_icall_indexes;
 		indexes_size = sizeof (mscorlib_icall_indexes) / 4;
 		handles = mscorlib_icall_handles;
 		funcs = mscorlib_icall_funcs;
 		assert (sizeof (mscorlib_icall_indexes [0]) == 4);
 	}
+#endif
+#if defined(ICALL_TABLE_corlib)
+	if (!strcmp (image_name, "System.Private.CoreLib")) {
+		indexes = corlib_icall_indexes;
+		indexes_size = sizeof (corlib_icall_indexes) / 4;
+		handles = corlib_icall_handles;
+		funcs = corlib_icall_funcs;
+		assert (sizeof (corlib_icall_indexes [0]) == 4);
+	}
+#endif
 #ifdef ICALL_TABLE_System
 	if (!strcmp (image_name, "System")) {
 		indexes = System_icall_indexes;
@@ -393,7 +395,6 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
 
 	return funcs [idx];
-#endif
 }
 
 static const char*
@@ -426,7 +427,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	int len;
 
 	assert (strlen (name) < 100);
-	sprintf (key, "%s_%s_%s", name, class_name, method_name);
+	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
 	len = strlen (key);
 	for (int i = 0; i < len; ++i) {
 		if (key [i] == '.')
@@ -511,6 +512,12 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #else
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
+#ifdef ENABLE_METADATA_UPDATE
+	if (monoeg_g_hasenv ("MONO_METADATA_UPDATE")) {
+		interp_opts = "-inline";
+	}
+#endif
+
 	/*
 	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
 	 * debug_level == 0 disables debugging and enables interpreter optimizations
@@ -523,6 +530,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		interp_opts = "-all";
 		mono_wasm_enable_debugging (debug_level);
 	}
+
 #endif
 
 #ifdef LINK_ICALLS
@@ -662,10 +670,10 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 	/*
 	 * If the entry point looks like a compiler generated wrapper around
-	 * an async method in the form "<Name>" then try to look up the async method
-	 * "Name" it is wrapping.  We do this because the generated sync wrapper will
-	 * call task.GetAwaiter().GetResult() when we actually want to yield
-	 * to the host runtime.
+	 * an async method in the form "<Name>" then try to look up the async methods
+	 * "<Name>$" and "Name" it could be wrapping.  We do this because the generated
+	 * sync wrapper will call task.GetAwaiter().GetResult() when we actually want
+	 * to yield to the host runtime.
 	 */
 	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */) {
 		const char *name = mono_method_get_name (method);
@@ -675,12 +683,21 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 			return method;
 
 		MonoClass *klass = mono_method_get_class (method);
-		char *async_name = strdup (name);
+		char *async_name = malloc (name_length + 2);
+		snprintf (async_name, name_length + 2, "%s$", name);
 
-		async_name [name_length - 1] = '\0';
-
+		// look for "<Name>$"
 		MonoMethodSignature *sig = mono_method_get_signature (method, image, mono_method_get_token (method));
-		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
+		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name, mono_signature_get_param_count (sig));
+		if (async_method != NULL) {
+			free (async_name);
+			return async_method;
+		}
+
+		// look for "Name" by trimming the first and last character of "<Name>"
+		async_name [name_length - 1] = '\0';
+		async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
+
 		free (async_name);
 		if (async_method != NULL)
 			return async_method;
@@ -781,6 +798,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_INT64 26
 #define MARSHAL_TYPE_UINT64 27
 #define MARSHAL_TYPE_CHAR 28
+#define MARSHAL_TYPE_STRING_INTERNED 29
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -890,6 +908,12 @@ mono_wasm_get_obj_type (MonoObject *obj)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if (
+		(klass == mono_get_string_class ()) &&
+		(mono_string_is_interned (obj) == obj)
+	)
+		return MARSHAL_TYPE_STRING_INTERNED;
+
 	MonoType *type = mono_class_get_type (klass);
 	obj = NULL;
 
@@ -913,6 +937,14 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if (
+		(klass == mono_get_string_class ()) &&
+		(mono_string_is_interned (obj) == obj)
+	) {
+		*resultL = 0;
+		return MARSHAL_TYPE_STRING_INTERNED;
+	}
+
 	MonoType *type = mono_class_get_type (klass), *original_type = type;
 
 	if (mono_class_is_enum (klass))
@@ -1070,4 +1102,10 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_enable_on_demand_gc (int enable)
 {
 	mono_wasm_enable_gc = enable ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_intern_string (MonoString *string) 
+{
+	return mono_string_intern (string);
 }

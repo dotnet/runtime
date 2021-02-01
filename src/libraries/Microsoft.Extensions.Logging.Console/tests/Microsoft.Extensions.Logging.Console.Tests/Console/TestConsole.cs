@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Logging.Test.Console
         public void OnParseWrite(string message, int startIndex, int length, ConsoleColor? background, ConsoleColor? foreground)
         {
             var consoleContext = new ConsoleContext();
-            consoleContext.Message = message.AsSpan().Slice(startIndex, length).ToString();
+            consoleContext.Message = message.AsSpan(startIndex, length).ToString();
 
             if (background.HasValue)
             {

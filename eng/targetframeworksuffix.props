@@ -77,7 +77,7 @@
     <When Condition="'$(TargetFrameworkSuffix)' == 'illumos'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TargetsIllumos>true</TargetsIllumos>
+        <Targetsillumos>true</Targetsillumos>
         <PackageTargetRuntime>illumos</PackageTargetRuntime>
       </PropertyGroup>
     </When>

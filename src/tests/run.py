@@ -927,7 +927,7 @@ def run_tests(args,
         per_test_timeout = 20*60*1000
 
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.
-    # This is read by the test wrapper invoker, in src\coreclr\tests\src\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
+    # This is read by the test wrapper invoker, in src\tests\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
     print("Setting __TestTimeout=%s" % str(per_test_timeout))
     os.environ["__TestTimeout"] = str(per_test_timeout)
 
@@ -984,7 +984,7 @@ def run_tests(args,
     urlretrieve(url, zipfilename)
 
     with zipfile.ZipFile(zipfilename,"r") as ziparch:
-        ziparch.extractall(args.core_root)
+        ziparch.extractall(os.path.join(args.core_root, "xunit"))
 
     os.remove(zipfilename)
     assert not os.path.isfile(zipfilename)

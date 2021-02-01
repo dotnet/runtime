@@ -107,8 +107,9 @@ namespace System.Net.Security.Tests
             catch { };
         }
 
-        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null)
+        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false)
         {
+            const int keySize = 2048;
             if (PlatformDetection.IsWindows && testName != null)
             {
                 CleanupCertificates(testName);
@@ -132,8 +133,42 @@ namespace System.Net.Security.Tests
                 out X509Certificate2 endEntity,
                 subjectName: targetName,
                 testName: testName,
-                keySize: 2048,
+                keySize: keySize,
                 extensions: extensions);
+
+            if (longChain)
+            {
+                using (RSA intermedKey2 = RSA.Create(keySize))
+                using (RSA intermedKey3 = RSA.Create(keySize))
+                {
+                    X509Certificate2 intermedPub2 = intermediate.CreateSubordinateCA(
+                        $"CN=\"A SSL Test CA 2\", O=\"testName\"",
+                        intermedKey2);
+
+                    X509Certificate2 intermedCert2 = intermedPub2.CopyWithPrivateKey(intermedKey2);
+                    intermedPub2.Dispose();
+                    CertificateAuthority intermediateAuthority2 = new CertificateAuthority(intermedCert2, null, null, null);
+
+                    X509Certificate2 intermedPub3 = intermediateAuthority2.CreateSubordinateCA(
+                        $"CN=\"A SSL Test CA 3\", O=\"testName\"",
+                        intermedKey3);
+
+                    X509Certificate2 intermedCert3 = intermedPub3.CopyWithPrivateKey(intermedKey3);
+                    intermedPub3.Dispose();
+                    CertificateAuthority intermediateAuthority3 = new CertificateAuthority(intermedCert3, null, null, null);
+
+                    RSA  eeKey = (RSA)endEntity.PrivateKey;
+                    endEntity = intermediateAuthority3.CreateEndEntity(
+                        $"CN=\"A SSL Test\", O=\"testName\"",
+                        eeKey,
+                        extensions);
+
+                    endEntity = endEntity.CopyWithPrivateKey(eeKey);
+
+                    chain.Add(intermedCert3);
+                    chain.Add(intermedCert2);
+                }
+            }
 
             chain.Add(intermediate.CloneIssuerCert());
             chain.Add(root.CloneIssuerCert());

@@ -19,7 +19,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>python3</Python>
-    <HelixPreCommands>$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/startup/Startup;chmod +x $HELIX_WORKITEM_PAYLOAD/startup/perfcollect;sudo apt update</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/startup/Startup;chmod +x $HELIX_WORKITEM_PAYLOAD/startup/perfcollect;sudo apt update;chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
     <CoreRoot>$HELIX_CORRELATION_PAYLOAD/Core_Root</CoreRoot>
     <ScenarioDirectory>$HELIX_CORRELATION_PAYLOAD/performance/src/scenarios/</ScenarioDirectory>
     <CrossgenDirectory>$(ScenarioDirectory)crossgen/</CrossgenDirectory>

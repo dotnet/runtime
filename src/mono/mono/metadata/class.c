@@ -197,7 +197,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		break;
 	}
 
-	if (idx > image->tables [MONO_TABLE_ASSEMBLYREF].rows) {
+	if (mono_metadata_table_bounds_check (image, MONO_TABLE_ASSEMBLYREF, idx)) {
 		mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", idx);
 		return NULL;
 	}
@@ -209,6 +209,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 	/* If the assembly did not load, register this as a type load exception */
 	if (image->references [idx - 1] == REFERENCE_MISSING){
 		MonoAssemblyName aname;
+		memset (&aname, 0, sizeof (MonoAssemblyName));
 		char *human_name;
 		
 		mono_assembly_get_assemblyref (image, idx - 1, &aname);
@@ -2759,6 +2760,7 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 	case MONO_TOKEN_TYPE_REF: {
 		ERROR_DECL (error);
 		MonoAssemblyName aname;
+		memset (&aname, 0, sizeof (MonoAssemblyName));
 		guint32 cols [MONO_TYPEREF_SIZE];
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 		guint32 idx = mono_metadata_token_index (type_token);

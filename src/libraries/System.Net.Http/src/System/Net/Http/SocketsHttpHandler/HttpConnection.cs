@@ -511,15 +511,26 @@ namespace System.Net.Http
                 if (t != null)
                 {
                     // Handle the pre-emptive read.  For the async==false case, hopefully the read has
-                    // already completed and this will be a nop, but if it hasn't, we're forced to block
+                    // already completed and this will be a nop, but if it hasn't, the caller will be forced to block
                     // waiting for the async operation to complete.  We will only hit this case for proxied HTTPS
                     // requests that use a pooled connection, as in that case we don't have a Socket we
                     // can poll and are forced to issue an async read.
                     ValueTask<int> vt = t.GetValueOrDefault();
-                    int bytesRead =
-                        vt.IsCompletedSuccessfully ? vt.Result :
-                        async ? await vt.ConfigureAwait(false) :
-                        vt.AsTask().GetAwaiter().GetResult();
+                    int bytesRead;
+                    if (vt.IsCompleted)
+                    {
+                        bytesRead = vt.Result;
+                    }
+                    else
+                    {
+                        if (!async)
+                        {
+                            Trace($"Pre-emptive read completed asynchronously for a synchronous request.");
+                        }
+
+                        bytesRead = await vt.ConfigureAwait(false);
+                    }
+
                     if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
 
                     if (bytesRead == 0)
@@ -635,14 +646,7 @@ namespace System.Net.Http
                 {
                     Task sendTask = sendRequestContentTask;
                     sendRequestContentTask = null;
-                    if (async)
-                    {
-                        await sendTask.ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        sendTask.GetAwaiter().GetResult();
-                    }
+                    await sendTask.ConfigureAwait(false);
                 }
 
                 // Now we are sure that the request was fully sent.
@@ -735,15 +739,7 @@ namespace System.Net.Http
                     {
                         try
                         {
-                            if (async)
-                            {
-                                await sendRequestContentTask.ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                // No way around it here if we want to get the exception from the task.
-                                sendRequestContentTask.GetAwaiter().GetResult();
-                            }
+                            await sendRequestContentTask.ConfigureAwait(false);
                         }
                         // Map the exception the same way as we normally do.
                         catch (Exception ex) when (MapSendException(ex, cancellationToken, out Exception mappedEx))

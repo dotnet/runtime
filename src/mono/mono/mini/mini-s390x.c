@@ -691,7 +691,7 @@ emit_unwind_regs(MonoCompile *cfg, guint8 *code, int start, int end, long offset
 {
 	int i;
 
-	for (i = start; i < end; i++) {
+	for (i = start; i <= end; i++) {
 		mono_emit_unwind_op_offset (cfg, code, i, offset);
 		mini_gc_set_slot_type_from_cfa (cfg, offset, SLOT_NOREF);
 		offset += sizeof(gulong);
@@ -5439,11 +5439,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/**
 	 * Create unwind information
 	 */ 
-	mono_emit_unwind_op_def_cfa (cfg, code, STK_BASE, 0);
-	emit_unwind_regs(cfg, code, s390_r6, s390_r14, S390_REG_SAVE_OFFSET);
-	mono_emit_unwind_op_offset (cfg, code, s390_r14, S390_RET_ADDR_OFFSET);
-	s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
-	mini_gc_set_slot_type_from_cfa (cfg, S390_RET_ADDR_OFFSET, SLOT_NOREF);
+	mono_emit_unwind_op_def_cfa (cfg, code, STK_BASE, S390_CFA_OFFSET);
+	s390_stmg (code, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
+	emit_unwind_regs(cfg, code, s390_r6, s390_r15, S390_REG_SAVE_OFFSET - S390_CFA_OFFSET);
 	if (cfg->arch.bkchain_reg != -1)
 		s390_lgr (code, cfg->arch.bkchain_reg, STK_BASE);
 
@@ -5485,6 +5483,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 		s390_agfi (code, STK_BASE, -stackSize);
 	}
+	mono_emit_unwind_op_def_cfa_offset (cfg, code, alloc_size + S390_CFA_OFFSET);
 	s390_stg  (code, s390_r11, 0, STK_BASE, 0);
 
 	if (fpOffset > 0) {
@@ -5494,19 +5493,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		s390_aghi (code, s390_r1, -fpOffset);
 		for (int i = s390_f8; i <= s390_f15; i++) {
 			if (cfg->arch.used_fp_regs & (1 << i)) {
-				emit_unwind_regs(cfg, code, 16+i, 16+i, stkOffset+fpOffset); 
 				s390_std (code, i, 0, s390_r1, stkOffset);
+				emit_unwind_regs(cfg, code, 16+i, 16+i, stkOffset+fpOffset - S390_CFA_OFFSET); 
 				stkOffset += sizeof(double);
 			}
 		}
 	}
 
-	mono_emit_unwind_op_def_cfa_offset (cfg, code, alloc_size);
-
-	if (cfg->frame_reg != STK_BASE)
+	if (cfg->frame_reg != STK_BASE) {
 		s390_lgr (code, s390_r11, STK_BASE);
-
-	mono_emit_unwind_op_def_cfa_reg (cfg, code, cfg->frame_reg);
+		mono_emit_unwind_op_def_cfa_reg (cfg, code, cfg->frame_reg);
+	}
 
 	/* store runtime generic context */
 	if (cfg->rgctx_var) {
@@ -5868,13 +5865,15 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
 
 	code = backUpStackPtr(cfg, code);
-	mono_emit_unwind_op_def_cfa (cfg, code, STK_BASE, 0);
+	mono_emit_unwind_op_def_cfa (cfg, code, STK_BASE, S390_CFA_OFFSET);
+	mono_emit_unwind_op_same_value (cfg, code, STK_BASE);
 
 	if (cfg->arch.fpSize != 0) {
 		fpOffset = -cfg->arch.fpSize;
 		for (int i=8; i<16; i++) {
 			if (cfg->arch.used_fp_regs & (1 << i)) {
 				s390_ldy (code, i, 0, STK_BASE, fpOffset);
+				mono_emit_unwind_op_same_value (cfg, code, 16+i);
 				fpOffset += sizeof(double);
 			}
 		}
@@ -6651,7 +6650,7 @@ mono_arch_get_cie_program (void)
 {
 	GSList *l = NULL;
 
-	mono_add_unwind_op_def_cfa (l, 0, 0, STK_BASE, 0);
+	mono_add_unwind_op_def_cfa (l, 0, 0, STK_BASE, S390_CFA_OFFSET);
 
 	return(l);
 }

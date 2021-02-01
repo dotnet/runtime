@@ -1,41 +1,42 @@
 <!-- This project requires an explicit SDK version number because it is used on Helix,
       and global.json is not available. -->
-<Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="BuildApp">
+<Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="WasmBuildApp">
+  <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.props" />
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
+
+    <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <MonoAOTCompilerTasksAssemblyPath>$(CORE_ROOT)\MonoAOTCompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
   </PropertyGroup>
 
-  <UsingTask TaskName="WasmAppBuilder" 
-      AssemblyFile="$(CORE_ROOT)/WasmAppBuilder/WasmAppBuilder.dll"/>
+  <Target Name="BuildApp" BeforeTargets="WasmBuildApp">
+    <PropertyGroup>
+      <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
+      <WasmAppDir>$(AppDir)</WasmAppDir>
+      <WasmMainJSPath>$(CORE_ROOT)\runtime-test\runtime-test.js</WasmMainJSPath>
+      <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
+      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+      <WasmSkipMissingAssemblies>true</WasmSkipMissingAssemblies>
+    </PropertyGroup>
 
-  <Target Name="BuildApp">
     <ItemGroup>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)\native"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)"/>
-      <AssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />
-      <AssemblySearchPaths Include="$(TestBinDir)" />
+      <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
+      <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll" />
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)"/>
+      <WasmAssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />
+      <WasmAssemblySearchPaths Include="$(TestBinDir)" />
     </ItemGroup>
-  
+
     <Message Importance="High" Text="AppDir: $(AppDir)" />
     <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
-
-    <WasmAppBuilder
-      AppDir="$(AppDir)"
-      MicrosoftNetCoreAppRuntimePackDir="$(MicrosoftNetCoreAppRuntimePackDir)"
-      MainAssembly="$(TestAssembly)"
-      MainJS="$(CORE_ROOT)\runtime-test\runtime-test.js"
-      ExtraAssemblies="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll"
-      AssemblySearchPaths="@(AssemblySearchPaths)"
-      SkipMissingAssemblies="True"
-      />
-
-
-    <Exec Command="chmod a+x $(AppDir)/run-v8.sh" />
   </Target>
+
+  <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.targets" />
 </Project>

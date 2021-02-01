@@ -71,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_LargeHeaders_CorrectlyWritten()
         {
-            if (UseVersion == HttpVersion30)
+            if (UseVersion == HttpVersion.Version30)
             {
                 // TODO: ActiveIssue
                 return;
@@ -338,7 +338,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
-            if (UseVersion == HttpVersion30)
+            if (UseVersion == HttpVersion.Version30)
             {
                 // External servers do not support HTTP3 currently.
                 return;
@@ -391,10 +391,16 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    await server.HandleRequestAsync(headers: new[]
+                    // The client may detect the bad header and close the connection before we are done sending the response.
+                    // So, eat any IOException that occurs here.
+                    try
                     {
-                        new HttpHeaderData("", "foo")
-                    });
+                        await server.HandleRequestAsync(headers: new[]
+                        {
+                            new HttpHeaderData("", "foo")
+                        });
+                    }
+                    catch (IOException) { }
                 });
         }
 

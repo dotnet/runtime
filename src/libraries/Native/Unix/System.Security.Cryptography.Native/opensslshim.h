@@ -73,6 +73,8 @@
 #define NEED_OPENSSL_1_0 true
 #define NEED_OPENSSL_1_1 true
 
+void InitializeOpenSSLShim(void);
+
 #if !HAVE_OPENSSL_EC2M
 // In portable build, we need to support the following functions even if they were not present
 // on the build OS. The shim will detect their presence at runtime.

@@ -24,7 +24,7 @@ namespace CoreXml.Test.XLinq
             module.AddChild(new MiscTests() { Attribute = new TestCaseAttribute() { Name = "Misc", Desc = "XLinq Misc. Tests" } });
             module.Execute();
 
-            Assert.Equal(0, module.FailCount);
+            Assert.False(module.HasFailures, module.GetFailuresInfo());
         }
         public partial class MiscTests : XLinqTestCase
         {

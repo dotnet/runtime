@@ -1,0 +1,19 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageType>MSBuildSdk</PackageType>
+    <PackageDescription>Provides support for building IL projects.</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <File Include="sdk/**/*">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Include="targets/**/*">
+      <TargetPath>targets</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

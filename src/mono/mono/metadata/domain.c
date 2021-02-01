@@ -66,8 +66,13 @@
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
 
+#ifndef ENABLE_NETCORE
 #define GET_APPCONTEXT() (mono_thread_internal_current ()->current_appcontext)
 #define SET_APPCONTEXT(x) MONO_OBJECT_SETREF_INTERNAL (mono_thread_internal_current (), current_appcontext, (x))
+#else
+#define GET_APPCONTEXT() NULL
+#define SET_APPCONTEXT(x)
+#endif
 
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
@@ -427,7 +432,9 @@ mono_domain_create (void)
 
 	domain->shadow_serial = shadow_serial;
 	domain->domain = NULL;
+#ifndef ENABLE_NETCORE
 	domain->setup = NULL;
+#endif
 	domain->friendly_name = NULL;
 	domain->search_path = NULL;
 
@@ -735,7 +742,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
                 mono_defaults.corlib, "System.Threading", "ThreadAbortException");
 #endif
 
+#ifndef ENABLE_NETCORE
 	mono_defaults.appdomain_class = mono_class_get_appdomain_class ();
+#endif
 
 #ifndef DISABLE_REMOTING
 	mono_defaults.transparent_proxy_class = mono_class_load_from_name (
@@ -797,11 +806,11 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_class_init_internal (mono_defaults.array_class);
 	mono_defaults.generic_nullable_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System", "Nullable`1");
-	mono_defaults.generic_ilist_class = mono_class_load_from_name (
+	mono_defaults.generic_ilist_class = mono_class_try_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IList`1");
-	mono_defaults.generic_ireadonlylist_class = mono_class_load_from_name (
+	mono_defaults.generic_ireadonlylist_class = mono_class_try_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IReadOnlyList`1");
-	mono_defaults.generic_ienumerator_class = mono_class_load_from_name (
+	mono_defaults.generic_ienumerator_class = mono_class_try_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IEnumerator`1");
 
 #ifdef ENABLE_NETCORE
@@ -915,7 +924,12 @@ mono_cleanup (void)
 void
 mono_close_exe_image (void)
 {
-	if (exe_image)
+	gboolean do_close = exe_image != NULL;
+#ifdef ENABLE_METADATA_UPDATE
+	/* FIXME: shutdown hack. We mess something up and try to double-close/free it. */
+	do_close = do_close && !exe_image->delta_image;
+#endif
+	if (do_close)
 		mono_image_close (exe_image);
 }
 
@@ -1020,10 +1034,11 @@ void
 mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
 {
 	if (!mono_runtime_get_no_exec () && !domain->entry_assembly && assembly) {
-		gchar *str;
-		ERROR_DECL (error);
 
 		domain->entry_assembly = assembly;
+#ifndef ENABLE_NETCORE
+		gchar *str;
+		ERROR_DECL (error);
 		/* Domains created from another domain already have application_base and configuration_file set */
 		if (domain->setup->application_base == NULL) {
 			MonoString *basedir = mono_string_new_checked (domain, assembly->basedir, error);
@@ -1039,6 +1054,7 @@ mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
 			g_free (str);
 			mono_domain_set_options_from_config (domain);
 		}
+#endif
 	}
 }
 

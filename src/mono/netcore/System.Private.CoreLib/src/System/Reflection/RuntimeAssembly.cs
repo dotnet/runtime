@@ -396,7 +396,7 @@ namespace System.Reflection
             try
             {
                 StackCrawlMark unused = default;
-                res = Load(an, ref unused, null);
+                res = Load(an, ref unused, AssemblyLoadContext.GetLoadContext(assembly));
             }
             catch
             {

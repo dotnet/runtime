@@ -84,6 +84,9 @@ dlldata.c
 *.svclog
 *.scc
 
+# Special file
+!src/coreclr/.nuget/_.pdb
+
 # Chutzpah Test files
 _Chutzpah*
 
@@ -292,10 +295,10 @@ prime/
 stage/
 
 # CLR prebuilt generated files
-!src/pal/prebuilt/idl/*_i.c
+!pal/prebuilt/idl/*_i.c
 
 # Valid 'debug' folder, that contains CLR debugging code
-!src/debug
+!debug
 
 # Ignore folders created by the CLR test build
 TestWrappers_x64_[d|D]ebug
@@ -310,7 +313,6 @@ TestWrappers_arm_[r|R]elease
 TestWrappers_arm64_[d|D]ebug
 TestWrappers_arm64_[c|C]hecked
 TestWrappers_arm64_[r|R]elease
-tests/src/common/test_runtime/project.json
 
 Vagrantfile
 .vagrant
@@ -330,7 +332,7 @@ cross/android-rootfs/*
 *.pyc
 
 # JIT32 files
-src/jit32
+jit32
 
 # performance testing sandbox
 sandbox
@@ -341,17 +343,23 @@ linker
 # Symbolic link for the shared portion of CoreLib to make grep/findstr work for runtime devs
 #
 # On Windows, make your own by running these commands from the repo root:
-# mklink /D src\coreclr\src\System.Private.CoreLib\shared %CD%\src\libraries\System.Private.CoreLib\src
-# mklink /D src\coreclr\src\System.Private.CoreLib\common %CD%\src\libraries\Common\src
+# mklink /D src\coreclr\System.Private.CoreLib\shared %CD%\src\libraries\System.Private.CoreLib\src
+# mklink /D src\coreclr\System.Private.CoreLib\common %CD%\src\libraries\Common\src
 #
 # On Unix, make your own by running these commands from the repo root:
-# ln -s $(pwd)/src/libraries/System.Private.CoreLib/src src/coreclr/src/System.Private.CoreLib/shared
-# ln -s $(pwd)/src/libraries/Common/src src/coreclr/src/System.Private.CoreLib/common
-src/coreclr/src/System.Private.CoreLib/shared
-src/coreclr/src/System.Private.CoreLib/common
+# ln -s $(pwd)/src/libraries/System.Private.CoreLib/src src/coreclr/System.Private.CoreLib/shared
+# ln -s $(pwd)/src/libraries/Common/src src/coreclr/System.Private.CoreLib/common
+src/coreclr/System.Private.CoreLib/shared
+src/coreclr/System.Private.CoreLib/common
 
 # The debug directory should not be ignored
-!src/coreclr/src/debug
+!src/coreclr/debug
+
+# Exceptions to the exclusions
+!src/coreclr/.nuget/_.pdb
+!src/coreclr/inc/obj/
+!src/coreclr/vm/.vscode/
+!src/coreclr/vm/.vscode/c_cpp_properties.json
 
 # Mono Wasm-specific excludes
 src/mono/wasm/emsdk/

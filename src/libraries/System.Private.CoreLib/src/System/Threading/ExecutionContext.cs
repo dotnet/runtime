@@ -24,17 +24,17 @@ namespace System.Threading
 
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
-        internal static readonly ExecutionContext Default = new ExecutionContext(isDefault: true);
-        internal static readonly ExecutionContext DefaultFlowSuppressed = new ExecutionContext(AsyncLocalValueMap.Empty, Array.Empty<IAsyncLocal>(), isFlowSuppressed: true);
+        internal static readonly ExecutionContext Default = new ExecutionContext();
+        private static volatile ExecutionContext? s_defaultFlowSuppressed;
 
         private readonly IAsyncLocalValueMap? m_localValues;
         private readonly IAsyncLocal[]? m_localChangeNotifications;
         private readonly bool m_isFlowSuppressed;
         private readonly bool m_isDefault;
 
-        private ExecutionContext(bool isDefault)
+        private ExecutionContext()
         {
-            m_isDefault = isDefault;
+            m_isDefault = true;
         }
 
         private ExecutionContext(
@@ -88,9 +88,11 @@ namespace System.Threading
 
             if (m_localValues == null || AsyncLocalValueMap.IsEmpty(m_localValues))
             {
+#pragma warning disable CA1825 // Avoid unnecessary zero-length array allocations
                 return isFlowSuppressed ?
-                    DefaultFlowSuppressed :
+                    (s_defaultFlowSuppressed ??= new ExecutionContext(AsyncLocalValueMap.Empty, new IAsyncLocal[0], isFlowSuppressed: true)) :
                     null; // implies the default context
+#pragma warning restore CA1825
             }
 
             return new ExecutionContext(m_localValues, m_localChangeNotifications, isFlowSuppressed);
@@ -603,7 +605,7 @@ namespace System.Threading
             Undo();
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is AsyncFlowControl asyncControl && Equals(asyncControl);
         }

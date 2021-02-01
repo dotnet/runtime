@@ -352,7 +352,7 @@ namespace System.Reflection.Emit
             sbName.Append(' ');
             sbName.Append(Name);
             sbName.Append('(');
-            AppendParameters(ref sbName, parameters ?? Array.Empty<Type>(), CallingConvention);
+            AppendParameters(ref sbName, parameters ?? Type.EmptyTypes, CallingConvention);
             sbName.Append(')');
             return sbName.ToString();
         }

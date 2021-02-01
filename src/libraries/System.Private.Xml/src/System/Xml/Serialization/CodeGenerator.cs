@@ -23,13 +23,13 @@ namespace System.Xml.Serialization
 {
     internal class CodeGenerator
     {
-        internal static BindingFlags InstancePublicBindingFlags = BindingFlags.Instance | BindingFlags.Public;
-        internal static BindingFlags InstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-        internal static BindingFlags StaticBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-        internal static MethodAttributes PublicMethodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig;
-        internal static MethodAttributes PublicOverrideMethodAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
-        internal static MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
-        internal static MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
+        internal const BindingFlags InstancePublicBindingFlags = BindingFlags.Instance | BindingFlags.Public;
+        internal const BindingFlags InstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        internal const BindingFlags StaticBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        internal const MethodAttributes PublicMethodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig;
+        internal const MethodAttributes PublicOverrideMethodAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
+        internal const MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
+        internal const MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
 
         private readonly TypeBuilder _typeBuilder;
         private MethodBuilder? _methodBuilder;
@@ -38,7 +38,7 @@ namespace System.Xml.Serialization
         private LocalScope? _currentScope;
         // Stores a queue of free locals available in the context of the method, keyed by
         // type and name of the local
-        private Dictionary<Tuple<Type, string>, Queue<LocalBuilder>>? _freeLocals;
+        private Dictionary<(Type, string), Queue<LocalBuilder>>? _freeLocals;
         private Stack<object>? _blockStack;
         private Label _methodEndLabel;
 
@@ -90,7 +90,7 @@ namespace System.Xml.Serialization
             _blockStack = new Stack<object>();
             _whileStack = new Stack<WhileState>();
             _currentScope = new LocalScope();
-            _freeLocals = new Dictionary<Tuple<Type, string>, Queue<LocalBuilder>>();
+            _freeLocals = new Dictionary<(Type, string), Queue<LocalBuilder>>();
             _argList = new Dictionary<string, ArgBuilder>();
             // this ptr is arg 0 for non static, assuming ref type (not value type)
             if (!isStatic)
@@ -229,7 +229,7 @@ namespace System.Xml.Serialization
             Debug.Assert(_freeLocals != null);
 
             Queue<LocalBuilder>? freeLocalQueue;
-            Tuple<Type, string> key = new Tuple<Type, string>(type, name);
+            (Type, string) key = (type, name);
             if (_freeLocals.TryGetValue(key, out freeLocalQueue))
             {
                 local = freeLocalQueue.Dequeue();
@@ -309,7 +309,7 @@ namespace System.Xml.Serialization
                     MethodInfo ICollection_get_Count = typeof(ICollection).GetMethod(
                           "get_Count",
                           CodeGenerator.InstanceBindingFlags,
-                          Array.Empty<Type>()
+                          Type.EmptyTypes
                           )!;
                     Call(ICollection_get_Count);
                 }
@@ -1242,7 +1242,13 @@ namespace System.Xml.Serialization
         {
             return assemblyBuilder.DefineDynamicModule(name);
         }
-        internal static TypeBuilder CreateTypeBuilder(ModuleBuilder moduleBuilder, string name, TypeAttributes attributes, Type parent, Type[] interfaces)
+
+        internal static TypeBuilder CreateTypeBuilder(
+            ModuleBuilder moduleBuilder,
+            string name,
+            TypeAttributes attributes,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent,
+            Type[] interfaces)
         {
             // parent is nullable if no base class
             return moduleBuilder.DefineType(TempAssembly.GeneratedAssemblyNamespace + "." + name,
@@ -1553,11 +1559,11 @@ namespace System.Xml.Serialization
             }
         }
 
-        public void AddToFreeLocals(Dictionary<Tuple<Type, string>, Queue<LocalBuilder>> freeLocals)
+        public void AddToFreeLocals(Dictionary<(Type, string), Queue<LocalBuilder>> freeLocals)
         {
             foreach (var item in _locals)
             {
-                Tuple<Type, string> key = new Tuple<Type, string>(item.Value.LocalType, item.Key);
+                (Type, string) key = (item.Value.LocalType, item.Key);
                 Queue<LocalBuilder>? freeLocalQueue;
                 if (freeLocals.TryGetValue(key, out freeLocalQueue))
                 {

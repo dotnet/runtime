@@ -1,0 +1,68 @@
+<!--
+    WasmApp.LocalBuild* files are meant for projects that want to use
+    a local build of `dotnet/runtime` repo.
+
+    Two ways to use this:
+
+    1. Use a local runtime build from the source directory:
+        Required properties to be set:
+
+        $(RuntimeSrcDir)       - path to the runtime checkout. This should have already been
+                                 built, and so should have `artifacts` directory.
+
+        $(RuntimeConfig)       - This is the config that the above checkout was built with.
+                                 This can be different from the configuration for the user project.
+
+    2. Use a local directory which has all the tasks, targets, runtimepack available
+
+        Required properties to be set:
+
+        $(WasmBuildSupportDir)
+-->
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
+
+  <PropertyGroup>
+    <WasmSkipBundleGeneration>true</WasmSkipBundleGeneration>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- Runtime feature defaults to trim unnecessary code -->
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+  </PropertyGroup>
+
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences" DependsOnTargets="_PrepareAndValidateWasmInputs">
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackLocationToUse)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Using Runtime pack from: %(RuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+
+  <!-- the actual properties need to get set in the props, so because UsingTasks depend on those. -->
+  <Target Name="_PrepareAndValidateWasmInputs">
+    <Error Condition="'$(RuntimeSrcDir)' == '' and '$(WasmBuildSupportDir)' == ''"
+           Text="Both %24(RuntimeSrcDir) and %24(WasmBuildSupportDir) are not set. Either one of them needs to be set to use local runtime builds" />
+
+    <Error Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' != ''"
+           Text="Both %24(RuntimeSrcDir) and %24(WasmBuildSupportDir) are set. " />
+
+    <Error Condition="'$(RuntimeSrcDir)' != '' and '$(RuntimeConfig)' == ''"
+           Text="%24(RuntimeSrcDir) is set, but %24(RuntimeConfig) is not" />
+
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')"
+           Text="Cannot find runtime pack at $(MicrosoftNetCoreAppRuntimePackRidDir). Make sure you have the correct %24(RuntimeConfig) set" />
+
+    <Warning
+      Condition="'$(WasmMainJS)' != '' and '$(WasmGenerateAppBundle)' != 'true'"
+      Text="%24(WasmMainJS) is set when %24(WasmGenerateAppBundle) is not true: it won't be used because an app bundle is not being generated. Possible build authoring error" />
+  </Target>
+</Project>

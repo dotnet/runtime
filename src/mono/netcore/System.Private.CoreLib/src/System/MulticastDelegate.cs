@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
@@ -12,12 +13,13 @@ namespace System
     {
         private Delegate[]? delegates;
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         protected MulticastDelegate(object target, string method)
             : base(target, method)
         {
         }
 
-        protected MulticastDelegate(Type target, string method)
+        protected MulticastDelegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
             : base(target, method)
         {
         }
@@ -63,7 +65,7 @@ namespace System
         //   Equals: two multicast delegates are equal if their base is equal
         //   and their invocations list is equal.
         // </remarks>
-        public sealed override bool Equals(object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!base.Equals(obj))
                 return false;

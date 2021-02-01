@@ -58,7 +58,7 @@ The limitations of the current format are:
 # Structures
 
 The structures and accompanying constants are defined in the [readytorun.h]
-(https://github.com/dotnet/runtime/blob/master/src/coreclr/src/inc/readytorun.h) header file.
+(https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/readytorun.h) header file.
 Basically the entire R2R executable image is addressed through the READYTORUN_HEADER singleton
 pointed to by the well-known export RTR_HEADER in the export section of the native executable
 envelope.
@@ -281,7 +281,7 @@ additional data determined by the flags.
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
 For slots resolved lazily via `READYTORUN_HELPER_DelayLoad_MethodCall` helper, auxiliary data are
-compressed argument maps that allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/runtime/blob/8c6b1314c95857b9e2f5c222a10f2f089ee02dfe/src/coreclr/src/inc/gcrefmap.h#L157) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
+compressed argument maps that allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/inc/gcrefmap.h#L158) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
 
 The auxiliary data table contains the exact same number of GC ref map records as there are method entries in the import section. To accelerate GC ref map lookup, the auxiliary data section starts with a lookup table holding the offset of every 1024-th method in the runtime function table within the linearized GC ref map.
 
@@ -294,7 +294,7 @@ The auxiliary data table contains the exact same number of GC ref map records as
 | 4 * (MethodCount / 1024 + 1) |  ... | Serialized GC ref map info
 
 The GCRef map is used to encode GC type of arguments for callsites. Logically, it is a sequence `<pos, token>` where `pos` is
-position of the reference in the stack frame and `token` is type of GC reference (one of [`GCREFMAP_XXX`](https://github.com/dotnet/runtime/blob/8c6b1314c95857b9e2f5c222a10f2f089ee02dfe/src/coreclr/src/inc/corcompile.h#L627) values):
+position of the reference in the stack frame and `token` is type of GC reference (one of [`GCREFMAP_XXX`](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/inc/corcompile.h#L633) values):
 
 | CORCOMPILE_GCREFMAP_TOKENS | Value | Stack frame entry interpretation
 |:---------------------------|------:|:--------------------------------
@@ -440,7 +440,7 @@ This section contains a native hashtable of all defined & export types within th
 |         1 | exported type
 
 The version-resilient hashing algorithm used for hashing the type names is implemented in
-[vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/8c6b1314c95857b9e2f5c222a10f2f089ee02dfe/src/coreclr/src/vm/versionresilienthashcode.cpp#L75).
+[vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/vm/versionresilienthashcode.cpp#L74).
 
 **Note:** This is a per-assembly section. In single-file R2R files, it is pointed to directly by the
 main R2R header; in composite R2R files, each component module has its own available type section pointed to
@@ -451,7 +451,7 @@ by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header structure.
 This section contains a native hashtable of all generic method instantiations compiled into
 the R2R executable. The key is the method instance signature; the appropriate version-resilient
 hash code calculation is implemented in
-[vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/versionresilienthashcode.cpp#L127);
+[vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/69e114c1abf91241a0eeecf1ecceab4711b8aa62/src/coreclr/vm/versionresilienthashcode.cpp#L126);
 the value, represented by the `EntryPointWithBlobVertex` class, stores the method index in the
 runtime function table, the fixups blob and a blob encoding the method signature.
 

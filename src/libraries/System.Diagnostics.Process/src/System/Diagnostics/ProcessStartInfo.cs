@@ -63,17 +63,9 @@ namespace System.Diagnostics
             set => _arguments = value;
         }
 
-        public Collection<string> ArgumentList
-        {
-            get
-            {
-                if (_argumentList == null)
-                {
-                    _argumentList = new Collection<string>();
-                }
-                return _argumentList;
-            }
-        }
+        public Collection<string> ArgumentList => _argumentList ??= new Collection<string>();
+
+        internal bool HasArgumentList => _argumentList is not null && _argumentList.Count != 0;
 
         public bool CreateNoWindow { get; set; }
 
@@ -89,11 +81,9 @@ namespace System.Diagnostics
                 {
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
 
-#pragma warning disable 0429 // CaseSensitiveEnvironmentVaribles is constant but varies depending on if we build for Unix or Windows
                     _environmentVariables = new DictionaryWrapper(new Dictionary<string, string?>(
                         envVars.Count,
-                        CaseSensitiveEnvironmentVariables ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase));
-#pragma warning restore 0429
+                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal));
 
                     // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                     IDictionaryEnumerator e = envVars.GetEnumerator();
@@ -176,25 +166,23 @@ namespace System.Diagnostics
 
         internal string BuildArguments()
         {
-            if (_argumentList == null || _argumentList.Count == 0)
+            if (HasArgumentList)
             {
-                return Arguments;
+                var arguments = new ValueStringBuilder(stackalloc char[256]);
+                AppendArgumentsTo(ref arguments);
+                return arguments.ToString();
             }
-            else
-            {
-                var stringBuilder = new StringBuilder();
-                AppendArgumentsTo(stringBuilder);
-                return stringBuilder.ToString();
-            }
+
+            return Arguments;
         }
 
-        internal void AppendArgumentsTo(StringBuilder stringBuilder)
+        internal void AppendArgumentsTo(ref ValueStringBuilder stringBuilder)
         {
             if (_argumentList != null && _argumentList.Count > 0)
             {
                 foreach (string argument in _argumentList)
                 {
-                    PasteArguments.AppendArgument(stringBuilder, argument);
+                    PasteArguments.AppendArgument(ref stringBuilder, argument);
                 }
             }
             else if (!string.IsNullOrEmpty(Arguments))

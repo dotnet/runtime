@@ -52,6 +52,9 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"\d", "1a2b3c4d5e6f7g8h9i0k", RegexOptions.RightToLeft, 10, 20, new string[] { "1a", "b", "c", "d", "e", "f", "g", "h", "i", "k" } };
             yield return new object[] { @"\d", "1a2b3c4d5e6f7g8h9i0k", RegexOptions.RightToLeft, 2, 20, new string[] { "1a2b3c4d5e6f7g8h9i", "k" } };
             yield return new object[] { @"\d", "1a2b3c4d5e6f7g8h9i0k", RegexOptions.RightToLeft, 1, 20, new string[] { "1a2b3c4d5e6f7g8h9i0k" } };
+
+            // Anchors
+            yield return new object[] { @"(?<=\G..)(?=..)", "aabbccdd", RegexOptions.None, 8, 0, new string[] { "aa", "bb", "cc", "dd" } };
         }
 
         [Theory]
@@ -60,7 +63,7 @@ namespace System.Text.RegularExpressions.Tests
         public void Split(string pattern, string input, RegexOptions options, int count, int start, string[] expected)
         {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, start);
-            bool isDefaultCount = RegexHelpers.IsDefaultStart(input, options, count);
+            bool isDefaultCount = RegexHelpers.IsDefaultCount(input, options, count);
             if (options == RegexOptions.None)
             {
                 // Use Split(string), Split(string, string), Split(string, int) or Split(string, int, int)

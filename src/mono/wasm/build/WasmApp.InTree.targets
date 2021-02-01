@@ -1,0 +1,47 @@
+<Project>
+  <!-- This depends on the root Directory.Build.targets imported this file -->
+
+  <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
+
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences" Condition="@(RuntimePack->Count()) != 0">
+    <ItemGroup>
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)</PackageDirectory>
+      </RuntimePack>
+    </ItemGroup>
+    <Message Text="Using RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="Low" />
+  </Target>
+
+  <Target Name="RebuildWasmAppBuilder">
+    <ItemGroup>
+      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(WasmAppBuildProject)"
+         Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+         Targets="Restore"/>
+
+    <MSBuild Projects="@(WasmAppBuildProject)"
+         Properties="Configuration=Debug"
+         Targets="Build;Publish"/>
+  </Target>
+
+  <Target Name="CopyAppZipToHelixTestDir"
+          Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish">
+    <PropertyGroup>
+      <WasmHelixTestAppRelativeDir Condition="'$(WasmHelixTestAppRelativeDir)' == ''">$(MSBuildProjectName)</WasmHelixTestAppRelativeDir>
+      <!-- Helix properties -->
+      <!-- AnyCPU as Platform-->
+      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
+      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/$(WasmHelixTestAppRelativeDir)/</HelixArchiveRunOnlyAppsDir>
+      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
+    </PropertyGroup>
+    <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
+    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
+  </Target>
+</Project>

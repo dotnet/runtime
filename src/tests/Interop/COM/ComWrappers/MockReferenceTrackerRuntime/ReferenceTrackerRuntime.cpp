@@ -72,23 +72,45 @@ namespace
         STDMETHOD(DropObjectRef)(_In_ int id) = 0;
     };
 
-    struct TrackerObject : public ITrackerObject, public API::IReferenceTracker, public UnknownImpl
+    struct TrackerObject : public IUnknown, public UnknownImpl
     {
-        const size_t _id;
-        std::atomic<int> _trackerSourceCount;
-        bool _connected;
-        std::atomic<int> _elementId;
-        std::unordered_map<int, ComSmartPtr<IUnknown>> _elements;
+        static std::atomic<int32_t> AllocationCount;
 
-        TrackerObject(size_t id) : _id{ id }, _trackerSourceCount{ 0 }, _connected{ false }, _elementId{ 1 }
-        { }
+        static const int32_t DisableTrackedCount = -1;
+        static const int32_t EnableTrackedCount = 0;
+        static std::atomic<int32_t> TrackedAllocationCount;
 
-        HRESULT ToggleTargets(_In_ bool shouldPeg)
+        TrackerObject(_In_ size_t id, _In_opt_ IUnknown* pUnkOuter)
+            : _outer{ pUnkOuter == nullptr ? static_cast<IUnknown*>(this) : pUnkOuter }
+            , _impl{ id, _outer }
+        {
+            ++AllocationCount;
+
+            if (TrackedAllocationCount != DisableTrackedCount)
+                ++TrackedAllocationCount;
+        }
+
+        ~TrackerObject()
+        {
+            // There is a cleanup race when tracking is enabled.
+            // It is possible previously allocated objects could be
+            // cleaned up during alloc tracking scenarios - these can be
+            // ignored.
+            //
+            // See the locking around the tracking scenarios in the
+            // managed P/Invoke usage.
+            if (TrackedAllocationCount > 0)
+                --TrackedAllocationCount;
+
+            --AllocationCount;
+        }
+
+        HRESULT TogglePeg(_In_ bool shouldPeg)
         {
             HRESULT hr;
 
-            auto curr = std::begin(_elements);
-            while (curr != std::end(_elements))
+            auto curr = std::begin(_impl._elements);
+            while (curr != std::end(_impl._elements))
             {
                 ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
                 if (S_OK == curr->second->QueryInterface(&mowMaybe))
@@ -105,69 +127,189 @@ namespace
                 ++curr;
             }
 
+            // Handle the case for aggregation
+            //
+            // Pegging occurs during a GC. We can't QI for this during
+            // a GC because the COM scenario would fallback to
+            // ICustomQueryInterface (i.e. managed code).
+            if (_impl._outerRefTrackerTarget)
+            {
+                ComSmartPtr<API::IReferenceTrackerTarget> thisTgtMaybe;
+                if (S_OK == _outer->QueryInterface(&thisTgtMaybe))
+                {
+                    if (shouldPeg)
+                    {
+                        RETURN_IF_FAILED(thisTgtMaybe->Peg());
+                    }
+                    else
+                    {
+                        RETURN_IF_FAILED(thisTgtMaybe->Unpeg());
+                    }
+                }
+            }
+
             return S_OK;
         }
 
-        STDMETHOD(AddObjectRef)(_In_ IUnknown* c, _Out_ int* id)
+        HRESULT DisconnectFromReferenceTrackerRuntime()
         {
-            assert(c != nullptr && id != nullptr);
+            HRESULT hr;
 
-            try
+            RETURN_IF_FAILED(TogglePeg(/* should peg */ false));
+
+            // Handle the case for aggregation in the release case.
+            if (_impl._outerRefTrackerTarget)
             {
-                *id = _elementId;
-                if (!_elements.insert(std::make_pair(*id, ComSmartPtr<IUnknown>{ c })).second)
+                ComSmartPtr<API::IReferenceTrackerTarget> thisTgtMaybe;
+                if (S_OK == _outer->QueryInterface(&thisTgtMaybe))
+                    RETURN_IF_FAILED(thisTgtMaybe->ReleaseFromReferenceTracker());
+            }
+
+            return S_OK;
+        }
+
+        struct TrackerObjectImpl : public ITrackerObject, public API::IReferenceTracker
+        {
+            IUnknown* _implOuter;
+            bool _outerRefTrackerTarget;
+            const size_t _id;
+            std::atomic<int> _trackerSourceCount;
+            bool _connected;
+            std::atomic<int> _elementId;
+            std::unordered_map<int, ComSmartPtr<IUnknown>> _elements;
+
+            TrackerObjectImpl(_In_ size_t id, _In_ IUnknown* pUnkOuter)
+                : _implOuter{ pUnkOuter }
+                , _outerRefTrackerTarget{ false }
+                , _id{ id }
+                , _trackerSourceCount{ 0 }
+                , _connected{ false }
+                , _elementId{ 1 }
+            {
+                // Check if we are aggregating with a tracker target
+                ComSmartPtr<API::IReferenceTrackerTarget> tgt;
+                if (SUCCEEDED(_implOuter->QueryInterface(&tgt)))
+                {
+                    _outerRefTrackerTarget = true;
+                    (void)tgt->AddRefFromReferenceTracker();
+                    if (FAILED(tgt->Peg()))
+                    {
+                        throw std::exception{ "Peg failure" };
+                    }
+                }
+            }
+
+            STDMETHOD(AddObjectRef)(_In_ IUnknown* c, _Out_ int* id)
+            {
+                assert(c != nullptr && id != nullptr);
+
+                try
+                {
+                    *id = _elementId;
+                    if (!_elements.insert(std::make_pair(*id, ComSmartPtr<IUnknown>{ c })).second)
+                        return S_FALSE;
+
+                    _elementId++;
+                }
+                catch (const std::bad_alloc&)
+                {
+                    return E_OUTOFMEMORY;
+                }
+
+                ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
+                if (S_OK == c->QueryInterface(&mowMaybe))
+                    (void)mowMaybe->AddRefFromReferenceTracker();
+
+                return S_OK;
+            }
+
+            STDMETHOD(DropObjectRef)(_In_ int id)
+            {
+                auto iter = _elements.find(id);
+                if (iter == std::end(_elements))
                     return S_FALSE;
 
-                _elementId++;
+                ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
+                if (S_OK == iter->second->QueryInterface(&mowMaybe))
+                {
+                    (void)mowMaybe->ReleaseFromReferenceTracker();
+                    (void)mowMaybe->Unpeg();
+                }
+
+                _elements.erase(iter);
+
+                return S_OK;
             }
-            catch (const std::bad_alloc&)
+
+            STDMETHOD(ConnectFromTrackerSource)();
+            STDMETHOD(DisconnectFromTrackerSource)();
+            STDMETHOD(FindTrackerTargets)(_In_ API::IFindReferenceTargetsCallback* pCallback);
+            STDMETHOD(GetReferenceTrackerManager)(_Outptr_ API::IReferenceTrackerManager** ppTrackerManager);
+            STDMETHOD(AddRefFromTrackerSource)();
+            STDMETHOD(ReleaseFromTrackerSource)();
+            STDMETHOD(PegFromTrackerSource)();
+
+            STDMETHOD(QueryInterface)(
+                /* [in] */ REFIID riid,
+                /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
             {
-                return E_OUTOFMEMORY;
+                return _implOuter->QueryInterface(riid, ppvObject);
             }
-
-            ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
-            if (S_OK == c->QueryInterface(&mowMaybe))
-                (void)mowMaybe->AddRefFromReferenceTracker();
-
-            return S_OK;
-        }
-
-        STDMETHOD(DropObjectRef)(_In_ int id)
-        {
-            auto iter = _elements.find(id);
-            if (iter == std::end(_elements))
-                return S_FALSE;
-
-            ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
-            if (S_OK == iter->second->QueryInterface(&mowMaybe))
+            STDMETHOD_(ULONG, AddRef)(void)
             {
-                (void)mowMaybe->ReleaseFromReferenceTracker();
-                (void)mowMaybe->Unpeg();
+                return _implOuter->AddRef();
             }
-
-            _elements.erase(iter);
-
-            return S_OK;
-        }
-
-        STDMETHOD(ConnectFromTrackerSource)();
-        STDMETHOD(DisconnectFromTrackerSource)();
-        STDMETHOD(FindTrackerTargets)(_In_ API::IFindReferenceTargetsCallback* pCallback);
-        STDMETHOD(GetReferenceTrackerManager)(_Outptr_ API::IReferenceTrackerManager** ppTrackerManager);
-        STDMETHOD(AddRefFromTrackerSource)();
-        STDMETHOD(ReleaseFromTrackerSource)();
-        STDMETHOD(PegFromTrackerSource)();
+            STDMETHOD_(ULONG, Release)(void)
+            {
+                return _implOuter->Release();
+            }
+        };
 
         STDMETHOD(QueryInterface)(
             /* [in] */ REFIID riid,
             /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
         {
-            return DoQueryInterface(riid, ppvObject, static_cast<IReferenceTracker*>(this), static_cast<ITrackerObject*>(this));
+            if (ppvObject == nullptr)
+                return E_POINTER;
+
+            IUnknown* tgt;
+
+            // Aggregation implementation.
+            if (riid == IID_IUnknown)
+            {
+                tgt = static_cast<IUnknown*>(this);
+            }
+            else
+            {
+                // Send non-IUnknown queries to the implementation.
+                if (riid == __uuidof(API::IReferenceTracker))
+                {
+                    tgt = static_cast<API::IReferenceTracker*>(&_impl);
+                }
+                else if (riid == __uuidof(ITrackerObject))
+                {
+                    tgt = static_cast<ITrackerObject*>(&_impl);
+                }
+                else
+                {
+                    *ppvObject = nullptr;
+                    return E_NOINTERFACE;
+                }
+            }
+
+            (void)tgt->AddRef();
+            *ppvObject = tgt;
+            return S_OK;
         }
 
-        DEFINE_REF_COUNTING()
+        DEFINE_REF_COUNTING();
+
+        IUnknown* _outer;
+        TrackerObjectImpl _impl;
     };
 
+    std::atomic<int32_t> TrackerObject::AllocationCount{};
+    std::atomic<int32_t> TrackerObject::TrackedAllocationCount{ TrackerObject::DisableTrackedCount };
     std::atomic<size_t> CurrentObjectId{};
 
     class TrackerRuntimeManagerImpl : public API::IReferenceTrackerManager
@@ -176,16 +318,29 @@ namespace
         std::list<ComSmartPtr<TrackerObject>> _objects;
 
     public:
-        void RecordObject(_In_ TrackerObject* obj)
+        ITrackerObject* RecordObject(_In_ TrackerObject* obj, _Outptr_ IUnknown** inner)
         {
             _objects.push_back(ComSmartPtr<TrackerObject>{ obj });
 
             if (_runtimeServices != nullptr)
                 _runtimeServices->AddMemoryPressure(sizeof(TrackerObject));
+
+            // Perform a QI to get the proper identity.
+            (void)obj->QueryInterface(IID_IUnknown, (void**)inner);
+
+            // Get the default interface.
+            ITrackerObject* type;
+            (void)obj->QueryInterface(__uuidof(ITrackerObject), (void**)&type);
+
+            return type;
         }
 
         void ReleaseObjects()
         {
+            // Unpeg all instances
+            for (auto& i : _objects)
+                (void)i->DisconnectFromReferenceTrackerRuntime();
+
             size_t count = _objects.size();
             _objects.clear();
             if (_runtimeServices != nullptr)
@@ -205,7 +360,7 @@ namespace
         {
             // Unpeg all instances
             for (auto& i : _objects)
-                i->ToggleTargets(/* should peg */ false);
+                i->TogglePeg(/* should peg */ false);
 
             return S_OK;
         }
@@ -214,7 +369,7 @@ namespace
         {
             // Verify and ensure all connected types are pegged
             for (auto& i : _objects)
-                i->ToggleTargets(/* should peg */ true);
+                i->TogglePeg(/* should peg */ true);
 
             return S_OK;
         }
@@ -262,19 +417,19 @@ namespace
 
     TrackerRuntimeManagerImpl TrackerRuntimeManager;
 
-    HRESULT STDMETHODCALLTYPE TrackerObject::ConnectFromTrackerSource()
+    HRESULT STDMETHODCALLTYPE TrackerObject::TrackerObjectImpl::ConnectFromTrackerSource()
     {
         _connected = true;
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE TrackerObject::DisconnectFromTrackerSource()
+    HRESULT STDMETHODCALLTYPE TrackerObject::TrackerObjectImpl::DisconnectFromTrackerSource()
     {
         _connected = false;
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE TrackerObject::FindTrackerTargets(_In_ API::IFindReferenceTargetsCallback* pCallback)
+    HRESULT STDMETHODCALLTYPE TrackerObject::TrackerObjectImpl::FindTrackerTargets(_In_ API::IFindReferenceTargetsCallback* pCallback)
     {
         assert(pCallback != nullptr);
 
@@ -291,27 +446,27 @@ namespace
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE TrackerObject::GetReferenceTrackerManager(_Outptr_ API::IReferenceTrackerManager** ppTrackerManager)
+    HRESULT STDMETHODCALLTYPE TrackerObject::TrackerObjectImpl::GetReferenceTrackerManager(_Outptr_ API::IReferenceTrackerManager** ppTrackerManager)
     {
         assert(ppTrackerManager != nullptr);
         return TrackerRuntimeManager.QueryInterface(__uuidof(API::IReferenceTrackerManager), (void**)ppTrackerManager);
     }
 
-    HRESULT STDMETHODCALLTYPE TrackerObject::AddRefFromTrackerSource()
+    HRESULT STDMETHODCALLTYPE TrackerObject::TrackerObjectImpl::AddRefFromTrackerSource()
     {
         assert(0 <= _trackerSourceCount);
         ++_trackerSourceCount;
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE TrackerObject::ReleaseFromTrackerSource()
+    HRESULT STDMETHODCALLTYPE TrackerObject::TrackerObjectImpl::ReleaseFromTrackerSource()
     {
         assert(0 < _trackerSourceCount);
         --_trackerSourceCount;
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE TrackerObject::PegFromTrackerSource()
+    HRESULT STDMETHODCALLTYPE TrackerObject::TrackerObjectImpl::PegFromTrackerSource()
     {
         /* Not used by runtime */
         return E_NOTIMPL;
@@ -319,13 +474,30 @@ namespace
 }
 
 // Create external object
-extern "C" DLL_EXPORT ITrackerObject* STDMETHODCALLTYPE CreateTrackerObject()
+extern "C" DLL_EXPORT ITrackerObject * STDMETHODCALLTYPE CreateTrackerObject_SkipTrackerRuntime()
 {
-    auto obj = new TrackerObject{ CurrentObjectId++ };
+    auto obj = new TrackerObject{ static_cast<size_t>(-1), nullptr };
+    return &obj->_impl;
+}
 
-    TrackerRuntimeManager.RecordObject(obj);
+extern "C" DLL_EXPORT ITrackerObject* STDMETHODCALLTYPE CreateTrackerObject_Unsafe(_In_opt_ IUnknown* outer, _Outptr_ IUnknown** inner)
+{
+    ComSmartPtr<TrackerObject> obj;
+    obj.Attach(new TrackerObject{ CurrentObjectId++, outer });
 
-    return obj;
+    return TrackerRuntimeManager.RecordObject(obj, inner);
+}
+
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE StartTrackerObjectAllocationCount_Unsafe()
+{
+    TrackerObject::TrackedAllocationCount = TrackerObject::EnableTrackedCount;
+}
+
+extern "C" DLL_EXPORT int32_t STDMETHODCALLTYPE StopTrackerObjectAllocationCount_Unsafe()
+{
+    int32_t count = TrackerObject::TrackedAllocationCount;
+    TrackerObject::TrackedAllocationCount = TrackerObject::DisableTrackedCount;
+    return count;
 }
 
 // Release the reference on all internally held tracker objects
@@ -346,7 +518,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIUnknown(IUnknown 
 
     HRESULT hr;
     ComSmartPtr<ITest> testObj;
-    RETURN_IF_FAILED(obj->QueryInterface(&testObj))
+    RETURN_IF_FAILED(obj->QueryInterface(&testObj));
     RETURN_IF_FAILED(testObj->SetValue(i));
 
     *out = testObj.Detach();

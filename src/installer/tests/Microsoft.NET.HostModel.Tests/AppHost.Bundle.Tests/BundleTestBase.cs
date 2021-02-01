@@ -63,7 +63,7 @@ namespace AppHost.Bundle.Tests
             {
                 var testFixture = new TestProjectFixture(projectName, RepoDirectories);
                 testFixture
-                    .EnsureRestoredForRid(testFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .EnsureRestoredForRid(testFixture.CurrentRid)
                     .PublishProject(runtime: testFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(testFixture),
                                     extraArgs: extraArgs);

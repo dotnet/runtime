@@ -23,6 +23,7 @@ parameters:
   runtimeFlavorDisplayName: 'CoreCLR'
   runtimeVariant: ''
   dependsOn: []
+  dependOnEvaluatePaths: false
 
 ### Build managed test components (native components are getting built as part
 ### of the the product build job).
@@ -47,6 +48,7 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -120,7 +122,7 @@ jobs:
         displayName: Disk Usage before Build
     
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) allTargets skipstressdependencies skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 

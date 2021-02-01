@@ -1259,9 +1259,9 @@ namespace System.Data
         object this[string name] { get; }
         bool GetBoolean(int i);
         byte GetByte(int i);
-        long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length);
+        long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferoffset, int length);
         char GetChar(int i);
-        long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length);
+        long GetChars(int i, long fieldoffset, char[]? buffer, int bufferoffset, int length);
         System.Data.IDataReader GetData(int i);
         string GetDataTypeName(int i);
         System.DateTime GetDateTime(int i);
@@ -2202,9 +2202,9 @@ namespace System.Data.Common
         public abstract object this[string name] { get; }
         public abstract bool GetBoolean(int i);
         public abstract byte GetByte(int i);
-        public abstract long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length);
+        public abstract long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferIndex, int length);
         public abstract char GetChar(int i);
-        public abstract long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length);
+        public abstract long GetChars(int i, long dataIndex, char[]? buffer, int bufferIndex, int length);
         public System.Data.IDataReader GetData(int i) { throw null; }
         public abstract string GetDataTypeName(int i);
         public abstract System.DateTime GetDateTime(int i);

@@ -905,7 +905,7 @@ namespace System.IO.Tests
                 Assert.Equal(size, stream.Seek(0, SeekOrigin.Current));
             }
 
-            Assert.Equal(expected, actual.ToArray());
+            AssertExtensions.SequenceEqual(expected, actual.ToArray());
         }
 
         [Theory]
@@ -990,7 +990,7 @@ namespace System.IO.Tests
             stream.Position = 0;
             byte[] actual = (byte[])expected.Clone();
             Assert.Equal(actual.Length, await ReadAllAsync(ReadWriteMode.AsyncMemory, stream, actual, 0, actual.Length));
-            Assert.Equal(expected, actual);
+            AssertExtensions.SequenceEqual(expected, actual);
         }
 
         [Theory]
@@ -1032,7 +1032,7 @@ namespace System.IO.Tests
                 Assert.Equal(expected.Length, stream.Position);
             }
 
-            Assert.Equal(expected.AsSpan(position).ToArray(), destination.ToArray());
+            AssertExtensions.SequenceEqual(expected.AsSpan(position).ToArray(), destination.ToArray());
         }
 
         public static IEnumerable<object[]> CopyTo_CopiesAllDataFromRightPosition_Success_MemberData()
@@ -1073,7 +1073,7 @@ namespace System.IO.Tests
             for (int i = 0; i < Copies; i++)
             {
                 int bytesRead = await ReadAllAsync(mode, stream, actual, 0, actual.Length);
-                Assert.Equal(expected, actual);
+                AssertExtensions.SequenceEqual(expected, actual);
                 Array.Clear(actual, 0, actual.Length);
             }
         }
@@ -1686,7 +1686,7 @@ namespace System.IO.Tests
                     readerBytes[i] = (byte)r;
                 }
 
-                Assert.Equal(writerBytes, readerBytes);
+                AssertExtensions.SequenceEqual(writerBytes, readerBytes);
 
                 await writes;
 
@@ -1760,7 +1760,7 @@ namespace System.IO.Tests
                     }
 
                     Assert.Equal(readerBytes.Length, n);
-                    Assert.Equal(writerBytes, readerBytes);
+                    AssertExtensions.SequenceEqual(writerBytes, readerBytes);
 
                     await writes;
 
@@ -1858,6 +1858,8 @@ namespace System.IO.Tests
 
             using StreamReader reader = new StreamReader(readable);
             Assert.Equal("hello", reader.ReadToEnd());
+
+            await write;
         }
 
         [Fact]
@@ -2367,7 +2369,7 @@ namespace System.IO.Tests
             writeable.Dispose();
             await copyTask;
 
-            Assert.Equal(dataToCopy, results.ToArray());
+            AssertExtensions.SequenceEqual(dataToCopy, results.ToArray());
         }
 
         [OuterLoop("May take several seconds")]

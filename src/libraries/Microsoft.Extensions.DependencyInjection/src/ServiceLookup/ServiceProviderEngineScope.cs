@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -17,13 +18,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private List<object> _disposables;
 
         private bool _disposed;
+        private readonly object _disposelock = new object();
 
-        public ServiceProviderEngineScope(ServiceProviderEngine engine)
+        public ServiceProviderEngineScope(ServiceProviderEngine engine, bool isRoot = false)
         {
             Engine = engine;
+
+            // To reduce lock contention for singletons upon resolve we use a concurrent dictionary.
+            ResolvedServices = isRoot ? new ConcurrentDictionary<ServiceCacheKey, object>() : new Dictionary<ServiceCacheKey, object>();
         }
 
-        internal Dictionary<ServiceCacheKey, object> ResolvedServices { get; } = new Dictionary<ServiceCacheKey, object>();
+        internal IDictionary<ServiceCacheKey, object> ResolvedServices { get; }
 
         public ServiceProviderEngine Engine { get; }
 
@@ -41,8 +46,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         internal object CaptureDisposable(object service)
         {
-            Debug.Assert(!_disposed);
-
             _captureDisposableCallback?.Invoke(service);
 
             if (ReferenceEquals(this, service) || !(service is IDisposable || service is IAsyncDisposable))
@@ -50,8 +53,22 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return service;
             }
 
-            lock (ResolvedServices)
+            lock (_disposelock)
             {
+                if (_disposed)
+                {
+                    if (service is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                    else
+                    {
+                        // sync over async, for the rare case that an object only implements IAsyncDisposable and may end up starving the thread pool.
+                        Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask()).GetAwaiter().GetResult();
+                    }
+                    ThrowHelper.ThrowObjectDisposedException();
+                }
+
                 if (_disposables == null)
                 {
                     _disposables = new List<object>();
@@ -144,7 +161,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private List<object> BeginDispose()
         {
             List<object> toDispose;
-            lock (ResolvedServices)
+            lock (_disposelock)
             {
                 if (_disposed)
                 {

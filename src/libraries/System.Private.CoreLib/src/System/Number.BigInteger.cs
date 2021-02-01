@@ -446,7 +446,7 @@ namespace System
 
                 if ((lhsLength == 1) && (rhsLength == 1))
                 {
-                    uint quotient = Math.DivRem(lhs._blocks[0], rhs._blocks[0], out uint remainder);
+                    (uint quotient, uint remainder) = Math.DivRem(lhs._blocks[0], rhs._blocks[0]);
                     SetUInt32(out quo, quotient);
                     SetUInt32(out rem, remainder);
                     return;
@@ -464,7 +464,8 @@ namespace System
                     for (int i = quoLength - 1; i >= 0; i--)
                     {
                         ulong value = (carry << 32) | lhs._blocks[i];
-                        ulong digit = Math.DivRem(value, rhsValue, out carry);
+                        ulong digit;
+                        (digit, carry) = Math.DivRem(value, rhsValue);
 
                         if ((digit == 0) && (i == (quoLength - 1)))
                         {

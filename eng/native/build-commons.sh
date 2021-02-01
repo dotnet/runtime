@@ -71,10 +71,9 @@ build_native()
     targetOS="$1"
     platformArch="$2"
     cmakeDir="$3"
-    tryrunDir="$4"
-    intermediatesDir="$5"
-    cmakeArgs="$6"
-    message="$7"
+    intermediatesDir="$4"
+    cmakeArgs="$5"
+    message="$6"
 
     # All set to commence the build
     echo "Commencing build of \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
@@ -146,9 +145,7 @@ EOF
             scan_build=scan-build
         fi
 
-        engNativeDir="$__RepoRootDir/eng/native"
-        cmakeArgs="-DCLR_ENG_NATIVE_DIR=\"$engNativeDir\" $cmakeArgs"
-        nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$cmakeDir\" \"$tryrunDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
+        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -265,7 +262,8 @@ __msbuildonunsupportedplatform=0
 # processors available to a single process.
 platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+  output=("$(sysctl hw.ncpu)")
+  __NumProc="$((output[1] + 1))"
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
   __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 elif [[ "$platform" == "Darwin" ]]; then
@@ -279,7 +277,7 @@ while :; do
         break
     fi
 
-    lowerI="$(echo "$1" | awk '{print tolower($0)}')"
+    lowerI="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
         -\?|-h|--help)
             usage
@@ -455,6 +453,22 @@ fi
 
 if [[ "$__PortableBuild" == 0 ]]; then
     __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
+fi
+
+if [[ "$__BuildArch" == wasm ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == iOS ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == tvOS ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == Android ]]; then
+    # nothing to do here
+    true
+else
+    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
 fi
 
 # Configure environment if we are doing a cross compile.

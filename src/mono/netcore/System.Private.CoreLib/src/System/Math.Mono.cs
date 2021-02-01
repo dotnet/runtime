@@ -64,6 +64,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Sin(double a);
 
+        public static (double Sin, double Cos) SinCos(double x) => (Sin(x), Cos(x));
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Sinh(double value);
 
@@ -85,9 +87,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Log2(double x);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern double ScaleB(double x, int n);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern double FMod(double x, double y);

@@ -10,6 +10,7 @@ parameters:
   stagedBuild: false
   timeoutInMinutes: ''
   variables: {}
+  dependOnEvaluatePaths: false
 
 ### Product build
 jobs:
@@ -23,6 +24,7 @@ jobs:
     enableMicrobuild: true
     stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
     name: ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -105,8 +107,8 @@ jobs:
         displayName: Build CoreCLR JIT
 
     # Ensure the Python azure-storage-blob package is installed before doing the upload.
-    - script: $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
-      displayName: Install azure-storage-blob Python package
+    - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
+      displayName: Upgrade Pip to latest and install azure-storage-blob Python package
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py upload -build_type $(buildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion)
       displayName: Upload JIT to Azure Storage

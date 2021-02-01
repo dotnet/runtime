@@ -70,7 +70,9 @@ namespace System.Transactions
         {
             if (currentScope != null)
             {
+#pragma warning disable CA1416 // Validate platform compatibility, the property is not platform-specific, safe to suppress
                 return currentScope.InteropMode;
+#pragma warning restore CA1416
             }
 
             return EnterpriseServicesInteropOption.None;
@@ -161,7 +163,9 @@ namespace System.Transactions
 
                 if (currentScope != null)
                 {
+#pragma warning disable CA1416 // Validate platform compatibility, the property is not platform-specific, safe to suppress
                     if (currentScope.ScopeComplete)
+#pragma warning restore CA1416
                     {
                         throw new InvalidOperationException(SR.TransactionScopeComplete);
                     }
@@ -315,7 +319,7 @@ namespace System.Transactions
 
         // Don't allow equals to get the identifier
         //
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             // If we can't cast the object as a Transaction, it must not be equal
             // to this, which is a Transaction. Check the internal transaction object for equality.

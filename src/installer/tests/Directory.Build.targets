@@ -106,7 +106,7 @@
 
   <Target Name="DetermineTestOutputDirectory">
     <PropertyGroup>
-      <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(HostRuntimeIdentifier)</TestTargetRid>
+      <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(PackageRID)</TestTargetRid>
       <TestsOutputName Condition="'$(TestsOutputName)' == ''">$(MSBuildProjectName)</TestsOutputName>
 
       <TestsOutputRootDir Condition="'$(TestsOutputRootDir)' == ''">$(ArtifactsDir)tests/$(Configuration)/</TestsOutputRootDir>

@@ -26,7 +26,7 @@ namespace CoreXml.Test.XLinq
             module.AddChild(new XNodeReaderTests() { Attribute = new TestCaseAttribute() { Name = "XNodeReader", Desc = "XLinq XNodeReader Tests" } });
             module.Execute();
 
-            Assert.Equal(0, module.FailCount);
+            Assert.False(module.HasFailures, module.GetFailuresInfo());
         }
 
         #region Class

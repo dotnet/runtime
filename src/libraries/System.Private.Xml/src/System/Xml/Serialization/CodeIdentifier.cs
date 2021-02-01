@@ -234,7 +234,7 @@ namespace System.Xml.Serialization
                 }
             }
 
-            Type[] arguments = t.IsGenericType || t.ContainsGenericParameters ? t.GetGenericArguments() : Array.Empty<Type>();
+            Type[] arguments = t.IsGenericType || t.ContainsGenericParameters ? t.GetGenericArguments() : Type.EmptyTypes;
             GetCSharpName(t, arguments, 0, sb);
             for (int i = 0; i < rank; i++)
             {

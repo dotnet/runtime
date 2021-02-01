@@ -62,7 +62,7 @@ namespace System.Net.Security
                             {
                                 store.Dispose();
                                 store = null;
-                                if (NetEventSource.IsEnabled)
+                                if (NetEventSource.Log.IsEnabled())
                                 {
                                     NetEventSource.Error(this, $"Failed to open certificate store for intermediates.");
                                 }

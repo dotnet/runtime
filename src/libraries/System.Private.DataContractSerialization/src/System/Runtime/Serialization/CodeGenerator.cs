@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_objectToString == null)
                 {
-                    s_objectToString = typeof(object).GetMethod("ToString", Array.Empty<Type>());
+                    s_objectToString = typeof(object).GetMethod("ToString", Type.EmptyTypes);
                     Debug.Assert(s_objectToString != null);
                 }
                 return s_objectToString;

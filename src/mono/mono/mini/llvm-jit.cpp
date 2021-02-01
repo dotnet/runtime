@@ -299,7 +299,8 @@ struct MonoLLVMJIT {
 		auto k = add_module (std::unique_ptr<Module>(module));
 		auto bodysym = compile_layer.findSymbolIn (k, mangle (func), false);
 		auto bodyaddr = bodysym.getAddress ();
-		assert (bodyaddr);
+		if (!bodyaddr)
+			g_assert_not_reached();
 		for (int i = 0; i < nvars; ++i) {
 			auto var = unwrap<GlobalVariable> (callee_vars[i]);
 			auto sym = compile_layer.findSymbolIn (k, mangle (var->getName ()), true);
@@ -404,7 +405,8 @@ public:
 		auto ModuleHandle = addModule (F, m);
 		auto BodySym = CompileLayer.findSymbolIn(ModuleHandle, mangle (F), false);
 		auto BodyAddr = BodySym.getAddress();
-		assert (BodyAddr);
+		if (!BodyAddr)
+			g_assert_not_reached ();
 
 		for (int i = 0; i < nvars; ++i) {
 			GlobalVariable *var = unwrap<GlobalVariable>(callee_vars [i]);
@@ -512,6 +514,22 @@ mono_llvm_jit_init ()
 #else
 	g_assert_not_reached ();
 #endif
+
+	llvm::StringMap<bool> cpu_features;
+	// Why 76? LLVM 9 supports 76 different x86 feature strings. This
+	// requires around 1216 bytes of data in the local activation record.
+	// It'd be possible to stream entries to setMAttrs using
+	// llvm::map_range and llvm::make_filter_range, but llvm::map_range
+	// isn't available in LLVM 6, and it's not worth writing a small
+	// single-purpose one here.
+	llvm::SmallVector<llvm::StringRef, 76> supported_features;
+	if (llvm::sys::getHostCPUFeatures (cpu_features)) {
+		for (const auto &feature : cpu_features) {
+			if (feature.second)
+				supported_features.push_back (feature.first ());
+		}
+		EB.setMAttrs (supported_features);
+	}
 
 	auto TM = EB.selectTarget ();
 	assert (TM);

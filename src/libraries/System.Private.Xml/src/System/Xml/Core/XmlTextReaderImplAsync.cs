@@ -860,7 +860,7 @@ namespace System.Xml
             }
         }
 
-        internal async Task<Tuple<int, bool>> DtdParserProxy_PushEntityAsync(IDtdEntityInfo entity)
+        internal async Task<(int, bool)> DtdParserProxy_PushEntityAsync(IDtdEntityInfo entity)
         {
             CheckAsyncCall();
             int entityId;
@@ -872,7 +872,7 @@ namespace System.Xml
                 {
                     entityId = -1;
 
-                    return new Tuple<int, bool>(entityId, false);
+                    return (entityId, false);
                 }
                 retValue = await PushExternalEntityAsync(entity).ConfigureAwait(false);
             }
@@ -883,7 +883,7 @@ namespace System.Xml
             }
             entityId = _ps.entityId;
 
-            return new Tuple<int, bool>(entityId, retValue);
+            return (entityId, retValue);
         }
 
         // SxS: The caller did not provide any SxS sensitive name or resource. No resource is being exposed either.

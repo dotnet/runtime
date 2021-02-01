@@ -5,24 +5,26 @@ parameters:
   condition: ''
   displayName: ''
   environment: {}
+  shouldContinueOnError: false
 
 steps:
 - ${{ if eq(parameters.osGroup, 'windows') }}:
   # TODO: Remove and consolidate this when we move to arcade via init-tools.cmd.
   - powershell: $(Build.SourcesDirectory)\eng\common\build.ps1 -ci ${{ parameters.restoreParams }}
     displayName: Restore blob feed tasks (Windows)
-    condition: ${{ and(ne(parameters.condition, false), ne(parameters.restoreParams, '')) }}
+    condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.restoreParams, '')) }})
 
   - powershell: $(Build.SourcesDirectory)\eng\common\msbuild.ps1 -ci ${{ parameters.sendParams }}
     displayName: ${{ parameters.displayName }} (Windows)
-    condition: ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }}
+    condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }})
     env: ${{ parameters.environment }}
+    continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
 
 - ${{ if ne(parameters.osGroup, 'windows') }}:
   # TODO: Remove and consolidate this when we move to arcade via init-tools.sh.
   - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci ${{ parameters.restoreParams }}
     displayName: Restore blob feed tasks (Unix)
-    condition: ${{ and(ne(parameters.condition, false), ne(parameters.restoreParams, '')) }}
+    condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.restoreParams, '')) }})
     ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
       env:
         # Arcade uses this SDK instead of trying to restore one.
@@ -30,5 +32,6 @@ steps:
 
   - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.sendParams }}
     displayName: ${{ parameters.displayName }} (Unix)
-    condition: ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }}
+    condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }})
     env: ${{ parameters.environment }}
+    continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}

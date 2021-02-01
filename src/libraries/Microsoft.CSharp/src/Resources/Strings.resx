@@ -414,4 +414,7 @@
   <data name="COMUnsupportedEventHandlerType" xml:space="preserve">
     <value>Attempting to pass an event handler of an unsupported type.</value>
   </data>
+  <data name="UnsupportedEnum" xml:space="preserve">
+    <value>Attempting to wrap an unsupported enum type.</value>
+  </data>
 </root>

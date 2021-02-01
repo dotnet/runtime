@@ -107,7 +107,7 @@ namespace pal
     #ifdef EXPORT_SHARED_API
         #define SHARED_API extern "C" __declspec(dllexport)
     #else
-        #define SHARED_API
+        #define SHARED_API extern "C"
     #endif
 
     #define STDMETHODCALLTYPE __stdcall
@@ -164,7 +164,6 @@ namespace pal
     inline const char_t* strerror(int errnum) { return ::_wcserror(errnum); }
 
     bool pal_utf8string(const string_t& str, std::vector<char>* out);
-    bool utf8_palstring(const std::string& str, string_t* out);
     bool pal_clrstring(const string_t& str, std::vector<char>* out);
     bool clr_palstring(const char* cstr, string_t* out);
 
@@ -179,17 +178,13 @@ namespace pal
     #ifdef EXPORT_SHARED_API
         #define SHARED_API extern "C" __attribute__((__visibility__("default")))
     #else
-        #define SHARED_API
+        #define SHARED_API extern "C"
     #endif
 
     #define __cdecl    /* nothing */
     #define __stdcall  /* nothing */
     #if !defined(TARGET_FREEBSD)
         #define __fastcall /* nothing */
-    #else
-        #include <sys/types.h>
-        #include <sys/sysctl.h>
-        #include <sys/param.h>
     #endif
     #define STDMETHODCALLTYPE __stdcall
 
@@ -223,7 +218,6 @@ namespace pal
     inline const char_t* strerror(int errnum) { return ::strerror(errnum); }
 
     inline bool pal_utf8string(const string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
-    inline bool utf8_palstring(const std::string& str, string_t* out) { out->assign(str); return true; }
     inline bool pal_clrstring(const string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }
     inline bool clr_palstring(const char* cstr, string_t* out) { out->assign(cstr); return true; }
 
@@ -305,7 +299,6 @@ namespace pal
     bool get_default_bundle_extraction_base_dir(string_t& extraction_dir);
 
     int xtoi(const char_t* input);
-    bool unicode_palstring(const char16_t* str, pal::string_t* out);
 
     bool get_loaded_library(const char_t *library_name, const char *symbol_name, /*out*/ dll_t *dll, /*out*/ string_t *path);
     bool load_library(const string_t* path, dll_t* dll);

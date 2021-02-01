@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <stdint.h>
+#include "../../AnyOS/entrypoints.h"
 
 typedef uint16_t UChar;
 
@@ -17,45 +17,47 @@ typedef uint16_t UChar;
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
 
-#define FCFuncStart(name) EXTERN_C const void* name[]; const void* name[] = {
-#define FCFuncEnd() (void*)0x01 /* FCFuncFlag_EndOfArray */ };
+static const Entry s_globalizationNative[] =
+{
+    DllImportEntry(GlobalizationNative_ChangeCase)
+    DllImportEntry(GlobalizationNative_ChangeCaseInvariant)
+    DllImportEntry(GlobalizationNative_ChangeCaseTurkish)
+    DllImportEntry(GlobalizationNative_CloseSortHandle)
+    DllImportEntry(GlobalizationNative_CompareString)
+    DllImportEntry(GlobalizationNative_EndsWith)
+    DllImportEntry(GlobalizationNative_EnumCalendarInfo)
+    DllImportEntry(GlobalizationNative_GetCalendarInfo)
+    DllImportEntry(GlobalizationNative_GetCalendars)
+    DllImportEntry(GlobalizationNative_GetDefaultLocaleName)
+    DllImportEntry(GlobalizationNative_GetICUVersion)
+    DllImportEntry(GlobalizationNative_GetJapaneseEraStartDate)
+    DllImportEntry(GlobalizationNative_GetLatestJapaneseEra)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoGroupingSizes)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoInt)
+    DllImportEntry(GlobalizationNative_GetLocaleInfoString)
+    DllImportEntry(GlobalizationNative_GetLocaleName)
+    DllImportEntry(GlobalizationNative_GetLocales)
+    DllImportEntry(GlobalizationNative_GetLocaleTimeFormat)
+    DllImportEntry(GlobalizationNative_GetSortHandle)
+    DllImportEntry(GlobalizationNative_GetSortKey)
+    DllImportEntry(GlobalizationNative_GetSortVersion)
+    DllImportEntry(GlobalizationNative_GetTimeZoneDisplayName)
+    DllImportEntry(GlobalizationNative_IndexOf)
+    DllImportEntry(GlobalizationNative_InitICUFunctions)
+    DllImportEntry(GlobalizationNative_InitOrdinalCasingPage)
+    DllImportEntry(GlobalizationNative_IsNormalized)
+    DllImportEntry(GlobalizationNative_IsPredefinedLocale)
+    DllImportEntry(GlobalizationNative_LastIndexOf)
+    DllImportEntry(GlobalizationNative_LoadICU)
+    DllImportEntry(GlobalizationNative_NormalizeString)
+    DllImportEntry(GlobalizationNative_StartsWith)
+    DllImportEntry(GlobalizationNative_ToAscii)
+    DllImportEntry(GlobalizationNative_ToUnicode)
+};
 
-#define QCFuncElement(name,impl) \
-    (void*)0x8 /* FCFuncFlag_QCall */, (void*)(impl), (void*)name,
+EXTERN_C const void* GlobalizationResolveDllImport(const char* name);
 
-FCFuncStart(gPalGlobalizationNative)
-    QCFuncElement("ChangeCase", GlobalizationNative_ChangeCase)
-    QCFuncElement("ChangeCaseInvariant", GlobalizationNative_ChangeCaseInvariant)
-    QCFuncElement("ChangeCaseTurkish", GlobalizationNative_ChangeCaseTurkish)
-    QCFuncElement("CloseSortHandle", GlobalizationNative_CloseSortHandle)
-    QCFuncElement("CompareString", GlobalizationNative_CompareString)
-    QCFuncElement("EndsWith", GlobalizationNative_EndsWith)
-    QCFuncElement("EnumCalendarInfo", GlobalizationNative_EnumCalendarInfo)
-    QCFuncElement("GetCalendarInfo", GlobalizationNative_GetCalendarInfo)
-    QCFuncElement("GetCalendars", GlobalizationNative_GetCalendars)
-    QCFuncElement("GetDefaultLocaleName", GlobalizationNative_GetDefaultLocaleName)
-    QCFuncElement("GetICUVersion", GlobalizationNative_GetICUVersion)
-    QCFuncElement("GetJapaneseEraStartDate", GlobalizationNative_GetJapaneseEraStartDate)
-    QCFuncElement("GetLatestJapaneseEra", GlobalizationNative_GetLatestJapaneseEra)
-    QCFuncElement("GetLocaleInfoGroupingSizes", GlobalizationNative_GetLocaleInfoGroupingSizes)
-    QCFuncElement("GetLocaleInfoInt", GlobalizationNative_GetLocaleInfoInt)
-    QCFuncElement("GetLocaleInfoString", GlobalizationNative_GetLocaleInfoString)
-    QCFuncElement("GetLocaleName", GlobalizationNative_GetLocaleName)
-    QCFuncElement("GetLocales", GlobalizationNative_GetLocales)
-    QCFuncElement("GetLocaleTimeFormat", GlobalizationNative_GetLocaleTimeFormat)
-    QCFuncElement("GetSortHandle", GlobalizationNative_GetSortHandle)
-    QCFuncElement("GetSortKey", GlobalizationNative_GetSortKey)
-    QCFuncElement("GetSortVersion", GlobalizationNative_GetSortVersion)
-    QCFuncElement("GetTimeZoneDisplayName", GlobalizationNative_GetTimeZoneDisplayName)
-    QCFuncElement("IndexOf", GlobalizationNative_IndexOf)
-    QCFuncElement("InitICUFunctions", GlobalizationNative_InitICUFunctions)
-    QCFuncElement("InitOrdinalCasingPage", GlobalizationNative_InitOrdinalCasingPage)
-    QCFuncElement("IsNormalized", GlobalizationNative_IsNormalized)
-    QCFuncElement("IsPredefinedLocale", GlobalizationNative_IsPredefinedLocale)
-    QCFuncElement("LastIndexOf", GlobalizationNative_LastIndexOf)
-    QCFuncElement("LoadICU", GlobalizationNative_LoadICU)
-    QCFuncElement("NormalizeString", GlobalizationNative_NormalizeString)
-    QCFuncElement("StartsWith", GlobalizationNative_StartsWith)
-    QCFuncElement("ToAscii", GlobalizationNative_ToAscii)
-    QCFuncElement("ToUnicode", GlobalizationNative_ToUnicode)
-FCFuncEnd()
+EXTERN_C const void* GlobalizationResolveDllImport(const char* name)
+{
+    return ResolveDllImport(s_globalizationNative, lengthof(s_globalizationNative), name);
+}

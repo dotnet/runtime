@@ -56,15 +56,6 @@
     <GenerateChecksums Items="@(ArtifactsForGeneratingChecksums)" />
   </Target>
 
-  <Target Name="SignPackages"
-          Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'public'">
-    <Message Importance="High" Text="Signing final packages" />
-    <MSBuild
-      Projects="$(SigningToolsDir)\SignFinalPackages.proj"
-      Targets="Build"
-      Properties="DownloadDirectory=$(DownloadDirectory)" />
-  </Target>
-
   <Target Name="PreparePublishToAzureBlobFeed"
           DependsOnTargets="GetProductVersions;FindDownloadedArtifacts">
     <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
@@ -152,7 +143,6 @@
   <Target Name="Build"
           DependsOnTargets="
             FindDownloadedArtifacts;
-            SignPackages;
             CreateChecksums;
             PreparePublishToAzureBlobFeed">
     <Message Importance="High" Text="Complete!" />

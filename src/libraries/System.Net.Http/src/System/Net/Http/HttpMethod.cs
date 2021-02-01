@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.QPack;
 
 namespace System.Net.Http
@@ -22,19 +23,6 @@ namespace System.Net.Http
         private static readonly HttpMethod s_traceMethod = new HttpMethod("TRACE");
         private static readonly HttpMethod s_patchMethod = new HttpMethod("PATCH");
         private static readonly HttpMethod s_connectMethod = new HttpMethod("CONNECT", http3StaticTableIndex: H3StaticTable.MethodConnect);
-
-        private static readonly Dictionary<HttpMethod, HttpMethod> s_knownMethods = new Dictionary<HttpMethod, HttpMethod>(9)
-        {
-            { s_getMethod, s_getMethod },
-            { s_putMethod, s_putMethod },
-            { s_postMethod, s_postMethod },
-            { s_deleteMethod, s_deleteMethod },
-            { s_headMethod, s_headMethod },
-            { s_optionsMethod, s_optionsMethod },
-            { s_traceMethod, s_traceMethod },
-            { s_patchMethod, s_patchMethod },
-            { s_connectMethod, s_connectMethod },
-        };
 
         public static HttpMethod Get
         {
@@ -118,7 +106,7 @@ namespace System.Net.Http
 
         #region IEquatable<HttpMethod> Members
 
-        public bool Equals(HttpMethod? other)
+        public bool Equals([NotNullWhen(true)] HttpMethod? other)
         {
             if (other is null)
             {
@@ -137,7 +125,7 @@ namespace System.Net.Http
 
         #endregion
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return Equals(obj as HttpMethod);
         }
@@ -175,13 +163,39 @@ namespace System.Net.Http
         /// </summary>
         internal static HttpMethod Normalize(HttpMethod method)
         {
-            // _http3EncodedBytes is only set for the singleton instances, so if it's not null,
-            // we can avoid the dictionary lookup.  Otherwise, look up the method instance in the
-            // dictionary and return the normalized instance if it's found.
             Debug.Assert(method != null);
-            return
-                method._http3EncodedBytes is null && s_knownMethods.TryGetValue(method, out HttpMethod? normalized) ? normalized :
-                method;
+            Debug.Assert(!string.IsNullOrEmpty(method._method));
+
+            // _http3EncodedBytes is only set for the singleton instances, so if it's not null,
+            // we can avoid the lookup.  Otherwise, look up the method instance and return the
+            // normalized instance if it's found.
+
+            if (method._http3EncodedBytes is null && method._method.Length >= 3) // 3 == smallest known method
+            {
+                HttpMethod? match = (method._method[0] | 0x20) switch
+                {
+                    'c' => s_connectMethod,
+                    'd' => s_deleteMethod,
+                    'g' => s_getMethod,
+                    'h' => s_headMethod,
+                    'o' => s_optionsMethod,
+                    'p' => method._method.Length switch
+                    {
+                        3 => s_putMethod,
+                        4 => s_postMethod,
+                        _ => s_patchMethod,
+                    },
+                    't' => s_traceMethod,
+                    _ => null,
+                };
+
+                if (match is not null && string.Equals(method._method, match._method, StringComparison.OrdinalIgnoreCase))
+                {
+                    return match;
+                }
+            }
+
+            return method;
         }
 
         internal bool MustHaveRequestBody

@@ -13,7 +13,7 @@ Any runtime-specific `partial` part which also has a shared part sholud use a ru
 
 ## System.Private.CoreLib CoreCLR Sources
 
-The CoreCLR specific sources can be found at [src/coreclr/src/System.Private.CoreLib](../../../coreclr/src/System.Private.CoreLib/).
+The CoreCLR specific sources can be found at [src/coreclr/System.Private.CoreLib](../../../coreclr/System.Private.CoreLib/).
 
 ## System.Private.CoreLib Mono Sources
 

@@ -1,0 +1,352 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+    <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+
+    <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
+    <OutputPath>$(RuntimeBinDir)/IL/</OutputPath>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <Platforms>x64;x86;arm;arm64</Platforms>
+
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    
+    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
+    <ILLinkTrimXml>$(IntermediateOutputPath)System.Private.CoreLib.xml</ILLinkTrimXml>
+    <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
+
+    <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
+    <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
+  </PropertyGroup>
+
+  <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
+  <ItemGroup Label="Embedded Resources">
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.SR</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Platform Condition=" '$(Platform)' == '' ">$(TargetArchitecture)</Platform>
+    <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <!-- These prevent the default MsBuild targets from referencing System.dll and mscorlib.dll -->
+    <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <!-- Override InformationalVersion during servicing as it's returned via public api. -->
+    <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn),0419,0649,CA2249,CA1830</NoWarn>
+    <Nullable>enable</Nullable>
+
+    <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
+    <DefineConstants>CORECLR;NETCOREAPP;SYSTEM_PRIVATE_CORELIB</DefineConstants>
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
+
+    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
+    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <SlnGenSolutionFolder>src</SlnGenSolutionFolder>
+  </PropertyGroup>
+
+  <!-- Platform specific properties -->
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DefineConstants>$(DefineConstants);TARGET_AMD64</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'x86'">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm'">
+    <PlatformTarget>arm</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_ARM</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Configuration specific properties -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
+    <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
+    <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
+    <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+  </PropertyGroup>
+
+  <!-- Assembly attributes -->
+  <PropertyGroup>
+    <Description>$(AssemblyName)</Description>
+  </PropertyGroup>
+
+  <!-- Signing -->
+  <PropertyGroup>
+    <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
+  </PropertyGroup>
+
+  <!--
+    Helper Paths
+  -->
+  <PropertyGroup>
+    <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
+    <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
+  </PropertyGroup>
+
+  <!-- Compilation options -->
+  <Import Project="../clr.featuredefines.props" />
+
+  <!-- Sources -->
+  <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\IsolatedComponentLoadContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Array.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Attribute.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\BadImageFormatException.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Buffer.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\CLRConfig.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Delegate.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrameHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackTrace.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymWriter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\SymAddressKind.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Enum.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Environment.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Exception.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\Stream.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Math.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MathF.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Object.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ISymWrapperCore.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilderInstantiation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilderData.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolMethod.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\INVOCATION_FLAGS.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdConstant.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdFieldInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdImport.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Internal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RtFieldInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeConstructorInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeExceptionHandlingClause.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeFieldInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeLocalVariableInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodBody.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeModule.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CrossLoaderAllocatorHashHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DependentHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\GCHeapHash.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DynamicInterfaceCastableHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandle.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RuntimeType.ActivatorCache.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\StackCrawlMark.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ProcessorIdCache.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Timer.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\WeakReference.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.CoreCLR.cs" />
+  </ItemGroup>
+  <!-- These classes are only used for FeatureCominterop, but they are referenced by tests
+       in order to allow tests to be built on all platforms, these classes are included for all
+       platforms, but throw PlatformNotSupported() for unsupported platforms -->
+  <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">
+      <Link>Common\System\Runtime\InteropServices\IDispatch.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsMethod.cs">
+      <Link>Common\System\Runtime\InteropServices\ComEventsMethod.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs">
+      <Link>Common\System\Runtime\InteropServices\ComEventsSink.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs">
+      <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
+    </Compile>
+    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\OleAutBinder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\ComDataHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumVariantViewOfEnumerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumerableToDispatchMarshaler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumerableViewOfDispatch.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumeratorToEnumVariantMarshaler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumeratorViewOfEnumVariant.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\ExpandoToDispatchExMarshaler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\TypeToTypeInfoMarshaler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Variant.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
+    </Compile>
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
+  </ItemGroup>
+  <!-- Include additional sources shared files in the compilation -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
+  
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <!-- This is the T4 template service and is added by VS anytime you modify a T4 template. Required for .tt files. -->
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
+
+  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile"/>
+
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
+
+  <!-- Setup eventing file generation -->
+  <ItemGroup>
+    <EventingGenerationScript Include="$(CoreClrProjectRoot)scripts/genRuntimeEventSources.py" />
+    <EventManifestFile Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />
+    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(TargetArchitecture)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.CoreCLR.cs</Link>
+    </EventingSourceFile>
+    <Compile Include="@(EventingSourceFile)" />
+  </ItemGroup>
+
+  <Target Name="GenerateEventingFiles"
+          Inputs="@(EventingGenerationScript);@(EventManifestFile)"
+          Outputs="@(EventingSourceFile)"
+          DependsOnTargets="FindPython"
+          BeforeTargets="BeforeCompile">
+
+    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.CoreCLR.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
+    <PropertyGroup>
+      <_PythonWarningParameter>-Wall</_PythonWarningParameter>
+      <_PythonWarningParameter Condition="'$(MSBuildTreatWarningsAsErrors)' == 'true'">$(_PythonWarningParameter) -Werror</_PythonWarningParameter>
+      <_EventingSourceFileDirectory>%(EventingSourceFile.RootDir)%(EventingSourceFile.Directory)</_EventingSourceFileDirectory>
+      <_EventingSourceFileDirectory Condition="HasTrailingSlash('$(_EventingSourceFileDirectory)')">$(_EventingSourceFileDirectory.TrimEnd('\'))</_EventingSourceFileDirectory>
+
+    </PropertyGroup>
+
+    <Exec Command="$(PYTHON) -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot;" />
+
+    <ItemGroup>
+      <FileWrites Include="@(EventingSourceFile)" />
+    </ItemGroup>
+  </Target>
+</Project>

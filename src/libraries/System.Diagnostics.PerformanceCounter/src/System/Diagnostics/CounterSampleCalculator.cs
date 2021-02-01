@@ -13,8 +13,6 @@ namespace System.Diagnostics
     /// </summary>
     public static class CounterSampleCalculator
     {
-        private static volatile bool s_perfCounterDllLoaded;
-
         /// <summary>
         ///    Converts 100NS elapsed time to fractional seconds
         /// </summary>
@@ -89,11 +87,9 @@ namespace System.Diagnostics
 
             FillInValues(oldSample, newSample, ref oldPdhValue, ref newPdhValue);
 
-            LoadPerfCounterDll();
-
             Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_COUNTERVALUE pdhFormattedValue = default;
             long timeBase = newSample.SystemFrequency;
-            int result = Interop.PerfCounter.FormatFromRawValue((uint)newCounterType, Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_DOUBLE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOSCALE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOCAP100,
+            int result = Interop.Pdh.PdhFormatFromRawValue((uint)newCounterType, Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_DOUBLE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOSCALE | Interop.Kernel32.PerformanceCounterOptions.PDH_FMT_NOCAP100,
                                                           ref timeBase, ref newPdhValue, ref oldPdhValue, ref pdhFormattedValue);
 
             if (result != Interop.Errors.ERROR_SUCCESS)
@@ -226,22 +222,6 @@ namespace System.Diagnostics
                     oldPdhValue.SecondValue = 0;
                     break;
             }
-        }
-
-        private static void LoadPerfCounterDll()
-        {
-            if (s_perfCounterDllLoaded)
-                return;
-
-            string installPath = NetFrameworkUtils.GetLatestBuildDllDirectory(".");
-
-            string perfcounterPath = Path.Combine(installPath, "perfcounter.dll");
-            if (Interop.Kernel32.LoadLibrary(perfcounterPath) == IntPtr.Zero)
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
-
-            s_perfCounterDllLoaded = true;
         }
     }
 }
