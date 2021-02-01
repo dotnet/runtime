@@ -59,6 +59,7 @@ namespace System.DirectoryServices.Tests
             {
                 try
                 {
+                    // This requires System.DirectoryServices.dll, which is Windows-only
                     using (DirectoryEntry rootDse = new DirectoryEntry(LdapConfiguration.Configuration.RootDSEPath,
                                             LdapConfiguration.Configuration.UserName,
                                             LdapConfiguration.Configuration.Password,

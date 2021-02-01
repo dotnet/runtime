@@ -16,6 +16,62 @@ namespace System.DirectoryServices.Protocols.Tests
         internal static bool IsActiveDirectoryServer => IsLdapConfigurationExist && LdapConfiguration.Configuration.IsActiveDirectoryServer;
 
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        public void TestInvalidFilter()
+        {
+            using LdapConnection connection = GetConnection();
+
+            LdapException ex = Assert.Throws<LdapException>(() =>
+            {
+                var searchRequest = new SearchRequest(LdapConfiguration.Configuration.SearchDn, "==invalid==", SearchScope.OneLevel);
+                _ = (SearchResponse) connection.SendRequest(searchRequest);
+            });
+
+            Assert.Equal(/* LdapError.FilterError */ 0x57, ex.ErrorCode);
+        }
+
+        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        public void TestInvalidSearchDn()
+        {
+            using LdapConnection connection = GetConnection();
+
+            DirectoryOperationException ex = Assert.Throws<DirectoryOperationException>(() =>
+            {
+                var searchRequest = new SearchRequest("==invaliddn==", "(objectClass=*)", SearchScope.OneLevel);
+                var searchResponse = (SearchResponse) connection.SendRequest(searchRequest);
+            });
+
+            Assert.Equal(ResultCode.InvalidDNSyntax, ex.Response.ResultCode);
+        }
+
+        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        public void TestUnavailableCriticalExtension()
+        {
+            using LdapConnection connection = GetConnection();
+
+            DirectoryOperationException ex = Assert.Throws<DirectoryOperationException>(() =>
+            {
+                var searchRequest = new SearchRequest(LdapConfiguration.Configuration.SearchDn, "(objectClass=*)", SearchScope.OneLevel);
+                var control = new DirectoryControl("==invalid-control==", value: null, isCritical: true, serverSide: true);
+                searchRequest.Controls.Add(control);
+                _ = (SearchResponse) connection.SendRequest(searchRequest);
+            });
+
+            Assert.Equal(ResultCode.UnavailableCriticalExtension, ex.Response.ResultCode);
+        }
+
+        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        public void TestUnavailableNonCriticalExtension()
+        {
+            using LdapConnection connection = GetConnection();
+
+            var searchRequest = new SearchRequest(LdapConfiguration.Configuration.SearchDn, "(objectClass=*)", SearchScope.OneLevel);
+            var control = new DirectoryControl("==invalid-control==", value: null, isCritical: false, serverSide: true);
+            searchRequest.Controls.Add(control);
+            _ = (SearchResponse) connection.SendRequest(searchRequest);
+            // Does not throw
+        }
+
+        [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void TestAddingOU()
         {
             using (LdapConnection connection = GetConnection())
