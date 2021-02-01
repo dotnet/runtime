@@ -697,7 +697,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         prevSchema = pSchema[iSchema];
     }
 
-    S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(pSchema[countSchemaItems - 1].Offset + InstrumentationKindToSize(pSchema[countSchemaItems - 1].InstrumentationKind));
+    S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(pSchema[countSchemaItems - 1].Offset) + S_SIZE_T(pSchema[countSchemaItems - 1].Count) * S_SIZE_T(InstrumentationKindToSize(pSchema[countSchemaItems - 1].InstrumentationKind));
     
     if (allocationSize.IsOverflow())
     {
@@ -712,7 +712,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         {
             return E_NOTIMPL;
         }
-        size_t unsafeAllocationSize = allocationSize.Value();
+        unsafeAllocationSize = allocationSize.Value();
     }
 
     HeaderList* pHeaderList = NULL;
