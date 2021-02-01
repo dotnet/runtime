@@ -10,7 +10,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <IsOSXLike Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsOSXLike>
+    <IsOSXLike Condition="'$(TargetsOSX)' == 'true' or '$(TargetsCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsOSXLike>
     <SupportsArmIntrinsics Condition="'$(Platform)' == 'arm64'">true</SupportsArmIntrinsics>
     <SupportsX86Intrinsics Condition="'$(Platform)' == 'x64' or ('$(Platform)' == 'x86' and '$(TargetsUnix)' != 'true')">true</SupportsX86Intrinsics>
     <ILLinkSharedDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkSharedDirectory>

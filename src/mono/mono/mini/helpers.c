@@ -252,7 +252,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	close (i);
 #endif
 
-#ifdef HAVE_SYSTEM
+#if defined(HAVE_SYSTEM) && !defined(MAC_CATALYST)
 	char *cmd = g_strdup_printf (ARCH_PREFIX AS_CMD " %s -o %s", as_file, o_file);
 	unused = system (cmd); 
 	g_free (cmd);

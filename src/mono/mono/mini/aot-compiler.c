@@ -10027,7 +10027,7 @@ execute_system (const char * command)
 	g_free (wstr);
 
 	g_free (quoted_command);
-#elif defined (HAVE_SYSTEM)
+#elif defined (HAVE_SYSTEM) && !defined(MAC_CATALYST)
 	status = system (command);
 #else
 	g_assert_not_reached ();
