@@ -850,7 +850,7 @@ ep_rt_walk_managed_stack_for_thread (
 	ep_rt_thread_handle_t thread,
 	EventPipeStackContents *stack_contents)
 {
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_walk_managed_stack_for_thread (thread, stack_contents) ? true : false;
+	return (ep_rt_mono_func_table_get ()->ep_rt_mono_walk_managed_stack_for_thread (thread, stack_contents) == TRUE) ? true : false;
 }
 
 static
@@ -861,7 +861,7 @@ ep_rt_method_get_simple_assembly_name (
 	ep_char8_t *name,
 	size_t name_len)
 {
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_method_get_simple_assembly_name (method, name, name_len) ? true : false;
+	return (ep_rt_mono_func_table_get ()->ep_rt_mono_method_get_simple_assembly_name (method, name, name_len) == TRUE) ? true : false;
 }
 
 static
@@ -872,7 +872,7 @@ ep_rt_method_get_full_name (
 	ep_char8_t *name,
 	size_t name_len)
 {
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_method_get_full_name (method, name, name_len) ? true : false;
+	return (ep_rt_mono_func_table_get ()->ep_rt_mono_method_get_full_name (method, name, name_len) == TRUE) ? true : false;
 }
 
 static
@@ -1284,9 +1284,9 @@ bool
 ep_rt_process_detach (void)
 {
 #ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	return mono_runtime_is_shutting_down () ? true : false;
+	return (mono_runtime_is_shutting_down () == TRUE) ? true : false;
 #else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_runtime_is_shutting_down () ? true : false;
+	return (ep_rt_mono_func_table_get ()->ep_rt_mono_runtime_is_shutting_down () == TRUE) ? true : false;
 #endif
 }
 
@@ -1425,9 +1425,9 @@ ep_rt_thread_create (
 		thread_params->thread_params.thread_params = params;
 		thread_params->background_thread = true;
 #ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-		return mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) ? true : false;
+		return (mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
 #else
-		return ep_rt_mono_func_table_get ()->ep_rt_mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) ? true : false;
+		return (ep_rt_mono_func_table_get ()->ep_rt_mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
 #endif
 	}
 
@@ -2079,9 +2079,9 @@ bool
 ep_rt_mono_thread_yield (void)
 {
 #ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	return mono_thread_info_yield () ? true : false;
+	return (mono_thread_info_yield () == TRUE) ? true : false;
 #else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_yield () ? true : false;
+	return (ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_yield () == TRUE) ? true : false;
 #endif
 }
 
