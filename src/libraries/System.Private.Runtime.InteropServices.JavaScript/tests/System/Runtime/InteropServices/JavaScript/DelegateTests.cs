@@ -124,11 +124,34 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS(@"
                 var del = App.call_test_method (""CreateDelegateMethodReturnString"", [  ]);
                 var res = del(""Hic sunt dracones"");
-                console.log(res);
                 App.call_test_method (""SetTestString1"", [ res ]);
             ");
 
             Assert.Equal("Received: Hic sunt dracones", HelperMarshal._delMethodStringResultValue);
+        }
+
+        [Fact]
+        public static void MarshalCustomMultiDelegateAcceptingString()
+        {
+            HelperMarshal._custMultiDelStringResultValue = string.Empty;
+            Runtime.InvokeJS(@"
+                var del = App.call_test_method (""CreateCustomMultiDelegateAcceptingString"", [  ]);
+                del(""Moin"");
+            ");
+
+            Assert.Equal("  Hello, Moin!  GoodMorning, Moin!", HelperMarshal._custMultiDelStringResultValue);
+        }
+
+        [Fact]
+        public static void MarshalCustomMultiActionAcceptingString()
+        {
+            HelperMarshal._custMultiActionStringResultValue = string.Empty;
+            Runtime.InvokeJS(@"
+                var del = App.call_test_method (""CreateCustomMultiActionAcceptingString"", [  ]);
+                del(""MoinMoin"");
+            ");
+
+            Assert.Equal("  Hello, MoinMoin!  GoodMorning, MoinMoin!", HelperMarshal._custMultiActionStringResultValue);
         }
 
     }

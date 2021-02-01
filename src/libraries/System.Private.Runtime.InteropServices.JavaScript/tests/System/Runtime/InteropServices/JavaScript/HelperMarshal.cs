@@ -451,6 +451,49 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return handler;
         }
 
+        static void Hello(string s)
+        {
+            _custMultiDelStringResultValue += $"  Hello, {s}!";
+        }
+
+        static void GoodMorning(string s)
+        {
+            _custMultiDelStringResultValue += $"  GoodMorning, {s}!";
+        }
+
+        delegate void CustomDelStr(string s);
+        internal static string _custMultiDelStringResultValue;
+        private static CustomDelStr CreateCustomMultiDelegateAcceptingString()
+        {
+            CustomDelStr hiDel, mornDel, multiDel;
+            hiDel = Hello;
+            mornDel = GoodMorning;
+            multiDel = hiDel + mornDel;
+
+            return multiDel;
+        }
+
+        static void HelloHello(string s)
+        {
+            _custMultiActionStringResultValue += $"  Hello, {s}!";
+        }
+
+        static void GoodMorningMorning(string s)
+        {
+            _custMultiActionStringResultValue += $"  GoodMorning, {s}!";
+        }
+
+        internal static string _custMultiActionStringResultValue;
+        private static Action<string> CreateCustomMultiActionAcceptingString()
+        {
+            Action<string> hiDel, mornDel, multiDel;
+            hiDel = HelloHello;
+            mornDel = GoodMorningMorning;
+            multiDel = hiDel + mornDel;
+
+            return multiDel;
+        }
+
     }
 
     public enum TestEnum : uint {
