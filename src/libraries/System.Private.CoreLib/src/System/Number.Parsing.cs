@@ -360,7 +360,7 @@ namespace System
                         }
                         else
                         {
-                            // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part, so we keep a count of the numer of trailing zeros and update digCount later
+                            // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part, so we keep a count of the number of trailing zeros and update digCount later
                             if (ch == '0')
                             {
                                 numberOfTrailingZeros++;
@@ -396,7 +396,6 @@ namespace System
             bool negExp = false;
             number.DigitsCount = digEnd - numberOfTrailingZeros;
             number.Digits[digEnd] = (byte)('\0');
-            // Technically we don't have to clean up the number buffer below. Just doing it to avoid potential future bugs
             if (numberOfTrailingZeros != 0)
             {
                 for (int i = digEnd - numberOfTrailingZeros; i < digEnd; i++)
