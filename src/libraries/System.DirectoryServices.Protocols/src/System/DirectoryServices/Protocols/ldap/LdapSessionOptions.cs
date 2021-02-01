@@ -524,6 +524,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
+        // In practice, this apparently rarely if ever contains useful text
         internal string ServerErrorMessage => GetStringValueHelper(LdapOption.LDAP_OPT_SERVER_ERROR, true);
 
         internal DereferenceAlias DerefAlias
