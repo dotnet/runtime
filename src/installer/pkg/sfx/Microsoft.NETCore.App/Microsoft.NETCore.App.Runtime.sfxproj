@@ -133,6 +133,7 @@
       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FilesToPublish Include="@(_VersionFile)" />
+      <FileWrites Include="@(_VersionFile)" />
     </ItemGroup>
   </Target>
 
