@@ -26,7 +26,7 @@ namespace System
                     if (Interop.Kernel32.FileTimeToSystemTime(&fileTime, &time) != Interop.BOOL.FALSE)
                     {
                         // to keep the time precision
-                        ulong tmp = fileTime;
+                        ulong tmp = fileTime; // temp. variable avoids double read from memory
                         hundredNanoSecond = tmp % TicksPerMillisecond;
                     }
                     else
@@ -49,7 +49,7 @@ namespace System
             Interop.Kernel32.SYSTEMTIME time;
             time.Year = (ushort)year;
             time.Month = (ushort)month;
-            time.DayOfWeek = (ushort)new DateTime(year, month, day).DayOfWeek;
+            time.DayOfWeek = 0; // ignored by TzSpecificLocalTimeToSystemTime/SystemTimeToFileTime
             time.Day = (ushort)day;
             time.Hour = (ushort)hour;
             time.Minute = (ushort)minute;

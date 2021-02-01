@@ -357,7 +357,6 @@ namespace System
             }
         }
 
-        internal long InternalTicks => (long)(_dateData & TicksMask);
         private ulong UTicks => _dateData & TicksMask;
 
         private ulong InternalKind => _dateData & FlagsMask;
@@ -541,8 +540,8 @@ namespace System
         //
         public static int Compare(DateTime t1, DateTime t2)
         {
-            long ticks1 = t1.InternalTicks;
-            long ticks2 = t2.InternalTicks;
+            long ticks1 = t1.Ticks;
+            long ticks2 = t2.Ticks;
             if (ticks1 > ticks2) return 1;
             if (ticks1 < ticks2) return -1;
             return 0;
@@ -655,14 +654,14 @@ namespace System
         {
             if (value is DateTime)
             {
-                return InternalTicks == ((DateTime)value).InternalTicks;
+                return Ticks == ((DateTime)value).Ticks;
             }
             return false;
         }
 
         public bool Equals(DateTime value)
         {
-            return InternalTicks == value.InternalTicks;
+            return Ticks == value.Ticks;
         }
 
         // Compares two DateTime values for equality. Returns true if
@@ -671,7 +670,7 @@ namespace System
         //
         public static bool Equals(DateTime t1, DateTime t2)
         {
-            return t1.InternalTicks == t2.InternalTicks;
+            return t1.Ticks == t2.Ticks;
         }
 
         public static DateTime FromBinary(long dateData)
@@ -768,7 +767,7 @@ namespace System
             if (info == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
 
             // Serialize both the old and the new format
-            info.AddValue(TicksField, InternalTicks);
+            info.AddValue(TicksField, Ticks);
             info.AddValue(DateDataField, _dateData);
         }
 
@@ -977,7 +976,7 @@ namespace System
         //
         public override int GetHashCode()
         {
-            long ticks = InternalTicks;
+            long ticks = Ticks;
             return unchecked((int)ticks) ^ (int)(ticks >> 32);
         }
 
@@ -1156,7 +1155,7 @@ namespace System
 
         public TimeSpan Subtract(DateTime value)
         {
-            return new TimeSpan(InternalTicks - value.InternalTicks);
+            return new TimeSpan(Ticks - value.Ticks);
         }
 
         public DateTime Subtract(TimeSpan value)
@@ -1190,7 +1189,7 @@ namespace System
         // double date.
         public double ToOADate()
         {
-            return TicksToOADate(InternalTicks);
+            return TicksToOADate(Ticks);
         }
 
         public long ToFileTime()
@@ -1202,7 +1201,7 @@ namespace System
         public long ToFileTimeUtc()
         {
             // Treats the input as universal if it is not specified
-            long ticks = ((_dateData & KindLocal) != 0) ? ToUniversalTime().InternalTicks : this.InternalTicks;
+            long ticks = ((_dateData & KindLocal) != 0) ? ToUniversalTime().Ticks : Ticks;
 
 #pragma warning disable 162 // Unrechable code on Unix
             if (s_systemSupportsLeapSeconds)
@@ -1373,19 +1372,19 @@ namespace System
             return new DateTime(ticks | d.InternalKind);
         }
 
-        public static TimeSpan operator -(DateTime d1, DateTime d2) => new TimeSpan(d1.InternalTicks - d2.InternalTicks);
+        public static TimeSpan operator -(DateTime d1, DateTime d2) => new TimeSpan(d1.Ticks - d2.Ticks);
 
-        public static bool operator ==(DateTime d1, DateTime d2) => d1.InternalTicks == d2.InternalTicks;
+        public static bool operator ==(DateTime d1, DateTime d2) => d1.Ticks == d2.Ticks;
 
-        public static bool operator !=(DateTime d1, DateTime d2) => d1.InternalTicks != d2.InternalTicks;
+        public static bool operator !=(DateTime d1, DateTime d2) => d1.Ticks != d2.Ticks;
 
-        public static bool operator <(DateTime t1, DateTime t2) => t1.InternalTicks < t2.InternalTicks;
+        public static bool operator <(DateTime t1, DateTime t2) => t1.Ticks < t2.Ticks;
 
-        public static bool operator <=(DateTime t1, DateTime t2) => t1.InternalTicks <= t2.InternalTicks;
+        public static bool operator <=(DateTime t1, DateTime t2) => t1.Ticks <= t2.Ticks;
 
-        public static bool operator >(DateTime t1, DateTime t2) => t1.InternalTicks > t2.InternalTicks;
+        public static bool operator >(DateTime t1, DateTime t2) => t1.Ticks > t2.Ticks;
 
-        public static bool operator >=(DateTime t1, DateTime t2) => t1.InternalTicks >= t2.InternalTicks;
+        public static bool operator >=(DateTime t1, DateTime t2) => t1.Ticks >= t2.Ticks;
 
         // Returns a string array containing all of the known date and time options for the
         // current culture.  The strings returned are properly formatted date and
