@@ -570,8 +570,11 @@ namespace System.DirectoryServices.Protocols.Tests
                 AuthType = AuthType.Basic
             };
 
-            connection.Bind();
+            // Set server protocol before bind; OpenLDAP servers default
+            // to LDAP v2, which we do not support, and will return LDAP_PROTOCOL_ERROR
             connection.SessionOptions.ProtocolVersion = 3;
+            connection.Bind();
+
             connection.Timeout = new TimeSpan(0, 3, 0);
             return connection;
         }
