@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -804,20 +805,19 @@ namespace System.Diagnostics.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("/dev/stdin")]
-        [InlineData("/dev/stdout")]
-        [InlineData("/dev/stderr")]
-        public void ChildProcessRedirectedIO_FilePathOpenShouldSucceed(string filename)
+        [InlineData("/dev/stdin",  O_RDONLY)]
+        [InlineData("/dev/stdout", O_WRONLY)]
+        [InlineData("/dev/stderr", O_WRONLY)]
+        public void ChildProcessRedirectedIO_FilePathOpenShouldSucceed(string filename, int flags)
         {
             var options = new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, RedirectStandardInput = true, RedirectStandardError = true }};
-            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(ExecuteChildProcess, filename, options))
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(ExecuteChildProcess, filename, flags.ToString(CultureInfo.InvariantCulture), options))
             { }
 
-            static void ExecuteChildProcess(string filename)
+            static void ExecuteChildProcess(string filename, string flags)
             {
-                int flags = filename == "/dev/stdin" ? /* O_WRONLY */ 1 : /* O_RDONLY */ 0;
-                int result = open(filename, flags);
-                Assert.True(result >= 0);
+                int result = open(filename, int.Parse(flags, CultureInfo.InvariantCulture));
+                Assert.True(result >= 0, $"failed to open file with {result} and errno {Marshal.GetLastWin32Error()}.");
             }
         }
 
@@ -962,6 +962,9 @@ namespace System.Diagnostics.Tests
 
         [DllImport("libc", SetLastError = true)]
         private static extern int open(string pathname, int flags);
+
+        private const int O_RDONLY = 0;
+        private const int O_WRONLY = 1;
 
         private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
 
