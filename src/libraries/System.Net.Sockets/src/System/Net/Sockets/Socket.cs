@@ -2499,36 +2499,15 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, size);
 
-            var task = ReceiveFromAsync(new Memory<byte>(buffer, offset, size), socketFlags, remoteEP);
-
-            if (remoteEP == null)
+            Task<SocketReceiveFromResult> t = ReceiveFromAsync(new Memory<byte>(buffer, offset, size), socketFlags, remoteEP).AsTask();
+            if (t.IsCompleted)
             {
-                throw new ArgumentNullException(nameof(remoteEP));
-            }
-            if (!CanTryAddressFamily(remoteEP.AddressFamily))
-            {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEP.AddressFamily, _addressFamily), nameof(remoteEP));
-            }
-            if (_rightEndPoint == null)
-            {
-                throw new InvalidOperationException(SR.net_sockets_mustbind);
+                remoteEP = t.Result.RemoteEndPoint;
             }
 
+            return TaskToApm.Begin(t, callback, state);
         }
 
-        // Routine Description:
-        //
-        //    EndReceiveFrom -  Called when I/O is done or the user wants to wait. If
-        //              the I/O isn't done, we'll wait for it to complete, and then we'll return
-        //              the bytes of I/O done.
-        //
-        // Arguments:
-        //
-        //    AsyncResult - the AsyncResult Returned from BeginReceiveFrom call
-        //
-        // Return Value:
-        //
-        //    int - Number of bytes transferred
         public int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint)
         {
             ThrowIfDisposed();
@@ -2542,55 +2521,13 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, endPoint.AddressFamily, _addressFamily), nameof(endPoint));
             }
-            if (asyncResult == null)
+
+            SocketReceiveFromResult result = TaskToApm.End<SocketReceiveFromResult>(asyncResult);
+            if (!endPoint.Equals(result.RemoteEndPoint))
             {
-                throw new ArgumentNullException(nameof(asyncResult));
+                endPoint = result.RemoteEndPoint;
             }
-
-            OverlappedAsyncResult? castedAsyncResult = asyncResult as OverlappedAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
-            }
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndReceiveFrom"));
-            }
-
-            Internals.SocketAddress socketAddressOriginal = Serialize(ref endPoint);
-
-            int bytesTransferred = castedAsyncResult.InternalWaitForCompletionInt32Result();
-            castedAsyncResult.EndCalled = true;
-
-            // Update socket address size.
-            castedAsyncResult.SocketAddress!.InternalSize = castedAsyncResult.GetSocketAddressSize();
-
-            if (!socketAddressOriginal.Equals(castedAsyncResult.SocketAddress))
-            {
-                try
-                {
-                    endPoint = endPoint.Create(castedAsyncResult.SocketAddress);
-                }
-                catch
-                {
-                }
-            }
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"bytesTransferred:{bytesTransferred}");
-
-            // Throw an appropriate SocketException if the native call failed asynchronously.
-            SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
-            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
-            if (errorCode != SocketError.Success)
-            {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-            else if (SocketsTelemetry.Log.IsEnabled())
-            {
-                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
-                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
-            }
-            return bytesTransferred;
+            return result.ReceivedBytes;
         }
 
         // Routine Description:
