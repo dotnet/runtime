@@ -72,6 +72,7 @@ set __Priority=0
 set __PriorityArg=
 
 set __BuildNeedTargetArg=
+set __Mono=0
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
