@@ -8,11 +8,29 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
+using Mono.Linker.Tests.Cases.RequiresCapability.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
+	[SetupLinkerAction ("copyused", "lib")]
+	[SetupCompileBefore ("lib.dll", new[] { "Dependencies/RequiresUnreferencedCodeInCopyAssembly.cs" })]
+	[KeptAllTypesAndMembersInAssembly ("lib.dll")]
 	[SetupLinkAttributesFile ("RequiresUnreferencedCodeCapability.attributes.xml")]
 	[SkipKeptItemsValidation]
+	// Annotated members on a copied assembly should not produce any warnings
+	// unless directly called or referenced through reflection.
+	[LogDoesNotContain ("--UncalledMethod--")]
+	[LogDoesNotContain ("--getter UnusedProperty--")]
+	[LogDoesNotContain ("--setter UnusedProperty--")]
+	[LogDoesNotContain ("--UnusedBaseTypeCctor--")]
+	[LogDoesNotContain ("--UnusedVirtualMethod1--")]
+	[LogDoesNotContain ("--UnusedVirtualMethod2--")]
+	[LogDoesNotContain ("--IUnusedInterface.UnusedMethod--")]
+	[LogDoesNotContain ("--UnusedImplementationClass.UnusedMethod--")]
+	[ExpectedWarning ("IL2026", "--DynamicallyAccessedTypeWithRequiresUnreferencedCode.RequiresUnreferencedCode--")]
+	[ExpectedWarning ("IL2026", "--IDerivedInterface.MethodInDerivedInterface--")]
+	[ExpectedWarning ("IL2026", "--IBaseInterface.MethodInBaseInterface--")]
+	[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequiresUnreferencedCode--")]
 	public class RequiresUnreferencedCodeCapability
 	{
 		public static void Main ()
@@ -24,12 +42,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresSuppressesWarningsFromReflectionAnalysis ();
 			TestDuplicateRequiresAttribute ();
 			TestRequiresUnreferencedCodeOnlyThroughReflection ();
+			TestBaseTypeVirtualMethodRequiresUnreferencedCode ();
+			TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCode ();
+			TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCodeOnBase ();
+			TestStaticCctorRequiresUnreferencedCode ();
+			TestDynamicallyAccessedMembersWithRequiresUnreferencedCode (typeof (DynamicallyAccessedTypeWithRequiresUnreferencedCode));
+			TestDynamicallyAccessedMembersWithRequiresUnreferencedCode (typeof (TypeWhichOverridesMethod));
+			TestInterfaceMethodWithRequiresUnreferencedCode ();
+			TestCovariantReturnCallOnDerived ();
+			TestRequiresInMethodFromCopiedAssembly ();
+			TestRequiresThroughReflectionInMethodFromCopiedAssembly ();
+			TestRequiresInDynamicallyAccessedMethodFromCopiedAssembly (typeof (RequiresUnreferencedCodeInCopyAssembly.IDerivedInterface));
+			TestRequiresInDynamicDependency ();
 		}
 
-		[ExpectedWarning ("IL2026",
-			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.RequiresWithMessageOnly()' " +
-			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
-			"Message for --RequiresWithMessageOnly--.")]
+		[ExpectedWarning ("IL2026", "--RequiresWithMessageOnly--")]
 		static void TestRequiresWithMessageOnlyOnMethod ()
 		{
 			RequiresWithMessageOnly ();
@@ -40,11 +67,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[ExpectedWarning ("IL2026",
-			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.RequiresWithMessageAndUrl()' " +
-			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
-			"Message for --RequiresWithMessageAndUrl--. " +
-			"https://helpurl")]
+		[ExpectedWarning ("IL2026", "--RequiresWithMessageAndUrl--. https://helpurl")]
 		static void TestRequiresWithMessageAndUrlOnMethod ()
 		{
 			RequiresWithMessageAndUrl ();
@@ -55,11 +78,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[LogContains (
-			"warning IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TestRequiresOnConstructor(): " +
-			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.ConstructorRequires.ConstructorRequires()' " +
-			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
-			"Message for --ConstructorRequires--.")]
+		[ExpectedWarning ("IL2026", "--ConstructorRequires--")]
 		static void TestRequiresOnConstructor ()
 		{
 			new ConstructorRequires ();
@@ -73,14 +92,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 		}
 
-		[ExpectedWarning ("IL2026",
-			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.PropertyRequires.get' " +
-			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
-			"Message for --getter PropertyRequires--.")]
-		[ExpectedWarning ("IL2026",
-			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.PropertyRequires.set' " +
-			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
-			"Message for --setter PropertyRequires--.")]
+		[ExpectedWarning ("IL2026", "--getter PropertyRequires--")]
+		[ExpectedWarning ("IL2026", "--setter PropertyRequires--")]
 		static void TestRequiresOnPropertyGetterAndSetter ()
 		{
 			_ = PropertyRequires;
@@ -95,10 +108,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			set { }
 		}
 
-		[ExpectedWarning ("IL2026",
-			"Calling 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.RequiresAndCallsOtherRequiresMethods<TPublicMethods>()' " +
-			"which has `RequiresUnreferencedCodeAttribute` can break functionality when trimming application code. " +
-			"Message for --RequiresAndCallsOtherRequiresMethods--.")]
+		[ExpectedWarning ("IL2026", "--RequiresAndCallsOtherRequiresMethods--")]
 		static void TestRequiresSuppressesWarningsFromReflectionAnalysis ()
 		{
 			RequiresAndCallsOtherRequiresMethods<TestType> ();
@@ -163,14 +173,158 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		// issue: https://github.com/mono/linker/issues/1607
-		// Linker currently doesn't report a warning in this case
-		// [ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeOnlyThroughReflection--")]
+		[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeOnlyThroughReflection--")]
 		static void TestRequiresUnreferencedCodeOnlyThroughReflection ()
 		{
-			typeof (RequiresUnreferencedCodeAttribute)
+			typeof (RequiresUnreferencedCodeCapability)
 				.GetMethod (nameof (RequiresUnreferencedCodeOnlyThroughReflection), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
 				.Invoke (null, new object[0]);
+		}
+
+		class BaseType
+		{
+			[RequiresUnreferencedCode ("Message for --BaseType.VirtualMethodRequiresUnreferencedCode--")]
+			public virtual void VirtualMethodRequiresUnreferencedCode ()
+			{
+			}
+		}
+
+		class TypeWhichOverridesMethod : BaseType
+		{
+			[RequiresUnreferencedCode ("Message for --TypeWhichOverridesMethod.VirtualMethodRequiresUnreferencedCode--")]
+			public override void VirtualMethodRequiresUnreferencedCode ()
+			{
+			}
+		}
+
+		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequiresUnreferencedCode--")]
+		static void TestBaseTypeVirtualMethodRequiresUnreferencedCode ()
+		{
+			var tmp = new BaseType ();
+			tmp.VirtualMethodRequiresUnreferencedCode ();
+		}
+
+		[LogDoesNotContain ("TypeWhichOverridesMethod.VirtualMethodRequiresUnreferencedCode")]
+		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequiresUnreferencedCode--")]
+		static void TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCode ()
+		{
+			var tmp = new TypeWhichOverridesMethod ();
+			tmp.VirtualMethodRequiresUnreferencedCode ();
+		}
+
+		[LogDoesNotContain ("TypeWhichOverridesMethod.VirtualMethodRequiresUnreferencedCode")]
+		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequiresUnreferencedCode--")]
+		static void TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCodeOnBase ()
+		{
+			BaseType tmp = new TypeWhichOverridesMethod ();
+			tmp.VirtualMethodRequiresUnreferencedCode ();
+		}
+
+		class StaticCtor
+		{
+			[RequiresUnreferencedCode ("Message for --TestStaticCtor--")]
+			static StaticCtor ()
+			{
+			}
+		}
+
+		[ExpectedWarning ("IL2026", "--TestStaticCtor--")]
+		static void TestStaticCctorRequiresUnreferencedCode ()
+		{
+			_ = new StaticCtor ();
+		}
+
+		public class DynamicallyAccessedTypeWithRequiresUnreferencedCode
+		{
+			[RequiresUnreferencedCode ("Message for --DynamicallyAccessedTypeWithRequiresUnreferencedCode.RequiresUnreferencedCode--")]
+			public void RequiresUnreferencedCode ()
+			{
+			}
+		}
+
+		static void TestDynamicallyAccessedMembersWithRequiresUnreferencedCode (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+		{
+		}
+
+		[LogDoesNotContain ("ImplementationClass.RequiresUnreferencedCodeMethod")]
+		[ExpectedWarning ("IL2026", "--IRequiresUnreferencedCode.RequiresUnreferencedCodeMethod--")]
+		static void TestInterfaceMethodWithRequiresUnreferencedCode ()
+		{
+			IRequiresUnreferencedCode inst = new ImplementationClass ();
+			inst.RequiresUnreferencedCodeMethod ();
+		}
+
+		class BaseReturnType { }
+		class DerivedReturnType : BaseReturnType { }
+
+		interface IRequiresUnreferencedCode
+		{
+			[RequiresUnreferencedCode ("Message for --IRequiresUnreferencedCode.RequiresUnreferencedCodeMethod--")]
+			public void RequiresUnreferencedCodeMethod ();
+		}
+
+		class ImplementationClass : IRequiresUnreferencedCode
+		{
+			[RequiresUnreferencedCode ("Message for --ImplementationClass.RequiresUnreferencedCodeMethod--")]
+			public void RequiresUnreferencedCodeMethod ()
+			{
+			}
+		}
+
+		abstract class CovariantReturnBase
+		{
+			[RequiresUnreferencedCode ("Message for --CovariantReturnBase.GetRequiresUnreferencedCode--")]
+			public abstract BaseReturnType GetRequiresUnreferencedCode ();
+		}
+
+		class CovariantReturnDerived : CovariantReturnBase
+		{
+			[RequiresUnreferencedCode ("Message for --CovariantReturnDerived.GetRequiresUnreferencedCode--")]
+			public override DerivedReturnType GetRequiresUnreferencedCode ()
+			{
+				return null;
+			}
+		}
+
+		[LogDoesNotContain ("--CovariantReturnBase.GetRequiresUnreferencedCode--")]
+		[ExpectedWarning ("IL2026", "--CovariantReturnDerived.GetRequiresUnreferencedCode--")]
+		static void TestCovariantReturnCallOnDerived ()
+		{
+			var tmp = new CovariantReturnDerived ();
+			tmp.GetRequiresUnreferencedCode ();
+		}
+
+		[ExpectedWarning ("IL2026", "--Method--")]
+		static void TestRequiresInMethodFromCopiedAssembly ()
+		{
+			var tmp = new RequiresUnreferencedCodeInCopyAssembly ();
+			tmp.Method ();
+		}
+
+		[ExpectedWarning ("IL2026", "--MethodCalledThroughReflection--")]
+		static void TestRequiresThroughReflectionInMethodFromCopiedAssembly ()
+		{
+			typeof (RequiresUnreferencedCodeInCopyAssembly)
+				.GetMethod ("MethodCalledThroughReflection", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+				.Invoke (null, new object[0]);
+		}
+
+		static void TestRequiresInDynamicallyAccessedMethodFromCopiedAssembly (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type type)
+		{
+		}
+
+		[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeInDynamicDependency--")]
+		static void RequiresUnreferencedCodeInDynamicDependency ()
+		{
+		}
+
+		[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeInDynamicDependency--")]
+		[DynamicDependency ("RequiresUnreferencedCodeInDynamicDependency")]
+		static void TestRequiresInDynamicDependency ()
+		{
+			RequiresUnreferencedCodeInDynamicDependency ();
 		}
 	}
 }

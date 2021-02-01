@@ -19,8 +19,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			switch (m.Identifier.ValueText) {
 			case "MethodWithDuplicateRequiresAttribute":
+			case "TestCovariantReturnCallOnDerived":
+			case "TestRequiresUnreferencedCodeOnlyThroughReflection":
+			case "TestStaticCctorRequiresUnreferencedCode":
+			case "TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCode":
+			case "TestRequiresInMethodFromCopiedAssembly":
+			case "TestRequiresThroughReflectionInMethodFromCopiedAssembly":
 				return;
 			}
+
 			RunTest (m, attrs, UseMSBuildProperties (MSBuildPropertyOptionNames.PublishTrimmed));
 		}
 	}

@@ -9,7 +9,8 @@ namespace Mono.Linker.Tests.Cases.Warnings
 {
 	[SkipKeptItemsValidation]
 	[SetupLinkerArgument ("--warnaserror")]
-	[SetupLinkerArgument ("--nowarn", "IL2075")]
+	[SetupLinkerArgument ("--nowarn", "IL2026,IL2075")]
+	[LogDoesNotContain ("IL2026")]
 	[LogDoesNotContain ("IL2075")]
 	public class NoWarnRegardlessOfWarnAsError
 	{
