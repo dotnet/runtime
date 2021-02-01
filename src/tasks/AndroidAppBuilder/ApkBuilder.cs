@@ -102,6 +102,22 @@ public class ApkBuilder
             throw new ArgumentException($"{buildToolsFolder} was not found.");
         }
 
+        var assemblerFiles = new List<string>();
+        foreach (ITaskItem file in assemblies)
+        {
+            // use AOT files if available
+            var obj = file.GetMetadata("AssemblerFile");
+            if (!string.IsNullOrEmpty(obj))
+            {
+                assemblerFiles.Add(obj);
+            }
+        }
+
+        if (ForceAOT && !assemblerFiles.Any())
+        {
+            throw new InvalidOperationException("Need list of AOT files.");
+        }
+
         Directory.CreateDirectory(OutputDir);
         Directory.CreateDirectory(Path.Combine(OutputDir, "bin"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
@@ -157,11 +173,29 @@ public class ApkBuilder
 
         string monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
         if (!File.Exists(monoRuntimeLib))
+        {
             throw new ArgumentException($"libmonosgen-2.0.a was not found in {AppDir}");
+        }
+        else
+        {
+            monoRuntimeLib = $"    {monoRuntimeLib}{Environment.NewLine}";
+        }
+
+        string aotSources = "";
+        foreach (string asm in assemblerFiles)
+        {
+            // these libraries are linked via modules.c
+            var name = Path.GetFileNameWithoutExtension(asm);
+            aotSources += $"add_library({name} OBJECT {asm}){Environment.NewLine}";
+            monoRuntimeLib += $"    {name}{Environment.NewLine}";
+        }
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
             .Replace("%MonoInclude%", monoRuntimeHeaders)
-            .Replace("%NativeLibrariesToLink%", monoRuntimeLib);
+            .Replace("%NativeLibrariesToLink%", monoRuntimeLib)
+            .Replace("%AotSources%", aotSources)
+            .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c");
+
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
         File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), Utils.GetEmbeddedResource("monodroid.c"));

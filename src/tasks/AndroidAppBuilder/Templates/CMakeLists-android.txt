@@ -5,7 +5,10 @@ project(monodroid)
 add_library(
     monodroid
     SHARED
-    monodroid.c)
+    monodroid.c
+    %AotModulesSource%)
+
+%AotSources%
 
 include_directories("%MonoInclude%")
 
