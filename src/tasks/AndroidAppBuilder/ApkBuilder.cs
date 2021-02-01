@@ -204,7 +204,8 @@ public class ApkBuilder
 
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
-            .Replace("%ForceInterpreter%", ForceInterpreter.ToString().ToLower());
+            .Replace("%ForceInterpreter%", ForceInterpreter.ToString().ToLower())
+            .Replace("%ForceAOT%", ForceAOT.ToString().ToLower());
         File.WriteAllText(monoRunnerPath, monoRunner);
 
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),

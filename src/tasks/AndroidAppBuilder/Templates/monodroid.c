@@ -23,6 +23,7 @@
 static char *bundle_path;
 static char *executable;
 static bool force_interpreter;
+static bool force_AOT;
 
 #define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
@@ -147,6 +148,9 @@ log_callback (const char *log_domain, const char *log_level, const char *message
     }
 }
 
+void 
+register_aot_modules (void);
+
 int
 mono_droid_runtime_init (void)
 {
@@ -187,6 +191,9 @@ mono_droid_runtime_init (void)
     if (force_interpreter) {
         LOG_INFO("Interp Enabled");
         mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
+    } else if (force_AOT) {
+        register_aot_modules();
+        mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
     }
 
     mono_jit_init_version ("dotnet.android", "mobile");
@@ -224,7 +231,7 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jboolean j_forceInterpreter)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jboolean j_forceInterpreter, jboolean j_forceAOT)
 {
     char file_dir[2048];
     char cache_dir[2048];
@@ -238,6 +245,7 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     bundle_path = file_dir;
     executable = entryPointLibName;
     force_interpreter = (bool)j_forceInterpreter;
+    force_AOT = (bool)j_forceAOT;
 
     setenv ("HOME", bundle_path, true);
     setenv ("TMPDIR", cache_dir, true);
