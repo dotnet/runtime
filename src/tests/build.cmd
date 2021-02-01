@@ -474,7 +474,7 @@ set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-if %%__Mono%%==1 (
+if %__Mono%==1 (
   set RuntimeFlavor="mono"
 ) else (
   set RuntimeFlavor="coreclr"
