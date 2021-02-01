@@ -459,8 +459,8 @@ namespace System.Collections.Immutable
         /// <returns><c>true</c> if the key and comparison value were present in the dictionary and the update was made; <c>false</c> otherwise.</returns>
         public static bool TryUpdate<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, TValue newValue, TValue comparisonValue) where TKey : notnull
         {
+            var valueComparer = EqualityComparer<TValue>.Default;
             var priorCollection = Volatile.Read(ref location);
-            var valueComparer = priorCollection.ValueComparer;
             bool successful;
             do
             {
