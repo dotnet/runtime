@@ -38,7 +38,7 @@ namespace System.Numerics
         /// <param name="condition">The integral mask vector used to drive selection.</param>
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The new vector with elements selected based on the mask.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -50,7 +50,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector of a specified type whose elements signal whether the elements in two specified vectors of the same type are equal.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The resulting vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -106,7 +106,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether each pair of elements in the given vectors is equal.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns><see langword="true" /> if all elements in <paramref name="left" /> and <paramref name="right" /> are equal; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EqualsAll<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -117,7 +117,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether any single pair of elements in the given vectors is equal.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns><see langword="true" /> if any element pair in <paramref name="left" /> and <paramref name="right" /> is equal; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EqualsAny<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -128,7 +128,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector of a specified type whose elements signal whether the elements in one vector are less than their corresponding elements in the second vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The resulting vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -184,7 +184,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether all of the elements in the first vector are less than their corresponding elements in the second vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns><see langword="true" /> if all of the elements in <paramref name="left" /> are less than the corresponding elements in <paramref name="right" />; otherwise,  <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanAll<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -196,7 +196,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether any element in the first vector is less than the corresponding element in the second vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns><see langword="true" /> if any element in <paramref name="left" /> is less than the corresponding element in <paramref name="right" />; otherwise,  <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanAny<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -208,7 +208,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose elements signal whether the elements in one vector are less than or equal to their corresponding elements in the second vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The resulting vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -264,7 +264,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether all elements in the first vector are less than or equal to their corresponding elements in the second vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns><see langword="true" /> if all of the elements in <paramref name="left" /> are less than or equal to the corresponding elements in <paramref name="right" />; otherwise,  <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanOrEqualAll<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -276,7 +276,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether any element in the first vector is less than or equal to the corresponding element in the second vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns><see langword="true" /> if any element in <paramref name="left" /> is less than or equal to the corresponding element in <paramref name="right" />; otherwise,  <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanOrEqualAny<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -288,7 +288,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose elements signal whether the elements in one vector of a specified type are greater than their corresponding elements in the second vector of the same time.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The resulting vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -344,7 +344,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether all elements in the first vector are greater than the corresponding elements in the second vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns><see langword="true" /> if all elements in <paramref name="left" /> are greater than the corresponding elements in <paramref name="right" />; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanAll<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -356,7 +356,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether any element in the first vector is greater than the corresponding element in the second vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns><see langword="true" /> if any element in <paramref name="left" /> is greater than the corresponding element in <paramref name="right" />; otherwise,  <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanAny<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -368,7 +368,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose elements signal whether the elements in one vector of a specified type are greater than or equal to their corresponding elements in the second vector of the same type.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The resulting vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -424,7 +424,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether all elements in the first vector are greater than or equal to all the corresponding elements in the second vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns><see langword="true" /> if all elements in <paramref name="left" /> are greater than or equal to the corresponding elements in <paramref name="right" />; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanOrEqualAll<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -436,7 +436,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether any element in the first vector is greater than or equal to the corresponding element in the second vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns><see langword="true" /> if any element in <paramref name="left" /> is greater than or equal to the corresponding element in <paramref name="right" />; otherwise,  <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanOrEqualAny<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -456,7 +456,7 @@ namespace System.Numerics
 
         /// <summary>Returns a new vector whose elements are the absolute values of the given vector's elements.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The absolute value vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -468,7 +468,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose elements are the minimum of each pair of elements in the two given vectors.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The minimum vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -480,7 +480,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose elements are the maximum of each pair of elements in the two given vectors.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The maximum vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -492,7 +492,7 @@ namespace System.Numerics
         /// <summary>Returns the dot product of two vectors.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The dot product.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -503,7 +503,7 @@ namespace System.Numerics
 
         /// <summary>Returns a new vector whose elements are the square roots of a specified vector's elements.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The square root vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -563,7 +563,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose values are the sum of each pair of elements from two given vectors.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The summed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Add<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -574,7 +574,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose values are the difference between the elements in the second vector and their corresponding elements in the first vector.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The difference vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Subtract<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -585,7 +585,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose values are the product of each pair of elements in two specified vectors.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The element-wise product vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Multiply<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -596,7 +596,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose values are the values of a specified vector each multiplied by a scalar value.</summary>
         /// <param name="left">The vector.</param>
         /// <param name="right">The scalar value.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The scaled vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Multiply<T>(Vector<T> left, T right) where T : struct
@@ -607,7 +607,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose values are a scalar value multiplied by each of the values of a specified vector.</summary>
         /// <param name="left">The scalar value.</param>
         /// <param name="right">The vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The scaled vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Multiply<T>(T left, Vector<T> right) where T : struct
@@ -618,7 +618,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector whose values are the result of dividing the first vector's elements by the corresponding elements in the second vector.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The divided vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Divide<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -628,7 +628,7 @@ namespace System.Numerics
 
         /// <summary>Returns a new vector whose elements are the negation of the corresponding element in the specified vector.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The negated vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Negate<T>(Vector<T> value) where T : struct
@@ -639,7 +639,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector by performing a bitwise <see langword="And" /> operation on each pair of elements in two vectors.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The resulting vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> BitwiseAnd<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -650,7 +650,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector by performing a bitwise <see langword="Or" /> operation on each pair of elements in two vectors.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The resulting vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> BitwiseOr<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -660,7 +660,7 @@ namespace System.Numerics
 
         /// <summary>Returns a new vector whose elements are obtained by taking the one's complement of a specified vector's elements.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The resulting vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> OnesComplement<T>(Vector<T> value) where T : struct
@@ -671,7 +671,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector by performing a bitwise exclusive Or (<see langword="XOr" />) operation on each pair of elements in two vectors.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The resulting vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Xor<T>(Vector<T> left, Vector<T> right) where T : struct
@@ -682,7 +682,7 @@ namespace System.Numerics
         /// <summary>Returns a new vector by performing a bitwise And Not operation on each pair of corresponding elements in two vectors.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The resulting vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -693,7 +693,7 @@ namespace System.Numerics
 
         /// <summary>Reinterprets the bits of a specified vector into those of a vector of unsigned bytes.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<byte> AsVectorByte<T>(Vector<T> value) where T : struct
@@ -703,7 +703,7 @@ namespace System.Numerics
 
         /// <summary>Reinterprets the bits of a specified vector into those of a vector of signed bytes.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -714,7 +714,7 @@ namespace System.Numerics
 
         /// <summary>Reinterprets the bits of a specified vector into those of a vector of unsigned 16-bit integers.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -725,7 +725,7 @@ namespace System.Numerics
 
         /// <summary>Reinterprets the bits of a specified vector into those of a vector of 16-bit integers.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<short> AsVectorInt16<T>(Vector<T> value) where T : struct
@@ -735,7 +735,7 @@ namespace System.Numerics
 
         /// <summary>Reinterprets the bits of a specified vector into those of a vector of unsigned integers.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -746,7 +746,7 @@ namespace System.Numerics
 
         /// <summary>Reinterprets the bits of a specified vector into those of a vector of integers.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> AsVectorInt32<T>(Vector<T> value) where T : struct
@@ -756,7 +756,7 @@ namespace System.Numerics
 
         /// <summary>Reinterprets the bits of a specified vector into those of a vector of unsigned long integers.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The reinterpreted vector.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -767,7 +767,7 @@ namespace System.Numerics
 
         /// <summary>Reinterprets the bits of a specified vector into those of a vector of long integers.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> AsVectorInt64<T>(Vector<T> value) where T : struct
@@ -777,7 +777,7 @@ namespace System.Numerics
 
         /// <summary>Reinterprets the bits of a specified vector into those of a single-precision floating-point vector.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> AsVectorSingle<T>(Vector<T> value) where T : struct
@@ -787,7 +787,7 @@ namespace System.Numerics
 
         /// <summary>Reinterprets the bits of a specified vector into those of a double-precision floating-point vector.</summary>
         /// <param name="value">The source vector.</param>
-        /// <typeparam name="T">The vector type. <c>T</c> can be any primitive numeric type.</typeparam>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
         /// <returns>The reinterpreted vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> AsVectorDouble<T>(Vector<T> value) where T : struct
