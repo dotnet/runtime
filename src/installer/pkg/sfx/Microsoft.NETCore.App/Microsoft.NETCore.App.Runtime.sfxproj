@@ -122,7 +122,10 @@
   </ItemGroup>
 
   <!-- VS uses this file to show the target framework in the drop down. -->
-  <Target Name="CreateDotVersionFile" DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager" BeforeTargets="GetFilesToPublish">
+  <Target Name="CreateDotVersionFile"
+          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager"
+          BeforeTargets="GetFilesToPublish"
+          Condition="'$(DisableSourceLink)' != 'true'">
     <ItemGroup>
       <_VersionFile Include="$(IntermediateOutputPath).version" TargetPath="shared/$(SharedFrameworkName)/$(Version)/" />
     </ItemGroup>
