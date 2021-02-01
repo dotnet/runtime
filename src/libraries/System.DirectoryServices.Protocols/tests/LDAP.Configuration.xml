@@ -75,10 +75,5 @@ Note:
 
     </CommentThatAllowsDoubleHyphens>
 
-    <ServerName>localhost</ServerName>
-    <SearchDN>DC=example,DC=com</SearchDN>
-    <Port>1389</Port>
-    <User>cn=admin,dc=example,dc=com</User>
-    <Password>password</Password>
-    <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+    <!-- Put your configuration XML here -->
 </Configuration>

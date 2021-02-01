@@ -95,7 +95,14 @@ namespace System.DirectoryServices.Tests
                 {
                     XElement child = config.Element("ServerName");
                     if (child != null)
+                    {
                         serverName = child.Value;
+                    }
+                    else
+                    {
+                        // No configuration in the XML - presumably they didn't set up test servers
+                        return null;
+                    }
 
                     child = config.Element("SearchDN");
                     if (child != null)
