@@ -10,12 +10,6 @@ internal static partial class Interop
 {
     internal static partial class libobjc
     {
-#if TARGET_ARM64
-        private const string MessageSendStructReturnEntryPoint = "objc_msgSend";
-#else
-        private const string MessageSendStructReturnEntryPoint = "objc_msgSend_stret";
-#endif
-
         [StructLayout(LayoutKind.Sequential)]
         private struct NSOperatingSystemVersion
         {
@@ -41,8 +35,11 @@ internal static partial class Interop
 
             if (processInfo != IntPtr.Zero)
             {
-                NSOperatingSystemVersion osVersion = get_operatingSystemVersion(processInfo, sel_getUid("operatingSystemVersion"));
-
+#if TARGET_ARM64
+                NSOperatingSystemVersion osVersion = osversion_objc_msgSend(processInfo, sel_getUid("operatingSystemVersion"));
+#else
+                objc_msgSend_stret_rosversion(out NSOperatingSystemVersion osVersion, processInfo, sel_getUid("operatingSystemVersion"));
+#endif
                 checked
                 {
                     major = (int)osVersion.majorVersion;
@@ -63,7 +60,10 @@ internal static partial class Interop
             return new Version(major, minor, patch);
         }
 
-        [DllImport(Libraries.libobjc, EntryPoint = MessageSendStructReturnEntryPoint)]
-        private static extern NSOperatingSystemVersion get_operatingSystemVersion(IntPtr basePtr, IntPtr selector);
+        [DllImport(Libraries.libobjc, EntryPoint = "obj_msgSend")]
+        private static extern NSOperatingSystemVersion osversion_objc_msgSend(IntPtr basePtr, IntPtr selector);
+
+        [DllImport(Libraries.libobjc, EntryPoint = "obj_msgSend_stret")]
+        private static extern void objc_msgSend_stret_rosversion(out NSOperatingSystemVersion osVersion, IntPtr basePtr, IntPtr selector);
     }
 }

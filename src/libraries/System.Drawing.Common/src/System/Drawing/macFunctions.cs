@@ -71,11 +71,10 @@ namespace System.Drawing
         {
             IntPtr graphicsContext = intptr_objc_msgSend(objc_getClass("NSGraphicsContext"), sel_registerName("currentContext"));
             IntPtr ctx = intptr_objc_msgSend(graphicsContext, sel_registerName("graphicsPort"));
-            Rect bounds = default;
 
             CGContextSaveGState(ctx);
 
-            void_objc_msgSend_stret_rrect(ref bounds, handle, sel_registerName("bounds"));
+            void_objc_msgSend_stret_rrect(out Rect bounds, handle, sel_registerName("bounds"));
 
             var isFlipped = bool_objc_msgSend(handle, sel_registerName("isFlipped"));
             if (isFlipped)
@@ -214,7 +213,7 @@ namespace System.Drawing
         [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
         public static extern IntPtr intptr_objc_msgSend(IntPtr basePtr, IntPtr selector);
         [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend_stret")]
-        public static extern void void_objc_msgSend_stret_rrect(ref Rect arect, IntPtr basePtr, IntPtr selector);
+        public static extern void void_objc_msgSend_stret_rrect(out Rect arect, IntPtr basePtr, IntPtr selector);
         [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
         [return:MarshalAs(UnmanagedType.U1)]
         public static extern bool bool_objc_msgSend(IntPtr handle, IntPtr selector);
