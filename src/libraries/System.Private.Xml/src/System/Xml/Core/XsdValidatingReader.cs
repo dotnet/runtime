@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -345,7 +344,7 @@ namespace System.Xml
         }
 
         // Gets the base URI of the current node.
-        public override string? BaseURI
+        public override string BaseURI
         {
             get
             {
@@ -728,7 +727,7 @@ namespace System.Xml
             }
         }
 
-        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             if (!CanReadContentAs(this.NodeType))
             {
@@ -1512,7 +1511,6 @@ namespace System.Xml
         // Skips to the end tag of the current element.
         public override void Skip()
         {
-            int startDepth = Depth;
             switch (NodeType)
             {
                 case XmlNodeType.Element:

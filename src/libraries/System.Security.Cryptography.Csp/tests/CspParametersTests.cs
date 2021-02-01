@@ -7,6 +7,8 @@ namespace System.Security.Cryptography.Csp.Tests
 {
     public static class CspParametersTests
     {
+        public static bool ManualTestsEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MANUAL_TESTS"));
+
         const int PROV_RSA_FULL = 1;
         const int PROV_RSA_AES = 24;
 
@@ -45,7 +47,7 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        [Theory(Skip = "Manual test - requires Smart Card - read instructions")]
+        [ConditionalTheory(nameof(ManualTestsEnabled))] // requires Smart Card - read instructions
         [InlineData(true)]
         [InlineData(false)]
         public static void KeyPassword_SmartCard_Manual_Test(bool correctPassword)

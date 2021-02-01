@@ -7,7 +7,7 @@ namespace System.Xml.Serialization
 {
     internal class XmlSerializationPrimitiveWriter : System.Xml.Serialization.XmlSerializationWriter
     {
-        internal void Write_string(object o)
+        internal void Write_string(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -19,7 +19,7 @@ namespace System.Xml.Serialization
             WriteNullableStringLiteral(@"string", @"", ((string)o));
         }
 
-        internal void Write_int(object o)
+        internal void Write_int(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -30,7 +30,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"int", @"", System.Xml.XmlConvert.ToString((int)((int)o)));
         }
 
-        internal void Write_boolean(object o)
+        internal void Write_boolean(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -41,7 +41,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"boolean", @"", System.Xml.XmlConvert.ToString((bool)((bool)o)));
         }
 
-        internal void Write_short(object o)
+        internal void Write_short(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -52,7 +52,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"short", @"", System.Xml.XmlConvert.ToString((short)((short)o)));
         }
 
-        internal void Write_long(object o)
+        internal void Write_long(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -63,7 +63,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"long", @"", System.Xml.XmlConvert.ToString((long)((long)o)));
         }
 
-        internal void Write_float(object o)
+        internal void Write_float(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -74,7 +74,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"float", @"", System.Xml.XmlConvert.ToString((float)((float)o)));
         }
 
-        internal void Write_double(object o)
+        internal void Write_double(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -85,7 +85,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"double", @"", System.Xml.XmlConvert.ToString((double)((double)o)));
         }
 
-        internal void Write_decimal(object o)
+        internal void Write_decimal(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -98,7 +98,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"decimal", @"", System.Xml.XmlConvert.ToString(d));
         }
 
-        internal void Write_dateTime(object o)
+        internal void Write_dateTime(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -109,7 +109,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"dateTime", @"", FromDateTime(((System.DateTime)o)));
         }
 
-        internal void Write_unsignedByte(object o)
+        internal void Write_unsignedByte(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -120,7 +120,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"unsignedByte", @"", System.Xml.XmlConvert.ToString((byte)((byte)o)));
         }
 
-        internal void Write_byte(object o)
+        internal void Write_byte(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -131,7 +131,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"byte", @"", System.Xml.XmlConvert.ToString((sbyte)((sbyte)o)));
         }
 
-        internal void Write_unsignedShort(object o)
+        internal void Write_unsignedShort(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -142,7 +142,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"unsignedShort", @"", System.Xml.XmlConvert.ToString((ushort)((ushort)o)));
         }
 
-        internal void Write_unsignedInt(object o)
+        internal void Write_unsignedInt(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -153,7 +153,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"unsignedInt", @"", System.Xml.XmlConvert.ToString((uint)((uint)o)));
         }
 
-        internal void Write_unsignedLong(object o)
+        internal void Write_unsignedLong(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -164,7 +164,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"unsignedLong", @"", System.Xml.XmlConvert.ToString((ulong)((ulong)o)));
         }
 
-        internal void Write_base64Binary(object o)
+        internal void Write_base64Binary(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -176,7 +176,7 @@ namespace System.Xml.Serialization
             WriteNullableStringLiteralRaw(@"base64Binary", @"", FromByteArrayBase64(((byte[])o)));
         }
 
-        internal void Write_guid(object o)
+        internal void Write_guid(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -189,7 +189,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"guid", @"", System.Xml.XmlConvert.ToString(guid));
         }
 
-        internal void Write_TimeSpan(object o)
+        internal void Write_TimeSpan(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -201,7 +201,7 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"TimeSpan", @"", System.Xml.XmlConvert.ToString(timeSpan));
         }
 
-        internal void Write_char(object o)
+        internal void Write_char(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -212,7 +212,7 @@ namespace System.Xml.Serialization
             WriteElementString(@"char", @"", FromChar(((char)o)));
         }
 
-        internal void Write_QName(object o)
+        internal void Write_QName(object? o)
         {
             WriteStartDocument();
             if (o == null)
@@ -231,9 +231,9 @@ namespace System.Xml.Serialization
 
     internal class XmlSerializationPrimitiveReader : System.Xml.Serialization.XmlSerializationReader
     {
-        internal object Read_string()
+        internal object? Read_string()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -257,12 +257,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_int()
+        internal object? Read_int()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -281,12 +281,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_boolean()
+        internal object? Read_boolean()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -305,12 +305,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_short()
+        internal object? Read_short()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -329,12 +329,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_long()
+        internal object? Read_long()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -353,12 +353,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_float()
+        internal object? Read_float()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -377,12 +377,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_double()
+        internal object? Read_double()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -401,12 +401,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_decimal()
+        internal object? Read_decimal()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -425,12 +425,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_dateTime()
+        internal object? Read_dateTime()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -449,12 +449,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_unsignedByte()
+        internal object? Read_unsignedByte()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -473,12 +473,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_byte()
+        internal object? Read_byte()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -497,12 +497,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_unsignedShort()
+        internal object? Read_unsignedShort()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -521,12 +521,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_unsignedInt()
+        internal object? Read_unsignedInt()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -545,12 +545,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_unsignedLong()
+        internal object? Read_unsignedLong()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -569,12 +569,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_base64Binary()
+        internal object? Read_base64Binary()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -598,12 +598,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_guid()
+        internal object? Read_guid()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -622,12 +622,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_TimeSpan()
+        internal object? Read_TimeSpan()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -652,12 +652,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_char()
+        internal object? Read_char()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -676,12 +676,12 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
-        internal object Read_QName()
+        internal object? Read_QName()
         {
-            object o = null;
+            object? o = null;
             Reader.MoveToContent();
             if (Reader.NodeType == System.Xml.XmlNodeType.Element)
             {
@@ -705,33 +705,33 @@ namespace System.Xml.Serialization
             {
                 UnknownNode(null);
             }
-            return (object)o;
+            return (object?)o;
         }
 
         protected override void InitCallbacks()
         {
         }
 
-        private string _id4_boolean;
-        private string _id14_unsignedInt;
-        private string _id15_unsignedLong;
-        private string _id7_float;
-        private string _id10_dateTime;
-        private string _id6_long;
-        private string _id9_decimal;
-        private string _id8_double;
-        private string _id17_guid;
-        private string _id19_TimeSpan;
-        private string _id2_Item;
-        private string _id13_unsignedShort;
-        private string _id18_char;
-        private string _id3_int;
-        private string _id12_byte;
-        private string _id16_base64Binary;
-        private string _id11_unsignedByte;
-        private string _id5_short;
-        private string _id1_string;
-        private string _id1_QName;
+        private string _id4_boolean = null!;
+        private string _id14_unsignedInt = null!;
+        private string _id15_unsignedLong = null!;
+        private string _id7_float = null!;
+        private string _id10_dateTime = null!;
+        private string _id6_long = null!;
+        private string _id9_decimal = null!;
+        private string _id8_double = null!;
+        private string _id17_guid = null!;
+        private string _id19_TimeSpan = null!;
+        private string _id2_Item = null!;
+        private string _id13_unsignedShort = null!;
+        private string _id18_char = null!;
+        private string _id3_int = null!;
+        private string _id12_byte = null!;
+        private string _id16_base64Binary = null!;
+        private string _id11_unsignedByte = null!;
+        private string _id5_short = null!;
+        private string _id1_string = null!;
+        private string _id1_QName = null!;
 
         protected override void InitIDs()
         {

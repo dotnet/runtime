@@ -123,7 +123,6 @@ namespace System.Xml.Tests
             res.CalledGetEntity += new XmlTestResolverEventHandler(holder.CallBackGetEntity);
 
             XmlNamespaceManager manager = new XmlNamespaceManager(new NameTable());
-            XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaValidator val = new XmlSchemaValidator(new NameTable(),
                                                             new XmlSchemaSet(),
                                                             manager,
@@ -159,7 +158,6 @@ namespace System.Xml.Tests
             res.CalledGetEntity += new XmlTestResolverEventHandler(holder.CallBackGetEntity);
 
             XmlNamespaceManager manager = new XmlNamespaceManager(new NameTable());
-            XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaValidator val = new XmlSchemaValidator(new NameTable(),
                                                             new XmlSchemaSet(),
                                                             manager,

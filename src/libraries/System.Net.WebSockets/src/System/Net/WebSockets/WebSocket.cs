@@ -5,6 +5,7 @@ using System.Buffers;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -133,6 +134,7 @@ namespace System.Net.WebSockets
         /// <param name="subProtocol">The agreed upon sub-protocol that was used when creating the connection.</param>
         /// <param name="keepAliveInterval">The keep-alive interval to use, or <see cref="Timeout.InfiniteTimeSpan"/> to disable keep-alives.</param>
         /// <returns>The created <see cref="WebSocket"/>.</returns>
+        [UnsupportedOSPlatform("browser")]
         public static WebSocket CreateFromStream(Stream stream, bool isServer, string? subProtocol, TimeSpan keepAliveInterval)
         {
             if (stream == null)
@@ -172,6 +174,7 @@ namespace System.Net.WebSockets
             throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static WebSocket CreateClientWebSocket(Stream innerStream,
             string? subProtocol, int receiveBufferSize, int sendBufferSize,

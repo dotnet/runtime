@@ -367,7 +367,7 @@ namespace System.Data.Tests
             Assert.Equal("</xs:schema>", TextString);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadWriteXml()
         {
             var ds = new DataSet();
@@ -424,7 +424,7 @@ namespace System.Data.Tests
             Assert.Equal("</Root>", TextString);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadWriteXmlDiffGram()
         {
             var ds = new DataSet();
@@ -507,7 +507,7 @@ namespace System.Data.Tests
             Assert.Equal("</diffgr:diffgram>", TextString);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void WriteXmlSchema()
         {
             using (new ThreadCultureChange("fi-FI"))
@@ -989,7 +989,7 @@ namespace System.Data.Tests
             Assert.Equal(sw.ToString().Replace("\r\n", "\n"), xml.Replace("\r\n", "\n"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void WriteXmlToStream()
         {
             string xml = "<set><table1><col1>sample text</col1><col2/></table1><table2 attr='value'><col3>sample text 2</col3></table2></set>";
@@ -1028,7 +1028,7 @@ namespace System.Data.Tests
             Assert.Equal(sw.ToString().Replace("\r\n", "\n"), xml.Replace("\r\n", "\n"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadWriteXml2()
         {
             string xml = "<FullTextResponse><Domains><AvailResponse info='y' name='novell-ximian-group' /><AvailResponse info='n' name='ximian' /></Domains></FullTextResponse>";
@@ -1046,7 +1046,7 @@ namespace System.Data.Tests
             Assert.Equal(xml, sw.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void ReadWriteXml3()
         {
             string input = @"<FullTextResponse>
@@ -1559,7 +1559,7 @@ namespace System.Data.Tests
             Assert.Equal(result.Replace("\r\n", "\n"), xml.Replace("\r\n", "\n"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void WriteXmlModeSchema1()
         {
             // Keeping the brackets as the test otherwise starts to fail.

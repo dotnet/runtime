@@ -10,18 +10,18 @@ namespace System.Runtime.Intrinsics.X86
     /// </summary>
     [Intrinsic]
     [CLSCompliant(false)]
-    public abstract class Lzcnt // : X86Base
+    public abstract class Lzcnt : X86Base
     {
         internal Lzcnt() { }
 
-        public static bool IsSupported { get => IsSupported; }
+        public static new bool IsSupported { get => IsSupported; }
 
         [Intrinsic]
-        public abstract class X64 // : X86Base.X64
+        public new abstract class X64 : X86Base.X64
         {
             internal X64() { }
 
-            public static bool IsSupported { get => IsSupported; }
+            public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>
             /// unsigned __int64 _lzcnt_u64 (unsigned __int64 a)

@@ -45,6 +45,12 @@
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
+#if __has_attribute(fallthrough)
+#define FALLTHROUGH __attribute__((fallthrough))
+#else
+#define FALLTHROUGH
+#endif
+
 /**
  * Abstraction helper method to safely copy strings using strlcpy or strcpy_s
  * or a different safe copy method, depending on the current platform.

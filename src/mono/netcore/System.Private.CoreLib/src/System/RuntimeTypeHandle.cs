@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Authors:
 //   Miguel de Icaza (miguel@ximian.com)
@@ -278,7 +279,7 @@ namespace System
             //  return false;
             // return true;
 
-            // It's like a workaround mentioned in https://github.com/dotnet/corefx/issues/17345
+            // It's like a workaround mentioned in https://github.com/dotnet/runtime/issues/20711
             return !type.HasElementType && !type.IsConstructedGenericType && !type.IsGenericParameter;
         }
 

@@ -176,7 +176,7 @@ namespace System.IO.Pipes
             return WaitForConnectionAsync(CancellationToken.None);
         }
 
-        public System.IAsyncResult BeginWaitForConnection(AsyncCallback callback, object state) =>
+        public System.IAsyncResult BeginWaitForConnection(AsyncCallback? callback, object? state) =>
             TaskToApm.Begin(WaitForConnectionAsync(), callback, state);
 
         public void EndWaitForConnection(IAsyncResult asyncResult) =>

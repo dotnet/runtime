@@ -314,8 +314,9 @@ enum {
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
 #ifdef TARGET_ARM64
-// FIXME: enable for Arm64
-#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
+// SIMD is only supported on arm64 when using the LLVM backend. When not using
+// the LLVM backend, treat SIMD datatypes as regular value types.
+#define MONO_CLASS_IS_SIMD(cfg, klass) ( ((cfg)->opt & MONO_OPT_SIMD) && ( COMPILE_LLVM (cfg) ) && m_class_is_simd_type (klass) )
 #else
 #define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass))
 #endif
@@ -1349,6 +1350,8 @@ typedef struct {
 
 	MonoGSharedVtMethodInfo *gsharedvt_info;
 
+	MonoMemoryManager *mem_manager;
+
 	/* Points to the gsharedvt locals area at runtime */
 	MonoInst *gsharedvt_locals_var;
 
@@ -1455,6 +1458,7 @@ typedef struct {
 	guint            self_init : 1;
 	guint            domainvar_inited : 1;
 	guint            code_exec_only : 1;
+	guint            interp_entry_only : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -2261,7 +2265,7 @@ void              mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *s
 void              mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass);
 void              mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype);
 int               mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index);
-MonoInst*         mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck);
+MonoInst*         mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck, gboolean bounded);
 MonoInst*         mini_emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgctxInfoType rgctx_type);
 MonoInst*         mini_emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 											  MonoMethod *cmethod, MonoRgctxInfoType rgctx_type);
@@ -2475,8 +2479,8 @@ void mono_arch_create_vars   (MonoCompile *cfg);
 void     mono_arch_save_unwind_info             (MonoCompile *cfg);
 void     mono_arch_register_lowlevel_calls      (void);
 gpointer mono_arch_get_unbox_trampoline         (MonoMethod *m, gpointer addr);
-gpointer mono_arch_get_static_rgctx_trampoline  (gpointer arg, gpointer addr);
-gpointer mono_arch_get_ftnptr_arg_trampoline  (gpointer arg, gpointer addr);
+gpointer mono_arch_get_static_rgctx_trampoline  (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr);
+gpointer mono_arch_get_ftnptr_arg_trampoline    (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr);
 gpointer  mono_arch_get_llvm_imt_trampoline     (MonoDomain *domain, MonoMethod *method, int vt_offset);
 gpointer mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr);
 void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *code, guint8 *addr);
@@ -2486,7 +2490,7 @@ int      mono_arch_get_this_arg_reg             (guint8 *code);
 gpointer mono_arch_get_this_arg_from_call       (host_mgreg_t *regs, guint8 *code);
 gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gboolean has_target);
 gpointer mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg);
-gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
+gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoMemoryManager *mem_manager, guint32 *code_len);
 MonoMethod* mono_arch_find_imt_method           (host_mgreg_t *regs, guint8 *code);
 MonoVTable* mono_arch_find_static_call_vtable   (host_mgreg_t *regs, guint8 *code);
 gpointer    mono_arch_build_imt_trampoline      (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
@@ -2498,9 +2502,14 @@ gpointer mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info);
 gpointer mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+// Moves data (arguments and return vt address) from the InterpFrame to the CallContext so a pinvoke call can be made.
 void mono_arch_set_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
-void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
-void mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+// Moves the return value from the InterpFrame to the ccontext, or to the retp (if native code passed the retvt address)
+void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer retp);
+// When entering interp from native, this moves the arguments from the ccontext to the InterpFrame. If we have a return
+// vt address, we return it. This ret vt address needs to be passed to mono_arch_set_native_call_context_ret.
+gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+// After the pinvoke call is done, this moves return value from the ccontext to the InterpFrame.
 void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
 #endif
 
@@ -2520,7 +2529,7 @@ typedef gboolean (*MonoJitStackWalk)            (StackFrameInfo *frame, MonoCont
 
 void     mono_exceptions_init                   (void);
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj);
-void     mono_handle_native_crash               (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, void *context);
+void     mono_handle_native_crash               (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo);
 MONO_API void     mono_print_thread_dump                 (void *sigctx);
 MONO_API void     mono_print_thread_dump_from_ctx        (MonoContext *ctx);
 void     mono_walk_stack_with_ctx               (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
@@ -2719,6 +2728,9 @@ mono_is_partially_sharable_inst (MonoGenericInst *inst);
 gboolean
 mini_is_gsharedvt_gparam (MonoType *t);
 
+gboolean
+mini_is_gsharedvt_inst (MonoGenericInst *inst);
+
 MonoGenericContext* mini_method_get_context (MonoMethod *method);
 
 int mono_method_check_context_used (MonoMethod *method);
@@ -2860,6 +2872,8 @@ typedef enum {
 #ifdef TARGET_ARM64
 	MONO_CPU_ARM64_BASE   = 1 << 1,
 	MONO_CPU_ARM64_CRC    = 1 << 2,
+	MONO_CPU_ARM64_CRYPTO = 1 << 3,
+	MONO_CPU_ARM64_ADVSIMD = 1 << 4,
 #endif
 } MonoCPUFeatures;
 
@@ -2887,6 +2901,12 @@ enum {
 
 /* SIMD operations */
 typedef enum {
+	SIMD_OP_LLVM_FABS,
+	SIMD_OP_LLVM_DABS,
+	SIMD_OP_LLVM_I8ABS,
+	SIMD_OP_LLVM_I16ABS,
+	SIMD_OP_LLVM_I32ABS,
+	SIMD_OP_LLVM_I64ABS,
 	SIMD_OP_SSE_CVTSS2SI,
 	SIMD_OP_SSE_CVTTSS2SI,
 	SIMD_OP_SSE_CVTSS2SI64,
@@ -2975,7 +2995,17 @@ typedef enum {
 	SIMD_OP_ARM64_CRC32CW,
 	SIMD_OP_ARM64_CRC32CX,
 	SIMD_OP_ARM64_RBIT32,
-	SIMD_OP_ARM64_RBIT64
+	SIMD_OP_ARM64_RBIT64,
+	SIMD_OP_ARM64_SHA1C,
+	SIMD_OP_ARM64_SHA1H,
+	SIMD_OP_ARM64_SHA1M,
+	SIMD_OP_ARM64_SHA1P,
+	SIMD_OP_ARM64_SHA1SU0,
+	SIMD_OP_ARM64_SHA1SU1,
+	SIMD_OP_ARM64_SHA256H,
+	SIMD_OP_ARM64_SHA256H2,
+	SIMD_OP_ARM64_SHA256SU0,
+	SIMD_OP_ARM64_SHA256SU1
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);
@@ -2984,7 +3014,6 @@ MonoCPUFeatures mono_arch_get_cpu_features (void);
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 void        mono_simd_simplify_indirection (MonoCompile *cfg);
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
-void        mono_simd_decompose_intrinsics (MonoCompile *cfg);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);

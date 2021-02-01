@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -95,13 +94,18 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
+            if (_parameters is null || _parameters.Count == 0)
+            {
+                return _mediaType ?? string.Empty;
+            }
+
             var sb = StringBuilderCache.Acquire();
             sb.Append(_mediaType);
             NameValueHeaderValue.ToString(_parameters, ';', true, sb);
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             MediaTypeHeaderValue? other = obj as MediaTypeHeaderValue;
 

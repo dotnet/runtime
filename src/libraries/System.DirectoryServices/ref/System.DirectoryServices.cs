@@ -224,6 +224,7 @@ namespace System.DirectoryServices
         public string Filter { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(0)]
         public int PageSize { get { throw null; } set { } }
+        [System.ComponentModel.EditorAttribute("System.Windows.Forms.Design.StringCollectionEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public System.Collections.Specialized.StringCollection PropertiesToLoad { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool PropertyNamesOnly { get { throw null; } set { } }
@@ -259,6 +260,7 @@ namespace System.DirectoryServices
         public string ExtendedErrorMessage { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class DirectoryServicesPermission : System.Security.Permissions.ResourcePermissionBase
     {
         public DirectoryServicesPermission() { }
@@ -274,6 +276,7 @@ namespace System.DirectoryServices
         Browse = 2,
         Write = 6,
     }
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public partial class DirectoryServicesPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {

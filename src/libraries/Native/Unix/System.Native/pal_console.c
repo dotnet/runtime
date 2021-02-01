@@ -91,6 +91,7 @@ static struct termios g_currentTermios;       // the latest attributes set
 static bool g_reading = false;                // tracks whether the application is performing a Console.Read operation
 static bool g_childUsesTerminal = false;      // tracks whether a child process is using the terminal
 static bool g_terminalUninitialized = false;  // tracks whether the application is terminating
+static bool g_terminalConfigured = false;     // tracks whether the application configured the terminal.
 
 static bool g_hasTty = false;                  // cache we are not a tty
 
@@ -153,6 +154,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
     // On success, update the cached value.
     if (rv)
     {
+        g_terminalConfigured = true;
         g_hasCurrentTermios = true;
         g_currentTermios = *termios;
     }
@@ -160,7 +162,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
     return rv;
 }
 
-static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground, bool convertCrToNl)
+static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground)
 {
     if (!g_hasTty)
     {
@@ -179,13 +181,8 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
     if (!forChild)
     {
-        termios.c_iflag &= (uint32_t)(~(IXON | IXOFF | ICRNL | INLCR | IGNCR));
+        termios.c_iflag &= (uint32_t)(~(IXON | IXOFF));
         termios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
-
-        if (convertCrToNl)
-        {
-            termios.c_iflag |= (uint32_t)ICRNL;
-        }
     }
 
     termios.c_cc[VMIN] = minChars;
@@ -217,7 +214,11 @@ void UninitializeTerminal()
     {
         if (!g_terminalUninitialized)
         {
-            TcSetAttr(&g_initTermios, /* blockIfBackground */ false);
+            // Avoid configuring the terminal: only reset terminal settings when our process has changed them.
+            if (g_terminalConfigured)
+            {
+                TcSetAttr(&g_initTermios, /* blockIfBackground */ false);
+            }
 
             g_terminalUninitialized = true;
         }
@@ -226,15 +227,13 @@ void UninitializeTerminal()
     }
 }
 
-void SystemNative_InitializeConsoleBeforeRead(int32_t convertCrToNl, uint8_t minChars, uint8_t decisecondsTimeout)
+void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
-    assert(convertCrToNl == 0 || convertCrToNl == 1);
-
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         g_reading = true;
 
-        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true, convertCrToNl);
+        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true);
 
         pthread_mutex_unlock(&g_lock);
     }
@@ -269,7 +268,11 @@ void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
             g_hasCurrentTermios = false;
         }
 
-        ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false, /* convertCrToNl */ false);
+        // Avoid configuring the terminal: only change terminal settings when our process has changed them.
+        if (g_terminalConfigured)
+        {
+            ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false);
+        }
 
         // Redo "Application mode" when there are no more children using the terminal.
         if (!childUsesTerminal)
@@ -378,7 +381,7 @@ void SystemNative_GetControlCharacters(
 
 int32_t SystemNative_StdinReady()
 {
-    SystemNative_InitializeConsoleBeforeRead(1, 0, 0);
+    SystemNative_InitializeConsoleBeforeRead(/* minChars */ 1, /* decisecondsTimeout */ 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
     int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
     SystemNative_UninitializeConsoleAfterRead();
@@ -414,7 +417,7 @@ int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 
     if (pthread_mutex_lock(&g_lock) == 0)
     {
-        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true, /* convertCrToNl */ false))
+        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true))
         {
             g_signalForBreak = signalForBreak;
             rv = 1;

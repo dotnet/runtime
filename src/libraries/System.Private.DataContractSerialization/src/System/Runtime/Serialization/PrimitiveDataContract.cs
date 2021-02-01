@@ -18,15 +18,15 @@ namespace System.Runtime.Serialization
 
         protected PrimitiveDataContract(Type type, XmlDictionaryString name, XmlDictionaryString ns) : base(new PrimitiveDataContractCriticalHelper(type, name, ns))
         {
-            _helper = base.Helper as PrimitiveDataContractCriticalHelper;
+            _helper = (base.Helper as PrimitiveDataContractCriticalHelper)!;
         }
 
-        internal static PrimitiveDataContract GetPrimitiveDataContract(Type type)
+        internal static PrimitiveDataContract? GetPrimitiveDataContract(Type type)
         {
             return DataContract.GetBuiltInDataContract(type) as PrimitiveDataContract;
         }
 
-        internal static PrimitiveDataContract GetPrimitiveDataContract(string name, string ns)
+        internal static PrimitiveDataContract? GetPrimitiveDataContract(string name, string ns)
         {
             return DataContract.GetBuiltInDataContract(name, ns) as PrimitiveDataContract;
         }
@@ -34,7 +34,7 @@ namespace System.Runtime.Serialization
         internal abstract string WriteMethodName { get; }
         internal abstract string ReadMethodName { get; }
 
-        public override XmlDictionaryString TopLevelElementNamespace
+        public override XmlDictionaryString? TopLevelElementNamespace
         {
             get
             { return DictionaryGlobals.SerializationNamespace; }
@@ -56,9 +56,9 @@ namespace System.Runtime.Serialization
                 if (_helper.XmlFormatWriterMethod == null)
                 {
                     if (UnderlyingType.IsValueType)
-                        _helper.XmlFormatWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) });
+                        _helper.XmlFormatWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) })!;
                     else
-                        _helper.XmlFormatWriterMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { typeof(XmlWriterDelegator), UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) });
+                        _helper.XmlFormatWriterMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { typeof(XmlWriterDelegator), UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) })!;
                 }
                 return _helper.XmlFormatWriterMethod;
             }
@@ -71,9 +71,9 @@ namespace System.Runtime.Serialization
                 if (_helper.XmlFormatContentWriterMethod == null)
                 {
                     if (UnderlyingType.IsValueType)
-                        _helper.XmlFormatContentWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { UnderlyingType });
+                        _helper.XmlFormatContentWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { UnderlyingType })!;
                     else
-                        _helper.XmlFormatContentWriterMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { typeof(XmlWriterDelegator), UnderlyingType });
+                        _helper.XmlFormatContentWriterMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { typeof(XmlWriterDelegator), UnderlyingType })!;
                 }
                 return _helper.XmlFormatContentWriterMethod;
             }
@@ -85,13 +85,13 @@ namespace System.Runtime.Serialization
             {
                 if (_helper.XmlFormatReaderMethod == null)
                 {
-                    _helper.XmlFormatReaderMethod = typeof(XmlReaderDelegator).GetMethod(ReadMethodName, Globals.ScanAllMembers);
+                    _helper.XmlFormatReaderMethod = typeof(XmlReaderDelegator).GetMethod(ReadMethodName, Globals.ScanAllMembers)!;
                 }
                 return _helper.XmlFormatReaderMethod;
             }
         }
 
-        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             xmlWriter.WriteAnyType(obj);
         }
@@ -118,28 +118,28 @@ namespace System.Runtime.Serialization
 
         private class PrimitiveDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
-            private MethodInfo _xmlFormatWriterMethod;
-            private MethodInfo _xmlFormatContentWriterMethod;
-            private MethodInfo _xmlFormatReaderMethod;
+            private MethodInfo? _xmlFormatWriterMethod;
+            private MethodInfo? _xmlFormatContentWriterMethod;
+            private MethodInfo? _xmlFormatReaderMethod;
 
             internal PrimitiveDataContractCriticalHelper(Type type, XmlDictionaryString name, XmlDictionaryString ns) : base(type)
             {
                 SetDataContractName(name, ns);
             }
 
-            internal MethodInfo XmlFormatWriterMethod
+            internal MethodInfo? XmlFormatWriterMethod
             {
                 get { return _xmlFormatWriterMethod; }
                 set { _xmlFormatWriterMethod = value; }
             }
 
-            internal MethodInfo XmlFormatContentWriterMethod
+            internal MethodInfo? XmlFormatContentWriterMethod
             {
                 get { return _xmlFormatContentWriterMethod; }
                 set { _xmlFormatContentWriterMethod = value; }
             }
 
-            internal MethodInfo XmlFormatReaderMethod
+            internal MethodInfo? XmlFormatReaderMethod
             {
                 get { return _xmlFormatReaderMethod; }
                 set { _xmlFormatReaderMethod = value; }
@@ -160,20 +160,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteChar"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsChar"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteChar((char)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsChar()
                 : HandleReadValue(reader.ReadElementContentAsChar(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteChar((char)obj, name, ns);
+            xmlWriter.WriteChar((char)obj!, name, ns);
         }
     }
 
@@ -191,20 +191,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteBoolean"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsBoolean"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteBoolean((bool)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsBoolean()
                 : HandleReadValue(reader.ReadElementContentAsBoolean(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteBoolean((bool)obj, name, ns);
+            xmlWriter.WriteBoolean((bool)obj!, name, ns);
         }
     }
 
@@ -217,20 +217,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteSignedByte"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsSignedByte"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteSignedByte((sbyte)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsSignedByte()
                 : HandleReadValue(reader.ReadElementContentAsSignedByte(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteSignedByte((sbyte)obj, name, ns);
+            xmlWriter.WriteSignedByte((sbyte)obj!, name, ns);
         }
     }
 
@@ -243,20 +243,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteUnsignedByte"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsUnsignedByte"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteUnsignedByte((byte)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsUnsignedByte()
                 : HandleReadValue(reader.ReadElementContentAsUnsignedByte(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteUnsignedByte((byte)obj, name, ns);
+            xmlWriter.WriteUnsignedByte((byte)obj!, name, ns);
         }
     }
 
@@ -269,20 +269,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteShort"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsShort"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteShort((short)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsShort()
                 : HandleReadValue(reader.ReadElementContentAsShort(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteShort((short)obj, name, ns);
+            xmlWriter.WriteShort((short)obj!, name, ns);
         }
     }
 
@@ -295,20 +295,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteUnsignedShort"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsUnsignedShort"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteUnsignedShort((ushort)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsUnsignedShort()
                 : HandleReadValue(reader.ReadElementContentAsUnsignedShort(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteUnsignedShort((ushort)obj, name, ns);
+            xmlWriter.WriteUnsignedShort((ushort)obj!, name, ns);
         }
     }
 
@@ -335,17 +335,17 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             throw new NotImplementedException();
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             throw new NotImplementedException();
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
             throw new NotImplementedException();
         }
@@ -360,20 +360,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteInt"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsInt"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteInt((int)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsInt()
                 : HandleReadValue(reader.ReadElementContentAsInt(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteInt((int)obj, name, ns);
+            xmlWriter.WriteInt((int)obj!, name, ns);
         }
     }
 
@@ -386,20 +386,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteUnsignedInt"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsUnsignedInt"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteUnsignedInt((uint)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsUnsignedInt()
                 : HandleReadValue(reader.ReadElementContentAsUnsignedInt(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteUnsignedInt((uint)obj, name, ns);
+            xmlWriter.WriteUnsignedInt((uint)obj!, name, ns);
         }
     }
 
@@ -416,20 +416,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteLong"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsLong"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteLong((long)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsLong()
                 : HandleReadValue(reader.ReadElementContentAsLong(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteLong((long)obj, name, ns);
+            xmlWriter.WriteLong((long)obj!, name, ns);
         }
     }
 
@@ -467,20 +467,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteUnsignedLong"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsUnsignedLong"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteUnsignedLong((ulong)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsUnsignedLong()
                 : HandleReadValue(reader.ReadElementContentAsUnsignedLong(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteUnsignedLong((ulong)obj, name, ns);
+            xmlWriter.WriteUnsignedLong((ulong)obj!, name, ns);
         }
     }
 
@@ -493,20 +493,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteFloat"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsFloat"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteFloat((float)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsFloat()
                 : HandleReadValue(reader.ReadElementContentAsFloat(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteFloat((float)obj, name, ns);
+            xmlWriter.WriteFloat((float)obj!, name, ns);
         }
     }
 
@@ -519,20 +519,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteDouble"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsDouble"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteDouble((double)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsDouble()
                 : HandleReadValue(reader.ReadElementContentAsDouble(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteDouble((double)obj, name, ns);
+            xmlWriter.WriteDouble((double)obj!, name, ns);
         }
     }
 
@@ -545,20 +545,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteDecimal"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsDecimal"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteDecimal((decimal)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsDecimal()
                 : HandleReadValue(reader.ReadElementContentAsDecimal(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteDecimal((decimal)obj, name, ns);
+            xmlWriter.WriteDecimal((decimal)obj!, name, ns);
         }
     }
 
@@ -571,20 +571,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteDateTime"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsDateTime"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteDateTime((DateTime)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsDateTime()
                 : HandleReadValue(reader.ReadElementContentAsDateTime(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteDateTime((DateTime)obj, name, ns);
+            xmlWriter.WriteDateTime((DateTime)obj!, name, ns);
         }
     }
 
@@ -601,12 +601,12 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteString"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsString"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteString((string)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             if (context == null)
             {
@@ -618,9 +618,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            context.WriteString(xmlWriter, (string)obj, name, ns);
+            context.WriteString(xmlWriter, (string?)obj, name, ns);
         }
     }
 
@@ -733,12 +733,12 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteBase64"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsBase64"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteBase64((byte[])obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             if (context == null)
             {
@@ -750,10 +750,10 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
             xmlWriter.WriteStartElement(name, ns);
-            xmlWriter.WriteBase64((byte[])obj);
+            xmlWriter.WriteBase64((byte[]?)obj);
             xmlWriter.WriteEndElement();
         }
     }
@@ -767,12 +767,12 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteAnyType"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsAnyType"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             // write nothing
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             object obj;
             if (reader.IsEmptyElement)
@@ -822,20 +822,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteTimeSpan"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsTimeSpan"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteTimeSpan((TimeSpan)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsTimeSpan()
                 : HandleReadValue(reader.ReadElementContentAsTimeSpan(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator writer, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            writer.WriteTimeSpan((TimeSpan)obj, name, ns);
+            writer.WriteTimeSpan((TimeSpan)obj!, name, ns);
         }
     }
 
@@ -857,20 +857,20 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteGuid"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsGuid"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteGuid((Guid)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             return (context == null) ? reader.ReadElementContentAsGuid()
                 : HandleReadValue(reader.ReadElementContentAsGuid(), context);
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            xmlWriter.WriteGuid((Guid)obj, name, ns);
+            xmlWriter.WriteGuid((Guid)obj!, name, ns);
         }
     }
 
@@ -888,12 +888,12 @@ namespace System.Runtime.Serialization
         internal override string WriteMethodName { get { return "WriteUri"; } }
         internal override string ReadMethodName { get { return "ReadElementContentAsUri"; } }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteUri((Uri)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             if (context == null)
             {
@@ -905,9 +905,9 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator writer, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            writer.WriteUri((Uri)obj, name, ns);
+            writer.WriteUri((Uri?)obj, name, ns);
         }
     }
 
@@ -925,12 +925,12 @@ namespace System.Runtime.Serialization
             get { return false; }
         }
 
-        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context)
+        public override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteQName((XmlQualifiedName)obj);
         }
 
-        public override object ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext context)
+        public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             if (context == null)
             {
@@ -942,12 +942,12 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public override void WriteXmlElement(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString ns)
+        public override void WriteXmlElement(XmlWriterDelegator writer, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            context.WriteQName(writer, (XmlQualifiedName)obj, name, ns);
+            context.WriteQName(writer, (XmlQualifiedName?)obj, name, ns);
         }
 
-        internal override void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString ns)
+        internal override void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString? ns)
         {
             if (object.ReferenceEquals(ns, DictionaryGlobals.SerializationNamespace))
                 writer.WriteStartElement(Globals.SerPrefix, name, ns);

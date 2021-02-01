@@ -10,7 +10,7 @@ namespace System.Linq
     {
         public static TSource Last<TSource>(this IEnumerable<TSource> source)
         {
-            TSource last = source.TryGetLast(out bool found);
+            TSource? last = source.TryGetLast(out bool found);
             if (!found)
             {
                 ThrowHelper.ThrowNoElementsException();
@@ -21,7 +21,7 @@ namespace System.Linq
 
         public static TSource Last<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            TSource last = source.TryGetLast(predicate, out bool found);
+            TSource? last = source.TryGetLast(predicate, out bool found);
             if (!found)
             {
                 ThrowHelper.ThrowNoMatchException();
@@ -30,16 +30,13 @@ namespace System.Linq
             return last!;
         }
 
-        [return: MaybeNull]
-        public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source) =>
+        public static TSource? LastOrDefault<TSource>(this IEnumerable<TSource> source) =>
             source.TryGetLast(out bool _);
 
-        [return: MaybeNull]
-        public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) =>
+        public static TSource? LastOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) =>
             source.TryGetLast(predicate, out bool _);
 
-        [return: MaybeNull]
-        private static TSource TryGetLast<TSource>(this IEnumerable<TSource> source, out bool found)
+        private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, out bool found)
         {
             if (source == null)
             {
@@ -80,11 +77,10 @@ namespace System.Linq
             }
 
             found = false;
-            return default!;
+            return default;
         }
 
-        [return: MaybeNull]
-        private static TSource TryGetLast<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
+        private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
         {
             if (source == null)
             {
@@ -139,7 +135,7 @@ namespace System.Linq
             }
 
             found = false;
-            return default!;
+            return default;
         }
     }
 }

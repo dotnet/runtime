@@ -1,7 +1,7 @@
 Configuring Huge Pages for loading composite binaries using CoreCLR on Linux
 ----
 
-Huge pages can provide performance benefits to reduce the cost of TLB cache misses when 
+Huge pages can provide performance benefits to reduce the cost of TLB cache misses when
 executing code. In general, the largest available wins may be achieved by enabling huge
 pages for use by the GC, which will dominate the memory use in the process, but in some
 circumstances, if the application is sufficiently large, there may be a benefit to using
@@ -16,7 +16,7 @@ images using the hugetlbfs. Doing some requires several steps.
 2. The composite image must be copied into a hugetlbfs filesystem which is visible to the .NET process instead of the composite image being loaded from the normal path.
   - IMPORTANT: The composite image must NOT be located in the normal path next to the application binary, or that file will be used instead of the huge page version.
   - The environment variable `COMPlus_NativeImageSearchPaths` must be set to point at the location of the hugetlbfs in use. For instance, `COMPlus_NativeImageSearchPaths` might be set to `/var/lib/hugetlbfs/user/USER/pagesize-2MB`
-  - As the cp command does not support copying into a hugetlbfs due to lack of support for the write syscall in that file system, a custom copy application must be used. A sample application that may be used to perform this task has a source listing in Appendix A.   
+  - As the cp command does not support copying into a hugetlbfs due to lack of support for the write syscall in that file system, a custom copy application must be used. A sample application that may be used to perform this task has a source listing in Appendix A.
 3. The machine must be configured to have sufficient huge pages available in the appropriate huge page pool. The memory requirements of huge page PE loading are as follows.
   - Sufficient pages to hold the unmodified copy of the composite image in the hugetlbfs. These pages will be used by the initial copy which emplaces the composite image into huge pages.
   - By default the runtime will map each page of the composite image using a MAP_PRIVATE mapping. This will require that the maximum number of huge pages is large enough to hold a completely separate copy of the image as loaded.
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
         printf("fdSrc fstat failed\n");
         return 1;
     }
-    
+
     addrSrc = mmap(0, st.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fdSrc, 0);
     if (addrSrc == MAP_FAILED)
     {

@@ -170,10 +170,14 @@ struct _MonoAssemblyName {
 	uint32_t hash_len;
 	uint32_t flags;
 #ifdef ENABLE_NETCORE
-	int major, minor, build, revision, arch;
+	int32_t major, minor, build, revision, arch;
 #else
 	uint16_t major, minor, build, revision, arch;
 #endif
+	//Add members for correct work with mono_stringify_assembly_name
+	MonoBoolean without_version;
+	MonoBoolean without_culture;
+	MonoBoolean without_public_key_token;
 };
 
 struct MonoTypeNameParse {
@@ -216,7 +220,7 @@ struct _MonoAssembly {
 	 * the additional reference, they can be freed at any time.
 	 * The ref_count is initially 0.
 	 */
-	int ref_count; /* use atomic operations only */
+	gint32 ref_count; /* use atomic operations only */
 	char *basedir;
 	MonoAssemblyName aname;
 	MonoImage *image;
@@ -268,6 +272,7 @@ typedef struct {
 	GHashTable *native_wrapper_aot_check_cache;
 
 	GHashTable *native_func_wrapper_aot_cache;
+	GHashTable *native_func_wrapper_indirect_cache; /* Indexed by MonoMethodSignature. Protected by the marshal lock */
 	GHashTable *remoting_invoke_cache;
 	GHashTable *synchronized_cache;
 	GHashTable *unbox_wrapper_cache;
@@ -388,6 +393,9 @@ struct _MonoImage {
 
 	/* Whenever this image is considered as platform code for the CoreCLR security model */
 	guint8 core_clr_platform_code : 1;
+
+	/* Whether a #JTD stream was present. Indicates that this image was a minimal delta and its heaps only include the new heap entries */
+	guint8 minimal_delta : 1;
 
 	/* The path to the file for this image or an arbitrary name for images loaded from data. */
 	char *name;
@@ -582,6 +590,23 @@ struct _MonoImage {
 	gboolean weak_fields_inited;
 	/* Contains 1 based indexes */
 	GHashTable *weak_field_indexes;
+
+#ifdef ENABLE_METADATA_UPDATE
+	/* List of MonoImages of deltas.  Parent image owns 1 refcount ref of the delta image */
+	GList *delta_image;
+	/* Tail of delta_image for fast appends */
+	GList *delta_image_last;
+
+	/* Metadata delta images only */
+	uint32_t generation; /* global update ID that added this delta image */
+
+	/* Maps MethodDef token indices to something. In base images a boolean
+	 * flag that there's an update for the method; in delta images a
+	 * pointer into the RVA of the delta IL */
+	GHashTable *method_table_update;
+
+
+#endif
 
 	/*
 	 * No other runtime locks must be taken while holding this lock.
@@ -780,6 +805,7 @@ struct _MonoMethodSignature {
 	unsigned int  pinvoke             : 1;
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;
+	unsigned int  suppress_gc_transition : 1;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -883,6 +909,30 @@ mono_install_image_loader (const MonoImageLoader *loader);
 void
 mono_image_append_class_to_reflection_info_set (MonoClass *klass);
 
+#ifndef ENABLE_METADATA_UPDATE
+static inline void
+mono_image_effective_table (const MonoTableInfo **t, int *idx)
+{
+}
+#else /* ENABLE_METADATA_UPDATE */
+void
+mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
+
+static inline void
+mono_image_effective_table (const MonoTableInfo **t, int *idx)
+{
+	if (G_LIKELY (*idx < (*t)->rows))
+		return;
+	mono_image_effective_table_slow (t, idx);
+}
+
+int
+mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
+
+void
+mono_image_load_enc_delta (MonoDomain *domain, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
+#endif /* ENABLE_METADATA_UPDATE */
+
 gpointer
 mono_image_set_alloc  (MonoImageSet *set, guint size);
 
@@ -938,6 +988,27 @@ mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 
 MONO_API void
 mono_metadata_cleanup (void);
+
+#ifndef ENABLE_METADATA_UPDATE
+static inline gboolean
+mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
+{
+	/* token_index is 1-based. TRUE means the token is out of bounds */
+	return token_index > image->tables [table_index].rows;
+}
+#else
+gboolean
+mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index);
+
+static inline gboolean
+mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
+{
+	/* returns true if given index is not in bounds with provided table/index pair */
+	if (G_LIKELY (token_index <= image->tables [table_index].rows))
+		return FALSE;
+	return mono_metadata_table_bounds_check_slow (image, table_index, token_index);
+}
+#endif
 
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);
@@ -1011,9 +1082,13 @@ gboolean
 mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2);
 
 void mono_dynamic_stream_reset  (MonoDynamicStream* stream);
-MONO_API void mono_assembly_addref       (MonoAssembly *assembly);
 void mono_assembly_load_friends (MonoAssembly* ass);
 gboolean mono_assembly_has_skip_verification (MonoAssembly* ass);
+
+MONO_API gint32 
+mono_assembly_addref (MonoAssembly *assembly);
+gint32
+mono_assembly_decref (MonoAssembly *assembly);
 
 void mono_assembly_release_gc_roots (MonoAssembly *assembly);
 gboolean mono_assembly_close_except_image_pools (MonoAssembly *assembly);
@@ -1104,7 +1179,7 @@ MonoImage *mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname,
 
 MonoImage *mono_image_open_metadata_only (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
 
-MonoImage *mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name);
+MonoImage *mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name, const char *filename);
 
 MonoException *mono_get_exception_field_access_msg (const char *msg);
 
@@ -1174,6 +1249,9 @@ mono_type_is_valid_generic_argument (MonoType *type);
 
 MonoAssemblyContextKind
 mono_asmctx_get_kind (const MonoAssemblyContext *ctx);
+
+void
+mono_metadata_get_class_guid (MonoClass* klass, uint8_t* guid, MonoError *error);
 
 #define MONO_CLASS_IS_INTERFACE_INTERNAL(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_INTERFACE) || mono_type_is_generic_parameter (m_class_get_byval_arg (c)))
 

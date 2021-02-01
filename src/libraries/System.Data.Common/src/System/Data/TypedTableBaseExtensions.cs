@@ -92,8 +92,7 @@ namespace System.Data
             return new EnumerableRowCollection<TRow>(source as DataTable);
         }
 
-        [return: MaybeNull]
-        public static TRow ElementAtOrDefault<TRow>(this TypedTableBase<TRow> source, int index) where TRow : DataRow
+        public static TRow? ElementAtOrDefault<TRow>(this TypedTableBase<TRow> source, int index) where TRow : DataRow
         {
             if ((index >= 0) && (index < source.Rows.Count))
             {

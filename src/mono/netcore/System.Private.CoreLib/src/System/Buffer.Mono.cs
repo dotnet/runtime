@@ -8,8 +8,6 @@ namespace System
 {
     public partial class Buffer
     {
-        internal static unsafe void Memcpy(byte* dest, byte* src, int len) => Memmove(dest, src, (nuint)len);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 

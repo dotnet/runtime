@@ -75,7 +75,8 @@ namespace System
             if (_traceIPs != null)
             {
                 stackFrames = Diagnostics.StackTrace.get_trace(this, 0, true);
-                stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;
+                if (stackFrames.Length > 0)
+                    stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;
 
                 if (foreignExceptionsFrames != null)
                 {

@@ -21,15 +21,13 @@ Building dotnet/runtime depends on several tools to be installed. You can downlo
 Install the following packages:
 
 - cmake 3.15.5 or newer
-- autoconf
-- automake
 - icu4c
-- libtool
 - openssl 1.1
 - pkg-config
 - python3
+- ninja (optional, enables building native code with ninja instead of make)
 
-You can install all the packages above using Homebrew by running this command in the repository root:
+You can install all the required packages above using Homebrew by running this command in the repository root:
 
 ```
 brew bundle --no-lock --file eng/Brewfile

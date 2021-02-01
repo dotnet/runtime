@@ -1177,7 +1177,7 @@ namespace System.Security.Principal
                     {
                         claimType = ClaimTypes.WindowsDeviceGroup;
                         Claim claim = new Claim(claimType, groupSid.Value, ClaimValueTypes.String, _issuerName, _issuerName, this);
-                        claim.Properties.Add(ClaimTypes.WindowsSubAuthority, Convert.ToString(groupSid.IdentifierAuthority, CultureInfo.InvariantCulture));
+                        claim.Properties.Add(ClaimTypes.WindowsSubAuthority, Convert.ToString(groupSid.IdentifierAuthority, CultureInfo.InvariantCulture)!);
                         claim.Properties.Add(claimType, "");
                         instanceClaims.Add(claim);
                     }
@@ -1185,7 +1185,7 @@ namespace System.Security.Principal
                     {
                         claimType = ClaimTypes.DenyOnlyWindowsDeviceGroup;
                         Claim claim = new Claim(claimType, groupSid.Value, ClaimValueTypes.String, _issuerName, _issuerName, this);
-                        claim.Properties.Add(ClaimTypes.WindowsSubAuthority, Convert.ToString(groupSid.IdentifierAuthority, CultureInfo.InvariantCulture));
+                        claim.Properties.Add(ClaimTypes.WindowsSubAuthority, Convert.ToString(groupSid.IdentifierAuthority, CultureInfo.InvariantCulture)!);
                         claim.Properties.Add(claimType, "");
                         instanceClaims.Add(claim);
                     }

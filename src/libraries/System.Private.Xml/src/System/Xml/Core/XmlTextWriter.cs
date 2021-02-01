@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -174,9 +173,6 @@ namespace System.Xml
         private int _nsTop;
         private Dictionary<string, int>? _nsHashtable;
         private bool _useNsHashtable;
-
-        // char types
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         //
         // Constants and constant tables
@@ -852,7 +848,7 @@ namespace System.Xml
                     ws = string.Empty;
                 }
 
-                if (!_xmlCharType.IsOnlyWhitespace(ws))
+                if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
                 }

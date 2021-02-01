@@ -114,7 +114,7 @@ namespace System.Collections.ObjectModel
                 }
             }
 
-            item = default(TItem)!;
+            item = default;
             return false;
         }
 

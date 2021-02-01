@@ -79,7 +79,11 @@ namespace System.Text.Unicode
             long tempUtf8CodeUnitCountAdjustment = 0;
             int tempScalarCountAdjustment = 0;
 
-            if ((AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || Sse2.IsSupported)
+            // Per https://github.com/dotnet/runtime/issues/41699, temporarily disabling
+            // ARM64-intrinsicified code paths. ARM64 platforms may still use the vectorized
+            // non-intrinsicified 'else' block below.
+
+            if (/* (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || */ Sse2.IsSupported)
             {
                 if (inputLength >= Vector128<ushort>.Count)
                 {

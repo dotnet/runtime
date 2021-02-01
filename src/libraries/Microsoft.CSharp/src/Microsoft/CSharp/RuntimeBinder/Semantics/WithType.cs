@@ -63,11 +63,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return true;
             }
-            else if (ReferenceEquals(swt1, null))
+            else if (swt1 is null)
             {
                 return swt2._sym == null;
             }
-            else if (ReferenceEquals(swt2, null))
+            else if (swt2 is null)
             {
                 return swt1._sym == null;
             }

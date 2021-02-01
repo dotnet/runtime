@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static class DSAKeyPemTests
     {
         private const string AmbiguousExceptionMarker = "multiple keys";

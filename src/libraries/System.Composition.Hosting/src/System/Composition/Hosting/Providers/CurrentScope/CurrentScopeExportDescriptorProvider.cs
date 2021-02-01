@@ -17,7 +17,7 @@ namespace System.Composition.Hosting.Providers.CurrentScope
 
             return new[] { new ExportDescriptorPromise(
                 contract,
-                typeof(CompositionContext).Name,
+                nameof(CompositionContext),
                 true,
                 NoDependencies,
                 _ => ExportDescriptor.Create((c, o) => c, NoMetadata)) };

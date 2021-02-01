@@ -1,6 +1,18 @@
 <Project>
+  
+  <PropertyGroup>
+    <TargetPlatformSupported>true</TargetPlatformSupported>
+    <TargetPlatformVersionSupported>true</TargetPlatformVersionSupported>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFrameworkSuffix)' != '' and '$(TargetFrameworkSuffix)' != 'windows'">
+    <TargetPlatformIdentifier>$(TargetFrameworkSuffix)</TargetPlatformIdentifier>
+    <TargetPlatformVersion>0.0</TargetPlatformVersion>
+    <TargetPlatformMoniker>$(TargetFrameworkSuffix),Version=$(TargetPlatformVersion)</TargetPlatformMoniker>
+  </PropertyGroup>
+  
   <Choose>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Windows_NT'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'windows'">
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
         <PackageTargetRuntime>win</PackageTargetRuntime>
@@ -65,7 +77,7 @@
     <When Condition="'$(TargetFrameworkSuffix)' == 'illumos'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TargetsIllumos>true</TargetsIllumos>
+        <Targetsillumos>true</Targetsillumos>
         <PackageTargetRuntime>illumos</PackageTargetRuntime>
       </PropertyGroup>
     </When>

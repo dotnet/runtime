@@ -15,12 +15,18 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void CancellationTokenRegister_Exceptions()
         {
-            CancellationToken token = new CancellationToken();
-            Assert.Throws<ArgumentNullException>(() => token.Register(null));
+            CancellationToken token = default;
 
-            Assert.Throws<ArgumentNullException>(() => token.Register(null, false));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.Register(null));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.Register(null, false));
 
-            Assert.Throws<ArgumentNullException>(() => token.Register(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.Register((Action<object>)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.Register((Action<object>)null, null, false));
+            AssertExtensions.Throws<ArgumentNullException>(() => token.Register((Action<object>)null, null, true));
+            AssertExtensions.Throws<ArgumentNullException>(() => token.Register((Action<object, CancellationToken>)null, null));
+
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.UnsafeRegister((Action<object>)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.UnsafeRegister((Action<object, CancellationToken>)null, null));
         }
 
         [Fact]
@@ -1046,27 +1052,28 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void CancellationTokenSourceWithTimer_Negative()
         {
-            TimeSpan bigTimeSpan = new TimeSpan(2000, 0, 0, 0, 0);
+            TimeSpan bigTimeSpan = TimeSpan.FromMilliseconds(uint.MaxValue);
             TimeSpan reasonableTimeSpan = new TimeSpan(0, 0, 1);
-            //
-            // Test exception logic
-            //
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { new CancellationTokenSource(-2); });
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { new CancellationTokenSource(bigTimeSpan); });
 
-            CancellationTokenSource cts = new CancellationTokenSource();
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { cts.CancelAfter(-2); });
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { cts.CancelAfter(bigTimeSpan); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new CancellationTokenSource(-2); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new CancellationTokenSource(bigTimeSpan); });
+
+            var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(uint.MaxValue - 1));
+            Assert.False(cts.IsCancellationRequested);
+            cts.Dispose();
+
+            cts = new CancellationTokenSource();
+            Assert.Throws<ArgumentOutOfRangeException>(() => { cts.CancelAfter(-2); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { cts.CancelAfter(bigTimeSpan); });
+
+            cts = new CancellationTokenSource();
+            cts.CancelAfter(TimeSpan.FromMilliseconds(uint.MaxValue - 1));
+            Assert.False(cts.IsCancellationRequested);
+            cts.Dispose();
 
             cts.Dispose();
-            Assert.Throws<ObjectDisposedException>(
-               () => { cts.CancelAfter(1); });
-            Assert.Throws<ObjectDisposedException>(
-               () => { cts.CancelAfter(reasonableTimeSpan); });
+            Assert.Throws<ObjectDisposedException>(() => { cts.CancelAfter(1); });
+            Assert.Throws<ObjectDisposedException>(() => { cts.CancelAfter(reasonableTimeSpan); });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -1462,7 +1469,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [OuterLoop("Runs for several seconds")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Unregister_ConcurrentUse_ThreadSafe()
         {
             CancellationTokenRegistration reg = default;
@@ -1505,8 +1512,10 @@ namespace System.Threading.Tasks.Tests
             // Validating that no exception is thrown.
         }
 
-        [Fact]
-        public static void Register_ExecutionContextFlowsIfExpected()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Register_ExecutionContextFlowsIfExpected(bool callbackWithToken)
         {
             var cts = new CancellationTokenSource();
 
@@ -1526,9 +1535,25 @@ namespace System.Threading.Tasks.Tests
                 };
 
                 CancellationToken ct = cts.Token;
-                if (flowExecutionContext)
+                if (flowExecutionContext && callbackWithToken)
+                {
+                    ct.Register((s, t) =>
+                    {
+                        Assert.Equal(ct, t);
+                        callback(s);
+                    }, i);
+                }
+                else if (flowExecutionContext)
                 {
                     ct.Register(callback, i);
+                }
+                else if (callbackWithToken)
+                {
+                    ct.UnsafeRegister((s, t) =>
+                    {
+                        Assert.Equal(ct, t);
+                        callback(s);
+                    }, i);
                 }
                 else
                 {
@@ -1691,8 +1716,6 @@ namespace System.Threading.Tasks.Tests
                 Task t = new Task(
                     (passedInState) =>
                     {
-                        //Debug.WriteLine(" threadCrossingSyncContext..running callback delegate on threadID = " + Thread.CurrentThread.ManagedThreadId);
-
                         try
                         {
                             d(passedInState);
@@ -1705,9 +1728,6 @@ namespace System.Threading.Tasks.Tests
 
                 t.Start();
                 t.Wait();
-
-                //t.Start(state);
-                //t.Join();
 
                 if (marshalledException != null)
                     throw new AggregateException("DUMMY: ThreadCrossingSynchronizationContext.Send captured and propogated an exception",

@@ -24,6 +24,7 @@ assignees: ''
 * What OS and version, and what distro if applicable?
 * What is the architecture (x64, x86, ARM, ARM64)?
 * Do you know whether it is specific to that configuration?
+* If you're using Blazor, which web browser(s) do you see this issue in?
   -->
 
 ### Regression?

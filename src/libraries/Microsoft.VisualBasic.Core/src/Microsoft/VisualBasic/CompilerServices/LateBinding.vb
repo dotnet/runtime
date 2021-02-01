@@ -3,10 +3,8 @@
 
 Imports System
 Imports System.Diagnostics
-Imports System.Globalization
 Imports System.Reflection
 Imports System.Runtime.InteropServices
-Imports System.Runtime.Remoting
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
@@ -268,6 +266,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 If UseCallType = CallType.Set Then
                     flags = flags Or BindingFlags.PutRefDispProperty
                     If args(args.GetUpperBound(0)) Is Nothing Then
+                        Debug.Assert(OperatingSystem.IsWindows())
 #Disable Warning BC40000 ' DispatchWrapper is marked obsolete.
                         args(args.GetUpperBound(0)) = New DispatchWrapper(Nothing)
 #Enable Warning BC40000

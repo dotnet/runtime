@@ -26,7 +26,7 @@ namespace System.Xml.Xsl.XsltOld
         private static readonly DbgData s_nullDbgData = new DbgData();
         private DbgData()
         {
-            StyleSheet = null;
+            StyleSheet = null!;
             _variables = Array.Empty<VariableAction>();
         }
         public static DbgData Empty { get { return s_nullDbgData; } }
@@ -52,7 +52,7 @@ namespace System.Xml.Xsl.XsltOld
         //          No duplicates posible.
         private readonly ArrayList _globalVars = new ArrayList();
         private readonly ArrayList _localVars = new ArrayList();
-        private VariableAction[] _globalVarsCache, _localVarsCache;
+        private VariableAction[]? _globalVarsCache, _localVarsCache;
 
         public virtual VariableAction[] GlobalVariables
         {
@@ -86,7 +86,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 for (int i = 0; i < _globalVars.Count; i++)
                 {
-                    VariableAction oldVar = (VariableAction)_globalVars[i];
+                    VariableAction oldVar = (VariableAction)_globalVars[i]!;
                     if (oldVar.Name == variable.Name)
                     { // Duplicate var definition
                         if (variable.Stylesheetid < oldVar.Stylesheetid)
@@ -122,7 +122,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void PopScope()
         {
-            this.UnDefineVariables(this.ScopeManager.CurrentScope.GetVeriablesCount());
+            this.UnDefineVariables(this.ScopeManager.CurrentScope!.GetVeriablesCount());
             base.PopScope();
         }
 
@@ -580,7 +580,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private class RootActionDbg : RootAction
         {
-            private DbgData _dbgData;
+            private DbgData? _dbgData;
 
             // SxS: This method does not take any resource name and does not expose any resources to the caller.
             // It's OK to suppress the SxS warning.
@@ -711,7 +711,7 @@ namespace System.Xml.Xsl.XsltOld
         private class VariableActionDbg : VariableAction
         {
             internal VariableActionDbg(VariableType type) : base(type) { }
-            private DbgData _dbgData;
+            private DbgData? _dbgData;
 
             internal override void Compile(Compiler compiler)
             {

@@ -8,6 +8,8 @@ using System;
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
+using System.Runtime.Versioning;
+
 namespace System.Diagnostics.Tracing
 #endif
 {
@@ -17,6 +19,9 @@ namespace System.Diagnostics.Tracing
     /// function to collect metrics on its own rather than the user having to call WriteMetric()
     /// every time.
     /// </summary>
+#if NETCOREAPP
+    [UnsupportedOSPlatform("browser")]
+#endif
     public partial class PollingCounter : DiagnosticCounter
     {
         /// <summary>

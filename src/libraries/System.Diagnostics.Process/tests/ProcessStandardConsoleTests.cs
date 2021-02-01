@@ -1,22 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Win32;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
     public class ProcessStandardConsoleTests : ProcessTestBase
     {
-        private const int s_ConsoleEncoding = 437;
-
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestChangesInConsoleEncoding()
         {
-            Action<int> run = expectedCodePage =>
+            const int ConsoleEncoding = 437;
+
+            void RunWithExpectedCodePage(int expectedCodePage)
             {
                 Process p = CreateProcessLong();
                 p.StartInfo.RedirectStandardInput = true;
@@ -24,17 +23,19 @@ namespace System.Diagnostics.Tests
                 p.StartInfo.RedirectStandardError = true;
                 p.Start();
 
-                Assert.Equal(p.StandardInput.Encoding.CodePage, expectedCodePage);
-                Assert.Equal(p.StandardOutput.CurrentEncoding.CodePage, expectedCodePage);
-                Assert.Equal(p.StandardError.CurrentEncoding.CodePage, expectedCodePage);
+                Assert.Equal(expectedCodePage, p.StandardInput.Encoding.CodePage);
+                Assert.Equal(expectedCodePage, p.StandardOutput.CurrentEncoding.CodePage);
+                Assert.Equal(expectedCodePage, p.StandardError.CurrentEncoding.CodePage);
 
                 p.Kill();
                 Assert.True(p.WaitForExit(WaitInMS));
             };
 
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            // Don't test this on Windows containers, as the test is currently failing
+            // cf. https://github.com/dotnet/runtime/issues/42000
+            if (!OperatingSystem.IsWindows() || PlatformDetection.IsInContainer)
             {
-                run(Encoding.UTF8.CodePage);
+                RunWithExpectedCodePage(Encoding.UTF8.CodePage);
                 return;
             }
 
@@ -43,14 +44,10 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                // Don't test this on Windows Nano, Windows Nano only supports UTF8.
-                if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")))
-                {
-                    Interop.SetConsoleCP(s_ConsoleEncoding);
-                    Interop.SetConsoleOutputCP(s_ConsoleEncoding);
+                Interop.SetConsoleCP(ConsoleEncoding);
+                Interop.SetConsoleOutputCP(ConsoleEncoding);
 
-                    run(s_ConsoleEncoding);
-                }
+                RunWithExpectedCodePage(ConsoleEncoding);
             }
             finally
             {

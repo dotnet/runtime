@@ -272,7 +272,6 @@ namespace System.Net.Tests
         {
             using (var factory1 = new HttpListenerFactory(host, path: string.Empty))
             {
-                HttpListener listener1 = factory1.GetListener();
                 using (var listener2 = new HttpListener())
                 {
                     string prefixWithSubPath = $"{factory1.ListeningUrl}sub_path/";

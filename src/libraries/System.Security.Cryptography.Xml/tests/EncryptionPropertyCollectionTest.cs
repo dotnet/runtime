@@ -130,7 +130,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void Remove_MultipleOccurences()
+        public void Remove_MultipleOccurrences()
         {
             EncryptionPropertyCollection encPropertyCollection = new EncryptionPropertyCollection();
             for (int i = 0; i < 2; i++)
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 encPropertyCollection.Add(multiple);
             }
             encPropertyCollection.Remove(multiple);
-            // Only the first occurence will be removed.
+            // Only the first occurrence will be removed.
             Assert.Equal(3, encPropertyCollection.Count);
         }
 

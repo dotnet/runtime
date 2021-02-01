@@ -3,7 +3,7 @@
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 
-if getprop ro.product.system.model 2>&1 | grep -qi android; then
+if command -v getprop && getprop ro.product.system.model 2>&1 | grep -qi android; then
     OSName="Android"
 fi
 
@@ -27,6 +27,17 @@ if [ "$os" = "SunOS" ]; then
         os="Solaris"
     fi
     CPUName=$(isainfo -n)
+elif [ "$os" = "OSX" ]; then
+    # On OSX universal binaries make uname -m unreliable.  The uname -m response changes
+    # based on what hardware is being emulated.
+    # Use sysctl instead
+    if [ "$(sysctl -q -n hw.optional.arm64)" = "1" ]; then
+        CPUName=arm64
+    elif [ "$(sysctl -q -n hw.optional.x86_64)" = "1" ]; then
+        CPUName=x86_64
+    else
+        CPUName=$(uname -m)
+    fi
 else
     # For rest of the operating systems, use uname(1) to determine what the CPU is.
     CPUName=$(uname -m)

@@ -32,19 +32,20 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1'">
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Diagnostics\Activity.cs" />
+    <Compile Include="System\Diagnostics\ActivityStatusCode.cs" />
     <Compile Include="System\Diagnostics\ActivityTagsCollection.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.cs" />
     <Compile Include="System\Diagnostics\ActivityCreationOptions.cs" />
-    <Compile Include="System\Diagnostics\ActivityDataRequest.cs" />
+    <Compile Include="System\Diagnostics\ActivitySamplingResult.cs" />
     <Compile Include="System\Diagnostics\ActivityEvent.cs" />
     <Compile Include="System\Diagnostics\ActivityKind.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.cs" />
     <Compile Include="System\Diagnostics\ActivityListener.cs" />
     <Compile Include="System\Diagnostics\ActivitySource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
+    <Compile Include="System\Diagnostics\RandomNumberGenerator.cs" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
@@ -93,5 +94,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>

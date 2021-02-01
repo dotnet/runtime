@@ -118,7 +118,7 @@ namespace System.Net.Sockets.Tests
             {
                 IAsyncResult result = sock.BeginConnect(new DnsEndPoint("localhost", port), null, null);
                 sock.EndConnect(result);
-                Assert.Throws<InvalidOperationException>(() => sock.EndConnect(result)); // validate can't call end twice
+                Assert.True(sock.Connected);
             }
         }
 
@@ -330,9 +330,10 @@ namespace System.Net.Sockets.Tests
                 ManualResetEvent complete = new ManualResetEvent(false);
                 args.UserToken = complete;
 
-                Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
-
-                Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args))
+                {
+                    Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                }
 
                 Assert.Equal(SocketError.Success, args.SocketError);
                 Assert.Null(args.ConnectByNameError);
@@ -345,9 +346,11 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new DnsEndPoint("localhost", port6);
                 complete.Reset();
 
-                Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
+                if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args))
+                {
+                    Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                }
 
-                Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
                 complete.Dispose(); // only dispose on success as we know we're done with the instance
 
                 Assert.Equal(SocketError.Success, args.SocketError);

@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netstandard2.0;netstandard2.0-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.0-windows</TargetFrameworks>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\Caching\_shims.cs" />

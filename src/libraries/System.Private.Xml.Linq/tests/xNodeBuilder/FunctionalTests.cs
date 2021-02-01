@@ -29,7 +29,7 @@ namespace CoreXml.Test.XLinq
             }
             module.Execute();
 
-            Assert.Equal(0, module.FailCount);
+            Assert.False(module.HasFailures, module.GetFailuresInfo());
         }
 
         #region Code

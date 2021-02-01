@@ -28,6 +28,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/console-io.h>
 #include <mono/metadata/exception.h>
+#include <mono/utils/w32subset.h>
 #include "icall-decl.h"
 
 void
@@ -40,7 +41,7 @@ mono_console_handle_async_ops (void)
 {
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_CONSOLE
 MonoBoolean
 ves_icall_System_ConsoleDriver_Isatty (HANDLE handle, MonoError* error)
 {
@@ -71,4 +72,49 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoStringHandle keypad, MonoStringHand
 {
 	return FALSE;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_CONSOLE
+MonoBoolean
+ves_icall_System_ConsoleDriver_Isatty (HANDLE handle, MonoError* error)
+{
+	g_unsupported_api ("Console");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "Console");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean want_echo, MonoError* error)
+{
+	g_unsupported_api ("Console");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "Console");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break, MonoError* error)
+{
+	g_unsupported_api ("Console");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "Console");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+
+gint32
+ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout, MonoError* error)
+{
+	g_unsupported_api ("Console");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "Console");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_ConsoleDriver_TtySetup (MonoStringHandle keypad, MonoStringHandle teardown, MonoArrayHandleOut control_chars, int **size, MonoError* error)
+{
+	g_unsupported_api ("Console");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "Console");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_CONSOLE */

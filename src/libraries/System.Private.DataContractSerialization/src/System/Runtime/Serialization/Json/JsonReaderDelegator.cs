@@ -4,26 +4,27 @@
 using System.Xml;
 using System.Runtime.Serialization;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonReaderDelegator : XmlReaderDelegator
     {
-        private readonly DateTimeFormat _dateTimeFormat;
-        private DateTimeArrayJsonHelperWithString _dateTimeArrayHelper;
+        private readonly DateTimeFormat? _dateTimeFormat;
+        private DateTimeArrayJsonHelperWithString? _dateTimeArrayHelper;
 
         public JsonReaderDelegator(XmlReader reader)
             : base(reader)
         {
         }
 
-        public JsonReaderDelegator(XmlReader reader, DateTimeFormat dateTimeFormat)
+        public JsonReaderDelegator(XmlReader reader, DateTimeFormat? dateTimeFormat)
             : this(reader)
         {
             _dateTimeFormat = dateTimeFormat;
         }
 
-        internal XmlDictionaryReaderQuotas ReaderQuotas
+        internal XmlDictionaryReaderQuotas? ReaderQuotas
         {
             get
             {
@@ -139,7 +140,7 @@ namespace System.Runtime.Serialization.Json
             return ParseJsonDate(ReadContentAsString(), _dateTimeFormat);
         }
 
-        internal static DateTime ParseJsonDate(string originalDateTimeValue, DateTimeFormat dateTimeFormat)
+        internal static DateTime ParseJsonDate(string originalDateTimeValue, DateTimeFormat? dateTimeFormat)
         {
             if (dateTimeFormat == null)
             {
@@ -235,20 +236,16 @@ namespace System.Runtime.Serialization.Json
             return ParseJsonDate(ReadElementContentAsString(), _dateTimeFormat);
         }
 
-#if USE_REFEMIT
-        public override bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
-#else
         internal override bool TryReadDateTimeArray(XmlObjectSerializerReadContext context,
-#endif
         XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out DateTime[] array)
+            int arrayLength, [NotNullWhen(true)] out DateTime[]? array)
         {
             return TryReadJsonDateTimeArray(context, itemName, itemNamespace, arrayLength, out array);
         }
 
         internal bool TryReadJsonDateTimeArray(XmlObjectSerializerReadContext context,
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
-            int arrayLength, out DateTime[] array)
+            int arrayLength, [NotNullWhen(true)] out DateTime[]? array)
         {
             if ((dictionaryReader == null) || (arrayLength != -1))
             {
@@ -264,9 +261,9 @@ namespace System.Runtime.Serialization.Json
 
         private class DateTimeArrayJsonHelperWithString : ArrayHelper<string, DateTime>
         {
-            private readonly DateTimeFormat _dateTimeFormat;
+            private readonly DateTimeFormat? _dateTimeFormat;
 
-            public DateTimeArrayJsonHelperWithString(DateTimeFormat dateTimeFormat)
+            public DateTimeArrayJsonHelperWithString(DateTimeFormat? dateTimeFormat)
             {
                 _dateTimeFormat = dateTimeFormat;
             }

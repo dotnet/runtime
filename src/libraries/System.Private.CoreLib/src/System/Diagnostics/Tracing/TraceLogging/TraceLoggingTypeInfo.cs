@@ -134,17 +134,11 @@ namespace System.Diagnostics.Tracing
         /// Refer to TraceLoggingTypeInfo.WriteObjectData for information about this
         /// method.
         /// </summary>
-        /// <param name="collector">
-        /// Refer to TraceLoggingTypeInfo.WriteObjectData for information about this
-        /// method.
-        /// </param>
         /// <param name="value">
         /// Refer to TraceLoggingTypeInfo.WriteObjectData for information about this
         /// method.
         /// </param>
-        public abstract void WriteData(
-            TraceLoggingDataCollector collector,
-            PropertyValue value);
+        public abstract void WriteData(PropertyValue value);
 
         /// <summary>
         /// Fetches the event parameter data for internal serialization.

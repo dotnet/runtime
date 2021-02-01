@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.DirectoryServices.ActiveDirectory.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     public class DirectoryContextTests
     {
         [Theory]

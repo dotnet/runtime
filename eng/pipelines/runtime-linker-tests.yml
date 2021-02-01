@@ -47,11 +47,6 @@ pr:
 
 jobs:
 #
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
-
-#
 # Build Release config vertical for Windows, Linux, Linux musl and OSX
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -59,7 +54,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
     platforms:
-    - Windows_NT_x64
+    - windows_x64
     - OSX_x64
     - Linux_x64
     jobParameters:

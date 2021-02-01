@@ -91,14 +91,12 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        [return: MaybeNull]
-        public override T GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent)
+        public override T? GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent) where T : class
         {
             return GetPrivateKey<T>(certificate, silent, preferNCrypt: true);
         }
 
-        [return: MaybeNull]
-        public override T GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent)
+        public override T? GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent) where T : class
         {
             return GetPrivateKey<T>(certificate, silent, preferNCrypt: false);
         }
@@ -131,6 +129,10 @@ namespace Internal.Cryptography.Pal.Windows
 
                 if (keySpec == CryptKeySpec.CERT_NCRYPT_KEY_SPEC)
                 {
+#if NETSTANDARD || NETCOREAPP
+                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
+
                     using (SafeNCryptKeyHandle keyHandle = new SafeNCryptKeyHandle(handle.DangerousGetHandle(), handle))
                     {
                         CngKeyHandleOpenOptions options = CngKeyHandleOpenOptions.None;
@@ -164,6 +166,7 @@ namespace Internal.Cryptography.Pal.Windows
                 // 3) PNSE.
                 // 4) Defer to cert.Get{R|D}SAPrivateKey if not silent, throw otherwise.
                 CspParameters cspParams = handle.GetProvParameters();
+                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
                 Debug.Assert((cspParams.Flags & CspProviderFlags.UseExistingKey) != 0);
                 cspParams.KeyNumber = (int)keySpec;
 

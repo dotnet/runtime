@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 
@@ -77,6 +74,17 @@ namespace Microsoft.Extensions.Hosting.Internal
                     eventId: LoggerEventIds.StoppedWithException,
                     exception: ex,
                     message: "Hosting shutdown exception");
+            }
+        }
+
+        public static void BackgroundServiceFaulted(this ILogger logger, Exception ex)
+        {
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+                logger.LogError(
+                    eventId: LoggerEventIds.BackgroundServiceFaulted,
+                    exception: ex,
+                    message: "BackgroundService failed");
             }
         }
     }

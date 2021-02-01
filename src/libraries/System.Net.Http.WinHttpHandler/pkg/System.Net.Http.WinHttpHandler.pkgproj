@@ -12,7 +12,7 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- Excluding the reference assets on the package so that RAR will see the run-time conflicts at build time in order to
-    generate the right binding redirects when targeting Desktop. https://github.com/dotnet/corefx/issues/32457 -->
+    generate the right binding redirects when targeting Desktop. https://github.com/dotnet/runtime/issues/27470 -->
     <ExcludeReferenceAssets>true</ExcludeReferenceAssets>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

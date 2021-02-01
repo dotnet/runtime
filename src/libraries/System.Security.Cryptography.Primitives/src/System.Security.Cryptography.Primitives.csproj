@@ -5,9 +5,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemSecurityCryptographyPrimitives_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\CipherMode.cs" />
@@ -28,8 +25,6 @@
     <Compile Include="System\Security\Cryptography\SymmetricAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\ForceAsyncAwaiter.cs"
-             Link="Common\System\Threading\Tasks\ForceAsyncAwaiter.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
              Link="Internal\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"

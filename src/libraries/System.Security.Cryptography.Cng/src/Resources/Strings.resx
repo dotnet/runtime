@@ -270,4 +270,7 @@
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
   </data>
+  <data name="Cryptography_FeedbackSizeNotSupported" xml:space="preserve">
+    <value>The current platform does not support the specified feedback size.</value>
+  </data>
 </root>

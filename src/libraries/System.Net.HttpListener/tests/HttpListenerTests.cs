@@ -148,7 +148,7 @@ namespace System.Net.Tests
                 HttpListener listener = listenerFactory.GetListener();
                 listener.Start();
 
-                Task<string> clientTask = client.GetStringAsync(listenerFactory.ListeningUrl);
+                _ = client.GetStringAsync(listenerFactory.ListeningUrl);
 
                 IAsyncResult beginGetContextResult = listener.BeginGetContext(null, null);
                 listener.EndGetContext(beginGetContextResult);

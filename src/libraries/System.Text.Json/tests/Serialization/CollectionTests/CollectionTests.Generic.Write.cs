@@ -175,6 +175,34 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void WriteGenericStructIListWrapperT()
+        {
+            {
+                GenericStructIListWrapper<int> obj = new GenericStructIListWrapper<int>() { 10, 20 };
+                Assert.Equal("[10,20]", JsonSerializer.Serialize(obj));
+            }
+
+            {
+                GenericStructIListWrapper<int> obj = default;
+                Assert.Equal("[]", JsonSerializer.Serialize(obj));
+            }
+        }
+
+        [Fact]
+        public static void WriteGenericStructICollectionWrapperT()
+        {
+            {
+                GenericStructICollectionWrapper<int> obj = new GenericStructICollectionWrapper<int>() { 10, 20 };
+                Assert.Equal("[10,20]", JsonSerializer.Serialize(obj));
+            }
+
+            {
+                GenericStructICollectionWrapper<int> obj = default;
+                Assert.Equal("[]", JsonSerializer.Serialize(obj));
+            }
+        }
+
+        [Fact]
         public static void WriteGenericICollectionOfGenericICollection()
         {
             ICollection<ICollection<int>> input = new List<ICollection<int>>
@@ -338,6 +366,20 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
+        }
+
+        [Fact]
+        public static void GenericStructISetWrapperT()
+        {
+            {
+                GenericStructISetWrapper<int> obj = new GenericStructISetWrapper<int>() { 10, 20 };
+                Assert.Equal("[10,20]", JsonSerializer.Serialize(obj));
+            }
+
+            {
+                GenericStructISetWrapper<int> obj = default;
+                Assert.Equal("[]", JsonSerializer.Serialize(obj));
+            }
         }
 
         [Fact]
@@ -778,6 +820,56 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj5));
             Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj5));
+        }
+
+        [Fact]
+        public static void WriteSimpleTestClassWithGenericStructCollectionWrappers()
+        {
+            {
+                SimpleTestClassWithGenericStructCollectionWrappers obj = new SimpleTestClassWithGenericStructCollectionWrappers();
+                obj.Initialize();
+                Assert.Equal(SimpleTestClassWithGenericStructCollectionWrappers.s_json.StripWhitespace(), JsonSerializer.Serialize(obj));
+            }
+
+            {
+                SimpleTestClassWithGenericStructCollectionWrappers obj = new SimpleTestClassWithGenericStructCollectionWrappers()
+                {
+                    List = default,
+                    Dictionary = default,
+                    Collection = default,
+                    Set = default
+                };
+                string json =
+                    @"{" +
+                    @"""List"" : []," +
+                    @"""Collection"" : []," +
+                    @"""Set"" : []," +
+                    @"""Dictionary"" : {}" +
+                    @"}";
+                Assert.Equal(json.StripWhitespace(), JsonSerializer.Serialize(obj));
+            }
+        }
+
+        [Fact]
+        public static void WriteSimpleTestStructWithNullableGenericStructCollectionWrappers()
+        {
+            {
+                SimpleTestStructWithNullableGenericStructCollectionWrappers obj = new SimpleTestStructWithNullableGenericStructCollectionWrappers();
+                obj.Initialize();
+                Assert.Equal(SimpleTestStructWithNullableGenericStructCollectionWrappers.s_json.StripWhitespace(), JsonSerializer.Serialize(obj));
+            }
+
+            {
+                SimpleTestStructWithNullableGenericStructCollectionWrappers obj = new SimpleTestStructWithNullableGenericStructCollectionWrappers();
+                string json =
+                    @"{" +
+                    @"""List"" : null," +
+                    @"""Collection"" : null," +
+                    @"""Set"" : null," +
+                    @"""Dictionary"" : null" +
+                    @"}";
+                Assert.Equal(json.StripWhitespace(), JsonSerializer.Serialize(obj));
+            }
         }
 
         [Fact]

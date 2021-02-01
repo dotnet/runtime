@@ -4,6 +4,7 @@
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Xml;
 
     internal class NamespaceDecl
@@ -11,7 +12,7 @@ namespace System.Xml.Xsl.XsltOld
         private string _prefix;
         private string _nsUri;
         private string _prevDefaultNsUri;
-        private NamespaceDecl _next;
+        private NamespaceDecl? _next;
 
         internal string Prefix
         {
@@ -28,17 +29,20 @@ namespace System.Xml.Xsl.XsltOld
             get { return _prevDefaultNsUri; }
         }
 
-        internal NamespaceDecl Next
+        internal NamespaceDecl? Next
         {
             get { return _next; }
         }
 
-        internal NamespaceDecl(string prefix, string nsUri, string prevDefaultNsUri, NamespaceDecl next)
+        internal NamespaceDecl(string prefix, string nsUri, string prevDefaultNsUri, NamespaceDecl? next)
         {
             Init(prefix, nsUri, prevDefaultNsUri, next);
         }
 
-        internal void Init(string prefix, string nsUri, string prevDefaultNsUri, NamespaceDecl next)
+        [MemberNotNull(nameof(_prefix))]
+        [MemberNotNull(nameof(_nsUri))]
+        [MemberNotNull(nameof(_prevDefaultNsUri))]
+        internal void Init(string prefix, string nsUri, string prevDefaultNsUri, NamespaceDecl? next)
         {
             _prefix = prefix;
             _nsUri = nsUri;

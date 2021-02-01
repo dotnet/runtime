@@ -87,7 +87,7 @@ bool IsCorrectINNER2(INNER2* p)
 }
 
 
-struct InnerExplicit 
+struct InnerExplicit
 {
 	#ifdef WINDOWS
     union
@@ -97,7 +97,7 @@ struct InnerExplicit
     };
 	CHAR _unused0[4];
     LPCSTR f3;
-	#endif 
+	#endif
 
 	#ifndef WINDOWS
     union
@@ -107,7 +107,7 @@ struct InnerExplicit
     };
 	INT _unused0;
     LPCSTR f3;
-	#endif 
+	#endif
 };
 
 
@@ -169,13 +169,13 @@ union InnerArrayExplicit
 	{
 		LONG64 _unused0;
 		LPCSTR f4;
-	} s; 
+	} s;
 };
 
 
 #ifdef WINDOWS
 #ifdef HOST_64BIT
-#pragma warning(push) 
+#pragma warning(push)
 #pragma warning(disable: 4201) // nonstandard extension used: nameless struct/union
 union OUTER3
 {
@@ -285,7 +285,7 @@ bool IsCorrectCharSetAnsiSequential(CharSetAnsiSequential* p)
 }
 
 
-struct CharSetUnicodeSequential 
+struct CharSetUnicodeSequential
 {
     LPCWSTR f1;
     WCHAR f2;
@@ -346,15 +346,15 @@ struct NumberSequential
 	LONG64 i64;
 	ULONG64 ui64;
 	DOUBLE d;
-    INT i32;		
-    UINT ui32;		
-    SHORT s1;		
-    WORD us1;	
-	SHORT i16;		
+    INT i32;
+    UINT ui32;
+    SHORT s1;
+    WORD us1;
+	SHORT i16;
     WORD ui16;
 	FLOAT sgl;
-    BYTE b;			
-    CHAR sb;		  
+    BYTE b;
+    CHAR sb;
 };
 void PrintNumberSequential(NumberSequential* str, char const * name)
 {
@@ -454,10 +454,10 @@ struct S4
     INT age;
     LPCSTR name;
 };
-enum Enum1 
+enum Enum1
 {
     e1 = 1,
-    e2 = 3 
+    e2 = 3
 };
 struct S5
 {
@@ -529,7 +529,7 @@ void ChangeStringStructSequentialAnsi(StringStructSequentialAnsi* str)
 	newFirst[512] = '\0';
 	newLast[512] = '\0';
 
-	str->first = newFirst;	
+	str->first = newFirst;
 	str->last = newLast;
 }
 
@@ -938,7 +938,7 @@ union OverlappingMultipleEightbyte
     float arr[3];
     struct
     {
-        float padding[2]; 
+        float padding[2];
         int i;
     };
 };
@@ -967,4 +967,10 @@ struct UnicodeCharArrayClassification
 {
     WCHAR arr[6];
     float f;
+};
+
+struct Int32CLongStruct
+{
+    int32_t i;
+    long l;
 };

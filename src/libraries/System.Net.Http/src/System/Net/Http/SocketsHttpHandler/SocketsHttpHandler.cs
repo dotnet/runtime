@@ -3,8 +3,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Connections;
+using System.IO;
+using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
@@ -12,6 +15,7 @@ using System.Text;
 
 namespace System.Net.Http
 {
+    [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
@@ -34,6 +38,11 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_operation_started);
             }
         }
+
+        /// <summary>
+        /// Gets a value that indicates whether the handler is supported on the current platform.
+        /// </summary>
+        public static bool IsSupported => true;
 
         public bool UseCookies
         {
@@ -131,7 +140,7 @@ namespace System.Net.Http
             get => _settings._maxAutomaticRedirections;
             set
             {
-                if (value < 1)
+                if (value <= 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
@@ -275,6 +284,74 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the server if it
+        /// doesn't receive any frames on a connection for this period of time. This property is used together with
+        /// <see cref="SocketsHttpHandler.KeepAlivePingTimeout"/> to close broken connections.
+        /// <para>
+        /// Delay value must be greater than or equal to 1 second. Set to <see cref="Timeout.InfiniteTimeSpan"/> to
+        /// disable the keep alive ping.
+        /// Defaults to <see cref="Timeout.InfiniteTimeSpan"/>.
+        /// </para>
+        /// </summary>
+        public TimeSpan KeepAlivePingDelay
+        {
+            get => _settings._keepAlivePingDelay;
+            set
+            {
+                if (value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than_or_equal, value, TimeSpan.FromSeconds(1)));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingDelay = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the keep alive ping timeout. Keep alive pings are sent when a period of inactivity exceeds
+        /// the configured <see cref="KeepAlivePingDelay"/> value. The client will close the connection if it
+        /// doesn't receive any frames within the timeout.
+        /// <para>
+        /// Timeout must be greater than or equal to 1 second. Set to <see cref="Timeout.InfiniteTimeSpan"/> to
+        /// disable the keep alive ping timeout.
+        /// Defaults to 20 seconds.
+        /// </para>
+        /// </summary>
+        public TimeSpan KeepAlivePingTimeout
+        {
+            get => _settings._keepAlivePingTimeout;
+            set
+            {
+                if (value.Ticks < TimeSpan.TicksPerSecond && value != Timeout.InfiniteTimeSpan)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than_or_equal, value, TimeSpan.FromSeconds(1)));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingTimeout = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the keep alive ping behaviour. Keep alive pings are sent when a period of inactivity exceeds
+        /// the configured <see cref="KeepAlivePingDelay"/> value.
+        /// </summary>
+        public HttpKeepAlivePingPolicy KeepAlivePingPolicy
+        {
+            get => _settings._keepAlivePingPolicy;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._keepAlivePingPolicy = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value that indicates whether additional HTTP/2 connections can be established to the same server
+        /// when the maximum of concurrent streams is reached on all existing connections.
+        /// </summary>
         public bool EnableMultipleHttp2Connections
         {
             get => _settings._enableMultipleHttp2Connections;
@@ -286,34 +363,48 @@ namespace System.Net.Http
             }
         }
 
-        internal bool SupportsAutomaticDecompression => true;
-        internal bool SupportsProxy => true;
-        internal bool SupportsRedirectConfiguration => true;
+        internal const bool SupportsAutomaticDecompression = true;
+        internal const bool SupportsProxy = true;
+        internal const bool SupportsRedirectConfiguration = true;
 
         /// <summary>
-        /// When non-null, a custom factory used to open new TCP connections.
-        /// When null, a <see cref="SocketsHttpConnectionFactory"/> will be used.
+        /// When non-null, a custom callback used to open new connections.
         /// </summary>
-        public ConnectionFactory? ConnectionFactory
+        public Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? ConnectCallback
         {
-            get => _settings._connectionFactory;
+            get => _settings._connectCallback;
             set
             {
                 CheckDisposedOrStarted();
-                _settings._connectionFactory = value;
+                _settings._connectCallback = value;
             }
         }
 
         /// <summary>
-        /// When non-null, a connection filter that is applied prior to any TLS encryption.
+        /// Gets or sets a custom callback that provides access to the plaintext HTTP protocol stream.
         /// </summary>
-        public Func<HttpRequestMessage, Connection, CancellationToken, ValueTask<Connection>>? PlaintextFilter
+        public Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? PlaintextStreamFilter
         {
-            get => _settings._plaintextFilter;
+            get => _settings._plaintextStreamFilter;
             set
             {
                 CheckDisposedOrStarted();
-                _settings._plaintextFilter = value;
+                _settings._plaintextStreamFilter = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the QUIC implementation to be used for HTTP3 requests.
+        /// </summary>
+        public QuicImplementationProvider? QuicImplementationProvider
+        {
+            // !!! NOTE !!!
+            // This is temporary and will not ship.
+            get => _settings._quicImplementationProvider;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._quicImplementationProvider = value;
             }
         }
 
@@ -411,6 +502,12 @@ namespace System.Net.Http
             if (request.Version.Major >= 2)
             {
                 throw new NotSupportedException(SR.Format(SR.net_http_http2_sync_not_supported, GetType()));
+            }
+
+            // Do not allow upgrades for synchronous requests, that might lead to asynchronous code-paths.
+            if (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher)
+            {
+                throw new NotSupportedException(SR.Format(SR.net_http_upgrade_not_enabled_sync, nameof(Send), request.VersionPolicy));
             }
 
             CheckDisposed();

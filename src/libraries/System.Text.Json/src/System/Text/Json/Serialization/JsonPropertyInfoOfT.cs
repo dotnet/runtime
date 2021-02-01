@@ -15,6 +15,18 @@ namespace System.Text.Json
     /// or a type's converter, if the current instance is a <see cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
+        /// <summary>
+        /// Returns true if the property's converter is external (a user's custom converter)
+        /// and the type to convert is not the same as the declared property type (polymorphic).
+        /// Used to determine whether to perform additional validation on the value returned by the
+        /// converter on deserialization.
+        /// </summary>
+        private bool _converterIsExternalAndPolymorphic;
+
+        // Since a converter's TypeToConvert (which is the T value in this type) can be different than
+        // the property's type, we track that and whether the property type can be null.
+        private bool _propertyTypeEqualsTypeToConvert;
+
         public Func<object, T>? Get { get; private set; }
         public Action<object, T>? Set { get; private set; }
 
@@ -91,7 +103,11 @@ namespace System.Text.Json
                     }
             }
 
-            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: Converter.CanBeNull);
+            _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && DeclaredPropertyType != converter.TypeToConvert;
+            PropertyTypeCanBeNull = DeclaredPropertyType.CanBeNull();
+            _propertyTypeEqualsTypeToConvert = typeof(T) == DeclaredPropertyType;
+
+            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: PropertyTypeCanBeNull);
         }
 
         public override JsonConverter ConverterBase
@@ -122,20 +138,42 @@ namespace System.Text.Json
         {
             T value = Get!(obj);
 
-            // Since devirtualization only works in non-shared generics,
-            // the default comparer is used only for value types for now.
-            // For reference types there is a quick check for null.
-            if (IgnoreDefaultValuesOnWrite && (
-                default(T) == null ? value == null : EqualityComparer<T>.Default.Equals(default, value)))
+            if (IgnoreDefaultValuesOnWrite)
             {
-                return true;
+                // If value is null, it is a reference type or nullable<T>.
+                if (value == null)
+                {
+                    return true;
+                }
+
+                if (!PropertyTypeCanBeNull)
+                {
+                    if (_propertyTypeEqualsTypeToConvert)
+                    {
+                        // The converter and property types are the same, so we can use T for EqualityComparer<>.
+                        if (EqualityComparer<T>.Default.Equals(default, value))
+                        {
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(RuntimeClassInfo.Type == DeclaredPropertyType);
+
+                        // Use a late-bound call to EqualityComparer<DeclaredPropertyType>.
+                        if (RuntimeClassInfo.GenericMethods.IsDefaultValue(value))
+                        {
+                            return true;
+                        }
+                    }
+                }
             }
 
             if (value == null)
             {
-                Debug.Assert(Converter.CanBeNull);
+                Debug.Assert(PropertyTypeCanBeNull);
 
-                if (Converter.HandleNull)
+                if (Converter.HandleNullOnWrite)
                 {
                     // No object, collection, or re-entrancy converter handles null.
                     Debug.Assert(Converter.ClassType == ClassType.Value);
@@ -194,9 +232,9 @@ namespace System.Text.Json
             bool success;
 
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
+            if (isNullToken && !Converter.HandleNullOnRead && !state.IsContinuation)
             {
-                if (!Converter.CanBeNull)
+                if (!PropertyTypeCanBeNull)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
                 }
@@ -205,7 +243,7 @@ namespace System.Text.Json
 
                 if (!IgnoreDefaultValuesOnRead)
                 {
-                    T value = default;
+                    T? value = default;
                     Set!(obj, value!);
                 }
 
@@ -213,10 +251,13 @@ namespace System.Text.Json
             }
             else if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
+                // CanUseDirectReadOrWrite == false when using streams
+                Debug.Assert(!state.IsContinuation);
+
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !PropertyTypeCanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    T fastValue = Converter.Read(ref reader, RuntimePropertyType!, Options);
+                    T? fastValue = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     Set!(obj, fastValue!);
                 }
 
@@ -225,11 +266,29 @@ namespace System.Text.Json
             else
             {
                 success = true;
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !PropertyTypeCanBeNull || state.IsContinuation)
                 {
-                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
+                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T? value);
                     if (success)
                     {
+#if !DEBUG
+                        if (_converterIsExternalAndPolymorphic)
+#endif
+                        {
+                            if (value != null)
+                            {
+                                Type typeOfValue = value.GetType();
+                                if (!DeclaredPropertyType.IsAssignableFrom(typeOfValue))
+                                {
+                                    ThrowHelper.ThrowInvalidCastException_DeserializeUnableToAssignValue(typeOfValue, DeclaredPropertyType);
+                                }
+                            }
+                            else if (!PropertyTypeCanBeNull)
+                            {
+                                ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(DeclaredPropertyType);
+                            }
+                        }
+
                         Set!(obj, value!);
                     }
                 }
@@ -242,14 +301,14 @@ namespace System.Text.Json
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
+            if (isNullToken && !Converter.HandleNullOnRead && !state.IsContinuation)
             {
-                if (!Converter.CanBeNull)
+                if (!PropertyTypeCanBeNull)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
                 }
 
-                value = default(T)!;
+                value = default(T);
                 success = true;
             }
             else
@@ -257,12 +316,15 @@ namespace System.Text.Json
                 // Optimize for internal converters by avoiding the extra call to TryRead.
                 if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
+                    // CanUseDirectReadOrWrite == false when using streams
+                    Debug.Assert(!state.IsContinuation);
+
                     value = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     success = true;
                 }
                 else
                 {
-                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T typedValue);
+                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T? typedValue);
                     value = typedValue;
                 }
             }

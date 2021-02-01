@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Drawing
 {
     using System.Collections.Generic;
@@ -256,7 +258,7 @@ namespace System.Drawing
                     if (s_animationThread == null)
                     {
                         s_animationThread = new Thread(new ThreadStart(AnimateImages50ms));
-                        s_animationThread.Name = typeof(ImageAnimator).Name;
+                        s_animationThread.Name = nameof(ImageAnimator);
                         s_animationThread.IsBackground = true;
                         s_animationThread.Start();
                     }
@@ -278,7 +280,7 @@ namespace System.Drawing
         /// <summary>
         ///    Whether or not the image has multiple time-based frames.
         /// </summary>
-        public static bool CanAnimate(Image? image)
+        public static bool CanAnimate([NotNullWhen(true)] Image? image)
         {
             if (image == null)
             {

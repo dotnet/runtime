@@ -1,26 +1,52 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Net.Sockets;
+using System.Threading;
 
 internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        // Important: this API is called once by the System.Net.NameResolution contract implementation.
-        // WSACleanup is not called and will be automatically performed at process shutdown.
-        internal static unsafe SocketError WSAStartup()
+        private static int s_initialized;
+
+        internal static void EnsureInitialized()
         {
-            WSAData d;
-            return WSAStartup(0x0202 /* 2.2 */, &d);
+            // No volatile needed here. Reading stale information is just going to cause a harmless extra startup.
+            if (s_initialized == 0)
+                Initialize();
+
+            static unsafe void Initialize()
+            {
+                WSAData d;
+                SocketError errorCode = WSAStartup(0x0202 /* 2.2 */, &d);
+
+                if (errorCode != SocketError.Success)
+                {
+                    // WSAStartup does not set LastWin32Error
+                    throw new SocketException((int)errorCode);
+                }
+
+                if (Interlocked.CompareExchange(ref s_initialized, 1, 0) != 0)
+                {
+                    // Keep the winsock initialization count balanced if other thread beats us to finish the initialization.
+                    // This cleanup is just for good hygiene. A few extra startups would not matter.
+                    errorCode = WSACleanup();
+                    Debug.Assert(errorCode == SocketError.Success);
+                }
+            }
         }
 
-        [DllImport(Libraries.Ws2_32, SetLastError = true)]
+        [DllImport(Libraries.Ws2_32)]
         private static extern unsafe SocketError WSAStartup(short wVersionRequested, WSAData* lpWSAData);
 
+        [DllImport(Libraries.Ws2_32)]
+        private static extern SocketError WSACleanup();
+
         [StructLayout(LayoutKind.Sequential, Size = 408)]
-        private unsafe struct WSAData
+        private struct WSAData
         {
             // WSADATA is defined as follows:
             //

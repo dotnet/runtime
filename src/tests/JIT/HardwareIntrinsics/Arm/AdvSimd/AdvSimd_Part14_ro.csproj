@@ -1,0 +1,115 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalNarrowingUpper.Vector128.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector64.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector64.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector64.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector64.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector64.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector64.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector128.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector128.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector128.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector128.Int64.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector128.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector128.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector128.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalRounded.Vector128.UInt64.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector64.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector64.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector64.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector64.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector64.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector64.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector128.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector128.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector128.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector128.Int64.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector128.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector128.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector128.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAdd.Vector128.UInt64.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAddScalar.Vector64.Int64.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedAddScalar.Vector64.UInt64.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingLower.Vector64.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingLower.Vector64.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingLower.Vector64.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingLower.Vector64.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingLower.Vector64.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingLower.Vector64.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateLower.Vector64.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateLower.Vector64.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateLower.Vector64.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateLower.Vector64.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateLower.Vector64.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateLower.Vector64.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateUpper.Vector128.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateUpper.Vector128.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateUpper.Vector128.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateUpper.Vector128.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateUpper.Vector128.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingSaturateUpper.Vector128.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingUpper.Vector128.Byte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingUpper.Vector128.Int16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingUpper.Vector128.Int32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingUpper.Vector128.SByte.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingUpper.Vector128.UInt16.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedNarrowingUpper.Vector128.UInt32.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedScalar.Vector64.Int64.1.cs" />
+    <Compile Include="ShiftRightLogicalRoundedScalar.Vector64.UInt64.1.cs" />
+    <Compile Include="ShiftRightLogicalScalar.Vector64.Int64.1.cs" />
+    <Compile Include="ShiftRightLogicalScalar.Vector64.UInt64.1.cs" />
+    <Compile Include="SignExtendWideningLower.Vector64.Int16.cs" />
+    <Compile Include="SignExtendWideningLower.Vector64.Int32.cs" />
+    <Compile Include="SignExtendWideningLower.Vector64.SByte.cs" />
+    <Compile Include="SignExtendWideningUpper.Vector128.Int16.cs" />
+    <Compile Include="SignExtendWideningUpper.Vector128.Int32.cs" />
+    <Compile Include="SignExtendWideningUpper.Vector128.SByte.cs" />
+    <Compile Include="SqrtScalar.Vector64.Double.cs" />
+    <Compile Include="SqrtScalar.Vector64.Single.cs" />
+    <Compile Include="Store.Vector64.Byte.cs" />
+    <Compile Include="Store.Vector64.Double.cs" />
+    <Compile Include="Store.Vector64.Int16.cs" />
+    <Compile Include="Store.Vector64.Int32.cs" />
+    <Compile Include="Store.Vector64.Int64.cs" />
+    <Compile Include="Store.Vector64.SByte.cs" />
+    <Compile Include="Store.Vector64.Single.cs" />
+    <Compile Include="Store.Vector64.UInt16.cs" />
+    <Compile Include="Store.Vector64.UInt32.cs" />
+    <Compile Include="Store.Vector64.UInt64.cs" />
+    <Compile Include="Store.Vector128.Byte.cs" />
+    <Compile Include="Store.Vector128.Double.cs" />
+    <Compile Include="Store.Vector128.Int16.cs" />
+    <Compile Include="Store.Vector128.Int32.cs" />
+    <Compile Include="Store.Vector128.Int64.cs" />
+    <Compile Include="Store.Vector128.SByte.cs" />
+    <Compile Include="Store.Vector128.Single.cs" />
+    <Compile Include="Store.Vector128.UInt16.cs" />
+    <Compile Include="Store.Vector128.UInt32.cs" />
+    <Compile Include="Store.Vector128.UInt64.cs" />
+    <Compile Include="StoreSelectedScalar.Vector64.Byte.7.cs" />
+    <Compile Include="StoreSelectedScalar.Vector64.Int16.3.cs" />
+    <Compile Include="StoreSelectedScalar.Vector64.Int32.1.cs" />
+    <Compile Include="StoreSelectedScalar.Vector64.SByte.7.cs" />
+    <Compile Include="StoreSelectedScalar.Vector64.Single.1.cs" />
+    <Compile Include="StoreSelectedScalar.Vector64.UInt16.3.cs" />
+    <Compile Include="StoreSelectedScalar.Vector64.UInt32.1.cs" />
+    <Compile Include="StoreSelectedScalar.Vector128.Byte.15.cs" />
+    <Compile Include="StoreSelectedScalar.Vector128.Double.1.cs" />
+    <Compile Include="StoreSelectedScalar.Vector128.Int16.7.cs" />
+    <Compile Include="StoreSelectedScalar.Vector128.Int32.3.cs" />
+    <Compile Include="Program.AdvSimd_Part14.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

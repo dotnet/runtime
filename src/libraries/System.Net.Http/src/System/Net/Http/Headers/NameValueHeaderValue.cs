@@ -80,7 +80,7 @@ namespace System.Net.Http.Headers
             return nameHashCode;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             NameValueHeaderValue? other = obj as NameValueHeaderValue;
 

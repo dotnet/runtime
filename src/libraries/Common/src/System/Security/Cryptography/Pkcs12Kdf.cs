@@ -14,17 +14,16 @@ namespace System.Security.Cryptography.Pkcs
         private const byte IvId = 2;
         private const byte MacKeyId = 3;
 
-        // This is a dictionary representation of the table in
-        // https://tools.ietf.org/html/rfc7292#appendix-B.2
-        private static readonly Dictionary<HashAlgorithmName, Tuple<int, int>> s_uvLookup =
-            new Dictionary<HashAlgorithmName, Tuple<int, int>>
-            {
-                { HashAlgorithmName.MD5, Tuple.Create(128, 512) },
-                { HashAlgorithmName.SHA1, Tuple.Create(160, 512) },
-                { HashAlgorithmName.SHA256, Tuple.Create(256, 512) },
-                { HashAlgorithmName.SHA384, Tuple.Create(384, 1024) },
-                { HashAlgorithmName.SHA512, Tuple.Create(512, 1024) },
-            };
+        // This is based on the table in https://tools.ietf.org/html/rfc7292#appendix-B.2.
+        // It is small enough that it's cheaper to just use an array and linear search rather than dictionary lookup.
+        private static readonly (HashAlgorithmName, int, int)[] s_uvLookup = new[]
+        {
+            (HashAlgorithmName.MD5, 128, 512),
+            (HashAlgorithmName.SHA1, 160, 512),
+            (HashAlgorithmName.SHA256, 256, 512),
+            (HashAlgorithmName.SHA384, 384, 1024),
+            (HashAlgorithmName.SHA512, 512, 1024),
+        };
 
         internal static void DeriveCipherKey(
             ReadOnlySpan<char> password,
@@ -85,12 +84,21 @@ namespace System.Security.Cryptography.Pkcs
             // https://tools.ietf.org/html/rfc7292#appendix-B.2
             Debug.Assert(iterationCount >= 1);
 
-            if (!s_uvLookup.TryGetValue(hashAlgorithm, out Tuple<int, int>? uv))
+            int u = -1, v = -1;
+            foreach ((HashAlgorithmName, int, int) huv in s_uvLookup)
+            {
+                if (huv.Item1 == hashAlgorithm)
+                {
+                    u = huv.Item2;
+                    v = huv.Item3;
+                    break;
+                }
+            }
+
+            if (u == -1)
             {
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
             }
-
-            (int u, int v) = uv;
 
             Debug.Assert(v <= 1024);
 

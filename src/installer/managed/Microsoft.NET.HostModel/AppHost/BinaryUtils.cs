@@ -60,8 +60,8 @@ namespace Microsoft.NET.HostModel.AppHost
         }
 
         public static unsafe void SearchAndReplace(
-            string filePath, 
-            byte[] searchPattern, 
+            string filePath,
+            byte[] searchPattern,
             byte[] patternToReplace,
             bool pad0s = true)
         {

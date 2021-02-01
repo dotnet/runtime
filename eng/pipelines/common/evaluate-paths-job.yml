@@ -1,0 +1,52 @@
+### Job used to evaluate changed paths on a pull request to emit variables to condition jobs based on paths.
+
+parameters:
+  # Object containing subset include and exclude paths in an array form.
+  # Scenarios:
+  #  1. exclude paths are specified
+  #     Will include all paths except the ones in the exclude list.
+  #  2. include paths are specified
+  #     Will only include paths specified in the list.
+  #  3. exclude + include:
+  #     1st we evaluate changes for all paths except ones in excluded list. If we can't find
+  #     any applicable changes like that, then we evaluate changes for incldued paths
+  #     if any of these two finds changes, then a variable will be set to true.
+  #  In order to consume this variable you need to reference it via: $[ dependencies.evaluate_paths.outputs['SetPathVars_<subset>.containschange'] ]
+  #
+  #  Array form example
+  #  paths:
+  #  - subset: coreclr
+  #    include:
+  #    - src/libraries/System.Private.CoreLib/*
+  #    exclude:
+  #    - src/libraries/*
+  #
+  #  This example will include ALL path changes under src/libraries/ except the ones under src/libraries/*!System.Private.CoreLib/*
+  paths: []
+
+
+jobs:
+  - job: evaluate_paths
+    displayName: Evaluate Paths
+    pool:
+      vmImage: 'macOS-10.14'
+
+    steps:
+    - checkout: self
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
+
+    - ${{ if ne(parameters.paths[0], '') }}:
+      - ${{ each path in parameters.paths }}:
+        - template: evaluate-changed-paths.yml
+          parameters:
+            subsetName: ${{ path.subset }} 
+            arguments:
+            # The commit that we're building is always a merge commit that is merging into the target branch.
+            # So the first parent of the commit is on the target branch and the second parent is on the source branch.
+            - --difftarget HEAD^1
+            - --subset ${{ path.subset }}
+            - ${{ if ne(path.include[0], '') }}:
+              - --includepaths '${{ join('+', path.include) }}'
+            - ${{ if ne(path.exclude[0], '') }}:
+              - --excludepaths '${{ join('+', path.exclude) }}'

@@ -16,7 +16,7 @@ namespace System.IO.Pipes.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void InheritHandles_AvailableInChildProcess()
         {
-            string pipeName = GetUniquePipeName();
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
 
             using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In))
             using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.Inheritable))
@@ -48,8 +48,8 @@ namespace System.IO.Pipes.Tests
         public void PingPong_Sync()
         {
             // Create names for two pipes
-            string outName = GetUniquePipeName();
-            string inName = GetUniquePipeName();
+            string outName = PipeStreamConformanceTests.GetUniquePipeName();
+            string inName = PipeStreamConformanceTests.GetUniquePipeName();
 
             // Create the two named pipes, one for each direction, then create
             // another process with which to communicate
@@ -74,8 +74,8 @@ namespace System.IO.Pipes.Tests
         public async Task PingPong_Async()
         {
             // Create names for two pipes
-            string outName = GetUniquePipeName();
-            string inName = GetUniquePipeName();
+            string outName = PipeStreamConformanceTests.GetUniquePipeName();
+            string inName = PipeStreamConformanceTests.GetUniquePipeName();
 
             // Create the two named pipes, one for each direction, then create
             // another process with which to communicate
@@ -117,15 +117,5 @@ namespace System.IO.Pipes.Tests
                 }
             }
         }
-
-        private static string GetUniquePipeName()
-        {
-            if (PlatformDetection.IsInAppContainer)
-            {
-                return @"LOCAL\" + Path.GetRandomFileName();
-            }
-            return Path.GetRandomFileName();
-        }
-
     }
 }

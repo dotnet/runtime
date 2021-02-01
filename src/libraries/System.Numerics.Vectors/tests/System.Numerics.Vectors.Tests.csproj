@@ -5,16 +5,7 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\Numerics\ConstantHelper.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ConstantHelper.tt</DependentUpon>
-    </Compile>
-    <Compile Include="GenericVectorTests.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>GenericVectorTests.tt</DependentUpon>
-    </Compile>
+    <Compile Include="GenericVectorTests.cs" />
     <Compile Include="GenericVectorUnsupportedTests.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="Vector2Tests.cs" />
@@ -25,19 +16,5 @@
     <Compile Include="Matrix4x4Tests.cs" />
     <Compile Include="PlaneTests.cs" />
     <Compile Include="QuaternionTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="$(CoreLibSharedDir)System\Numerics\ConstantHelper.tt">
-      <Link>ConstantHelper.tt</Link>
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>ConstantHelper.cs</LastGenOutput>
-    </None>
-    <None Include="$(CoreLibSharedDir)System\Numerics\GenerationConfig.ttinclude">
-      <Link>GenerationConfig.ttinclude</Link>
-    </None>
-    <None Include="GenericVectorTests.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>GenericVectorTests.cs</LastGenOutput>
-    </None>
   </ItemGroup>
 </Project>

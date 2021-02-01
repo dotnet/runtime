@@ -273,8 +273,6 @@ namespace System.ComponentModel.DataAnnotations
                                                     _errorMessageResourceType.FullName));
             }
 
-
-            // TODO-NULLABLE: If the user-provided resource returns null, an ArgumentNullException is thrown - should probably throw a better exception
             _errorMessageResourceAccessor = () => (string)property.GetValue(null, null)!;
         }
 

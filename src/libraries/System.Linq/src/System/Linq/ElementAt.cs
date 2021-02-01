@@ -17,7 +17,7 @@ namespace System.Linq
 
             if (source is IPartition<TSource> partition)
             {
-                TSource element = partition.TryGetElementAt(index, out bool found);
+                TSource? element = partition.TryGetElementAt(index, out bool found);
                 if (found)
                 {
                     return element!;
@@ -51,8 +51,7 @@ namespace System.Linq
             return default;
         }
 
-        [return: MaybeNull]
-        public static TSource ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, int index)
+        public static TSource? ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, int index)
         {
             if (source == null)
             {
@@ -90,7 +89,7 @@ namespace System.Linq
                 }
             }
 
-            return default!;
+            return default;
         }
     }
 }

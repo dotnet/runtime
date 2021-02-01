@@ -67,7 +67,7 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 	}
 #endif
 	if (mono_dump_start ())
-		mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL, NULL);
+		mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL);
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -1140,7 +1140,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 		MonoContext mctx;
 		mono_sigctx_to_monoctx (sigctx, &mctx);
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, siginfo, sigctx);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, siginfo);
 		else
 			abort ();
 	}
@@ -1175,7 +1175,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 #endif
 }
 
-#if MONO_SUPPORT_TASKLETS
+#if MONO_SUPPORT_TASKLETS && !defined(ENABLE_NETCORE)
 MonoContinuationRestore
 mono_tasklets_arch_restore (void)
 {

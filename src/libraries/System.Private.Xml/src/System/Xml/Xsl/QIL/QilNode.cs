@@ -22,9 +22,9 @@ namespace System.Xml.Xsl.Qil
     internal class QilNode : IList<QilNode>
     {
         protected QilNodeType nodeType;
-        protected XmlQueryType xmlType;
-        protected ISourceLineInfo sourceLine;
-        protected object annotation;
+        protected XmlQueryType? xmlType;
+        protected ISourceLineInfo? sourceLine;
+        protected object? annotation;
 
         //-----------------------------------------------
         // Constructor
@@ -64,7 +64,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Access the QIL type.
         /// </summary>
-        public virtual XmlQueryType XmlType
+        public virtual XmlQueryType? XmlType
         {
             get { return this.xmlType; }
             set { this.xmlType = value; }
@@ -73,7 +73,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Line info information for tools support.
         /// </summary>
-        public ISourceLineInfo SourceLine
+        public ISourceLineInfo? SourceLine
         {
             get { return this.sourceLine; }
             set { this.sourceLine = value; }
@@ -82,7 +82,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Access an annotation which may have been attached to this node.
         /// </summary>
-        public object Annotation
+        public object? Annotation
         {
             get { return this.annotation; }
             set { this.annotation = value; }

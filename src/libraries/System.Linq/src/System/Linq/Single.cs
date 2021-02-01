@@ -83,8 +83,7 @@ namespace System.Linq
             return default;
         }
 
-        [return: MaybeNull]
-        public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source)
+        public static TSource? SingleOrDefault<TSource>(this IEnumerable<TSource> source)
         {
             if (source == null)
             {
@@ -96,7 +95,7 @@ namespace System.Linq
                 switch (list.Count)
                 {
                     case 0:
-                        return default!;
+                        return default;
                     case 1:
                         return list[0];
                 }
@@ -107,7 +106,7 @@ namespace System.Linq
                 {
                     if (!e.MoveNext())
                     {
-                        return default!;
+                        return default;
                     }
 
                     TSource result = e.Current;
@@ -122,8 +121,7 @@ namespace System.Linq
             return default;
         }
 
-        [return: MaybeNull]
-        public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
+        public static TSource? SingleOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
             if (source == null)
             {
@@ -155,7 +153,7 @@ namespace System.Linq
                 }
             }
 
-            return default!;
+            return default;
         }
     }
 }

@@ -3,8 +3,6 @@
 
 Imports System
 Imports System.Math
-Imports Microsoft.VisualBasic.CompilerServices
-Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic
 

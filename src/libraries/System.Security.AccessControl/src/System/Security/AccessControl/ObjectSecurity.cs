@@ -675,7 +675,7 @@ namespace System.Security.AccessControl
                 throw new ArgumentNullException(nameof(rule));
             }
 
-            if (!this.AccessRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()))
+            if (!this.AccessRuleType.IsAssignableFrom(rule.GetType()))
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAccessRuleType,
@@ -701,7 +701,7 @@ namespace System.Security.AccessControl
                 throw new ArgumentNullException(nameof(rule));
             }
 
-            if (!this.AuditRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()))
+            if (!this.AuditRuleType.IsAssignableFrom(rule.GetType()))
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAuditRuleType,

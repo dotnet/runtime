@@ -1,7 +1,11 @@
-#include "mono/eventpipe/ep.h"
-#include "mono/eventpipe/ep-session.h"
-#include "mono/eventpipe/ep-thread.h"
-#include "eglib/test/test.h"
+#if defined(_MSC_VER) && defined(_DEBUG)
+#include "ep-tests-debug.h"
+#endif
+
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-session.h>
+#include <eventpipe/ep-thread.h>
+#include <eglib/test/test.h>
 
 #define TEST_FILE "./ep_test_create_file.txt"
 
@@ -115,8 +119,8 @@ test_get_or_create_thread (void)
 
 	test_location = 3;
 
-	if (ep_rt_volatile_load_uint32_t ((const volatile uint32_t *)ep_thread_get_ref_count_ref (thread)) != 1) {
-		result = FAILED ("thread ref count should be 1");
+	if (ep_rt_volatile_load_uint32_t ((const volatile uint32_t *)ep_thread_get_ref_count_ref (thread)) == 0) {
+		result = FAILED ("thread ref count should not be 0");
 		ep_raise_error ();
 	}
 
@@ -315,7 +319,7 @@ test_thread_session_write (void)
 	test_location = 1;
 
 	uint32_t session_write = ep_thread_get_session_write_in_progress (thread);
-	if (session_write) {
+	if (session_write < EP_MAX_NUMBER_OF_SESSIONS) {
 		result = FAILED ("Session write is in progress");
 		ep_raise_error ();
 	}
@@ -335,7 +339,7 @@ test_thread_session_write (void)
 	ep_thread_set_session_write_in_progress (thread, 0);
 
 	session_write = ep_thread_get_session_write_in_progress (thread);
-	if (session_write) {
+	if (session_write != 0) {
 		result = FAILED ("Session write is in progress");
 		ep_raise_error ();
 	}

@@ -1,7 +1,0 @@
-<Project>
-  <Import Project="..\Directory.Build.targets" />
-
-  <PropertyGroup>
-    <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
-  </PropertyGroup>
-</Project>

@@ -112,7 +112,7 @@ namespace System.Xml.Xsl.XsltOld
         {
 #if DEBUG
             Debug.Assert(keyword != null);
-            Debug.Assert((object)keyword == (object)_NameTable.Get(keyword));
+            Debug.Assert((object)keyword == (object?)_NameTable.Get(keyword));
 #endif
         }
     }

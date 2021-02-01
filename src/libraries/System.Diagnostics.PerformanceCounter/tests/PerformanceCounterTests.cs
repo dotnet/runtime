@@ -10,7 +10,7 @@ namespace System.Diagnostics.Tests
 {
     public static class PerformanceCounterTests
     {
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounter_CreateCounter_EmptyCounter()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter())
@@ -36,7 +36,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounter_CreateCounter_ProcessorCounter()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_CreateCounter_MultiInstanceReadOnly()
         {
             var name = nameof(PerformanceCounter_CreateCounter_MultiInstanceReadOnly) + "_Counter";
@@ -66,7 +66,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_CreateCounter_SetReadOnly()
         {
             var name = nameof(PerformanceCounter_CreateCounter_SetReadOnly) + "_Counter";
@@ -83,7 +83,7 @@ namespace System.Diagnostics.Tests
             Helpers.DeleteCategory(name);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounter_SetProperties_Null()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter())
@@ -94,7 +94,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounter_SetRawValue_ReadOnly()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter())
@@ -103,7 +103,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounter_GetRawValue_EmptyCategoryName()
         {
             var name = nameof(PerformanceCounter_GetRawValue_EmptyCategoryName) + "_Counter";
@@ -116,7 +116,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounter_GetRawValue_EmptyCounterName()
         {
             var name = nameof(PerformanceCounter_GetRawValue_EmptyCounterName) + "_Counter";
@@ -129,7 +129,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounter_GetRawValue_CounterDoesNotExist()
         {
             var name = nameof(PerformanceCounter_GetRawValue_CounterDoesNotExist) + "_Counter";
@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/29753")]
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounter_NextValue_ProcessorCounter()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
@@ -156,7 +156,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounter_BeginInit_ProcessorCounter()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
@@ -167,7 +167,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void PerformanceCounter_BeginInitEndInit_ProcessorCounter()
         {
             using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
@@ -179,7 +179,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_Decrement()
         {
             var name = nameof(PerformanceCounter_Decrement) + "_Counter";
@@ -193,7 +193,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_Increment()
         {
             var name = nameof(PerformanceCounter_Increment) + "_Counter";
@@ -207,7 +207,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_IncrementBy_IncrementBy2()
         {
             var name = nameof(PerformanceCounter_IncrementBy_IncrementBy2) + "_Counter";
@@ -221,8 +221,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/24176")]
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_IncrementBy_IncrementByReadOnly()
         {
             var name = nameof(PerformanceCounter_IncrementBy_IncrementByReadOnly) + "_Counter";
@@ -233,7 +232,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_Increment_IncrementReadOnly()
         {
             var name = nameof(PerformanceCounter_Increment_IncrementReadOnly) + "_Counter";
@@ -244,7 +243,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_Decrement_DecrementReadOnly()
         {
             var name = nameof(PerformanceCounter_Decrement_DecrementReadOnly) + "_Counter";
@@ -270,7 +269,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_NextSample_MultiInstance()
         {
             var name = nameof(PerformanceCounter_NextSample_MultiInstance) + "_Counter";

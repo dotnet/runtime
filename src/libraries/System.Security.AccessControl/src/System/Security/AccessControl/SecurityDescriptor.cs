@@ -289,8 +289,6 @@ namespace System.Security.AccessControl
             // Populate the header
             //
 
-            int length = BinaryLength;
-
             byte rmControl =
                 ((this is RawSecurityDescriptor rsd) &&
                  ((ControlFlags & ControlFlags.RMControlValid) != 0)) ? (rsd.ResourceManagerControl) : (byte)0;

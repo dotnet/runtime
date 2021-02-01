@@ -33,8 +33,8 @@ namespace StaticTestGenerator
 
             // Set up an assembly resolving event handler to help locate helper assemblies that are needed
             // to process the test assembly, such as xunit assemblies and .NET Core test helpers.
-            string[] probingPaths = new[] { Path.GetDirectoryName(testAssemblyPath), runtimeAssembliesPath, outputPath, AppContext.BaseDirectory };
-            AppDomain.CurrentDomain.AssemblyResolve += (object sender, ResolveEventArgs args) =>
+            string[] probingPaths = new string[] { Path.GetDirectoryName(testAssemblyPath)!, runtimeAssembliesPath, outputPath, AppContext.BaseDirectory };
+            AppDomain.CurrentDomain.AssemblyResolve += (object? sender, ResolveEventArgs args) =>
             {
                 // Clean up the dll name.
                 string name = args.Name;
@@ -86,7 +86,7 @@ namespace StaticTestGenerator
                 }
 
                 MethodInfo m = ((ReflectionMethodInfo)testCase.Method).MethodInfo;
-                Type t = m.ReflectedType;
+                Type t = m.ReflectedType!;
 
                 // Skip test cases we can't support.  Some of these xunit doesn't support
                 // either, so it's just for good measure; in other cases, xunit can support
@@ -202,7 +202,7 @@ namespace StaticTestGenerator
             File.WriteAllText(
                 csprojPath,
                 CSProjTemplate
-                .Replace("#HelperAssemblyLocation#", runtimeAssembliesPath)
+                .Replace("#HelperAssemblyLocation#", Path.GetDirectoryName(testAssemblyPath) + Path.DirectorySeparatorChar)
                 .Replace("#TestAssembly#", Path.GetFullPath(testAssemblyPath))
                 .Replace("#TestAssemblyLocation#", testAssemblyPath));
             Log($"Wrote {csprojPath}");
@@ -273,7 +273,7 @@ namespace StaticTestGenerator
             // Invalid command line arguments.
             Console.WriteLine("Usage: <output_directory> <helper_assemblies_directory> <test_assembly_path> <xunit_console_options>");
             Console.WriteLine("    Example:");
-            Console.WriteLine(@"   dotnet run d:\tmpoutput d:\repos\runtime\artifacts\bin\testhost\net5.0-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\$(ProductVersion) d:\repos\runtime\artifacts\bin\System.Runtime.Tests\net5.0-Windows_NT-Debug\System.Runtime.Tests.dll");
+            Console.WriteLine(@"   dotnet run d:\tmpoutput d:\repos\runtime\artifacts\bin\testhost\net6.0-windows-Debug-x64\shared\Microsoft.NETCore.App\6.0.0\ d:\repos\runtime\artifacts\bin\System.Runtime.Tests\net6.0-windows-Debug\System.Runtime.Tests.dll");
             testAssemblyPath = string.Empty;
             runtimeAssembliesPath = string.Empty;
             outputPath = string.Empty;
@@ -327,7 +327,7 @@ namespace StaticTestGenerator
                 .Select(tc =>
                 {
                     MethodInfo testMethod = ((ReflectionMethodInfo)tc.Method).MethodInfo;
-                    Type testMethodType = testMethod.ReflectedType;
+                    Type testMethodType = testMethod.ReflectedType!;
 
                     var cases = new List<TestCase>();
 
@@ -350,23 +350,23 @@ namespace StaticTestGenerator
                                         // For a [MemberData(...)], it might point to a method, property, or field; get the right
                                         // piece of metadata.  Also, for methods, there might be data to pass to the method
                                         // when invoking it; store that as well.
-                                        Type memberDataType = memberData.MemberType ?? testMethod.DeclaringType;
+                                        Type memberDataType = memberData.MemberType ?? testMethod.DeclaringType!;
 
-                                        MethodInfo testDataMethod = memberDataType.GetMethod(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                                        MethodInfo? testDataMethod = memberDataType.GetMethod(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                                         if (testDataMethod != null)
                                         {
                                             cases.Add(new TestCase { MemberDataMember = testDataMethod, Values = memberData.Parameters });
                                             break;
                                         }
 
-                                        PropertyInfo testDataProperty = memberDataType.GetProperty(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                                        PropertyInfo? testDataProperty = memberDataType.GetProperty(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                                         if (testDataProperty != null)
                                         {
                                             cases.Add(new TestCase { MemberDataMember = testDataProperty });
                                             break;
                                         }
 
-                                        FieldInfo testDataField = memberDataType.GetField(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                                        FieldInfo? testDataField = memberDataType.GetField(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                                         if (testDataField != null)
                                         {
                                             cases.Add(new TestCase { MemberDataMember = testDataField });
@@ -454,8 +454,8 @@ namespace StaticTestGenerator
             for (int i = 0; i < args.Count; i++)
             {
                 CustomAttributeTypedArgument cata = args[i];
-                object newArg = cata.Value is IReadOnlyCollection<CustomAttributeTypedArgument> roc ?
-                    UnwrapCustomAttributeTypedArguments(cata.ArgumentType.GetElementType(), roc.ToArray()) :
+                object? newArg = cata.Value is IReadOnlyCollection<CustomAttributeTypedArgument> roc ?
+                    UnwrapCustomAttributeTypedArguments(cata.ArgumentType.GetElementType()!, roc.ToArray()) :
                     cata.Value;
                 try
                 {
@@ -481,7 +481,7 @@ namespace StaticTestGenerator
         {
             // Writes out ".MethodName(arg1, arg2, ...)" when all arguments are statically available.
             // The arguments are written as literals.
-            void WriteArgumentListStatic(object[]? arguments, ParameterInfo[] parameters)
+            void WriteArgumentListStatic(object?[]? arguments, ParameterInfo[] parameters)
             {
                 // Handle optional arguments by populating the input array with the defaults
                 // whereever they exist and didn't already contain a value.  Also handle
@@ -495,7 +495,7 @@ namespace StaticTestGenerator
                 }
                 else if (arguments.Length < parameters.Length)
                 {
-                    var newArguments = new object[parameters.Length];
+                    var newArguments = new object?[parameters.Length];
                     Array.Copy(arguments, newArguments, arguments.Length);
                     for (int i = arguments.Length; i < parameters.Length; i++)
                     {
@@ -638,19 +638,19 @@ namespace StaticTestGenerator
                         }
                         memberDataArgs = argsSb.ToString();
                     }
-                    sb.AppendLine($"foreach (object[] row in {GetTypeName(mi.ReflectedType)}.{mi.Name}({memberDataArgs}))");
+                    sb.AppendLine($"foreach (object[] row in {GetTypeName(mi.ReflectedType!)}.{mi.Name}({memberDataArgs}))");
                     WriteInvocationDynamic("row", parameters);
                     break;
 
                 case PropertyInfo pi:
                     // This is a theory with data coming from a MemberData property.
-                    sb.AppendLine($"foreach (object[] row in {GetTypeName(pi.ReflectedType)}.{pi.Name})");
+                    sb.AppendLine($"foreach (object[] row in {GetTypeName(pi.ReflectedType!)}.{pi.Name})");
                     WriteInvocationDynamic("row", parameters);
                     break;
 
                 case FieldInfo fi:
                     // This is a theory with data coming from a MemberData field.
-                    sb.AppendLine($"foreach (object[] row in {GetTypeName(fi.ReflectedType)}.{fi.Name})");
+                    sb.AppendLine($"foreach (object[] row in {GetTypeName(fi.ReflectedType!)}.{fi.Name})");
                     WriteInvocationDynamic("row", parameters);
                     break;
 
@@ -662,7 +662,7 @@ namespace StaticTestGenerator
 
                 case ConstructorInfo ci:
                     // This is a theory with data coming from a custom data attribute.
-                    sb.AppendLine($"foreach (object[] row in new {GetTypeName(ci.DeclaringType)}");
+                    sb.AppendLine($"foreach (object[] row in new {GetTypeName(ci.DeclaringType!)}");
                     WriteArgumentListStatic(testCase.Values, ci.GetParameters());
                     sb.Append(".GetData(null))"); // TODO: Generate code to construct a method info to pass in instead of null?
                     WriteInvocationDynamic("row", parameters);
@@ -695,7 +695,7 @@ namespace StaticTestGenerator
 
             if (literal is Array arr)
             {
-                Type elementType = literal.GetType().GetElementType();
+                Type elementType = literal.GetType().GetElementType()!;
                 return
                     $"new {GetTypeName(elementType)}[]" +
                     "{" +
@@ -778,7 +778,7 @@ namespace StaticTestGenerator
                     case TypeCode.String:
                         var sb = new StringBuilder();
                         sb.Append('"');
-                        foreach (char c in literal.ToString())
+                        foreach (char c in literal.ToString()!)
                         {
                             if (c == '\\')
                             {
@@ -855,12 +855,12 @@ namespace StaticTestGenerator
 
             if (type.IsArray)
             {
-                return GetTypeName(type.GetElementType()) + "[" + new string(',', type.GetArrayRank() - 1) + "]";
+                return GetTypeName(type.GetElementType()!) + "[" + new string(',', type.GetArrayRank() - 1) + "]";
             }
 
             if (type.IsPointer)
             {
-                return GetTypeName(type.GetElementType()) + "*";
+                return GetTypeName(type.GetElementType()!) + "*";
             }
 
             Type[] genericArgs = type.GetGenericArguments();
@@ -869,7 +869,7 @@ namespace StaticTestGenerator
 
             if (type.IsNested)
             {
-                if (type.DeclaringType.IsGenericType &&
+                if (type.DeclaringType!.IsGenericType &&
                     !type.DeclaringType.IsConstructedGenericType &&
                     type.IsConstructedGenericType)
                 {
@@ -904,7 +904,7 @@ namespace StaticTestGenerator
 
             name = name.Substring(0, backtickPos);
 
-            if (type.IsNested && type.DeclaringType.IsGenericType)
+            if (type.IsNested && type.DeclaringType!.IsGenericType)
             {
                 genericArgs = genericArgs.Skip(parentGenericArgs.Length).ToArray();
             }
@@ -923,12 +923,12 @@ namespace StaticTestGenerator
         {
             if (type.IsArray || type.IsPointer)
             {
-                return IsPublic(type.GetElementType());
+                return IsPublic(type.GetElementType()!);
             }
 
             if (type.IsNested)
             {
-                return type.IsNestedPublic && IsPublic(type.DeclaringType);
+                return type.IsNestedPublic && IsPublic(type.DeclaringType!);
             }
 
             return type.IsPublic;
@@ -1034,10 +1034,22 @@ public static class Test
 {
     private static bool s_verbose;
     private static int s_succeeded, s_failed;
+    private const int SuccessErrorCode = 42;
 
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
-        if (args[0] == ""-v"") s_verbose = true;
+        if (args.Length == 1 && args[0] == ""-v"")
+        {
+            s_verbose = true;
+        }
+        else if (args.Length != 0)
+        {
+            // TODO: RemoteExecutor has changed and no longer works correctly with this
+            //       runner, as it ends up trying to use this runner to launch the
+            //       remote executor process.
+            Console.Error.WriteLine(""Unsupported arguments: "" + string.Join("", "", args));
+            return -1;
+        }
 
 ";
 
@@ -1054,6 +1066,7 @@ public static class Test
             Console.WriteLine($""Failed: {s_failed} ({(s_failed * 100.0 / total).ToString(""N"")}%)"");
         }
         Console.ResetColor();
+        return SuccessErrorCode;
     }
 
     private static void Execute(string name, Action action)
@@ -1119,7 +1132,7 @@ public static class Test
 @"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <LangVersion>preview</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>IDE0049</NoWarn> <!-- names can be simplified -->
@@ -1128,8 +1141,8 @@ public static class Test
     <Reference Include=""xunit.core""><HintPath>#HelperAssemblyLocation#xunit.core.dll</HintPath></Reference>
     <Reference Include=""xunit.assert""><HintPath>#HelperAssemblyLocation#xunit.assert.dll</HintPath></Reference>
     <Reference Include=""xunit.abstractions""><HintPath>#HelperAssemblyLocation#xunit.abstractions.dll</HintPath></Reference>
-    <Reference Include=""System.Runtime.CompilerServices.Unsafe""><HintPath>#HelperAssemblyLocation#System.Runtime.CompilerServices.Unsafe.dll</HintPath></Reference>
     <Reference Include=""Microsoft.DotNet.XUnitExtensions""><HintPath>#HelperAssemblyLocation#Microsoft.DotNet.XUnitExtensions.dll</HintPath></Reference>
+    <Reference Include=""TestUtilities""><HintPath>#HelperAssemblyLocation#TestUtilities.dll</HintPath></Reference>
     <Reference Include=""#TestAssembly#""><HintPath>#TestAssemblyLocation#</HintPath></Reference>
   </ItemGroup>
 </Project>";

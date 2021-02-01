@@ -11,7 +11,7 @@
 // does not call String.Format. Expectation is that they will have
 // similar performance.
 //
-// See https://github.com/dotnet/coreclr/issues/7569 for context.
+// See https://github.com/dotnet/runtime/issues/6796 for context.
 
 using Microsoft.Xunit.Performance;
 using System;

@@ -67,7 +67,7 @@ namespace System.IO.Pipes
             return true;
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public int NumberOfServerInstances
         {
             get

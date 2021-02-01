@@ -10,12 +10,6 @@ namespace System.IO.Tests
     public class FileStream_DisposeAsync : FileSystemTest
     {
         [Fact]
-        public void CanDisposeAsync()
-        {
-            Assert.True(new FileStream(GetTestFilePath(), FileMode.Create).DisposeAsync().IsCompletedSuccessfully);
-        }
-
-        [Fact]
         public async Task DisposeAsyncClosesHandle()
         {
             SafeFileHandle handle;
@@ -23,15 +17,6 @@ namespace System.IO.Tests
             handle = fs.SafeFileHandle;
             await fs.DisposeAsync();
             Assert.True(handle.IsClosed);
-        }
-
-        [Fact]
-        public async Task HandlesMultipleDisposeAsync()
-        {
-            var fs = new FileStream(GetTestFilePath(), FileMode.Create);
-            await fs.DisposeAsync();
-            fs.Dispose();
-            await fs.DisposeAsync();
         }
 
         [Fact]

@@ -3,43 +3,54 @@
 
 namespace System.ServiceProcess
 {
+    /// <summary>
+    /// Enum containing various session change reason
+    /// </summary>
     public enum SessionChangeReason
     {
-        /// <devdoc>
-        ///    <para>A session was connected to the console session. </para>
-        /// </devdoc>
-        ConsoleConnect          = Interop.Advapi32.SessionStateChange.WTS_CONSOLE_CONNECT,
-        /// <devdoc>
-        ///    <para>A session was disconnected from the console session. </para>
-        /// </devdoc>
-        ConsoleDisconnect       = Interop.Advapi32.SessionStateChange.WTS_CONSOLE_DISCONNECT,
-        /// <devdoc>
-        ///    <para>A session was connected to the remote session. </para>
-        /// </devdoc>
-        RemoteConnect           = Interop.Advapi32.SessionStateChange.WTS_REMOTE_CONNECT,
-        /// <devdoc>
-        ///    <para>A session was disconnected from the remote session. </para>
-        /// </devdoc>
-        RemoteDisconnect        = Interop.Advapi32.SessionStateChange.WTS_REMOTE_DISCONNECT,
-        /// <devdoc>
-        ///    <para>A user has logged on to the session. </para>
-        /// </devdoc>
-        SessionLogon            = Interop.Advapi32.SessionStateChange.WTS_SESSION_LOGON,
-        /// <devdoc>
-        ///    <para>A user has logged off the session. </para>
-        /// </devdoc>
-        SessionLogoff           = Interop.Advapi32.SessionStateChange.WTS_SESSION_LOGOFF,
-        /// <devdoc>
-        ///    <para>A session has been locked. </para>
-        /// </devdoc>
-        SessionLock             = Interop.Advapi32.SessionStateChange.WTS_SESSION_LOCK,
-        /// <devdoc>
-        ///    <para>A session has been unlocked. </para>
-        /// </devdoc>
-        SessionUnlock           = Interop.Advapi32.SessionStateChange.WTS_SESSION_UNLOCK,
-        /// <devdoc>
-        ///    <para>A session has changed its remote controlled status. </para>
-        /// </devdoc>
-        SessionRemoteControl    = Interop.Advapi32.SessionStateChange.WTS_SESSION_REMOTE_CONTROL
+        ///<summary>
+        /// A session was connected to the console session.
+        ///</summary>
+        ConsoleConnect = Interop.Advapi32.SessionStateChange.WTS_CONSOLE_CONNECT,
+
+        ///<summary>
+        ///A session was disconnected from the console session.
+        ///</summary>
+        ConsoleDisconnect = Interop.Advapi32.SessionStateChange.WTS_CONSOLE_DISCONNECT,
+
+        ///<summary>
+        /// A session was connected to the remote session.
+        ///</summary>
+        RemoteConnect = Interop.Advapi32.SessionStateChange.WTS_REMOTE_CONNECT,
+
+        ///<summary>
+        /// A session was disconnected from the remote session.
+        ///</summary>
+        RemoteDisconnect = Interop.Advapi32.SessionStateChange.WTS_REMOTE_DISCONNECT,
+
+        ///<summary>
+        /// A user has logged on to the session.
+        ///</summary>
+        SessionLogon = Interop.Advapi32.SessionStateChange.WTS_SESSION_LOGON,
+
+        ///<summary>
+        /// A user has logged off the session.
+        ///</summary>
+        SessionLogoff = Interop.Advapi32.SessionStateChange.WTS_SESSION_LOGOFF,
+
+        ///<summary>
+        /// A session has been locked.
+        ///</summary>
+        SessionLock = Interop.Advapi32.SessionStateChange.WTS_SESSION_LOCK,
+
+        ///<summary>
+        /// A session has been unlocked.
+        ///</summary>
+        SessionUnlock = Interop.Advapi32.SessionStateChange.WTS_SESSION_UNLOCK,
+
+        ///<summary>
+        /// A session has changed its remote controlled status.
+        ///</summary>
+        SessionRemoteControl = Interop.Advapi32.SessionStateChange.WTS_SESSION_REMOTE_CONTROL
     }
 }

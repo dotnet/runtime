@@ -17,17 +17,17 @@ namespace System.Runtime.Serialization
         /// <summary>
         /// Gets or sets Dummy documentation
         /// </summary>
-        public XmlDictionaryString RootName { get; set; }
+        public XmlDictionaryString? RootName { get; set; }
 
         /// <summary>
         /// Gets or sets Dummy documentation
         /// </summary>
-        public XmlDictionaryString RootNamespace { get; set; }
+        public XmlDictionaryString? RootNamespace { get; set; }
 
         /// <summary>
         /// Gets or sets Dummy documentation
         /// </summary>
-        public IEnumerable<Type> KnownTypes { get; set; }
+        public IEnumerable<Type>? KnownTypes { get; set; }
 
         /// <summary>
         /// Gets or sets Dummy documentation
@@ -52,7 +52,7 @@ namespace System.Runtime.Serialization
         /// <summary>
         /// Gets or sets Dummy documentation
         /// </summary>
-        public DataContractResolver DataContractResolver { get; set; }
+        public DataContractResolver? DataContractResolver { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether Dummy documentation

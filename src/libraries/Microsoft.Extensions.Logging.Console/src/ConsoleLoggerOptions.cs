@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Disables colors when <see langword="true" />.
         /// </summary>
-        [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Please use SimpleConsoleFormatterOptions.DisableColors instead.", false)]
+        [System.ObsoleteAttribute("ConsoleLoggerOptions.DisableColors has been deprecated. Please use SimpleConsoleFormatterOptions.ColorBehavior instead.", false)]
         public bool DisableColors { get; set; }
 
 #pragma warning disable CS0618

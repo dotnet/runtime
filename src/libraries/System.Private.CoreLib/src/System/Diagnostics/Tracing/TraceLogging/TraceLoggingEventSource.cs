@@ -13,27 +13,30 @@
 // #define FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
 #endif
 
-#if ES_BUILD_STANDALONE
 using System;
-using System.Diagnostics;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
-using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
-#endif
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
 #if ES_BUILD_STANDALONE
+using System.Runtime.CompilerServices;
 namespace Microsoft.Diagnostics.Tracing
 #else
+using Internal.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 #endif
 {
     public partial class EventSource
     {
 #if FEATURE_MANAGED_ETW
-        private byte[] providerMetadata = null!;
+        private byte[]? m_providerMetadata;
+#if ES_BUILD_STANDALONE
+        private byte[] ProviderMetadata => m_providerMetadata ?? Array.Empty<byte>();
+#else
+        private protected virtual ReadOnlySpan<byte> ProviderMetadata => m_providerMetadata;
+#endif
 #endif
 
 #if FEATURE_PERFTRACING
@@ -431,16 +434,17 @@ namespace System.Diagnostics.Tracing
             for (int i = 0; i < pinCount; i++)
                 pins[i] = default;
 
+            var providerMetadata = ProviderMetadata;
             fixed (byte*
-                pMetadata0 = this.providerMetadata,
+                pMetadata0 = providerMetadata,
                 pMetadata1 = nameInfo.nameMetadata,
                 pMetadata2 = eventTypes.typeMetadata)
             {
-                descriptors[0].SetMetadata(pMetadata0, this.providerMetadata.Length, 2);
+                descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
                 descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                 descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 
-#if (!ES_BUILD_PCL && !NETCOREAPP)
+#if ES_BUILD_STANDALONE
                 System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                 try
@@ -456,7 +460,7 @@ namespace System.Diagnostics.Tracing
                     for (int i = 0; i < eventTypes.typeInfos.Length; i++)
                     {
                         TraceLoggingTypeInfo info = eventTypes.typeInfos[i];
-                        info.WriteData(TraceLoggingDataCollector.Instance, info.PropertyValueFactory(values[i]));
+                        info.WriteData(info.PropertyValueFactory(values[i]));
                     }
 
                     this.WriteEventRaw(
@@ -542,12 +546,13 @@ namespace System.Diagnostics.Tracing
                 for (int i = 0; i < descriptorsLength; i++)
                     descriptors[i] = default;
 
+                var providerMetadata = ProviderMetadata;
                 fixed (byte*
-                    pMetadata0 = this.providerMetadata,
+                    pMetadata0 = providerMetadata,
                     pMetadata1 = nameInfo.nameMetadata,
                     pMetadata2 = eventTypes.typeMetadata)
                 {
-                    descriptors[0].SetMetadata(pMetadata0, this.providerMetadata.Length, 2);
+                    descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
                     descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                     descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
                     int numDescrs = 3;
@@ -614,17 +619,18 @@ namespace System.Diagnostics.Tracing
                     for (int i = 0; i < pinCount; i++)
                         pins[i] = default;
 
+                    var providerMetadata = ProviderMetadata;
                     fixed (byte*
-                        pMetadata0 = this.providerMetadata,
+                        pMetadata0 = providerMetadata,
                         pMetadata1 = nameInfo.nameMetadata,
                         pMetadata2 = eventTypes.typeMetadata)
                     {
-                        descriptors[0].SetMetadata(pMetadata0, this.providerMetadata.Length, 2);
+                        descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
                         descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                         descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 #endif // FEATURE_MANAGED_ETW
 
-#if (!ES_BUILD_PCL && !NETCOREAPP)
+#if ES_BUILD_STANDALONE
                         System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                         EventOpcode opcode = (EventOpcode)descriptor.Opcode;
@@ -662,7 +668,7 @@ namespace System.Diagnostics.Tracing
                                 pinCount);
 
                             TraceLoggingTypeInfo info = eventTypes.typeInfos[0];
-                            info.WriteData(TraceLoggingDataCollector.Instance, info.PropertyValueFactory(data));
+                            info.WriteData(info.PropertyValueFactory(data));
 
                             this.WriteEventRaw(
                                 eventName,
@@ -731,7 +737,7 @@ namespace System.Diagnostics.Tracing
             DispatchToAllListeners(-1, eventCallbackArgs);
         }
 
-#if (!ES_BUILD_PCL && !NETCOREAPP)
+#if ES_BUILD_STANDALONE
         [System.Runtime.ConstrainedExecution.ReliabilityContract(
             System.Runtime.ConstrainedExecution.Consistency.WillNotCorruptState,
             System.Runtime.ConstrainedExecution.Cer.Success)]
@@ -753,6 +759,14 @@ namespace System.Diagnostics.Tracing
         private void InitializeProviderMetadata()
         {
 #if FEATURE_MANAGED_ETW
+            bool hasProviderMetadata = ProviderMetadata.Length > 0;
+#if !DEBUG && !ES_BUILD_STANDALONE
+            if (hasProviderMetadata)
+            {
+                // Already set
+                return;
+            }
+#endif
             if (m_traits != null)
             {
                 List<byte> traitMetaData = new List<byte>(100);
@@ -782,13 +796,27 @@ namespace System.Diagnostics.Tracing
                         traitMetaData[lenPos + 1] = unchecked((byte)(valueLen >> 8));
                     }
                 }
-                providerMetadata = Statics.MetadataForString(this.Name, 0, traitMetaData.Count, 0);
+                byte[] providerMetadata = Statics.MetadataForString(this.Name, 0, traitMetaData.Count, 0);
                 int startPos = providerMetadata.Length - traitMetaData.Count;
                 foreach (byte b in traitMetaData)
+                {
                     providerMetadata[startPos++] = b;
+                }
+
+                m_providerMetadata = providerMetadata;
             }
             else
-                providerMetadata = Statics.MetadataForString(this.Name, 0, 0, 0);
+            {
+                m_providerMetadata = Statics.MetadataForString(this.Name, 0, 0, 0);
+            }
+
+#if DEBUG && !ES_BUILD_STANDALONE
+            if (hasProviderMetadata)
+            {
+                // Validate the provided ProviderMetadata still matches in debug
+                Debug.Assert(ProviderMetadata.SequenceEqual(m_providerMetadata));
+            }
+#endif
 #endif //FEATURE_MANAGED_ETW
         }
 

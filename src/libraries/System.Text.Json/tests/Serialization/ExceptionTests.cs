@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text.Encodings.Web;
 using Xunit;
 
@@ -511,56 +513,158 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DeserializeTypeInstance()
+        public static void DeserializeUnsupportedType()
         {
-            string json = @"""System.Int32, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e""";
+            // Any test payload is fine.
+            string json = @"""Some string""";
 
-            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Type>(json));
-            string exAsStr = ex.ToString();
-            Assert.Contains("System.Type", exAsStr);
-            Assert.Contains("$", exAsStr);
+            RunTest<Type>();
+            RunTest<SerializationInfo>();
 
-            json = $@"{{""Type"":{json}}}";
+            void RunTest<T>()
+            {
+                string fullName = typeof(T).FullName;
 
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithType>(json));
-            exAsStr = ex.ToString();
-            Assert.Contains("System.Type", exAsStr);
-            Assert.Contains("$.Type", exAsStr);
+                NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<T>(json));
+                string exAsStr = ex.ToString();
+                Assert.Contains(fullName, exAsStr);
+                Assert.Contains("$", exAsStr);
 
-            // NSE is not thrown because the serializer handles null.
-            Assert.Null(JsonSerializer.Deserialize<Type>("null"));
+                json = $@"{{""Prop"":{json}}}";
 
-            ClassWithType obj = JsonSerializer.Deserialize<ClassWithType>(@"{""Type"":null}");
-            Assert.Null(obj.Type);
+                ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithType<T>>(json));
+                exAsStr = ex.ToString();
+                Assert.Contains(fullName, exAsStr);
+                Assert.Contains("$.Prop", exAsStr);
+
+                // NSE is not thrown because the serializer handles null.
+                Assert.Null(JsonSerializer.Deserialize<T>("null"));
+
+                ClassWithType<T> obj = JsonSerializer.Deserialize<ClassWithType<T>>(@"{""Prop"":null}");
+                Assert.Null(obj.Prop);
+            }
         }
 
         [Fact]
-        public static void SerializeTypeInstance()
+        public static void SerializeUnsupportedType()
         {
-            Type type = typeof(int);
+            RunTest<Type>(typeof(int));
+            RunTest<SerializationInfo>(new SerializationInfo(typeof(Type), new FormatterConverter()));
 
-            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(type));
+            void RunTest<T>(T value)
+            {
+                string fullName = typeof(T).FullName;
+
+                NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(value));
+                string exAsStr = ex.ToString();
+                Assert.Contains(fullName, exAsStr);
+                Assert.Contains("$", exAsStr);
+
+                string serialized = JsonSerializer.Serialize((T)(object)null);
+                Assert.Equal("null", serialized);
+
+                ClassWithType<T> obj = new ClassWithType<T> { Prop = value };
+
+                ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj));
+                exAsStr = ex.ToString();
+                Assert.Contains(fullName, exAsStr);
+                Assert.Contains("$.Prop", exAsStr);
+
+                obj.Prop = (T)(object)null;
+                serialized = JsonSerializer.Serialize(obj);
+                Assert.Equal(@"{""Prop"":null}", serialized);
+
+                serialized = JsonSerializer.Serialize(obj, new JsonSerializerOptions { IgnoreNullValues = true });
+                Assert.Equal(@"{}", serialized);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithBadCtor))]
+        [InlineData(typeof(StructWithBadCtor))]
+        public static void TypeWithBadCtorNoProps(Type type)
+        {
+            var instance = Activator.CreateInstance(
+                type,
+                BindingFlags.Instance | BindingFlags.Public,
+                binder: null,
+                args: new object[] { new SerializationInfo(typeof(Type), new FormatterConverter()), new StreamingContext(default) },
+                culture: null)!;
+
+            Assert.Equal("{}", JsonSerializer.Serialize(instance, type));
+
+            // Each constructor parameter must bind to an object property or field.
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", type));
             string exAsStr = ex.ToString();
-            Assert.Contains("System.Type", exAsStr);
-            Assert.Contains("$", exAsStr);
+            Assert.Contains(typeof(SerializationInfo).FullName, exAsStr);
+            Assert.Contains(typeof(StreamingContext).FullName, exAsStr);
+        }
 
-            type = null;
-            string serialized = JsonSerializer.Serialize(type);
-            Assert.Equal("null", serialized);
+        [Theory]
+        [InlineData(typeof(ClassWithBadCtor_WithProps))]
+        [InlineData(typeof(StructWithBadCtor_WithProps))]
+        public static void TypeWithBadCtorWithPropsInvalid(Type type)
+        {
+            var instance = Activator.CreateInstance(
+                type,
+                BindingFlags.Instance | BindingFlags.Public,
+                binder: null,
+                args: new object[] { new SerializationInfo(typeof(Type), new FormatterConverter()), new StreamingContext(default) },
+                culture: null)!;
 
-            ClassWithType obj = new ClassWithType { Type = typeof(int) };
+            string serializationInfoName = typeof(SerializationInfo).FullName;
 
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj));
+            // (De)serialization of SerializationInfo type is not supported.
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(instance, type));
+            string exAsStr = ex.ToString();
+            Assert.Contains(serializationInfoName, exAsStr);
+            Assert.Contains("$.Info", exAsStr);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(@"{""Info"":{}}", type));
             exAsStr = ex.ToString();
-            Assert.Contains("System.Type", exAsStr);
-            Assert.Contains("$.Type", exAsStr);
+            Assert.Contains(serializationInfoName, exAsStr);
+            Assert.Contains("$.Info", exAsStr);
 
-            obj.Type = null;
-            serialized = JsonSerializer.Serialize(obj);
-            Assert.Equal(@"{""Type"":null}", serialized);
+            // Deserialization of null is okay since no data is read.
+            object obj = JsonSerializer.Deserialize(@"{""Info"":null}", type);
+            Assert.Null(type.GetProperty("Info").GetValue(obj));
 
-            serialized = JsonSerializer.Serialize(obj, new JsonSerializerOptions { IgnoreNullValues = true });
-            Assert.Equal(@"{}", serialized);
+            // Deserialization of other non-null tokens is not okay.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(@"{""Info"":1}", type));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(@"{""Info"":""""}", type));
+        }
+
+        public class ClassWithBadCtor
+        {
+            public ClassWithBadCtor(SerializationInfo info, StreamingContext ctx) { }
+        }
+
+        public struct StructWithBadCtor
+        {
+            [JsonConstructor]
+            public StructWithBadCtor(SerializationInfo info, StreamingContext ctx) { }
+        }
+
+        public class ClassWithBadCtor_WithProps
+        {
+            public SerializationInfo Info { get; set; }
+
+            public StreamingContext Ctx { get; set; }
+
+            public ClassWithBadCtor_WithProps(SerializationInfo info, StreamingContext ctx) =>
+                (Info, Ctx) = (info, ctx);
+        }
+
+        public struct StructWithBadCtor_WithProps
+        {
+            public SerializationInfo Info { get; set; }
+
+            public StreamingContext Ctx { get; set; }
+
+            [JsonConstructor]
+            public StructWithBadCtor_WithProps(SerializationInfo info, StreamingContext ctx) =>
+                (Info, Ctx) = (info, ctx);
         }
     }
 }

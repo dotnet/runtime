@@ -438,6 +438,7 @@ UCalendar * ucal_open(const UChar * zoneID, int32_t len, const char * locale, UC
 void ucal_set(UCalendar * cal, UCalendarDateFields field, int32_t value);
 void ucol_close(UCollator * coll);
 void ucol_closeElements(UCollationElements * elems);
+int32_t ucol_getOffset(const UCollationElements *elems);
 const UChar * ucol_getRules(const UCollator * coll, int32_t * length);
 int32_t ucol_getSortKey(const UCollator * coll, const UChar * source, int32_t sourceLength, uint8_t * result, int32_t resultLength);
 UCollationStrength ucol_getStrength(const UCollator * coll);
@@ -512,4 +513,6 @@ int32_t usearch_first(UStringSearch * strsrch, UErrorCode * status);
 int32_t usearch_getMatchedLength(const UStringSearch * strsrch);
 int32_t usearch_last(UStringSearch * strsrch, UErrorCode * status);
 UStringSearch * usearch_openFromCollator(const UChar * pattern, int32_t patternlength, const UChar * text, int32_t textlength, const UCollator * collator, UBreakIterator * breakiter, UErrorCode * status);
+void usearch_setPattern(UStringSearch * strsrch, const UChar * pattern, int32_t patternlength, UErrorCode * status);
+void usearch_setText(UStringSearch * strsrch, const UChar * text, int32_t textlength, UErrorCode * status);
 void ucol_setMaxVariable(UCollator * coll, UColReorderCode group, UErrorCode * pErrorCode);

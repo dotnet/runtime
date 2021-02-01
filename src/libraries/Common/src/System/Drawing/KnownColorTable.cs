@@ -10,6 +10,8 @@ namespace System.Drawing
         // All non system colors (in order of definition in the KnownColor enum).
         private static readonly uint[] s_colorTable = new uint[]
         {
+            // First contiguous set.
+
             0x00FFFFFF,     // Transparent
             0xFFF0F8FF,     // AliceBlue
             0xFFFAEBD7,     // AntiqueWhite
@@ -151,6 +153,10 @@ namespace System.Drawing
             0xFFF5F5F5,     // WhiteSmoke
             0xFFFFFF00,     // Yellow
             0xFF9ACD32,     // YellowGreen
+
+            // Second contiguous set.
+
+            0xFF663399,     // RebeccaPurple
         };
 
         internal static Color ArgbToKnownColor(uint argb)
@@ -163,7 +169,14 @@ namespace System.Drawing
             {
                 if (s_colorTable[index] == argb)
                 {
-                    return Color.FromKnownColor((KnownColor)(index + (int)KnownColor.Transparent));
+                    var knownColor = KnownColor.Transparent + index;
+                    // Handles the mismatching of the RebeccaPurple color with ButtonFace color ("System" colors, Part 2)
+                    if (knownColor > KnownColor.YellowGreen)
+                    {
+                        knownColor += (int)KnownColor.RebeccaPurple - (int)KnownColor.ButtonFace;
+                    }
+
+                    return Color.FromKnownColor(knownColor);
                 }
             }
 
@@ -173,11 +186,16 @@ namespace System.Drawing
 
         public static uint KnownColorToArgb(KnownColor color)
         {
-            Debug.Assert(color > 0 && color <= KnownColor.MenuHighlight);
+            Debug.Assert(color > 0 && color <= KnownColor.RebeccaPurple);
 
-            return Color.IsKnownColorSystem(color)
-                ? GetSystemColorArgb(color)
-                : s_colorTable[(int)color - (int)KnownColor.Transparent];
+            if (Color.IsKnownColorSystem(color))
+            {
+                return GetSystemColorArgb(color);
+            }
+
+            return color < KnownColor.ButtonFace
+                 ? s_colorTable[(int)color - (int)KnownColor.Transparent]
+                 : s_colorTable[(int)color - (int)KnownColor.RebeccaPurple + ((int)KnownColor.YellowGreen - (int)KnownColor.WindowText)];
         }
 
 #if FEATURE_WINDOWS_SYSTEM_COLORS

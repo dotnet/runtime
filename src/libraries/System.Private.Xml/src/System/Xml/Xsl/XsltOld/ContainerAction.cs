@@ -13,14 +13,15 @@ namespace System.Xml.Xsl.XsltOld
     using MS.Internal.Xml.XPath;
     using System.Collections;
     using System.Runtime.Versioning;
+    using System.Diagnostics.CodeAnalysis;
 
     internal class NamespaceInfo
     {
-        internal string prefix;
-        internal string nameSpace;
+        internal string? prefix;
+        internal string? nameSpace;
         internal int stylesheetId;
 
-        internal NamespaceInfo(string prefix, string nameSpace, int stylesheetId)
+        internal NamespaceInfo(string? prefix, string? nameSpace, int stylesheetId)
         {
             this.prefix = prefix;
             this.nameSpace = nameSpace;
@@ -30,8 +31,8 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class ContainerAction : CompiledAction
     {
-        internal ArrayList containedActions;
-        internal CopyCodeAction lastCopyCodeAction; // non null if last action is CopyCodeAction;
+        internal ArrayList? containedActions;
+        internal CopyCodeAction? lastCopyCodeAction; // non null if last action is CopyCodeAction;
 
         private int _maxid;
 
@@ -47,8 +48,8 @@ namespace System.Xml.Xsl.XsltOld
         {
             NavigatorInput input = compiler.Input;
             string element = input.LocalName;
-            string badAttribute = null;
-            string version = null;
+            string? badAttribute = null;
+            string? version = null;
 
             if (input.MoveToFirstAttribute())
             {
@@ -116,7 +117,7 @@ namespace System.Xml.Xsl.XsltOld
             // find mandatory version attribute and launch compilation of single template
             //
 
-            string version = null;
+            string? version = null;
 
             if (input.MoveToFirstAttribute())
             {
@@ -220,12 +221,12 @@ namespace System.Xml.Xsl.XsltOld
 
         private void CompileImports(Compiler compiler)
         {
-            ArrayList imports = compiler.CompiledStylesheet.Imports;
+            ArrayList imports = compiler.CompiledStylesheet!.Imports;
             // We can't reverce imports order. Template lookup relyes on it after compilation
             int saveStylesheetId = compiler.Stylesheetid;
             for (int i = imports.Count - 1; 0 <= i; i--)
             {   // Imports should be compiled in reverse order
-                Uri uri = imports[i] as Uri;
+                Uri? uri = imports[i] as Uri;
                 Debug.Assert(uri != null);
                 imports[i] = CompileImport(compiler, uri, ++_maxid);
             }
@@ -269,8 +270,8 @@ namespace System.Xml.Xsl.XsltOld
         {
             NavigatorInput input = compiler.Input;
             string element = input.LocalName;
-            string namespace1 = null, namespace2 = null;
-            string prefix1 = null, prefix2 = null;
+            string? namespace1 = null, namespace2 = null;
+            string? prefix1 = null, prefix2 = null;
             if (input.MoveToFirstAttribute())
             {
                 do
@@ -307,7 +308,7 @@ namespace System.Xml.Xsl.XsltOld
             CheckEmpty(compiler);
 
             //String[] resultarray = { prefix2, namespace2 };
-            compiler.AddNamespaceAlias(namespace1, new NamespaceInfo(prefix2, namespace2, compiler.Stylesheetid));
+            compiler.AddNamespaceAlias(namespace1!, new NamespaceInfo(prefix2, namespace2, compiler.Stylesheetid));
         }
 
         internal void CompileKey(Compiler compiler)
@@ -317,7 +318,7 @@ namespace System.Xml.Xsl.XsltOld
             int MatchKey = Compiler.InvalidQueryKey;
             int UseKey = Compiler.InvalidQueryKey;
 
-            XmlQualifiedName Name = null;
+            XmlQualifiedName? Name = null;
             if (input.MoveToFirstAttribute())
             {
                 do
@@ -358,14 +359,14 @@ namespace System.Xml.Xsl.XsltOld
             // It is a breaking change to check for emptiness, SQLBUDT 324364
             //CheckEmpty(compiler);
 
-            compiler.InsertKey(Name, MatchKey, UseKey);
+            compiler.InsertKey(Name!, MatchKey, UseKey);
         }
 
         protected void CompileDecimalFormat(Compiler compiler)
         {
             NumberFormatInfo info = new NumberFormatInfo();
             DecimalFormat format = new DecimalFormat(info, '#', '0', ';');
-            XmlQualifiedName Name = null;
+            XmlQualifiedName? Name = null;
             NavigatorInput input = compiler.Input;
             if (input.MoveToFirstAttribute())
             {
@@ -462,7 +463,7 @@ namespace System.Xml.Xsl.XsltOld
             for (int i = 0; i < elements.Length; i++)
             {
                 double defaultPriority = NameTest(elements[i]);
-                compiler.CompiledStylesheet.AddSpace(compiler, elements[i], defaultPriority, preserve);
+                compiler.CompiledStylesheet!.AddSpace(compiler, elements[i], defaultPriority, preserve);
             }
             CheckEmpty(compiler);
         }
@@ -526,7 +527,7 @@ namespace System.Xml.Xsl.XsltOld
                                 {
                                     throw XsltException.Create(SR.Xslt_CircularInclude, resolved);
                                 }
-                                compiler.CompiledStylesheet.Imports.Add(uri);
+                                compiler.CompiledStylesheet!.Imports.Add(uri);
                                 CheckEmpty(compiler);
                             }
                             else if (Ref.Equal(name, input.Atoms.Include))
@@ -568,7 +569,7 @@ namespace System.Xml.Xsl.XsltOld
                                 }
                                 else if (Ref.Equal(name, input.Atoms.Variable))
                                 {
-                                    VariableAction action = compiler.CreateVariableAction(VariableType.GlobalVariable);
+                                    VariableAction? action = compiler.CreateVariableAction(VariableType.GlobalVariable);
                                     if (action != null)
                                     {
                                         AddAction(action);
@@ -576,7 +577,7 @@ namespace System.Xml.Xsl.XsltOld
                                 }
                                 else if (Ref.Equal(name, input.Atoms.Param))
                                 {
-                                    VariableAction action = compiler.CreateVariableAction(VariableType.GlobalParameter);
+                                    VariableAction? action = compiler.CreateVariableAction(VariableType.GlobalParameter);
                                     if (action != null)
                                     {
                                         AddAction(action);
@@ -672,7 +673,7 @@ namespace System.Xml.Xsl.XsltOld
         private void CompileInstruction(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
-            CompiledAction action = null;
+            CompiledAction? action = null;
 
             Debug.Assert(Ref.Equal(input.NamespaceURI, input.Atoms.UriXsl));
 
@@ -858,7 +859,7 @@ namespace System.Xml.Xsl.XsltOld
             compiler.RootAction.Output.Compile(compiler);
         }
 
-        internal void AddAction(Action action)
+        internal void AddAction(Action? action)
         {
             if (this.containedActions == null)
             {
@@ -868,6 +869,7 @@ namespace System.Xml.Xsl.XsltOld
             lastCopyCodeAction = null;
         }
 
+        [MemberNotNull(nameof(lastCopyCodeAction))]
         private void EnsureCopyCodeAction()
         {
             if (lastCopyCodeAction == null)
@@ -895,7 +897,7 @@ namespace System.Xml.Xsl.XsltOld
             NavigatorInput input = compiler.Input;
 
             ScriptingLanguage lang = ScriptingLanguage.JScript;
-            string implementsNamespace = null;
+            string? implementsNamespace = null;
             if (input.MoveToFirstAttribute())
             {
                 do
@@ -981,13 +983,13 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal Action GetAction(int actionIndex)
+        internal Action? GetAction(int actionIndex)
         {
             Debug.Assert(actionIndex == 0 || this.containedActions != null);
 
             if (this.containedActions != null && actionIndex < this.containedActions.Count)
             {
-                return (Action)this.containedActions[actionIndex];
+                return (Action)this.containedActions[actionIndex]!;
             }
             else
             {
@@ -1001,7 +1003,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 foreach (CompiledAction action in this.containedActions)
                 {
-                    WithParamAction param = action as WithParamAction;
+                    WithParamAction? param = action as WithParamAction;
                     if (param != null && param.Name == name)
                     {
                         throw XsltException.Create(SR.Xslt_DuplicateWithParam, name.ToString());
@@ -1018,7 +1020,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             for (int i = 0; i < this.containedActions.Count; i++)
             {
-                ((Action)this.containedActions[i]).ReplaceNamespaceAlias(compiler);
+                ((Action)this.containedActions[i]!).ReplaceNamespaceAlias(compiler);
             }
         }
     }

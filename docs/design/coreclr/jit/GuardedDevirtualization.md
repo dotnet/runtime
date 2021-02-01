@@ -28,7 +28,7 @@ happens quite early (during importation) and there is only minimal ability to do
 data flow analysis at this stage. So for current devirtualization the source of
 the type information and the consumption must be fairly close in the code. A
 more detailed accounting of some of the shortcomings can be found in
-[CoreCLR#9908](https://github.com/dotnet/coreclr/issues/9908).
+[#7541](https://github.com/dotnet/runtime/issues/7541).
 
 Resolution of these issues will improve the ability of the JIT to devirtualize,
 but even the best analysis possible will still miss out on many cases. Some call
@@ -277,7 +277,7 @@ setup, may be able to optimize away the null check, and opens the door for
 inlining. So it should be slightly cheaper on average and significantly cheaper
 in some cases.
 
-(Note [CoreCLR#1422](https://github.com/dotnet/coreclr/issues/14222) indicates
+(Note [#9027](https://github.com/dotnet/runtime/issues/9027) indicates
 we should be able to optimize away the null check in any case).
 
 If the guarded tests fails we've filtered out one method table the dispatch cell

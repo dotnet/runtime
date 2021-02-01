@@ -230,6 +230,8 @@ namespace System.DirectoryServices
         /// Gets the set of properties retrieved during the search. By default, the <see cref='System.DirectoryServices.DirectoryEntry.Path'/>
         /// and <see cref='System.DirectoryServices.DirectoryEntry.Name'/> properties are retrieved.
         /// </devdoc>
+        [Editor("System.Windows.Forms.Design.StringCollectionEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public StringCollection PropertiesToLoad
         {
             get

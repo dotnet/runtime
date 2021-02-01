@@ -59,3 +59,14 @@ typedef void (*TerminalInvalidationCallback)(void);
   *
  */
 PALEXPORT void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback);
+
+#ifndef HAS_CONSOLE_SIGNALS
+
+/**
+ * Initializes signal handling and terminal for use by System.Console and System.Diagnostics.Process.
+ *
+ * Returns 1 on success; otherwise returns 0 and sets errno.
+ */
+PALEXPORT int32_t SystemNative_InitializeTerminalAndSignalHandling(void);
+
+#endif

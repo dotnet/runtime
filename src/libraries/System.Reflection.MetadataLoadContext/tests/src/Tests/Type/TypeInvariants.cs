@@ -603,7 +603,7 @@ namespace System.Reflection.Tests
             Assert.True(position >= 0);
             GenericParameterAttributes attributes = type.GenericParameterAttributes;
 
-            Assert.Equal<Type>(Array.Empty<Type>(), type.GetGenericArguments());
+            Assert.Equal<Type>(Type.EmptyTypes, type.GetGenericArguments());
 
             Assert.False(type.IsByRefLike());
 

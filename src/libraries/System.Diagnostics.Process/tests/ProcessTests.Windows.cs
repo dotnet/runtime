@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 
 namespace System.Diagnostics.Tests
@@ -14,5 +15,8 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(filename, $"exit {returnValue}");
             return filename;
         }
+
+        private static void ChMod(string filename, string mode)
+            => throw new PlatformNotSupportedException();
     }
 }

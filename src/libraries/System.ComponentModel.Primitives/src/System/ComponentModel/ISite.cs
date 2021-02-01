@@ -26,7 +26,7 @@ namespace System.ComponentModel
         /// When implemented by a class, gets the container associated with
         /// the <see cref='System.ComponentModel.ISite'/>.
         /// </summary>
-        IContainer Container { get; }
+        IContainer? Container { get; }
 
         /// <summary>
         /// When implemented by a class, determines whether the component is in design mode.

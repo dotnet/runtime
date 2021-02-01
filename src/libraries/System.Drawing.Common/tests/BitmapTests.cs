@@ -104,12 +104,11 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Ctor_NullType_ThrowsNullReferenceException()
+        public void Ctor_NullType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new Bitmap(null, "name"));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("type", () => new Bitmap(null, "name"));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(typeof(Bitmap), "")]
         [InlineData(typeof(Bitmap), "bitmap_173x183_indexed_8bit.bmp")]
@@ -1212,7 +1211,7 @@ namespace System.Drawing.Tests
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     // "Reserved" is documented as "Reserved. Do not use.", so it's not clear whether we actually need to test this in any unit tests.
-                    // Additionally, the values are not consistent accross Windows (GDI+) and Unix (libgdiplus)
+                    // Additionally, the values are not consistent across Windows (GDI+) and Unix (libgdiplus)
                     Assert.Equal(expectedReserved, data.Reserved);
                 }
 

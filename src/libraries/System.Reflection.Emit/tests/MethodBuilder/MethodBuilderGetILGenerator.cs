@@ -21,8 +21,16 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             Type createdType = type.CreateTypeInfo().AsType();
-            MethodInfo createedMethod = createdType.GetMethod("TestMethod");
-            Assert.Equal(expectedReturn, createedMethod.Invoke(null, null));
+            MethodInfo createdMethod = createdType.GetMethod("TestMethod");
+            Assert.Equal(expectedReturn, createdMethod.Invoke(null, null));
+
+            // Verify MetadataToken
+            Assert.Equal(method.MetadataToken, createdMethod.MetadataToken);
+            MethodInfo methodFromToken = (MethodInfo)type.Module.ResolveMethod(method.MetadataToken);
+            Assert.Equal(createdMethod, methodFromToken);
+
+            MemberInfo memberInfoFromToken = (MemberInfo)type.Module.ResolveMember(method.MetadataToken);
+            Assert.Equal(methodFromToken, memberInfoFromToken);
         }
 
         [Theory]

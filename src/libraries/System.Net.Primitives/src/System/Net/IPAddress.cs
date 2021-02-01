@@ -185,7 +185,7 @@ namespace System.Net
         {
             if (address.Length == IPAddressParserStatics.IPv4AddressBytes)
             {
-                PrivateAddress = (uint)((address[3] << 24 | address[2] << 16 | address[1] << 8 | address[0]) & 0x0FFFFFFFF);
+                PrivateAddress = BinaryPrimitives.ReadUInt32LittleEndian(address);
             }
             else if (address.Length == IPAddressParserStatics.IPv6AddressBytes)
             {
@@ -546,7 +546,7 @@ namespace System.Net
         }
 
         /// <summary>Compares two IP addresses.</summary>
-        public override bool Equals(object? comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             return comparand is IPAddress address && Equals(address);
         }

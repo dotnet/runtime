@@ -7,7 +7,7 @@ namespace System.DirectoryServices.Protocols
 {
     public static partial class BerConverter
     {
-        private static unsafe int DecodeBitStringHelper(ArrayList resultList, SafeBerHandle berElement)
+        private static int DecodeBitStringHelper(ArrayList resultList, SafeBerHandle berElement)
         {
             // Windows doesn't really decode BitStrings correctly, and wldap32 will internally treat it as 'O' Octet string.
             // In order to match behavior, in Linux we will interpret 'B' as 'O' when passing the call to libldap.

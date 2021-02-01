@@ -95,8 +95,8 @@ namespace System.Linq.Parallel
 
             protected override bool MoveNextCore(ref long currentElement)
             {
-                TSource elementUnused = default(TSource)!;
-                TKey keyUnused = default(TKey)!;
+                TSource? elementUnused = default(TSource);
+                TKey? keyUnused = default(TKey);
 
                 QueryOperatorEnumerator<TSource, TKey> source = _source;
                 if (source.MoveNext(ref elementUnused, ref keyUnused))

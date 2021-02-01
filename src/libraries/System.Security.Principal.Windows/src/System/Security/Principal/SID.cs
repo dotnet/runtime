@@ -314,7 +314,7 @@ namespace System.Security.Principal
 
         [MemberNotNull(nameof(_binaryForm))]
         [MemberNotNull(nameof(_subAuthorities))]
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
         private void CreateFromParts(IdentifierAuthority identifierAuthority, int[] subAuthorities)
 #else
         private void CreateFromParts(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
@@ -350,7 +350,7 @@ namespace System.Security.Principal
             //
 
             _identifierAuthority = identifierAuthority;
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
             _subAuthorities = (int[])subAuthorities.Clone();
 #else
             _subAuthorities = subAuthorities.ToArray();
@@ -462,7 +462,7 @@ namespace System.Security.Principal
                 throw new ArgumentException(SR.ArgumentOutOfRange_ArrayTooSmall, nameof(binaryForm));
             }
 
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
             int[] subAuthorities = new int[subAuthoritiesLength];
 #else
             Span<int> subAuthorities = stackalloc int[MaxSubAuthorities];
@@ -494,7 +494,7 @@ namespace System.Security.Principal
 
             CreateFromParts(
                 authority,
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
                 subAuthorities
 #else
                 subAuthorities.Slice(0, subAuthoritiesLength)
@@ -657,7 +657,7 @@ namespace System.Security.Principal
             CreateFromBinaryForm(resultSid!, 0);
         }
 
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
         internal SecurityIdentifier(IdentifierAuthority identifierAuthority, int[] subAuthorities)
 #else
         internal SecurityIdentifier(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
@@ -719,7 +719,7 @@ namespace System.Security.Principal
 
 #region Inherited properties and methods
 
-        public override bool Equals(object? o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             return (this == o as SecurityIdentifier); // invokes operator==
         }
@@ -748,7 +748,7 @@ namespace System.Security.Principal
                 // otherwise you would see this: "S-1-NTAuthority-32-544"
                 //
 
-#if NETCOREAPP2_0
+#if NETSTANDARD2_0
                 StringBuilder result = new StringBuilder();
                 result.Append("S-1-").Append((ulong)_identifierAuthority);
                 for (int i = 0; i < SubAuthorityCount; i++)

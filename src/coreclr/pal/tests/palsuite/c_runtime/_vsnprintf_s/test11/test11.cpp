@@ -1,0 +1,49 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/*=====================================================================
+**
+** Source:    test11.c
+**
+** Purpose:   Test #11 for the _vsnprintf function.
+**
+**
+**===================================================================*/ 
+
+#include <palsuite.h>
+#include "../_vsnprintf_s.h"
+
+/*
+ * Notes: memcmp is used, as is strlen.
+ */
+
+PALTEST(c_runtime__vsnprintf_s_test11_paltest_vsnprintf_test11, "c_runtime/_vsnprintf_s/test11/paltest_vsnprintf_test11")
+{
+    int neg = -42;
+    int pos = 42;
+    INT64 l = 42;
+    
+    if (PAL_Initialize(argc, argv) != 0)
+    {
+        return(FAIL);
+    }
+
+    DoNumTest("foo %u", pos, "foo 42");
+    DoNumTest("foo %lu", 0xFFFF, "foo 65535");
+    DoNumTest("foo %hu", 0xFFFF, "foo 65535");
+    DoNumTest("foo %Lu", pos, "foo 42");
+    DoI64Test("foo %I64u", l, "42", "foo 42");
+    DoNumTest("foo %3u", pos, "foo  42");
+    DoNumTest("foo %-3u", pos, "foo 42 ");
+    DoNumTest("foo %.1u", pos, "foo 42");
+    DoNumTest("foo %.3u", pos, "foo 042");
+    DoNumTest("foo %03u", pos, "foo 042");
+    DoNumTest("foo %#u", pos, "foo 42");
+    DoNumTest("foo %+u", pos, "foo 42");
+    DoNumTest("foo % u", pos, "foo 42");
+    DoNumTest("foo %+u", neg, "foo 4294967254");
+    DoNumTest("foo % u", neg, "foo 4294967254");
+
+    PAL_Terminate();
+    return PASS;
+}

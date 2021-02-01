@@ -12,8 +12,6 @@
 #include "mono/utils/mono-path.h"
 #include "mono/metadata/native-library.h"
 
-extern const void* gPalGlobalizationNative[];
-
 enum {
     func_flag_end_of_array = 0x01,
     func_flag_has_signature = 0x02,
@@ -21,15 +19,13 @@ enum {
     func_flag_qcall = 0x08, // QCall - mscorlib.dll to mscorwks.dll transition implemented as PInvoke
 };
 
-#if defined(NO_GLOBALIZATION_SHIM) || !defined(ENABLE_NETCORE)
-const void* gPalGlobalizationNative[] = { (void*)func_flag_end_of_array };
-#endif
-
 static const MonoQCallDef c_qcalls[] =
 {
+#ifndef DISABLE_QCALLS
     #define FCClassElement(name,namespace,funcs) {name, namespace, funcs},
     #include "mono/metadata/qcall-def.h"
     #undef FCClassElement
+#endif
 };
 
 const int c_nECClasses = sizeof (c_qcalls) / sizeof (c_qcalls[0]);

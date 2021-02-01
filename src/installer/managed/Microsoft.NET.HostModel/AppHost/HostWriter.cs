@@ -155,7 +155,7 @@ namespace Microsoft.NET.HostModel.AppHost
             long bundleHeaderOffset)
         {
             byte[] bundleHeaderPlaceholder = {
-                // 8 bytes represent the bundle header-offset 
+                // 8 bytes represent the bundle header-offset
                 // Zero for non-bundle apphosts (default).
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
@@ -171,6 +171,9 @@ namespace Microsoft.NET.HostModel.AppHost
                                              bundleHeaderPlaceholder,
                                              BitConverter.GetBytes(bundleHeaderOffset),
                                              pad0s: false));
+
+            RetryUtil.RetryOnIOError(() =>
+                MachOUtils.AdjustHeadersForBundle(appHostPath));
 
             // Memory-mapped write does not updating last write time
             RetryUtil.RetryOnIOError(() =>
@@ -206,7 +209,7 @@ namespace Microsoft.NET.HostModel.AppHost
                             throw new PlaceHolderNotFoundInAppHostException(bundleSignature);
                         }
 
-                        headerOffset = accessor.ReadInt64(position - sizeof(Int64));
+                        headerOffset = accessor.ReadInt64(position - sizeof(long));
                     }
                 }
             }

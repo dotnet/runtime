@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net48-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net48-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Tests.cs" />

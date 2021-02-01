@@ -119,7 +119,7 @@ namespace System.Text
         }
 
         // private helper methods
-        private char TryBestFit(char cUnknown)
+        private static char TryBestFit(char cUnknown)
         {
             // Need to figure out our best fit character, low is beginning of array, high is 1 AFTER end of array
             int lowBound = 0;

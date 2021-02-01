@@ -1,10 +1,8 @@
 ACLOCAL_AMFLAGS = -I m4
 
-AM_CFLAGS = $(WERROR_CFLAGS)
-
 SUBDIRS = @MONO_SUBDIRS@
 noinst_SUBDIRS = @MONO_NOINST_SUBDIRS@
-DIST_SUBDIRS = $(SUBDIRS) m4 netcore
+DIST_SUBDIRS = $(SUBDIRS) m4
 
 if !ENABLE_NETCORE
 
@@ -24,7 +22,6 @@ EXTRA_DIST= \
 	winconfig.h 		\
 	code_of_conduct.md 	\
 	external		\
-	netcore/Makefile	\
 	mcs/class/referencesource
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_RUNTIME=false

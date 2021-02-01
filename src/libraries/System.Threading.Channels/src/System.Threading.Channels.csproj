@@ -9,7 +9,8 @@
     <Compile Include="System\Collections\Generic\Deque.cs" />
     <Compile Include="System\Threading\Channels\AsyncOperation.cs" />
     <Compile Include="System\Threading\Channels\AsyncOperation.netcoreapp.cs" Condition="!$(TargetFramework.StartsWith('netstandard')) AND !$(TargetFramework.StartsWith('net4'))" />
-    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard.cs" Condition="$(TargetFramework.StartsWith('netstandard')) OR $(TargetFramework.StartsWith('net4'))" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard1.cs" Condition="$(TargetFramework.StartsWith('netstandard1.'))" />
+    <Compile Include="System\Threading\Channels\AsyncOperation.netstandard2.cs" Condition="$(TargetFramework.StartsWith('netstandard2.')) OR $(TargetFramework.StartsWith('net4'))" />
     <Compile Include="System\Threading\Channels\BoundedChannel.cs" />
     <Compile Include="System\Threading\Channels\BoundedChannelFullMode.cs" />
     <Compile Include="System\Threading\Channels\Channel.cs" />
@@ -24,6 +25,7 @@
     <Compile Include="System\Threading\Channels\Channel_2.cs" />
     <Compile Include="System\Threading\Channels\IDebugEnumerator.cs" />
     <Compile Include="System\Threading\Channels\SingleConsumerUnboundedChannel.cs" />
+    <Compile Include="System\Threading\Channels\TaskCompletionSource.cs" Condition="$(TargetFramework.StartsWith('netstandard')) OR $(TargetFramework.StartsWith('net4')) OR $(TargetFramework.StartsWith('netcoreapp3.0'))"/>
     <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
     <Compile Include="$(CommonPath)Internal\Padding.cs"
              Link="Common\Internal\Padding.cs" />
@@ -46,5 +48,6 @@
   <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard')) or
                         $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>

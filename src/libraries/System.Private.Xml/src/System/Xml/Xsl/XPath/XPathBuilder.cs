@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Xml.Schema;
 using System.Xml.XPath;
@@ -69,7 +70,8 @@ namespace System.Xml.Xsl.XPath
             numFixupCurrent = numFixupPosition = numFixupLast = 0;
         }
 
-        public virtual QilNode EndBuild(QilNode result)
+        [return: NotNullIfNotNull("result")]
+        public virtual QilNode? EndBuild(QilNode? result)
         {
             if (result == null)
             { // special door to clean builder state in exception handlers
@@ -77,7 +79,7 @@ namespace System.Xml.Xsl.XPath
                 return result;
             }
             Debug.Assert(_inTheBuild, "StartBuild() wasn't called");
-            if (result.XmlType.MaybeMany && result.XmlType.IsNode && result.XmlType.IsNotRtf)
+            if (result.XmlType!.MaybeMany && result.XmlType.IsNode && result.XmlType.IsNotRtf)
             {
                 result = _f.DocOrderDistinct(result);
             }
@@ -109,17 +111,21 @@ namespace System.Xml.Xsl.XPath
             return _f.Double(value);
         }
 
-        public virtual QilNode Operator(XPathOperator op, QilNode left, QilNode right)
+        public virtual QilNode Operator(XPathOperator op, QilNode? left, QilNode? right)
         {
             Debug.Assert(op != XPathOperator.Unknown);
-            switch (s_operatorGroup[(int)op])
+            XPathOperatorGroup opGroup = s_operatorGroup[(int)op];
+
+            Debug.Assert((opGroup != XPathOperatorGroup.Negate && right != null) || (opGroup == XPathOperatorGroup.Negate && right == null));
+
+            switch (opGroup)
             {
-                case XPathOperatorGroup.Logical: return LogicalOperator(op, left, right);
-                case XPathOperatorGroup.Equality: return EqualityOperator(op, left, right);
-                case XPathOperatorGroup.Relational: return RelationalOperator(op, left, right);
-                case XPathOperatorGroup.Arithmetic: return ArithmeticOperator(op, left, right);
-                case XPathOperatorGroup.Negate: return NegateOperator(op, left, right);
-                case XPathOperatorGroup.Union: return UnionOperator(op, left, right);
+                case XPathOperatorGroup.Logical: return LogicalOperator(op, left!, right!);
+                case XPathOperatorGroup.Equality: return EqualityOperator(op, left!, right!);
+                case XPathOperatorGroup.Relational: return RelationalOperator(op, left!, right!);
+                case XPathOperatorGroup.Arithmetic: return ArithmeticOperator(op, left!, right!);
+                case XPathOperatorGroup.Negate: return NegateOperator(op, left!);
+                case XPathOperatorGroup.Union: return UnionOperator(op, left, right!);
                 default:
                     Debug.Fail(op + " is not a valid XPathOperator");
                     return null;
@@ -140,7 +146,7 @@ namespace System.Xml.Xsl.XPath
         private QilNode CompareValues(XPathOperator op, QilNode left, QilNode right, XmlTypeCode compType)
         {
             Debug.Assert(compType == XmlTypeCode.Boolean || compType == XmlTypeCode.Double || compType == XmlTypeCode.String);
-            Debug.Assert(compType == XmlTypeCode.Boolean || left.XmlType.IsSingleton && right.XmlType.IsSingleton, "Both comparison operands must be singletons");
+            Debug.Assert(compType == XmlTypeCode.Boolean || left.XmlType!.IsSingleton && right.XmlType!.IsSingleton, "Both comparison operands must be singletons");
             left = _f.ConvertToType(compType, left);
             right = _f.ConvertToType(compType, right);
 
@@ -161,9 +167,9 @@ namespace System.Xml.Xsl.XPath
         private QilNode CompareNodeSetAndValue(XPathOperator op, QilNode nodeset, QilNode val, XmlTypeCode compType)
         {
             _f.CheckNodeSet(nodeset);
-            Debug.Assert(val.XmlType.IsSingleton);
+            Debug.Assert(val.XmlType!.IsSingleton);
             Debug.Assert(compType == XmlTypeCode.Boolean || compType == XmlTypeCode.Double || compType == XmlTypeCode.String, "I don't know what to do with RTF here");
-            if (compType == XmlTypeCode.Boolean || nodeset.XmlType.IsSingleton)
+            if (compType == XmlTypeCode.Boolean || nodeset.XmlType!.IsSingleton)
             {
                 return CompareValues(op, nodeset, val, compType);
             }
@@ -190,11 +196,11 @@ namespace System.Xml.Xsl.XPath
         {
             _f.CheckNodeSet(left);
             _f.CheckNodeSet(right);
-            if (right.XmlType.IsSingleton)
+            if (right.XmlType!.IsSingleton)
             {
                 return CompareNodeSetAndValue(op, /*nodeset:*/left, /*value:*/right, compType);
             }
-            if (left.XmlType.IsSingleton)
+            if (left.XmlType!.IsSingleton)
             {
                 op = InvertOp(op);
                 return CompareNodeSetAndValue(op, /*nodeset:*/right, /*value:*/left, compType);
@@ -207,8 +213,8 @@ namespace System.Xml.Xsl.XPath
         private QilNode EqualityOperator(XPathOperator op, QilNode left, QilNode right)
         {
             Debug.Assert(op == XPathOperator.Eq || op == XPathOperator.Ne);
-            XmlQueryType leftType = left.XmlType;
-            XmlQueryType rightType = right.XmlType;
+            XmlQueryType leftType = left.XmlType!;
+            XmlQueryType rightType = right.XmlType!;
 
             if (_f.IsAnyType(left) || _f.IsAnyType(right))
             {
@@ -240,8 +246,8 @@ namespace System.Xml.Xsl.XPath
         private QilNode RelationalOperator(XPathOperator op, QilNode left, QilNode right)
         {
             Debug.Assert(op == XPathOperator.Lt || op == XPathOperator.Le || op == XPathOperator.Gt || op == XPathOperator.Ge);
-            XmlQueryType leftType = left.XmlType;
-            XmlQueryType rightType = right.XmlType;
+            XmlQueryType leftType = left.XmlType!;
+            XmlQueryType rightType = right.XmlType!;
 
             if (_f.IsAnyType(left) || _f.IsAnyType(right))
             {
@@ -268,10 +274,9 @@ namespace System.Xml.Xsl.XPath
             }
         }
 
-        private QilNode NegateOperator(XPathOperator op, QilNode left, QilNode right)
+        private QilNode NegateOperator(XPathOperator op, QilNode left)
         {
             Debug.Assert(op == XPathOperator.UnaryMinus);
-            Debug.Assert(right == null);
             return _f.Negate(_f.ConvertToNumber(left));
         }
 
@@ -292,7 +297,7 @@ namespace System.Xml.Xsl.XPath
             }
         }
 
-        private QilNode UnionOperator(XPathOperator op, QilNode left, QilNode right)
+        private QilNode UnionOperator(XPathOperator op, QilNode? left, QilNode right)
         {
             Debug.Assert(op == XPathOperator.Union);
             if (left == null)
@@ -321,9 +326,9 @@ namespace System.Xml.Xsl.XPath
             );
         }
 
-        private QilNode BuildAxisFilter(QilNode qilAxis, XPathAxis xpathAxis, XPathNodeType nodeType, string name, string nsUri)
+        private QilNode BuildAxisFilter(QilNode qilAxis, XPathAxis xpathAxis, XPathNodeType nodeType, string? name, string? nsUri)
         {
-            XmlNodeKindFlags original = qilAxis.XmlType.NodeKinds;
+            XmlNodeKindFlags original = qilAxis.XmlType!.NodeKinds;
             XmlNodeKindFlags required = AxisTypeMask(original, nodeType, xpathAxis);
 
             QilIterator itr;
@@ -338,7 +343,7 @@ namespace System.Xml.Xsl.XPath
             else
             {
                 qilAxis = _f.Filter(itr = _f.For(qilAxis), _f.IsType(itr, T.NodeChoice(required)));
-                qilAxis.XmlType = T.PrimeProduct(T.NodeChoice(required), qilAxis.XmlType.Cardinality);
+                qilAxis.XmlType = T.PrimeProduct(T.NodeChoice(required), qilAxis.XmlType!.Cardinality);
 
 
                 // Without code bellow IlGeneragion gives stack overflow exception for the following passage.
@@ -383,7 +388,7 @@ namespace System.Xml.Xsl.XPath
                 /*All                  */ XmlNodeKindFlags.Any
         };
 
-        private QilNode BuildAxis(XPathAxis xpathAxis, XPathNodeType nodeType, string nsUri, string name)
+        private QilNode BuildAxis(XPathAxis xpathAxis, XPathNodeType nodeType, string? nsUri, string? name)
         {
             QilNode currentNode = GetCurrentNode();
             QilNode qilAxis;
@@ -406,7 +411,7 @@ namespace System.Xml.Xsl.XPath
                 // Can be done using BuildAxisFilter() but f.Root() sets wrong XmlNodeKindFlags
                 case XPathAxis.Root: return _f.Root(currentNode);
                 default:
-                    qilAxis = null;
+                    qilAxis = null!;
                     Debug.Fail("Invalid EnumValue 'XPathAxis'");
                     break;
             }
@@ -425,9 +430,9 @@ namespace System.Xml.Xsl.XPath
             return result;
         }
 
-        public virtual QilNode Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string prefix, string name)
+        public virtual QilNode Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name)
         {
-            string nsUri = prefix == null ? null : _environment.ResolvePrefix(prefix);
+            string? nsUri = prefix == null ? null : _environment.ResolvePrefix(prefix);
             return BuildAxis(xpathAxis, nodeType, nsUri, name);
         }
 
@@ -470,7 +475,7 @@ namespace System.Xml.Xsl.XPath
             // Prepocess predicate: if (predicate is number) then predicate := (position() == predicate)
             if (!f.IsAnyType(predicate))
             {
-                if (predicate.XmlType.TypeCode == XmlTypeCode.Double)
+                if (predicate.XmlType!.TypeCode == XmlTypeCode.Double)
                 {
                     predicate = f.Eq(env.GetPosition(), predicate);
                 }
@@ -557,7 +562,7 @@ namespace System.Xml.Xsl.XPath
             Debug.Assert(!args.IsReadOnly, "Writable collection expected");
             if (prefix.Length == 0)
             {
-                FunctionInfo func;
+                FunctionInfo? func;
                 if (FunctionTable.TryGetValue(name, out func))
                 {
                     func.CastArguments(args, name, _f);
@@ -607,7 +612,7 @@ namespace System.Xml.Xsl.XPath
         private QilNode LocalNameOfFirstNode(QilNode arg)
         {
             _f.CheckNodeSet(arg);
-            if (arg.XmlType.IsSingleton)
+            if (arg.XmlType!.IsSingleton)
             {
                 return _f.LocalNameOf(arg);
             }
@@ -621,7 +626,7 @@ namespace System.Xml.Xsl.XPath
         private QilNode NamespaceOfFirstNode(QilNode arg)
         {
             _f.CheckNodeSet(arg);
-            if (arg.XmlType.IsSingleton)
+            if (arg.XmlType!.IsSingleton)
             {
                 return _f.NamespaceUriOf(arg);
             }
@@ -653,7 +658,7 @@ namespace System.Xml.Xsl.XPath
         private QilNode NameOfFirstNode(QilNode arg)
         {
             _f.CheckNodeSet(arg);
-            if (arg.XmlType.IsSingleton)
+            if (arg.XmlType!.IsSingleton)
             {
                 return NameOf(arg);
             }
@@ -827,10 +832,10 @@ namespace System.Xml.Xsl.XPath
         {
             private new readonly QilPatternFactory f;
             private readonly QilNode _fixupCurrent, _fixupPosition, _fixupLast; // fixup nodes we are replacing
-            private QilIterator _current;
-            private QilNode _last;               // expressions we are using to replace fixupNodes
+            private QilIterator? _current;
+            private QilNode? _last;               // expressions we are using to replace fixupNodes
             private bool _justCount;          // Don't change tree, just count
-            private IXPathEnvironment _environment;  // temp solution
+            private IXPathEnvironment? _environment;  // temp solution
             public int numCurrent, numPosition, numLast; // here we are counting all replacements we have made
 
             public FixupVisitor(QilPatternFactory f, QilNode fixupCurrent, QilNode fixupPosition, QilNode fixupLast) : base(f.BaseFactory)
@@ -841,7 +846,7 @@ namespace System.Xml.Xsl.XPath
                 _fixupLast = fixupLast;
             }
 
-            public QilNode Fixup(QilNode inExpr, QilIterator current, QilNode last)
+            public QilNode Fixup(QilNode inExpr, QilIterator current, QilNode? last)
             {
                 QilDepthChecker.Check(inExpr);
                 _current = current;
@@ -891,7 +896,7 @@ namespace System.Xml.Xsl.XPath
                     {
                         if (_environment != null)
                         {
-                            unknown = _environment.GetCurrent();
+                            unknown = _environment.GetCurrent()!;
                         }
                         else if (_current != null)
                         {
@@ -975,11 +980,11 @@ namespace System.Xml.Xsl.XPath
             public T id;
             public int minArgs;
             public int maxArgs;
-            public XmlTypeCode[] argTypes;
+            public XmlTypeCode[]? argTypes;
 
             public const int Infinity = int.MaxValue;
 
-            public FunctionInfo(T id, int minArgs, int maxArgs, XmlTypeCode[] argTypes)
+            public FunctionInfo(T id, int minArgs, int maxArgs, XmlTypeCode[]? argTypes)
             {
                 Debug.Assert(maxArgs == 0 || maxArgs == Infinity || argTypes != null && argTypes.Length == maxArgs);
                 this.id = id;
@@ -1039,9 +1044,10 @@ namespace System.Xml.Xsl.XPath
                 }
                 else
                 {
+                    Debug.Assert(args.Count == 0 || argTypes != null);
                     for (int i = 0; i < args.Count; i++)
                     {
-                        if (argTypes[i] == XmlTypeCode.Node && f.CannotBeNodeSet(args[i]))
+                        if (argTypes![i] == XmlTypeCode.Node && f.CannotBeNodeSet(args[i]))
                         {
                             throw new XPathCompileException(SR.XPath_NodeSetArgumentExpected, name, (i + 1).ToString(CultureInfo.InvariantCulture));
                         }

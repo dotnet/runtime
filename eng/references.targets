@@ -1,6 +1,9 @@
 <Project>
-  <PropertyGroup>
-    <!-- Disable RAR from transitively discovering dependencies for References -->
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <!--
+      Disable RAR from transitively discovering dependencies for references. This is required as we don't copy
+      dependencies over into the output directory which means RAR can't resolve them.
+    -->
     <_FindDependencies>false</_FindDependencies>
   </PropertyGroup>
 

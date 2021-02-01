@@ -45,7 +45,7 @@ namespace System
 
         public UriBuilder(Uri uri)
         {
-            if ((object?)uri == null)
+            if (uri is null)
                 throw new ArgumentNullException(nameof(uri));
 
             Init(uri);
@@ -351,7 +351,7 @@ namespace System
 
         // methods
 
-        public override bool Equals(object? rparam)
+        public override bool Equals([NotNullWhen(true)] object? rparam)
         {
             if (rparam == null)
             {

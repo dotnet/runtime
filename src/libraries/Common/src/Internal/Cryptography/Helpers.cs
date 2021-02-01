@@ -4,6 +4,7 @@
 #nullable enable
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
@@ -18,6 +19,16 @@ namespace Internal.Cryptography
             }
 
             return (byte[])(src.Clone());
+        }
+
+        public static int GetPaddingSize(this SymmetricAlgorithm algorithm)
+        {
+            // CFB8 does not require any padding at all
+            // otherwise, it is always required to pad for block size
+            if (algorithm.Mode == CipherMode.CFB && algorithm.FeedbackSize == 8)
+                return 1;
+
+            return algorithm.BlockSize / 8;
         }
 
         internal static bool TryCopyToDestination(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)

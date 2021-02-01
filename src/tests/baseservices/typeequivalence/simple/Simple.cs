@@ -216,6 +216,10 @@ public class Simple
 
     public static int Main(string[] noArgs)
     {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return 100;
+        }
         try
         {
             InterfaceTypesFromDifferentAssembliesAreEquivalent();

@@ -168,25 +168,33 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal('Y', JsonSerializer.Deserialize<char>("\"\u0059\""));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1037")]
         [Fact]
         public static void ParseNullStringToStructShouldThrowJsonException()
         {
             string nullString = "null";
-            Utf8JsonReader reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(nullString));
+            byte[] nullStringAsBytes = Encoding.UTF8.GetBytes(nullString);
+
+            Utf8JsonReader reader = new Utf8JsonReader(nullStringAsBytes);
 
             JsonTestHelper.AssertThrows<JsonException>(reader, (reader) => JsonSerializer.Deserialize<SimpleStruct>(ref reader));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleStruct>(Encoding.UTF8.GetBytes(nullString)));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleStruct>(nullStringAsBytes));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleStruct>(nullString));
+
+            // null can be assigned to nullable structs.
+            Assert.Null(JsonSerializer.Deserialize<SimpleStruct?>(nullStringAsBytes));
+            Assert.Null(JsonSerializer.Deserialize<SimpleStruct?>(nullString));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1037")]
         [Fact]
         public static async Task ParseNullStringShouldThrowJsonExceptionAsync()
         {
             using (var stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
             { 
                 await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<SimpleStruct>(stream));
+
+                // null can be assigned to nullable structs.
+                stream.Position = 0;
+                Assert.Null(await JsonSerializer.DeserializeAsync<SimpleStruct?>(stream));
             }
         }
 

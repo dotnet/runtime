@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        [DllImport(Libraries.Ws2_32, SetLastError = true)]
         internal static extern unsafe SocketError WSARecv(
             SafeHandle socketHandle,
             WSABuffer* buffer,
@@ -20,22 +20,6 @@ internal static partial class Interop
             ref SocketFlags socketFlags,
             NativeOverlapped* overlapped,
             IntPtr completionRoutine);
-
-        internal static unsafe SocketError WSARecv(
-            SafeHandle socketHandle,
-            ref WSABuffer buffer,
-            int bufferCount,
-            out int bytesTransferred,
-            ref SocketFlags socketFlags,
-            NativeOverlapped* overlapped,
-            IntPtr completionRoutine)
-        {
-            // We intentionally do NOT copy this back after the function completes:
-            // We don't want to cause a race in async scenarios.
-            // The WSABuffer struct should be unchanged anyway.
-            WSABuffer localBuffer = buffer;
-            return WSARecv(socketHandle, &localBuffer, bufferCount, out bytesTransferred, ref socketFlags, overlapped, completionRoutine);
-        }
 
         internal static unsafe SocketError WSARecv(
             SafeHandle socketHandle,

@@ -24,7 +24,7 @@ namespace System.Net.NetworkInformation
         }
 
         // IPV6 version of the Tcp row.
-        internal unsafe SystemTcpConnectionInformation(in Interop.IpHlpApi.MibTcp6RowOwnerPid row)
+        internal SystemTcpConnectionInformation(in Interop.IpHlpApi.MibTcp6RowOwnerPid row)
         {
             _state = row.state;
 

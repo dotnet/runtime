@@ -4,10 +4,12 @@
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Runtime.Versioning;
 using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
 {
+    [SupportedOSPlatform("windows")]
     public sealed class CspParameters
     {
         public int ProviderType;

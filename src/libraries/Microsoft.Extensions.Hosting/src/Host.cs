@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Hosting
                     var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
                     if (appAssembly != null)
                     {
-                        config.AddUserSecrets(appAssembly, optional: true);
+                        config.AddUserSecrets(appAssembly, optional: true, reloadOnChange: reloadOnChange);
                     }
                 }
 

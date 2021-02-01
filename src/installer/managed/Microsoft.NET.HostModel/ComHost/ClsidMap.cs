@@ -65,7 +65,7 @@ namespace Microsoft.NET.HostModel.ComHost
 
             using (StreamWriter writer = File.CreateText(clsidMapPath))
             {
-                writer.Write(JsonSerializer.Serialize(clsidMap, new JsonSerializerOptions { IgnoreNullValues = true }));
+                writer.Write(JsonSerializer.Serialize(clsidMap, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }));
             }
         }
 
@@ -180,7 +180,7 @@ namespace Microsoft.NET.HostModel.ComHost
                     return attr;
                 }
             }
-            return new CustomAttributeHandle();
+            return default;
         }
 
         private static Guid GetTypeGuid(MetadataReader reader, TypeDefinition type)

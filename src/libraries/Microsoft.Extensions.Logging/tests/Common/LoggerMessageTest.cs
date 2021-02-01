@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 using Xunit.Sdk;
@@ -276,6 +277,9 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
         public void DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(
             int expectedNamedParameterCount)
         {
@@ -300,12 +304,54 @@ namespace Microsoft.Extensions.Logging.Test
                     exception = Assert.Throws<ArgumentException>(
                         () => LoggerMessage.DefineScope<string, string, string>(formatString));
                     break;
+                case 4:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string>(formatString));
+                    break;
+                case 5:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string, string>(formatString));
+                    break;
+                case 6:
+                    exception = Assert.Throws<ArgumentException>(
+                        () => LoggerMessage.DefineScope<string, string, string, string, string, string>(formatString));
+                    break;
                 default:
                     throw new ArgumentException($"Invalid value for '{nameof(expectedNamedParameterCount)}'");
             }
 
             Assert.Equal(expectedMessage, exception.Message);
         }
+
+        [Theory]
+        [MemberData(nameof(DefineMethodsWithInvalidParametersData))]
+        public void DefineAndDefineScope_ThrowsException_WhenFormatString_IsNull(Delegate method, object[] parameters)
+        {
+            // Act
+            var exception = Assert.Throws<TargetInvocationException>(
+                () => method.DynamicInvoke(parameters));
+
+            // Assert
+            Assert.IsType<ArgumentNullException>(exception.InnerException);
+        }
+
+        public static IEnumerable<object[]> DefineMethodsWithInvalidParametersData => new[]
+        {
+            new object[] { (Define)LoggerMessage.Define, DefineInvalidParameters },
+            new object[] { (Define)LoggerMessage.Define<string>, DefineInvalidParameters },
+            new object[] { (Define)LoggerMessage.Define<string, string>, DefineInvalidParameters },
+            new object[] { (Define)LoggerMessage.Define<string, string, string>, DefineInvalidParameters },
+            new object[] { (Define)LoggerMessage.Define<string, string, string, string>, DefineInvalidParameters },
+            new object[] { (Define)LoggerMessage.Define<string, string, string, string, string>, DefineInvalidParameters },
+            new object[] { (Define)LoggerMessage.Define<string, string, string, string, string, string>, DefineInvalidParameters },
+            new object[] { (DefineScope)LoggerMessage.DefineScope, DefineScopeInvalidParameters },
+            new object[] { (DefineScope)LoggerMessage.DefineScope<string>, DefineScopeInvalidParameters },
+            new object[] { (DefineScope)LoggerMessage.DefineScope<string, string>, DefineScopeInvalidParameters },
+            new object[] { (DefineScope)LoggerMessage.DefineScope<string, string, string>, DefineScopeInvalidParameters },
+            new object[] { (DefineScope)LoggerMessage.DefineScope<string, string, string, string>, DefineScopeInvalidParameters },
+            new object[] { (DefineScope)LoggerMessage.DefineScope<string, string, string, string, string>, DefineScopeInvalidParameters },
+            new object[] { (DefineScope)LoggerMessage.DefineScope<string, string, string, string, string, string>, DefineScopeInvalidParameters }
+        };
 
         public static IEnumerable<object[]> LogMessagesData => new[]
         {
@@ -317,6 +363,11 @@ namespace Microsoft.Extensions.Logging.Test
             new object[] { LoggerMessage.Define<string, string, string, string, string>(LogLevel.Error, 5, "Log {P0} {P1} {P2} {P3} {P4}"), 5 },
             new object[] { LoggerMessage.Define<string, string, string, string, string, string>(LogLevel.Error, 6, "Log {P0} {P1} {P2} {P3} {P4} {P5}"), 6 },
         };
+
+        private delegate Delegate Define(LogLevel logLevel, EventId eventId, string formatString);
+        private delegate Delegate DefineScope(string formatString);
+        private static object[] DefineInvalidParameters => new object[] { LogLevel.Error, new EventId(0), null };
+        private static object[] DefineScopeInvalidParameters => new object[] { null };
 
         private void AssertLogValues(
             IEnumerable<KeyValuePair<string, object>> expected,

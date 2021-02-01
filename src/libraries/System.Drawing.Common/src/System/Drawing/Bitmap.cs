@@ -10,6 +10,8 @@ using System.Runtime.Serialization;
 
 namespace System.Drawing
 {
+    [Editor("System.Drawing.Design.BitmapEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Bitmap : Image
@@ -47,7 +49,33 @@ namespace System.Drawing
             EnsureSave(this, filename, null);
         }
 
-        public Bitmap(Stream stream) : this(stream, false) { }
+        public Bitmap(Stream stream) : this(stream, false)
+        {
+        }
+
+        public Bitmap(Type type, string resource) : this(GetResourceStream(type, resource))
+        {
+        }
+
+        private static Stream GetResourceStream(Type type, string resource)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+            if (resource == null)
+            {
+                throw new ArgumentNullException(nameof(resource));
+            }
+
+            Stream? stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
+            if (stream == null)
+            {
+                throw new ArgumentException(SR.Format(SR.ResourceNotFound, type, resource));
+            }
+
+            return stream;
+        }
 
         public Bitmap(int width, int height) : this(width, height, PixelFormat.Format32bppArgb)
         {

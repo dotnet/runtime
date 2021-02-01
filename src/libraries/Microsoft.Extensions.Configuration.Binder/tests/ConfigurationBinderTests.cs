@@ -109,6 +109,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public string MyString { get; set; }
         }
 
+        public class ByteArrayOptions
+        {
+            public byte[] MyByteArray { get; set; }
+        }
+
         [Fact]
         public void CanBindIConfigurationSection()
         {
@@ -810,6 +815,55 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ValueTypeOptions>();
             Assert.Equal(42, options.MyInt32);
             Assert.Equal("hello world", options.MyString);
+        }
+
+        [Fact]
+        public void CanBindByteArray()
+        {
+            var bytes = new byte[] { 1, 2, 3, 4 };
+            var dic = new Dictionary<string, string>
+            {
+                { "MyByteArray", Convert.ToBase64String(bytes) }
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ByteArrayOptions>();
+            Assert.Equal(bytes, options.MyByteArray);
+        }
+
+        [Fact]
+        public void CanBindByteArrayWhenValueIsNull()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                { "MyByteArray", null }
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ByteArrayOptions>();
+            Assert.Null(options.MyByteArray);
+        }
+
+        [Fact]
+        public void ExceptionWhenTryingToBindToByteArray()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                { "MyByteArray", "(not a valid base64 string)" }
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<ByteArrayOptions>());
+            Assert.Equal(
+                SR.Format(SR.Error_FailedBinding, "MyByteArray", typeof(byte[])),
+                exception.Message);
         }
 
         private interface ISomeInterface

@@ -50,13 +50,12 @@ namespace Microsoft.Extensions.Http.Logging
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var stopwatch = ValueStopwatch.StartNew();
-
             Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
 
             // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's
             // not really anything to surround.
             Log.RequestStart(_logger, request, shouldRedactHeaderValue);
+            var stopwatch = ValueStopwatch.StartNew();
             HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             Log.RequestEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
 

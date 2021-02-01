@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="WasmBuildApp">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>219</NoWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RunAnalyzers>false</RunAnalyzers>
+    <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="debugger-driver.html" />
+    <WasmExtraFilesToDeploy Include="other.js" />
+    <WasmExtraFilesToDeploy Include="runtime-debugger.js" />
+
+    <!-- We want to bundle these assemblies, so build them first -->
+    <ProjectReference Include="..\lazy-debugger-test\lazy-debugger-test.csproj" Private="true"/>
+    <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" Private="true"/>
+  </ItemGroup>
+
+  <Target Name="PrepareForWasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+    <PropertyGroup>
+      <WasmAppDir>$(AppDir)</WasmAppDir>
+      <WasmMainJSPath>$(MonoProjectRoot)wasm\runtime-test.js</WasmMainJSPath>
+      <WasmDebugLevel>1</WasmDebugLevel>
+
+      <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
+      <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
+
+      <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
+    </ItemGroup>
+  </Target>
+
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
+</Project>

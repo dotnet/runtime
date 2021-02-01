@@ -5,12 +5,14 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ObjectConverter : JsonConverter<object>
     {
+        public ObjectConverter()
+        {
+            IsInternalConverterForNumberType = true;
+        }
+
         public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            using (JsonDocument document = JsonDocument.ParseValue(ref reader))
-            {
-                return document.RootElement.Clone();
-            }
+            return JsonElement.ParseValue(ref reader);
         }
 
         public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
@@ -19,7 +21,10 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         internal override object ReadWithQuotes(ref Utf8JsonReader reader)
-            => throw new NotSupportedException();
+        {
+            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert);
+            return null!;
+        }
 
         internal override void WriteWithQuotes(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
         {
@@ -36,6 +41,11 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             return runtimeConverter;
+        }
+
+        internal override object ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+        {
+            return JsonElement.ParseValue(ref reader);
         }
     }
 }

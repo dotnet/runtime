@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
@@ -20,6 +21,7 @@ namespace System.Diagnostics
     ///       processes. Enables you to start and stop system processes.
     ///    </para>
     /// </devdoc>
+    [Designer("System.Diagnostics.Design.ProcessDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class Process : Component
     {
         private bool _haveProcessId;
@@ -252,12 +254,10 @@ namespace System.Diagnostics
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the maximum allowable working set for the associated
-        ///       process.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the maximum allowable working set for the associated process.
+        /// </summary>
+        /// <remarks>On macOS and FreeBSD, setting the value works only for the current process.</remarks>
         public IntPtr MaxWorkingSet
         {
             get
@@ -265,19 +265,19 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
-            [MinimumOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("freebsd")]
             set
             {
                 SetWorkingSetLimits(null, value);
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the minimum allowable working set for the associated
-        ///       process.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the minimum allowable working set for the associated process.
+        /// </summary>
+        /// <remarks>On macOS and FreeBSD, setting the value works only for the current process.</remarks>
         public IntPtr MinWorkingSet
         {
             get
@@ -285,7 +285,9 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _minWorkingSet;
             }
-            [MinimumOSPlatform("windows7.0")]
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("freebsd")]
             set
             {
                 SetWorkingSetLimits(value, null);
@@ -314,7 +316,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int NonpagedSystemMemorySize
         {
             get
@@ -334,7 +336,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PagedMemorySize
         {
             get
@@ -354,7 +356,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PagedSystemMemorySize
         {
             get
@@ -374,7 +376,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PeakPagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakPagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PeakPagedMemorySize
         {
             get
@@ -393,7 +395,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PeakWorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakWorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PeakWorkingSet
         {
             get
@@ -412,7 +414,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PeakVirtualMemorySize
         {
             get
@@ -487,7 +489,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PrivateMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PrivateMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PrivateMemorySize
         {
             get
@@ -630,7 +632,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int VirtualMemorySize
         {
             get
@@ -750,7 +752,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.WorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.WorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int WorkingSet
         {
             get
@@ -1126,7 +1128,9 @@ namespace System.Diagnostics
         public void Refresh()
         {
             _processInfo = null;
+            _threads?.Dispose();
             _threads = null;
+            _modules?.Dispose();
             _modules = null;
             _exited = false;
             _haveWorkingSetLimits = false;
@@ -1214,7 +1218,7 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
             }
-            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.ArgumentList.Count > 0)
+            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.HasArgumentList)
             {
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
             }
@@ -1259,6 +1263,25 @@ namespace System.Diagnostics
             // when the ProcessStartInfo.UseShellExecute property is set to true.
             // We can thus safely assert non-nullability for tihs overload.
             return Start(new ProcessStartInfo(fileName, arguments))!;
+        }
+
+        /// <summary>
+        /// Starts a process resource by specifying the name of an application and a set of command line arguments
+        /// </summary>
+        public static Process Start(string fileName, IEnumerable<string> arguments)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+            if (arguments == null)
+                throw new ArgumentNullException(nameof(arguments));
+
+            var startInfo = new ProcessStartInfo(fileName);
+            foreach (string argument in arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            return Start(startInfo)!;
         }
 
         /// <devdoc>
@@ -1429,15 +1452,16 @@ namespace System.Diagnostics
                 // exception up to the user
                 if (HasExited)
                 {
+                    await WaitUntilOutputEOF().ConfigureAwait(false);
                     return;
                 }
 
                 throw;
             }
 
-            var tcs = new TaskCompletionSourceWithCancellation<bool>();
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            EventHandler handler = (s, e) => tcs.TrySetResult(true);
+            EventHandler handler = (_, _) => tcs.TrySetResult();
             Exited += handler;
 
             try
@@ -1445,15 +1469,35 @@ namespace System.Diagnostics
                 if (HasExited)
                 {
                     // CASE 1.2 & CASE 3.2: Handle race where the process exits before registering the handler
-                    return;
+                }
+                else
+                {
+                    // CASE 1.1 & CASE 3.1: Process exits or is canceled here
+                    using (cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((TaskCompletionSource)s!).TrySetCanceled(cancellationToken), tcs))
+                    {
+                        await tcs.Task.ConfigureAwait(false);
+                    }
                 }
 
-                // CASE 1.1 & CASE 3.1: Process exits or is canceled here
-                await tcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                // Wait until output streams have been drained
+                await WaitUntilOutputEOF().ConfigureAwait(false);
             }
             finally
             {
                 Exited -= handler;
+            }
+
+            async ValueTask WaitUntilOutputEOF()
+            {
+                if (_output != null)
+                {
+                    await _output.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                if (_error != null)
+                {
+                    await _error.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                }
             }
         }
 

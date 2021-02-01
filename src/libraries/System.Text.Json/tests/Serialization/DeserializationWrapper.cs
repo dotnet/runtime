@@ -15,6 +15,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public static DeserializationWrapper StringDeserializer => new StringDeserializerWrapper();
         public static DeserializationWrapper StreamDeserializer => new StreamDeserializerWrapper();
+        public static DeserializationWrapper SpanDeserializer => new SpanDesearializationWrapper();
 
         protected internal abstract Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null);
 
@@ -59,6 +60,19 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     return await JsonSerializer.DeserializeAsync(stream, type, options);
                 }
+            }
+        }
+
+        private class SpanDesearializationWrapper : DeserializationWrapper
+        {
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
+            {
+                return Task.FromResult(JsonSerializer.Deserialize<T>(json.AsSpan(), options));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
+            {
+                return Task.FromResult(JsonSerializer.Deserialize(json.AsSpan(), type, options));
             }
         }
     }

@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class HmacSha512Tests : Rfc4231HmacTests
     {
         protected override HMAC Create()

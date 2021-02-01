@@ -295,7 +295,7 @@ namespace System
                 // "-Kr 1231.47" is legal but "- 1231.47" is not.
                 if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && info.NumberNegativePattern != 2)))
                 {
-                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchChars(p, strEnd, info.NegativeSign)) != null && (number.IsNegative = true))))
+                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchNegativeSignChars(p, strEnd, info)) != null && (number.IsNegative = true))))
                     {
                         state |= StateSign;
                         p = next - 1;
@@ -393,7 +393,7 @@ namespace System
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                     }
-                    else if ((next = MatchChars(p, strEnd, info._negativeSign)) != null)
+                    else if ((next = MatchNegativeSignChars(p, strEnd, info)) != null)
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                         negExp = true;
@@ -430,7 +430,7 @@ namespace System
                 {
                     if (!IsWhite(ch) || (styles & NumberStyles.AllowTrailingWhite) == 0)
                     {
-                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchChars(p, strEnd, info.NegativeSign)) != null) && (number.IsNegative = true))))
+                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchNegativeSignChars(p, strEnd, info)) != null) && (number.IsNegative = true))))
                         {
                             state |= StateSign;
                             p = next - 1;
@@ -554,6 +554,14 @@ namespace System
                             goto FalseExit;
                         num = value[index];
                     }
+                }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    sign = -1;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
                 }
                 else
                 {
@@ -725,6 +733,14 @@ namespace System
                             goto FalseExit;
                         num = value[index];
                     }
+                }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    sign = -1;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
                 }
                 else
                 {
@@ -970,6 +986,14 @@ namespace System
                         num = value[index];
                     }
                 }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    overflow = true;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
+                }
                 else
                 {
                     value = value.Slice(index);
@@ -1096,7 +1120,7 @@ namespace System
         }
 
         /// <summary>Parses uint limited to styles that make up NumberStyles.HexNumber.</summary>
-        private static ParsingStatus TryParseUInt32HexNumberStyle(ReadOnlySpan<char> value, NumberStyles styles, out uint result)
+        internal static ParsingStatus TryParseUInt32HexNumberStyle(ReadOnlySpan<char> value, NumberStyles styles, out uint result)
         {
             Debug.Assert((styles & ~NumberStyles.HexNumber) == 0, "Only handles subsets of HexNumber format");
 
@@ -1297,6 +1321,14 @@ namespace System
                             goto FalseExit;
                         num = value[index];
                     }
+                }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    overflow = true;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
                 }
                 else
                 {
@@ -1725,6 +1757,8 @@ namespace System
             return ParsingStatus.OK;
         }
 
+        internal static bool SpanStartsWith(ReadOnlySpan<char> span, char c) => !span.IsEmpty && span[0] == c;
+
         internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
         {
             byte* pDigits = stackalloc byte[DoubleNumberBufferLength];
@@ -1768,8 +1802,8 @@ namespace System
                         return false;
                     }
                 }
-                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                        valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                else if ((valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) && valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol)) ||
+                        (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol)))
                 {
                     result = double.NaN;
                 }
@@ -1840,6 +1874,11 @@ namespace System
                 {
                     result = Half.NaN;
                 }
+                else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = Half.NaN;
+                }
                 else
                 {
                     result = (Half)0;
@@ -1907,6 +1946,11 @@ namespace System
                 {
                     result = float.NaN;
                 }
+                else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = float.NaN;
+                }
                 else
                 {
                     result = 0;
@@ -1954,6 +1998,18 @@ namespace System
         }
 
         private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe char* MatchNegativeSignChars(char* p, char* pEnd, NumberFormatInfo info)
+        {
+            char *ret = MatchChars(p, pEnd, info.NegativeSign);
+            if (ret == null && info.AllowHyphenDuringParsing && p < pEnd && *p == '-')
+            {
+                ret = p + 1;
+            }
+
+            return ret;
+        }
 
         private static unsafe char* MatchChars(char* p, char* pEnd, string value)
         {

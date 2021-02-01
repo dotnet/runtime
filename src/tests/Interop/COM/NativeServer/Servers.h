@@ -19,6 +19,7 @@ class DECLSPEC_UUID("4CEFE36D-F377-4B6E-8C34-819A8BB9CB04") AggregationTesting;
 class DECLSPEC_UUID("C222F472-DA5A-4FC6-9321-92F4F7053A65") ColorTesting;
 class DECLSPEC_UUID("66DB7882-E2B0-471D-92C7-B2B52A0EA535") LicenseTesting;
 class DECLSPEC_UUID("FAEF42AE-C1A4-419F-A912-B768AC2679EA") DefaultInterfaceTesting;
+class DECLSPEC_UUID("CE137261-6F19-44F5-A449-EF963B3F987E") InspectableTesting;
 
 #define CLSID_NumericTesting __uuidof(NumericTesting)
 #define CLSID_ArrayTesting __uuidof(ArrayTesting)
@@ -30,6 +31,7 @@ class DECLSPEC_UUID("FAEF42AE-C1A4-419F-A912-B768AC2679EA") DefaultInterfaceTest
 #define CLSID_ColorTesting __uuidof(ColorTesting)
 #define CLSID_LicenseTesting __uuidof(LicenseTesting)
 #define CLSID_DefaultInterfaceTesting __uuidof(DefaultInterfaceTesting)
+#define CLSID_InspectableTesting __uidof(InspectableTesting)
 
 #define IID_INumericTesting __uuidof(INumericTesting)
 #define IID_IArrayTesting __uuidof(IArrayTesting)
@@ -43,6 +45,8 @@ class DECLSPEC_UUID("FAEF42AE-C1A4-419F-A912-B768AC2679EA") DefaultInterfaceTest
 #define IID_ILicenseTesting __uuidof(ILicenseTesting)
 #define IID_IDefaultInterfaceTesting __uuidof(IDefaultInterfaceTesting)
 #define IID_IDefaultInterfaceTesting2 __uuidof(IDefaultInterfaceTesting2)
+#define IID_IInspectableTesting __uuidof(IInspectableTesting)
+#define IID_IInspectableTesting2 __uuidof(IInspectableTesting2)
 
 // Class used for COM activation when using CoreShim
 struct CoreShimComActivation
@@ -81,4 +85,5 @@ private:
     #include "AggregationTesting.h"
     #include "ColorTesting.h"
     #include "LicenseTesting.h"
+    #include "InspectableTesting.h"
 #endif

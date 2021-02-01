@@ -57,7 +57,7 @@ namespace System
 
         // Well-defined and commonly used values
 
-        public static Half Epsilon =>  new Half(EpsilonBits);                        //  5.9604645E-08
+        public static Half Epsilon => new Half(EpsilonBits);                        //  5.9604645E-08
 
         public static Half PositiveInfinity => new Half(PositiveInfinityBits);      //  1.0 / 0.0;
 
@@ -151,12 +151,19 @@ namespace System
 
         public static bool operator ==(Half left, Half right)
         {
-            return left.Equals(right);
+            if (IsNaN(left) || IsNaN(right))
+            {
+                // IEEE defines that NaN is not equal to anything, including itself.
+                return false;
+            }
+
+            // IEEE defines that positive and negative zero are equivalent.
+            return (left._value == right._value) || AreZero(left, right);
         }
 
         public static bool operator !=(Half left, Half right)
         {
-            return !(left.Equals(right));
+            return !(left == right);
         }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
@@ -405,7 +412,7 @@ namespace System
         /// <summary>
         /// Returns a value that indicates whether this instance is equal to a specified <paramref name="obj"/>.
         /// </summary>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return (obj is Half other) && Equals(other);
         }
@@ -415,14 +422,9 @@ namespace System
         /// </summary>
         public bool Equals(Half other)
         {
-            if (IsNaN(this) || IsNaN(other))
-            {
-                // IEEE defines that NaN is not equal to anything, including itself.
-                return false;
-            }
-
-            // IEEE defines that positive and negative zero are equivalent.
-            return (_value == other._value) || AreZero(this, other);
+            return _value == other._value
+                || AreZero(this, other)
+                || (IsNaN(this) && IsNaN(other));
         }
 
         /// <summary>
@@ -633,6 +635,7 @@ namespace System
                 {
                     sig = (ushort)ShiftRightJam(sig, -exp);
                     exp = 0;
+                    roundBits = sig & 0xF;
                 }
                 else if (exp > 0x1D || sig + RoundIncrement >= 0x8000) // Overflow
                 {
@@ -681,10 +684,10 @@ namespace System
         }
 
         private static float CreateSingle(bool sign, byte exp, uint sig)
-            => BitConverter.Int32BitsToSingle((int)(((sign ? 1U : 0U) << float.SignShift) | ((uint)exp << float.ExponentShift) | sig));
+            => BitConverter.Int32BitsToSingle((int)(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.ExponentShift) + sig));
 
         private static double CreateDouble(bool sign, ushort exp, ulong sig)
-            => BitConverter.Int64BitsToDouble((long)(((sign ? 1UL : 0UL) << double.SignShift) | ((ulong)exp << double.ExponentShift) | sig));
+            => BitConverter.Int64BitsToDouble((long)(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.ExponentShift) + sig));
 
         #endregion
     }

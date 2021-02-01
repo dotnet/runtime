@@ -180,7 +180,7 @@ namespace System.Diagnostics.Tracing
             this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags)) ??
                 this.nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));
 
-        private TraceLoggingTypeInfo[] MakeArray(System.Reflection.ParameterInfo[] paramInfos)
+        private static TraceLoggingTypeInfo[] MakeArray(System.Reflection.ParameterInfo[] paramInfos)
         {
             if (paramInfos == null)
             {

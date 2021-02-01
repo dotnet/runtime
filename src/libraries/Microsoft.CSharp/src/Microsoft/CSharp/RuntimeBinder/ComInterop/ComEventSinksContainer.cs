@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         public static ComEventSinksContainer FromRuntimeCallableWrapper(object rcw, bool createIfNotFound)
         {
             object data = Marshal.GetComObjectData(rcw, s_comObjectEventSinksKey);
-            if (data != null || createIfNotFound == false)
+            if (data != null || !createIfNotFound)
             {
                 return (ComEventSinksContainer)data;
             }

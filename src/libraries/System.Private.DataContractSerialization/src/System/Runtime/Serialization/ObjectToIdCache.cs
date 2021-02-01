@@ -11,7 +11,7 @@ namespace System.Runtime.Serialization
     {
         internal int m_currentCount;
         internal int[] m_ids;
-        internal object[] m_objs;
+        internal object?[] m_objs;
         internal bool[] m_isWrapped;
 
         public ObjectToIdCache()
@@ -131,7 +131,7 @@ namespace System.Runtime.Serialization
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.ObjectTableOverflow));
         }
 
-        private int ComputeStartPosition(object o)
+        private int ComputeStartPosition(object? o)
         {
             return (RuntimeHelpers.GetHashCode(o) & 0x7FFFFFFF) % m_objs.Length;
         }
@@ -140,14 +140,14 @@ namespace System.Runtime.Serialization
         {
             int size = GetPrime(m_objs.Length + 1); // The lookup does an inherent doubling
             int[] oldIds = m_ids;
-            object[] oldObjs = m_objs;
+            object?[] oldObjs = m_objs;
             m_ids = new int[size];
             m_objs = new object[size];
             m_isWrapped = new bool[size];
 
             for (int j = 0; j < oldObjs.Length; j++)
             {
-                object obj = oldObjs[j];
+                object? obj = oldObjs[j];
                 if (obj != null)
                 {
                     bool found, isWrapped;

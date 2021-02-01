@@ -252,6 +252,36 @@ namespace System.Net.Sockets.Tests
             Assert.True(listener.ExclusiveAddressUse);
         }
 
+        [Fact]
+        public void EndAcceptSocket_WhenStopped_ThrowsObjectDisposedException()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+
+            IAsyncResult iar = listener.BeginAcceptSocket(callback: null, state: null);
+
+            // Give some time for the underlying OS operation to start:
+            Thread.Sleep(50);
+            listener.Stop();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.EndAcceptSocket(iar));
+        }
+
+        [Fact]
+        public void EndAcceptTcpClient_WhenStopped_ThrowsObjectDisposedException()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+
+            IAsyncResult iar = listener.BeginAcceptTcpClient(callback: null, state: null);
+
+            // Give some time for the underlying OS operation to start:
+            Thread.Sleep(50);
+            listener.Stop();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.EndAcceptTcpClient(iar));
+        }
+
         private sealed class DerivedTcpListener : TcpListener
         {
 #pragma warning disable 0618

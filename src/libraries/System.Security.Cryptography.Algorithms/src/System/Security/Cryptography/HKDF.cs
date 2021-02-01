@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -13,6 +14,7 @@ namespace System.Security.Cryptography
     /// phase to be skipped, and the master key to be used directly as the pseudorandom key.
     /// See <a href="https://tools.ietf.org/html/rfc5869">RFC5869</a> for more information.
     /// </remarks>
+    [UnsupportedOSPlatform("browser")]
     public static class HKDF
     {
         /// <summary>

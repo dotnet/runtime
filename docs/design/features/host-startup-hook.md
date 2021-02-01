@@ -57,8 +57,8 @@ Each part may be either
   * the assembly name must be considered a valid assembly name as specified
     by the `AssemblyName` class.
 
-Note that white-spaces are preserved and considered part of the specified 
-path/name. So for example path separator followed by a white-space and 
+Note that white-spaces are preserved and considered part of the specified
+path/name. So for example path separator followed by a white-space and
 another path separator is invalid, since the white-space only string
 in between the path separators will be considered as assembly name.
 
@@ -90,10 +90,10 @@ centralized, while still allowing user code to do its own thing if it
 so desires.
 
 The producer of `StartupHook.dll` needs to ensure that
-`StartupHook.dll` is compatible with the dependencies specified in the 
-main application's deps.json, since those dependencies are put on the 
-Trusted Platform Assemblies (TPA) list during the runtime startup, 
-before `StartupHook.dll` is loaded. This means that `StartupHook.dll` 
+`StartupHook.dll` is compatible with the dependencies specified in the
+main application's deps.json, since those dependencies are put on the
+Trusted Platform Assemblies (TPA) list during the runtime startup,
+before `StartupHook.dll` is loaded. This means that `StartupHook.dll`
 needs to be built against the same or lower version of .NET Core than the app.
 
 ## Example
@@ -253,3 +253,10 @@ be defined either in the app or within the first hook that uses it:
 The type should be made `internal` to prevent exposing it as API
 surface to any managed code that happens to have access to the startup
 hook dll. However, the feature will also work if the type is `public`.
+
+### Incompatible with trimming
+
+Startup hooks are disabled by default on trimmed apps. The usage of
+startup hooks on a trimmed app is potentially dangerous since these
+could make use of assemblies, types or members that were removed by
+trimming, causing the app to crash.

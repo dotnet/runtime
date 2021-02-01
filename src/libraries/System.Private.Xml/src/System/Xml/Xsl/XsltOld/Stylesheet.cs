@@ -12,16 +12,16 @@ namespace System.Xml.Xsl.XsltOld
     internal class Stylesheet
     {
         private readonly ArrayList _imports = new ArrayList();
-        private Hashtable _modeManagers;
+        private Hashtable? _modeManagers;
         private readonly Hashtable _templateNameTable = new Hashtable();
-        private Hashtable _attributeSetTable;
+        private Hashtable? _attributeSetTable;
         private int _templateCount;
         //private ArrayList     preserveSpace;
-        private Hashtable _queryKeyTable;
-        private ArrayList _whitespaceList;
+        private Hashtable? _queryKeyTable;
+        private ArrayList? _whitespaceList;
         private bool _whitespace;
         private readonly Hashtable _scriptObjectTypes = new Hashtable();
-        private TemplateManager _templates;
+        private TemplateManager? _templates;
 
 
         private class WhitespaceElement
@@ -60,7 +60,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool Whitespace { get { return _whitespace; } }
         internal ArrayList Imports { get { return _imports; } }
-        internal Hashtable AttributeSetTable { get { return _attributeSetTable; } }
+        internal Hashtable? AttributeSetTable { get { return _attributeSetTable; } }
 
         internal void AddSpace(Compiler compiler, string query, double Priority, bool PreserveSpace)
         {
@@ -69,7 +69,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 if (_queryKeyTable.Contains(query))
                 {
-                    elem = (WhitespaceElement)_queryKeyTable[query];
+                    elem = (WhitespaceElement)_queryKeyTable[query]!;
                     elem.ReplaceValue(PreserveSpace);
                     return;
                 }
@@ -82,20 +82,20 @@ namespace System.Xml.Xsl.XsltOld
             int key = compiler.AddQuery(query);
             elem = new WhitespaceElement(key, Priority, PreserveSpace);
             _queryKeyTable[query] = elem;
-            _whitespaceList.Add(elem);
+            _whitespaceList!.Add(elem);
         }
 
         internal void SortWhiteSpace()
         {
             if (_queryKeyTable != null)
             {
-                for (int i = 0; i < _whitespaceList.Count; i++)
+                for (int i = 0; i < _whitespaceList!.Count; i++)
                 {
                     for (int j = _whitespaceList.Count - 1; j > i; j--)
                     {
                         WhitespaceElement elem1, elem2;
-                        elem1 = (WhitespaceElement)_whitespaceList[j - 1];
-                        elem2 = (WhitespaceElement)_whitespaceList[j];
+                        elem1 = (WhitespaceElement)_whitespaceList[j - 1]!;
+                        elem2 = (WhitespaceElement)_whitespaceList[j]!;
                         if (elem2.Priority < elem1.Priority)
                         {
                             _whitespaceList[j - 1] = elem2;
@@ -109,7 +109,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
-                    Stylesheet stylesheet = (Stylesheet)_imports[importIndex];
+                    Stylesheet stylesheet = (Stylesheet)_imports[importIndex]!;
                     if (stylesheet.Whitespace)
                     {
                         stylesheet.SortWhiteSpace();
@@ -126,7 +126,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 for (int i = _whitespaceList.Count - 1; 0 <= i; i--)
                 {
-                    WhitespaceElement elem = (WhitespaceElement)_whitespaceList[i];
+                    WhitespaceElement elem = (WhitespaceElement)_whitespaceList[i]!;
                     if (proc.Matches(node, elem.Key))
                     {
                         return elem.PreserveSpace;
@@ -137,7 +137,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
-                    Stylesheet stylesheet = (Stylesheet)_imports[importIndex];
+                    Stylesheet stylesheet = (Stylesheet)_imports[importIndex]!;
                     if (!stylesheet.PreserveWhiteSpace(proc, node))
                         return false;
                 }
@@ -161,13 +161,13 @@ namespace System.Xml.Xsl.XsltOld
             else
             {
                 // merge the attribute-sets
-                ((AttributeSetAction)_attributeSetTable[attributeSet.Name]).Merge(attributeSet);
+                ((AttributeSetAction)_attributeSetTable[attributeSet.Name]!).Merge(attributeSet);
             }
         }
 
         internal void AddTemplate(TemplateAction template)
         {
-            XmlQualifiedName mode = template.Mode;
+            XmlQualifiedName? mode = template.Mode;
 
             //
             // Ensure template has a unique name
@@ -201,7 +201,7 @@ namespace System.Xml.Xsl.XsltOld
                     mode = XmlQualifiedName.Empty;
                 }
 
-                TemplateManager manager = (TemplateManager)_modeManagers[mode];
+                TemplateManager? manager = (TemplateManager?)_modeManagers[mode];
 
                 if (manager == null)
                 {
@@ -240,7 +240,7 @@ namespace System.Xml.Xsl.XsltOld
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
                     Debug.Assert(_imports[importIndex] is Stylesheet);
-                    Stylesheet stylesheet = (Stylesheet)_imports[importIndex];
+                    Stylesheet? stylesheet = (Stylesheet?)_imports[importIndex];
                     Debug.Assert(stylesheet != null);
 
                     //
@@ -260,12 +260,12 @@ namespace System.Xml.Xsl.XsltOld
                 IDictionaryEnumerator enumerator = _modeManagers.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    TemplateManager manager = (TemplateManager)enumerator.Value;
+                    TemplateManager manager = (TemplateManager)enumerator.Value!;
                     if (manager.templates != null)
                     {
                         for (int i = 0; i < manager.templates.Count; i++)
                         {
-                            TemplateAction template = (TemplateAction)manager.templates[i];
+                            TemplateAction template = (TemplateAction)manager.templates[i]!;
                             template.ReplaceNamespaceAlias(compiler);
                         }
                     }
@@ -276,7 +276,7 @@ namespace System.Xml.Xsl.XsltOld
                 IDictionaryEnumerator enumerator = _templateNameTable.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    TemplateAction template = (TemplateAction)enumerator.Value;
+                    TemplateAction template = (TemplateAction)enumerator.Value!;
                     template.ReplaceNamespaceAlias(compiler);
                 }
             }
@@ -284,24 +284,24 @@ namespace System.Xml.Xsl.XsltOld
             {
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
-                    Stylesheet stylesheet = (Stylesheet)_imports[importIndex];
+                    Stylesheet stylesheet = (Stylesheet)_imports[importIndex]!;
                     stylesheet.ReplaceNamespaceAlias(compiler);
                 }
             }
         }
 
-        internal TemplateAction FindTemplate(Processor processor, XPathNavigator navigator, XmlQualifiedName mode)
+        internal TemplateAction? FindTemplate(Processor processor, XPathNavigator navigator, XmlQualifiedName mode)
         {
             Debug.Assert(processor != null && navigator != null);
             Debug.Assert(mode != null);
-            TemplateAction action = null;
+            TemplateAction? action = null;
 
             //
             // Try to find template within this stylesheet first
             //
             if (_modeManagers != null)
             {
-                TemplateManager manager = (TemplateManager)_modeManagers[mode];
+                TemplateManager? manager = (TemplateManager?)_modeManagers[mode];
 
                 if (manager != null)
                 {
@@ -322,9 +322,9 @@ namespace System.Xml.Xsl.XsltOld
             return action;
         }
 
-        internal TemplateAction FindTemplateImports(Processor processor, XPathNavigator navigator, XmlQualifiedName mode)
+        internal TemplateAction? FindTemplateImports(Processor processor, XPathNavigator navigator, XmlQualifiedName mode)
         {
-            TemplateAction action = null;
+            TemplateAction? action = null;
 
             //
             // Do we have imported stylesheets?
@@ -335,7 +335,7 @@ namespace System.Xml.Xsl.XsltOld
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
                     Debug.Assert(_imports[importIndex] is Stylesheet);
-                    Stylesheet stylesheet = (Stylesheet)_imports[importIndex];
+                    Stylesheet? stylesheet = (Stylesheet?)_imports[importIndex];
                     Debug.Assert(stylesheet != null);
 
                     //
@@ -354,12 +354,12 @@ namespace System.Xml.Xsl.XsltOld
             return action;
         }
 
-        internal TemplateAction FindTemplate(Processor processor, XPathNavigator navigator)
+        internal TemplateAction? FindTemplate(Processor processor, XPathNavigator navigator)
         {
             Debug.Assert(processor != null && navigator != null);
-            Debug.Assert(_templates == null && _modeManagers == null || _templates == _modeManagers[XmlQualifiedName.Empty]);
+            Debug.Assert(_templates == null && _modeManagers == null || _templates == _modeManagers![XmlQualifiedName.Empty]);
 
-            TemplateAction action = null;
+            TemplateAction? action = null;
 
             //
             // Try to find template within this stylesheet first
@@ -382,11 +382,11 @@ namespace System.Xml.Xsl.XsltOld
             return action;
         }
 
-        internal TemplateAction FindTemplate(XmlQualifiedName name)
+        internal TemplateAction? FindTemplate(XmlQualifiedName name)
         {
             //Debug.Assert(this.templateNameTable == null);
 
-            TemplateAction action = null;
+            TemplateAction? action = null;
 
             //
             // Try to find template within this stylesheet first
@@ -394,7 +394,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (_templateNameTable != null)
             {
-                action = (TemplateAction)_templateNameTable[name];
+                action = (TemplateAction?)_templateNameTable[name];
             }
 
             //
@@ -406,7 +406,7 @@ namespace System.Xml.Xsl.XsltOld
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
                     Debug.Assert(_imports[importIndex] is Stylesheet);
-                    Stylesheet stylesheet = (Stylesheet)_imports[importIndex];
+                    Stylesheet? stylesheet = (Stylesheet?)_imports[importIndex];
                     Debug.Assert(stylesheet != null);
 
                     //
@@ -425,9 +425,9 @@ namespace System.Xml.Xsl.XsltOld
             return action;
         }
 
-        internal TemplateAction FindTemplateImports(Processor processor, XPathNavigator navigator)
+        internal TemplateAction? FindTemplateImports(Processor processor, XPathNavigator navigator)
         {
-            TemplateAction action = null;
+            TemplateAction? action = null;
 
             //
             // Do we have imported stylesheets?
@@ -438,7 +438,7 @@ namespace System.Xml.Xsl.XsltOld
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
                     Debug.Assert(_imports[importIndex] is Stylesheet);
-                    Stylesheet stylesheet = (Stylesheet)_imports[importIndex];
+                    Stylesheet? stylesheet = (Stylesheet?)_imports[importIndex];
                     Debug.Assert(stylesheet != null);
 
                     //

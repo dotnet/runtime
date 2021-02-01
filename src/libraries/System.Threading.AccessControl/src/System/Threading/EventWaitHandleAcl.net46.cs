@@ -16,5 +16,15 @@ namespace System.Threading
         {
             return new EventWaitHandle(initialState, mode, name, out createdNew, eventSecurity);
         }
+
+        public static EventWaitHandle OpenExisting(string name, EventWaitHandleRights rights)
+        {
+            return EventWaitHandle.OpenExisting(name, rights);
+        }
+
+        public static bool TryOpenExisting(string name, EventWaitHandleRights rights, out EventWaitHandle result)
+        {
+            return EventWaitHandle.TryOpenExisting(name, rights, out result);
+        }
     }
 }

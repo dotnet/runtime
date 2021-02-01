@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
@@ -78,6 +79,24 @@ namespace System.Text.Json
         /// need to add an argument for JsonClassInfo.
         /// </remarks>
         public JsonPropertyInfo PropertyInfoForClassInfo { get; private set; }
+
+        private GenericMethodHolder? _genericMethods;
+        /// <summary>
+        /// Returns a helper class used when generic methods need to be invoked on Type.
+        /// </summary>
+        public GenericMethodHolder GenericMethods
+        {
+            get
+            {
+                if (_genericMethods == null)
+                {
+                    Type runtimePropertyClass = typeof(GenericMethodHolder<>).MakeGenericType(new Type[] { Type })!;
+                    _genericMethods = (GenericMethodHolder)Activator.CreateInstance(runtimePropertyClass)!;
+                }
+
+                return _genericMethods;
+            }
+        }
 
         public JsonClassInfo(Type type, JsonSerializerOptions options)
         {
@@ -287,7 +306,7 @@ namespace System.Text.Json
                 return StringComparer.OrdinalIgnoreCase.GetHashCode(Name);
             }
 
-            public override bool Equals(object? obj)
+            public override bool Equals([NotNullWhen(true)] object? obj)
             {
                 Debug.Assert(obj is ParameterLookupKey);
 

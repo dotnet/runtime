@@ -1,6 +1,0 @@
-add_library_clr(clrjit_crossgen ${SOURCES} ${JIT_ARCH_SOURCES})
-if(FEATURE_MERGE_JIT_AND_ENGINE)
-  target_link_libraries(clrjit_crossgen ${JIT_LINK_LIBRARIES} ${JIT_ARCH_LINK_LIBRARIES})
-endif(FEATURE_MERGE_JIT_AND_ENGINE)
-set_target_properties(clrjit_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
-target_precompile_header(TARGET clrjit_crossgen HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})

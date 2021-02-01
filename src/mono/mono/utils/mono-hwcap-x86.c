@@ -29,8 +29,8 @@
 #include <intrin.h>
 #endif
 
-static gboolean
-cpuid (int id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
+gboolean
+mono_hwcap_x86_call_cpuidex (int id, int sub_id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
 {
 #if defined(_MSC_VER)
 	int info [4];
@@ -80,7 +80,7 @@ cpuid (int id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
 	/* Now issue the actual cpuid instruction. We can use
 	   MSVC's __cpuid on both 32-bit and 64-bit. */
 #if defined(_MSC_VER)
-	__cpuid (info, id);
+	__cpuidex (info, id, sub_id);
 	*p_eax = info [0];
 	*p_ebx = info [1];
 	*p_ecx = info [2];
@@ -93,13 +93,13 @@ cpuid (int id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx)
 		"cpuid\n\t"
 		"xchgl\t%%ebx, %k1\n\t"
 		: "=a" (*p_eax), "=&r" (*p_ebx), "=c" (*p_ecx), "=d" (*p_edx)
-		: "0" (id)
+		: "0" (id), "2" (sub_id)
 	);
 #else
 	__asm__ __volatile__ (
 		"cpuid\n\t"
 		: "=a" (*p_eax), "=b" (*p_ebx), "=c" (*p_ecx), "=d" (*p_edx)
-		: "a" (id)
+		: "a" (id), "2" (sub_id)
 	);
 #endif
 
@@ -111,7 +111,7 @@ mono_hwcap_arch_init (void)
 {
 	int eax, ebx, ecx, edx;
 
-	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
+	if (mono_hwcap_x86_call_cpuidex (1, 0, &eax, &ebx, &ecx, &edx)) {
 		if (edx & (1 << 15)) {
 			mono_hwcap_x86_has_cmov = TRUE;
 
@@ -144,16 +144,16 @@ mono_hwcap_arch_init (void)
 			mono_hwcap_x86_has_avx = TRUE;
 	}
 
-	if (cpuid (0x80000000, &eax, &ebx, &ecx, &edx)) {
+	if (mono_hwcap_x86_call_cpuidex (0x80000000, 0, &eax, &ebx, &ecx, &edx)) {
 		if ((unsigned int) eax >= 0x80000001 && ebx == 0x68747541 && ecx == 0x444D4163 && edx == 0x69746E65) {
-			if (cpuid (0x80000001, &eax, &ebx, &ecx, &edx)) {
+			if (mono_hwcap_x86_call_cpuidex (0x80000001, 0, &eax, &ebx, &ecx, &edx)) {
 				if (ecx & (1 << 6))
 					mono_hwcap_x86_has_sse4a = TRUE;
 			}
 		}
 	}
 
-	if (cpuid (0x80000001, &eax, &ebx, &ecx, &edx)) {
+	if (mono_hwcap_x86_call_cpuidex (0x80000001, 0, &eax, &ebx, &ecx, &edx)) {
 		if (ecx & (1 << 5))
 			mono_hwcap_x86_has_lzcnt = TRUE;
 	}

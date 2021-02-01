@@ -16,6 +16,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             CloseHandle _
                 Lib "kernel32" (ByVal hObject As IntPtr) As Integer
 
+#Disable Warning CA1838 ' Avoid 'StringBuilder' parameters for P/Invokes
         <DllImport(
              "kernel32",
              CharSet:=CharSet.Auto,
@@ -32,6 +33,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
              ByVal lpFileSystemNameBuffer As IntPtr,
              ByVal nFileSystemNameSize As Integer) As Integer
         End Function
+#Enable Warning CA1838
 
         ''' <summary>
         ''' Given a 32-bit SHFILEOPSTRUCT, call the appropriate SHFileOperation function

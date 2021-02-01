@@ -75,12 +75,13 @@ namespace System.Data.Common
 
         /// <summary>
         /// Returns a <see cref="DataTable" /> that describes the column metadata of the ><see cref="DbDataReader" />.
+        ///
+        /// Returns <see langword="null" /> if the executed command returned no resultset, or after
+        /// <see cref="NextResult" /> returns <see langword="false" />.
         /// </summary>
         /// <returns>A <see cref="DataTable" /> that describes the column metadata.</returns>
         /// <exception cref="InvalidOperationException">The <see cref="DbDataReader" /> is closed.</exception>
-        /// <exception cref="IndexOutOfRangeException">The column index is out of range.</exception>
-        /// <exception cref="NotSupportedException">.NET Core only: This member is not supported.</exception>
-        public virtual DataTable GetSchemaTable()
+        public virtual DataTable? GetSchemaTable()
         {
             throw new NotSupportedException();
         }
@@ -97,11 +98,11 @@ namespace System.Data.Common
         /// </summary>
         /// <param name="cancellationToken">The cancellation instruction.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
-        public virtual Task<DataTable> GetSchemaTableAsync(CancellationToken cancellationToken = default)
+        public virtual Task<DataTable?> GetSchemaTableAsync(CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<DataTable>(cancellationToken);
+                return Task.FromCanceled<DataTable?>(cancellationToken);
             }
 
             try
@@ -110,7 +111,7 @@ namespace System.Data.Common
             }
             catch (Exception e)
             {
-                return Task.FromException<DataTable>(e);
+                return Task.FromException<DataTable?>(e);
             }
         }
 

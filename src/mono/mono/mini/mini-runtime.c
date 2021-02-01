@@ -75,7 +75,8 @@
 #include <mono/metadata/threadpool.h>
 
 #ifdef ENABLE_PERFTRACING
-#include <mono/eventpipe/ep.h>
+#include <eventpipe/ep.h>
+#include <eventpipe/ds-server.h>
 #endif
 
 #include "mini.h"
@@ -84,7 +85,9 @@
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
+#ifndef ENABLE_NETCORE
 #include "version.h"
+#endif
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "llvmonly-runtime.h"
@@ -165,6 +168,12 @@ static GSList *tramp_infos;
 GSList *mono_interp_only_classes;
 
 static void register_icalls (void);
+static void runtime_cleanup (MonoDomain *domain, gpointer user_data);
+#ifdef ENABLE_METADATA_UPDATE
+static void mini_metadata_update_init (MonoError *error);
+static void mini_invalidate_transformed_interp_methods (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);
+#endif
+
 
 gboolean
 mono_running_on_valgrind (void)
@@ -354,8 +363,6 @@ mono_print_method_from_ip (void *ip)
  */
 gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 {
-	MonoMethod *cmethod;
-
 	if (!caller || caller->is_trampoline || !callee || callee->is_trampoline)
 		return FALSE;
 
@@ -366,13 +373,16 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 	if (caller->domain_neutral && !callee->domain_neutral)
 		return FALSE;
 
+#ifndef ENABLE_NETCORE
+	MonoMethod *cmethod;
+
 	cmethod = jinfo_get_method (caller);
 	if ((cmethod->klass == mono_defaults.appdomain_class) &&
 		(strstr (cmethod->name, "InvokeInDomain"))) {
 		 /* The InvokeInDomain methods change the current appdomain */
 		return FALSE;
 	}
-
+#endif
 	return TRUE;
 }
 
@@ -864,10 +874,9 @@ mono_jit_thread_attach (MonoDomain *domain)
 	attached = mono_tls_get_jit_tls () != NULL;
 
 	if (!attached) {
-		mono_thread_attach (domain);
-
 		// #678164
-		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
+		gboolean background = TRUE;
+		mono_thread_attach_external_native_thread (domain, background);
 
 		/* mono_jit_thread_attach is external-only and not called by
 		 * the runtime on any of our own threads.  So if we get here,
@@ -1239,6 +1248,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 		return hash | (gssize)ji->data.target;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return hash | (gssize)ji->data.gsharedvt->method;
@@ -1444,19 +1454,26 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = code_slot;
 		break;
 	}
+	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
+		target = mono_domain_alloc0 (domain, sizeof (gpointer));
+		break;
+	}
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 		target = (gpointer)&mono_polling_required;
 		break;
 	case MONO_PATCH_INFO_SWITCH: {
+#ifndef MONO_ARCH_NO_CODEMAN
 		gpointer *jump_table;
 		int i;
+
 		if (method && method->dynamic) {
 			jump_table = (void **)mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
+			MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, method);
 			if (mono_aot_only) {
-				jump_table = (void **)mono_domain_alloc (domain, sizeof (gpointer) * patch_info->data.table->table_size);
+				jump_table = (void **)mono_mem_manager_alloc (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
-				jump_table = (void **)mono_domain_code_reserve (domain, sizeof (gpointer) * patch_info->data.table->table_size);
+				jump_table = (void **)mono_mem_manager_code_reserve (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 			}
 		}
 
@@ -1467,6 +1484,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		mono_codeman_disable_write ();
 
 		target = jump_table;
+#else
+		g_assert_not_reached ();
+		target = NULL;
+#endif
 		break;
 	}
 	case MONO_PATCH_INFO_METHODCONST:
@@ -1965,6 +1986,8 @@ enum {
 	ELF_MACHINE = EM_S390,
 #elif HOST_RISCV
 	ELF_MACHINE = EM_RISCV,
+#elif HOST_MIPS
+	ELF_MACHINE = EM_MIPS,
 #endif
 	JIT_CODE_LOAD = 0
 };
@@ -2370,24 +2393,38 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 		MonoMethodPInvoke* piinfo = (MonoMethodPInvoke *) method;
 
 		if (!piinfo->addr) {
-			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-				piinfo->addr = mono_lookup_internal_call (method);
-			else if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)
+			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+				guint32 flags = MONO_ICALL_FLAGS_NONE;
+				gpointer icall_addr;
+				icall_addr = (gpointer)mono_lookup_internal_call_full_with_flags (method, TRUE, (guint32 *)&flags);
+				if (flags & MONO_ICALL_FLAGS_NO_WRAPPER) {
+					piinfo->icflags = MONO_ICALL_FLAGS_NO_WRAPPER;
+					mono_memory_write_barrier ();
+				}
+				piinfo->addr = icall_addr;
+			} else if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE) {
 #ifdef HOST_WIN32
 				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono in modules loaded from byte arrays. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), m_class_get_image (method->klass)->name);
 #else
 				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono on this platform. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), m_class_get_image (method->klass)->name);
 #endif
-			else {
+			} else {
 				ERROR_DECL (ignored_error);
 				mono_lookup_pinvoke_call_internal (method, ignored_error);
 				mono_error_cleanup (ignored_error);
 			}
 		}
 
-		MonoMethod *nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
-		gpointer compiled_method = mono_jit_compile_method_jit_only (nm, error);
-		return_val_if_nok (error, NULL);
+		mono_memory_read_barrier ();
+
+		gpointer compiled_method = NULL;
+		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && (piinfo->icflags & MONO_ICALL_FLAGS_NO_WRAPPER)) {
+			compiled_method = piinfo->addr;
+		} else {
+			MonoMethod *nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
+			compiled_method = mono_jit_compile_method_jit_only (nm, error);
+			return_val_if_nok (error, NULL);
+		}
 
 		code = mono_get_addr_from_ftnptr (compiled_method);
 		jinfo = mono_jit_info_table_find (target_domain, code);
@@ -3173,10 +3210,14 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (exc && *exc)
 		return NULL;
 
-	if (sig->ret->type != MONO_TYPE_VOID && info->ret_box_class)
-		return mono_value_box_checked (domain, info->ret_box_class, retval, error);
-	else
-		return *(MonoObject**)retval;
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		if (info->ret_box_class)
+			return mono_value_box_checked (domain, info->ret_box_class, retval, error);
+		else
+			return *(MonoObject**)retval;
+	} else {
+		return NULL;
+	}
 }
 
 /**
@@ -3434,8 +3475,11 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 
 		mono_sigctx_to_monoctx (ctx, &mctx);
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGFPE), &mctx, info, ctx);
-		goto exit;
+			mono_handle_native_crash (mono_get_signame (SIGFPE), &mctx, info);
+		if (mono_do_crash_chaining) {
+			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			goto exit;
+		}
 	}
 
 	mono_arch_handle_exception (ctx, exc);
@@ -3456,10 +3500,14 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 	mono_sigctx_to_monoctx (ctx, &mctx);
 	if (mono_dump_start ())
 #if defined(HAVE_SIG_INFO) && !defined(HOST_WIN32) // info is a siginfo_t
-		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info, ctx);
+		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info);
 #else
-		mono_handle_native_crash (mono_get_signame (SIGTERM), &mctx, info, ctx);
+		mono_handle_native_crash (mono_get_signame (SIGTERM), &mctx, info);
 #endif
+	if (mono_do_crash_chaining) {
+		mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+		return;
+	}
 }
 
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
@@ -3539,7 +3587,11 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 		if (mono_dump_start())
-			mono_handle_native_crash (mono_get_signame (signo), &mctx, info, ctx);
+			mono_handle_native_crash (mono_get_signame (signo), &mctx, info);
+		if (mono_do_crash_chaining) {
+			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			return;
+		}
 	}
 #endif
 
@@ -3578,7 +3630,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		} else {
 			// FIXME: This shouldn't run on the altstack
 			if (mono_dump_start ())
-				mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, info, ctx);
+				mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, info);
 		}
 #endif
 	}
@@ -3589,14 +3641,23 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 			return;
 
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info, ctx);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
+
+		if (mono_do_crash_chaining) {
+			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			return;
+		}
 	}
 
 	if (mono_is_addr_implicit_null_check (fault_addr)) {
 		mono_arch_handle_exception (ctx, NULL);
 	} else {
 		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info, ctx);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
+		if (mono_do_crash_chaining) {
+			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			return;
+		}
 	}
 #endif
 }
@@ -4053,7 +4114,7 @@ mini_get_addr_from_ftnptr (gpointer descr)
 }
 
 static void
-register_jit_stats (void)
+register_counters (void)
 {
 	mono_counters_register ("Compiled methods", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_compiled);
 	mono_counters_register ("Methods from AOT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_aot);
@@ -4061,63 +4122,6 @@ register_jit_stats (void)
 	mono_counters_register ("Methods JITted using mono JIT", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_without_llvm);
 	mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_with_llvm);
 	mono_counters_register ("Methods using the interpreter", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_with_interp);
-	mono_counters_register ("JIT/method_to_ir", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_method_to_ir);
-	mono_counters_register ("JIT/liveness_handle_exception_clauses", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_liveness_handle_exception_clauses);
-	mono_counters_register ("JIT/handle_out_of_line_bblock", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_handle_out_of_line_bblock);
-	mono_counters_register ("JIT/decompose_long_opts", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_decompose_long_opts);
-	mono_counters_register ("JIT/decompose_typechecks", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_decompose_typechecks);
-	mono_counters_register ("JIT/local_cprop", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_local_cprop);
-	mono_counters_register ("JIT/local_emulate_ops", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_local_emulate_ops);
-	mono_counters_register ("JIT/optimize_branches", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_optimize_branches);
-	mono_counters_register ("JIT/handle_global_vregs", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_handle_global_vregs);
-	mono_counters_register ("JIT/local_deadce", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_local_deadce);
-	mono_counters_register ("JIT/local_alias_analysis", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_local_alias_analysis);
-	mono_counters_register ("JIT/if_conversion", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_if_conversion);
-	mono_counters_register ("JIT/bb_ordering", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_bb_ordering);
-	mono_counters_register ("JIT/compile_dominator_info", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_compile_dominator_info);
-	mono_counters_register ("JIT/compute_natural_loops", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_compute_natural_loops);
-	mono_counters_register ("JIT/insert_safepoints", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_insert_safepoints);
-	mono_counters_register ("JIT/ssa_compute", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_compute);
-	mono_counters_register ("JIT/ssa_cprop", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_cprop);
-	mono_counters_register ("JIT/ssa_deadce", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_deadce);
-	mono_counters_register ("JIT/perform_abc_removal", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_perform_abc_removal);
-	mono_counters_register ("JIT/ssa_remove", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_ssa_remove);
-	mono_counters_register ("JIT/local_cprop2", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_local_cprop2);
-	mono_counters_register ("JIT/handle_global_vregs2", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_handle_global_vregs2);
-	mono_counters_register ("JIT/local_deadce2", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_local_deadce2);
-	mono_counters_register ("JIT/optimize_branches2", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_optimize_branches2);
-	mono_counters_register ("JIT/decompose_vtype_opts", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_decompose_vtype_opts);
-	mono_counters_register ("JIT/decompose_array_access_opts", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_decompose_array_access_opts);
-	mono_counters_register ("JIT/liveness_handle_exception_clauses2", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_liveness_handle_exception_clauses2);
-	mono_counters_register ("JIT/analyze_liveness", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_analyze_liveness);
-	mono_counters_register ("JIT/linear_scan", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_linear_scan);
-	mono_counters_register ("JIT/arch_allocate_vars", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_arch_allocate_vars);
-	mono_counters_register ("JIT/spill_global_var", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_spill_global_vars);
-	mono_counters_register ("JIT/local_cprop3", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_local_cprop3);
-	mono_counters_register ("JIT/local_deadce3", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_local_deadce3);
-	mono_counters_register ("JIT/codegen", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_codegen);
-	mono_counters_register ("JIT/create_jit_info", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_create_jit_info);
-	mono_counters_register ("JIT/gc_create_gc_map", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_gc_create_gc_map);
-	mono_counters_register ("JIT/save_seq_point_info", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_save_seq_point_info);
-	mono_counters_register ("Total time spent JITting", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_jit_stats.jit_time);
-	mono_counters_register ("Basic blocks", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.basic_blocks);
-	mono_counters_register ("Max basic blocks", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.max_basic_blocks);
-	mono_counters_register ("Allocated vars", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.allocate_var);
-	mono_counters_register ("Code reallocs", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.code_reallocs);
-	mono_counters_register ("Allocated code size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.allocated_code_size);
-	mono_counters_register ("Allocated seq points size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.allocated_seq_points_size);
-	mono_counters_register ("Inlineable methods", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.inlineable_methods);
-	mono_counters_register ("Inlined methods", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.inlined_methods);
-	mono_counters_register ("Regvars", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.regvars);
-	mono_counters_register ("Locals stack size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.locals_stack_size);
-	mono_counters_register ("Method cache lookups", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.methods_lookups);
-	mono_counters_register ("Compiled CIL code size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.cil_code_size);
-	mono_counters_register ("Native code size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.native_code_size);
-	mono_counters_register ("Aliases found", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.alias_found);
-	mono_counters_register ("Aliases eliminated", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.alias_removed);
-	mono_counters_register ("Aliased loads eliminated", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.loads_eliminated);
-	mono_counters_register ("Aliased stores eliminated", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.stores_eliminated);
-	mono_counters_register ("Optimized immediate divisions", MONO_COUNTER_JIT | MONO_COUNTER_INT, &mono_jit_stats.optimized_divisions);
 }
 
 static void runtime_invoke_info_free (gpointer value);
@@ -4280,7 +4284,7 @@ mini_add_profiler_argument (const char *desc)
 	if (!profile_options)
 		profile_options = g_ptr_array_new ();
 
-	g_ptr_array_add (profile_options, (gpointer) desc);
+	g_ptr_array_add (profile_options, (gpointer) g_strdup (desc));
 }
 
 
@@ -4434,6 +4438,10 @@ mini_init (const char *filename, const char *runtime_version)
 #ifndef DISABLE_CRASH_REPORTING
 	callbacks.install_state_summarizer = mini_register_sigterm_handler;
 #endif
+#ifdef ENABLE_METADATA_UPDATE
+	callbacks.metadata_update_init = mini_metadata_update_init;
+	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
+#endif
 
 	mono_install_callbacks (&callbacks);
 
@@ -4534,6 +4542,12 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_profiler_state.context_get_result = mini_profiler_context_get_result;
 	mono_profiler_state.context_free_buffer = mini_profiler_context_free_buffer;
 
+	if (g_hasenv ("MONO_PROFILE")) {
+		gchar *profile_env = g_getenv ("MONO_PROFILE");
+		mini_add_profiler_argument (profile_env);
+		g_free (profile_env);
+	}
+
 	if (profile_options)
 		for (guint i = 0; i < profile_options->len; i++)
 			mono_profiler_load ((const char *) g_ptr_array_index (profile_options, i));
@@ -4549,12 +4563,15 @@ mini_init (const char *filename, const char *runtime_version)
 		domain = mono_init_from_assembly (filename, filename);
 
 #if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
+	if (mono_compile_aot)
+		ds_server_disable ();
+
 	ep_init ();
 #endif
 
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
-		mono_code_manager_set_read_only (domain->code_mp);
+		mono_code_manager_set_read_only (mono_domain_ambient_memory_manager (domain)->code_mp);
 		mono_marshal_use_aot_wrappers (TRUE);
 	}
 
@@ -4578,7 +4595,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_create_icall_signatures ();
 
-	register_jit_stats ();
+	register_counters ();
 
 #define JIT_CALLS_WORK
 #ifdef JIT_CALLS_WORK
@@ -4596,7 +4613,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_simd_intrinsics_init ();
 #endif
 
+#ifndef ENABLE_NETCORE
 	mono_tasklets_init ();
+#endif
 
 	register_trampolines (domain);
 
@@ -4611,13 +4630,17 @@ mini_init (const char *filename, const char *runtime_version)
 
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
-	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
+	mono_install_runtime_cleanup (runtime_cleanup);
 	mono_runtime_init_checked (domain, (MonoThreadStartCB)mono_thread_start_cb, mono_thread_attach_cb, error);
 	mono_error_assert_ok (error);
-	mono_thread_attach (domain);
+	mono_thread_internal_attach (domain);
 	MONO_PROFILER_RAISE (thread_name, (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main"));
 #endif
 	mono_threads_set_runtime_startup_finished ();
+
+#if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
+	ep_finish_init ();
+#endif
 
 #ifdef ENABLE_EXPERIMENT_TIERED
 	if (!mono_compile_aot) {
@@ -4890,6 +4913,8 @@ register_icalls (void)
 	register_icall (mini_llvmonly_init_delegate_virtual, mono_icall_sig_void_object_object_ptr, TRUE);
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
+	register_icall (mini_llvmonly_pop_lmf, mono_icall_sig_void_ptr, TRUE);
+	register_icall (mini_llvmonly_get_interp_entry, mono_icall_sig_ptr_ptr, TRUE);
 
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);
@@ -4985,6 +5010,12 @@ jit_stats_cleanup (void)
 	mono_jit_stats.biggest_method = NULL;
 }
 
+static void
+runtime_cleanup (MonoDomain *domain, gpointer user_data)
+{
+	mini_cleanup (domain);
+}
+
 #ifdef DISABLE_CLEANUP
 void
 mini_cleanup (MonoDomain *domain)
@@ -4997,6 +5028,7 @@ mini_cleanup (MonoDomain *domain)
 	mini_get_interp_callbacks ()->cleanup ();
 #if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
 	ep_shutdown ();
+	ds_server_shutdown ();
 #endif
 }
 #else
@@ -5038,8 +5070,11 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_profiler_cleanup ();
 
-	if (profile_options)
+	if (profile_options) {
+		for (guint i = 0; i < profile_options->len; ++i)
+			g_free (g_ptr_array_index (profile_options, i));
 		g_ptr_array_free (profile_options, TRUE);
+	}
 
 	mono_icall_cleanup ();
 
@@ -5111,6 +5146,9 @@ mono_disable_optimizations (guint32 opts)
 void
 mono_set_optimizations (guint32 opts)
 {
+	if (opts & MONO_OPT_AGGRESSIVE_INLINING)
+		opts |= MONO_OPT_INLINE;
+
 	default_opt = opts;
 	default_opt_set = TRUE;
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
@@ -5299,3 +5337,17 @@ mono_runtime_install_custom_handlers_usage (void)
 		 "No handlers supported on current platform.\n");
 }
 #endif /* HOST_WIN32 */
+
+#ifdef ENABLE_METADATA_UPDATE
+void
+mini_metadata_update_init (MonoError *error)
+{
+	mini_get_interp_callbacks ()->metadata_update_init (error);
+}
+
+void
+mini_invalidate_transformed_interp_methods (MonoDomain *domain, MonoAssemblyLoadContext *alc G_GNUC_UNUSED, uint32_t generation G_GNUC_UNUSED)
+{
+	mini_get_interp_callbacks ()->invalidate_transformed (domain);
+}
+#endif

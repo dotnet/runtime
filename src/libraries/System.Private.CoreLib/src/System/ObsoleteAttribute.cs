@@ -24,7 +24,13 @@ namespace System
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum |
         AttributeTargets.Interface | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Delegate,
         Inherited = false)]
-    public sealed class ObsoleteAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+#nullable enable
+    internal
+#endif
+    sealed class ObsoleteAttribute : Attribute
     {
         public ObsoleteAttribute()
         {

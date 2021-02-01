@@ -8,7 +8,7 @@ namespace System.IO.Compression
 {
     /// <summary>
     /// This class provides declaration for constants and PInvokes as well as some basic tools for exposing the
-    /// native CLRCompression.dll (effectively, ZLib) library to managed code.
+    /// native System.IO.Compression.Native.dll (effectively, ZLib) library to managed code.
     ///
     /// See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.
     /// </summary>
@@ -44,8 +44,8 @@ namespace System.IO.Compression
         ///
         /// <p><strong>How to choose a compression level:</strong></p>
         ///
-        /// <p>The names <code>NoCompression</code>, <code>BestSpeed</code>, <code>DefaultCompression</code> are taken over from the corresponding
-        /// ZLib definitions, which map to our public NoCompression, Fastest, and Optimal respectively.</p>
+        /// <p>The names <code>NoCompression</code>, <code>BestSpeed</code>, <code>DefaultCompression</code>, <code>BestCompression</code> are taken over from
+        /// the corresponding ZLib definitions, which map to our public NoCompression, Fastest, Optimal, and SmallestSize respectively.</p>
         /// <p><em>Optimal Compression:</em></p>
         /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.DefaultCompression;</code> <br />
         ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
@@ -63,12 +63,19 @@ namespace System.IO.Compression
         ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
         ///    <code>int memLevel = 7;</code> <br />
         ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
+        ///
+        /// <p><em>Smallest Size Compression:</em></p>
+        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.BestCompression;</code> <br />
+        ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
+        ///    <code>int memLevel = 8;</code> <br />
+        ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
         /// </summary>
         public enum CompressionLevel : int
         {
             NoCompression = 0,
             BestSpeed = 1,
-            DefaultCompression = -1
+            DefaultCompression = -1,
+            BestCompression = 9
         }
 
         /// <summary>
@@ -115,6 +122,14 @@ namespace System.IO.Compression
                                                           // negative val causes deflate to produce raw deflate data (no zlib header).
 
         /// <summary>
+        /// <p><strong>From the ZLib manual:</strong></p>
+        /// <p>ZLib's <code>windowBits</code> parameter is the base two logarithm of the window size (the size of the history buffer).
+        /// It should be in the range 8..15 for this version of the library. Larger values of this parameter result in better compression
+        /// at the expense of memory usage. The default value is 15 if deflateInit is used instead.<br /></p>
+        /// </summary>
+        public const int ZLib_DefaultWindowBits = 15;
+
+        /// <summary>
         /// <p>Zlib's <code>windowBits</code> parameter is the base two logarithm of the window size (the size of the history buffer).
         /// For GZip header encoding, <code>windowBits</code> should be equal to a value between 8..15 (to specify Window Size) added to
         /// 16. The range of values for GZip encoding is therefore 24..31.
@@ -144,12 +159,12 @@ namespace System.IO.Compression
          * This was done on purpose to:
          *
          * - Achieve the right encapsulation in a situation where <code>ZLibNative</code> may be compiled division-wide
-         *   into different assemblies that wish to consume <code>CLRCompression</code>. Since <code>internal</code>
+         *   into different assemblies that wish to consume <code>System.IO.Compression.Native</code>. Since <code>internal</code>
          *   scope is effectively like <code>public</code> scope when compiling <code>ZLibNative</code> into a higher
          *   level assembly, we need a combination of inner types and <code>private</code>-scope members to achieve
          *   the right encapsulation.
          *
-         * - Achieve late dynamic loading of <code>CLRCompression.dll</code> at the right time.
+         * - Achieve late dynamic loading of <code>System.IO.Compression.Native.dll</code> at the right time.
          *   The native assembly will not be loaded unless it is actually used since the loading is performed by a static
          *   constructor of an inner type that is not directly referenced by user code.
          *

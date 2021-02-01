@@ -4,7 +4,6 @@
 #if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
 #else
 using System.Threading.Tasks;
 #endif
@@ -228,10 +227,8 @@ namespace System.Diagnostics.Tracing
                 }
                 catch (NotImplementedException)
                 {
-#if (!ES_BUILD_PCL)
                     // send message to debugger without delay
                     System.Diagnostics.Debugger.Log(0, null, "Activity Enabled() called but AsyncLocals Not Supported (pre V4.6).  Ignoring Enable");
-#endif
                 }
             }
         }
@@ -637,27 +634,4 @@ namespace System.Diagnostics.Tracing
         public void SetActivityId(Guid Id) { WriteEvent(3, Id); }
     }
 #endif
-
-#if ES_BUILD_AGAINST_DOTNET_V35 || ES_BUILD_PCL || NO_ASYNC_LOCAL
-    // In these cases we don't have any Async local support.   Do nothing.
-    internal sealed class AsyncLocalValueChangedArgs<T>
-    {
-        public T PreviousValue { get { return default(T); } }
-        public T CurrentValue { get { return default(T); } }
-
-    }
-
-    internal sealed class AsyncLocal<T>
-    {
-        public AsyncLocal(Action<AsyncLocalValueChangedArgs<T>> valueChangedHandler) {
-            throw new NotImplementedException("AsyncLocal only available on V4.6 and above");
-        }
-        public T Value
-        {
-            get { return default(T); }
-            set { }
-        }
-    }
-#endif
-
 }

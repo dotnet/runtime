@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.X509Certificates
                 if (publicKey == null)
                     throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
 
-                if (!IsSameKey(publicKey, privateKey))
+                if (!Helpers.AreSamePublicECParameters(publicKey.ExportParameters(false), privateKey.ExportParameters(false)))
                 {
                     throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
                 }
@@ -86,60 +86,6 @@ namespace System.Security.Cryptography.X509Certificates
             // If the key usage extension is not present in the certificate it is
             // considered valid for all usages, so we can use it for ECDSA.
             return true;
-        }
-
-        private static bool IsSameKey(ECDsa a, ECDsa b)
-        {
-            ECParameters aParameters = a.ExportParameters(false);
-            ECParameters bParameters = b.ExportParameters(false);
-
-            if (aParameters.Curve.CurveType != bParameters.Curve.CurveType)
-                return false;
-
-            if (!aParameters.Q.X!.ContentsEqual(bParameters.Q.X!) ||
-                !aParameters.Q.Y!.ContentsEqual(bParameters.Q.Y!))
-            {
-                return false;
-            }
-
-            ECCurve aCurve = aParameters.Curve;
-            ECCurve bCurve = bParameters.Curve;
-
-            if (aCurve.IsNamed)
-            {
-                // On Windows we care about FriendlyName, on Unix we care about Value
-                return (aCurve.Oid.Value == bCurve.Oid.Value && aCurve.Oid.FriendlyName == bCurve.Oid.FriendlyName);
-            }
-
-            if (!aCurve.IsExplicit)
-            {
-                // Implicit curve, always fail.
-                return false;
-            }
-
-            // Ignore Cofactor (which is derivable from the prime or polynomial and Order)
-            // Ignore Seed and Hash (which are entirely optional, and about how A and B were built)
-            if (!aCurve.G.X!.ContentsEqual(bCurve.G.X!) ||
-                !aCurve.G.Y!.ContentsEqual(bCurve.G.Y!) ||
-                !aCurve.Order.ContentsEqual(bCurve.Order) ||
-                !aCurve.A.ContentsEqual(bCurve.A) ||
-                !aCurve.B.ContentsEqual(bCurve.B))
-            {
-                return false;
-            }
-
-            if (aCurve.IsPrime)
-            {
-                return aCurve.Prime.ContentsEqual(bCurve.Prime);
-            }
-
-            if (aCurve.IsCharacteristic2)
-            {
-                return aCurve.Polynomial.ContentsEqual(bCurve.Polynomial);
-            }
-
-            Debug.Fail($"Missing match criteria for curve type {aCurve.CurveType}");
-            return false;
         }
     }
 }

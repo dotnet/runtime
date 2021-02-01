@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Reflection.Emit/ConstructorOnTypeBuilderInst.cs
 //
@@ -163,7 +164,7 @@ namespace System.Reflection.Emit
         }
 
         // Called from the runtime to return the corresponding finished ConstructorInfo object
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
         internal ConstructorInfo RuntimeResolve()
         {

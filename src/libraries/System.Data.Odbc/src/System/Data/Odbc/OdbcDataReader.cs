@@ -405,12 +405,9 @@ namespace System.Data.Odbc
                 DbSchemaInfo info = _dataCache.GetSchema(i);
                 if (info._typename == null)
                 {
-                    info._typename = GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW);
+                    info._typename = GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
                 }
-// TODO-NULLABLE: Behavior change probably needed here - when there's no data type, we mostly probably need to throw instead of returning null.
-#nullable disable
                 return info._typename;
-#nullable enable
             }
             throw ADP.DataReaderNoData();
         }
@@ -2245,7 +2242,7 @@ namespace System.Data.Odbc
         // The default values are already defined in DbSchemaRows (see DbSchemaRows.cs) so there is no need to set any default value
         //
 
-        public override DataTable GetSchemaTable()
+        public override DataTable? GetSchemaTable()
         {
             if (IsClosed)
             { // MDAC 68331
@@ -2253,10 +2250,7 @@ namespace System.Data.Odbc
             }
             if (_noMoreResults)
             {
-// TODO-NULLABLE: Behavior change (https://github.com/dotnet/runtime/issues/509)
-#nullable disable
                 return null;                                            // no more results
-#nullable enable
             }
             if (null != _schemaTable)
             {

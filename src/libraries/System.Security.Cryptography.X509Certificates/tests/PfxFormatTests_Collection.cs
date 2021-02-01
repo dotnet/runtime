@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
                 () => coll.Import(pfxBytes, bestPassword, s_importFlags));
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 if (altWin32Error != 0 && ex.HResult != altWin32Error)
                 {

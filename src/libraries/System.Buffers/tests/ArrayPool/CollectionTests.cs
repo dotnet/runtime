@@ -143,6 +143,7 @@ namespace System.Buffers.ArrayPool.Tests
 
         private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/44037")]
         [ConditionalTheory(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         [InlineData(true)]
         [InlineData(false)]

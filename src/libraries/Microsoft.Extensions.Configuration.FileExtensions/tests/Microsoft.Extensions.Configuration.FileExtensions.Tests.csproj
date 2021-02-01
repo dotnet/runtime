@@ -6,8 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ConfigurationRootTest.cs"
-             Link="Microsoft.Extensions.Configuration\tests\ConfigurationRootTest.cs" />
+    <Compile Include="$(CommonTestPath)Extensions\ConfigurationRootTest.cs" Link="Common\Extensions\ConfigurationRootTest.cs" />
   </ItemGroup>
 
   <ItemGroup>

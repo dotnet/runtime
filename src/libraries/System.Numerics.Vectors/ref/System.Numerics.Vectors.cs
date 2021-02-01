@@ -32,7 +32,7 @@ namespace System.Numerics
         public static System.Numerics.Matrix3x2 CreateTranslation(System.Numerics.Vector2 position) { throw null; }
         public static System.Numerics.Matrix3x2 CreateTranslation(float xPosition, float yPosition) { throw null; }
         public readonly bool Equals(System.Numerics.Matrix3x2 other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public readonly float GetDeterminant() { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static bool Invert(System.Numerics.Matrix3x2 matrix, out System.Numerics.Matrix3x2 result) { throw null; }
@@ -104,7 +104,7 @@ namespace System.Numerics
         public static System.Numerics.Matrix4x4 CreateWorld(System.Numerics.Vector3 position, System.Numerics.Vector3 forward, System.Numerics.Vector3 up) { throw null; }
         public static bool Decompose(System.Numerics.Matrix4x4 matrix, out System.Numerics.Vector3 scale, out System.Numerics.Quaternion rotation, out System.Numerics.Vector3 translation) { throw null; }
         public readonly bool Equals(System.Numerics.Matrix4x4 other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public readonly float GetDeterminant() { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static bool Invert(System.Numerics.Matrix4x4 matrix, out System.Numerics.Matrix4x4 result) { throw null; }
@@ -136,7 +136,7 @@ namespace System.Numerics
         public static float DotCoordinate(System.Numerics.Plane plane, System.Numerics.Vector3 value) { throw null; }
         public static float DotNormal(System.Numerics.Plane plane, System.Numerics.Vector3 value) { throw null; }
         public readonly bool Equals(System.Numerics.Plane other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Numerics.Plane Normalize(System.Numerics.Plane value) { throw null; }
         public static bool operator ==(System.Numerics.Plane value1, System.Numerics.Plane value2) { throw null; }
@@ -164,7 +164,7 @@ namespace System.Numerics
         public static System.Numerics.Quaternion Divide(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public static float Dot(System.Numerics.Quaternion quaternion1, System.Numerics.Quaternion quaternion2) { throw null; }
         public readonly bool Equals(System.Numerics.Quaternion other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Numerics.Quaternion Inverse(System.Numerics.Quaternion value) { throw null; }
         public readonly float Length() { throw null; }
@@ -269,32 +269,32 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Multiply<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(System.Numerics.Vector<T> left, T right) where T : struct { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(T left, System.Numerics.Vector<T> right) where T : struct { throw null; }
-        public static System.Numerics.Vector<System.Single> Narrow(System.Numerics.Vector<System.Double> source1, System.Numerics.Vector<System.Double> source2) { throw null; }
+        public static System.Numerics.Vector<System.Single> Narrow(System.Numerics.Vector<System.Double> low, System.Numerics.Vector<System.Double> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.SByte> Narrow(System.Numerics.Vector<System.Int16> source1, System.Numerics.Vector<System.Int16> source2) { throw null; }
-        public static System.Numerics.Vector<System.Int16> Narrow(System.Numerics.Vector<System.Int32> source1, System.Numerics.Vector<System.Int32> source2) { throw null; }
-        public static System.Numerics.Vector<System.Int32> Narrow(System.Numerics.Vector<System.Int64> source1, System.Numerics.Vector<System.Int64> source2) { throw null; }
+        public static System.Numerics.Vector<System.SByte> Narrow(System.Numerics.Vector<System.Int16> low, System.Numerics.Vector<System.Int16> high) { throw null; }
+        public static System.Numerics.Vector<System.Int16> Narrow(System.Numerics.Vector<System.Int32> low, System.Numerics.Vector<System.Int32> high) { throw null; }
+        public static System.Numerics.Vector<System.Int32> Narrow(System.Numerics.Vector<System.Int64> low, System.Numerics.Vector<System.Int64> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.Byte> Narrow(System.Numerics.Vector<System.UInt16> source1, System.Numerics.Vector<System.UInt16> source2) { throw null; }
+        public static System.Numerics.Vector<System.Byte> Narrow(System.Numerics.Vector<System.UInt16> low, System.Numerics.Vector<System.UInt16> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt16> Narrow(System.Numerics.Vector<System.UInt32> source1, System.Numerics.Vector<System.UInt32> source2) { throw null; }
+        public static System.Numerics.Vector<System.UInt16> Narrow(System.Numerics.Vector<System.UInt32> low, System.Numerics.Vector<System.UInt32> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.Numerics.Vector<System.UInt32> Narrow(System.Numerics.Vector<System.UInt64> source1, System.Numerics.Vector<System.UInt64> source2) { throw null; }
+        public static System.Numerics.Vector<System.UInt32> Narrow(System.Numerics.Vector<System.UInt64> low, System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Negate<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> OnesComplement<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> SquareRoot<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> Subtract<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.Byte> source, out System.Numerics.Vector<System.UInt16> dest1, out System.Numerics.Vector<System.UInt16> dest2) { throw null; }
-        public static void Widen(System.Numerics.Vector<System.Int16> source, out System.Numerics.Vector<System.Int32> dest1, out System.Numerics.Vector<System.Int32> dest2) { throw null; }
-        public static void Widen(System.Numerics.Vector<System.Int32> source, out System.Numerics.Vector<System.Int64> dest1, out System.Numerics.Vector<System.Int64> dest2) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.Byte> source, out System.Numerics.Vector<System.UInt16> low, out System.Numerics.Vector<System.UInt16> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.Int16> source, out System.Numerics.Vector<System.Int32> low, out System.Numerics.Vector<System.Int32> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.Int32> source, out System.Numerics.Vector<System.Int64> low, out System.Numerics.Vector<System.Int64> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.SByte> source, out System.Numerics.Vector<System.Int16> dest1, out System.Numerics.Vector<System.Int16> dest2) { throw null; }
-        public static void Widen(System.Numerics.Vector<System.Single> source, out System.Numerics.Vector<System.Double> dest1, out System.Numerics.Vector<System.Double> dest2) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.SByte> source, out System.Numerics.Vector<System.Int16> low, out System.Numerics.Vector<System.Int16> high) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.Single> source, out System.Numerics.Vector<System.Double> low, out System.Numerics.Vector<System.Double> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.UInt16> source, out System.Numerics.Vector<System.UInt32> dest1, out System.Numerics.Vector<System.UInt32> dest2) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.UInt16> source, out System.Numerics.Vector<System.UInt32> low, out System.Numerics.Vector<System.UInt32> high) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void Widen(System.Numerics.Vector<System.UInt32> source, out System.Numerics.Vector<System.UInt64> dest1, out System.Numerics.Vector<System.UInt64> dest2) { throw null; }
+        public static void Widen(System.Numerics.Vector<System.UInt32> source, out System.Numerics.Vector<System.UInt64> low, out System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Xor<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
     }
     public partial struct Vector2 : System.IEquatable<System.Numerics.Vector2>, System.IFormattable
@@ -318,7 +318,7 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector2 other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
@@ -377,7 +377,7 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Divide(System.Numerics.Vector3 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector3 other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
@@ -436,7 +436,7 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector4 vector1, System.Numerics.Vector4 vector2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector4 other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
@@ -488,7 +488,7 @@ namespace System.Numerics
         public readonly void CopyTo(T[] destination) { }
         public readonly void CopyTo(T[] destination, int startIndex) { }
         public readonly bool Equals(System.Numerics.Vector<T> other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Numerics.Vector<T> operator +(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> operator &(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }

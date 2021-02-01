@@ -34,7 +34,7 @@ namespace System.Xml.Linq
         /// target and data. Two <see cref="XDocumentType"/> nodes are equal if the have the
         /// same name, public id, system id, and internal subset.
         /// </remarks>
-        public bool Equals(XNode x, XNode y)
+        public bool Equals(XNode? x, XNode? y)
         {
             return XNode.DeepEquals(x, y);
         }
@@ -73,11 +73,11 @@ namespace System.Xml.Linq
         /// target and data. Two <see cref="XDocumentType"/> nodes are equal if the have the
         /// same name, public id, system id, and internal subset.
         /// </remarks>
-        bool IEqualityComparer.Equals(object x, object y)
+        bool IEqualityComparer.Equals(object? x, object? y)
         {
-            XNode n1 = x as XNode;
+            XNode? n1 = x as XNode;
             if (n1 == null && x != null) throw new ArgumentException(SR.Format(SR.Argument_MustBeDerivedFrom, typeof(XNode)), nameof(x));
-            XNode n2 = y as XNode;
+            XNode? n2 = y as XNode;
             if (n2 == null && y != null) throw new ArgumentException(SR.Format(SR.Argument_MustBeDerivedFrom, typeof(XNode)), nameof(y));
             return Equals(n1, n2);
         }
@@ -94,9 +94,9 @@ namespace System.Xml.Linq
         /// </remarks>
         int IEqualityComparer.GetHashCode(object obj)
         {
-            XNode n = obj as XNode;
+            XNode? n = obj as XNode;
             if (n == null && obj != null) throw new ArgumentException(SR.Format(SR.Argument_MustBeDerivedFrom, typeof(XNode)), nameof(obj));
-            return GetHashCode(n);
+            return GetHashCode(n!);
         }
     }
 }

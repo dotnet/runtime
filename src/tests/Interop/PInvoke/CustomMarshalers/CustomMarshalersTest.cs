@@ -5,10 +5,7 @@ using System;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Expando;
 using TestLibrary;
-
-using Console = Internal.Console;
 
 namespace PInvokeTests
 {

@@ -1,26 +1,37 @@
-<Project>
-  <Import Project="Directory.Build.props" />
-  <Import Project="Directory.Build.targets" />
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <!-- NoTargets SDK needs a TFM set. So we used the latest .NETCoreApp supported one. -->
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
 
-  <Target Name="Build">
+  <Target Name="BuildRuntime"
+          AfterTargets="Build">
     <ItemGroup>
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
-      <_CoreClrBuildArg Include="$(CMakeArgs)" />
+      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="$(CMakeArgs)" />
+      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="-cmakeargs &quot;$(CMakeArgs)&quot;" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
       <_CoreClrBuildArg Include="$(Compiler)" />
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
       <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />
+      <_CoreClrBuildArg Condition="'$(KeepNativeSymbols)' != 'false'" Include="-keepnativesymbols" />
       <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows))" Include="-os $(TargetOS)" />
 
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and
                                    ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and
                                    '$(Configuration)' == 'Release' and
+                                   '$(ClrRuntimeSubset)' == 'true' and
                                    '$(NoPgoOptimize)' != 'true'"
                                    Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
-      <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="/p:OfficialBuildId=$(OfficialBuildId)" />
+      <_CoreClrBuildArg Condition="'$(Ninja)' == 'true'" Include="-ninja" />
+      <_CoreClrBuildArg Condition="'$(ClrRuntimeSubset)' != 'true'" Include="-skipruntime" />
+      <_CoreClrBuildArg Condition="'$(ClrJitSubset)' != 'true'" Include="-skipjit" />
+      <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-paltests" />
+      <_CoreClrBuildArg Condition="'$(ClrAllJitsSubset)' != 'true'" Include="-skipalljits" />
       <_CoreClrBuildArg Condition="'$(NoPgoOptimize)' == 'true'" Include="-nopgooptimize" />
+      <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="/p:OfficialBuildId=$(OfficialBuildId)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -29,10 +40,7 @@
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')"
+          IgnoreStandardErrorWarningFormat="true" />
   </Target>
-
-  <Target Name="Restore" />
-  <Target Name="Test" />
-  <Target Name="Pack" />
 </Project>

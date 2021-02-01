@@ -60,9 +60,7 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) _owner.Trace($"{_name}. requested={amount}, no credit available.");
 
                 // Otherwise, create a new waiter.
-                CreditWaiter waiter = cancellationToken.CanBeCanceled ?
-                    new CancelableCreditWaiter(SyncObject, cancellationToken) :
-                    new CreditWaiter();
+                var waiter = new CreditWaiter(cancellationToken);
                 waiter.Amount = amount;
 
                 // Add the waiter at the tail of the queue.

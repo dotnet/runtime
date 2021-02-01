@@ -10,6 +10,7 @@
 #define FASTLOOP
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime.CompilerServices;
@@ -112,7 +113,9 @@ namespace System.Text
         {
             // Validate input
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
 
             fixed (char* pChars = s)
                 return GetByteCount(pChars, s.Length, null);
@@ -1827,7 +1830,7 @@ namespace System.Text
             return (int)charCount;
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is UnicodeEncoding that)
             {

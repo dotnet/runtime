@@ -27,15 +27,15 @@ namespace System.Xml.Xsl
     [DebuggerDisplay("{Uri} [{StartLine},{StartPos} -- {EndLine},{EndPos}]")]
     internal class SourceLineInfo : ISourceLineInfo
     {
-        protected string uriString;
+        protected string? uriString;
         protected Location start;
         protected Location end;
 
-        public SourceLineInfo(string uriString, int startLine, int startPos, int endLine, int endPos)
+        public SourceLineInfo(string? uriString, int startLine, int startPos, int endLine, int endPos)
             : this(uriString, new Location(startLine, startPos), new Location(endLine, endPos))
         { }
 
-        public SourceLineInfo(string uriString, Location start, Location end)
+        public SourceLineInfo(string? uriString, Location start, Location end)
         {
             this.uriString = uriString;
             this.start = start;
@@ -43,7 +43,7 @@ namespace System.Xml.Xsl
             Validate(this);
         }
 
-        public string Uri { get { return this.uriString; } }
+        public string? Uri { get { return this.uriString; } }
         public int StartLine { get { return this.start.Line; } }
         public Location End { get { return this.end; } }
         public Location Start { get { return this.start; } }
@@ -82,7 +82,7 @@ namespace System.Xml.Xsl
         public static string GetFileName(string uriString)
         {
             Debug.Assert(uriString != null);
-            Uri uri;
+            Uri? uri;
 
             if (uriString.Length != 0 &&
                 System.Uri.TryCreate(uriString, UriKind.Absolute, out uri) &&

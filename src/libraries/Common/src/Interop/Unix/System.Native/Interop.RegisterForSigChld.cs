@@ -7,9 +7,7 @@ internal partial class Interop
 {
     internal partial class Sys
     {
-        internal delegate void SigChldCallback(bool reapAll);
-
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_RegisterForSigChld")]
-        internal static extern void RegisterForSigChld(SigChldCallback handler);
+        internal static extern unsafe void RegisterForSigChld(delegate* unmanaged<int, void> handler);
     }
 }

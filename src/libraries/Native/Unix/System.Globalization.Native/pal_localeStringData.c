@@ -3,6 +3,7 @@
 //
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -210,7 +211,7 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
 {
     UErrorCode status = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
 
     if (U_FAILURE(status))
     {
@@ -243,8 +244,6 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
         case LocaleString_NativeCountryName:
             uloc_getDisplayCountry(locale, locale, value, valueLength, &status);
             break;
-        case LocaleString_ListSeparator:
-        // fall through
         case LocaleString_ThousandSeparator:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
@@ -268,10 +267,10 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INTL_CURRENCY_SYMBOL, value, valueLength);
             break;
         case LocaleString_CurrencyEnglishName:
-            status = GetLocaleCurrencyName(locale, FALSE, value, valueLength);
+            status = GetLocaleCurrencyName(locale, false, value, valueLength);
             break;
         case LocaleString_CurrencyNativeName:
-            status = GetLocaleCurrencyName(locale, TRUE, value, valueLength);
+            status = GetLocaleCurrencyName(locale, true, value, valueLength);
             break;
         case LocaleString_MonetaryDecimalSeparator:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength);
@@ -281,10 +280,10 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                 GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case LocaleString_AMDesignator:
-            status = GetLocaleInfoAmPm(locale, TRUE, value, valueLength);
+            status = GetLocaleInfoAmPm(locale, true, value, valueLength);
             break;
         case LocaleString_PMDesignator:
-            status = GetLocaleInfoAmPm(locale, FALSE, value, valueLength);
+            status = GetLocaleInfoAmPm(locale, false, value, valueLength);
             break;
         case LocaleString_PositiveSign:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PLUS_SIGN_SYMBOL, value, valueLength);
@@ -352,10 +351,10 @@ int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
     UDateFormatStyle style = (shortFormat != 0) ? UDAT_SHORT : UDAT_MEDIUM;
     UDateFormat* pFormat = udat_open(style, UDAT_NONE, locale, NULL, 0, NULL, 0, &err);
-    udat_toPattern(pFormat, FALSE, value, valueLength, &err);
+    udat_toPattern(pFormat, false, value, valueLength, &err);
     udat_close(pFormat);
     return UErrorCodeToBool(err);
 }

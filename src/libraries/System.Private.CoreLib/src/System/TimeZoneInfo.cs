@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -743,12 +744,12 @@ namespace System
         /// Returns value equality. Equals does not compare any localizable
         /// String objects (DisplayName, StandardName, DaylightName).
         /// </summary>
-        public bool Equals(TimeZoneInfo? other) =>
+        public bool Equals([NotNullWhen(true)] TimeZoneInfo? other) =>
             other != null &&
             string.Equals(_id, other._id, StringComparison.OrdinalIgnoreCase) &&
             HasSameRules(other);
 
-        public override bool Equals(object? obj) => Equals(obj as TimeZoneInfo);
+        public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as TimeZoneInfo);
 
         public static TimeZoneInfo FromSerializedString(string source)
         {
@@ -1314,7 +1315,7 @@ namespace System
         /// <summary>
         /// Gets the offset that should be used to calculate DST end times from a UTC time.
         /// </summary>
-        private TimeSpan GetDaylightSavingsEndOffsetFromUtc(TimeSpan baseUtcOffset, AdjustmentRule rule)
+        private static TimeSpan GetDaylightSavingsEndOffsetFromUtc(TimeSpan baseUtcOffset, AdjustmentRule rule)
         {
             // NOTE: even NoDaylightTransitions rules use this logic since DST ends w.r.t. the current rule
             return baseUtcOffset + rule.BaseUtcOffsetDelta + rule.DaylightDelta; /* FUTURE: + rule.StandardDelta; */
@@ -1374,7 +1375,7 @@ namespace System
                 startTime = daylightTime.Start - dstStartOffset;
             }
 
-            TimeSpan dstEndOffset = zone.GetDaylightSavingsEndOffsetFromUtc(utc, rule);
+            TimeSpan dstEndOffset = GetDaylightSavingsEndOffsetFromUtc(utc, rule);
             DateTime endTime;
             if (rule.IsEndDateMarkerForEndOfYear() && daylightTime.End.Year < DateTime.MaxValue.Year)
             {

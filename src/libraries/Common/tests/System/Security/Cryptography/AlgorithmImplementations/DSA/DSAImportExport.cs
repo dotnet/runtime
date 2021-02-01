@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public partial class DSAImportExport
     {
         public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;

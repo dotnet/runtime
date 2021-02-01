@@ -56,22 +56,18 @@ namespace System.IO.Tests
         [Fact]
         public static async Task TestNullStream_CopyToAsyncValidation()
         {
-            // Since Stream.Null previously inherited its CopyToAsync
-            // implementation from the base class, which did check its
-            // arguments, we have to make sure it validates them as
-            // well for compat.
-
             var disposedStream = new MemoryStream();
             disposedStream.Dispose();
 
+            // Stream.Null doesn't do any validation of state or arguments
             var readOnlyStream = new MemoryStream(new byte[1], writable: false);
 
-            await AssertExtensions.ThrowsAsync<ArgumentNullException>("destination", () => Stream.Null.CopyToAsync(null));
-            await AssertExtensions.ThrowsAsync<ArgumentNullException>("destination", () => Stream.Null.CopyToAsync(null, -123)); // Should check if destination == null first
-            await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("bufferSize", () => Stream.Null.CopyToAsync(Stream.Null, 0)); // 0 shouldn't be a valid buffer size
-            await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("bufferSize", () => Stream.Null.CopyToAsync(Stream.Null, -123));
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => Stream.Null.CopyToAsync(disposedStream));
-            await Assert.ThrowsAsync<NotSupportedException>(() => Stream.Null.CopyToAsync(readOnlyStream));
+            await Stream.Null.CopyToAsync(null);
+            await Stream.Null.CopyToAsync(null, -123);
+            await Stream.Null.CopyToAsync(Stream.Null, 0); // 0 shouldn't be a valid buffer size
+            await Stream.Null.CopyToAsync(Stream.Null, -123);
+            await Stream.Null.CopyToAsync(disposedStream);
+            await Stream.Null.CopyToAsync(readOnlyStream);
         }
 
         [Theory]

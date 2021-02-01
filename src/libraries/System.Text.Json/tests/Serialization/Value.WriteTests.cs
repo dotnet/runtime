@@ -96,6 +96,21 @@ namespace System.Text.Json.Serialization.Tests
                 Uri uri = new Uri("http://localhost?p1=Value&p2=A%20B%26p3%3DFooled!");
                 Assert.Equal(@"""http://localhost?p1=Value\u0026p2=A%20B%26p3%3DFooled!""", JsonSerializer.Serialize(uri));
             }
+
+            {
+                Version version = new Version(1, 2);
+                Assert.Equal(@"""1.2""", JsonSerializer.Serialize(version));
+            }
+
+            {
+                Version version = new Version(1, 2, 3);
+                Assert.Equal(@"""1.2.3""", JsonSerializer.Serialize(version));
+            }
+
+            {
+                Version version = new Version(1, 2, 3, 4);
+                Assert.Equal(@"""1.2.3.4""", JsonSerializer.Serialize(version));
+            }
         }
     }
 }

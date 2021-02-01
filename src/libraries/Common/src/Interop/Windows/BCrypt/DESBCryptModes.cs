@@ -9,25 +9,33 @@ namespace Internal.Cryptography
 {
     internal static class DesBCryptModes
     {
-        private static readonly SafeAlgorithmHandle s_hAlgCbc = OpenDesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CBC);
-        private static readonly SafeAlgorithmHandle s_hAlgEcb = OpenDesAlgorithm(Cng.BCRYPT_CHAIN_MODE_ECB);
+        private static readonly Lazy<SafeAlgorithmHandle> s_hAlgCbc = OpenDesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CBC);
+        private static readonly Lazy<SafeAlgorithmHandle> s_hAlgEcb = OpenDesAlgorithm(Cng.BCRYPT_CHAIN_MODE_ECB);
+        private static readonly Lazy<SafeAlgorithmHandle> s_hAlgCfb8 = OpenDesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CFB);
 
-        internal static SafeAlgorithmHandle GetSharedHandle(CipherMode cipherMode) =>
+        internal static SafeAlgorithmHandle GetSharedHandle(CipherMode cipherMode, int feedback) =>
             // Windows 8 added support to set the CipherMode value on a key,
             // but Windows 7 requires that it be set on the algorithm before key creation.
-            cipherMode switch
+            (cipherMode, feedback) switch
             {
-                CipherMode.CBC => s_hAlgCbc,
-                CipherMode.ECB => s_hAlgEcb,
+                (CipherMode.CBC, _) => s_hAlgCbc.Value,
+                (CipherMode.ECB, _) => s_hAlgEcb.Value,
+                (CipherMode.CFB, 1) => s_hAlgCfb8.Value,
                 _ => throw new NotSupportedException(),
             };
 
-        private static SafeAlgorithmHandle OpenDesAlgorithm(string cipherMode)
+        private static Lazy<SafeAlgorithmHandle> OpenDesAlgorithm(string cipherMode)
         {
-            SafeAlgorithmHandle hAlg = Cng.BCryptOpenAlgorithmProvider(Cng.BCRYPT_DES_ALGORITHM, null, Cng.OpenAlgorithmProviderFlags.NONE);
-            hAlg.SetCipherMode(cipherMode);
+            return new Lazy<SafeAlgorithmHandle>(() =>
+            {
+                SafeAlgorithmHandle hAlg = Cng.BCryptOpenAlgorithmProvider(
+                    Cng.BCRYPT_DES_ALGORITHM,
+                    null,
+                    Cng.OpenAlgorithmProviderFlags.NONE);
+                hAlg.SetCipherMode(cipherMode);
 
-            return hAlg;
+                return hAlg;
+            });
         }
     }
 }

@@ -10,6 +10,8 @@ namespace System.Data
     /// Represents a restriction on a set of columns in which all values must be unique.
     /// </summary>
     [DefaultProperty("ConstraintName")]
+    [Editor("Microsoft.VSDesigner.Data.Design.UniqueConstraintEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class UniqueConstraint : Constraint
     {
         private DataKey _key;

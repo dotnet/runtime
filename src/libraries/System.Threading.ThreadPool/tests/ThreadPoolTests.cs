@@ -14,12 +14,16 @@ namespace System.Threading.ThreadPools.Tests
     {
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
-        private const int MaxPossibleThreadCount = 0x7fff;
+
+        private static readonly int MaxPossibleThreadCount = short.MaxValue;
 
         static ThreadPoolTests()
         {
             // Run the following tests before any others
-            ConcurrentInitializeTest();
+            if (IsThreadingAndRemoteExecutorSupported)
+            {
+                ConcurrentInitializeTest();
+            }
         }
 
         public static IEnumerable<object[]> OneBool() =>
@@ -31,32 +35,34 @@ namespace System.Threading.ThreadPools.Tests
             from b2 in new[] { true, false }
             select new object[] { b1, b2 };
 
-        // Tests concurrent calls to ThreadPool.SetMinThreads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void ConcurrentInitializeTest()
+        // Tests concurrent calls to ThreadPool.SetMinThreads. Invoked from the static constructor.
+        private static void ConcurrentInitializeTest()
         {
-            int processorCount = Environment.ProcessorCount;
-            var countdownEvent = new CountdownEvent(processorCount);
-            Action threadMain =
-                () =>
+            RemoteExecutor.Invoke(() =>
+            {
+                int processorCount = Environment.ProcessorCount;
+                var countdownEvent = new CountdownEvent(processorCount);
+                Action threadMain =
+                    () =>
+                    {
+                        countdownEvent.Signal();
+                        countdownEvent.Wait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+                        Assert.True(ThreadPool.SetMinThreads(processorCount, processorCount));
+                    };
+
+                var waitForThreadArray = new Action[processorCount];
+                for (int i = 0; i < processorCount; ++i)
                 {
-                    countdownEvent.Signal();
-                    countdownEvent.Wait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
-                    Assert.True(ThreadPool.SetMinThreads(processorCount, processorCount));
-                };
+                    var t = ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i], threadMain);
+                    t.IsBackground = true;
+                    t.Start();
+                }
 
-            var waitForThreadArray = new Action[processorCount];
-            for (int i = 0; i < processorCount; ++i)
-            {
-                var t = ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i], threadMain);
-                t.IsBackground = true;
-                t.Start();
-            }
-
-            foreach (Action waitForThread in waitForThreadArray)
-            {
-                waitForThread();
-            }
+                foreach (Action waitForThread in waitForThreadArray)
+                {
+                    waitForThread();
+                }
+            }).Dispose();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -87,90 +93,95 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(c <= maxc);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         [ActiveIssue("https://github.com/mono/mono/issues/15164", TestRuntimes.Mono)]
         public static void SetMinMaxThreadsTest()
         {
-            int minw, minc, maxw, maxc;
-            ThreadPool.GetMinThreads(out minw, out minc);
-            ThreadPool.GetMaxThreads(out maxw, out maxc);
-
-            try
+            RemoteExecutor.Invoke(() =>
             {
-                int mint = Environment.ProcessorCount * 2;
-                int maxt = mint + 1;
-                ThreadPool.SetMinThreads(mint, mint);
-                ThreadPool.SetMaxThreads(maxt, maxt);
+                int minw, minc, maxw, maxc;
+                ThreadPool.GetMinThreads(out minw, out minc);
+                ThreadPool.GetMaxThreads(out maxw, out maxc);
 
-                Assert.False(ThreadPool.SetMinThreads(maxt + 1, mint));
-                Assert.False(ThreadPool.SetMinThreads(mint, maxt + 1));
-                Assert.False(ThreadPool.SetMinThreads(MaxPossibleThreadCount, mint));
-                Assert.False(ThreadPool.SetMinThreads(mint, MaxPossibleThreadCount));
-                Assert.False(ThreadPool.SetMinThreads(MaxPossibleThreadCount + 1, mint));
-                Assert.False(ThreadPool.SetMinThreads(mint, MaxPossibleThreadCount + 1));
-                Assert.False(ThreadPool.SetMinThreads(-1, mint));
-                Assert.False(ThreadPool.SetMinThreads(mint, -1));
+                try
+                {
+                    int mint = Environment.ProcessorCount * 2;
+                    int maxt = mint + 1;
+                    ThreadPool.SetMinThreads(mint, mint);
+                    ThreadPool.SetMaxThreads(maxt, maxt);
 
-                Assert.False(ThreadPool.SetMaxThreads(mint - 1, maxt));
-                Assert.False(ThreadPool.SetMaxThreads(maxt, mint - 1));
+                    Assert.False(ThreadPool.SetMinThreads(maxt + 1, mint));
+                    Assert.False(ThreadPool.SetMinThreads(mint, maxt + 1));
+                    Assert.False(ThreadPool.SetMinThreads(MaxPossibleThreadCount, mint));
+                    Assert.False(ThreadPool.SetMinThreads(mint, MaxPossibleThreadCount));
+                    Assert.False(ThreadPool.SetMinThreads(MaxPossibleThreadCount + 1, mint));
+                    Assert.False(ThreadPool.SetMinThreads(mint, MaxPossibleThreadCount + 1));
+                    Assert.False(ThreadPool.SetMinThreads(-1, mint));
+                    Assert.False(ThreadPool.SetMinThreads(mint, -1));
 
-                VerifyMinThreads(mint, mint);
-                VerifyMaxThreads(maxt, maxt);
+                    Assert.False(ThreadPool.SetMaxThreads(mint - 1, maxt));
+                    Assert.False(ThreadPool.SetMaxThreads(maxt, mint - 1));
 
-                Assert.True(ThreadPool.SetMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount));
-                VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
-                Assert.True(ThreadPool.SetMaxThreads(MaxPossibleThreadCount + 1, MaxPossibleThreadCount + 1));
-                VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
-                Assert.Equal(PlatformDetection.IsNetFramework, ThreadPool.SetMaxThreads(-1, -1));
-                VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
+                    VerifyMinThreads(mint, mint);
+                    VerifyMaxThreads(maxt, maxt);
 
-                Assert.True(ThreadPool.SetMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount));
-                VerifyMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
+                    Assert.True(ThreadPool.SetMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount));
+                    VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
+                    Assert.True(ThreadPool.SetMaxThreads(MaxPossibleThreadCount + 1, MaxPossibleThreadCount + 1));
+                    VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
+                    Assert.Equal(PlatformDetection.IsNetFramework, ThreadPool.SetMaxThreads(-1, -1));
+                    VerifyMaxThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
 
-                Assert.False(ThreadPool.SetMinThreads(MaxPossibleThreadCount + 1, MaxPossibleThreadCount));
-                Assert.False(ThreadPool.SetMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount + 1));
-                Assert.False(ThreadPool.SetMinThreads(-1, MaxPossibleThreadCount));
-                Assert.False(ThreadPool.SetMinThreads(MaxPossibleThreadCount, -1));
-                VerifyMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
+                    Assert.True(ThreadPool.SetMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount));
+                    VerifyMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
 
-                Assert.True(ThreadPool.SetMinThreads(0, 0));
-                Assert.True(ThreadPool.SetMaxThreads(1, 1));
-                VerifyMaxThreads(1, 1);
-                Assert.True(ThreadPool.SetMinThreads(1, 1));
-                VerifyMinThreads(1, 1);
-            }
-            finally
-            {
-                Assert.True(ThreadPool.SetMaxThreads(maxw, maxc));
-                VerifyMaxThreads(maxw, maxc);
-                Assert.True(ThreadPool.SetMinThreads(minw, minc));
-                VerifyMinThreads(minw, minc);
-            }
+                    Assert.False(ThreadPool.SetMinThreads(MaxPossibleThreadCount + 1, MaxPossibleThreadCount));
+                    Assert.False(ThreadPool.SetMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount + 1));
+                    Assert.False(ThreadPool.SetMinThreads(-1, MaxPossibleThreadCount));
+                    Assert.False(ThreadPool.SetMinThreads(MaxPossibleThreadCount, -1));
+                    VerifyMinThreads(MaxPossibleThreadCount, MaxPossibleThreadCount);
+
+                    Assert.True(ThreadPool.SetMinThreads(0, 0));
+                    Assert.True(ThreadPool.SetMaxThreads(1, 1));
+                    VerifyMaxThreads(1, 1);
+                    Assert.True(ThreadPool.SetMinThreads(1, 1));
+                    VerifyMinThreads(1, 1);
+                }
+                finally
+                {
+                    Assert.True(ThreadPool.SetMaxThreads(maxw, maxc));
+                    VerifyMaxThreads(maxw, maxc);
+                    Assert.True(ThreadPool.SetMinThreads(minw, minc));
+                    VerifyMinThreads(minw, minc);
+                }
+            }).Dispose();
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32020", TestRuntimes.Mono)]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
-            int minw, minc, maxw, maxc;
-            ThreadPool.GetMinThreads(out minw, out minc);
-            ThreadPool.GetMaxThreads(out maxw, out maxc);
+            RemoteExecutor.Invoke(() =>
+            {
+                int minw, minc, maxw, maxc;
+                ThreadPool.GetMinThreads(out minw, out minc);
+                ThreadPool.GetMaxThreads(out maxw, out maxc);
 
-            try
-            {
-                Assert.True(ThreadPool.SetMinThreads(0, 0));
-                VerifyMinThreads(1, 1);
-                Assert.False(ThreadPool.SetMaxThreads(0, 1));
-                Assert.False(ThreadPool.SetMaxThreads(1, 0));
-                VerifyMaxThreads(maxw, maxc);
-            }
-            finally
-            {
-                Assert.True(ThreadPool.SetMaxThreads(maxw, maxc));
-                VerifyMaxThreads(maxw, maxc);
-                Assert.True(ThreadPool.SetMinThreads(minw, minc));
-                VerifyMinThreads(minw, minc);
-            }
+                try
+                {
+                    Assert.True(ThreadPool.SetMinThreads(0, 0));
+                    VerifyMinThreads(1, 1);
+                    Assert.False(ThreadPool.SetMaxThreads(0, 1));
+                    Assert.False(ThreadPool.SetMaxThreads(1, 0));
+                    VerifyMaxThreads(maxw, maxc);
+                }
+                finally
+                {
+                    Assert.True(ThreadPool.SetMaxThreads(maxw, maxc));
+                    VerifyMaxThreads(maxw, maxc);
+                    Assert.True(ThreadPool.SetMinThreads(minw, minc));
+                    VerifyMinThreads(minw, minc);
+                }
+            }).Dispose();
         }
 
         private static void VerifyMinThreads(int expectedMinw, int expectedMinc)
@@ -189,204 +200,44 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(expectedMaxc, maxc);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         public static void SetMinThreadsTo0Test()
         {
-            int minw, minc, maxw, maxc;
-            ThreadPool.GetMinThreads(out minw, out minc);
-            ThreadPool.GetMaxThreads(out maxw, out maxc);
-
-            try
+            RemoteExecutor.Invoke(() =>
             {
-                Assert.True(ThreadPool.SetMinThreads(0, minc));
-                Assert.True(ThreadPool.SetMaxThreads(1, maxc));
+                int minw, minc, maxw, maxc;
+                ThreadPool.GetMinThreads(out minw, out minc);
+                ThreadPool.GetMaxThreads(out maxw, out maxc);
 
-                int count = 0;
-                var done = new ManualResetEvent(false);
-                WaitCallback callback = null;
-                callback = state =>
+                try
                 {
-                    ++count;
-                    if (count > 100)
-                    {
-                        done.Set();
-                    }
-                    else
-                    {
-                        ThreadPool.QueueUserWorkItem(callback);
-                    }
-                };
-                ThreadPool.QueueUserWorkItem(callback);
-                done.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
-            }
-            finally
-            {
-                Assert.True(ThreadPool.SetMaxThreads(maxw, maxc));
-                Assert.True(ThreadPool.SetMinThreads(minw, minc));
-            }
-        }
+                    Assert.True(ThreadPool.SetMinThreads(0, minc));
+                    Assert.True(ThreadPool.SetMaxThreads(1, maxc));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void QueueRegisterPositiveAndFlowTest()
-        {
-            var asyncLocal = new AsyncLocal<int>();
-            asyncLocal.Value = 1;
-
-            var obj = new object();
-            var registerWaitEvent = new AutoResetEvent(false);
-            var threadDone = new AutoResetEvent(false);
-            RegisteredWaitHandle registeredWaitHandle = null;
-            Exception backgroundEx = null;
-            int backgroundAsyncLocalValue = 0;
-
-            Action<bool, Action> commonBackgroundTest =
-                (isRegisteredWaitCallback, test) =>
-                {
-                    try
+                    int count = 0;
+                    var done = new ManualResetEvent(false);
+                    WaitCallback callback = null;
+                    callback = state =>
                     {
-                        if (isRegisteredWaitCallback)
+                        ++count;
+                        if (count > 100)
                         {
-                            RegisteredWaitHandle toUnregister = registeredWaitHandle;
-                            registeredWaitHandle = null;
-                            Assert.True(toUnregister.Unregister(threadDone));
+                            done.Set();
                         }
-                        test();
-                        backgroundAsyncLocalValue = asyncLocal.Value;
-                    }
-                    catch (Exception ex)
-                    {
-                        backgroundEx = ex;
-                    }
-                    finally
-                    {
-                        if (!isRegisteredWaitCallback)
+                        else
                         {
-                            threadDone.Set();
+                            ThreadPool.QueueUserWorkItem(callback);
                         }
-                    }
-                };
-            Action<bool> waitForBackgroundWork =
-                isWaitForRegisteredWaitCallback =>
+                    };
+                    ThreadPool.QueueUserWorkItem(callback);
+                    done.WaitOne(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+                }
+                finally
                 {
-                    if (isWaitForRegisteredWaitCallback)
-                    {
-                        registerWaitEvent.Set();
-                    }
-                    threadDone.CheckedWait();
-                    if (backgroundEx != null)
-                    {
-                        throw new AggregateException(backgroundEx);
-                    }
-                };
-
-            ThreadPool.QueueUserWorkItem(
-                state =>
-                {
-                    commonBackgroundTest(false, () =>
-                    {
-                        Assert.Same(obj, state);
-                    });
-                },
-                obj);
-            waitForBackgroundWork(false);
-            Assert.Equal(1, backgroundAsyncLocalValue);
-
-            ThreadPool.UnsafeQueueUserWorkItem(
-                state =>
-                {
-                    commonBackgroundTest(false, () =>
-                    {
-                        Assert.Same(obj, state);
-                    });
-                },
-                obj);
-            waitForBackgroundWork(false);
-            Assert.Equal(0, backgroundAsyncLocalValue);
-
-            registeredWaitHandle =
-                ThreadPool.RegisterWaitForSingleObject(
-                    registerWaitEvent,
-                    (state, timedOut) =>
-                    {
-                        commonBackgroundTest(true, () =>
-                        {
-                            Assert.Same(obj, state);
-                            Assert.False(timedOut);
-                        });
-                    },
-                    obj,
-                    UnexpectedTimeoutMilliseconds,
-                    false);
-            waitForBackgroundWork(true);
-            Assert.Equal(1, backgroundAsyncLocalValue);
-
-            registeredWaitHandle =
-                ThreadPool.UnsafeRegisterWaitForSingleObject(
-                    registerWaitEvent,
-                    (state, timedOut) =>
-                    {
-                        commonBackgroundTest(true, () =>
-                        {
-                            Assert.Same(obj, state);
-                            Assert.False(timedOut);
-                        });
-                    },
-                    obj,
-                    UnexpectedTimeoutMilliseconds,
-                    false);
-            waitForBackgroundWork(true);
-            Assert.Equal(0, backgroundAsyncLocalValue);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void QueueRegisterNegativeTest()
-        {
-            Assert.Throws<ArgumentNullException>(() => ThreadPool.QueueUserWorkItem(null));
-            Assert.Throws<ArgumentNullException>(() => ThreadPool.UnsafeQueueUserWorkItem(null, null));
-
-            WaitHandle waitHandle = new ManualResetEvent(true);
-            WaitOrTimerCallback callback = (state, timedOut) => { };
-            Assert.Throws<ArgumentNullException>(() => ThreadPool.RegisterWaitForSingleObject(null, callback, null, 0, true));
-            Assert.Throws<ArgumentNullException>(() => ThreadPool.RegisterWaitForSingleObject(waitHandle, null, null, 0, true));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
-                ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, -2, true));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
-                ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, (long)-2, true));
-            if (!PlatformDetection.IsNetFramework) // .NET Framework silently overflows the timeout
-            {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
-                    ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, (long)int.MaxValue + 1, true));
-            }
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () =>
-                ThreadPool.RegisterWaitForSingleObject(waitHandle, callback, null, TimeSpan.FromMilliseconds(-2), true));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () =>
-                ThreadPool.RegisterWaitForSingleObject(
-                    waitHandle,
-                    callback,
-                    null,
-                    TimeSpan.FromMilliseconds((double)int.MaxValue + 1),
-                    true));
-
-            Assert.Throws<ArgumentNullException>(() => ThreadPool.UnsafeRegisterWaitForSingleObject(null, callback, null, 0, true));
-            Assert.Throws<ArgumentNullException>(() => ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, null, null, 0, true));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
-                ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, -2, true));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
-                ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, (long)-2, true));
-            if (!PlatformDetection.IsNetFramework) // .NET Framework silently overflows the timeout
-            {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeOutInterval", () =>
-                    ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, (long)int.MaxValue + 1, true));
-            }
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () =>
-                ThreadPool.UnsafeRegisterWaitForSingleObject(waitHandle, callback, null, TimeSpan.FromMilliseconds(-2), true));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () =>
-                ThreadPool.UnsafeRegisterWaitForSingleObject(
-                    waitHandle,
-                    callback,
-                    null,
-                    TimeSpan.FromMilliseconds((double)int.MaxValue + 1),
-                    true));
+                    Assert.True(ThreadPool.SetMaxThreads(maxw, maxc));
+                    Assert.True(ThreadPool.SetMinThreads(minw, minc));
+                }
+            }).Dispose();
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -558,7 +409,9 @@ namespace System.Threading.ThreadPools.Tests
             public void Execute() { }
         }
 
-        [ConditionalFact(nameof(HasAtLeastThreeProcessorsAndRemoteExecutorSupported))]
+        public static bool IsMetricsTestSupported => Environment.ProcessorCount >= 3 && IsThreadingAndRemoteExecutorSupported;
+
+        [ConditionalFact(nameof(IsMetricsTestSupported))]
         public void MetricsTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -696,6 +549,343 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        public static bool HasAtLeastThreeProcessorsAndRemoteExecutorSupported => Environment.ProcessorCount >= 3 && RemoteExecutor.IsSupported;
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void RunProcessorCountItemsInParallel()
+        {
+            int processorCount = Environment.ProcessorCount;
+            AutoResetEvent allWorkItemsStarted = new AutoResetEvent(false);
+            int startedWorkItemCount = 0;
+            WaitCallback workItem = _ =>
+            {
+                if (Interlocked.Increment(ref startedWorkItemCount) == processorCount)
+                {
+                    allWorkItemsStarted.Set();
+                }
+            };
+
+            // Run the test twice to make sure we can reuse the threads.
+            for (int j = 0; j < 2; ++j)
+            {
+                for (int i = 0; i < processorCount; ++i)
+                {
+                    ThreadPool.QueueUserWorkItem(workItem);
+                }
+
+                allWorkItemsStarted.CheckedWait();
+                Interlocked.Exchange(ref startedWorkItemCount, 0);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43754", TestPlatforms.Android)]
+        public static void ThreadPoolCanPickUpOneOrMoreWorkItemsWhenThreadIsAvailable()
+        {
+            int processorCount = Environment.ProcessorCount;
+            AutoResetEvent allBlockingWorkItemsStarted = new AutoResetEvent(false);
+            AutoResetEvent allTestWorkItemsStarted = new AutoResetEvent(false);
+            ManualResetEvent unblockWorkItems = new ManualResetEvent(false);
+            int startedBlockingWorkItemCount = 0;
+            int startedTestWorkItemCount = 0;
+            WaitCallback blockingWorkItem = _ =>
+            {
+                if (Interlocked.Increment(ref startedBlockingWorkItemCount) == processorCount - 1)
+                {
+                    allBlockingWorkItemsStarted.Set();
+                }
+                unblockWorkItems.CheckedWait();
+            };
+            WaitCallback testWorkItem = _ =>
+            {
+                if (Interlocked.Increment(ref startedTestWorkItemCount) == processorCount)
+                {
+                    allTestWorkItemsStarted.Set();
+                }
+            };
+
+            for (int i = 0; i < processorCount - 1; ++i)
+            {
+                ThreadPool.QueueUserWorkItem(blockingWorkItem);
+            }
+
+            allBlockingWorkItemsStarted.CheckedWait();
+            for (int i = 0; i < processorCount; ++i)
+            {
+                ThreadPool.QueueUserWorkItem(testWorkItem);
+            }
+
+            allTestWorkItemsStarted.CheckedWait();
+            unblockWorkItems.Set();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void RunMoreThanMaxWorkItemsMakesOneWorkItemWaitForStarvationDetection()
+        {
+            int processorCount = Environment.ProcessorCount;
+            AutoResetEvent allBlockingWorkItemsStarted = new AutoResetEvent(false);
+            AutoResetEvent testWorkItemStarted = new AutoResetEvent(false);
+            ManualResetEvent unblockWorkItems = new ManualResetEvent(false);
+            int startedBlockingWorkItemCount = 0;
+            WaitCallback blockingWorkItem = _ =>
+            {
+                if (Interlocked.Increment(ref startedBlockingWorkItemCount) == processorCount)
+                {
+                    allBlockingWorkItemsStarted.Set();
+                }
+                unblockWorkItems.CheckedWait();
+            };
+
+            for (int i = 0; i < processorCount; ++i)
+            {
+                ThreadPool.QueueUserWorkItem(blockingWorkItem);
+            }
+
+            allBlockingWorkItemsStarted.CheckedWait();
+            ThreadPool.QueueUserWorkItem(_ => testWorkItemStarted.Set());
+            testWorkItemStarted.CheckedWait();
+            unblockWorkItems.Set();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void WorkQueueDepletionTest()
+        {
+            ManualResetEvent done = new ManualResetEvent(false);
+            int numLocalScheduled = 1;
+            int numGlobalScheduled = 1;
+            int numOfEachTypeToSchedule = Environment.ProcessorCount * 64;
+            int numTotalCompleted = 0;
+            Action<bool> workItem = null;
+            workItem = preferLocal =>
+            {
+                int numScheduled =
+                    preferLocal ? Interlocked.Increment(ref numLocalScheduled) : Interlocked.Increment(ref numGlobalScheduled);
+                if (numScheduled <= numOfEachTypeToSchedule)
+                {
+                    ThreadPool.QueueUserWorkItem(workItem, preferLocal, preferLocal);
+                    if (Interlocked.Increment(ref numScheduled) <= numOfEachTypeToSchedule)
+                    {
+                        ThreadPool.QueueUserWorkItem(workItem, preferLocal, preferLocal);
+                    }
+                }
+
+                if (Interlocked.Increment(ref numTotalCompleted) == numOfEachTypeToSchedule * 2)
+                {
+                    done.Set();
+                }
+            };
+
+            ThreadPool.QueueUserWorkItem(workItem, true, preferLocal: true);
+            ThreadPool.QueueUserWorkItem(workItem, false, preferLocal: false);
+            done.CheckedWait();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void WorkerThreadStateResetTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                ThreadPool.GetMinThreads(out int minw, out int minc);
+                ThreadPool.GetMaxThreads(out int maxw, out int maxc);
+                try
+                {
+                    // Use maximum one worker thread to have all work items below run on the same thread
+                    Assert.True(ThreadPool.SetMinThreads(1, minc));
+                    Assert.True(ThreadPool.SetMaxThreads(1, maxc));
+
+                    var done = new AutoResetEvent(false);
+                    string failureMessage = string.Empty;
+                    WaitCallback setNameWorkItem = null;
+                    WaitCallback verifyNameWorkItem = null;
+                    WaitCallback setIsBackgroundWorkItem = null;
+                    WaitCallback verifyIsBackgroundWorkItem = null;
+                    WaitCallback setPriorityWorkItem = null;
+                    WaitCallback verifyPriorityWorkItem = null;
+
+                    setNameWorkItem = _ =>
+                    {
+                        Thread.CurrentThread.Name = nameof(WorkerThreadStateResetTest);
+                        ThreadPool.QueueUserWorkItem(verifyNameWorkItem);
+                    };
+
+                    verifyNameWorkItem = _ =>
+                    {
+                        Thread currentThread = Thread.CurrentThread;
+                        if (currentThread.Name != null)
+                        {
+                            failureMessage += $"Name was not reset: {currentThread.Name}{Environment.NewLine}";
+                        }
+                        ThreadPool.QueueUserWorkItem(setIsBackgroundWorkItem);
+                    };
+
+                    setIsBackgroundWorkItem = _ =>
+                    {
+                        Thread.CurrentThread.IsBackground = false;
+                        ThreadPool.QueueUserWorkItem(verifyIsBackgroundWorkItem);
+                    };
+
+                    verifyIsBackgroundWorkItem = _ =>
+                    {
+                        Thread currentThread = Thread.CurrentThread;
+                        if (!currentThread.IsBackground)
+                        {
+                            failureMessage += $"IsBackground was not reset: {currentThread.IsBackground}{Environment.NewLine}";
+                            currentThread.IsBackground = true;
+                        }
+                        ThreadPool.QueueUserWorkItem(setPriorityWorkItem);
+                    };
+
+                    setPriorityWorkItem = _ =>
+                    {
+                        Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+                        ThreadPool.QueueUserWorkItem(verifyPriorityWorkItem);
+                    };
+
+                    verifyPriorityWorkItem = _ =>
+                    {
+                        Thread currentThread = Thread.CurrentThread;
+                        if (currentThread.Priority != ThreadPriority.Normal)
+                        {
+                            failureMessage += $"Priority was not reset: {currentThread.Priority}{Environment.NewLine}";
+                            currentThread.Priority = ThreadPriority.Normal;
+                        }
+                        done.Set();
+                    };
+
+                    ThreadPool.QueueUserWorkItem(setNameWorkItem);
+                    done.CheckedWait();
+                    Assert.Equal(string.Empty, failureMessage);
+                }
+                finally
+                {
+                    Assert.True(ThreadPool.SetMaxThreads(maxw, maxc));
+                    Assert.True(ThreadPool.SetMinThreads(minw, minc));
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void SettingMinWorkerThreadsWillCreateThreadsUpToMinimum()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                ThreadPool.GetMinThreads(out int minWorkerThreads, out int minIocpThreads);
+                ThreadPool.GetMaxThreads(out int maxWorkerThreads, out int maxIocpThreads);
+
+                AutoResetEvent allWorkItemsExceptOneStarted = new AutoResetEvent(false);
+                AutoResetEvent allWorkItemsStarted = new AutoResetEvent(false);
+                ManualResetEvent unblockWorkItems = new ManualResetEvent(false);
+                int startedWorkItemCount = 0;
+                WaitCallback workItem = _ =>
+                {
+                    int newStartedWorkItemCount = Interlocked.Increment(ref startedWorkItemCount);
+                    if (newStartedWorkItemCount == minWorkerThreads)
+                    {
+                        allWorkItemsExceptOneStarted.Set();
+                    }
+                    else if (newStartedWorkItemCount == minWorkerThreads + 1)
+                    {
+                        allWorkItemsStarted.Set();
+                    }
+
+                    unblockWorkItems.CheckedWait();
+                };
+
+                ThreadPool.SetMaxThreads(minWorkerThreads, maxIocpThreads);
+                for (int i = 0; i < minWorkerThreads + 1; ++i)
+                {
+                    ThreadPool.QueueUserWorkItem(workItem);
+                }
+
+                allWorkItemsExceptOneStarted.CheckedWait();
+                Assert.False(allWorkItemsStarted.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+
+                Assert.True(ThreadPool.SetMaxThreads(minWorkerThreads + 1, maxIocpThreads));
+                Assert.True(ThreadPool.SetMinThreads(minWorkerThreads + 1, minIocpThreads));
+                allWorkItemsStarted.CheckedWait();
+
+                unblockWorkItems.Set();
+            }).Dispose();
+        }
+
+        // See https://github.com/dotnet/corert/pull/6822
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking()
+        {
+            int processorCount = Environment.ProcessorCount;
+            int iterationCount = 100_000;
+            var done = new ManualResetEvent(false);
+
+            WaitCallback workItem = null;
+            workItem = _ =>
+            {
+                if (Interlocked.Decrement(ref iterationCount) > 0)
+                {
+                    ThreadPool.QueueUserWorkItem(workItem);
+                }
+                else
+                {
+                    done.Set();
+                }
+            };
+
+            for (int i = 0; i < processorCount; ++i)
+            {
+                ThreadPool.QueueUserWorkItem(workItem);
+            }
+
+            done.CheckedWait();
+        }
+
+        [ThreadStatic]
+        private static int t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect;
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void ThreadPoolThreadCreationDoesNotTransferExecutionContext()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
+            // would cause the thread pool to create threads
+            RemoteExecutor.Invoke(() =>
+            {
+                var done = new AutoResetEvent(false);
+
+                // Create an AsyncLocal with value change notifications, this changes the EC on this thread to non-default
+                var asyncLocal = new AsyncLocal<int>(e =>
+                {
+                    // There is nothing in this test that should cause a thread's EC to change due to EC flow
+                    Assert.False(e.ThreadContextChanged);
+
+                    // Record a side-effect from AsyncLocal value changes caused by flow. This is mainly because AsyncLocal
+                    // value change notifications can have side-effects like impersonation, we want to ensure that not only the
+                    // AsyncLocal's value is correct, but also that the side-effect matches the value, confirming that any value
+                    // changes cause matching notifications.
+                    t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect = e.CurrentValue;
+                });
+                asyncLocal.Value = 1;
+
+                ThreadPool.UnsafeQueueUserWorkItem(_ =>
+                {
+                    // The EC should not have flowed. If the EC had flowed, the assertion in the value change notification would
+                    // fail. Just for additional verification, check the side-effect as well.
+                    Assert.Equal(0, t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect);
+
+                    done.Set();
+                }, null);
+                done.CheckedWait();
+
+                ThreadPool.UnsafeRegisterWaitForSingleObject(done, (_, timedOut) =>
+                {
+                    Assert.True(timedOut);
+
+                    // The EC should not have flowed. If the EC had flowed, the assertion in the value change notification would
+                    // fail. Just for additional verification, check the side-effect as well.
+                    Assert.Equal(0, t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect);
+
+                    done.Set();
+                }, null, 0, true);
+                done.CheckedWait();
+            }).Dispose();
+        }
+
+        public static bool IsThreadingAndRemoteExecutorSupported =>
+            PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
     }
 }

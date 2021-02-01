@@ -12,8 +12,6 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Net.Http.QPack;
 using System.Runtime.ExceptionServices;
-using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
@@ -278,6 +276,10 @@ namespace System.Net.Http
             catch (Exception ex)
             {
                 _stream.AbortWrite((long)Http3ErrorCode.InternalError);
+                if (ex is HttpRequestException)
+                {
+                    throw;
+                }
                 throw new HttpRequestException(SR.net_http_client_execution_error, ex);
             }
             finally
@@ -290,13 +292,11 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// Waits for the initial response headers to be completed, including e.g. Expect 100 Continue.
+        /// Waits for the response headers to be read, and handles (Expect 100 etc.) informational statuses.
         /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
         private async Task ReadResponseAsync(CancellationToken cancellationToken)
         {
-            Debug.Assert(_response != null);
+            Debug.Assert(_response == null);
             do
             {
                 _headerState = HeaderState.StatusHeader;
@@ -313,6 +313,7 @@ namespace System.Net.Http
                 }
 
                 await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
+                Debug.Assert(_response != null);
             }
             while ((int)_response.StatusCode < 200);
 
@@ -518,9 +519,6 @@ namespace System.Net.Http
                 BufferBytes(_connection.Pool._http3EncodedAuthorityHostHeader);
             }
 
-            // The only way to reach H3 is to upgrade via an Alt-Svc header, so we can encode Alt-Used for every connection.
-            BufferBytes(_connection.AltUsedEncodedHeaderBytes);
-
             Debug.Assert(request.RequestUri != null);
             string pathAndQuery = request.RequestUri.PathAndQuery;
             if (pathAndQuery == "/")
@@ -531,6 +529,9 @@ namespace System.Net.Http
             {
                 BufferLiteralHeaderWithStaticNameReference(H3StaticTable.PathSlash, pathAndQuery);
             }
+
+            // The only way to reach H3 is to upgrade via an Alt-Svc header, so we can encode Alt-Used for every connection.
+            BufferBytes(_connection.AltUsedEncodedHeaderBytes);
 
             if (request.HasHeaders)
             {
@@ -553,14 +554,8 @@ namespace System.Net.Http
                 }
             }
 
-            if (request.Content == null || request.Content.Headers.ContentLength == 0)
+            if (request.Content == null)
             {
-                // Expect 100 Continue requires content.
-                if (request.HasHeaders && request.Headers.ExpectContinue != null)
-                {
-                    request.Headers.ExpectContinue = null;
-                }
-
                 if (normalizedMethod.MustHaveRequestBody)
                 {
                     BufferIndexedHeader(H3StaticTable.ContentLength0);
@@ -748,15 +743,23 @@ namespace System.Net.Http
 
                 _recvBuffer.Discard(bytesRead);
 
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    Trace($"Received frame {frameType} of length {payloadLength}.");
+                }
+
                 switch ((Http3FrameType)frameType)
                 {
                     case Http3FrameType.Headers:
                     case Http3FrameType.Data:
                         return ((Http3FrameType)frameType, payloadLength);
-                    case Http3FrameType.Settings:
+                    case Http3FrameType.Settings: // These frames should only be received on a control stream, not a response stream.
                     case Http3FrameType.GoAway:
                     case Http3FrameType.MaxPushId:
-                        // These frames should only be received on a control stream, not a response stream.
+                    case Http3FrameType.ReservedHttp2Priority: // These frames are explicitly reserved and must never be sent.
+                    case Http3FrameType.ReservedHttp2Ping:
+                    case Http3FrameType.ReservedHttp2WindowUpdate:
+                    case Http3FrameType.ReservedHttp2Continuation:
                         throw new Http3ConnectionException(Http3ErrorCode.UnexpectedFrame);
                     case Http3FrameType.DuplicatePush:
                     case Http3FrameType.PushPromise:
@@ -808,6 +811,9 @@ namespace System.Net.Http
                 _recvBuffer.Discard(processLength);
                 headersLength -= processLength;
             }
+
+            // Reset decoder state. Require because one decoder instance is reused to decode headers and trailers.
+            _headerDecoder.Reset();
         }
 
         private static ReadOnlySpan<byte> StatusHeaderNameBytes => new byte[] { (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
@@ -1168,16 +1174,17 @@ namespace System.Net.Http
         // TODO: it may be possible for Http3RequestStream to implement Stream directly and avoid this allocation.
         private sealed class Http3ReadStream : HttpBaseStream
         {
-            private Http3RequestStream _stream;
+            private Http3RequestStream? _stream;
             private HttpResponseMessage? _response;
 
-            public override bool CanRead => true;
+            public override bool CanRead => _stream != null;
 
             public override bool CanWrite => false;
 
             public Http3ReadStream(Http3RequestStream stream)
             {
                 _stream = stream;
+                _response = stream._response;
             }
 
             ~Http3ReadStream()
@@ -1202,7 +1209,7 @@ namespace System.Net.Http
                         _stream._connection = null!;
                     }
 
-                    _stream = null!;
+                    _stream = null;
                     _response = null;
                 }
 
@@ -1215,7 +1222,6 @@ namespace System.Net.Http
                 {
                     await _stream.DisposeAsync().ConfigureAwait(false);
                     _stream = null!;
-                    _response = null;
                 }
 
                 await base.DisposeAsync().ConfigureAwait(false);
@@ -1256,7 +1262,7 @@ namespace System.Net.Http
 
             public override bool CanRead => false;
 
-            public override bool CanWrite => true;
+            public override bool CanWrite => _stream != null;
 
             public Http3WriteStream(Http3RequestStream stream)
             {

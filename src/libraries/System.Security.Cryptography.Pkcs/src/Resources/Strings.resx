@@ -295,7 +295,4 @@
   <data name="Cryptography_Cms_CertificateAlreadyInCollection" xml:space="preserve">
     <value>Certificate already present in the collection.</value>
   </data>
-  <data name="SystemSecurityCryptographyPkcs_PlatformNotSupported" xml:space="preserve">
-    <value>System.Security.Cryptography.Pkcs is not supported on this platform.</value>
-  </data>
 </root>

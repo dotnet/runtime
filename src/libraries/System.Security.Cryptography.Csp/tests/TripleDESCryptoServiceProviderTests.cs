@@ -19,6 +19,7 @@ namespace System.Security.Cryptography.Encryption.TripleDES.Tests
             {
                 Assert.Equal(64, alg.BlockSize);
                 Assert.Equal(192, alg.KeySize);
+                Assert.Equal(8, alg.FeedbackSize);
                 Assert.Equal(CipherMode.CBC, alg.Mode);
                 Assert.Equal(PaddingMode.PKCS7, alg.Padding);
             }

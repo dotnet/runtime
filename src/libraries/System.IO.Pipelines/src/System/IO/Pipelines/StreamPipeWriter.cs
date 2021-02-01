@@ -22,6 +22,7 @@ namespace System.IO.Pipelines
         private int _bytesBuffered;
 
         private readonly MemoryPool<byte>? _pool;
+        private readonly int _maxPooledBufferSize;
 
         private CancellationTokenSource? _internalTokenSource;
         private bool _isCompleted;
@@ -56,6 +57,7 @@ namespace System.IO.Pipelines
 
             _minimumBufferSize = options.MinimumBufferSize;
             _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
+            _maxPooledBufferSize = _pool?.MaxBufferSize ?? -1;
             _bufferSegmentPool = new BufferSegmentStack(InitialSegmentPoolSize);
             _leaveOpen = options.LeaveOpen;
         }
@@ -149,18 +151,20 @@ namespace System.IO.Pipelines
 
         private BufferSegment AllocateSegment(int sizeHint)
         {
+            Debug.Assert(sizeHint >= 0);
             BufferSegment newSegment = CreateSegmentUnsynchronized();
 
-            if (_pool is null || sizeHint > _pool.MaxBufferSize)
+            int maxSize = _maxPooledBufferSize;
+            if (sizeHint <= maxSize)
+            {
+                // Use the specified pool as it fits. Specified pool is not null as maxSize == -1 if _pool is null.
+                newSegment.SetOwnedMemory(_pool!.Rent(GetSegmentSize(sizeHint, maxSize)));
+            }
+            else
             {
                 // Use the array pool
                 int sizeToRequest = GetSegmentSize(sizeHint);
                 newSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(sizeToRequest));
-            }
-            else
-            {
-                // Use the specified pool as it fits
-                newSegment.SetOwnedMemory(_pool.Rent(GetSegmentSize(sizeHint, _pool.MaxBufferSize)));
             }
 
             _tailMemory = newSegment.AvailableMemory;

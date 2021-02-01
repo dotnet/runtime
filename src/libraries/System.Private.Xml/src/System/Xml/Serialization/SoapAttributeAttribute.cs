@@ -4,13 +4,14 @@
 namespace System.Xml.Serialization
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
     public class SoapAttributeAttribute : System.Attribute
     {
-        private string _attributeName;
-        private string _ns;
-        private string _dataType;
+        private string? _attributeName;
+        private string? _ns;
+        private string? _dataType;
 
         public SoapAttributeAttribute()
         {
@@ -21,18 +22,20 @@ namespace System.Xml.Serialization
             _attributeName = attributeName;
         }
 
+        [AllowNull]
         public string AttributeName
         {
             get { return _attributeName == null ? string.Empty : _attributeName; }
             set { _attributeName = value; }
         }
 
-        public string Namespace
+        public string? Namespace
         {
             get { return _ns; }
             set { _ns = value; }
         }
 
+        [AllowNull]
         public string DataType
         {
             get { return _dataType == null ? string.Empty : _dataType; }

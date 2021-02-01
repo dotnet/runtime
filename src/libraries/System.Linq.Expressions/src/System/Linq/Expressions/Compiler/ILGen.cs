@@ -16,7 +16,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(methodBase is MethodInfo || methodBase is ConstructorInfo);
 
             var ctor = methodBase as ConstructorInfo;
-            if ((object?)ctor != null)
+            if (ctor is not null)
             {
                 il.Emit(opcode, ctor);
             }
@@ -61,11 +61,11 @@ namespace System.Linq.Expressions.Compiler
 
             switch (type.GetTypeCode())
             {
-                case TypeCode.Byte:
+                case TypeCode.SByte:
                     il.Emit(OpCodes.Ldind_I1);
                     break;
                 case TypeCode.Boolean:
-                case TypeCode.SByte:
+                case TypeCode.Byte:
                     il.Emit(OpCodes.Ldind_U1);
                     break;
                 case TypeCode.Int16:

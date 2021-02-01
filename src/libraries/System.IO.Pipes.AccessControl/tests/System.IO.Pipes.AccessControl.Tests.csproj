@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <AssembliesBeingTested Include="System.IO.Pipes" />
@@ -13,7 +13,6 @@
     <Compile Include="NamedPipeTests\NamedPipeTest.AclExtensions.cs" />
     <Compile Include="PipeServerStreamAclTestBase.cs" />
     <Compile Include="PipeTest.AclExtensions.cs" />
-    <Compile Include="..\..\System.IO.Pipes\tests\PipeTestBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.IO.Pipes.AccessControl.csproj" />

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Authors:
 //   Miguel de Icaza (miguel@ximian.com)
@@ -31,6 +32,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -70,6 +72,7 @@ namespace System
         private bool method_is_virtual;
         #endregion
 
+        [RequiresUnreferencedCode("The target method might be removed")]
         protected Delegate(object target, string method)
         {
             if (target is null)
@@ -85,7 +88,7 @@ namespace System
             };
         }
 
-        protected Delegate(Type target, string method)
+        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
         {
             if (target is null)
                 throw new ArgumentNullException(nameof(target));
@@ -135,7 +138,7 @@ namespace System
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
 
-            if (!IsMatchingCandidate(type, firstArgument, method, allowClosed, out DelegateData? delegate_data))
+            if (!IsMatchingCandidate(rtType, firstArgument, method, allowClosed, out DelegateData? delegate_data))
             {
                 if (throwOnBindFailure)
                     throw new ArgumentException(SR.Arg_DlgtTargMeth);
@@ -168,7 +171,7 @@ namespace System
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
 
-            MethodInfo? info = GetCandidateMethod(type, target.GetType(), method, BindingFlags.Instance, ignoreCase);
+            MethodInfo? info = GetCandidateMethod(rtType, target.GetType(), method, BindingFlags.Instance, ignoreCase);
             if (info is null)
             {
                 if (throwOnBindFailure)
@@ -177,11 +180,10 @@ namespace System
                 return null;
             }
 
-            return CreateDelegate_internal(type, null, info, throwOnBindFailure);
+            return CreateDelegate_internal(type, target, info, throwOnBindFailure);
         }
 
-        [RequiresUnreferencedCode("The target method might be removed")]
-        public static Delegate? CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure)
+        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
@@ -200,7 +202,7 @@ namespace System
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
 
-            MethodInfo? info = GetCandidateMethod(type, target, method, BindingFlags.Static, ignoreCase);
+            MethodInfo? info = GetCandidateMethod(rtType, target, method, BindingFlags.Static, ignoreCase);
             if (info is null)
             {
                 if (throwOnBindFailure)
@@ -212,10 +214,11 @@ namespace System
             return CreateDelegate_internal(type, null, info, throwOnBindFailure);
         }
 
-        [RequiresUnreferencedCode("The target method might be removed")]
-        private static MethodInfo? GetCandidateMethod(Type type, Type target, string method, BindingFlags bflags, bool ignoreCase)
+        // GetCandidateMethod is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
+        // on a base type of methodType. Using All is currently the only way ILLinker will preserve these methods.
+        private static MethodInfo? GetCandidateMethod(RuntimeType type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, BindingFlags bflags, bool ignoreCase)
         {
-            MethodInfo? invoke = type.GetMethod("Invoke");
+            MethodInfo? invoke = GetDelegateInvokeMethod(type);
             if (invoke is null)
                 return null;
 
@@ -250,12 +253,9 @@ namespace System
             return null;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
-            Justification = "Invoke method is never removed from delegates")]
-        private static bool IsMatchingCandidate(Type type, object? target, MethodInfo method, bool allowClosed, out DelegateData? delegateData)
+        private static bool IsMatchingCandidate(RuntimeType type, object? target, MethodInfo method, bool allowClosed, out DelegateData? delegateData)
         {
-            MethodInfo? invoke = type.GetMethod("Invoke");
-
+            MethodInfo? invoke = GetDelegateInvokeMethod(type);
             if (invoke == null || !IsReturnTypeMatch(invoke.ReturnType!, method.ReturnType!))
             {
                 delegateData = null;
@@ -367,6 +367,15 @@ namespace System
             }
 
             return argsMatch;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "ILLinker will never remove the Invoke method from delegates.")]
+        private static MethodInfo? GetDelegateInvokeMethod(RuntimeType type)
+        {
+            Debug.Assert(type.IsDelegate());
+
+            return type.GetMethod("Invoke");
         }
 
         private static bool IsReturnTypeMatch(Type delReturnType, Type returnType)
@@ -489,7 +498,7 @@ namespace System
             return _method.Invoke(target, args);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is Delegate d) || !InternalEqualTypes(this, obj))
                 return false;

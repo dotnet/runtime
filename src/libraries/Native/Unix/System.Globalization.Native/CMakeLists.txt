@@ -43,6 +43,10 @@ if(CLR_CMAKE_TARGET_UNIX)
     endif()
 endif()
 
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 10.0))
+    add_compile_options(-Wno-error=stringop-truncation)
+endif()
+
 include(configure.cmake)
 
 set(NATIVEGLOBALIZATION_SOURCES
@@ -56,8 +60,15 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_normalization.c
     pal_timeZoneInfo.c
     pal_icushim.c
-    entrypoints.c
 )
+
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} entrypoints.c)
+endif()
+
+if (MSVC)
+    set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)
+endif()
 
 include_directories("../Common")
 
@@ -75,14 +86,17 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
 
+
 add_library(System.Globalization.Native-Static
-    OBJECT
+    STATIC
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
+if(CLR_CMAKE_TARGET_UNIX)
+    set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
+endif()
 
-install (TARGETS System.Globalization.Native-Static DESTINATION .)
+install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
 
 if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     if (GEN_SHARED_LIB)
