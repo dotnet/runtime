@@ -509,6 +509,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return multiDel;
         }
 
+        internal static Uint8Array _funcActionBufferResultValue;
+        internal static int _funcActionBufferResultLengthValue;
+        private static Func<Uint8Array, Action<Uint8Array>> CreateFunctionAcceptingUint8Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
     }
 
     public enum TestEnum : uint {

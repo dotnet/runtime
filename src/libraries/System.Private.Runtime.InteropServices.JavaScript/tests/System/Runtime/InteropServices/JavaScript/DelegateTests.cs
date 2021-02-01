@@ -9,6 +9,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class DelegateTests
     {
+        private static Function _objectPrototype;
+        public static IEnumerable<object[]> Object_Prototype()
+        {
+            _objectPrototype ??= new Function("return Object.prototype.toString;");
+            yield return new object[] { _objectPrototype.Call() };
+        }
+
         [Fact]
         public static void MarshalFunction()
         {
@@ -177,6 +184,30 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
 
             Assert.Equal("  Hello, MoinMoin!  GoodMorning, MoinMoin!", HelperMarshal._custMultiActionStringResultValue);
+        }
+
+        [Theory]
+        [MemberData(nameof(Object_Prototype))]
+        public static void MarshalFunctionAcceptingUint8Array(Function objectPrototype)
+        {
+            var clamped = new byte[10];
+            HelperMarshal._funcActionBufferResultValue = Uint8Array.From(clamped);
+            Assert.Equal(10, HelperMarshal._funcActionBufferResultValue.Length);
+            Assert.NotEqual("[object Uint8ClampedArray]", objectPrototype.Call(HelperMarshal._funcActionBufferResultValue));
+            Assert.Equal("[object Uint8Array]", objectPrototype.Call(HelperMarshal._funcActionBufferResultValue));
+
+            Runtime.InvokeJS(@"
+                var buffer = new Uint8Array(50);
+                var del = App.call_test_method (""CreateFunctionAcceptingUint8Array"", [  ]);
+                var setAction = del(buffer);
+                setAction(buffer);
+            ");
+
+            Assert.Equal(50, HelperMarshal._funcActionBufferResultValue.Length);
+            Assert.Equal(HelperMarshal._funcActionBufferResultLengthValue, HelperMarshal._funcActionBufferResultValue.Length);
+            Assert.NotEqual("[object Uint8ClampedArray]", objectPrototype.Call(HelperMarshal._funcActionBufferResultValue));
+            Assert.Equal("[object Uint8Array]", objectPrototype.Call(HelperMarshal._funcActionBufferResultValue));
+
         }
 
     }
