@@ -67,6 +67,7 @@ namespace System.Net.Sockets
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static Task<int> SendAsync(this Socket socket, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags) =>
             socket.SendAsync(buffers, socketFlags);
+
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static Task<int> SendToAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP) =>
             socket.SendToAsync(buffer, socketFlags, remoteEP);

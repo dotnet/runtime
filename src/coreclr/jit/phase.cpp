@@ -157,19 +157,11 @@ void Phase::PostPhase(PhaseStatus status)
     // well as the new-style phases that have been updated to return
     // PhaseStatus from their DoPhase methods.
     //
-    static Phases s_allowlist[] = {PHASE_IMPORTATION,
-                                   PHASE_INDXCALL,
-                                   PHASE_MORPH_INLINE,
-                                   PHASE_ALLOCATE_OBJECTS,
-                                   PHASE_EMPTY_TRY,
-                                   PHASE_EMPTY_FINALLY,
-                                   PHASE_MERGE_FINALLY_CHAINS,
-                                   PHASE_CLONE_FINALLY,
-                                   PHASE_MERGE_THROWS,
-                                   PHASE_MORPH_GLOBAL,
-                                   PHASE_BUILD_SSA,
-                                   PHASE_RATIONALIZE,
-                                   PHASE_LOWERING,
+    static Phases s_allowlist[] = {PHASE_IMPORTATION,       PHASE_IBCINSTR,      PHASE_INCPROFILE,
+                                   PHASE_INDXCALL,          PHASE_MORPH_INLINE,  PHASE_ALLOCATE_OBJECTS,
+                                   PHASE_EMPTY_TRY,         PHASE_EMPTY_FINALLY, PHASE_MERGE_FINALLY_CHAINS,
+                                   PHASE_CLONE_FINALLY,     PHASE_MERGE_THROWS,  PHASE_MORPH_GLOBAL,
+                                   PHASE_BUILD_SSA,         PHASE_RATIONALIZE,   PHASE_LOWERING,
                                    PHASE_STACK_LEVEL_SETTER};
 
     if (madeChanges)

@@ -323,7 +323,7 @@ namespace ILCompiler
             Console.WriteLine($"Successfully resolved {_methodsSuccessfullyResolved} methods ({(double)_methodsSuccessfullyResolved / (double)_methodResolvesAttempted:P})");
         }
 #endif
+
+        public IReadOnlyDictionary<MethodDesc, Dictionary<MethodDesc, int>> ResolvedProfileData => _resolvedProfileData;
     }
-
 }
-

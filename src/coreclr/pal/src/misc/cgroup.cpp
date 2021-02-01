@@ -222,7 +222,9 @@ private:
             if (filesystemType == nullptr || lineLen > maxLineLen)
             {
                 PAL_free(filesystemType);
+                filesystemType = nullptr;
                 PAL_free(options);
+                options = nullptr;
                 filesystemType = (char*)PAL_malloc(lineLen+1);
                 if (filesystemType == nullptr)
                     goto done;
@@ -308,7 +310,9 @@ private:
             if (subsystem_list == nullptr || lineLen > maxLineLen)
             {
                 PAL_free(subsystem_list);
+                subsystem_list = nullptr;
                 PAL_free(cgroup_path);
+                cgroup_path = nullptr;
                 subsystem_list = (char*)PAL_malloc(lineLen+1);
                 if (subsystem_list == nullptr)
                     goto done;

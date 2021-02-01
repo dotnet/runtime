@@ -834,6 +834,12 @@ namespace System.Tests
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { Half.Epsilon, "G", invariantFormat, "6E-08" };
+
+            yield return new object[] { 32.5f, "C100", invariantFormat, "¤32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "P100", invariantFormat, "3,250.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { 32.5f, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { 32.5f, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
         }
 
         [Fact]
@@ -870,6 +876,18 @@ namespace System.Tests
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
         }
+
+        [Fact]
+        public static void ToString_InvalidFormat_ThrowsFormatException()
+        {
+            Half f = (Half)123.0f;
+            Assert.Throws<FormatException>(() => f.ToString("Y")); // Invalid format
+            Assert.Throws<FormatException>(() => f.ToString("Y", null)); // Invalid format
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => f.ToString("E" + intMaxPlus1String));
+        }
+
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
         {

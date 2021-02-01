@@ -5283,6 +5283,38 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static long MultiplyHigh(long op1, long op2)
+        {
+            ulong u0, v0, w0;
+            long u1, v1, w1, w2, t;
+            u0 = (ulong)op1 & 0xFFFFFFFF;
+            u1 = op1 >> 32;
+            v0 = (ulong)op2 & 0xFFFFFFFF;
+            v1 = op2 >> 32;
+            w0 = u0 * v0;
+            t  = u1 * (long)v0 + (long)(w0 >> 32);
+            w1 = t & 0xFFFFFFFF;
+            w2 = t >> 32;
+            w1 = (long)u0 * v1 + w1;
+            return u1 * v1 + w2 + (w1 >> 32);
+        }
+
+        public static ulong MultiplyHigh(ulong op1, ulong op2)
+        {
+            ulong u0, v0, w0;
+            ulong u1, v1, w1, w2, t;
+            u0 = (ulong)op1 & 0xFFFFFFFF;
+            u1 = op1 >> 32;
+            v0 = (ulong)op2 & 0xFFFFFFFF;
+            v1 = op2 >> 32;
+            w0 = u0 * v0;
+            t  = u1 * (ulong)v0 + (ulong)(w0 >> 32);
+            w1 = t & 0xFFFFFFFF;
+            w2 = t >> 32;
+            w1 = (ulong)u0 * v1 + w1;
+            return u1 * v1 + w2 + (w1 >> 32);
+        }
+
         public static byte PolynomialMultiply(byte op1, byte op2) => (byte)PolynomialMult(op1, op2);
 
         public static ushort PolynomialMultiplyWidening(byte op1, byte op2) => PolynomialMult(op1, op2);

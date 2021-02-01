@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.QPack;
 
 namespace System.Net.Http
@@ -105,7 +106,7 @@ namespace System.Net.Http
 
         #region IEquatable<HttpMethod> Members
 
-        public bool Equals(HttpMethod? other)
+        public bool Equals([NotNullWhen(true)] HttpMethod? other)
         {
             if (other is null)
             {
@@ -124,7 +125,7 @@ namespace System.Net.Http
 
         #endregion
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return Equals(obj as HttpMethod);
         }

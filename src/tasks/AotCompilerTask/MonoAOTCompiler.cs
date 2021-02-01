@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -28,6 +29,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     [Required]
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
+    /// Directory where the AOT'ed files will be emitted
+    /// </summary>
+    [NotNull]
+    [Required]
+    public string? OutputDir { get; set; }
 
     /// <summary>
     /// Assemblies which were AOT compiled.
@@ -131,6 +139,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (Assemblies.Length == 0)
         {
             throw new ArgumentException($"'{nameof(Assemblies)}' is required.", nameof(Assemblies));
+        }
+
+        if (!Path.IsPathRooted(OutputDir))
+            OutputDir = Path.GetFullPath(OutputDir);
+
+        if (!Directory.Exists(OutputDir))
+        {
+            Log.LogError($"OutputDir={OutputDir} doesn't exist");
+            return false;
         }
 
         if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
@@ -242,12 +259,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             processArgs.Add("--nollvm");
         }
 
+        string assemblyFilename = Path.GetFileName(assembly);
+
         // compute output mode and file names
         if (parsedAotMode == MonoAotMode.LLVMOnly || parsedAotMode == MonoAotMode.AotInterp)
         {
             aotArgs.Add("llvmonly");
 
-            string llvmBitcodeFile = Path.ChangeExtension(assembly, ".dll.bc");
+            string llvmBitcodeFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.bc"));
             aotAssembly.SetMetadata("LlvmBitcodeFile", llvmBitcodeFile);
 
             if (parsedAotMode == MonoAotMode.AotInterp)
@@ -276,20 +295,20 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 aotArgs.Add("asmonly");
 
-                string assemblerFile = Path.ChangeExtension(assembly, ".dll.s");
+                string assemblerFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.s"));
                 aotArgs.Add($"outfile={assemblerFile}");
                 aotAssembly.SetMetadata("AssemblerFile", assemblerFile);
             }
             else
             {
-                string objectFile = Path.ChangeExtension(assembly, ".dll.o");
+                string objectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.o"));
                 aotArgs.Add($"outfile={objectFile}");
                 aotAssembly.SetMetadata("ObjectFile", objectFile);
             }
 
             if (UseLLVM)
             {
-                string llvmObjectFile = Path.ChangeExtension(assembly, ".dll-llvm.o");
+                string llvmObjectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll-llvm.o"));
                 aotArgs.Add($"llvm-outfile={llvmObjectFile}");
                 aotAssembly.SetMetadata("LlvmObjectFile", llvmObjectFile);
             }

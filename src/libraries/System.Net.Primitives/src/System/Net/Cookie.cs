@@ -710,7 +710,7 @@ namespace System.Net
             }
         }
 
-        public override bool Equals(object? comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             Cookie? other = comparand as Cookie;
 

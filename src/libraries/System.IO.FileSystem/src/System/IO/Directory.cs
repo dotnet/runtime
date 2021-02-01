@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 
 #if MS_IO_REDIST
@@ -49,7 +50,7 @@ namespace System.IO
         }
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
-        public static bool Exists(string? path)
+        public static bool Exists([NotNullWhen(true)] string? path)
         {
             try
             {
