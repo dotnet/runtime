@@ -256,6 +256,31 @@ namespace System.Net.Sockets.Tests
             IAsyncResult iar = socket.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref validEndPoint, null, null);
             Assert.Throws<ArgumentException>(RemoteEndPointArgumentName, () => socket.EndReceiveFrom(iar, ref invalidEndPoint));
         }
+
+        [Fact]
+        public void BeginReceiveFrom_RemoteEpIsReturnedWhenCompletedSynchronously()
+        {
+            EndPoint anyEp = new IPEndPoint(IPAddress.Any, 0);
+            EndPoint remoteEp = anyEp;
+            using Socket receiver = CreateSocket();
+            receiver.BindToAnonymousPort(IPAddress.Loopback);
+            using Socket sender = CreateSocket();
+            sender.BindToAnonymousPort(IPAddress.Loopback);
+
+            sender.SendTo(new byte[1], receiver.LocalEndPoint);
+
+            IAsyncResult iar = receiver.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref remoteEp, null, null);
+            if (iar.CompletedSynchronously)
+            {
+                _output.WriteLine("Completed synchronously, updated endpoint.");
+                Assert.Equal(sender.LocalEndPoint, remoteEp);
+            }
+            else
+            {
+                _output.WriteLine("Completed asynchronously, did not update endPoint");
+                Assert.Equal(anyEp, remoteEp);
+            }
+        }
     }
 
     public sealed class ReceiveFrom_Task : ReceiveFrom<SocketHelperTask>
