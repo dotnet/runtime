@@ -572,7 +572,6 @@ namespace System.Net.Sockets
             public SocketFlags Flags;
             public int BytesTransferred;
             public SocketFlags ReceivedFlags;
-            public IList<ArraySegment<byte>>? Buffers;
 
             public bool IsIPv4;
             public bool IsIPv6;
@@ -585,7 +584,7 @@ namespace System.Net.Sockets
             public Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>? Callback { get; set; }
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
-                SocketPal.TryCompleteReceiveMessageFrom(context._socket, new Span<byte>(BufferPtr, Length), Buffers, Flags, SocketAddress!, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
+                SocketPal.TryCompleteReceiveMessageFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress!, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
 
             public override void InvokeCallback(bool allowPooling) =>
                 Callback!(BytesTransferred, SocketAddress!, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
@@ -1779,7 +1778,6 @@ namespace System.Net.Sockets
                 {
                     BufferPtr = bufferPtr,
                     Length = buffer.Length,
-                    Buffers = null,
                     Flags = flags,
                     SocketAddress = socketAddress,
                     SocketAddressLen = socketAddressLen,
