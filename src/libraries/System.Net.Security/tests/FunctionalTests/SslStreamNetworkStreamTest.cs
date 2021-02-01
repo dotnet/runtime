@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -323,6 +324,63 @@ namespace System.Net.Security.Tests
                 Assert.Contains(errorMessage, e.Message);
                 // Server side should finish since we run custom callback after handshake is done.
                 await t2;
+            }
+        }
+
+        [Fact]
+        public async Task SslStream_ClientCertificate_SendsChain()
+        {
+            List<SslStream> streams = new List<SslStream>();
+            TestHelper.CleanupCertificates("SslStream_ClinetCertificate_SendsChain");
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates("SslStream_ClinetCertificate_SendsChain", serverCertificate: false);
+            using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+            {
+                // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
+                store.Open(OpenFlags.ReadWrite);
+                store.AddRange(clientChain);
+            }
+
+            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost",  };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
+
+            var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true };
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
+            serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                // Client should send chain without root CA. There is no good way how to know if the chain was built from certificates
+                // from wire or from system store. However, SslStream adds certificates from wire to ExtraStore in RemoteCertificateValidationCallback.
+                // So we verify the operation by checking the ExtraStore.
+                Assert.Equal(clientChain.Count - 1, chain.ChainPolicy.ExtraStore.Count);
+                return true;
+            };
+
+            // run the test multiple times while holding established SSL so we could hit credential cache.
+            for (int i = 0; i < 3; i++)
+            {
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                SslStream client = new SslStream(clientStream);
+                SslStream server = new SslStream(serverStream);
+
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+                await Task.WhenAll(t1, t2).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+
+                // hold to the streams so they stay in credential cache
+                streams.Add(client);
+                streams.Add(server);
+            }
+
+            TestHelper.CleanupCertificates("SslStream_ClinetCertificate_SendsChain");
+            clientCertificate.Dispose();
+            foreach (X509Certificate c in clientChain)
+            {
+                c.Dispose();
+            }
+
+            foreach (SslStream s in  streams)
+            {
+                s.Dispose();
             }
         }
 
