@@ -204,10 +204,12 @@
     </ItemGroup>
     <!-- Mac Catalyst specific options -->
     <ItemGroup Condition="'$(TargetsCatalyst)' == 'true'">
-      <_MonoCFlags Include="-target x86_64-apple-ios13.2-macabi" />
+      <_MonoCFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios13.2-macabi" />
+      <_MonoCFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.2-macabi" />
       <_MonoCFlags Include="-DMAC_CATALYST" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
-      <_MonoCXXFlags Include="-target x86_64-apple-ios13.2-macabi" />
+      <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios13.2-macabi" />
+      <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.2-macabi" />
       <_MonoCXXFlags Include="-DMAC_CATALYST" />
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <_MonoLDFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
