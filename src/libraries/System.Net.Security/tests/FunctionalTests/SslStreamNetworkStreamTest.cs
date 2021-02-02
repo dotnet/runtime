@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Security.Tests
 {
@@ -19,6 +20,7 @@ namespace System.Net.Security.Tests
 
     public class SslStreamNetworkStreamTest
     {
+        readonly ITestOutputHelper _output;
         private static readonly X509Certificate2 _serverCert;
         private static readonly X509Certificate2Collection _serverChain;
 
@@ -26,6 +28,11 @@ namespace System.Net.Security.Tests
         {
             TestHelper.CleanupCertificates(nameof(SslStreamNetworkStreamTest));
             (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
+        }
+
+        SslStreamNetworkStreamTest(ITestOutputHelper output)
+        {
+            _output = output;
         }
 
         [ConditionalFact]
@@ -351,6 +358,12 @@ namespace System.Net.Security.Tests
                 // Client should send chain without root CA. There is no good way how to know if the chain was built from certificates
                 // from wire or from system store. However, SslStream adds certificates from wire to ExtraStore in RemoteCertificateValidationCallback.
                 // So we verify the operation by checking the ExtraStore. On Windows, that includes leaf itself.
+                _output.WriteLine("RemoteCertificateValidationCallback called with {0} and {1} extra certificates", sslPolicyErrors, chain.ChainPolicy.ExtraStore.Count);
+                foreach (X509Certificate c in chain.ChainPolicy.ExtraStore)
+                {
+                    _output.WriteLine("received {0}", c.Subject);
+                }
+
                 Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1);
                 return true;
             };
