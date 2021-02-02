@@ -35,11 +35,6 @@ pal::string_t& extractor_t::extraction_dir()
         {
             pal::string_t cwd;
             pal::string_t relative_path(m_extraction_dir);
-            if (_X('/') != DIR_SEPARATOR)
-            {
-                replace_char(&relative_path, _X('/'), DIR_SEPARATOR);
-            }
-
             if (!pal::getcwd(&cwd))
             {
                 trace::error(_X("Failure processing application bundle."));
