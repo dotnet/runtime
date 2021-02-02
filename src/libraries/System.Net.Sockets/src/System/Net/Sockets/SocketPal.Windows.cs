@@ -1099,28 +1099,6 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe SocketError ReceiveMessageFromAsync(Socket socket, SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, ReceiveMessageOverlappedAsyncResult asyncResult)
-        {
-            asyncResult.SetUnmanagedStructures(buffer, offset, count, socketAddress, socketFlags);
-            try
-            {
-                int bytesTransfered;
-                SocketError errorCode = (SocketError)socket.WSARecvMsg(
-                    handle,
-                    Marshal.UnsafeAddrOfPinnedArrayElement(asyncResult._messageBuffer!, 0),
-                    out bytesTransfered,
-                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
-                    IntPtr.Zero);
-
-                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransfered);
-            }
-            catch
-            {
-                asyncResult.ReleaseUnmanagedStructures();
-                throw;
-            }
-        }
-
         public static unsafe SocketError AcceptAsync(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle, int receiveSize, int socketAddressSize, AcceptOverlappedAsyncResult asyncResult)
         {
             // The buffer needs to contain the requested data plus room for two sockaddrs and 16 bytes
