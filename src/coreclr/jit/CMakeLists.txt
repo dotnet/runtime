@@ -28,7 +28,7 @@ function(create_standalone_jit)
 
   if(TARGETDETAILS_ARCH STREQUAL "x64")
     set(JIT_ARCH_SOURCES ${JIT_AMD64_SOURCES})
-  elseif(TARGETDETAILS_ARCH STREQUAL "arm")
+  elseif((TARGETDETAILS_ARCH STREQUAL "arm") OR (TARGETDETAILS_ARCH STREQUAL "armel"))
     set(JIT_ARCH_SOURCES ${JIT_ARM_SOURCES})
   elseif(TARGETDETAILS_ARCH STREQUAL "x86")
     set(JIT_ARCH_SOURCES ${JIT_I386_SOURCES})
@@ -480,13 +480,6 @@ create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME
 # Enable profile guided optimization
 add_pgo(clrjit)
 
-
-if (CLR_CMAKE_HOST_ARCH_I386)
-     # On x86, build RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
-  create_standalone_jit(TARGET clrjit_unix_armel_${ARCH_HOST_NAME} OS unix ARCH arm)
-  target_compile_definitions(clrjit_unix_armel_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP)
-endif ()
-
 if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     create_standalone_jit(TARGET clrjit_unix_arm64_${ARCH_HOST_NAME} OS unix ARCH arm64)
@@ -496,6 +489,7 @@ if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
     create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64)
   endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
+  create_standalone_jit(TARGET clrjit_unix_armel_${ARCH_HOST_NAME} OS unix ARCH armel)
   create_standalone_jit(TARGET clrjit_unix_arm_${ARCH_HOST_NAME} OS unix ARCH arm)
   create_standalone_jit(TARGET clrjit_win_arm_${ARCH_HOST_NAME} OS win ARCH arm)
   create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
