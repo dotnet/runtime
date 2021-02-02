@@ -21,7 +21,12 @@ void* SystemNative_CreateAutoreleasePool(void)
     {
         // Start another no-op thread with the NSThread APIs to get NSThread into multithreaded mode.
         // The NSAutoReleasePool APIs can't be used on secondary threads until NSThread is in multithreaded mode.
+        // See https://developer.apple.com/documentation/foundation/nsautoreleasepool for more information.
         PlaceholderObject* placeholderObject = [[PlaceholderObject alloc] init];
+
+        // We need to use detachNewThreadSelector to put NSThread into multithreaded mode.
+        // We can't use detachNewThreadWithBlock since it doesn't change NSThread into multithreaded mode for some reason.
+        // See https://developer.apple.com/documentation/foundation/nswillbecomemultithreadednotification for more information.
         [NSThread detachNewThreadSelector:@selector(noop:) toTarget:placeholderObject withObject:nil];
     }
     assert([NSThread isMultiThreaded]);

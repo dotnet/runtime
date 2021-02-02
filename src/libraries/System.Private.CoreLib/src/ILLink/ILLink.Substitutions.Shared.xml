@@ -22,7 +22,7 @@
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
     <type fullname="System.Threading.ThreadPool" feature="System.Threading.ThreadPool.EnableDispatchAutoreleasePool" featurevalue="false">
-      <method signature="EnableDispatchAutoReleasePool" value="false" initialize="false" />
+      <method signature="EnableDispatchAutoreleasePool" value="false" initialize="false" />
     </type>
   </assembly>
 </linker>

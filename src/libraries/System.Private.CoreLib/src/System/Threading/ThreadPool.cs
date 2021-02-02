@@ -21,10 +21,6 @@ using System.Threading.Tasks;
 using Internal.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
-#if FEATURE_OBJCWRAPPERS
-using System.Runtime.InteropServices.ObjectiveC;
-#endif
-
 namespace System.Threading
 {
     internal sealed class ThreadPoolWorkQueue
@@ -696,7 +692,7 @@ namespace System.Threading
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
                     if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS() ||
-                        (OperatingSystem.IsMacOS() && ThreadPool.EnableDispatchAutoReleasePool))
+                        (OperatingSystem.IsMacOS() && ThreadPool.EnableDispatchAutoreleasePool))
                     {
                         DispatchItemWithAutoReleasePool(workItem, currentThread);
                     }
