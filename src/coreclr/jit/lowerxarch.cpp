@@ -1518,22 +1518,22 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == 32));
 
         if (((simdSize == 16) || (simdSize == 32)) &&
-            VectorConstantIsBroadcastedI64(vecCns, (argCnt == 1 ? argCnt : simdSize / 8)))
+            VectorConstantIsBroadcastedI64(vecCns, (argCnt == 1) ? argCnt : (simdSize / 8)))
         {
             // If we are a single constant or if all parts are the same, we might be able to optimize
             // this even further for certain values, such as Zero or AllBitsSet.
 
             if (vecCns.i64[0] == 0)
             {
-                node->gtOp1 = nullptr;
-                node->gtOp2 = nullptr;
+                node->gtOp1           = nullptr;
+                node->gtOp2           = nullptr;
                 node->gtHWIntrinsicId = (simdSize == 16) ? NI_Vector128_get_Zero : NI_Vector256_get_Zero;
                 return;
             }
             else if (vecCns.i64[0] == -1)
             {
-                node->gtOp1 = nullptr;
-                node->gtOp2 = nullptr;
+                node->gtOp1           = nullptr;
+                node->gtOp2           = nullptr;
                 node->gtHWIntrinsicId = (simdSize == 16) ? NI_Vector128_get_AllBitsSet : NI_Vector256_get_AllBitsSet;
                 return;
             }
