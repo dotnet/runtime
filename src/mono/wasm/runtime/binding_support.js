@@ -1458,7 +1458,7 @@ var BindingSupportLib = {
 					throw new Error("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
 			}
 
-			var [delegateRoot, argsRoot] = MONO.mono_wasm_new_roots ([this.extract_mono_obj (delegate_obj), undefined]);
+			var [delegateRoot] = MONO.mono_wasm_new_roots ([this.extract_mono_obj (delegate_obj)]);
 			try {
 				if (typeof delegate_obj.__mono_delegate_invoke__ === "undefined")
 					delegate_obj.__mono_delegate_invoke__ = this.mono_wasm_get_delegate_invoke(delegateRoot.value);
@@ -1470,7 +1470,7 @@ var BindingSupportLib = {
 
 				return this.call_method (delegate_obj.__mono_delegate_invoke__, delegateRoot.value, delegate_obj.__mono_delegate_invoke_sig__, js_args);
 			} finally {
-				MONO.mono_wasm_release_roots (delegateRoot, argsRoot);
+				MONO.mono_wasm_release_roots (delegateRoot);
 			}
 		},
 
