@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             if (func == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(func));
 
-            if (!Enum.IsDefined<MsgSendFunction>(msgSendFunction))
+            if (msgSendFunction < MsgSendFunction.ObjCMsgSend || msgSendFunction > MsgSendFunction.ObjCMsgSendSuperStret)
                 throw new ArgumentOutOfRangeException(nameof(msgSendFunction));
 
             if (!TrySetGlobalMessageSendCallback(msgSendFunction, func))
