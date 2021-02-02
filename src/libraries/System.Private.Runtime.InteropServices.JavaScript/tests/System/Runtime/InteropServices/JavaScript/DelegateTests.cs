@@ -120,31 +120,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void InvokeAnonDelegateMethod()
-        {
-            HelperMarshal._delAnonMethodStringResultValue = string.Empty;
-            Runtime.InvokeJS(@"
-                var del = App.call_test_method (""CreateDelegateAnonMethodReturnString"", [  ]);
-                del(""Hic sunt dracones"");
-            ");
-
-            Assert.Equal("Notification received for: Hic sunt dracones", HelperMarshal._delAnonMethodStringResultValue);
-        }
-
-
-        [Fact]
-        public static void InvokeLambdaDelegateMethod()
-        {
-            HelperMarshal._delLambdaMethodStringResultValue = string.Empty;
-            Runtime.InvokeJS(@"
-                var del = App.call_test_method (""CreateDelegateLambdaMethodReturnString"", [  ]);
-                del(""Hic sunt dracones"");
-            ");
-
-            Assert.Equal("Notification received for: Hic sunt dracones", HelperMarshal._delLambdaMethodStringResultValue);
-        }
-
-        [Fact]
         public static void InvokeDelegateMethodReturnString()
         {
             HelperMarshal._delMethodStringResultValue = string.Empty;
@@ -157,28 +132,33 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("Received: Hic sunt dracones", HelperMarshal._delMethodStringResultValue);
         }
 
-        [Fact]
-        public static void InvokeCustomMultiDelegateAcceptingString()
+        [Theory]
+        [InlineData("CreateCustomMultiCastDelegate_VoidString", "Moin")]
+        [InlineData("CreateMultiCastAction_VoidString", "MoinMoin")]
+        public static void InvokeMultiCastDelegate_VoidString(string creator, string testStr)
         {
-            HelperMarshal._custMultiDelStringResultValue = string.Empty;
-            Runtime.InvokeJS(@"
-                var del = App.call_test_method (""CreateCustomMultiDelegateAcceptingString"", [  ]);
-                del(""Moin"");
+            HelperMarshal._delegateCallResult = string.Empty;
+            Runtime.InvokeJS($@"
+                var del = App.call_test_method (""{creator}"", [  ]);
+                del(""{testStr}"");
             ");
-
-            Assert.Equal("  Hello, Moin!  GoodMorning, Moin!", HelperMarshal._custMultiDelStringResultValue);
+            Assert.Equal($"  Hello, {testStr}!  GoodMorning, {testStr}!", HelperMarshal._delegateCallResult);
         }
-
-        [Fact]
-        public static void InvokeCustomMultiActionAcceptingString()
+        
+        [Theory]
+        [InlineData("CreateDelegateFromAnonymousMethod_VoidString")]
+        [InlineData("CreateDelegateFromLambda_VoidString")]
+        [InlineData("CreateDelegateFromMethod_VoidString")]
+        [InlineData("CreateActionT_VoidString")]
+        public static void InvokeDelegate_VoidString(string creator)
         {
-            HelperMarshal._custMultiActionStringResultValue = string.Empty;
-            Runtime.InvokeJS(@"
-                var del = App.call_test_method (""CreateCustomMultiActionAcceptingString"", [  ]);
-                del(""MoinMoin"");
+            HelperMarshal._delegateCallResult = string.Empty;
+            var s = Runtime.InvokeJS($@"
+                var del = App.call_test_method (""{creator}"", [  ]);
+                del(""Hic sunt dracones"");
             ");
 
-            Assert.Equal("  Hello, MoinMoin!  GoodMorning, MoinMoin!", HelperMarshal._custMultiActionStringResultValue);
+            Assert.Equal("Notification received for: Hic sunt dracones", HelperMarshal._delegateCallResult);
         }
 
         public static IEnumerable<object[]> ArrayType_TestData()

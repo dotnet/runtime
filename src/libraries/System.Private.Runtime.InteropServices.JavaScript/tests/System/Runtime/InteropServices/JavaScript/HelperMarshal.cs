@@ -421,11 +421,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _delMethodStringResultValue = a;
         }
 
-        private static int TestInt2(int a, int b)
-        {
-            return a+b;
-        }
-
         // Create a method for a delegate.
         public static void DelegateMethod(string message)
         {
@@ -450,35 +445,45 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return handler;
         }
 
-        internal static string _delAnonMethodStringResultValue;
-        private static Del CreateDelegateAnonMethodReturnString()
+        internal static string _delegateCallResult;
+        private static Del CreateDelegateFromAnonymousMethod_VoidString()
         {
             // Instantiate the delegate.
-            Del handler = delegate(string name) { _delAnonMethodStringResultValue = $"Notification received for: {name}"; };
+            Del handler = delegate(string name) { _delegateCallResult = $"Notification received for: {name}"; };
             return handler;
         }
 
-        internal static string _delLambdaMethodStringResultValue;
-        private static Del CreateDelegateLambdaMethodReturnString()
+        private static Del CreateDelegateFromLambda_VoidString()
         {
             // Instantiate the delegate.
-            Del handler = (string name) => { _delLambdaMethodStringResultValue = $"Notification received for: {name}"; };
+            Del handler = (string name) => { _delegateCallResult = $"Notification received for: {name}"; };
             return handler;
         }
+
+        public static void DelegateMethod_VoidString(string name) => _delegateCallResult = $"Notification received for: {name}";
+
+        private static Del CreateDelegateFromMethod_VoidString()
+        {
+            // Instantiate the delegate.
+            Del handler = DelegateMethod_VoidString;
+            return handler;
+        }
+
+        private static Action<string> CreateActionT_VoidString()
+            => (string name) => _delegateCallResult = $"Notification received for: {name}";
 
         static void Hello(string s)
         {
-            _custMultiDelStringResultValue += $"  Hello, {s}!";
+            _delegateCallResult += $"  Hello, {s}!";
         }
 
         static void GoodMorning(string s)
         {
-            _custMultiDelStringResultValue += $"  GoodMorning, {s}!";
+            _delegateCallResult += $"  GoodMorning, {s}!";
         }
 
         delegate void CustomDelStr(string s);
-        internal static string _custMultiDelStringResultValue;
-        private static CustomDelStr CreateCustomMultiDelegateAcceptingString()
+        private static CustomDelStr CreateCustomMultiCastDelegate_VoidString()
         {
             CustomDelStr hiDel, mornDel, multiDel;
             hiDel = Hello;
@@ -488,22 +493,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return multiDel;
         }
 
-        static void HelloHello(string s)
-        {
-            _custMultiActionStringResultValue += $"  Hello, {s}!";
-        }
-
-        static void GoodMorningMorning(string s)
-        {
-            _custMultiActionStringResultValue += $"  GoodMorning, {s}!";
-        }
-
-        internal static string _custMultiActionStringResultValue;
-        private static Action<string> CreateCustomMultiActionAcceptingString()
+        private static Action<string> CreateMultiCastAction_VoidString()
         {
             Action<string> hiDel, mornDel, multiDel;
-            hiDel = HelloHello;
-            mornDel = GoodMorningMorning;
+            hiDel = Hello;
+            mornDel = GoodMorning;
             multiDel = hiDel + mornDel;
 
             return multiDel;
