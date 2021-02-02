@@ -36,9 +36,9 @@ internal static partial class Interop
             if (processInfo != IntPtr.Zero)
             {
 #if TARGET_ARM64
-                NSOperatingSystemVersion osVersion = osversion_objc_msgSend(processInfo, sel_getUid("operatingSystemVersion"));
+                NSOperatingSystemVersion osVersion = NSOperatingSystemVersion_objc_msgSend(processInfo, sel_getUid("operatingSystemVersion"));
 #else
-                objc_msgSend_stret_rosversion(out NSOperatingSystemVersion osVersion, processInfo, sel_getUid("operatingSystemVersion"));
+                NSOperatingSystemVersion_objc_msgSend_stret(out NSOperatingSystemVersion osVersion, processInfo, sel_getUid("operatingSystemVersion"));
 #endif
                 checked
                 {
@@ -61,9 +61,9 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.libobjc, EntryPoint = "obj_msgSend")]
-        private static extern NSOperatingSystemVersion osversion_objc_msgSend(IntPtr basePtr, IntPtr selector);
+        private static extern NSOperatingSystemVersion NSOperatingSystemVersion_objc_msgSend(IntPtr basePtr, IntPtr selector);
 
         [DllImport(Libraries.libobjc, EntryPoint = "obj_msgSend_stret")]
-        private static extern void objc_msgSend_stret_rosversion(out NSOperatingSystemVersion osVersion, IntPtr basePtr, IntPtr selector);
+        private static extern void NSOperatingSystemVersion_objc_msgSend_stret(out NSOperatingSystemVersion osVersion, IntPtr basePtr, IntPtr selector);
     }
 }
