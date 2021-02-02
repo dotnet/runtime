@@ -108,9 +108,9 @@ public: // Functions operating on a registered global instance for tracker suppo
 
 #endif // FEATURE_COMWRAPPERS
 
-#ifdef FEATURE_OBJCWRAPPERS
+#ifdef FEATURE_OBJCBRIDGE
 
-class ObjCWrappersNative
+class ObjCBridgeNative
 {
 public:
     // See MsgSendFunction in Bridge.cs
@@ -134,7 +134,7 @@ public: // static
         _Out_ void** deallocImpl);
 };
 
-#endif // FEATURE_OBJCWRAPPERS
+#endif // FEATURE_OBJCBRIDGE
 
 class Interop
 {

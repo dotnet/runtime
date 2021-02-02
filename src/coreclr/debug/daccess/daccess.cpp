@@ -8156,7 +8156,7 @@ void DacHandleWalker::GetRefCountedHandleInfo(
     if (pIsPegged)
         *pIsPegged = FALSE;
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCWRAPPERS)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCBRIDGE)
     if (uType == HNDTYPE_REFCOUNTED)
     {
 #if defined(FEATURE_COMINTEROP)
@@ -8173,11 +8173,11 @@ void DacHandleWalker::GetRefCountedHandleInfo(
             return;
         }
 #endif
-#if defined(FEATURE_OBJCWRAPPERS)
-        // [TODO] FEATURE_OBJCWRAPPERS
-#endif // FEATURE_OBJCWRAPPERS
+#if defined(FEATURE_OBJCBRIDGE)
+        // [TODO] FEATURE_OBJCBRIDGE
+#endif // FEATURE_OBJCBRIDGE
     }
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCWRAPPERS
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCBRIDGE
 
     if (pRefCount)
         *pRefCount = 0;
