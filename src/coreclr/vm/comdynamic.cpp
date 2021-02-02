@@ -887,7 +887,7 @@ void UpdateRuntimeStateForAssemblyCustomAttribute(Module* pModule, mdToken tkCus
         }
     }
 
-    // Debuggable attribute processing
+    // InternalsVisibleTo and IgnoresAccessChecksTo attribute processing
     if (((strcmp(szNamespace, FRIEND_ASSEMBLY_TYPE_NAMESPACE) == 0) && (strcmp(szName, FRIEND_ASSEMBLY_TYPE_NAME) == 0)) ||
         ((strcmp(szNamespace, SUBJECT_ASSEMBLY_TYPE_NAMESPACE) == 0) && (strcmp(szName, SUBJECT_ASSEMBLY_TYPE_NAME) == 0)))
     {
@@ -929,15 +929,6 @@ void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModul
 
     if (FAILED(hr))
     {
-        // See if the metadata engine gave us any error information.
-        SafeComHolderPreemp<IErrorInfo> pIErrInfo;
-        BSTRHolder bstrMessage;
-        if (SafeGetErrorInfo(&pIErrInfo) == S_OK)
-        {
-            if (SUCCEEDED(pIErrInfo->GetDescription(&bstrMessage)) && bstrMessage != NULL)
-                COMPlusThrow(kArgumentException, IDS_EE_INVALID_CA_EX, bstrMessage);
-        }
-
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_CA);
     }
 

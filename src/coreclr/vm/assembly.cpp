@@ -1247,7 +1247,6 @@ void Assembly::CacheFriendAssemblyInfo()
         if (m_pFriendAssemblyDescriptor == NULL)
         {
             m_pFriendAssemblyDescriptor = pFriendAssemblies.Extract();
-            pFriendAssemblies.SuppressRelease();
         }
     }
 } // void Assembly::CacheFriendAssemblyInfo()
@@ -1287,7 +1286,6 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
                     m_pFriendAssemblyDescriptor->Release();
 
                 m_pFriendAssemblyDescriptor = pFriendAssemblies.Extract();
-                pFriendAssemblies.SuppressRelease();
                 return;
             }
             else
@@ -2437,8 +2435,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
         }
     }
 
-    pFriendAssemblies.SuppressRelease();
-    return pFriendAssemblies.Extract();
+    return pFriendAssemblies;
 }
 
 //---------------------------------------------------------------------------------------
