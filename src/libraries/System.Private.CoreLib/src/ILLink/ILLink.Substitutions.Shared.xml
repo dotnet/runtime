@@ -22,10 +22,10 @@
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
     <type fullname="System.Resources.ManifestBasedResourceGroveler" feature="System.Resources.AllowReflectionForNonPrimitiveObjects" featurevalue="false">
-      <method signature="System.Boolean AllowUsingReflectionToLoadTypes()" body="stub" value="false" />
+      <method signature="System.Boolean get_AllowReflectionForNonPrimitiveObjects()" body="stub" value="false" />
     </type>
     <type fullname="System.Resources.ResourceReader" feature="System.Resources.AllowReflectionForNonPrimitiveObjects" featurevalue="false">
-      <method signature="System.Boolean AllowUsingReflectionToLoadTypes()" body="stub" value="false" />
+      <method signature="System.Boolean get_AllowReflectionForNonPrimitiveObjects()" body="stub" value="false" />
     </type>
   </assembly>
 </linker>

@@ -84,9 +84,6 @@ namespace System.Resources
         // avoid allocating String objects and the like.
         private UnmanagedMemoryStream? _ums;
 
-        // AppContext switch to check whether use of Reflection for custom types is allowed
-        private static readonly bool s_allowUsingReflectionToLoadTypes = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveObjects", out bool allowReflection) ? allowReflection : true;
-
         // Version number of .resources file, for compatibility
         private int _version;
 
@@ -165,9 +162,7 @@ namespace System.Resources
             }
         }
 
-        // Adding static method that is not inlined so it can be substituted away by the linker to disallow the use of serialization.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool AllowUsingReflectionToLoadTypes() => s_allowUsingReflectionToLoadTypes;
+        private static bool AllowReflectionForNonPrimitiveObjects { get; } = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveObjects", out bool allowReflection) ? allowReflection : true;
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
@@ -931,7 +926,7 @@ namespace System.Resources
             }
             if (_typeTable[typeIndex] == null)
             {
-                if (AllowUsingReflectionToLoadTypes())
+                if (AllowReflectionForNonPrimitiveObjects)
                 {
                     UseReflectionToGetType(typeIndex);
                 }
@@ -944,7 +939,7 @@ namespace System.Resources
             return _typeTable[typeIndex]!;
         }
 
-        [RequiresUnreferencedCode("This method will use reflection to get a type from a string read on the stream.")]
+        [RequiresUnreferencedCode("This method will use reflection to get a type from a string read from the stream.")]
         private void UseReflectionToGetType(int typeIndex)
         {
             long oldPos = _store.BaseStream.Position;

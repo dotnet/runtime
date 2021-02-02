@@ -36,11 +36,7 @@ namespace System.Resources
     internal partial class ManifestBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;
-        private static readonly bool s_allowUsingReflectionToLoadTypes = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveObjects", out bool allowReflection) ? allowReflection : true;
-
-        // Adding static method that is not inlined so it can be substituted away by the linker to disallow the use of serialization.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool AllowUsingReflectionToLoadTypes() => s_allowUsingReflectionToLoadTypes;
+        private static bool AllowReflectionForNonPrimitiveObjects { get; } = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveObjects", out bool allowReflection) ? allowReflection : true;
 
         public ManifestBasedResourceGroveler(ResourceManager.ResourceManagerMediator mediator)
         {
@@ -238,7 +234,7 @@ namespace System.Resources
                     }
                     else
                     {
-                        if (AllowUsingReflectionToLoadTypes())
+                        if (AllowReflectionForNonPrimitiveObjects)
                         {
                             Debug.Assert(readerTypeName != null, "Reader Type name should be set");
                             Debug.Assert(resSetTypeName != null, "ResourceSet Type name should be set");

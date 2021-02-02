@@ -135,6 +135,9 @@
   <data name="ObjectDisposed_ResourceSet" xml:space="preserve">
     <value>Cannot access a closed resource set.</value>
   </data>
+  <data name="ResourceManager_ReflectionNotAllowed" xml:space="preserve">
+    <value>Use of ResourceManager for non primitive types is disabled. Set the 'System.Resources.AllowReflectionForNonPrimitiveObjects' AppContext switch to true in order to enable it.</value>
+  </data>
   <data name="ResourceReaderIsClosed" xml:space="preserve">
     <value>ResourceReader is closed.</value>
   </data>
