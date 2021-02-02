@@ -1857,8 +1857,6 @@
              Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs" Condition="'$(TargetsLinux)' == 'true'"
              Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.AutoreleasePool.cs"
-             Link="Common\Interop\OSX\System.Native\Interop.AutoreleasePool.cs" />
     <Compile Include="$(CommonPath)System\IO\StringParser.cs" Condition="'$(TargetsLinux)' == 'true'"
              Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs" Condition="'$(IsOSXLike)' == 'true'"
@@ -1889,6 +1887,14 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 
+      Include unconditionally to simplify code-structuring since the entry-points are available on all platforms
+      but assert with a not-supported error code on unsupported ones.
+    -->
+    <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.AutoreleasePool.cs"
+             Link="Common\Interop\OSX\System.Native\Interop.AutoreleasePool.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsX86Intrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />

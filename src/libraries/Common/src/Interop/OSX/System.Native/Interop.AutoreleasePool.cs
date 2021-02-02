@@ -9,9 +9,17 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [SupportedOSPlatform("macos")]
+        [SupportedOSPlatform("ios")]
+        [SupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("watchos")]
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateAutoreleasePool")]
         internal static extern IntPtr CreateAutoreleasePool();
 
+        [SupportedOSPlatform("macos")]
+        [SupportedOSPlatform("ios")]
+        [SupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("watchos")]
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_DrainAutoreleasePool")]
         internal static extern void DrainAutoreleasePool(IntPtr ptr);
     }
