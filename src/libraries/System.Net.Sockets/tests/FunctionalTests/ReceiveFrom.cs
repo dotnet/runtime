@@ -74,18 +74,12 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task NotBound_Throws_InvalidOperationException()
         {
-            using Socket socket = CreateSocket();
-
-            // ReceiveFromAsync(saea) throws SocketException:
+            // ReceiveFromAsync(saea) does not throw.
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/47714")]
-            if (UsesEap)
-            {
-                await Assert.ThrowsAsync<SocketException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
-            }
-            else
-            {
-                await AssertThrowsSynchronously<InvalidOperationException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
-            }
+            if (UsesEap) return;
+
+            using Socket socket = CreateSocket();
+            await AssertThrowsSynchronously<InvalidOperationException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
         }
 
         [Theory]
