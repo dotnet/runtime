@@ -60,10 +60,10 @@ internal static partial class Interop
             return new Version(major, minor, patch);
         }
 
-        [DllImport(Libraries.libobjc, EntryPoint = "obj_msgSend")]
+        [DllImport(Libraries.libobjc, EntryPoint = "objc_msgSend")]
         private static extern NSOperatingSystemVersion osversion_objc_msgSend(IntPtr basePtr, IntPtr selector);
 
-        [DllImport(Libraries.libobjc, EntryPoint = "obj_msgSend_stret")]
+        [DllImport(Libraries.libobjc, EntryPoint = "objc_msgSend_stret")]
         private static extern void objc_msgSend_stret_rosversion(out NSOperatingSystemVersion osVersion, IntPtr basePtr, IntPtr selector);
     }
 }
