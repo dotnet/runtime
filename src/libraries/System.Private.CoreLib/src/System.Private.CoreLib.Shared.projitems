@@ -1964,6 +1964,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjcWrappers)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Bridge.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Flags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ManagedObjectWrapperLifetime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Instance.cs" />
@@ -1971,6 +1972,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Wrappers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjcWrappers)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Bridge.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Flags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ManagedObjectWrapperLifetime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Wrappers.PlatformNotSupported.cs" />

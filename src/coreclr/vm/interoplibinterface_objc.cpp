@@ -11,20 +11,69 @@
 
 #include "interoplibinterface.h"
 
-BOOL QCALLTYPE ObjCWrappersNative::TrySetGlobalMessageSendCallbacks(
-    _In_ void* fptr_objc_msgSend,
-    _In_ void* fptr_objc_msgSend_fpret,
-    _In_ void* fptr_objc_msgSend_stret,
-    _In_ void* fptr_objc_msgSendSuper,
-    _In_ void* fptr_objc_msgSendSuper_stret)
+#include <pinvokeoverride.h>
+
+#define OBJC_MSGSEND "objc_msgSend"
+
+namespace
+{
+    BOOL s_msgSendOverridden = FALSE;
+    void* s_msgSendOverrides[ObjCWrappersNative::MsgSendFunction::Last + 1] = {};
+
+    const char* ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
+    const char* MsgSendEntryPoints[ObjCWrappersNative::MsgSendFunction::Last + 1] =
+    {
+        OBJC_MSGSEND,
+        OBJC_MSGSEND "_fpret",
+        OBJC_MSGSEND "_stret",
+        OBJC_MSGSEND "Super",
+        OBJC_MSGSEND "Super_stret",
+    };
+
+    const void* STDMETHODCALLTYPE MessageSendPInvokeOverride(_In_z_ const char* libraryName, _In_z_ const char* entrypointName)
+    {
+        // All overrides are in libobjc
+        if (strcmp(libraryName, ObjectiveCLibrary) != 0)
+            return nullptr;
+
+        // All overrides start with objc_msgSend
+        if (strncmp(entrypointName, OBJC_MSGSEND, _countof(OBJC_MSGSEND) -1) != 0)
+            return nullptr;
+
+        for (int i = 0; i < _countof(MsgSendEntryPoints); ++i)
+        {
+            void* funcMaybe = s_msgSendOverrides[i];
+            if (funcMaybe != nullptr
+                && strcmp(entrypointName, MsgSendEntryPoints[i]) == 0)
+            {
+                return funcMaybe;
+            }
+        }
+
+        return nullptr;
+    }
+}
+
+BOOL QCALLTYPE ObjCWrappersNative::TrySetGlobalMessageSendCallback(
+    _In_ MsgSendFunction msgSendFunction,
+    _In_ void* fptr)
 {
     QCALL_CONTRACT;
 
+    bool success;
+
     BEGIN_QCALL;
+
+    _ASSERTE(msgSendFunction >= 0 && msgSendFunction < _countof(s_msgSendOverrides));
+    success = FastInterlockCompareExchangePointer(&s_msgSendOverrides[msgSendFunction], fptr, NULL) == NULL;
+
+    // Set P/Invoke override callback if we haven't already
+    if (success && FALSE == FastInterlockCompareExchange((LONG*)&s_msgSendOverridden, TRUE, FALSE))
+        PInvokeOverride::SetPInvokeOverride(&MessageSendPInvokeOverride, PInvokeOverride::Source::ObjectiveCInterop);
 
     END_QCALL;
 
-    return FALSE;
+    return success ? TRUE : FALSE;
 }
 
 namespace
