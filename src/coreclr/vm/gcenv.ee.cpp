@@ -317,8 +317,8 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     if (ComWrappersNative::HasManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
         return isRooted;
 #endif
-#ifdef FEATURE_OBJCWRAPPERS
-    // [TODO] FEATURE_OBJCWRAPPERS
+#ifdef FEATURE_OBJCBRIDGE
+    // [TODO] FEATURE_OBJCBRIDGE
 #endif
     return false;
 }
@@ -428,7 +428,7 @@ bool GCToEEInterface::IsPreemptiveGCDisabled()
     WRAPPER_NO_CONTRACT;
 
     Thread* pThread = ::GetThread();
-    
+
     return (pThread && pThread->PreemptiveGCDisabled());
 }
 
@@ -1610,7 +1610,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
             DACNotify::DoGCNotification(gea);
         }
     }
-    
+
     if (gcGenAnalysisState == GcGenAnalysisState::Enabled)
     {
 #ifndef GEN_ANALYSIS_STRESS

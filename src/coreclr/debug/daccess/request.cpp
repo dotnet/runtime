@@ -3272,9 +3272,9 @@ HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 {
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_VARIABLE, HNDTYPE_DEPENDENT,
                             HNDTYPE_ASYNCPINNED, HNDTYPE_SIZEDREF,
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCWRAPPERS)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCBRIDGE)
                             HNDTYPE_REFCOUNTED,
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCWRAPPERS
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCBRIDGE
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
                             HNDTYPE_WEAK_NATIVE_COM
 #endif // FEATURE_COMINTEROP
@@ -3313,9 +3313,9 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
 
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_VARIABLE, HNDTYPE_DEPENDENT,
                             HNDTYPE_ASYNCPINNED, HNDTYPE_SIZEDREF,
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCWRAPPERS)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCBRIDGE)
                             HNDTYPE_REFCOUNTED,
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCWRAPPERS
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCBRIDGE
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
                             HNDTYPE_WEAK_NATIVE_COM
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
@@ -4844,7 +4844,7 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
                 {
                     comWrappers.Push(TO_CDADDR(iter->Value()));
                     ++iter;
-                
+
                 }
             }
 
@@ -4880,7 +4880,7 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
     return E_NOTIMPL;
 #endif // FEATURE_COMWRAPPERS
 }
-    
+
 HRESULT ClrDataAccess::IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappersCCW)
 {
 #ifdef FEATURE_COMWRAPPERS
@@ -4890,12 +4890,12 @@ HRESULT ClrDataAccess::IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappers
     }
 
     SOSDacEnter();
-    
+
     if (isComWrappersCCW != NULL)
     {
         TADDR managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccw);
         *isComWrappersCCW = managedObjectWrapperPtr != NULL;
-        hr = *isComWrappersCCW ? S_OK : S_FALSE; 
+        hr = *isComWrappersCCW ? S_OK : S_FALSE;
     }
 
     SOSDacLeave();
@@ -4914,12 +4914,12 @@ HRESULT ClrDataAccess::GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRES
     }
 
     SOSDacEnter();
-    
+
     TADDR managedObjectWrapperPtr = DACGetManagedObjectWrapperFromCCW(ccw);
     if (managedObjectWrapperPtr != NULL)
     {
         PTR_ManagedObjectWrapper pMOW(managedObjectWrapperPtr);
-        
+
         if (managedObject != NULL)
         {
             OBJECTREF managedObjectRef;
@@ -4960,7 +4960,7 @@ HRESULT ClrDataAccess::IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappers
     }
 
     SOSDacEnter();
-    
+
     if (isComWrappersRCW != NULL)
     {
         PTR_ExternalObjectContext pRCW(TO_TADDR(rcw));
@@ -4983,7 +4983,7 @@ HRESULT ClrDataAccess::IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappers
 
         PTR_InteropSyncBlockInfo pInfo = NULL;
         if (stillValid)
-        {   
+        {
             pInfo = pSyncBlk->GetInteropInfoNoCreate();
             if(pInfo == NULL)
             {
@@ -4997,11 +4997,11 @@ HRESULT ClrDataAccess::IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappers
         }
 
         *isComWrappersRCW = stillValid;
-        hr = *isComWrappersRCW ? S_OK : S_FALSE; 
+        hr = *isComWrappersRCW ? S_OK : S_FALSE;
     }
 
     SOSDacLeave();
-    return hr;    
+    return hr;
 #else // FEATURE_COMWRAPPERS
     return E_NOTIMPL;
 #endif // FEATURE_COMWRAPPERS
@@ -5016,7 +5016,7 @@ HRESULT ClrDataAccess::GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRES
     }
 
     SOSDacEnter();
-    
+
     PTR_ExternalObjectContext pEOC(TO_TADDR(rcw));
     if (identity != NULL)
     {
