@@ -603,12 +603,16 @@ mono_wasm_find_corlib_class (const char *namespace, const char *name)
 EMSCRIPTEN_KEEPALIVE MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
+	if (!assembly)
+		return NULL;
 	return mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
+	if (!klass)
+		return NULL;
 	return mono_class_get_method_from_name (klass, name, arguments);
 }
 
@@ -693,6 +697,8 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 			return method;
 
 		MonoClass *klass = mono_method_get_class (method);
+		if (!klass)
+			return NULL;
 		char *async_name = malloc (name_length + 2);
 		snprintf (async_name, name_length + 2, "%s$", name);
 
@@ -759,6 +765,14 @@ mono_wasm_string_from_utf16 (const mono_unichar2 * chars, int length)
 static int
 class_is_task (MonoClass *klass)
 {
+	if (!klass)
+		return 0;
+
+	char * class_name = mono_class_get_name (klass);
+	EM_ASM({
+		console.debug("class_is_task(", Module.UTF8ToString ($0), ")");
+	}, class_name);
+
 	if (!task_class && !resolved_task_class) {
 		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
 		resolved_task_class = 1;
@@ -814,7 +828,9 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_VOID 30
 
 // errors
-#define MARSHAL_BUFFER_TOO_SMALL 512
+#define MARSHAL_ERROR_BUFFER_TOO_SMALL 512
+#define MARSHAL_ERROR_NULL_CLASS_POINTER 513
+#define MARSHAL_ERROR_NULL_TYPE_POINTER 514
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -914,7 +930,7 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 			return MARSHAL_TYPE_VOID;
 		if (mono_class_is_enum (klass))
 			return MARSHAL_TYPE_ENUM;
-		if (!mono_type_is_reference (type)) //vt
+		if (type && !mono_type_is_reference (type)) //vt
 			return MARSHAL_TYPE_VT;
 		if (klass && mono_class_is_delegate (klass))
 			return MARSHAL_TYPE_DELEGATE;
@@ -945,11 +961,15 @@ mono_wasm_get_obj_type (MonoObject *obj)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if (!klass)
+		return MARSHAL_ERROR_NULL_CLASS_POINTER;
 	if ((klass == mono_get_string_class ()) &&
 		mono_string_instance_is_interned ((MonoString *)obj))
 		return MARSHAL_TYPE_STRING_INTERNED;
 
 	MonoType *type = mono_class_get_type (klass);
+	if (!type)
+		return MARSHAL_ERROR_NULL_TYPE_POINTER;
 	obj = NULL;
 
 	int mono_type = mono_type_get_type (type);
@@ -966,12 +986,12 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 	double *resultD = result;
 
 	if (!result)
-		return MARSHAL_BUFFER_TOO_SMALL;
+		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
 
 	if (result_capacity < 16) {
 		if (result_capacity >= sizeof (int64_t))
 			*resultL = 0;
-		return MARSHAL_BUFFER_TOO_SMALL;
+		return MARSHAL_ERROR_BUFFER_TOO_SMALL;
 	}
 
 	if (!obj) {
@@ -981,6 +1001,11 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
+	if (!klass) {
+		*resultL = 0;
+		return MARSHAL_ERROR_NULL_CLASS_POINTER;
+	}
+	
 	if ((klass == mono_get_string_class ()) &&
 		mono_string_instance_is_interned ((MonoString *)obj)) {
 		*resultL = 0;
@@ -988,9 +1013,18 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 	}
 
 	MonoType *type = mono_class_get_type (klass), *original_type = type;
+	if (!type) {
+		*resultL = 0;
+		return MARSHAL_ERROR_NULL_TYPE_POINTER;
+	}
 
 	if (mono_class_is_enum (klass))
 		type = mono_type_get_underlying_type (type);
+
+	if (!type) {
+		*resultL = 0;
+		return MARSHAL_ERROR_NULL_TYPE_POINTER;
+	}
 	
 	int mono_type = mono_type_get_type (type);
 	
@@ -1047,7 +1081,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 				// Check whether the result buffer is big enough for the struct and padding
 				if (result_capacity < required_size) {
 					*resultL = 0;
-					return MARSHAL_BUFFER_TOO_SMALL;
+					return MARSHAL_ERROR_BUFFER_TOO_SMALL;
 				}
 
 				// Store a header before the struct data with the size of the data and its class
@@ -1200,6 +1234,11 @@ void build_signature_info_record (MonoType *type, int* resultMtype, MonoClass** 
 	}
 	int mono_type = mono_type_get_type (type);
 	MonoClass * klass = mono_type_get_class (type);
+	if (!klass) {
+		*resultMtype = 0;
+		*resultClass = 0;
+		return;
+	}
 	*resultMtype = mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
 	*resultClass = klass;
 

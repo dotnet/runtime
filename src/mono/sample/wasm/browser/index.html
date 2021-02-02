@@ -36,15 +36,10 @@
 
       var App = {
         init: function () {
-          var ret = BINDING.call_static_method("[Wasm.Browser.Sample] Sample.Test:TestMeaning", []);
-          document.getElementById("out").innerHTML = ret;
-
-          if (is_testing)
-          {
-            console.debug(`ret: ${ret}`);
-            let exit_code = ret == 42 ? 0 : 1;
-            test_exit(exit_code);
-          }
+           console.log(`calling mono_bind_static_method now`);
+//           this.async_method = Module.mono_bind_static_method ("[Wasm.Browser.Sample] Math:AsyncTest");
+           this.async_method = Module.mono_bind_static_method ("[Wasm.Browser.Sample] Math/NestedInMath:AsyncTest");
+           this.async_method("helo", 5);
         },
       };
     </script>
