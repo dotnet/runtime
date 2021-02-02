@@ -509,13 +509,121 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return multiDel;
         }
 
-        internal static Uint8Array _funcActionBufferResultValue;
+        internal static JSObject _funcActionBufferObjectResultValue;
         internal static int _funcActionBufferResultLengthValue;
+        private static Func<Uint8ClampedArray, Action<Uint8ClampedArray>> CreateFunctionAcceptingUint8ClampedArray()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
         private static Func<Uint8Array, Action<Uint8Array>> CreateFunctionAcceptingUint8Array()
         {
             return (buffer) =>
             {
-                _funcActionBufferResultValue = buffer;
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Int8Array, Action<Int8Array>> CreateFunctionAcceptingInt8Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Uint16Array, Action<Uint16Array>> CreateFunctionAcceptingUint16Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Int16Array, Action<Int16Array>> CreateFunctionAcceptingInt16Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Uint32Array, Action<Uint32Array>> CreateFunctionAcceptingUint32Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Int32Array, Action<Int32Array>> CreateFunctionAcceptingInt32Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Float32Array, Action<Float32Array>> CreateFunctionAcceptingFloat32Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Float64Array, Action<Float64Array>> CreateFunctionAcceptingFloat64Array()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
+                return (i1) =>
+                {
+                    _funcActionBufferResultLengthValue = i1.Length;
+                };
+            };
+        }
+
+        private static Func<Array, Action<Array>> CreateFunctionAcceptingArray()
+        {
+            return (buffer) =>
+            {
+                _funcActionBufferObjectResultValue = buffer;
                 return (i1) =>
                 {
                     _funcActionBufferResultLengthValue = i1.Length;
