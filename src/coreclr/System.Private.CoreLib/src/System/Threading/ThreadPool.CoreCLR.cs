@@ -234,7 +234,7 @@ namespace System.Threading
                 ? AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false)
                 : GetEnableWorkerTrackingNative();
 
-        internal static readonly bool EnableDispatchAutoreleasePool =
+        internal static bool EnableDispatchAutoreleasePool =>
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableDispatchAutoreleasePool", false);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
