@@ -49,7 +49,7 @@ MONO_API HRESULT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid,
                                             LPCWSTR lpApplicationGroupId,
                                             HMODULE hmodTargetCLR,
                                             void **ppCordb) {
-  DEBUG_PRINTF(1, "CoreCLRCreateCordbObjectEx \n");
+  LOG((LF_CORDB, LL_INFO100000, "CoreCLRCreateCordbObjectEx\n"));
   *ppCordb = new Cordb();
   return S_OK;
 }
@@ -67,18 +67,18 @@ static void debugger_thread(void *ppProcess) {
 }
 
 HRESULT Cordb::Initialize(void) {
-  DEBUG_PRINTF(1, "Cordb - Initialize - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "Cordb - Initialize - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT Cordb::Terminate(void) {
-  DEBUG_PRINTF(1, "Cordb - Terminate - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "Cordb - Terminate - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT Cordb::SetManagedHandler(
     /* [in] */ ICorDebugManagedCallback *pCallback) {
-  DEBUG_PRINTF(1, "Cordb - SetManagedHandler - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "Cordb - SetManagedHandler - IMPLEMENTED\n"));
   this->pCallback = pCallback;
   this->pCallback->AddRef();
 
@@ -87,7 +87,8 @@ HRESULT Cordb::SetManagedHandler(
 
 HRESULT Cordb::SetUnmanagedHandler(
     /* [in] */ ICorDebugUnmanagedCallback *pCallback) {
-  DEBUG_PRINTF(1, "Cordb - SetUnmanagedHandler - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "Cordb - SetUnmanagedHandler - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -104,7 +105,7 @@ HRESULT Cordb::CreateProcess(
     /* [in] */ LPPROCESS_INFORMATION lpProcessInformation,
     /* [in] */ CorDebugCreateProcessFlags debuggingFlags,
     /* [out] */ ICorDebugProcess **ppProcess) {
-  DEBUG_PRINTF(1, "Cordb - CreateProcess - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "Cordb - CreateProcess - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -112,7 +113,7 @@ HRESULT Cordb::DebugActiveProcess(
     /* [in] */ DWORD id,
     /* [in] */ BOOL win32Attach,
     /* [out] */ ICorDebugProcess **ppProcess) {
-  DEBUG_PRINTF(1, "Cordb - DebugActiveProcess - IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO1000000, "Cordb - DebugActiveProcess - IMPLEMENTED\n"));
   *ppProcess = new CordbProcess();
   ((CordbProcess *)*ppProcess)->cordb = this;
 
@@ -124,21 +125,23 @@ HRESULT Cordb::DebugActiveProcess(
 
 HRESULT Cordb::EnumerateProcesses(
     /* [out] */ ICorDebugProcessEnum **ppProcess) {
-  DEBUG_PRINTF(1, "Cordb - EnumerateProcesses - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "Cordb - EnumerateProcesses - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT Cordb::GetProcess(
     /* [in] */ DWORD dwProcessId,
     /* [out] */ ICorDebugProcess **ppProcess) {
-  DEBUG_PRINTF(1, "Cordb - GetProcess - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "Cordb - GetProcess - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
 HRESULT Cordb::CanLaunchOrAttach(
     /* [in] */ DWORD dwProcessId,
     /* [in] */ BOOL win32DebuggingEnabled) {
-  DEBUG_PRINTF(1, "Cordb - CanLaunchOrAttach - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "Cordb - CanLaunchOrAttach - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -148,6 +151,9 @@ Cordb::Cordb() {
   threads = g_ptr_array_new();
   functions = g_ptr_array_new();
   modules = g_hash_table_new(NULL, NULL);
+#ifdef LOGGING
+  InitializeLogging();
+#endif
 }
 
 CordbFunction *Cordb::findFunction(int id) {
@@ -177,7 +183,7 @@ CordbFunction *Cordb::findFunctionByToken(int token) {
 HRESULT Cordb::QueryInterface(
     /* [in] */ REFIID riid,
     /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject) {
-  DEBUG_PRINTF(1, "Cordb - QueryInterface - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "Cordb - QueryInterface - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -200,7 +206,7 @@ HRESULT Cordb::CreateProcessEx(
     /* [in] */ LPPROCESS_INFORMATION lpProcessInformation,
     /* [in] */ CorDebugCreateProcessFlags debuggingFlags,
     /* [out] */ ICorDebugProcess **ppProcess) {
-  DEBUG_PRINTF(1, "Cordb - CreateProcessEx - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000, "Cordb - CreateProcessEx - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -209,7 +215,8 @@ HRESULT Cordb::DebugActiveProcessEx(
     /* [in] */ DWORD dwProcessId,
     /* [in] */ BOOL fWin32Attach,
     /* [out] */ ICorDebugProcess **ppProcess) {
-  DEBUG_PRINTF(1, "Cordb - DebugActiveProcessEx - NOT IMPLEMENTED\n");
+  LOG((LF_CORDB, LL_INFO100000,
+       "Cordb - DebugActiveProcessEx - NOT IMPLEMENTED\n"));
   return S_OK;
 }
 
@@ -244,14 +251,16 @@ void Connection::receive() {
         recv(connect_socket, (char *)recvbuf_header.buf, HEADER_LENGTH, 0);
 
     if (iResult == -1) {
-        ppCordb->pCallback->ExitProcess(static_cast<ICorDebugProcess*>(ppProcess));
-        break;
+      ppCordb->pCallback->ExitProcess(
+          static_cast<ICorDebugProcess *>(ppProcess));
+      break;
     }
     while (iResult == 0) {
-      DEBUG_PRINTF(1,
-                   "[dbg] transport_recv () sleep returned %d, expected %d.\n",
-                   iResult, HEADER_LENGTH);
-      iResult = recv(connect_socket, (char *)recvbuf_header.buf, HEADER_LENGTH, 0);
+      LOG((LF_CORDB, LL_INFO100000,
+           "transport_recv () sleep returned %d, expected %d.\n", iResult,
+           HEADER_LENGTH));
+      iResult =
+          recv(connect_socket, (char *)recvbuf_header.buf, HEADER_LENGTH, 0);
       Sleep(1000);
     }
 
@@ -278,9 +287,6 @@ void Connection::receive() {
 
     dbg_lock();
     if (header.flags == REPLY_PACKET) {
-      DEBUG_PRINTF(
-          1, "header->id - %d - header->error - %d - header->error_2 - %d\n",
-          header.id, header.error, header.error_2);
       ReceivedReplyPacket *rp =
           (ReceivedReplyPacket *)g_malloc0(sizeof(ReceivedReplyPacket));
       rp->error = header.error;
@@ -317,68 +323,73 @@ ReceivedReplyPacket *Connection::get_answer_with_error(int cmdId) {
 }
 
 void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
-  int spolicy = m_dbgprot_decode_byte(recvbuf->buf, &recvbuf->buf, recvbuf->end);
+  int spolicy =
+      m_dbgprot_decode_byte(recvbuf->buf, &recvbuf->buf, recvbuf->end);
   int nevents = m_dbgprot_decode_int(recvbuf->buf, &recvbuf->buf, recvbuf->end);
 
   for (int i = 0; i < nevents; ++i) {
 
     int kind = m_dbgprot_decode_byte(recvbuf->buf, &recvbuf->buf, recvbuf->end);
-    int req_id = m_dbgprot_decode_int(recvbuf->buf, &recvbuf->buf, recvbuf->end);
+    int req_id =
+        m_dbgprot_decode_int(recvbuf->buf, &recvbuf->buf, recvbuf->end);
 
     MdbgProtEventKind etype = (MdbgProtEventKind)kind;
 
-    long thread_id = m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
+    long thread_id =
+        m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
 
-    DEBUG_PRINTF(1, "Received %d %d events %s, suspend=%d\n", i, nevents,
-                 m_dbgprot_event_to_string(etype), etype);
+    LOG((LF_CORDB, LL_INFO100000, "Received %d %d events %s, suspend=%d\n", i,
+         nevents, m_dbgprot_event_to_string(etype), spolicy));
 
     switch (etype) {
     case MDBGPROT_EVENT_KIND_VM_START: {
       ppProcess->suspended = true;
-      ppCordb->pCallback->CreateProcess(static_cast<ICorDebugProcess *>(ppProcess));
-    }
-    break;
+      ppCordb->pCallback->CreateProcess(
+          static_cast<ICorDebugProcess *>(ppProcess));
+    } break;
     case MDBGPROT_EVENT_KIND_VM_DEATH: {
-        ppCordb->pCallback->ExitProcess(static_cast<ICorDebugProcess*>(ppProcess));
-    }
-    break;
+      ppCordb->pCallback->ExitProcess(
+          static_cast<ICorDebugProcess *>(ppProcess));
+    } break;
     case MDBGPROT_EVENT_KIND_THREAD_START: {
-      DEBUG_PRINTF(1, "criei a thread certinha pelo MDBGPROT_EVENT_KIND_THREAD_START\n");
       CordbThread *thread = new CordbThread(this, ppProcess, thread_id);
       g_ptr_array_add(ppCordb->threads, thread);
       ppCordb->pCallback->CreateThread(pCorDebugAppDomain, thread);
-    }
-    break;
+    } break;
     case MDBGPROT_EVENT_KIND_APPDOMAIN_CREATE: {
 
-    }
-    break;
+    } break;
     case MDBGPROT_EVENT_KIND_ASSEMBLY_LOAD: {
       // all the callbacks call a resume, in this case that we are faking 2
       // callbacks without receive command, we should not send the continue
-      int assembly_id = m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
+      int assembly_id =
+          m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
       if (pCorDebugAppDomain == NULL) {
-        pCorDebugAppDomain = new CordbAppDomain(this, static_cast<ICorDebugProcess *>(ppProcess));
+        pCorDebugAppDomain = new CordbAppDomain(
+            this, static_cast<ICorDebugProcess *>(ppProcess));
         ppProcess->Stop(false);
-        ppCordb->pCallback->CreateAppDomain(static_cast<ICorDebugProcess *>(ppProcess), pCorDebugAppDomain);
+        ppCordb->pCallback->CreateAppDomain(
+            static_cast<ICorDebugProcess *>(ppProcess), pCorDebugAppDomain);
       }
-      DEBUG_PRINTF(1, "Recebi assembly load - %d\n", assembly_id);
-      ICorDebugAssembly *pAssembly = new CordbAssembly(this, ppProcess, pCorDebugAppDomain, assembly_id);
+      ICorDebugAssembly *pAssembly =
+          new CordbAssembly(this, ppProcess, pCorDebugAppDomain, assembly_id);
       ppProcess->Stop(false);
       ppCordb->pCallback->LoadAssembly(pCorDebugAppDomain, pAssembly);
 
       ppProcess->suspended = true;
-      ICorDebugModule *pModule = new CordbModule(this, ppProcess, (CordbAssembly *)pAssembly, assembly_id);
-      g_hash_table_insert(ppCordb->modules, GINT_TO_POINTER(assembly_id), pModule);
+      ICorDebugModule *pModule = new CordbModule(
+          this, ppProcess, (CordbAssembly *)pAssembly, assembly_id);
+      g_hash_table_insert(ppCordb->modules, GINT_TO_POINTER(assembly_id),
+                          pModule);
       ppCordb->pCallback->LoadModule(pCorDebugAppDomain, pModule);
-    }
-    break;
+    } break;
     case MDBGPROT_EVENT_KIND_BREAKPOINT: {
-      int method_id = m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
-      long offset = m_dbgprot_decode_long(recvbuf->buf, &recvbuf->buf, recvbuf->end);
+      int method_id =
+          m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
+      long offset =
+          m_dbgprot_decode_long(recvbuf->buf, &recvbuf->buf, recvbuf->end);
       CordbThread *thread = findThread(ppCordb->threads, thread_id);
       if (thread == NULL) {
-        DEBUG_PRINTF(1, "criei a thread errada pelo MDBGPROT_EVENT_KIND_BREAKPOINT\n");
         thread = new CordbThread(this, ppProcess, thread_id);
         g_ptr_array_add(ppCordb->threads, thread);
         ppProcess->Stop(false);
@@ -387,33 +398,33 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
       int i = 0;
       CordbFunctionBreakpoint *breakpoint;
       while (i < ppCordb->breakpoints->len) {
-        breakpoint = (CordbFunctionBreakpoint *)g_ptr_array_index(ppCordb->breakpoints, i);
-        if (breakpoint->offset == offset && breakpoint->code->func->id == method_id) {
-          ppCordb->pCallback->Breakpoint(pCorDebugAppDomain, thread, static_cast<ICorDebugFunctionBreakpoint *>(breakpoint));
+        breakpoint = (CordbFunctionBreakpoint *)g_ptr_array_index(
+            ppCordb->breakpoints, i);
+        if (breakpoint->offset == offset &&
+            breakpoint->code->func->id == method_id) {
+          ppCordb->pCallback->Breakpoint(
+              pCorDebugAppDomain, thread,
+              static_cast<ICorDebugFunctionBreakpoint *>(breakpoint));
           break;
         }
         i++;
       }
-    }
-    break;
+    } break;
     case MDBGPROT_EVENT_KIND_STEP: {
-      int method_id = m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
-      long offset = m_dbgprot_decode_long(recvbuf->buf, &recvbuf->buf, recvbuf->end);
-
-      DEBUG_PRINTF(1, "MDBGPROT_EVENT_KIND_STEP - %d - %d - %d\n", thread_id, method_id,
-                   offset);
-
+      int method_id =
+          m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
+      long offset =
+          m_dbgprot_decode_long(recvbuf->buf, &recvbuf->buf, recvbuf->end);
       CordbThread *thread = findThread(ppCordb->threads, thread_id);
       if (thread == NULL) {
-        DEBUG_PRINTF(1, "criei a thread errada pelo MDBGPROT_EVENT_KIND_STEP\n");
         thread = new CordbThread(this, ppProcess, thread_id);
         g_ptr_array_add(ppCordb->threads, thread);
         ppProcess->Stop(false);
         ppCordb->pCallback->CreateThread(pCorDebugAppDomain, thread);
       }
-      ppCordb->pCallback->StepComplete(pCorDebugAppDomain, thread, thread->stepper, STEP_NORMAL);
-    }
-    break;
+      ppCordb->pCallback->StepComplete(pCorDebugAppDomain, thread,
+                                       thread->stepper, STEP_NORMAL);
+    } break;
     }
   }
   // m_dbgprot_buffer_free(&recvbuf);
@@ -428,7 +439,8 @@ int Connection::process_packet(bool is_answer) {
 void Connection::process_packet_from_queue() {
   int i = 0;
   while (i < received_packets_to_process->len) {
-    MdbgProtBuffer *req = (MdbgProtBuffer *)g_ptr_array_index(received_packets_to_process, i);
+    MdbgProtBuffer *req =
+        (MdbgProtBuffer *)g_ptr_array_index(received_packets_to_process, i);
     process_packet_internal(req);
     dbg_lock();
     g_ptr_array_remove_index_fast(received_packets_to_process, i);
@@ -452,9 +464,6 @@ void Connection::loop_send_receive() {
   CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)receive_thread, this, 0,
                &thread_id);
 
-  // machine.EnableEvents(EventType.AssemblyLoad, EventType.ThreadStart,
-  // EventType.ThreadDeath, EventType.AppDomainUnload, EventType.UserBreak,
-  // EventType.UserLog);
   enable_event(MDBGPROT_EVENT_KIND_ASSEMBLY_LOAD);
   enable_event(MDBGPROT_EVENT_KIND_APPDOMAIN_CREATE);
   enable_event(MDBGPROT_EVENT_KIND_THREAD_START);
@@ -468,7 +477,8 @@ void Connection::loop_send_receive() {
   m_dbgprot_buffer_init(&localbuf, 128);
   m_dbgprot_buffer_add_int(&localbuf, MAJOR_VERSION);
   m_dbgprot_buffer_add_int(&localbuf, MINOR_VERSION);
-  int cmdId = send_event(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_SET_PROTOCOL_VERSION, &localbuf);
+  int cmdId = send_event(MDBGPROT_CMD_SET_VM,
+                         MDBGPROT_CMD_VM_SET_PROTOCOL_VERSION, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
   m_dbgprot_buffer_init(&localbuf, 128);
@@ -483,9 +493,9 @@ void Connection::loop_send_receive() {
   int minor_version =
       m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
 
-  DEBUG_PRINTF(1,
-               "[dbg] Protocol version %d.%d, server protocol version %d.%d.\n",
-               MAJOR_VERSION, MINOR_VERSION, major_version, minor_version);
+  LOG((LF_CORDB, LL_INFO100000,
+       "Protocol version %d.%d, server protocol version %d.%d.\n",
+       MAJOR_VERSION, MINOR_VERSION, major_version, minor_version));
 
   int iResult = 0;
   // Receive until the peer closes the connection
@@ -502,7 +512,8 @@ void Connection::enable_event(MdbgProtEventKind eventKind) {
   m_dbgprot_buffer_add_byte(&sendbuf, eventKind);
   m_dbgprot_buffer_add_byte(&sendbuf, MDBGPROT_SUSPEND_POLICY_ALL);
   m_dbgprot_buffer_add_byte(&sendbuf, 0); // modifiers
-  send_event(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
+  send_event(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET,
+             &sendbuf);
   m_dbgprot_buffer_free(&sendbuf);
 }
 
@@ -512,7 +523,7 @@ void Connection::close_connection() {
 }
 
 void Connection::start_connection() {
-  DEBUG_PRINTF(1, "Start Connection\n");
+  LOG((LF_CORDB, LL_INFO100000, "Start Connection\n"));
 
   WSADATA wsaData;
   connect_socket = INVALID_SOCKET;
@@ -530,7 +541,7 @@ void Connection::start_connection() {
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
 
-  DEBUG_PRINTF(1, "Listening to 127.0.0.1:1003\n");
+  LOG((LF_CORDB, LL_INFO100000, "Listening to 127.0.0.1:1003\n"));
 
   // Resolve the server address and port
   iResult = getaddrinfo("127.0.0.1", "1003", &hints, &result);
@@ -570,7 +581,7 @@ void Connection::start_connection() {
   if (connect_socket == -1)
     exit(1);
 
-  DEBUG_PRINTF(1, "Accepted connection from client.\n");
+  LOG((LF_CORDB, LL_INFO100000, "Accepted connection from client.\n"));
 
   freeaddrinfo(result);
 
@@ -598,8 +609,8 @@ void Connection::transport_handshake() {
 }
 
 void Connection::send_packet(MdbgProtBuffer &sendbuf) {
-  int iResult =
-      send(connect_socket, (const char *)sendbuf.buf, m_dbgprot_buffer_len(&sendbuf), 0);
+  int iResult = send(connect_socket, (const char *)sendbuf.buf,
+                     m_dbgprot_buffer_len(&sendbuf), 0);
   if (iResult == SOCKET_ERROR) {
     WSACleanup();
     return;
@@ -630,27 +641,28 @@ int Connection::send_event(int cmd_set, int cmd, MdbgProtBuffer *sendbuf) {
 MONO_API HRESULT CoreCLRCreateCordbObject(int iDebuggerVersion, DWORD pid,
                                           HMODULE hmodTargetCLR,
                                           void **ppCordb) {
-  DEBUG_PRINTF(1, "CoreCLRCreateCordbObject \n");
+  LOG((LF_CORDB, LL_INFO100000, "CoreCLRCreateCordbObject\n"));
   *ppCordb = new Cordb();
   return S_OK;
 }
 
 MONO_API HRESULT CreateCordbObject(int iDebuggerVersion, void **ppCordb) {
-  DEBUG_PRINTF(1, "CreateCordbObject \n");
+  LOG((LF_CORDB, LL_INFO100000, "CreateCordbObject\n"));
   *ppCordb = new Cordb();
   return S_OK;
 }
 
 HRESULT CordbModule::GetAssembly(
     /* [out] */ ICorDebugAssembly **ppAssembly) {
-  DEBUG_PRINTF(1, "CordbModule - GetAssembly\n");
+  LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetAssembly - IMPLEMENTED\n"));
   *ppAssembly = static_cast<ICorDebugAssembly *>(pAssembly);
   return S_OK;
 }
 
 HRESULT CordbAssembly::GetProcess(
     /* [out] */ ICorDebugProcess **ppProcess) {
-  DEBUG_PRINTF(1, "CorDebugAssembly - GetProcess\n");
+  LOG((LF_CORDB, LL_INFO1000000,
+       "CorDebugAssembly - GetProcess - IMPLEMENTED\n"));
   *ppProcess = static_cast<ICorDebugProcess *>(pProcess);
   return S_OK;
 }

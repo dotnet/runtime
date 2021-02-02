@@ -26,9 +26,6 @@
 #include <ws2tcpip.h>
 #endif
 
-#define MAJOR_VERSION 3
-#define MINOR_VERSION 0
-
 #define return_if_nok(error)                                                   \
   do {                                                                         \
     if (!is_ok((error)))                                                       \
@@ -38,6 +35,11 @@
 #define dbg_lock() mono_os_mutex_lock(&debug_mutex.m);
 #define dbg_unlock() mono_os_mutex_unlock(&debug_mutex.m);
 static MonoCoopMutex debug_mutex;
+
+#ifdef _DEBUG
+#define LOGGING
+#include <log.h>
+#endif
 
 class Cordb;
 class CordbProcess;
@@ -177,28 +179,10 @@ public:
   void SetConnection(Connection *conn);
 };
 
-static int log_level = 10;
-static FILE *log_file = fopen("c:\\thays\\example.txt", "a+");
-
-#define DEBUG(level, s)                                                        \
-  do {                                                                         \
-    if (G_UNLIKELY((level) <= log_level)) {                                    \
-      s;                                                                       \
-      fflush(log_file);                                                        \
-    }                                                                          \
-  } while (0)
-#define DEBUG_PRINTF(level, ...)                                               \
-  do {                                                                         \
-    if (G_UNLIKELY((level) <= log_level)) {                                    \
-      fprintf(log_file, __VA_ARGS__);                                          \
-      fflush(log_file);                                                        \
-    }                                                                          \
-  } while (0)
-
 #define CHECK_ERROR_RETURN_FALSE(localbuf)                                     \
   do {                                                                         \
     if (localbuf->error > 0 || localbuf->error_2 > 0) {                        \
-      DEBUG_PRINTF(1, "retornando erro\n");                                    \
+      LOG((LF_CORDB, LL_INFO100000, "ERROR RECEIVED\n"));                      \
       return S_FALSE;                                                          \
     }                                                                          \
   } while (0)
