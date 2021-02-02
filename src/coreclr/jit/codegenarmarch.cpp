@@ -3821,77 +3821,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     int totalFrameSize = genTotalFrameSize();
 
-    bool      useStackProbeHelper = false;
-    const int pageSize            = (int)compiler->eeGetPageSize();
-
-    const int currentSpToFinalSp = compiler->compLclFrameSize;
-
-    if (currentSpToFinalSp < compiler->getVeryLargeFrameSize())
-    {
-        const regNumber tempReg            = REG_SCRATCH;
-        bool            tempRegWasModified = false;
-
-        constexpr int ldrLargestPositiveImmByteOffset = 0x8000;
-        const bool    useLdrUnsignedImmediate         = (pageSize < ldrLargestPositiveImmByteOffset / 2);
-
-        int currentSpToLastProbedLoc = 0;
-
-        if (useLdrUnsignedImmediate)
-        {
-            for (int currentSpToTempReg = 0;
-                 currentSpToFinalSp + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES - currentSpToLastProbedLoc > pageSize;)
-            {
-                const int currentSpToProbeLoc = min(currentSpToLastProbedLoc + pageSize, currentSpToFinalSp);
-
-                if (currentSpToProbeLoc > currentSpToTempReg)
-                {
-                    if (currentSpToFinalSp + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES - currentSpToProbeLoc > pageSize)
-                    {
-                        // At least one more probing beside the one at [sp, #currentSpToProbeLoc] are needed,
-                        // so it is worthwhile to advance tempReg and emit two or more ldr xzr, [tempReg, #imm].
-                        currentSpToTempReg = currentSpToTempReg + ldrLargestPositiveImmByteOffset;
-                        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, tempReg, REG_SPBASE, currentSpToTempReg);
-                        tempRegWasModified = true;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                const int probeLocToTempReg = currentSpToTempReg - currentSpToProbeLoc;
-                GetEmitter()->emitIns_R_R_I(INS_ldr, EA_8BYTE, REG_ZR, tempReg, probeLocToTempReg);
-                currentSpToLastProbedLoc = currentSpToProbeLoc;
-            }
-        }
-
-        while (currentSpToFinalSp + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES - currentSpToLastProbedLoc > pageSize)
-        {
-            const int currentSpToProbeLoc = min(currentSpToLastProbedLoc + pageSize, currentSpToFinalSp);
-
-            // Emit mov tempReg, #imm followed by ldr wzr, [sp, tempReg].
-            genSetRegToIcon(tempReg, -currentSpToProbeLoc, TYP_I_IMPL);
-            tempRegWasModified = true;
-            GetEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, tempReg);
-            currentSpToLastProbedLoc = currentSpToProbeLoc;
-        }
-
-        if (tempRegWasModified)
-        {
-            regSet.verifyRegUsed(tempReg);
-
-            if (initReg == tempReg)
-            {
-                *pInitRegZeroed = false;
-            }
-        }
-
-        compiler->unwindPadding();
-    }
-    else
-    {
-        useStackProbeHelper = true;
-    }
+    const int probePageSize = (int)compiler->eeGetPageSize();
 
     int offset; // This will be the starting place for saving the callee-saved registers, in increasing order.
 
@@ -4177,6 +4107,51 @@ void CodeGen::genPushCalleeSavedRegisters()
     // If we do establish the frame pointer, what is the amount we add to SP to do so?
     unsigned offsetSpToSavedFp = 0;
 
+    auto emitUnrolledStackProbeLoop = [this, probePageSize, initReg, pInitRegZeroed](int currentSpToFpLrLoc,
+                                                                                     int lastProbedLocToCurrentSp) {
+        // We can not call a stack probe helper before storing lr register on the stack
+        // since the call would trash that register.
+        // Instead for relatively small frames (smaller than STACK_PROBE_HELPER_FRAME_SIZE_PAGES)
+        // the JIT emits unrolled stack probing loop.
+        // "stp fp, lr, [sp, #fpLrLoc]" would also count as a probe, hence we use and maintain
+        // the value of currentSpToFpLrLoc in the algorithm below.
+
+        assert(currentSpToFpLrLoc < STACK_PROBE_HELPER_FRAME_SIZE_PAGES * probePageSize);
+
+        // Generate the following code
+        //
+        //       sub   sp, sp, #probePageSize
+        //       ldr   xzr, [sp,#probeLocToCurrentSp]
+        //       ...
+        //       sub   sp, sp, #probePageSize
+        //       ldr   xzr, [sp,#probeLocToCurrentSp]
+        //
+        // until sp is closer than probePageSize to a location
+        // where fp,lr register pair will be written.
+
+        int lastProbedLocToFpLrLoc = lastProbedLocToCurrentSp + currentSpToFpLrLoc;
+
+        while (currentSpToFpLrLoc > probePageSize)
+        {
+            const int probeLocToFpLrLoc = lastProbedLocToFpLrLoc - probePageSize;
+
+            genStackPointerAdjustment(-probePageSize, initReg, pInitRegZeroed, /* reportUnwindData */ true);
+            currentSpToFpLrLoc -= probePageSize;
+
+            const int probeLocToCurrentSp = probeLocToFpLrLoc - currentSpToFpLrLoc;
+
+            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, probeLocToCurrentSp);
+            compiler->unwindNop();
+
+            lastProbedLocToFpLrLoc = probeLocToFpLrLoc;
+        }
+
+        // The loop doesn't have to stop at a location where fp,lr register pair will be written.
+        // Therefore, we need to return the distance between updated sp value and that location to
+        // a user of this lambda.
+        return currentSpToFpLrLoc;
+    };
+
     if (frameType == 1)
     {
         assert(!genSaveFpLrWithAllCalleeSavedRegisters);
@@ -4197,6 +4172,13 @@ void CodeGen::genPushCalleeSavedRegisters()
         assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
                                               // totalFrameSize and calleeSaveSPDelta -- is 16-byte aligned.
 
+        int lastProbedLocToCurrentSp = STACK_PROBE_BOUNDARY_THRESHOLD_BYTES;
+
+        if (compiler->info.compIsVarArgs || ((maskSaveRegsInt | maskSaveRegsFloat) != 0))
+        {
+            lastProbedLocToCurrentSp = 0;
+        }
+
         if (compiler->lvaOutgoingArgSpaceSize > 504)
         {
             // We can't do "stp fp,lr,[sp,#outsz]" because #outsz is too big.
@@ -4209,7 +4191,11 @@ void CodeGen::genPushCalleeSavedRegisters()
 
             JITDUMP("    spAdjustment2=%d\n", spAdjustment2);
 
-            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -spAdjustment2, false, initReg, pInitRegZeroed);
+            int currentSpToFpLrLoc = spAdjustment2;
+            currentSpToFpLrLoc     = emitUnrolledStackProbeLoop(currentSpToFpLrLoc, lastProbedLocToCurrentSp);
+
+            genPrologSaveRegPair(REG_FP, REG_LR, alignmentAdjustment2, -currentSpToFpLrLoc, false, initReg,
+                                 pInitRegZeroed);
             offset += spAdjustment2;
 
             // Now subtract off the #outsz (or the rest of the #outsz if it was unaligned, and the above "sub"
@@ -4227,17 +4213,28 @@ void CodeGen::genPushCalleeSavedRegisters()
 
             JITDUMP("    spAdjustment3=%d\n", spAdjustment3);
 
-            // We've already established the frame pointer, so no need to report the stack pointer change to unwind
-            // info.
-            genStackPointerAdjustment(-spAdjustment3, initReg, pInitRegZeroed, /* reportUnwindData */ false);
+            if (spAdjustment3 >= probePageSize)
+            {
+                genEmitStackProbeHelperCall(spAdjustment3, initReg, pInitRegZeroed);
+            }
+            else
+            {
+                // We've already established the frame pointer, so no need to report the stack pointer change to unwind
+                // info.
+                genStackPointerAdjustment(-spAdjustment3, initReg, pInitRegZeroed, /* reportUnwindData */ false);
+            }
             offset += spAdjustment3;
         }
         else
         {
-            genPrologSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize, -remainingFrameSz, false, initReg,
-                                 pInitRegZeroed);
-            offset += remainingFrameSz;
+            int currentSpToFpLrLoc = remainingFrameSz - compiler->lvaOutgoingArgSpaceSize;
+            currentSpToFpLrLoc     = emitUnrolledStackProbeLoop(currentSpToFpLrLoc, lastProbedLocToCurrentSp);
 
+            const int currentSpToFinalSp = currentSpToFpLrLoc + compiler->lvaOutgoingArgSpaceSize;
+            genPrologSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize, -currentSpToFinalSp, false, initReg,
+                                 pInitRegZeroed);
+
+            offset += remainingFrameSz;
             offsetSpToSavedFp = compiler->lvaOutgoingArgSpaceSize;
         }
     }
@@ -4266,26 +4263,14 @@ void CodeGen::genPushCalleeSavedRegisters()
 
         JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
-        // We've already established the frame pointer, so no need to report the unwind info at this point.
-        const bool reportUnwindData = false;
-
-        if (useStackProbeHelper)
+        if (remainingFrameSz >= probePageSize)
         {
-            genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, remainingFrameSz,
-                                 REG_STACK_PROBE_HELPER_ARG, reportUnwindData);
-            regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
-            genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
-            GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG);
-
-            if ((genRegMask(initReg) & (RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
-                                        RBM_STACK_PROBE_HELPER_TRASH)) != RBM_NONE)
-            {
-                *pInitRegZeroed = false;
-            }
+            genEmitStackProbeHelperCall(remainingFrameSz, initReg, pInitRegZeroed);
         }
         else
         {
-            genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, reportUnwindData);
+            // We've already established the frame pointer, so no need to report the unwind info at this point.
+            genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, /* reportUnwindData */ false);
         }
 
         offset += remainingFrameSz;

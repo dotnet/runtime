@@ -1552,11 +1552,12 @@ typedef unsigned char   regNumberSmall;
   // For arm64, this is the maximum prolog establishment pre-indexed (that is SP pre-decrement) offset.
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 512
 
-  #define REG_STACK_PROBE_HELPER_ARG         REG_R9
-  #define RBM_STACK_PROBE_HELPER_ARG         RBM_R9
-  #define REG_STACK_PROBE_HELPER_CALL_TARGET REG_IP0
-  #define RBM_STACK_PROBE_HELPER_CALL_TARGET RBM_IP0
-  #define RBM_STACK_PROBE_HELPER_TRASH       RBM_NONE
+  #define STACK_PROBE_HELPER_FRAME_SIZE_PAGES 4
+  #define REG_STACK_PROBE_HELPER_ARG          REG_R9
+  #define RBM_STACK_PROBE_HELPER_ARG          RBM_R9
+  #define REG_STACK_PROBE_HELPER_CALL_TARGET  REG_IP0
+  #define RBM_STACK_PROBE_HELPER_CALL_TARGET  RBM_IP0
+  #define RBM_STACK_PROBE_HELPER_TRASH        RBM_NONE
 
   // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g. "MLA (by element)")
   // have encoding that restricts what registers that can be used for the indexed element when the element size is H (i.e. 2 bytes).

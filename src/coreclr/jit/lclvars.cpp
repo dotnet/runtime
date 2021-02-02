@@ -5998,7 +5998,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
     }
 
-    if (compLclFrameSize >= getVeryLargeFrameSize())
+    const unsigned probePageSize = (unsigned)eeGetPageSize();
+
+    if (compLclFrameSize >= STACK_PROBE_HELPER_FRAME_SIZE_PAGES * probePageSize)
     {
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true);
     }
