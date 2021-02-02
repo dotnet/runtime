@@ -172,7 +172,7 @@ namespace System.Reflection.Emit
             m_typeBuilder.ThrowIfCreated();
 
             TypeBuilder.DefineCustomAttribute(module,
-                m_fieldTok, module.GetConstructorToken(con), binaryAttribute, false, false);
+                m_fieldTok, module.GetConstructorToken(con), binaryAttribute, false);
         }
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)

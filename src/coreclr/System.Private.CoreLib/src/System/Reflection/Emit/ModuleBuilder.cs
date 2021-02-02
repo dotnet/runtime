@@ -1559,7 +1559,7 @@ namespace System.Reflection.Emit
                 1,                                          // This is hard coding the module token to 1
                 GetConstructorToken(con),
                 binaryAttribute,
-                false, false);
+                false);
         }
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)

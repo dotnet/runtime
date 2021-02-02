@@ -34,7 +34,7 @@ namespace System.Reflection.Emit
                 _token,
                 ((ModuleBuilder)_methodBuilder.GetModule()).GetConstructorToken(con),
                 binaryAttribute,
-                false, false);
+                false);
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder

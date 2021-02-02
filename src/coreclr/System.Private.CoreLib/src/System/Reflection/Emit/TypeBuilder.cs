@@ -51,7 +51,7 @@ namespace System.Reflection.Emit
                 {
                     Debug.Assert(m_con != null);
                     DefineCustomAttribute(module, token, module.GetConstructorToken(m_con),
-                        m_binaryAttribute, false, false);
+                        m_binaryAttribute, false);
                 }
                 else
                 {
@@ -178,10 +178,10 @@ namespace System.Reflection.Emit
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
-            byte[]? attr, int attrLength, bool toDisk, bool updateCompilerFlags);
+            byte[]? attr, int attrLength, bool toDisk);
 
         internal static void DefineCustomAttribute(ModuleBuilder module, int tkAssociate, int tkConstructor,
-            byte[]? attr, bool toDisk, bool updateCompilerFlags)
+            byte[]? attr, bool toDisk)
         {
             byte[]? localAttr = null;
 
@@ -192,7 +192,7 @@ namespace System.Reflection.Emit
             }
 
             DefineCustomAttribute(new QCallModule(ref module), tkAssociate, tkConstructor,
-                localAttr, (localAttr != null) ? localAttr.Length : 0, toDisk, updateCompilerFlags);
+                localAttr, (localAttr != null) ? localAttr.Length : 0, toDisk);
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -2159,7 +2159,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(binaryAttribute));
 
             DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con),
-                binaryAttribute, false, false);
+                binaryAttribute, false);
         }
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)

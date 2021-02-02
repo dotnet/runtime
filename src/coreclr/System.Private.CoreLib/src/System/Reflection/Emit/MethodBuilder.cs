@@ -776,7 +776,7 @@ namespace System.Reflection.Emit
             TypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
                 ((ModuleBuilder)m_module).GetConstructorToken(con),
                 binaryAttribute,
-                false, false);
+                false);
 
             if (IsKnownCA(con))
                 ParseCA(con);

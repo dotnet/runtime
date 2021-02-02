@@ -118,7 +118,7 @@ namespace System.Reflection.Emit
                 m_tkProperty,
                 m_moduleBuilder.GetConstructorToken(con),
                 binaryAttribute,
-                false, false);
+                false);
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder

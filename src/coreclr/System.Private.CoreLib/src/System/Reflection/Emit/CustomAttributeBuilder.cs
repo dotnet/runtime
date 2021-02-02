@@ -533,8 +533,7 @@ namespace System.Reflection.Emit
         /// </summary>
         internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner, int tkAttrib, bool toDisk)
         {
-            TypeBuilder.DefineCustomAttribute(mod, tkOwner, tkAttrib, m_blob, toDisk,
-                                                      typeof(System.Diagnostics.DebuggableAttribute) == m_con.DeclaringType);
+            TypeBuilder.DefineCustomAttribute(mod, tkOwner, tkAttrib, m_blob, toDisk);
         }
     }
 }

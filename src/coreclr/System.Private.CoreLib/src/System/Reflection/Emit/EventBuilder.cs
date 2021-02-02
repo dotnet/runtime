@@ -97,7 +97,7 @@ namespace System.Reflection.Emit
                 m_evToken,
                 m_module.GetConstructorToken(con),
                 binaryAttribute,
-                false, false);
+                false);
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
