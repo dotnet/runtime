@@ -731,7 +731,7 @@ jobs:
     jobParameters:
       isOfficialBuild: ${{ variables.isOfficialBuild }}
       liveRuntimeBuildConfig: release
-      liveLibrariesBuildConfig: Release
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       pgoInstrument: true
     platforms:
     - windows_x64
