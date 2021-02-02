@@ -298,6 +298,8 @@ namespace ILCompiler
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
+            if (nodeFactory.InstrumentationDataTable != null)
+                nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
@@ -385,6 +387,7 @@ namespace ILCompiler
             NodeFactory componentFactory = new NodeFactory(
                 _nodeFactory.TypeSystemContext,
                 _nodeFactory.CompilationModuleGroup,
+                null,
                 _nodeFactory.NameMangler,
                 copiedCorHeader,
                 debugDirectory,

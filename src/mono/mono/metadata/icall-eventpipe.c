@@ -151,6 +151,32 @@ eventpipe_execute_rundown (
 	ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func,
 	ep_rt_mono_fire_method_rundown_events_func methods_events_func);
 
+static
+gboolean
+eventpipe_walk_managed_stack_for_thread_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	gpointer data);
+
+static
+gboolean
+eventpipe_walk_managed_stack_for_thread (
+	ep_rt_thread_handle_t thread,
+	EventPipeStackContents *stack_contents);
+
+static
+gboolean
+eventpipe_method_get_simple_assembly_name (
+	ep_rt_method_desc_t *method,
+	ep_char8_t *name,
+	size_t name_len);
+
+static
+gboolean
+evetpipe_method_get_full_name (
+	ep_rt_method_desc_t *method,
+	ep_char8_t *name,
+	size_t name_len);
 
 static
 void
@@ -381,6 +407,7 @@ eventpipe_fire_assembly_events (
 {
 	g_assert_checked (domain != NULL);
 	g_assert_checked (assembly != NULL);
+	g_assert_checked (assembly_events_func != NULL);
 
 	uint64_t domain_id = (uint64_t)domain;
 	uint64_t module_id = (uint64_t)assembly->image;
@@ -451,6 +478,10 @@ eventpipe_execute_rundown (
 	ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func,
 	ep_rt_mono_fire_method_rundown_events_func method_events_func)
 {
+	g_assert_checked (domain_events_func != NULL);
+	g_assert_checked (assembly_events_func != NULL);
+	g_assert_checked (method_events_func != NULL);
+
 	// Under netcore we only have root domain.
 	MonoDomain *root_domain = mono_get_root_domain ();
 	if (root_domain) {
@@ -491,6 +522,93 @@ eventpipe_execute_rundown (
 	return TRUE;
 }
 
+static
+gboolean
+eventpipe_walk_managed_stack_for_thread_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	gpointer data)
+{
+	g_assert_checked (frame != NULL);
+	g_assert_checked (data != NULL);
+
+	switch (frame->type) {
+	case FRAME_TYPE_DEBUGGER_INVOKE:
+	case FRAME_TYPE_MANAGED_TO_NATIVE:
+	case FRAME_TYPE_TRAMPOLINE:
+	case FRAME_TYPE_INTERP_TO_MANAGED:
+	case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+		return FALSE;
+	case FRAME_TYPE_MANAGED:
+	case FRAME_TYPE_INTERP:
+		if (!frame->ji)
+			return FALSE;
+		MonoMethod *method = frame->ji->async ? NULL : frame->actual_method;
+		ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
+		return ep_stack_contents_get_length ((EventPipeStackContents *)data) >= EP_MAX_STACK_DEPTH;
+	default:
+		g_assert_not_reached ();
+		return FALSE;
+	}
+}
+
+static
+gboolean
+eventpipe_walk_managed_stack_for_thread (
+	ep_rt_thread_handle_t thread,
+	EventPipeStackContents *stack_contents)
+{
+	g_assert (thread != NULL && stack_contents != NULL);
+
+	if (thread == ep_rt_thread_get_handle ())
+		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (eventpipe_walk_managed_stack_for_thread_func, NULL, MONO_UNWIND_SIGNAL_SAFE, stack_contents);
+	else
+		mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_walk_managed_stack_for_thread_func, mono_thread_info_get_suspend_state (thread), MONO_UNWIND_SIGNAL_SAFE, stack_contents);
+
+	return TRUE;
+}
+
+static
+gboolean
+eventpipe_method_get_simple_assembly_name (
+	ep_rt_method_desc_t *method,
+	ep_char8_t *name,
+	size_t name_len)
+{
+	g_assert_checked (method != NULL);
+	g_assert_checked (name != NULL);
+
+	MonoClass *method_class = mono_method_get_class (method);
+	MonoImage *method_image = method_class ? mono_class_get_image (method_class) : NULL;
+	const ep_char8_t *assembly_name = method_image ? mono_image_get_name (method_image) : NULL;
+
+	if (!assembly_name)
+		return FALSE;
+
+	g_strlcpy (name, assembly_name, name_len);
+	return TRUE;
+}
+
+static
+gboolean
+evetpipe_method_get_full_name (
+	ep_rt_method_desc_t *method,
+	ep_char8_t *name,
+	size_t name_len)
+{
+	g_assert_checked (method != NULL);
+	g_assert_checked (name != NULL);
+
+	char *full_method_name = mono_method_get_name_full (method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL);
+	if (!full_method_name)
+		return FALSE;
+
+	g_strlcpy (name, full_method_name, name_len);
+
+	g_free (full_method_name);
+	return TRUE;
+}
+
 void
 mono_eventpipe_init (
 	EventPipeMonoFuncTable *table,
@@ -525,6 +643,9 @@ mono_eventpipe_init (
 		table->ep_rt_mono_get_os_cmd_line = mono_get_os_cmd_line;
 		table->ep_rt_mono_get_managed_cmd_line = mono_runtime_get_managed_cmd_line;
 		table->ep_rt_mono_execute_rundown = eventpipe_execute_rundown;
+		table->ep_rt_mono_walk_managed_stack_for_thread = eventpipe_walk_managed_stack_for_thread;
+		table->ep_rt_mono_method_get_simple_assembly_name = eventpipe_method_get_simple_assembly_name;
+		table->ep_rt_mono_method_get_full_name = evetpipe_method_get_full_name;
 	}
 
 	thread_holder_alloc_callback_func = thread_holder_alloc_func;

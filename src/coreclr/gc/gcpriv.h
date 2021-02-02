@@ -124,7 +124,7 @@ inline void FATAL_GC_ERROR()
 
 #define CARD_BUNDLE         //enable card bundle feature.(requires WRITE_WATCH)
 
-// #define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
+#define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
 
 #ifdef BACKGROUND_GC
 #define BGC_SERVO_TUNING

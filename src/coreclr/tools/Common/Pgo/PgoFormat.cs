@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
-using System.Collections.Generic;
-using ILCompiler;
-using System.Text.RegularExpressions;
 using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
+using ILCompiler;
 
 namespace Internal.Pgo
 {
@@ -240,7 +239,7 @@ namespace Internal.Pgo
                     else
                     {
                         int dataIndex = curSchema.Count - dataCountToRead;
-                        switch(curSchema.InstrumentationKind & PgoInstrumentationKind.MarshalMask)
+                        switch (curSchema.InstrumentationKind & PgoInstrumentationKind.MarshalMask)
                         {
                             case PgoInstrumentationKind.FourByte:
                                 if (longsAreCompressed)
@@ -332,7 +331,7 @@ namespace Internal.Pgo
                         case PgoInstrumentationKind.None:
                             yield return curSchema;
                             break;
-                            
+
                         case PgoInstrumentationKind.FourByte:
                             if (curSchema.Count > 1)
                             {
@@ -414,42 +413,42 @@ namespace Internal.Pgo
                         case PgoInstrumentationKind.None:
                             break;
                         case PgoInstrumentationKind.FourByte:
-                        {
-                            long valueToEmit;
-                            if (schema.Count == 1)
                             {
-                                valueToEmit = schema.DataLong;
+                                long valueToEmit;
+                                if (schema.Count == 1)
+                                {
+                                    valueToEmit = schema.DataLong;
+                                }
+                                else
+                                {
+                                    valueToEmit = ((int[])schema.DataObject)[i];
+                                }
+                                valueEmitter.EmitLong(valueToEmit, prevEmittedIntData);
+                                prevEmittedIntData = valueToEmit;
+                                break;
                             }
-                            else
-                            {
-                                valueToEmit = ((int[])schema.DataObject)[i];
-                            }
-                            valueEmitter.EmitLong(valueToEmit, prevEmittedIntData);
-                            prevEmittedIntData = valueToEmit;
-                            break;
-                        }
                         case PgoInstrumentationKind.EightByte:
-                        {
-                            long valueToEmit;
-                            if (schema.Count == 1)
                             {
-                                valueToEmit = schema.DataLong;
+                                long valueToEmit;
+                                if (schema.Count == 1)
+                                {
+                                    valueToEmit = schema.DataLong;
+                                }
+                                else
+                                {
+                                    valueToEmit = ((long[])schema.DataObject)[i];
+                                }
+                                valueEmitter.EmitLong(valueToEmit, prevEmittedIntData);
+                                prevEmittedIntData = valueToEmit;
+                                break;
                             }
-                            else
-                            {
-                                valueToEmit = ((long[])schema.DataObject)[i];
-                            }
-                            valueEmitter.EmitLong(valueToEmit, prevEmittedIntData);
-                            prevEmittedIntData = valueToEmit;
-                            break;
-                        }
                         case PgoInstrumentationKind.TypeHandle:
-                        {
-                            TType typeToEmit = ((TType[])schema.DataObject)[i];
-                            valueEmitter.EmitType(typeToEmit, prevEmittedType);
-                            prevEmittedType = typeToEmit;
-                            break;
-                        }
+                            {
+                                TType typeToEmit = ((TType[])schema.DataObject)[i];
+                                valueEmitter.EmitType(typeToEmit, prevEmittedType);
+                                prevEmittedType = typeToEmit;
+                                break;
+                            }
                     }
                 }
 
@@ -559,43 +558,43 @@ namespace Internal.Pgo
 
                     switch (existingSchemaItem.InstrumentationKind)
                     {
-                    case PgoInstrumentationKind.BasicBlockIntCount:
-                    case PgoInstrumentationKind.TypeHandleHistogramCount:
-                        if ((existingSchemaItem.Count != 1) || (schema.Count != 1))
-                        {
-                            throw new Exception("Unable to merge pgo data. Invalid format");
-                        }
-                        mergedElem.DataLong = existingSchemaItem.DataLong + schema.DataLong;
-                        break;
-
-                    case PgoInstrumentationKind.TypeHandleHistogramTypeHandle:
-                        {
-                            mergedElem.Count = existingSchemaItem.Count + schema.Count;
-                            TType[] newMergedTypeArray = new TType[mergedElem.Count];
-                            mergedElem.DataObject = newMergedTypeArray;
-                            int i = 0;
-                            foreach (TType type in (TType[])existingSchemaItem.DataObject)
+                        case PgoInstrumentationKind.BasicBlockIntCount:
+                        case PgoInstrumentationKind.TypeHandleHistogramCount:
+                            if ((existingSchemaItem.Count != 1) || (schema.Count != 1))
                             {
-                                newMergedTypeArray[i++] = type;
+                                throw new Exception("Unable to merge pgo data. Invalid format");
                             }
-                            foreach (TType type in (TType[])schema.DataObject)
+                            mergedElem.DataLong = existingSchemaItem.DataLong + schema.DataLong;
+                            break;
+
+                        case PgoInstrumentationKind.TypeHandleHistogramTypeHandle:
                             {
-                                newMergedTypeArray[i++] = type;
+                                mergedElem.Count = existingSchemaItem.Count + schema.Count;
+                                TType[] newMergedTypeArray = new TType[mergedElem.Count];
+                                mergedElem.DataObject = newMergedTypeArray;
+                                int i = 0;
+                                foreach (TType type in (TType[])existingSchemaItem.DataObject)
+                                {
+                                    newMergedTypeArray[i++] = type;
+                                }
+                                foreach (TType type in (TType[])schema.DataObject)
+                                {
+                                    newMergedTypeArray[i++] = type;
+                                }
+                                break;
                             }
-                            break;
-                        }
 
-                    case PgoInstrumentationKind.Version:
-                        {
-                            mergedElem.Other = Math.Max(existingSchemaItem.Other, schema.Other);
-                            break;
-                        }
+                        case PgoInstrumentationKind.Version:
+                            {
+                                mergedElem.Other = Math.Max(existingSchemaItem.Other, schema.Other);
+                                break;
+                            }
 
-                    case PgoInstrumentationKind.NumRuns:
-                        {
-                            mergedElem.Other = existingSchemaItem.Other + schema.Other;
-                            break;
-                        }
+                        case PgoInstrumentationKind.NumRuns:
+                            {
+                                mergedElem.Other = existingSchemaItem.Other + schema.Other;
+                                break;
+                            }
                     }
 
                     Debug.Assert(PgoSchemaMergeComparer.Singleton.Compare(schema, mergedElem) == 0);
