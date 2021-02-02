@@ -15,7 +15,7 @@
 }
 @end
 
-void* SystemNative_CreateAutoreleasePool()
+void* SystemNative_CreateAutoreleasePool(void)
 {
     if (![NSThread isMultiThreaded])
     {

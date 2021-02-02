@@ -8,7 +8,7 @@
 // These functions should not be used, but they need to be defined
 // to satisfy the tooling we used to enable redirecting P/Invokes
 // for the single file scenario.
-void* SystemNative_CreateAutoreleasePool()
+void* SystemNative_CreateAutoreleasePool(void)
 {
     assert_err(false, "Autorelease pools not supported on this platform.", EINVAL);
     return NULL;
@@ -16,5 +16,6 @@ void* SystemNative_CreateAutoreleasePool()
 
 void SystemNative_DrainAutoreleasePool(void* pool)
 {
+    (void)pool;
     assert_err(false, "Autorelease pools not supported on this platform.", EINVAL);
 }

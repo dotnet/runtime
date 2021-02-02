@@ -9,7 +9,7 @@
 /**
  * Creates an pool to automatically release applicable ref-counted resources.
  */
-PALEXPORT void* SystemNative_CreateAutoreleasePool();
+PALEXPORT void* SystemNative_CreateAutoreleasePool(void);
 
 /**
  * Drains and releases a pool created by SystemNative_CreateAutoreleasePool.
