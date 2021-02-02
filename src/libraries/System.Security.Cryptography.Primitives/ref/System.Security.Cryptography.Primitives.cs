@@ -139,7 +139,7 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.HashAlgorithmName SHA256 { get { throw null; } }
         public static System.Security.Cryptography.HashAlgorithmName SHA384 { get { throw null; } }
         public static System.Security.Cryptography.HashAlgorithmName SHA512 { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Security.Cryptography.HashAlgorithmName other) { throw null; }
         public static System.Security.Cryptography.HashAlgorithmName FromOid(string oidValue) { throw null; }
         public override int GetHashCode() { throw null; }

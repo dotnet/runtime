@@ -25,7 +25,7 @@ parameters:
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
-- template: xplat-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}

@@ -168,6 +168,9 @@ void Compiler::fgInit()
     fgPgoSchema          = nullptr;
     fgPgoData            = nullptr;
     fgPgoSchemaCount     = 0;
+    fgNumProfileRuns     = 0;
+    fgPgoBlockCounts     = 0;
+    fgPgoClassProfiles   = 0;
     fgPredListSortVector = nullptr;
 }
 
