@@ -896,7 +896,7 @@ void UpdateRuntimeStateForAssemblyCustomAttribute(Module* pModule, mdToken tkCus
     }
 }
 
-void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob, BOOL toDisk)
+void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob)
 {
     QCALL_CONTRACT;
 
@@ -908,24 +908,12 @@ void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModul
     HRESULT hr;
     mdCustomAttribute retToken;
 
-    if (toDisk && pRCW->GetOnDiskEmitter())
-    {
-        hr = pRCW->GetOnDiskEmitter()->DefineCustomAttribute(
-                token,
-                conTok,
-                pBlob,
-                cbBlob,
-                &retToken);
-    }
-    else
-    {
-        hr = pRCW->GetEmitter()->DefineCustomAttribute(
-                token,
-                conTok,
-                pBlob,
-                cbBlob,
-                &retToken);
-    }
+    hr = pRCW->GetEmitter()->DefineCustomAttribute(
+            token,
+            conTok,
+            pBlob,
+            cbBlob,
+            &retToken);
 
     if (FAILED(hr))
     {
