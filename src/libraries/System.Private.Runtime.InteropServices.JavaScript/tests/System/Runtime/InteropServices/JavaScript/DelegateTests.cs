@@ -193,7 +193,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var clamped = new byte[10];
             HelperMarshal._funcActionBufferResultValue = Uint8Array.From(clamped);
             Assert.Equal(10, HelperMarshal._funcActionBufferResultValue.Length);
-            Assert.NotEqual("[object Uint8ClampedArray]", objectPrototype.Call(HelperMarshal._funcActionBufferResultValue));
             Assert.Equal("[object Uint8Array]", objectPrototype.Call(HelperMarshal._funcActionBufferResultValue));
 
             Runtime.InvokeJS(@"
