@@ -926,14 +926,11 @@ FCFuncStart(gComWrappersFuncs)
 FCFuncEnd()
 #endif // FEATURE_COMWRAPPERS
 
-#ifdef FEATURE_OBJCWRAPPERS
+#ifdef FEATURE_OBJCBRIDGE
 FCFuncStart(gObjCBridgeFuncs)
-    QCFuncElement("TrySetGlobalMessageSendCallback", ObjCWrappersNative::TrySetGlobalMessageSendCallback)
+    QCFuncElement("TrySetGlobalMessageSendCallback", ObjCBridgeNative::TrySetGlobalMessageSendCallback)
 FCFuncEnd()
-FCFuncStart(gObjCWrappersFuncs)
-    QCFuncElement("GetLifetimeMethodsInternal", ObjCWrappersNative::GetLifetimeMethods)
-FCFuncEnd()
-#endif // FEATURE_OBJCWRAPPERS
+#endif // FEATURE_OBJCBRIDGE
 
 FCFuncStart(gMngdRefCustomMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdRefCustomMarshaler::CreateMarshaler)
@@ -1109,9 +1106,9 @@ FCClassElement("AssemblyExtensions", "System.Reflection.Metadata", gAssemblyExte
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
 
 FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
-#ifdef FEATURE_OBJCWRAPPERS
+#ifdef FEATURE_OBJCBRIDGE
 FCClassElement("Bridge", "System.Runtime.InteropServices.ObjectiveC", gObjCBridgeFuncs)
-#endif // FEATURE_OBJCWRAPPERS
+#endif // FEATURE_OBJCBRIDGE
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
@@ -1207,9 +1204,6 @@ FCClassElement("Variant", "System", gVariantFuncs)
 FCClassElement("WaitHandle", "System.Threading", gWaitHandleFuncs)
 FCClassElement("WeakReference", "System", gWeakReferenceFuncs)
 FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
-#ifdef FEATURE_OBJCWRAPPERS
-FCClassElement("Wrappers", "System.Runtime.InteropServices.ObjectiveC", gObjCWrappersFuncs)
-#endif // FEATURE_OBJCWRAPPERS
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 FCClassElement("X86Base", "System.Runtime.Intrinsics.X86", gX86BaseFuncs)
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)

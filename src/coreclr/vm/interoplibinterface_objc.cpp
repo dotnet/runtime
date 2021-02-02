@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifdef FEATURE_OBJCWRAPPERS
+#ifdef FEATURE_OBJCBRIDGE
 
 // Runtime headers
 #include "common.h"
@@ -18,10 +18,10 @@
 namespace
 {
     BOOL s_msgSendOverridden = FALSE;
-    void* s_msgSendOverrides[ObjCWrappersNative::MsgSendFunction::Last + 1] = {};
+    void* s_msgSendOverrides[ObjCBridgeNative::MsgSendFunction::Last + 1] = {};
 
     const char* ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
-    const char* MsgSendEntryPoints[ObjCWrappersNative::MsgSendFunction::Last + 1] =
+    const char* MsgSendEntryPoints[ObjCBridgeNative::MsgSendFunction::Last + 1] =
     {
         OBJC_MSGSEND,
         OBJC_MSGSEND "_fpret",
@@ -54,7 +54,7 @@ namespace
     }
 }
 
-BOOL QCALLTYPE ObjCWrappersNative::TrySetGlobalMessageSendCallback(
+BOOL QCALLTYPE ObjCBridgeNative::TrySetGlobalMessageSendCallback(
     _In_ MsgSendFunction msgSendFunction,
     _In_ void* fptr)
 {
@@ -89,7 +89,7 @@ namespace
     }
 }
 
-void QCALLTYPE ObjCWrappersNative::GetLifetimeMethods(
+void QCALLTYPE ObjCBridgeNative::GetLifetimeMethods(
     _Out_ void** allocImpl,
     _Out_ void** deallocImpl)
 {
@@ -105,4 +105,4 @@ void QCALLTYPE ObjCWrappersNative::GetLifetimeMethods(
     END_QCALL;
 }
 
-#endif // FEATURE_OBJCWRAPPERS
+#endif // FEATURE_OBJCBRIDGE
