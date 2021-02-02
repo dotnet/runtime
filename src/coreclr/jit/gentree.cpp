@@ -12495,28 +12495,44 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
                 {
                     fgWalkTreePre(&colon_op2, gtClearColonCond);
                 }
-
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("\nIdentical GT_COLON trees! ");
+                    gtDispTree(op2);
+                }
+#endif
+                GenTree* op;
                 if (sideEffList == nullptr)
                 {
                     // No side-effects, just return colon_op2
-                    return colon_op2;
+                    JITDUMP("No side effects, bashing to second operand:\n");
+                    op = colon_op2;
                 }
                 else
                 {
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("\nIdentical GT_COLON trees with side effects! Extracting side effects...\n");
+                        printf("Extracting side effects...\n");
                         gtDispTree(sideEffList);
-                        printf("\n");
                     }
 #endif
                     // Change the GT_COLON into a GT_COMMA node with the side-effects
                     op2->ChangeOper(GT_COMMA);
                     op2->gtFlags |= (sideEffList->gtFlags & GTF_ALL_EFFECT);
                     op2->AsOp()->gtOp1 = sideEffList;
-                    return op2;
+
+                    JITDUMP("Transformed GT_COLON into GT_COMMA:\n");
+                    op = op2;
                 }
+#ifdef DEBUG
+                if (verbose)
+                {
+                    gtDispTree(op);
+                }
+#endif
+                return op;
             }
         }
     }
@@ -12689,6 +12705,13 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
             return tree;
     }
 
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nFolding comparison with identical operands:\n");
+        gtDispTree(tree);
+    }
+#endif
     /* The node has beeen folded into 'cons' */
 
     if (fgGlobalMorph)
@@ -12700,6 +12723,14 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
         cons->gtNext = tree->gtNext;
         cons->gtPrev = tree->gtPrev;
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Bashed to %s:\n", cons->AsIntConCommon()->IconValue() ? "true" : "false");
+        gtDispTree(cons);
+    }
+#endif
 
     return cons;
 }
@@ -13133,7 +13164,8 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             if (tree->IsUnsigned() && (val == 0) && (op1 == cons) && !opHasSideEffects)
             {
                 // unsigned (0 <= x) is always true
-                return NewMorphedIntConNode(1);
+                op = NewMorphedIntConNode(1);
+                goto DONE_FOLD;
             }
             break;
 
@@ -13141,7 +13173,8 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             if (tree->IsUnsigned() && (val == 0) && (op2 == cons) && !opHasSideEffects)
             {
                 // unsigned (x >= 0) is always true
-                return NewMorphedIntConNode(1);
+                op = NewMorphedIntConNode(1);
+                goto DONE_FOLD;
             }
             break;
 
@@ -13149,7 +13182,8 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             if (tree->IsUnsigned() && (val == 0) && (op2 == cons) && !opHasSideEffects)
             {
                 // unsigned (x < 0) is always false
-                return NewMorphedIntConNode(0);
+                op = NewMorphedIntConNode(0);
+                goto DONE_FOLD;
             }
             break;
 
@@ -13157,7 +13191,8 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             if (tree->IsUnsigned() && (val == 0) && (op1 == cons) && !opHasSideEffects)
             {
                 // unsigned (0 > x) is always false
-                return NewMorphedIntConNode(0);
+                op = NewMorphedIntConNode(0);
+                goto DONE_FOLD;
             }
             FALLTHROUGH;
         case GT_EQ:
@@ -13381,6 +13416,16 @@ DONE_FOLD:
 
         op->gtFlags &= ~(GTF_VAR_USEASG | GTF_VAR_DEF);
     }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nFolding binary operator with a constant operand:\n");
+        gtDispTree(tree);
+        printf("Transformed into:\n");
+        gtDispTree(op);
+    }
+#endif
 
     return op;
 }
