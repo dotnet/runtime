@@ -350,8 +350,8 @@ namespace System.Net.Security.Tests
             {
                 // Client should send chain without root CA. There is no good way how to know if the chain was built from certificates
                 // from wire or from system store. However, SslStream adds certificates from wire to ExtraStore in RemoteCertificateValidationCallback.
-                // So we verify the operation by checking the ExtraStore.
-                Assert.Equal(clientChain.Count - 1, chain.ChainPolicy.ExtraStore.Count);
+                // So we verify the operation by checking the ExtraStore. On Windows, that includes leaf itself.
+                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1);
                 return true;
             };
 
