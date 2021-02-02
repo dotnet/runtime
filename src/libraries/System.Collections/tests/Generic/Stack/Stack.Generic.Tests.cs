@@ -364,6 +364,11 @@ namespace System.Collections.Tests
 
             stack.EnsureCapacity(count + 1);
             Assert.Equal(copiedList, stack);
+
+            for (int i = 0; i < count; i++)
+            {
+                Assert.Equal(copiedList[i], stack.Pop());
+            }
         }
     }
 }

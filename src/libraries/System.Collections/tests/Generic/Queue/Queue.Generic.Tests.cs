@@ -320,5 +320,89 @@ namespace System.Collections.Tests
             Assert.False(new Queue<T>().TryPeek(out result));
             Assert.Equal(default(T), result);
         }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void Queue_Generic_EnsureCapacity_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
+        {
+            Queue<T> queue = GenericQueueFactory(count);
+            IEnumerator<T> copiedEnumerator = new List<T>(queue).GetEnumerator();
+            IEnumerator<T> enumerator = queue.GetEnumerator();
+
+            queue.EnsureCapacity(count + 1);
+
+            while (enumerator.MoveNext())
+            {
+                copiedEnumerator.MoveNext();
+                Assert.Equal(copiedEnumerator.Current, enumerator.Current);
+            }
+        }
+
+        [Fact]
+        public void Queue_Generic_EnsureCapacity_NotInitialized_RequestedZero_ReturnsZero()
+        {
+            var queue = GenericQueueFactory();
+            Assert.Equal(0, queue.EnsureCapacity(0));
+        }
+
+        [Fact]
+        public void Queue_Generic_EnsureCapacity_NegativeCapacityRequested_Throws()
+        {
+            var queue = GenericQueueFactory();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => queue.EnsureCapacity(-1));
+        }
+
+        [Theory]
+        [InlineData(5)]
+        public void Queue_Generic_EnsureCapacity_RequestedCapacitySmallerThanOrEqualToCurrent_CapacityUnchanged(int currentCapacity)
+        {
+            var queue = new Queue<T>(currentCapacity);
+
+            for (int requestCapacity = 0; requestCapacity <= currentCapacity; requestCapacity++)
+            {
+                Assert.Equal(currentCapacity, queue.EnsureCapacity(requestCapacity));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void Queue_Generic_EnsureCapacity_RequestedCapacitySmallerThanOrEqualToCount_CapacityUnchanged(int count)
+        {
+            Queue<T> queue = GenericQueueFactory(count);
+
+            for (int requestCapacity = 0; requestCapacity <= count; requestCapacity++)
+            {
+                Assert.Equal(count, queue.EnsureCapacity(requestCapacity));
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(5)]
+        public void Queue_Generic_EnsureCapacity_CapacityIsAtLeastTheRequested(int count)
+        {
+            Queue<T> queue = GenericQueueFactory(count);
+
+            int requestCapacity = count + 1;
+            int newCapacity = queue.EnsureCapacity(requestCapacity);
+            Assert.InRange(newCapacity, requestCapacity, int.MaxValue);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void Queue_Generic_EnsureCapacity_RequestingLargerCapacity_DoesNotImpactQueueContent(int count)
+        {
+            Queue<T> queue = GenericQueueFactory(count);
+            var copiedList = new List<T>(queue);
+
+            queue.EnsureCapacity(count + 1);
+            Assert.Equal(copiedList, queue);
+
+            for (int i = 0; i < count; i++)
+            {
+                Assert.Equal(copiedList[i], queue.Dequeue());
+            }
+        }
     }
 }
