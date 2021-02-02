@@ -39,7 +39,7 @@ parameters:
 
 jobs:
 - job: ${{ format('installer_{0}_{1}_{2}_{3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
-  displayName: ${{ format('Installer Build and Test {0} {1} {2} {3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+  displayName: ${{ ${{ format('{0} Installer Build and Test {1} {2} {3} {4}', parameters.pgoInstrument parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
 
   condition: and(succeeded(), ${{ parameters.condition }})
   pool: ${{ parameters.pool }}
@@ -393,7 +393,7 @@ jobs:
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
         parameters:
-          filesToSign: 
+          filesToSign:
           - name: dotnet
             path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
             entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
@@ -405,7 +405,7 @@ jobs:
       displayName: Build and Package
       continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
-  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
     - script: |
         du -sh $(Build.SourcesDirectory)/*
         df -h

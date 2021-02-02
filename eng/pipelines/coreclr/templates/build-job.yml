@@ -126,6 +126,9 @@ jobs:
       - name: ninjaArg
         value: '-ninja'
 
+    - name: pgoInstrument
+      value: '${{ parameters.pgoInstrument }}'
+
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
 

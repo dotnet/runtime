@@ -294,6 +294,20 @@ stages:
       - windows_x64
       - windows_arm
       - windows_arm64
+  #
+  # PGO Build
+  #
+- ${{ if eq(variables.isOfficialBuild, true) }}:
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      jobParameters:
+        isOfficialBuild: true
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        pgoInstrument: true
+      platforms:
+      - windows_x64
+
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml
