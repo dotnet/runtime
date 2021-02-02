@@ -204,6 +204,22 @@ namespace System
             => IsMacOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
         /// <summary>
+        /// Indicates whether the current application is running on Mac Catalyst.
+        /// </summary>
+        public static bool IsMacCatalyst() =>
+#if TARGET_CATALYST
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Check for the tvOS version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given tvOS release.
+        /// </summary>
+        public static bool IsMacCatalystVersionAtLeast(int major, int minor = 0, int build = 0)
+            => IsMacCatalyst() && IsOSVersionAtLeast(major, minor, build, 0);
+
+        /// <summary>
         /// Indicates whether the current application is running on tvOS.
         /// </summary>
         public static bool IsTvOS() =>
