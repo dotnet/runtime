@@ -567,6 +567,97 @@ LsraLocation Referenceable::getNextRefLocation()
     }
 }
 
+// Iterate through all the registers of the given type
+class RegisterIterator
+{
+    friend class Registers;
+
+public:
+    RegisterIterator(RegisterType type) : regType(type)
+    {
+        if (useFloatReg(regType))
+        {
+            currentRegNum = REG_FP_FIRST;
+        }
+        else
+        {
+            currentRegNum = REG_INT_FIRST;
+        }
+    }
+
+protected:
+    static RegisterIterator Begin(RegisterType regType)
+    {
+        return RegisterIterator(regType);
+    }
+    static RegisterIterator End(RegisterType regType)
+    {
+        RegisterIterator endIter = RegisterIterator(regType);
+        // This assumes only integer and floating point register types
+        // if we target a processor with additional register types,
+        // this would have to change
+        if (useFloatReg(regType))
+        {
+            // This just happens to work for both double & float
+            endIter.currentRegNum = REG_NEXT(REG_FP_LAST);
+        }
+        else
+        {
+            endIter.currentRegNum = REG_NEXT(REG_INT_LAST);
+        }
+        return endIter;
+    }
+
+public:
+    void operator++(int dummy) // int dummy is c++ for "this is postfix ++"
+    {
+        currentRegNum = REG_NEXT(currentRegNum);
+#ifdef TARGET_ARM
+        if (regType == TYP_DOUBLE)
+            currentRegNum = REG_NEXT(currentRegNum);
+#endif
+    }
+    void operator++() // prefix operator++
+    {
+        currentRegNum = REG_NEXT(currentRegNum);
+#ifdef TARGET_ARM
+        if (regType == TYP_DOUBLE)
+            currentRegNum = REG_NEXT(currentRegNum);
+#endif
+    }
+    regNumber operator*()
+    {
+        return currentRegNum;
+    }
+    bool operator!=(const RegisterIterator& other)
+    {
+        return other.currentRegNum != currentRegNum;
+    }
+
+private:
+    regNumber    currentRegNum;
+    RegisterType regType;
+};
+
+class Registers
+{
+public:
+    friend class RegisterIterator;
+    RegisterType type;
+    Registers(RegisterType t)
+    {
+        type = t;
+    }
+    RegisterIterator begin()
+    {
+        return RegisterIterator::Begin(type);
+    }
+    RegisterIterator end()
+    {
+        return RegisterIterator::End(type);
+    }
+};
+
 #ifdef DEBUG
 void LinearScan::dumpVarToRegMap(VarToRegMap map)
 {
@@ -3362,9 +3453,8 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             regNumber farthestCandidateRegNum = genRegNumFromMask(farthestCandidateBit);
 
             // Find the next RefPosition of the register.
-            LsraLocation nextIntervalLocation =
-                getNextIntervalRef(farthestCandidateRegNum, currentInterval->registerType);
-            LsraLocation nextPhysRefLocation = Min(nextFixedRef[farthestCandidateRegNum], nextIntervalLocation);
+            LsraLocation nextIntervalLocation = nextIntervalRef[farthestCandidateRegNum];
+            LsraLocation nextPhysRefLocation  = Min(nextFixedRef[farthestCandidateRegNum], nextIntervalLocation);
             if (nextPhysRefLocation == farthestLocation)
             {
                 farthestSet |= farthestCandidateBit;
@@ -3390,70 +3480,22 @@ regNumber LinearScan::allocateReg(Interval* currentInterval, RefPosition* refPos
             prevRegOptCandidates &= ~prevRegOptCandidateBit;
             regNumber prevRegOptCandidateRegNum = genRegNumFromMask(prevRegOptCandidateBit);
             Interval* assignedInterval          = physRegs[prevRegOptCandidateRegNum].assignedInterval;
-            bool      foundPrevRegOptReg        = true;
-#ifdef DEBUG
-            bool hasAssignedInterval = false;
-#endif
-
-            if ((assignedInterval != nullptr) && (assignedInterval->recentRefPosition != nullptr))
-            {
-                foundPrevRegOptReg &=
-                    (assignedInterval->recentRefPosition->reload && assignedInterval->recentRefPosition->RegOptional());
-#ifdef DEBUG
-                hasAssignedInterval = true;
-#endif
-            }
-#ifndef TARGET_ARM
-            else
-            {
-                foundPrevRegOptReg = false;
-            }
-#endif
-
-#ifdef TARGET_ARM
-            // If current interval is TYP_DOUBLE, verify if the other half register matches the heuristics.
-            // We have three cases:
-            // 1. One of the register of the pair have an assigned interval: Check if that register's refPosition
-            // matches the heuristics. If yes, add it to the set.
-            // 2. Both registers of the pair have an assigned interval: Conservatively "and" conditions for
-            // heuristics of their corresponding refPositions. If both register's heuristic matches, add them
-            // to the set. TODO-CQ-ARM: We may implement a better condition later.
-            // 3. None of the register have an assigned interval: Skip adding register and assert.
-            if (currentInterval->registerType == TYP_DOUBLE)
-            {
-                regNumber anotherHalfRegNum = findAnotherHalfRegNum(prevRegOptCandidateRegNum);
-                assignedInterval            = physRegs[anotherHalfRegNum].assignedInterval;
-                if ((assignedInterval != nullptr) && (assignedInterval->recentRefPosition != nullptr))
-                {
-                    if (assignedInterval->recentRefPosition->reload &&
-                        assignedInterval->recentRefPosition->RegOptional())
-                    {
-                        foundPrevRegOptReg &= (assignedInterval->recentRefPosition->reload &&
-                                               assignedInterval->recentRefPosition->RegOptional());
-                    }
-#ifdef DEBUG
-                    hasAssignedInterval = true;
-#endif
-                }
-            }
-#endif
-
-            if (foundPrevRegOptReg)
-            {
-                // TODO-Cleanup: Previously, we always used the highest regNum with a previous regOptional
-                // RefPosition, which is not really consistent with the way other selection criteria are
-                // applied. should probably be: prevRegOptSet |= prevRegOptCandidateBit;
-                prevRegOptSet = prevRegOptCandidateBit;
-            }
-
-#ifdef DEBUG
             // The assigned should be non-null, and should have a recentRefPosition, however since
             // this is a heuristic, we don't want a fatal error, so we just assert (not noway_assert).
-            if (!hasAssignedInterval)
+            if ((assignedInterval != nullptr) && (assignedInterval->recentRefPosition != nullptr))
+            {
+                if (assignedInterval->recentRefPosition->reload && assignedInterval->recentRefPosition->RegOptional())
+                {
+                    // TODO-Cleanup: Previously, we always used the highest regNum with a previous regOptional
+                    // RefPosition, which is not really consistent with the way other selection criteria are applied.
+                    // should probably be: prevRegOptSet |= prevRegOptCandidateBit;
+                    prevRegOptSet = prevRegOptCandidateBit;
+                }
+            }
+            else
             {
                 assert(!"Spill candidate has no assignedInterval recentRefPosition");
             }
-#endif
         }
         found = selector.applySelection(PREV_REG_OPT, prevRegOptSet);
     }
@@ -4550,41 +4592,26 @@ RegRecord* LinearScan::getSecondHalfRegRec(RegRecord* regRec)
 //
 RegRecord* LinearScan::findAnotherHalfRegRec(RegRecord* regRec)
 {
-    regNumber anotherHalfRegNum = findAnotherHalfRegNum(regRec->regNum);
-    return getRegisterRecord(anotherHalfRegNum);
-}
-//------------------------------------------------------------------------------------------
-// findAnotherHalfRegNum: Find another half register's number which forms same ARM32 double register
-//
-// Arguments:
-//    regNumber - A float regNumber
-//
-// Assumptions:
-//    None
-//
-// Return Value:
-//    A register number which forms same double register with regNum.
-//
-regNumber LinearScan::findAnotherHalfRegNum(regNumber regNum)
-{
-    regNumber anotherHalfRegNum;
+    regNumber  anotherHalfRegNum;
+    RegRecord* anotherHalfRegRec;
 
-    assert(genIsValidFloatReg(regNum));
+    assert(genIsValidFloatReg(regRec->regNum));
 
     // Find another half register for TYP_DOUBLE interval,
     // following same logic in canRestorePreviousInterval().
-    if (genIsValidDoubleReg(regNum))
+    if (genIsValidDoubleReg(regRec->regNum))
     {
-        anotherHalfRegNum = REG_NEXT(regNum);
+        anotherHalfRegNum = REG_NEXT(regRec->regNum);
         assert(!genIsValidDoubleReg(anotherHalfRegNum));
     }
     else
     {
-        anotherHalfRegNum = REG_PREV(regNum);
+        anotherHalfRegNum = REG_PREV(regRec->regNum);
         assert(genIsValidDoubleReg(anotherHalfRegNum));
     }
+    anotherHalfRegRec = getRegisterRecord(anotherHalfRegNum);
 
-    return anotherHalfRegNum;
+    return anotherHalfRegRec;
 }
 #endif
 
