@@ -1963,10 +1963,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureObjcBridge)' == 'true'">
+  <ItemGroup Condition="'$(FeatureObjCBridge)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Bridge.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureObjcBridge)' != 'true'">
+  <ItemGroup Condition="'$(FeatureObjCBridge)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\Bridge.PlatformNotSupported.cs" />
   </ItemGroup>
 </Project>
