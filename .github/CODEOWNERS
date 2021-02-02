@@ -20,8 +20,6 @@
 /src/mono/llvm @vargaz @SamMonoRT @imhameed @EgorBo
 
 /src/mono/mono/arch @vargaz
-/src/mono/mono/benchmark @SamMonoRT @naricc
-/src/mono/mono/dis @lambdageek @vargaz
 /src/mono/mono/eglib @vargaz @lambdageek @CoffeeFlux
 
 /src/mono/mono/metadata @vargaz @lambdageek @thaystg @CoffeeFlux
@@ -43,7 +41,6 @@
 /src/mono/mono/mini/debugger-agent.c @vargaz @thaystg @DavidKarlas @lambdageek
 /src/mono/mono/mini/interp/* @BrzVlad @vargaz
 
-/src/mono/mono/native @egorbo @marek-safar
 /src/mono/mono/profiler @BrzVlad @lambdageek
 /src/mono/mono/sgen @BrzVlad @lambdageek @naricc
 
@@ -56,4 +53,4 @@
 /src/mono/mono/utils/mono-state* @lambdageek
 /src/mono/mono/utils/mono-threads* @lambdageek @vargaz
 
-/src/mono/netcore @marek-safar @akoeplinger @egorbo @vargaz @steveisok
+/src/mono/netcore @marek-safar @akoeplinger @vargaz @steveisok
