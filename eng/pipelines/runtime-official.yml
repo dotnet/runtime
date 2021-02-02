@@ -297,11 +297,10 @@ stages:
   #
   # PGO Build
   #
-- ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/installer/installer-matrix.yml
     parameters:
       jobParameters:
-        isOfficialBuild: true
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
         liveLibrariesBuildConfig: Release
         pgoInstrument: true
