@@ -203,11 +203,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             ");
 
             Assert.Equal(50, HelperMarshal._funcActionBufferResultValue.Length);
-            Assert.Equal(HelperMarshal._funcActionBufferResultLengthValue, HelperMarshal._funcActionBufferResultValue.Length);
-            Assert.NotEqual("[object Uint8ClampedArray]", objectPrototype.Call(HelperMarshal._funcActionBufferResultValue));
+            Assert.Equal(HelperMarshal._funcActionBufferResultValue.Length, HelperMarshal._funcActionBufferResultLengthValue);
             Assert.Equal("[object Uint8Array]", objectPrototype.Call(HelperMarshal._funcActionBufferResultValue));
-
         }
-
     }
 }
