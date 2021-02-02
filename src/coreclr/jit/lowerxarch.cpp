@@ -1516,6 +1516,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         }
 
         assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == 32));
+        assert(simdSize % 4 == 0);
 
         bool allBitsAreUnset        = true;
         bool allBitsAreSet          = true;
@@ -1539,19 +1540,37 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         if (allBitsAreUnset)
         {
-            node->gtOp1 = nullptr;
-            node->gtOp2 = nullptr;
-
-            node->gtHWIntrinsicId = NI_Vector128_get_Zero;
-            return;
+            if (simdSize == 16)
+            {
+                node->gtOp1 = nullptr;
+                node->gtOp2 = nullptr;
+                node->gtHWIntrinsicId = NI_Vector128_get_Zero;
+                return;
+            }
+            else if (simdSize == 32)
+            {
+                node->gtOp1 = nullptr;
+                node->gtOp2 = nullptr;
+                node->gtHWIntrinsicId = NI_Vector256_get_Zero;
+                return;
+            }
         }
         else if (allBitsAreSet)
         {
-            node->gtOp1 = nullptr;
-            node->gtOp2 = nullptr;
-
-            node->gtHWIntrinsicId = NI_Vector128_get_AllBitsSet;
-            return;
+            if (simdSize == 16)
+            {
+                node->gtOp1 = nullptr;
+                node->gtOp2 = nullptr;
+                node->gtHWIntrinsicId = NI_Vector128_get_AllBitsSet;
+                return;
+            }
+            else if (simdSize == 32)
+            {
+                node->gtOp1 = nullptr;
+                node->gtOp2 = nullptr;
+                node->gtHWIntrinsicId = NI_Vector256_get_AllBitsSet;
+                return;
+            }
         }
 
         unsigned cnsSize = (simdSize != 12) ? simdSize : 16;

@@ -976,17 +976,31 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
             if (vecCns.i64[0] == 0)
             {
+                if (simdSize == 8)
+                {
+                    node->gtOp1 = nullptr;
+                    node->gtOp2 = nullptr;
+                    node->gtHWIntrinsicId = NI_Vector64_get_Zero;
+                    return;
+                }
+                assert(simdSize == 16);
                 node->gtOp1 = nullptr;
                 node->gtOp2 = nullptr;
-
                 node->gtHWIntrinsicId = NI_Vector128_get_Zero;
                 return;
             }
             else if (vecCns.i64[0] == -1)
             {
+                if (simdSize == 8)
+                {
+                    node->gtOp1 = nullptr;
+                    node->gtOp2 = nullptr;
+                    node->gtHWIntrinsicId = NI_Vector64_get_AllBitsSet;
+                    return;
+                }
+                assert(simdSize == 16);
                 node->gtOp1 = nullptr;
                 node->gtOp2 = nullptr;
-
                 node->gtHWIntrinsicId = NI_Vector128_get_AllBitsSet;
                 return;
             }
