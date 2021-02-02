@@ -2199,8 +2199,8 @@ register_methods_in_jinfo (MonoAotModule *amodule)
 		/* The 'end' parameter is exclusive */
 		mono_jit_info_add_aot_module (assembly->image, GINT_TO_POINTER (start_method), GINT_TO_POINTER (end_method + 1));
 
-		for (int j = GINT_TO_POINTER (start_method); j < GINT_TO_POINTER (end_method + 1); ++j)
-			g_assert (!mono_bitset_test_fast (registered, GPOINTER_TO_INT (j)));
+		for (int j = start_method; j < end_method + 1; ++j)
+			g_assert (!mono_bitset_test_fast (registered, j));
 		start = end;
 	}
 	for (i = 0; i < amodule->sorted_methods_len; ++i)

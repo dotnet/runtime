@@ -908,10 +908,8 @@ mono_wasm_get_obj_type (MonoObject *obj)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
-	if (
-		(klass == mono_get_string_class ()) &&
-		(mono_string_is_interned (obj) == obj)
-	)
+	if ((klass == mono_get_string_class ()) &&
+		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj))
 		return MARSHAL_TYPE_STRING_INTERNED;
 
 	MonoType *type = mono_class_get_type (klass);
@@ -937,10 +935,8 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
-	if (
-		(klass == mono_get_string_class ()) &&
-		(mono_string_is_interned (obj) == obj)
-	) {
+	if ((klass == mono_get_string_class ()) &&
+		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj)) {
 		*resultL = 0;
 		return MARSHAL_TYPE_STRING_INTERNED;
 	}
