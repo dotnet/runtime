@@ -6,7 +6,9 @@ using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using Xunit;
 
@@ -53,25 +55,20 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("Hello World");
 
             var extractDir = BundleHelper.GetExtractionDir(fixture, bundler);
-            extractDir.Should().HaveFiles(BundleHelper.GetExtractedFiles(fixture));
+            extractDir.Should().HaveFiles(BundleHelper.GetExtractedFiles(fixture, BundleOptions.BundleNativeBinaries));
             extractDir.Should().NotHaveFiles(BundleHelper.GetFilesNeverExtracted(fixture));
         }
 
-        [InlineData("./foo", BundleOptions.None)]
-        [InlineData("../foo", BundleOptions.None)]
-        [InlineData("foo", BundleOptions.None)]
-        [InlineData("foo/bar", BundleOptions.None)]
-        [InlineData("foo\\bar", BundleOptions.None)]
+        [InlineData("./foo", BundleOptions.BundleAllContent)]
+        [InlineData("../foo", BundleOptions.BundleAllContent)]
+        [InlineData("foo", BundleOptions.BundleAllContent)]
+        [InlineData("foo/bar", BundleOptions.BundleAllContent)]
+        [InlineData("foo\\bar", BundleOptions.BundleAllContent)]
         [InlineData("./foo", BundleOptions.BundleNativeBinaries)]
         [InlineData("../foo", BundleOptions.BundleNativeBinaries)]
         [InlineData("foo", BundleOptions.BundleNativeBinaries)]
         [InlineData("foo/bar", BundleOptions.BundleNativeBinaries)]
         [InlineData("foo\\bar", BundleOptions.BundleNativeBinaries)]
-        [InlineData("./foo", BundleOptions.BundleSymbolFiles)]
-        [InlineData("../foo", BundleOptions.BundleSymbolFiles)]
-        [InlineData("foo", BundleOptions.BundleSymbolFiles)]
-        [InlineData("foo/bar", BundleOptions.BundleSymbolFiles)]
-        [InlineData("foo\\bar", BundleOptions.BundleSymbolFiles)]
         [Theory]
         private void Bundle_Extraction_To_Relative_Path_Succeeds(string relativePath, BundleOptions bundleOptions)
         {
@@ -80,7 +77,8 @@ namespace AppHost.Bundle.Tests
             var bundler = BundleHelper.BundleApp(fixture, out var singleFile, bundleOptions);
 
             // Run the bundled app (extract files to <path>)
-            Command.Create(singleFile)
+            var cmd = Command.Create(singleFile);
+            cmd.WorkingDirectory(Path.GetDirectoryName(singleFile))
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, relativePath)
@@ -90,7 +88,7 @@ namespace AppHost.Bundle.Tests
                 .And
                 .HaveStdOutContaining("Hello World");
 
-            var extractedFiles = BundleHelper.GetExtractedFiles(fixture);
+            var extractedFiles = BundleHelper.GetExtractedFiles(fixture, bundleOptions);
             var extractedDir = new DirectoryInfo(Path.Combine(Path.GetDirectoryName(singleFile),
                 relativePath,
                 fixture.TestProject.ProjectName,
@@ -176,7 +174,7 @@ namespace AppHost.Bundle.Tests
 
             // Remove the extracted files, but keep the extraction directory
             var extractDir = BundleHelper.GetExtractionDir(fixture, bundler);
-            var extractedFiles = BundleHelper.GetExtractedFiles(fixture);
+            var extractedFiles = BundleHelper.GetExtractedFiles(fixture, BundleOptions.BundleNativeBinaries);
 
             Array.ForEach(extractedFiles, file => File.Delete(Path.Combine(extractDir.FullName, file)));
 

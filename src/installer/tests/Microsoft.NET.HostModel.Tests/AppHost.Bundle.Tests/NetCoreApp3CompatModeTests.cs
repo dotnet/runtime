@@ -22,36 +22,6 @@ namespace AppHost.Bundle.Tests
             sharedTestState = fixture;
         }
 
-        [InlineData("./extract")]
-        [InlineData("../extract")]
-        [InlineData("extract")]
-        [InlineData("extract/foo")]
-        [InlineData("extract\\foo")]
-        [Theory]
-        private void Bundle_Extraction_To_Relative_Path(string relativePath)
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-            UseSingleFileSelfContainedHost(fixture);
-            Bundler bundler = BundleHelper.BundleApp(fixture, out string singleFile, BundleOptions.BundleAllContent);
-
-            var cmd = Command.Create(singleFile);
-            cmd.WorkingDirectory(Path.GetDirectoryName(singleFile))
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, relativePath)
-                .Execute()
-                .Should()
-                .Pass();
-
-            var pathToFile = Path.Combine(Path.GetDirectoryName(singleFile),
-                relativePath,
-                fixture.TestProject.ProjectName,
-                bundler.BundleManifest.BundleID,
-                fixture.TestProject.AssemblyName + ".dll");
-
-            Assert.True(File.Exists(pathToFile));
-        }
-
         [Fact]
         public void Bundle_Is_Extracted()
         {
