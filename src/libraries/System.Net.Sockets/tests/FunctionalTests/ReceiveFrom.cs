@@ -19,8 +19,6 @@ namespace System.Net.Sockets.Tests
 
         protected static readonly TimeSpan CancellationTestTimeout = TimeSpan.FromSeconds(30);
 
-        protected virtual string RemoteEndPointArgumentName => "remoteEP";
-
         protected ReceiveFrom(ITestOutputHelper output) : base(output) { }
 
         [Theory]
@@ -57,11 +55,11 @@ namespace System.Net.Sockets.Tests
             using Socket socket = CreateSocket();
             if (UsesEap)
             {
-                await Assert.ThrowsAsync<ArgumentException>(RemoteEndPointArgumentName, () => ReceiveFromAsync(socket, new byte[1], null));
+                await Assert.ThrowsAsync<ArgumentException>(() => ReceiveFromAsync(socket, new byte[1], null));
             }
             else
             {
-                await Assert.ThrowsAsync<ArgumentNullException>(RemoteEndPointArgumentName, () => ReceiveFromAsync(socket, new byte[1], null));
+                await Assert.ThrowsAsync<ArgumentNullException>(() => ReceiveFromAsync(socket, new byte[1], null));
             }   
         }
 
@@ -70,7 +68,7 @@ namespace System.Net.Sockets.Tests
         {
             using var ipv4Socket = CreateSocket();
             EndPoint ipV6Endpoint = GetGetDummyTestEndpoint(AddressFamily.InterNetworkV6);
-            await Assert.ThrowsAsync<ArgumentException>(RemoteEndPointArgumentName, () => ReceiveFromAsync(ipv4Socket, new byte[1], ipV6Endpoint));
+            await Assert.ThrowsAsync<ArgumentException>(() => ReceiveFromAsync(ipv4Socket, new byte[1], ipV6Endpoint));
         }
 
         [Fact]
@@ -260,8 +258,6 @@ namespace System.Net.Sockets.Tests
     {
         public ReceiveFrom_Apm(ITestOutputHelper output) : base(output) { }
 
-        protected override string RemoteEndPointArgumentName => "remoteEP";
-
         [Fact]
         public void EndReceiveFrom_NullAsyncResult_Throws_ArgumentNullException()
         {
@@ -330,15 +326,11 @@ namespace System.Net.Sockets.Tests
     public sealed class ReceiveFrom_Task : ReceiveFrom<SocketHelperTask>
     {
         public ReceiveFrom_Task(ITestOutputHelper output) : base(output) { }
-
-        protected override string RemoteEndPointArgumentName => "remoteEndPoint";
     }
 
     public sealed class ReceiveFrom_CancellableTask : ReceiveFrom<SocketHelperCancellableTask>
     {
         public ReceiveFrom_CancellableTask(ITestOutputHelper output) : base(output) { }
-
-        protected override string RemoteEndPointArgumentName => "remoteEndPoint";
 
         [Theory]
         [MemberData(nameof(LoopbacksAndBuffers))]
@@ -365,8 +357,6 @@ namespace System.Net.Sockets.Tests
     {
         public ReceiveFrom_Eap(ITestOutputHelper output) : base(output) { }
 
-        protected override string RemoteEndPointArgumentName => "e";
-
         [Fact]
         public void ReceiveFromAsync_NullAsyncEventArgs_Throws_ArgumentNullException()
         {
@@ -388,14 +378,10 @@ namespace System.Net.Sockets.Tests
     public sealed class ReceiveFrom_MemoryArrayTask : ReceiveFrom<SocketHelperMemoryArrayTask>
     {
         public ReceiveFrom_MemoryArrayTask(ITestOutputHelper output) : base(output) { }
-
-        protected override string RemoteEndPointArgumentName => "remoteEndPoint";
     }
 
     public sealed class ReceiveFrom_MemoryNativeTask : ReceiveFrom<SocketHelperMemoryNativeTask>
     {
         public ReceiveFrom_MemoryNativeTask(ITestOutputHelper output) : base(output) { }
-
-        protected override string RemoteEndPointArgumentName => "remoteEndPoint";
     }
 }
