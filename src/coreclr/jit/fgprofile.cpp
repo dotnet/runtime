@@ -932,24 +932,23 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 // Notes:
 //   Count data for inlinees is scaled (usually down).
 //
+//   Since we are now running before the importer, we do not know which
+//   blocks will be imported, and we should not see any internal blocks.
+//
 // Todo:
 //   Normalize counts.
 //
 //   Take advantage of the (likely) correspondence between block order
 //   and schema order?
 //
+//   Find some other mechanism for handling cases where handler entry
+//   blocks must be in the hot section.
+//
 void Compiler::fgIncorporateBlockCounts()
 {
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         BasicBlock::weight_t profileWeight;
-
-        // Skip internal and un-imported blocks.
-        //
-        if ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) != BBF_IMPORTED)
-        {
-            continue;
-        }
 
         if (fgGetProfileWeightForBasicBlock(block->bbCodeOffs, &profileWeight))
         {
@@ -972,6 +971,16 @@ void Compiler::fgIncorporateBlockCounts()
             {
                 block->bbFlags &= ~BBF_RUN_RARELY;
             }
+
+#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
+            // Handle a special case -- some handler entries can't have zero profile count.
+            //
+            if (this->bbIsHandlerBeg(block) && block->isRunRarely())
+            {
+                JITDUMP("Suppressing zero count for " FMT_BB " as it is a handler entry\n", block->bbNum);
+                block->makeBlockHot();
+            }
+#endif
         }
     }
 }
