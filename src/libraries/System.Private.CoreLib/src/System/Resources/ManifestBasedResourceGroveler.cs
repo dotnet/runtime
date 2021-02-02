@@ -36,7 +36,7 @@ namespace System.Resources
     internal partial class ManifestBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;
-        private static bool AllowReflectionForNonPrimitiveObjects { get; } = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveObjects", out bool allowReflection) ? allowReflection : true;
+        private static bool AllowReflectionForNonPrimitiveTypes { get; } = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveTypes", out bool allowReflection) ? allowReflection : true;
 
         public ManifestBasedResourceGroveler(ResourceManager.ResourceManagerMediator mediator)
         {
@@ -234,7 +234,7 @@ namespace System.Resources
                     }
                     else
                     {
-                        if (AllowReflectionForNonPrimitiveObjects)
+                        if (AllowReflectionForNonPrimitiveTypes)
                         {
                             Debug.Assert(readerTypeName != null, "Reader Type name should be set");
                             Debug.Assert(resSetTypeName != null, "ResourceSet Type name should be set");

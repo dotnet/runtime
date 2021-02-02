@@ -162,7 +162,7 @@ namespace System.Resources
             }
         }
 
-        private static bool AllowReflectionForNonPrimitiveObjects { get; } = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveObjects", out bool allowReflection) ? allowReflection : true;
+        private static bool AllowReflectionForNonPrimitiveTypes { get; } = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveTypes", out bool allowReflection) ? allowReflection : true;
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
@@ -926,7 +926,7 @@ namespace System.Resources
             }
             if (_typeTable[typeIndex] == null)
             {
-                if (AllowReflectionForNonPrimitiveObjects)
+                if (AllowReflectionForNonPrimitiveTypes)
                 {
                     UseReflectionToGetType(typeIndex);
                 }
