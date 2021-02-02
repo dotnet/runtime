@@ -218,7 +218,6 @@ namespace System.IO
         [InlineData(FileSystemRights.Read | FileSystemRights.Write)]
         [InlineData(FileSystemRights.Read | FileSystemRights.Write | FileSystemRights.ExecuteFile)]
         [InlineData(FileSystemRights.ReadAndExecute)]
-        [InlineData(FileSystemRights.ReadAttributes | FileSystemRights.ReadData | FileSystemRights.ReadPermissions)]
         public void DirectoryInfo_Create_DirectorySecurityWithSpecificAccessRule(FileSystemRights rights)
         {
             using var directory = new TempAclDirectory();
@@ -226,6 +225,36 @@ namespace System.IO
             DirectoryInfo info = new DirectoryInfo(path);
 
             DirectorySecurity expectedSecurity = GetDirectorySecurity(rights);
+
+            info.Create(expectedSecurity);
+
+            Assert.True(Directory.Exists(path));
+
+            DirectoryInfo actualInfo = new DirectoryInfo(info.FullName);
+
+            DirectorySecurity actualSecurity = actualInfo.GetAccessControl(AccessControlSections.Access);
+
+            VerifyAccessSecurity(expectedSecurity, actualSecurity);
+        }
+
+        [Theory]
+        [InlineData(FileSystemRights.TakeOwnership)]
+        [InlineData(FileSystemRights.Write)]
+        public void DirectoryInfo_Create_MultipleAddAccessRules(FileSystemRights rightsToDeny)
+        {
+            var expectedSecurity = new DirectorySecurity();
+
+            var identity = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+
+            var allowAccessRule = new FileSystemAccessRule(identity, FileSystemRights.Read, AccessControlType.Allow);
+            expectedSecurity.AddAccessRule(allowAccessRule);
+
+            var denyAccessRule = new FileSystemAccessRule(identity, rightsToDeny, AccessControlType.Deny);
+            expectedSecurity.AddAccessRule(denyAccessRule);
+
+            using var directory = new TempAclDirectory();
+            string path = Path.Combine(directory.Path, "directory");
+            DirectoryInfo info = new DirectoryInfo(path);
 
             info.Create(expectedSecurity);
 
@@ -350,7 +379,7 @@ namespace System.IO
 
             FileSecurity expectedSecurity = GetFileSecurity(FileSystemRights.FullControl);
 
-            info.Create(
+            using FileStream stream = info.Create(
                 FileMode.Create,
                 FileSystemRights.FullControl,
                 FileShare.ReadWrite | FileShare.Delete,
@@ -360,7 +389,45 @@ namespace System.IO
 
             Assert.True(File.Exists(path));
 
-            FileInfo actualInfo = new FileInfo(info.FullName);
+            var actualInfo = new FileInfo(info.FullName);
+
+            FileSecurity actualSecurity = actualInfo.GetAccessControl(AccessControlSections.Access);
+
+            VerifyAccessSecurity(expectedSecurity, actualSecurity);
+        }
+
+
+        [Theory]
+        [InlineData(FileSystemRights.TakeOwnership)]
+        [InlineData(FileSystemRights.Write)]
+        public void FileInfo_Create_MultipleAddAccessRules(FileSystemRights rightsToDeny)
+        {
+            var expectedSecurity = new FileSecurity();
+
+            var identity = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+
+            var allowAccessRule = new FileSystemAccessRule(identity, FileSystemRights.Read, AccessControlType.Allow);
+            expectedSecurity.AddAccessRule(allowAccessRule);
+
+            var denyAccessRule = new FileSystemAccessRule(identity, rightsToDeny, AccessControlType.Deny);
+            expectedSecurity.AddAccessRule(denyAccessRule);
+
+            using var directory = new TempAclDirectory();
+
+            string path = Path.Combine(directory.Path, "file.txt");
+            var info = new FileInfo(path);
+
+            using FileStream stream = info.Create(
+                FileMode.Create,
+                FileSystemRights.FullControl,
+                FileShare.ReadWrite | FileShare.Delete,
+                DefaultBufferSize,
+                FileOptions.None,
+                expectedSecurity);
+
+            Assert.True(File.Exists(path));
+
+            var actualInfo = new FileInfo(info.FullName);
 
             FileSecurity actualSecurity = actualInfo.GetAccessControl(AccessControlSections.Access);
 
@@ -392,7 +459,7 @@ namespace System.IO
         }
 
         [Fact]
-        public void DirectorySecurity_CreateDirectory_DirectorySecurityWithSpecificAccessRule()
+        public void DirectorySecurity_CreateDirectory_DirectoryAlreadyExists()
         {
             using var directory = new TempAclDirectory();
             string path = Path.Combine(directory.Path, "createMe");
@@ -423,13 +490,9 @@ namespace System.IO
         private DirectorySecurity GetDirectorySecurity(FileSystemRights rights)
         {
             DirectorySecurity security = new DirectorySecurity();
-
             SecurityIdentifier identity = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
-
             FileSystemAccessRule accessRule = new FileSystemAccessRule(identity, rights, AccessControlType.Allow);
-
             security.AddAccessRule(accessRule);
-
             return security;
         }
 

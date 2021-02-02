@@ -24,17 +24,23 @@ namespace System.IO
                 foreach (string dirPath in Directory.EnumerateDirectories(Path, "*", SearchOption.AllDirectories))
                 {
                     var dirInfo = new DirectoryInfo(dirPath);
-                    dirInfo.SetAccessControl(new DirectorySecurity(dirPath, AccessControlSections.Access));
+                    var dirSecurity = new DirectorySecurity(dirPath, AccessControlSections.Access);
+                    dirSecurity.AddAccessRule(accessRule);
+                    dirInfo.SetAccessControl(dirSecurity);
                 }
 
                 foreach (string filePath in Directory.EnumerateFiles(Path, "*", SearchOption.AllDirectories))
                 {
                     var fileInfo = new FileInfo(filePath);
-                    fileInfo.SetAccessControl(new FileSecurity(filePath, AccessControlSections.Access));
+                    var fileSecurity = new FileSecurity(filePath, AccessControlSections.Access);
+                    fileSecurity.AddAccessRule(accessRule);
+                    fileInfo.SetAccessControl(fileSecurity);
                 }
 
                 var rootDirInfo = new DirectoryInfo(Path);
-                rootDirInfo.SetAccessControl(new DirectorySecurity(Path, AccessControlSections.Access));
+                var rootSecurity = new DirectorySecurity(Path, AccessControlSections.Access);
+                rootSecurity.AddAccessRule(accessRule);
+                rootDirInfo.SetAccessControl(rootSecurity);
                 rootDirInfo.Delete(recursive: true);
             }
             catch { /* Do not throw because we call this on finalize */ }
