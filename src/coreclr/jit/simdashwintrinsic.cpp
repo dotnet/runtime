@@ -388,6 +388,15 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     // We should have already exited early if SSE2 isn't supported
     assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
+    // Vector<T>, when 32-bytes, requires at least AVX2
+    assert(!isVectorT256 || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+#elif defined(TARGET_ARM64)
+    // We should have already exited early if AdvSimd isn't supported
+    assert(compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
     switch (intrinsic)
     {
 #if defined(TARGET_X86)
@@ -421,6 +430,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             break;
         }
 
+#if defined(TARGET_XARCH)
         case NI_VectorT128_Dot:
         {
             if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
@@ -433,22 +443,14 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             }
             break;
         }
+#endif // TARGET_XARCH
 
         default:
         {
-            // Most intrinsics have some path that works even if only SSE2 is available
+            // Most intrinsics have some path that works even if only SSE2/AdvSimd is available
             break;
         }
     }
-
-    // Vector<T>, when 32-bytes, requires at least AVX2
-    assert(!isVectorT256 || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-#elif defined(TARGET_ARM64)
-    // We should have already exited early if AdvSimd isn't supported
-    assert(compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
 
     GenTree* copyBlkDst = nullptr;
     GenTree* copyBlkSrc = nullptr;
