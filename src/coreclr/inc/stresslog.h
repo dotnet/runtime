@@ -316,25 +316,29 @@ public:
 
 #ifdef MEMORY_MAPPED_STRESSLOG
     MapViewHolder hMapView;
-    uint8_t* memoryBase;                    // base of the memory mapped file
-    uint8_t* memoryCur;                     // current allocation pointer in the memory mapped file
-    uint8_t* memoryLimit;                   // limit of the memory mapped file
     static void* AllocMemoryMapped(size_t n);
 
     struct ModuleDesc
     {
-        uint8_t* baseAddress;
-        size_t size;
+        uint8_t*      baseAddress;
+        size_t        size;
     };
-    static const size_t MAX_MODULES = 2;
+    static const size_t MAX_MODULES = 5;
     struct StressLogHeader
     {
-        uint8_t* memoryMapBaseAddress;
-        ModuleDesc modules[MAX_MODULES];
-        Volatile<ThreadStressLog*> logs;        // the list of logs for every thread.
-        unsigned __int64 tickFrequency;         // number of ticks per second
-        unsigned __int64 startTimeStamp;        // start time from when tick counter started
-        uint8_t moduleImage[64 * 1024 * 1024];  // copy of the module images described by modules field
+        size_t        headerSize;               // size of this header including size field and moduleImage
+        uint32_t      magic;                    // must be 'STRL'
+        uint32_t      version;                  // must be 0x00010001
+        uint8_t*      memoryBase;               // base address of the memory mapped file
+        uint8_t*      memoryCur;                // highest address currently used
+        uint8_t*      memoryLimit;              // limit that can be used
+        Volatile<ThreadStressLog*>  logs;       // the list of logs for every thread.
+        uint64_t      tickFrequency;            // number of ticks per second
+        uint64_t      startTimeStamp;           // start time from when tick counter started
+        uint64_t      threadsWithNoLog;         // threads that didn't get a log
+        uint64_t      reserved[15];             // for future expansion
+        ModuleDesc    modules[MAX_MODULES];     // descriptor of the modules images
+        uint8_t       moduleImage[64*1024*1024];// copy of the module images described by modules field
     };
 
     StressLogHeader* stressLogHeader;       // header to find things in the memory mapped file

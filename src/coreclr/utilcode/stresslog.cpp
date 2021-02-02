@@ -21,6 +21,7 @@
 HANDLE StressLogChunk::s_LogChunkHeap = NULL;
 #endif
 thread_local ThreadStressLog* StressLog::t_pCurrentThreadLog;
+thread_local bool t_triedToCreateThreadStressLog;
 #endif // !STRESS_LOG_READONLY
 
 /*********************************************************************************/
@@ -198,6 +199,10 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 #ifdef MEMORY_MAPPED_STRESSLOG
     if (logFilename != nullptr)
     {
+        if (maxBytesTotal < sizeof(StressLogHeader))
+        {
+            return;
+        }
         HandleHolder hFile = WszCreateFile(logFilename,
             GENERIC_READ | GENERIC_WRITE,
             FILE_SHARE_READ,
@@ -223,18 +228,20 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
         {
             return;
         }
-        theLog.memoryBase = (uint8_t*)(void*)theLog.hMapView;
-        theLog.memoryCur = (uint8_t*)(void*)theLog.hMapView;
-        theLog.memoryLimit = (uint8_t*)(void*)theLog.hMapView + fileSize;
 
-        StressLogHeader* hdr = (StressLogHeader*)AllocMemoryMapped(sizeof(StressLogHeader));
-        hdr->memoryMapBaseAddress = (uint8_t*)(void*)theLog.hMapView;
+        StressLogHeader* hdr = (StressLogHeader*)(uint8_t*)(void*)theLog.hMapView;
+        hdr->headerSize = sizeof(StressLogHeader);
+        hdr->magic = 'STRL';
+        hdr->version = 0x00010001;
+        hdr->memoryBase = (uint8_t*)hdr;
+        hdr->memoryCur = hdr->memoryBase + sizeof(StressLogHeader);
+        hdr->memoryLimit = hdr->memoryBase + fileSize;
         hdr->logs = nullptr;
         hdr->tickFrequency = theLog.tickFrequency;
         hdr->startTimeStamp = theLog.startTimeStamp;
         theLog.stressLogHeader = hdr;
 
-        // copy the regions of coreclr
+        // copy coreclr image - just for the string literals
         AddModule((uint8_t*)moduleBase);
     }
 #endif
@@ -484,6 +491,10 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
         {
             delete msgs;
             msgs = 0;
+            if (!t_triedToCreateThreadStressLog && theLog.stressLogHeader != nullptr)
+            {
+                theLog.stressLogHeader->threadsWithNoLog++;
+            }
             goto LEAVE;
         }
     }
@@ -857,11 +868,15 @@ void* StressLog::AllocMemoryMapped(size_t n)
 {
     if ((ptrdiff_t)n > 0)
     {
-        uint8_t* newMemValue = (uint8_t*)InterlockedAdd64((LONG64*)&theLog.memoryCur, n);
-        if (newMemValue < theLog.memoryLimit)
+        StressLogHeader* hdr = theLog.stressLogHeader;
+        assert(hdr != nullptr);
+        uint8_t* newMemValue = (uint8_t*)InterlockedAdd64((LONG64*)&hdr->memoryCur, n);
+        if (newMemValue < hdr->memoryLimit)
+        {
             return newMemValue - n;
+        }
         // when we run out, we just can't allocate anymore
-        theLog.memoryCur = theLog.memoryLimit;
+        hdr->memoryCur = hdr->memoryLimit;
     }
     return nullptr;
 }
