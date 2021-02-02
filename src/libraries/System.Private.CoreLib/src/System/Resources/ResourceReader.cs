@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Resources
@@ -82,6 +83,9 @@ namespace System.Resources
         // We'll include a separate code path that uses UnmanagedMemoryStream to
         // avoid allocating String objects and the like.
         private UnmanagedMemoryStream? _ums;
+
+        // AppContext switch to check whether use of Reflection for custom types is allowed
+        private static readonly bool s_allowUsingReflectionToLoadTypes = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveObjects", out bool allowReflection) ? allowReflection : true;
 
         // Version number of .resources file, for compatibility
         private int _version;
@@ -160,6 +164,10 @@ namespace System.Resources
                 _nameHashesPtr = null;
             }
         }
+
+        // Adding static method that is not inlined so it can be substituted away by the linker to disallow the use of serialization.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool AllowUsingReflectionToLoadTypes() => s_allowUsingReflectionToLoadTypes;
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
@@ -923,34 +931,47 @@ namespace System.Resources
             }
             if (_typeTable[typeIndex] == null)
             {
-                long oldPos = _store.BaseStream.Position;
-                try
+                if (AllowUsingReflectionToLoadTypes())
                 {
-                    _store.BaseStream.Position = _typeNamePositions[typeIndex];
-                    string typeName = _store.ReadString();
-                    _typeTable[typeIndex] = Type.GetType(typeName, true);
+                    UseReflectionToGetType(typeIndex);
                 }
-                // If serialization isn't supported, we convert FileNotFoundException to
-                // NotSupportedException for consistency with v2. This is a corner-case, but the
-                // idea is that we want to give the user a more accurate error message. Even if
-                // the dependency were found, we know it will require serialization since it
-                // can't be one of the types we special case. So if the dependency were found,
-                // it would go down the serialization code path, resulting in NotSupported for
-                // SKUs without serialization.
-                //
-                // We don't want to regress the expected case by checking the type info before
-                // getting to Type.GetType -- this is costly with v1 resource formats.
-                catch (FileNotFoundException)
+                else
                 {
-                    throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
-                }
-                finally
-                {
-                    _store.BaseStream.Position = oldPos;
+                    throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
                 }
             }
             Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
             return _typeTable[typeIndex]!;
+        }
+
+        [RequiresUnreferencedCode("This method will use reflection to get a type from a string read on the stream.")]
+        private void UseReflectionToGetType(int typeIndex)
+        {
+            long oldPos = _store.BaseStream.Position;
+            try
+            {
+                _store.BaseStream.Position = _typeNamePositions[typeIndex];
+                string typeName = _store.ReadString();
+                _typeTable[typeIndex] = Type.GetType(typeName, true);
+            }
+            // If serialization isn't supported, we convert FileNotFoundException to
+            // NotSupportedException for consistency with v2. This is a corner-case, but the
+            // idea is that we want to give the user a more accurate error message. Even if
+            // the dependency were found, we know it will require serialization since it
+            // can't be one of the types we special case. So if the dependency were found,
+            // it would go down the serialization code path, resulting in NotSupported for
+            // SKUs without serialization.
+            //
+            // We don't want to regress the expected case by checking the type info before
+            // getting to Type.GetType -- this is costly with v1 resource formats.
+            catch (FileNotFoundException)
+            {
+                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+            }
+            finally
+            {
+                _store.BaseStream.Position = oldPos;
+            }
         }
 
         private string TypeNameFromTypeCode(ResourceTypeCode typeCode)

@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MissingManifestResourceExceptionTests.cs" />
+    <Compile Include="TrimCompatibilityTests.cs" />
     <Compile Include="NeutralResourcesLanguageAttributeTests.cs" />
     <Compile Include="ResourceManagerTests.cs" />
     <Compile Include="Resources\TestResx.Designer.cs">

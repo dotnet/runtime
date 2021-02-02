@@ -19,6 +19,8 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Resources
 {
@@ -34,6 +36,11 @@ namespace System.Resources
     internal partial class ManifestBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;
+        private static readonly bool s_allowUsingReflectionToLoadTypes = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveObjects", out bool allowReflection) ? allowReflection : true;
+
+        // Adding static method that is not inlined so it can be substituted away by the linker to disallow the use of serialization.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool AllowUsingReflectionToLoadTypes() => s_allowUsingReflectionToLoadTypes;
 
         public ManifestBasedResourceGroveler(ResourceManager.ResourceManagerMediator mediator)
         {
@@ -231,45 +238,16 @@ namespace System.Resources
                     }
                     else
                     {
-                        IResourceReader reader;
-
-                        // Permit deserialization as long as the default ResourceReader is used
-                        if (ResourceManager.IsDefaultType(readerTypeName, ResourceManager.ResReaderTypeName))
+                        if (AllowUsingReflectionToLoadTypes())
                         {
-                            reader = new ResourceReader(
-                                store,
-                                new Dictionary<string, ResourceLocator>(FastResourceComparer.Default),
-                                permitDeserialization: true);
+                            Debug.Assert(readerTypeName != null, "Reader Type name should be set");
+                            Debug.Assert(resSetTypeName != null, "ResourceSet Type name should be set");
+                            return InternalGetResourceSetFromSerializedData(store, readerTypeName, resSetTypeName);
                         }
                         else
                         {
-                            Type readerType = Type.GetType(readerTypeName, throwOnError: true)!;
-                            object[] args = new object[1];
-                            args[0] = store;
-                            reader = (IResourceReader)Activator.CreateInstance(readerType, args)!;
+                            throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
                         }
-
-                        object[] resourceSetArgs = new object[1];
-                        resourceSetArgs[0] = reader;
-
-                        Type resSetType;
-                        if (_mediator.UserResourceSet == null)
-                        {
-                            Debug.Assert(resSetTypeName != null, "We should have a ResourceSet type name from the custom resource file here.");
-                            resSetType = Type.GetType(resSetTypeName, true, false)!;
-                        }
-                        else
-                        {
-                            resSetType = _mediator.UserResourceSet;
-                        }
-
-                        ResourceSet rs = (ResourceSet)Activator.CreateInstance(resSetType,
-                                                                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
-                                                                                null,
-                                                                                resourceSetArgs,
-                                                                                null,
-                                                                                null)!;
-                        return rs;
                     }
                 }
                 else
@@ -305,6 +283,50 @@ namespace System.Resources
                     throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResMgrBadResSet_Type, _mediator.UserResourceSet.AssemblyQualifiedName), e);
                 }
             }
+        }
+
+        [RequiresUnreferencedCode("This Path uses Reflection to activate types on an external stream.")]
+        private ResourceSet InternalGetResourceSetFromSerializedData(Stream store, string readerTypeName, string? resSetTypeName)
+        {
+            IResourceReader reader;
+
+            // Permit deserialization as long as the default ResourceReader is used
+            if (ResourceManager.IsDefaultType(readerTypeName, ResourceManager.ResReaderTypeName))
+            {
+                reader = new ResourceReader(
+                    store,
+                    new Dictionary<string, ResourceLocator>(FastResourceComparer.Default),
+                    permitDeserialization: true);
+            }
+            else
+            {
+                Type readerType = Type.GetType(readerTypeName, throwOnError: true)!;
+                object[] args = new object[1];
+                args[0] = store;
+                reader = (IResourceReader)Activator.CreateInstance(readerType, args)!;
+            }
+
+            object[] resourceSetArgs = new object[1];
+            resourceSetArgs[0] = reader;
+
+            Type resSetType;
+            if (_mediator.UserResourceSet == null)
+            {
+                Debug.Assert(resSetTypeName != null, "We should have a ResourceSet type name from the custom resource file here.");
+                resSetType = Type.GetType(resSetTypeName, true, false)!;
+            }
+            else
+            {
+                resSetType = _mediator.UserResourceSet;
+            }
+
+            ResourceSet rs = (ResourceSet)Activator.CreateInstance(resSetType,
+                                                                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
+                                                                    null,
+                                                                    resourceSetArgs,
+                                                                    null,
+                                                                    null)!;
+            return rs;
         }
 
         private Stream? GetManifestResourceStream(Assembly satellite, string fileName)

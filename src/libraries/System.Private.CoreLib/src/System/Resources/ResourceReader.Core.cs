@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
@@ -19,6 +21,7 @@ namespace System.Resources
         // statics used to dynamically call into BinaryFormatter
         // When successfully located s_binaryFormatterType will point to the BinaryFormatter type
         // and s_deserializeMethod will point to an unbound delegate to the deserialize method.
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         private static Type? s_binaryFormatterType;
         private static Func<object?, Stream, object>? s_deserializeMethod;
 
@@ -73,6 +76,8 @@ namespace System.Resources
         }
 
         // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "ResourceReader.CreateUntypedDelegate method doesn't have trimming annotations.")]
         private bool InitializeBinaryFormatter()
         {
             // If BinaryFormatter support is disabled for the app, the linker will replace this entire
