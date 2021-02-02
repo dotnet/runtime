@@ -23,7 +23,7 @@
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>

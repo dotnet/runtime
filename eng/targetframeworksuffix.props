@@ -46,10 +46,10 @@
         <PackageTargetRuntime>osx</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Catalyst'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'MacCatalyst'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TargetsCatalyst>true</TargetsCatalyst>
+        <TargetsMacCatalyst>true</TargetsMacCatalyst>
         <PackageTargetRuntime>maccatalyst</PackageTargetRuntime>
       </PropertyGroup>
     </When>

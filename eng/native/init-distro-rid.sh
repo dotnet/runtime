@@ -170,7 +170,7 @@ initDistroRidGlobal()
                 distroRid="linux-$buildArch"
             elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
-            elif [ "$targetOs" = "Catalyst" ]; then
+            elif [ "$targetOs" = "MacCatalyst" ]; then
                 distroRid="maccatalyst-$buildArch"
             elif [ "$targetOs" = "tvOS" ]; then
                 distroRid="tvos-$buildArch"

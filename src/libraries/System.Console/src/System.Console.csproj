@@ -19,7 +19,7 @@
              Link="Common\System\Text\ConsoleEncoding.cs" />
   </ItemGroup>
   <!-- iOS/tvOS -->
-  <ItemGroup Condition="'$(TargetsCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="System\ConsolePal.iOS.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Log.cs"
              Link="Common\Interop\Unix\Interop.Log.cs" />
@@ -149,7 +149,7 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsCatalyst)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />

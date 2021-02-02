@@ -78,7 +78,7 @@ build_native()
     # All set to commence the build
     echo "Commencing build of \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
 
-    if [[ "$targetOS" == OSX || "$targetOS" == Catalyst ]]; then
+    if [[ "$targetOS" == OSX || "$targetOS" == MacCatalyst ]]; then
         if [[ "$platformArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$platformArch" == arm64 ]]; then
@@ -89,7 +89,7 @@ build_native()
         fi
     fi
 
-    if [[ "$targetOS" == Catalyst ]]; then
+    if [[ "$targetOS" == MacCatalyst ]]; then
         cmakeArgs="-DCLR_CMAKE_TARGET_CATALYST=1 $cmakeArgs"
     fi
 

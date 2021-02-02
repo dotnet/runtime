@@ -38,7 +38,7 @@
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs" Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- OSX specific files -->
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs" Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- Project references -->

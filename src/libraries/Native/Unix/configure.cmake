@@ -26,7 +26,7 @@ elseif (CLR_CMAKE_TARGET_OSX)
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
 elseif (CLR_CMAKE_TARGET_CATALYST)
-    set(PAL_UNIX_NAME \"CATALYST\")
+    set(PAL_UNIX_NAME \"MACCATALYST\")
 elseif (CLR_CMAKE_TARGET_IOS)
     set(PAL_UNIX_NAME \"IOS\")
 elseif (CLR_CMAKE_TARGET_TVOS)
