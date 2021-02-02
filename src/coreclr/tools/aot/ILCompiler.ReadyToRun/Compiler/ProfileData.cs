@@ -110,8 +110,10 @@ namespace ILCompiler
                                   IReadOnlyList<string> mibcFiles,
                                   CallChainProfile callChainProfile,
                                   CompilerTypeSystemContext context,
-                                  ReadyToRunCompilationModuleGroupBase compilationGroup)
+                                  ReadyToRunCompilationModuleGroupBase compilationGroup,
+                                  bool embedPgoDataInR2RImage)
         {
+            EmbedPgoDataInR2RImage = embedPgoDataInR2RImage;
             _ibcParser = new IBCProfileParser(logger, possibleReferenceModules);
             _compilationGroup = compilationGroup;
             _callChainProfile = callChainProfile;
@@ -269,6 +271,7 @@ namespace ILCompiler
             }
         }
 
+        public bool EmbedPgoDataInR2RImage { get; }
         public CallChainProfile CallChainProfile => _callChainProfile;
     }
 }

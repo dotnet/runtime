@@ -327,6 +327,18 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private BaseGcInfo _gcInfo;
 
+        public PgoInfo PgoInfo
+        {
+            get
+            {
+                EnsureInitialized();
+                if (_pgoInfo == PgoInfo.EmptySingleton)
+                    return null;
+                return _pgoInfo;
+            }
+        }
+
+        private PgoInfo _pgoInfo;
 
         private ReadyToRunReader _readyToRunReader;
         private List<FixupCell> _fixupCells;
@@ -341,6 +353,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return _fixupCells;
             }
         }
+
+        public string[] InstanceArgs { get; set; }
 
         public int RuntimeFunctionCount { get; set; }
 
@@ -357,6 +371,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             string[] instanceArgs,
             int? fixupOffset)
         {
+            InstanceArgs = (string[])instanceArgs?.Clone();
             _readyToRunReader = readyToRunReader;
             _fixupOffset = fixupOffset;
             MethodHandle = methodHandle;
@@ -470,6 +485,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     // Arm and Arm64 use the same GcInfo format as Amd64
                     _gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                }
+            }
+            if (_pgoInfo == null)
+            {
+                _pgoInfo = _readyToRunReader.GetPgoInfoByKey(PgoInfoKey.FromReadyToRunMethod(this));
+                if (_pgoInfo == null)
+                {
+                    _pgoInfo = PgoInfo.EmptySingleton;
                 }
             }
         }

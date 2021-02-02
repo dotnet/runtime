@@ -381,40 +381,6 @@ inline bool ReadInstrumentationSchemaWithLayoutIntoSArray(const uint8_t *pByte, 
     return ReadInstrumentationSchemaWithLayout(pByte, cbDataMax, initialOffset, lambda);
 }
 
-
-template<class ByteWriter>
-bool WriteCompressedIntToBytes(int32_t value, ByteWriter& byteWriter)
-{
-    uint8_t isSigned = 0;
-
-    // This function is modeled on CorSigCompressSignedInt, but differs in that
-    // it handles arbitrary int32 values, not just a subset
-    if (value < 0)
-        isSigned = 1;
-
-    if ((value & SIGN_MASK_ONEBYTE) == 0 || (value & SIGN_MASK_ONEBYTE) == SIGN_MASK_ONEBYTE)
-    {
-        return byteWriter((uint8_t)((value & ~SIGN_MASK_ONEBYTE) << 1 | isSigned));
-    }
-    else if ((value & SIGN_MASK_TWOBYTE) == 0 || (value & SIGN_MASK_TWOBYTE) == SIGN_MASK_TWOBYTE)
-    {
-        int32_t iData = (int32_t)((value & ~SIGN_MASK_TWOBYTE) << 1 | isSigned);
-        _ASSERTE(iData <= 0x3fff);
-        byteWriter(uint8_t((iData >> 8) | 0x80));
-        return byteWriter(uint8_t(iData & 0xff));
-    }
-    else
-    {
-        // Unlike CorSigCompressSignedInt, this just writes a header byte
-        // then a full 4 bytes, ignoring the whole signed bit detail
-        byteWriter(0xC0);
-        byteWriter(uint8_t((value >> 24) & 0xff));
-        byteWriter(uint8_t((value >> 16) & 0xff));
-        byteWriter(uint8_t((value >> 8) & 0xff));
-        return byteWriter(uint8_t((value >> 0) & 0xff));
-    }
-}
-
 #define SIGN_MASK_ONEBYTE_64BIT  0xffffffffffffffc0LL
 #define SIGN_MASK_TWOBYTE_64BIT  0xffffffffffffe000LL
 #define SIGN_MASK_FOURBYTE_64BIT 0xffffffff80000000LL
@@ -469,10 +435,10 @@ bool WriteCompressedIntToBytes(int64_t value, ByteWriter& byteWriter)
 template<class ByteWriter>
 bool WriteIndividualSchemaToBytes(ICorJitInfo::PgoInstrumentationSchema prevSchema, ICorJitInfo::PgoInstrumentationSchema curSchema, ByteWriter& byteWriter)
 {
-    int32_t ilOffsetDiff = curSchema.ILOffset - prevSchema.ILOffset;
-    int32_t OtherDiff = curSchema.Other - prevSchema.Other;
-    int32_t CountDiff = curSchema.Count - prevSchema.Count;
-    int32_t TypeDiff = (int32_t)curSchema.InstrumentationKind - (int32_t)prevSchema.InstrumentationKind;
+    int64_t ilOffsetDiff = (int64_t)curSchema.ILOffset - (int64_t)prevSchema.ILOffset;
+    int64_t OtherDiff = (int64_t)curSchema.Other - (int64_t)prevSchema.Other;
+    int64_t CountDiff = (int64_t)curSchema.Count - (int64_t)prevSchema.Count;
+    int64_t TypeDiff = (int64_t)curSchema.InstrumentationKind - (int64_t)prevSchema.InstrumentationKind;
 
     InstrumentationDataProcessingState modifyMask = (InstrumentationDataProcessingState)0;
 
