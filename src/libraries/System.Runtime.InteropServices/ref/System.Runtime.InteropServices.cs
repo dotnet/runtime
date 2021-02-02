@@ -1799,9 +1799,25 @@ namespace System.Runtime.InteropServices.ComTypes
 namespace System.Runtime.InteropServices.ObjectiveC
 {
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [System.AttributeUsage(AttributeTargets.Class)]
+    public class TrackedNativeReferenceAttribute : System.Attribute
+    {
+        public TrackedNativeReferenceAttribute() { }
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
     [System.CLSCompliantAttribute(false)]
     public static class Bridge
     {
+        public static unsafe void InitializeReferenceTracking(
+            delegate* unmanaged<int, void> beginEndCallback,
+            delegate* unmanaged<System.IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization) { }
+        public static GCHandle CreateReferenceTrackingHandle(
+            object obj,
+            bool initialReferencedState,
+            int scratchMemorySizeInBytes,
+            out System.IntPtr scratchMemory) => throw null;
         public enum MsgSendFunction
         {
             ObjCMsgSend,
@@ -1810,7 +1826,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             ObjCMsgSendSuper,
             ObjCMsgSendSuperStret,
         }
-        public static void SetMessageSendCallback(MsgSendFunction msgSendFunction, IntPtr func) => throw null;
+        public static void SetMessageSendCallback(MsgSendFunction msgSendFunction, System.IntPtr func) => throw null;
     }
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
     [System.Flags]

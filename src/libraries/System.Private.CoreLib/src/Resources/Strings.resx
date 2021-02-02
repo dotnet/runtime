@@ -3595,6 +3595,9 @@
   <data name="InvalidOperation_ResetGlobalObjectiveCMsgSend" xml:space="preserve">
     <value>Attempt to update previously set Objective-C msgSend API overrides.</value>
   </data>
+  <data name="InvalidOperation_ReinitializeReferenceTracker" xml:space="preserve">
+    <value>Attempt to reinitialize Reference Tracker.</value>
+  </data>
   <data name="InvalidOperation_SuppliedInnerMustBeMarkedAggregation" xml:space="preserve">
     <value>Supplying a non-null inner should also be marked as Aggregated.</value>
   </data>
