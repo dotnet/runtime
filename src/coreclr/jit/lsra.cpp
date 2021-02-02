@@ -4934,20 +4934,6 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     unassignIntervalBlockStart(getSecondHalfRegRec(targetRegRecord),
                                                allocationPassComplete ? nullptr : inVarToRegMap);
                 }
-
-                // If this is a TYP_FLOAT interval, and the assigned interval was TYP_DOUBLE, we also
-                // need to update the liveRegs to specify that the other half is not live anymore.
-                // As mentioned above, for TYP_DOUBLE, the other half will be unassigned further below.
-                if ((interval->registerType == TYP_FLOAT) &&
-                    ((targetRegRecord->assignedInterval != nullptr) &&
-                     (targetRegRecord->assignedInterval->registerType == TYP_DOUBLE)))
-                {
-                    RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(targetRegRecord);
-
-                    // Use TYP_FLOAT to get the regmask of just the half reg.
-                    liveRegs &= ~getRegMask(anotherHalfRegRec->regNum, TYP_FLOAT);
-                }
-
 #endif // TARGET_ARM
                 unassignIntervalBlockStart(targetRegRecord, allocationPassComplete ? nullptr : inVarToRegMap);
                 assignPhysReg(targetRegRecord, interval);
