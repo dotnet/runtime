@@ -426,6 +426,7 @@ namespace System.Collections.Generic
                     Array.Copy(_items, newItems, _size);
                 }
                 _items = newItems;
+                _version++;
             }
 
             return _items.Length;

@@ -322,6 +322,7 @@ namespace System.Collections.Generic
                 }
 
                 Array.Resize(ref _array, newCapacity);
+                _version++;
             }
 
             return _array.Length;

@@ -437,6 +437,7 @@ namespace System.Collections.Generic
                 _array = newArray;
                 _head = 0;
                 _tail = _size;
+                _version++;
             }
 
             return _array.Length;
