@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">true</MonoMetadataUpdate>
     <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
