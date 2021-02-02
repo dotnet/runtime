@@ -418,7 +418,7 @@ PALAPI
 PAL_TerminateEx(
     int exitCode);
 
-typedef VOID (*PSHUTDOWN_CALLBACK)(void);
+typedef VOID (*PSHUTDOWN_CALLBACK)(bool isExecutingOnAltStack);
 
 PALIMPORT
 VOID
@@ -3796,28 +3796,20 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define fsetpos       PAL_fsetpos
 #define setvbuf       PAL_setvbuf
 #define acos          PAL_acos
-#define acosh         PAL_acosh
 #define asin          PAL_asin
-#define asinh         PAL_asinh
 #define atan2         PAL_atan2
 #define exp           PAL_exp
-#define fma           PAL_fma
 #define ilogb         PAL_ilogb
 #define log           PAL_log
-#define log2          PAL_log2
 #define log10         PAL_log10
 #define pow           PAL_pow
 #define sincos        PAL_sincos
 #define acosf         PAL_acosf
-#define acoshf        PAL_acoshf
 #define asinf         PAL_asinf
-#define asinhf        PAL_asinhf
 #define atan2f        PAL_atan2f
 #define expf          PAL_expf
-#define fmaf          PAL_fmaf
 #define ilogbf        PAL_ilogbf
 #define logf          PAL_logf
-#define log2f         PAL_log2f
 #define log10f        PAL_log10f
 #define powf          PAL_powf
 #define sincosf       PAL_sincosf
@@ -4060,9 +4052,9 @@ PALIMPORT int __cdecl _finite(double);
 PALIMPORT int __cdecl _isnan(double);
 PALIMPORT double __cdecl _copysign(double, double);
 PALIMPORT double __cdecl acos(double);
-PALIMPORT double __cdecl acosh(double);
+PALIMPORT double __cdecl acosh(double) THROW_DECL;
 PALIMPORT double __cdecl asin(double);
-PALIMPORT double __cdecl asinh(double);
+PALIMPORT double __cdecl asinh(double) THROW_DECL;
 PALIMPORT double __cdecl atan(double) THROW_DECL;
 PALIMPORT double __cdecl atanh(double)
 #ifndef __sun
@@ -4082,10 +4074,10 @@ PALIMPORT double __cdecl exp(double);
 PALIMPORT double __cdecl fabs(double);
 PALIMPORT double __cdecl floor(double);
 PALIMPORT double __cdecl fmod(double, double);
-PALIMPORT double __cdecl fma(double, double, double);
+PALIMPORT double __cdecl fma(double, double, double) THROW_DECL;
 PALIMPORT int __cdecl ilogb(double);
 PALIMPORT double __cdecl log(double);
-PALIMPORT double __cdecl log2(double);
+PALIMPORT double __cdecl log2(double) THROW_DECL;
 PALIMPORT double __cdecl log10(double);
 PALIMPORT double __cdecl modf(double, double*);
 PALIMPORT double __cdecl pow(double, double);
@@ -4100,9 +4092,9 @@ PALIMPORT int __cdecl _finitef(float);
 PALIMPORT int __cdecl _isnanf(float);
 PALIMPORT float __cdecl _copysignf(float, float);
 PALIMPORT float __cdecl acosf(float);
-PALIMPORT float __cdecl acoshf(float);
+PALIMPORT float __cdecl acoshf(float) THROW_DECL;
 PALIMPORT float __cdecl asinf(float);
-PALIMPORT float __cdecl asinhf(float);
+PALIMPORT float __cdecl asinhf(float) THROW_DECL;
 PALIMPORT float __cdecl atanf(float)
 #ifndef __sun
 THROW_DECL
@@ -4126,10 +4118,10 @@ PALIMPORT float __cdecl expf(float);
 PALIMPORT float __cdecl fabsf(float);
 PALIMPORT float __cdecl floorf(float);
 PALIMPORT float __cdecl fmodf(float, float);
-PALIMPORT float __cdecl fmaf(float, float, float);
+PALIMPORT float __cdecl fmaf(float, float, float) THROW_DECL;
 PALIMPORT int __cdecl ilogbf(float);
 PALIMPORT float __cdecl logf(float);
-PALIMPORT float __cdecl log2f(float);
+PALIMPORT float __cdecl log2f(float) THROW_DECL;
 PALIMPORT float __cdecl log10f(float);
 PALIMPORT float __cdecl modff(float, float*);
 PALIMPORT float __cdecl powf(float, float);

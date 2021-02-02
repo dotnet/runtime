@@ -5952,6 +5952,51 @@ emit_setret (MonoCompile *cfg, MonoInst *val)
 	}
 }
 
+/*
+ * Emit a call to enter the interpreter for methods with filter clauses.
+ */
+static void
+emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
+{
+	MonoInst *ins;
+	gboolean has_filter = FALSE;
+
+	for (int i = 0; i < header->num_clauses; ++i) {
+		MonoExceptionClause *clause = &header->clauses [i];
+		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
+			has_filter = TRUE;
+	}
+	if (!has_filter)
+		return;
+
+	MonoInst **iargs;
+	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
+
+	iargs = g_newa (MonoInst*, sig->param_count + 1);
+	iargs [0] = emit_get_rgctx_method (cfg, -1, cfg->method, MONO_RGCTX_INFO_METHOD);
+	MonoInst *ftndesc;
+
+	cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
+	/* Tell the llvm backend to skip emitting the rest of the method code */
+	cfg->interp_entry_only = TRUE;
+
+	g_assert (cfg->cbb == cfg->bb_init);
+	/* Obtain the interp entry function */
+	ftndesc = mono_emit_jit_icall_id (cfg, MONO_JIT_ICALL_mini_llvmonly_get_interp_entry, iargs);
+
+	/* Call it */
+	for (int i = 0; i < sig->param_count + sig->hasthis; ++i)
+		EMIT_NEW_ARGLOAD (cfg, iargs [i], i);
+	ins = mini_emit_llvmonly_calli (cfg, sig, iargs, ftndesc);
+	/* Do a normal return */
+	if (cfg->ret)
+		emit_setret (cfg, ins);
+	MONO_INST_NEW (cfg, ins, OP_BR);
+	ins->inst_target_bb = cfg->bb_exit;
+	MONO_ADD_INS (cfg->cbb, ins);
+	link_bblock (cfg, cfg->cbb, cfg->bb_exit);
+}
+
 typedef union _MonoOpcodeParameter {
 	gint32 i32;
 	gint64 i64;
@@ -6562,6 +6607,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MONO_ADD_INS (cfg->cbb, arg_ins);
 		MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
 	}
+
+	if (cfg->llvm_only && cfg->interp)
+		emit_llvmonly_interp_entry (cfg, header);
 
 	skip_dead_blocks = !dont_verify;
 	if (skip_dead_blocks) {

@@ -2880,31 +2880,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoData                    = nullptr;
     fgPgoSchemaCount             = 0;
     fgProfileData_ILSizeMismatch = false;
-    fgNumProfileRuns             = 0;
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         HRESULT hr;
         hr = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
                                                             &fgPgoData);
 
-        if (SUCCEEDED(hr))
-        {
-            fgNumProfileRuns = 0;
-            for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
-            {
-                if (fgPgoSchema[iSchema].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::NumRuns)
-                {
-                    fgNumProfileRuns += fgPgoSchema[iSchema].Other;
-                }
-            }
-
-            if (fgNumProfileRuns == 0)
-                fgNumProfileRuns = 1;
-        }
-
-        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; schema at %p, counts at %p, %d schema "
-                "elements, %d runs\n",
-                info.compFullName, hr, dspPtr(fgPgoSchema), dspPtr(fgPgoData), fgPgoSchemaCount, fgNumProfileRuns);
+        JITDUMP(
+            "BBOPT set; query for profile data returned hr %0x, schema at %p, counts at %p, schema element count %d\n",
+            hr, dspPtr(fgPgoSchema), dspPtr(fgPgoData), fgPgoSchemaCount);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
@@ -4415,6 +4399,15 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
     compFunctionTraceStart();
+
+    // If profile data is available, incorporate it into the flowgraph.
+    // Note: the importer is sensitive to block weights, so this has
+    // to happen before importation.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
+    {
+        DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
+    }
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //

@@ -797,7 +797,7 @@ namespace System
 
         // Returns true if and only if the guid represented
         //  by o is the same as this instance.
-        public override bool Equals(object? o) => o is Guid g && EqualsCore(this, g);
+        public override bool Equals([NotNullWhen(true)] object? o) => o is Guid g && EqualsCore(this, g);
 
         public bool Equals(Guid g) => EqualsCore(this, g);
 

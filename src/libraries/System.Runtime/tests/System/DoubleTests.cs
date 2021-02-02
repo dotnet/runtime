@@ -713,5 +713,14 @@ namespace System.Tests
             double result = double.Parse(value.ToString("R"));
             Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(result));
         }
+
+        [Fact]
+        public static void TestNegativeNumberParsingWithHyphen()
+        {
+            // CLDR data for Swedish culture has negative sign U+2212. This test ensure parsing with the hyphen with such cultures will succeed.
+            CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
+            string s = string.Format(ci, "{0}", 158.68);
+            Assert.Equal(-158.68, double.Parse("-" + s, NumberStyles.Number, ci));
+        }
     }
 }

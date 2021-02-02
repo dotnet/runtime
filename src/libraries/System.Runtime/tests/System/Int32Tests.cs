@@ -834,5 +834,37 @@ namespace System.Tests
                 Assert.Equal(expected.ToLowerInvariant(), new string(actual));
             }
         }
+
+        [Fact]
+        public static void TestNegativeNumberParsingWithHyphen()
+        {
+            // CLDR data for Swedish culture has negative sign U+2212. This test ensure parsing with the hyphen with such cultures will succeed.
+            CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
+            Assert.Equal(-158, int.Parse("-158", NumberStyles.Integer, ci));
+        }
+
+        [Fact]
+        public static void TestParseLenientData()
+        {
+            NumberFormatInfo nfi = new CultureInfo("en-US").NumberFormat;
+
+            string [] negativeSigns = new string []
+            {
+                "\u2012", // Figure Dash
+                "\u207B", // Superscript Minus
+                "\u208B", // Subscript Minus
+                "\u2212", // Minus Sign
+                "\u2796", // Heavy Minus Sign
+                "\uFE63", // Small Hyphen-Minus
+            };
+
+            foreach (string negativeSign in negativeSigns)
+            {
+                nfi.NegativeSign = negativeSign;
+                Assert.Equal(negativeSign, nfi.NegativeSign);
+                Assert.Equal(-9670, int.Parse("-9670", NumberStyles.Integer, nfi));
+            }
+        }
+
     }
 }

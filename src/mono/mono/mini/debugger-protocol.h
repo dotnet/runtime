@@ -340,7 +340,7 @@ int m_dbgprot_decode_int (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 int64_t m_dbgprot_decode_long (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 int m_dbgprot_decode_id (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
 char* m_dbgprot_decode_string (uint8_t *buf, uint8_t **endbuf, uint8_t *limit);
-uint8_t* m_dbgprot_decode_byte_array(uint8_t* buf, uint8_t** endbuf, uint8_t* limit, uint32_t* len);
+uint8_t* m_dbgprot_decode_byte_array(uint8_t *buf, uint8_t **endbuf, uint8_t *limit, int *len);
 
 /*
  * Functions to encode protocol data

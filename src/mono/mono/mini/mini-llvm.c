@@ -2209,7 +2209,7 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 			 * Have to use an invoke instead of a call, branching to the
 			 * handler bblock of the clause containing this bblock.
 			 */
-			intptr_t key = CLAUSE_END(clause);
+			intptr_t key = CLAUSE_END (clause);
 
 			LLVMBasicBlockRef lpad_bb = (LLVMBasicBlockRef)g_hash_table_lookup (ctx->exc_meta, (gconstpointer)key);
 
@@ -4929,6 +4929,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 	if (!ctx_ok (ctx))
 		return;
+
+	if (cfg->interp_entry_only && bb != cfg->bb_init && bb != cfg->bb_entry && bb != cfg->bb_exit) {
+		/* The interp entry code is in bb_entry, skip the rest as we might not be able to compile it */
+		LLVMBuildUnreachable (builder);
+		return;
+	}
 
 	if (bb->flags & BB_EXCEPTION_HANDLER) {
 		if (!ctx->llvm_only && !bblocks [bb->block_num].invoke_target) {
@@ -9807,9 +9813,8 @@ emit_method_inner (EmitContext *ctx)
 		clause = &header->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE) {
 			if (cfg->llvm_only) {
-				// FIXME: Treat unhandled opcodes like __arglist the same way
-				// It would require deleting the already emitted code
-				llvmonly_fail = TRUE;
+				if (!cfg->interp_entry_only)
+					llvmonly_fail = TRUE;
 			} else {
 				set_failure (ctx, "non-finally/catch/fault clause.");
 				return;
@@ -10019,7 +10024,7 @@ emit_method_inner (EmitContext *ctx)
 		int clause_index;
 		char name [128];
 
-		if (!(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
+		if (ctx->cfg->interp_entry_only || !(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
 			continue;
 
 		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);
@@ -10038,7 +10043,7 @@ emit_method_inner (EmitContext *ctx)
 	// Make landing pads first
 	ctx->exc_meta = g_hash_table_new_full (NULL, NULL, NULL, NULL);
 
-	if (ctx->llvm_only) {
+	if (ctx->llvm_only && !ctx->cfg->interp_entry_only) {
 		size_t group_index = 0;
 		while (group_index < cfg->header->num_clauses) {
 			int count = 0;

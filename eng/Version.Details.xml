@@ -66,9 +66,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>ff8fec9066eca51a26abf723dd7d92e20926a90e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="6.0.0-beta.21062.10">
+    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="6.0.0-beta.21079.12">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>ff8fec9066eca51a26abf723dd7d92e20926a90e</Sha>
+      <Sha>9fb6553daa4cfbfa81cf68fb9e95c5e814b662fe</Sha>
     </Dependency>
     <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20200806.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
@@ -194,9 +194,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>e61c0eac22470091fc8126d375e5b80e13335ca1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.0-alpha.1.21076.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.0-alpha.1.21079.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>92b9b51bb8548320e40fc432efcb395156ad1445</Sha>
+      <Sha>08eae608989d45e4cb40a15e368f04dc5a457c4a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21068.3">
       <Uri>https://github.com/dotnet/xharness</Uri>

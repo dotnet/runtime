@@ -229,6 +229,10 @@ protected:
     }
 
 public:
+    virtual bool ShouldProcess(BasicBlock* block)
+    {
+        return false;
+    }
     virtual void Prepare()
     {
     }
@@ -267,13 +271,17 @@ public:
 
 //------------------------------------------------------------------------
 // BlockCountInstrumentor: instrumentor that adds a counter to each
-//   basic block
+//   non-internal imported basic block
 //
 class BlockCountInstrumentor : public Instrumentor
 {
 public:
     BlockCountInstrumentor(Compiler* comp) : Instrumentor(comp)
     {
+    }
+    bool ShouldProcess(BasicBlock* block) override
+    {
+        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
     }
     void Prepare() override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
@@ -302,6 +310,7 @@ void BlockCountInstrumentor::Prepare()
 //
 // Arguments:
 //   block -- block to instrument
+//   schema -- schema that we're building
 //
 void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
@@ -621,6 +630,10 @@ public:
     ClassProbeInstrumentor(Compiler* comp) : Instrumentor(comp)
     {
     }
+    bool ShouldProcess(BasicBlock* block) override
+    {
+        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+    }
     void Prepare() override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory) override;
@@ -648,6 +661,7 @@ void ClassProbeInstrumentor::Prepare()
 //
 // Arguments:
 //   block -- block to instrument
+//   schema -- schema that we're building
 //
 void ClassProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
@@ -707,7 +721,7 @@ void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE*
 // ClassProbeInstrumentor::SuppressProbes: clean up if we're not instrumenting
 //
 // Notes:
-//   Currently we're hijacking the gtCallStubAddre of the call node to hold
+//   Currently we're hijacking the gtCallStubAddr of the call node to hold
 //   a pointer to the profile candidate info.
 //
 //   We must undo this, if not instrumenting.
@@ -737,6 +751,9 @@ void ClassProbeInstrumentor::SuppressProbes()
 //------------------------------------------------------------------------
 // fgInstrumentMethod: add instrumentation probes to the method
 //
+// Returns:
+//   appropriate phase status
+//
 // Note:
 //
 //   By default this instruments each non-internal block with
@@ -747,7 +764,7 @@ void ClassProbeInstrumentor::SuppressProbes()
 //   Probe structure is described by a schema array, which is created
 //   here based on flowgraph and IR structure.
 //
-void Compiler::fgInstrumentMethod()
+PhaseStatus Compiler::fgInstrumentMethod()
 {
     noway_assert(!compIsForInlining());
 
@@ -775,20 +792,15 @@ void Compiler::fgInstrumentMethod()
     Schema schema(getAllocator(CMK_Pgo));
     for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
-        // Skip internal and un-imported blocks.
-        //
-        if ((block->bbFlags & BBF_IMPORTED) == 0)
+        if (countInst->ShouldProcess(block))
         {
-            continue;
+            countInst->BuildSchemaElements(block, schema);
         }
 
-        if ((block->bbFlags & BBF_INTERNAL) == BBF_INTERNAL)
+        if (classInst->ShouldProcess(block))
         {
-            continue;
+            classInst->BuildSchemaElements(block, schema);
         }
-
-        countInst->BuildSchemaElements(block, schema);
-        classInst->BuildSchemaElements(block, schema);
     }
 
     // Verify we created schema for the calls needing class probes.
@@ -802,7 +814,7 @@ void Compiler::fgInstrumentMethod()
     if ((JitConfig.JitMinimalProfiling() > 0) && (countInst->SchemaCount() == 1) && (classInst->SchemaCount() == 0))
     {
         JITDUMP("Not instrumenting method: only one counter, and no class probes\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     JITDUMP("Instrumenting method: %d count probes and %d class probes\n", countInst->SchemaCount(),
@@ -826,34 +838,29 @@ void Compiler::fgInstrumentMethod()
         if (res != E_NOTIMPL)
         {
             noway_assert(!"Error: unexpected hresult from allocPgoInstrumentationBySchema");
-            return;
+            return PhaseStatus::MODIFIED_NOTHING;
         }
 
         // Do any cleanup we might need to do...
         //
         countInst->SuppressProbes();
         classInst->SuppressProbes();
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // Add the instrumentation code
     //
     for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
-        // Skip internal and un-imported blocks.
-        //
-        if ((block->bbFlags & BBF_IMPORTED) == 0)
+        if (countInst->ShouldProcess(block))
         {
-            continue;
+            countInst->Instrument(block, schema, profileMemory);
         }
 
-        if ((block->bbFlags & BBF_INTERNAL) == BBF_INTERNAL)
+        if (classInst->ShouldProcess(block))
         {
-            continue;
+            classInst->Instrument(block, schema, profileMemory);
         }
-
-        countInst->Instrument(block, schema, profileMemory);
-        classInst->Instrument(block, schema, profileMemory);
     }
 
     // Verify we instrumented everthing we created schemas for.
@@ -866,6 +873,116 @@ void Compiler::fgInstrumentMethod()
     //
     countInst->InstrumentMethodEntry(schema, profileMemory);
     classInst->InstrumentMethodEntry(schema, profileMemory);
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgIncorporateProfileData: add block/edge profile data to the flowgraph
+//
+// Returns:
+//   appropriate phase status
+//
+PhaseStatus Compiler::fgIncorporateProfileData()
+{
+    assert(fgHaveProfileData());
+
+    // Summarize profile data
+    //
+    fgNumProfileRuns = 0;
+    for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
+    {
+        switch (fgPgoSchema[iSchema].InstrumentationKind)
+        {
+            case ICorJitInfo::PgoInstrumentationKind::NumRuns:
+                fgNumProfileRuns += fgPgoSchema[iSchema].Other;
+                break;
+
+            case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+                fgPgoBlockCounts++;
+                break;
+
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+                fgPgoClassProfiles++;
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    assert(fgPgoBlockCounts > 0);
+
+    if (fgNumProfileRuns == 0)
+    {
+        fgNumProfileRuns = 1;
+    }
+
+    JITDUMP("Profile summary: %d runs, %d block probes, %d class profiles\n", fgNumProfileRuns, fgPgoBlockCounts,
+            fgPgoClassProfiles);
+
+    fgIncorporateBlockCounts();
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgIncorporateBlockCounts: read block count based profile data
+//   and set block weights
+//
+// Notes:
+//   Count data for inlinees is scaled (usually down).
+//
+//   Since we are now running before the importer, we do not know which
+//   blocks will be imported, and we should not see any internal blocks.
+//
+// Todo:
+//   Normalize counts.
+//
+//   Take advantage of the (likely) correspondence between block order
+//   and schema order?
+//
+//   Find some other mechanism for handling cases where handler entry
+//   blocks must be in the hot section.
+//
+void Compiler::fgIncorporateBlockCounts()
+{
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        BasicBlock::weight_t profileWeight;
+
+        if (fgGetProfileWeightForBasicBlock(block->bbCodeOffs, &profileWeight))
+        {
+            if (compIsForInlining())
+            {
+                if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
+                {
+                    double scaledWeight = impInlineInfo->profileScaleFactor * profileWeight;
+                    profileWeight       = (BasicBlock::weight_t)scaledWeight;
+                }
+            }
+
+            block->setBBProfileWeight(profileWeight);
+
+            if (profileWeight == BB_ZERO_WEIGHT)
+            {
+                block->bbSetRunRarely();
+            }
+            else
+            {
+                block->bbFlags &= ~BBF_RUN_RARELY;
+            }
+
+#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
+            // Handle a special case -- some handler entries can't have zero profile count.
+            //
+            if (this->bbIsHandlerBeg(block) && block->isRunRarely())
+            {
+                JITDUMP("Suppressing zero count for " FMT_BB " as it is a handler entry\n", block->bbNum);
+                block->makeBlockHot();
+            }
+#endif
+        }
+    }
 }
 
 bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop)
