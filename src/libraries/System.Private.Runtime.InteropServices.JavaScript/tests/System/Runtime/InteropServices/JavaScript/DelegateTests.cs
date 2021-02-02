@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalFunction()
+        public static void InvokeFunction()
         {
             HelperMarshal._functionResultValue = 0;
             HelperMarshal._i32Value = 0;
@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalFunctionLooptyLoop()
+        public static void InvokeFunctionInLoopUsingConstanceValues()
         {
             HelperMarshal._functionResultValue = 0;
             HelperMarshal._i32Value = 0;
@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalFunctionLooptyLoopIncrement()
+        public static void InvokeFunctionInLoopUsingIncrementedValues()
         {
             HelperMarshal._functionResultValue = 0;
             HelperMarshal._i32Value = 0;
@@ -72,7 +72,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalFunctionReturnAction()
+        public static void InvokeActionTReturnedByInvokingFuncT()
         {
             HelperMarshal._functionActionResultValue = 0;
             HelperMarshal._functionActionResultValueOfAction = 0;
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalActionIntInt()
+        public static void InvokeActionIntInt()
         {
             HelperMarshal._actionResultValue = 0;
 
@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalActionFloatIntToIntInt()
+        public static void InvokeActionFloatIntToIntInt()
         {
             HelperMarshal._actionResultValue = 0;
             Runtime.InvokeJS(@"
@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalDelegateMethod()
+        public static void InvokeDelegateMethod()
         {
             HelperMarshal._delMethodResultValue = string.Empty;
             Runtime.InvokeJS(@"
@@ -125,7 +125,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalAnonDelegateMethod()
+        public static void InvokeAnonDelegateMethod()
         {
             HelperMarshal._delAnonMethodStringResultValue = string.Empty;
             Runtime.InvokeJS(@"
@@ -138,7 +138,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
 
         [Fact]
-        public static void MarshalLambdaDelegateMethod()
+        public static void InvokeLambdaDelegateMethod()
         {
             HelperMarshal._delLambdaMethodStringResultValue = string.Empty;
             Runtime.InvokeJS(@"
@@ -150,7 +150,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalDelegateMethodReturnString()
+        public static void InvokeDelegateMethodReturnString()
         {
             HelperMarshal._delMethodStringResultValue = string.Empty;
             Runtime.InvokeJS(@"
@@ -163,7 +163,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalCustomMultiDelegateAcceptingString()
+        public static void InvokeCustomMultiDelegateAcceptingString()
         {
             HelperMarshal._custMultiDelStringResultValue = string.Empty;
             Runtime.InvokeJS(@"
@@ -175,7 +175,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalCustomMultiActionAcceptingString()
+        public static void InvokeCustomMultiActionAcceptingString()
         {
             HelperMarshal._custMultiActionStringResultValue = string.Empty;
             Runtime.InvokeJS(@"
@@ -188,7 +188,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(Object_Prototype))]
-        public static void MarshalFunctionAcceptingUint8Array(Function objectPrototype)
+        public static void InvokeFunctionAcceptingUint8Array(Function objectPrototype)
         {
             var clamped = new byte[10];
             HelperMarshal._funcActionBufferResultValue = Uint8Array.From(clamped);
