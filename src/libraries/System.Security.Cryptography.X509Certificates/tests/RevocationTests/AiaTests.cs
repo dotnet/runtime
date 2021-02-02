@@ -42,7 +42,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/47492", TestPlatforms.OSX)]
         public static void DisableAiaOptionWorks()
         {
             CertificateAuthority.BuildPrivatePki(
@@ -65,6 +64,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 cuCaStore.Open(OpenFlags.ReadWrite);
 
                 X509Chain chain = holder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.DisableCertificateDownloads = true;
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
