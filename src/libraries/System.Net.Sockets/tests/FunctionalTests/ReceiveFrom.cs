@@ -89,7 +89,6 @@ namespace System.Net.Sockets.Tests
             {
                 await Assert.ThrowsAsync<InvalidOperationException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
             }
-            
         }
 
         [Theory]
@@ -289,6 +288,15 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void EndReceiveFrom_UnrelatedAsyncResult_Throws_ArgumentException()
+        {
+            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
+            using Socket socket = CreateSocket();
+
+            Assert.Throws<ArgumentException>(() => socket.EndReceiveFrom(Task.CompletedTask, ref endpoint));
+        }
+
+        [Fact]
         public void EndReceiveFrom_NullEndPoint_Throws_ArgumentNullException()
         {
             EndPoint validEndPoint = new IPEndPoint(IPAddress.Loopback, 1);
@@ -377,7 +385,7 @@ namespace System.Net.Sockets.Tests
         protected override string RemoteEndPointArgumentName => "e";
 
         [Fact]
-        public void ReceiveFromAsync_NullAsyncEventArgs_Throws_ArgumentNull()
+        public void ReceiveFromAsync_NullAsyncEventArgs_Throws_ArgumentNullException()
         {
             using Socket socket = CreateSocket();
             Assert.Throws<ArgumentNullException>(() => socket.ReceiveFromAsync(null));

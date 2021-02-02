@@ -288,6 +288,16 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void EndReceiveMessageFrom_UnrelatedAsyncResult_Throws_ArgumentException()
+        {
+            SocketFlags socketFlags = SocketFlags.None;
+            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
+            using Socket socket = CreateSocket();
+
+            Assert.Throws<ArgumentException>(() => socket.EndReceiveMessageFrom(Task.CompletedTask, ref socketFlags, ref endpoint, out _));
+        }
+
+        [Fact]
         public void EndReceiveMessageFrom_NullEndPoint_Throws_ArgumentNullException()
         {
             SocketFlags socketFlags = SocketFlags.None;
@@ -380,10 +390,10 @@ namespace System.Net.Sockets.Tests
         protected override string RemoteEndPointArgumentName => "e";
 
         [Fact]
-        public void ReceiveFromAsync_NullAsyncEventArgs_Throws_ArgumentNull()
+        public void ReceiveFromAsync_NullAsyncEventArgs_Throws_ArgumentNullException()
         {
             using Socket socket = CreateSocket();
-            Assert.Throws<ArgumentNullException>(() => socket.ReceiveFromAsync(null));
+            Assert.Throws<ArgumentNullException>(() => socket.ReceiveMessageFromAsync(null));
         }
 
         [Theory]
