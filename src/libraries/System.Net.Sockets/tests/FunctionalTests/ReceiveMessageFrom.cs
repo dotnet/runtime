@@ -118,10 +118,9 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task ReceiveSentMessages_UDP_Success(bool ipv4)
+        public async Task ReceiveSent_UDP_Success(bool ipv4)
         {
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/47637")]
-            int Offset = UsesSync || !PlatformDetection.IsWindows ? 10 : 0;
+            const int Offset = 10;
             const int DatagramSize = 256;
             const int DatagramsToSend = 16;
 
@@ -140,6 +139,7 @@ namespace System.Net.Sockets.Tests
             var receiveInternalBuffer = new byte[DatagramSize + Offset];
             var emptyBuffer = new byte[Offset];
             ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(receiveInternalBuffer, Offset, DatagramSize);
+
             Random rnd = new Random(0);
 
             IPEndPoint remoteEp = new IPEndPoint(ipv4 ? IPAddress.Any : IPAddress.IPv6Any, 0);

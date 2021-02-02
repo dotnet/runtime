@@ -230,9 +230,6 @@
 			<method signature="System.Void .ctor()" />
 		</type>
 
-		<!-- mono-mlist.c (managed list): used in threadpool.c and gc.c -->
-		<type fullname="Mono.MonoListItem" preserve="fields" />
-
 		<!-- domain.c: mono_defaults.multicastdelegate_class -->
 		<type fullname="System.MulticastDelegate" preserve="fields" />
 
