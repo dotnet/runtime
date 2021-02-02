@@ -31,46 +31,30 @@ namespace System.Linq
             Index end = range.End;
             bool isStartIndexFromEnd = start.IsFromEnd;
             bool isEndIndexFromEnd = end.IsFromEnd;
-            int startIndexValue = start.Value;
-            int endIndexValue = end.Value;
-            Debug.Assert(startIndexValue >= 0);
-            Debug.Assert(endIndexValue >= 0);
+            int startIndex = start.Value;
+            int endIndex = end.Value;
 
             if (!isStartIndexFromEnd && !isEndIndexFromEnd)
             {
-                return startIndexValue >= endIndexValue
+                return startIndex >= endIndex
                     ? Empty<TSource>()
                     : source switch
                     {
-                        IPartition<TSource> partition => partition.Skip(startIndexValue).Take(endIndexValue - startIndexValue),
-                        IList<TSource> list => new ListPartition<TSource>(list, startIndexValue, endIndexValue - 1),
-                        _ => new EnumerablePartition<TSource>(source, startIndexValue, endIndexValue - 1)
+                        IPartition<TSource> partition => partition.Skip(startIndex).Take(endIndex - startIndex),
+                        IList<TSource> list => new ListPartition<TSource>(list, startIndex, endIndex - 1),
+                        _ => new EnumerablePartition<TSource>(source, startIndex, endIndex - 1)
                     };
             }
 
-            return TakeIterator(source, isStartIndexFromEnd, startIndexValue, isEndIndexFromEnd, endIndexValue);
+            return TakeIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
         }
 
-        public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (predicate == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
-            }
-
-            return TakeWhileIterator(source, predicate);
-        }
-
-        private static IEnumerable<TSource> TakeIterator<TSource>(IEnumerable<TSource> source, bool isStartIndexFromEnd, int startIndexValue, bool isEndIndexFromEnd, int endIndexValue)
+        private static IEnumerable<TSource> TakeIterator<TSource>(
+            IEnumerable<TSource> source, bool isStartIndexFromEnd, int startIndex, bool isEndIndexFromEnd, int endIndex)
         {
             Debug.Assert(source != null);
-            Debug.Assert(startIndexValue >= 0);
-            Debug.Assert(endIndexValue >= 0);
+            Debug.Assert(startIndex >= 0);
+            Debug.Assert(endIndex >= 0);
 
             using IEnumerator<TSource> e = source.GetEnumerator();
             int currentIndex = -1;
@@ -96,7 +80,7 @@ namespace System.Linq
                         currentIndex++;
                     }
 
-                    if (queue.Count == startIndexValue)
+                    if (queue.Count == startIndex)
                     {
                         queue.Dequeue();
                     }
@@ -104,19 +88,26 @@ namespace System.Linq
                     queue.Enqueue(e.Current);
                 }
 
-                if (queue.Count < startIndexValue)
+                int count = checked(currentIndex + 1);
+                Debug.Assert(queue.Count == Math.Min(count, startIndex));
+
+                startIndex = count - startIndex;
+                if (startIndex < 0)
                 {
-                    yield break;
+                    startIndex = 0;
                 }
 
-                int count = checked(currentIndex + 1);
-                startIndexValue = count - startIndexValue;
                 if (isEndIndexFromEnd)
                 {
-                    endIndexValue = count - endIndexValue;
+                    endIndex = count - endIndex;
+                }
+                else if (endIndex > count)
+                {
+                    endIndex = count;
                 }
 
-                for (int index = startIndexValue; index < endIndexValue; index++)
+                Debug.Assert(endIndex - startIndex <= queue.Count);
+                for (int index = startIndex; index < endIndex; index++)
                 {
                     yield return queue.Dequeue();
                 }
@@ -133,7 +124,7 @@ namespace System.Linq
                     currentIndex++;
                 }
 
-                while (currentIndex < startIndexValue && e.MoveNext())
+                while (currentIndex < startIndex && e.MoveNext())
                 {
                     checked
                     {
@@ -141,28 +132,24 @@ namespace System.Linq
                     }
                 }
 
-                if (currentIndex != startIndexValue)
+                if (currentIndex != startIndex)
                 {
                     yield break;
                 }
 
                 if (isEndIndexFromEnd)
                 {
-                    if (endIndexValue > 0)
+                    if (endIndex > 0)
                     {
                         Queue<TSource> queue = new();
                         do
                         {
-                            if (queue.Count == endIndexValue)
+                            if (queue.Count == endIndex)
                             {
                                 yield return queue.Dequeue();
                             }
 
                             queue.Enqueue(e.Current);
-                            checked
-                            {
-                                currentIndex++;
-                            }
                         } while (e.MoveNext());
                     }
                     else
@@ -170,27 +157,38 @@ namespace System.Linq
                         do
                         {
                             yield return e.Current;
-                            checked
-                            {
-                                currentIndex++;
-                            }
                         } while (e.MoveNext());
                     }
                 }
                 else
                 {
-                    if (startIndexValue >= endIndexValue)
+                    if (startIndex >= endIndex)
                     {
                         yield break;
                     }
 
                     yield return e.Current;
-                    while (checked(++currentIndex) < endIndexValue && e.MoveNext())
+                    while (checked(++currentIndex) < endIndex && e.MoveNext())
                     {
                         yield return e.Current;
                     }
                 }
             }
+        }
+
+        public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (predicate == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            return TakeWhileIterator(source, predicate);
         }
 
         private static IEnumerable<TSource> TakeWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, bool> predicate)
