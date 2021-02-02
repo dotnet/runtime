@@ -434,6 +434,22 @@ namespace System.Net.Sockets.Tests
         public bool SupportsSendFileSlicing => _socketHelper.SupportsSendFileSlicing;
         public void Listen(Socket s, int backlog) => _socketHelper.Listen(s, backlog);
         public void ConfigureNonBlocking(Socket s) => _socketHelper.ConfigureNonBlocking(s);
+
+        // A helper method to observe exceptions on sync paths of async variants.
+        // In that case, exceptions should be seen without awaiting completion.
+        // Synchronous variants are started on a separate thread using Task.Run(), therefore we should await the task.
+        protected async Task<TException> AssertThrowsSynchronously<TException>(Func<Task> testCode)
+            where TException : Exception
+        {
+            if (UsesSync)
+            {
+                return await Assert.ThrowsAsync<TException>(testCode);
+            }
+            else
+            {
+                return Assert.Throws<TException>(() => { _ = testCode(); });
+            }
+        }
     }
 
     public class SocketHelperSpanSync : SocketHelperArraySync

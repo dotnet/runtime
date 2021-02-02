@@ -38,7 +38,7 @@ namespace System.Net.Sockets.Tests
                 Offset = offset
             }.ToActual();
 
-            await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => ReceiveFromAsync(socket, buffer, GetGetDummyTestEndpoint()));
+            await AssertThrowsSynchronously<ArgumentOutOfRangeException>(() => ReceiveFromAsync(socket, buffer, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
@@ -46,7 +46,7 @@ namespace System.Net.Sockets.Tests
         {
             if (!ValidatesArrayArguments) return;
             using Socket socket = CreateSocket();
-            await Assert.ThrowsAsync<ArgumentNullException>(() => ReceiveFromAsync(socket, null, GetGetDummyTestEndpoint()));
+            await AssertThrowsSynchronously<ArgumentNullException>(() => ReceiveFromAsync(socket, null, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
@@ -55,11 +55,11 @@ namespace System.Net.Sockets.Tests
             using Socket socket = CreateSocket();
             if (UsesEap)
             {
-                await Assert.ThrowsAsync<ArgumentException>(() => ReceiveFromAsync(socket, new byte[1], null));
+                await AssertThrowsSynchronously<ArgumentException>(() => ReceiveFromAsync(socket, new byte[1], null));
             }
             else
             {
-                await Assert.ThrowsAsync<ArgumentNullException>(() => ReceiveFromAsync(socket, new byte[1], null));
+                await AssertThrowsSynchronously<ArgumentNullException>(() => ReceiveFromAsync(socket, new byte[1], null));
             }   
         }
 
@@ -68,7 +68,7 @@ namespace System.Net.Sockets.Tests
         {
             using var ipv4Socket = CreateSocket();
             EndPoint ipV6Endpoint = GetGetDummyTestEndpoint(AddressFamily.InterNetworkV6);
-            await Assert.ThrowsAsync<ArgumentException>(() => ReceiveFromAsync(ipv4Socket, new byte[1], ipV6Endpoint));
+            await AssertThrowsSynchronously<ArgumentException>(() => ReceiveFromAsync(ipv4Socket, new byte[1], ipV6Endpoint));
         }
 
         [Fact]
@@ -84,7 +84,7 @@ namespace System.Net.Sockets.Tests
             }
             else
             {
-                await Assert.ThrowsAsync<InvalidOperationException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
+                await AssertThrowsSynchronously<InvalidOperationException>(() => ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
             }
         }
 

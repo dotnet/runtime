@@ -18,8 +18,6 @@ namespace System.Net.Sockets.Tests
         protected static IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
             addressFamily == AddressFamily.InterNetwork ? new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
 
-        protected const string RemoteEndPointArgumentName = "remoteEP";
-
         protected SendTo(ITestOutputHelper output) : base(output)
         {
         }
@@ -39,7 +37,7 @@ namespace System.Net.Sockets.Tests
                 Array = new byte[length], Count = count, Offset = offset
             }.ToActual();
 
-            await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => SendToAsync(socket, buffer, GetGetDummyTestEndpoint()));
+            await AssertThrowsSynchronously<ArgumentOutOfRangeException>(() => SendToAsync(socket, buffer, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
@@ -48,7 +46,7 @@ namespace System.Net.Sockets.Tests
             if (!ValidatesArrayArguments) return;
             using var socket = CreateSocket();
 
-            await Assert.ThrowsAsync<ArgumentNullException>(() => SendToAsync(socket, null, GetGetDummyTestEndpoint()));
+            await AssertThrowsSynchronously<ArgumentNullException>(() => SendToAsync(socket, null, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
@@ -57,11 +55,11 @@ namespace System.Net.Sockets.Tests
             using Socket socket = CreateSocket();
             if (UsesEap)
             {
-                await Assert.ThrowsAsync<ArgumentException>(() => SendToAsync(socket, new byte[1], null));
+                await AssertThrowsSynchronously<ArgumentException>(() => SendToAsync(socket, new byte[1], null));
             }
             else
             {
-                await Assert.ThrowsAsync<ArgumentNullException>(RemoteEndPointArgumentName, () => SendToAsync(socket, new byte[1], null));
+                await AssertThrowsSynchronously<ArgumentNullException>(() => SendToAsync(socket, new byte[1], null));
             }
         }
 

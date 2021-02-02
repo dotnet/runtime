@@ -38,7 +38,7 @@ namespace System.Net.Sockets.Tests
                 Offset = offset
             }.ToActual();
 
-            await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => ReceiveMessageFromAsync(socket, buffer, GetGetDummyTestEndpoint()));
+            await AssertThrowsSynchronously<ArgumentOutOfRangeException>(() => ReceiveMessageFromAsync(socket, buffer, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
@@ -46,7 +46,7 @@ namespace System.Net.Sockets.Tests
         {
             if (!ValidatesArrayArguments) return;
             using Socket socket = CreateSocket();
-            await Assert.ThrowsAsync<ArgumentNullException>(() => ReceiveMessageFromAsync(socket, null, GetGetDummyTestEndpoint()));
+            await AssertThrowsSynchronously<ArgumentNullException>(() => ReceiveMessageFromAsync(socket, null, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
@@ -55,11 +55,11 @@ namespace System.Net.Sockets.Tests
             using Socket socket = CreateSocket();
             if (UsesEap)
             {
-                await Assert.ThrowsAsync<ArgumentException>(() => ReceiveMessageFromAsync(socket, new byte[1], null));
+                await AssertThrowsSynchronously<ArgumentException>(() => ReceiveMessageFromAsync(socket, new byte[1], null));
             }
             else
             {
-                await Assert.ThrowsAsync<ArgumentNullException>(() => ReceiveMessageFromAsync(socket, new byte[1], null));
+                await AssertThrowsSynchronously<ArgumentNullException>(() => ReceiveMessageFromAsync(socket, new byte[1], null));
             }
         }
 
@@ -68,18 +68,18 @@ namespace System.Net.Sockets.Tests
         {
             using var ipv4Socket = CreateSocket();
             EndPoint ipV6Endpoint = GetGetDummyTestEndpoint(AddressFamily.InterNetworkV6);
-            await Assert.ThrowsAsync<ArgumentException>(() => ReceiveMessageFromAsync(ipv4Socket, new byte[1], ipV6Endpoint));
+            await AssertThrowsSynchronously<ArgumentException>(() => ReceiveMessageFromAsync(ipv4Socket, new byte[1], ipV6Endpoint));
         }
 
         [Fact]
         public async Task NotBound_Throws_InvalidOperationException()
         {
-            // ReceiveFromAsync(saea) throws SocketException / fails with Debug.Assert():
+            // ReceiveFromAsync(saea) fails on a Debug.Assert():
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/47714")]
             if (UsesEap) return;
 
             using Socket socket = CreateSocket();
-            await Assert.ThrowsAsync<InvalidOperationException>(() => ReceiveMessageFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
+            await AssertThrowsSynchronously<InvalidOperationException>(() => ReceiveMessageFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
