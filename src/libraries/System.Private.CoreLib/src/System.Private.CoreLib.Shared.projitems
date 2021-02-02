@@ -1012,7 +1012,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInt64PersistentCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInterruptedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadLocal.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolWorkQueue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPriority.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadStart.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadStartException.cs" />
@@ -1887,14 +1887,12 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <!-- 
-      Include unconditionally to simplify code-structuring since the entry-points are available on all platforms
-      but assert with a not-supported error code on unsupported ones.
-    -->
     <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.AutoreleasePool.cs"
              Link="Common\Interop\OSX\System.Native\Interop.AutoreleasePool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolWorkQueue.AutoreleasePool.OSX.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsOSXLike)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolWorkQueue.AutoreleasePool.Unsupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsX86Intrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />

@@ -23,7 +23,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    internal sealed class ThreadPoolWorkQueue
+    internal sealed partial class ThreadPoolWorkQueue
     {
         internal static class WorkStealingQueueList
         {
@@ -694,7 +694,7 @@ namespace System.Threading
                     if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS() ||
                         (OperatingSystem.IsMacOS() && ThreadPool.EnableDispatchAutoreleasePool))
                     {
-                        DispatchItemWithAutoReleasePool(workItem, currentThread);
+                        DispatchItemWithAutoreleasePool(workItem, currentThread);
                     }
 #pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be a constant in some runtimes.
                     else if (ThreadPool.EnableWorkerTracking)
@@ -763,33 +763,6 @@ namespace System.Threading
                 //
                 if (needAnotherThread)
                     outerWorkQueue.EnsureThreadRequested();
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        [SupportedOSPlatform("macos")]
-        [SupportedOSPlatform("ios")]
-        [SupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("watchos")]
-        private static void DispatchItemWithAutoReleasePool(object workItem, Thread currentThread)
-        {
-            IntPtr autoreleasePool = Interop.Sys.CreateAutoreleasePool();
-            try
-            {
-#pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be a constant in some runtimes.
-                if (ThreadPool.EnableWorkerTracking)
-                {
-                    DispatchWorkItemWithWorkerTracking(workItem, currentThread);
-                }
-                else
-                {
-                    DispatchWorkItem(workItem, currentThread);
-                }
-#pragma warning restore CS0162
-            }
-            finally
-            {
-                Interop.Sys.DrainAutoreleasePool(autoreleasePool);
             }
         }
 
