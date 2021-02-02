@@ -1099,31 +1099,6 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe SocketError ReceiveAsync(SafeSocketHandle handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
-        {
-            // Set up asyncResult for overlapped WSASend.
-            asyncResult.SetUnmanagedStructures(buffers);
-            try
-            {
-                int bytesTransferred;
-                SocketError errorCode = Interop.Winsock.WSARecv(
-                    handle,
-                    asyncResult._wsaBuffers,
-                    asyncResult._wsaBuffers!.Length,
-                    out bytesTransferred,
-                    ref socketFlags,
-                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
-                    IntPtr.Zero);
-
-                return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
-            }
-            catch
-            {
-                asyncResult.ReleaseUnmanagedStructures();
-                throw;
-            }
-        }
-
         public static unsafe SocketError ReceiveMessageFromAsync(Socket socket, SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, ReceiveMessageOverlappedAsyncResult asyncResult)
         {
             asyncResult.SetUnmanagedStructures(buffer, offset, count, socketAddress, socketFlags);
