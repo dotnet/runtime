@@ -725,16 +725,16 @@ jobs:
   #
   # PGO Build
   #
-  - template: /eng/pipelines/installer/installer-matrix.yml
-    buildConfig: Release
-    parameters:
-      jobParameters:
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        liveRuntimeBuildConfig: release
-        liveLibrariesBuildConfig: Release
-        pgoInstrument: true
-      platforms:
-      - windows_x64
+- template: /eng/pipelines/installer/installer-matrix.yml
+  buildConfig: Release
+  parameters:
+    jobParameters:
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: Release
+      pgoInstrument: true
+    platforms:
+    - windows_x64
 
 #
 # Crossgen-comparison jobs
