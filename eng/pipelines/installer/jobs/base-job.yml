@@ -39,7 +39,7 @@ parameters:
 
 jobs:
 - job: ${{ format('installer_{0}_{1}_{2}_{3}', parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
-  displayName: ${{ format('{0} Installer Build and Test {1} {2} {3} {4}', parameters.pgoInstrument parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
+  displayName: ${{ format('{0} Installer Build and Test {1} {2} {3} {4}', parameters.pgoInstrument, parameters.runtimeFlavor, parameters.runtimeVariant, coalesce(parameters.name, parameters.platform), parameters.buildConfig) }}
 
   condition: and(succeeded(), ${{ parameters.condition }})
   pool: ${{ parameters.pool }}
