@@ -1516,59 +1516,25 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         }
 
         assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == 32));
-        assert(simdSize % 4 == 0);
 
-        bool allBitsAreUnset        = true;
-        bool allBitsAreSet          = true;
-        int  i32ComponentsToInspect = argCnt == 1 ? 2 : simdSize / 4;
-        // Inspect only first two 32bit components if argCnt == 1
-        // or simdSize / 4 otherwise (32bit is the greatest common factor). 
-        for (int i = 0; i < i32ComponentsToInspect; i++)
+        if (((simdSize == 16) || (simdSize == 32)) &&
+            VectorConstantIsBroadcastedI64(vecCns, (argCnt == 1 ? argCnt : simdSize / 8)))
         {
-            if (vecCns.i32[i] != 0)
-            {
-                allBitsAreUnset = false;
-            }
-            else if (vecCns.i32[i] != -1)
-            {
-                allBitsAreSet = false;
-            }
-        }
+            // If we are a single constant or if all parts are the same, we might be able to optimize
+            // this even further for certain values, such as Zero or AllBitsSet.
 
-        // If we are a single constant or if all parts are the same, we might be able to optimize
-        // this even further for certain values, such as Zero or AllBitsSet.
-
-        if (allBitsAreUnset)
-        {
-            if (simdSize == 16)
+            if (vecCns.i64[0] == 0)
             {
                 node->gtOp1 = nullptr;
                 node->gtOp2 = nullptr;
-                node->gtHWIntrinsicId = NI_Vector128_get_Zero;
+                node->gtHWIntrinsicId = (simdSize == 16) ? NI_Vector128_get_Zero : NI_Vector256_get_Zero;
                 return;
             }
-            else if (simdSize == 32)
+            else if (vecCns.i64[0] == -1)
             {
                 node->gtOp1 = nullptr;
                 node->gtOp2 = nullptr;
-                node->gtHWIntrinsicId = NI_Vector256_get_Zero;
-                return;
-            }
-        }
-        else if (allBitsAreSet)
-        {
-            if (simdSize == 16)
-            {
-                node->gtOp1 = nullptr;
-                node->gtOp2 = nullptr;
-                node->gtHWIntrinsicId = NI_Vector128_get_AllBitsSet;
-                return;
-            }
-            else if (simdSize == 32)
-            {
-                node->gtOp1 = nullptr;
-                node->gtOp2 = nullptr;
-                node->gtHWIntrinsicId = NI_Vector256_get_AllBitsSet;
+                node->gtHWIntrinsicId = (simdSize == 16) ? NI_Vector128_get_AllBitsSet : NI_Vector256_get_AllBitsSet;
                 return;
             }
         }
