@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Resources.Tests
@@ -17,8 +19,7 @@ namespace System.Resources.Tests
         [Fact]
         public static void VerifyMethodsCalledWithMakeGenericMethod()
         {
-            Assembly assembly = typeof(ResourceManager).Assembly;
-            Type type = assembly.GetType("System.Resources.ResourceReader");
+            Type type = typeof(ResourceReader);
             MethodInfo mi = type.GetMethod("CreateUntypedDelegate", BindingFlags.NonPublic | BindingFlags.Static);
 
             Type[] genericTypes = mi.GetGenericArguments();
@@ -29,6 +30,20 @@ namespace System.Resources.Tests
                     Assert.Null(genericType.GetCustomAttribute<DynamicallyAccessedMembersAttribute>());
                 }
             }
+        }
+
+        [Fact]
+        public static void VerifyFeatureSwitchGeneratesTheRightException()
+        {
+            var remoteInvokeOptions = new RemoteInvokeOptions();
+            remoteInvokeOptions.RuntimeConfigurationOptions.Add("System.Resources.ResourceManager.CustomResourceTypes.IsSupported", false);
+
+            using var handle = RemoteExecutor.Invoke(() =>
+            {
+                // System.Resources.Tests.Resources.CustomType resources where built using BinaryFormatter to preserialize custom types.
+                ResourceManager rm = new ResourceManager("System.Resources.Tests.Resources.CustomType", typeof(TrimCompatibilityTests).Assembly);
+                Assert.Throws<NotSupportedException>(() => rm.GetObject("CustomObject"));
+            }, remoteInvokeOptions);
         }
     }
 }

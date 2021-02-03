@@ -129,6 +129,8 @@ namespace System.Resources
             ReadResources();
         }
 
+        internal static bool AllowCustomResourceTypes { get; } = AppContext.TryGetSwitch("System.Resources.ResourceManager.CustomResourceTypes.IsSupported", out bool allowReflection) ? allowReflection : true;
+
         public void Close()
         {
             Dispose(true);
@@ -161,8 +163,6 @@ namespace System.Resources
                 _nameHashesPtr = null;
             }
         }
-
-        private static bool AllowReflectionForNonPrimitiveTypes { get; } = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveTypes", out bool allowReflection) ? allowReflection : true;
 
         internal static unsafe int ReadUnalignedI4(int* p)
         {
@@ -926,7 +926,7 @@ namespace System.Resources
             }
             if (_typeTable[typeIndex] == null)
             {
-                if (AllowReflectionForNonPrimitiveTypes)
+                if (AllowCustomResourceTypes)
                 {
                     UseReflectionToGetType(typeIndex);
                 }
@@ -939,7 +939,10 @@ namespace System.Resources
             return _typeTable[typeIndex]!;
         }
 
-        [RequiresUnreferencedCode("This method will use reflection to get a type from a string read from the stream.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
+            Justification = "We don't want to add another RequiresUnreferencedCode attribute here since " +
+            "we are already going to get one warning on ManifestBasedResourceGroveler.InternalGetResourceSetFromSerializedData " +
+            "when the Custom types feature switch is enabled, and we only want user to get one warning for this feature switch.")]
         private void UseReflectionToGetType(int typeIndex)
         {
             long oldPos = _store.BaseStream.Position;

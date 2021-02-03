@@ -14,13 +14,11 @@
 ===========================================================*/
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Text;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Resources
 {
@@ -36,7 +34,6 @@ namespace System.Resources
     internal partial class ManifestBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;
-        private static bool AllowReflectionForNonPrimitiveTypes { get; } = AppContext.TryGetSwitch("System.Resources.AllowReflectionForNonPrimitiveTypes", out bool allowReflection) ? allowReflection : true;
 
         public ManifestBasedResourceGroveler(ResourceManager.ResourceManagerMediator mediator)
         {
@@ -234,11 +231,11 @@ namespace System.Resources
                     }
                     else
                     {
-                        if (AllowReflectionForNonPrimitiveTypes)
+                        if (ResourceReader.AllowCustomResourceTypes)
                         {
                             Debug.Assert(readerTypeName != null, "Reader Type name should be set");
                             Debug.Assert(resSetTypeName != null, "ResourceSet Type name should be set");
-                            return InternalGetResourceSetFromSerializedData(store, readerTypeName, resSetTypeName);
+                            return InternalGetResourceSetFromSerializedData(store, readerTypeName, resSetTypeName, _mediator);
                         }
                         else
                         {
@@ -281,8 +278,9 @@ namespace System.Resources
             }
         }
 
-        [RequiresUnreferencedCode("This Path uses Reflection to activate types on an external stream.")]
-        private ResourceSet InternalGetResourceSetFromSerializedData(Stream store, string readerTypeName, string? resSetTypeName)
+        [RequiresUnreferencedCode("The CustomTypeResourcesSupport feature switch has been enabled for this app which is being trimmed. " +
+            "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
+        private static ResourceSet InternalGetResourceSetFromSerializedData(Stream store, string readerTypeName, string? resSetTypeName, ResourceManager.ResourceManagerMediator mediator)
         {
             IResourceReader reader;
 
@@ -305,15 +303,11 @@ namespace System.Resources
             object[] resourceSetArgs = new object[1];
             resourceSetArgs[0] = reader;
 
-            Type resSetType;
-            if (_mediator.UserResourceSet == null)
+            Type? resSetType = mediator.UserResourceSet;
+            if (resSetType == null)
             {
                 Debug.Assert(resSetTypeName != null, "We should have a ResourceSet type name from the custom resource file here.");
                 resSetType = Type.GetType(resSetTypeName, true, false)!;
-            }
-            else
-            {
-                resSetType = _mediator.UserResourceSet;
             }
 
             ResourceSet rs = (ResourceSet)Activator.CreateInstance(resSetType,

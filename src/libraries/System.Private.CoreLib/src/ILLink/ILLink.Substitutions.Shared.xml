@@ -21,11 +21,8 @@
     <type fullname="System.StartupHookProvider" feature="System.StartupHookProvider.IsSupported" featurevalue="false">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
-    <type fullname="System.Resources.ManifestBasedResourceGroveler" feature="System.Resources.AllowReflectionForNonPrimitiveTypes" featurevalue="false">
-      <method signature="System.Boolean get_AllowReflectionForNonPrimitiveTypes()" body="stub" value="false" />
-    </type>
-    <type fullname="System.Resources.ResourceReader" feature="System.Resources.AllowReflectionForNonPrimitiveTypes" featurevalue="false">
-      <method signature="System.Boolean get_AllowReflectionForNonPrimitiveTypes()" body="stub" value="false" />
+    <type fullname="System.Resources.ResourceReader" feature="System.Resources.ResourceManager.CustomResourceTypes.IsSupported" featurevalue="false">
+      <method signature="System.Boolean get_AllowCustomResourceTypes()" body="stub" value="false" />
     </type>
   </assembly>
 </linker>
