@@ -148,8 +148,9 @@ log_callback (const char *log_domain, const char *log_level, const char *message
     }
 }
 
-void 
-register_aot_modules (void);
+#if FORCE_AOT
+void register_aot_modules (void);
+#endif
 
 int
 mono_droid_runtime_init (void)
@@ -191,10 +192,13 @@ mono_droid_runtime_init (void)
     if (force_interpreter) {
         LOG_INFO("Interp Enabled");
         mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
-    } else if (force_AOT) {
+    } 
+#if FORCE_AOT    
+    else if (force_AOT) {
         register_aot_modules();
         mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
     }
+#endif
 
     mono_jit_init_version ("dotnet.android", "mobile");
 

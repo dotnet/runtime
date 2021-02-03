@@ -10,6 +10,8 @@ add_library(
 
 %AotSources%
 
+%Defines%
+
 include_directories("%MonoInclude%")
 
 target_link_libraries(

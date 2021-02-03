@@ -196,6 +196,18 @@ public class ApkBuilder
             .Replace("%AotSources%", aotSources)
             .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c");
 
+        string defines = "";
+        if (ForceInterpreter)
+        {
+            defines = "add_definitions(-DFORCE_INTERPRETER=1)";
+        }
+        else if (ForceAOT)
+        {
+            defines = "add_definitions(-DFORCE_AOT=1)";
+        }
+
+        cmakeLists = cmakeLists.Replace("%Defines%", defines);
+
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 
         File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), Utils.GetEmbeddedResource("monodroid.c"));
