@@ -76,7 +76,6 @@ namespace System.Diagnostics.Tracing
             LogThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
         }
 
-
         [DllImport(RuntimeHelpers.QCall)]
         private static extern void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, NativeRuntimeEventSource.ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
 
@@ -84,7 +83,6 @@ namespace System.Diagnostics.Tracing
         {
             LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
         }
-
 
         [DllImport(RuntimeHelpers.QCall)]
         private static extern void LogThreadPoolWorkerThreadAdjustmentStats(

@@ -73,7 +73,7 @@ def getCSharpTypeFromManifestType(manifestType):
 
 def generateEvent(eventNode, providerNode, outputFile, stringTable):
 
-    # For Threading events, they are defined manually
+    # ThreadPool events are defined manually in NativeRuntimeEventSource.PortableThreadPool.cs
     symbol = eventNode.getAttribute("symbol")
     if "ThreadPool" in symbol:
         return
@@ -94,10 +94,8 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
             outputFile.write(", Keywords = ")
             for keywordIndex in range(len(keywords)):
                 evtKeywords += "Keywords." + keywords[keywordIndex]
-                # outputFile.write("Keywords." + keywords[keywordIndex])
                 if keywordIndex < (len(keywords) - 1):
                     evtKeywords += " | " 
-                    #outputFile.write(" | ")
             outputFile.write(evtKeywords)
     outputFile.write(")]\n")
 

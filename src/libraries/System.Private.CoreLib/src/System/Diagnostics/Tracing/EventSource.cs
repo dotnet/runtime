@@ -3801,16 +3801,6 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public event EventHandler<EventWrittenEventArgs>? EventWritten;
 
-        static EventListener()
-        {
-#if FEATURE_PERFTRACING
-            // Ensure that NativeRuntimeEventSource is initialized so that EventListeners get an opportunity to subscribe to its events.
-            // This is required because NativeRuntimeEventSource never emit events on its own, and thus will never be initialized
-            // in the normal way that EventSources are initialized.
-            // GC.KeepAlive(NativeRuntimeEventSource.Log);
-#endif // FEATURE_PERFTRACING
-        }
-
         /// <summary>
         /// Create a new EventListener in which all events start off turned off (use EnableEvents to turn
         /// them on).

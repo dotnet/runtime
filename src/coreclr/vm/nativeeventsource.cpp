@@ -33,52 +33,52 @@ BOOL QCALLTYPE XplatEventSourceLogger::IsEventSourceLoggingEnabled()
     return retVal;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadStart(__in_z uint ActiveWorkerThreadCount, __in_z uint RetiredWorkerThreadCount, __in_z short ClrInstanceID)
+void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadStart(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+    FireEtXplatThreadPoolWorkerThreadStart(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
 
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadStop(__in_z uint ActiveWorkerThreadCount, __in_z uint RetiredWorkerThreadCount, __in_z short ClrInstanceID)
+void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadStop(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+    FireEtXplatThreadPoolWorkerThreadStop(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
 
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadWait(__in_z uint ActiveWorkerThreadCount, __in_z uint RetiredWorkerThreadCount, __in_z short ClrInstanceID)
+void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadWait(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+    FireEtXplatThreadPoolWorkerThreadWait(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
 
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustSample(__in_z double Throughput, __in_z short ClrInstanceID)
+void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustSample(__in_z double throughput, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
+    FireEtXplatThreadPoolWorkerThreadAdjustmentSample(throughput, clrInstanceID);
 
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentAdjustment(__in_z double AverageThroughput, __in_z uint NewWorkerThreadCount, __in_z uint Reason, __in_z short ClrInstanceID)
+void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentAdjustment(__in_z double averageThroughput, __in_z uint newWorkerThreadCount, __in_z uint reason, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
+    FireEtXplatThreadPoolWorkerThreadAdjustmentAdjustment(averageThroughput, newWorkerThreadCount, reason, clrInstanceID);
     
     END_QCALL;
 }
