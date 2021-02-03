@@ -32,7 +32,7 @@ namespace System
         private string? _stackTraceString;
         private string? _remoteStackTraceString;
         private int _unused4;
-        private object? _dynamicMethods; // Dynamic methods referenced by the stack trace
+        private object[]? _dynamicMethods; // Dynamic methods referenced by the stack trace
         private int _HResult;
         private string? _source;
         private object? _unused6;

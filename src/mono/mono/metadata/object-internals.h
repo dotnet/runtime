@@ -358,7 +358,11 @@ struct _MonoException {
 	MonoString *remote_stack_trace;
 	gint32	    remote_stack_index;
 	/* Dynamic methods referenced by the stack trace */
+#ifdef ENABLE_NETCORE
+	MonoArray *dynamic_methods;
+#else
 	MonoObject *dynamic_methods;
+#endif
 	gint32	    hresult;
 	MonoString *source;
 	MonoObject *serialization_manager;
@@ -1775,6 +1779,9 @@ mono_array_clone_checked (MonoArray *array, MonoError *error);
 
 void
 mono_array_full_copy (MonoArray *src, MonoArray *dest);
+
+void
+mono_array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size);
 
 gboolean
 mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res);

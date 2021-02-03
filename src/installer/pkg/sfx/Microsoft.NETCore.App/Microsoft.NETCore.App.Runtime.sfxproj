@@ -39,7 +39,7 @@
     <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
   </PropertyGroup>
 
-  <!-- 
+  <!--
     hostpolicy and hostfxr aren't in the platform manifest in the ref pack and cannot be without breaking things upstack.
     We add the entries here to ensure that we don't fail the validation that every file included in the runtime pack is in the platform manifest
     without adding the entries to the manifest in the ref pack.
@@ -120,6 +120,25 @@
   <ItemGroup Condition="'$(_diaSymReaderPathIfExists)' != ''">
     <NativeRuntimeAsset Include="$(_diaSymReaderPathIfExists)" />
   </ItemGroup>
+
+  <!-- VS uses this file to show the target framework in the drop down. -->
+  <Target Name="CreateDotVersionFile"
+          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager"
+          BeforeTargets="GetFilesToPublish"
+          Condition="'$(DisableSourceLink)' != 'true'">
+    <ItemGroup>
+      <_VersionFile Include="$(IntermediateOutputPath).version" TargetPath="shared/$(SharedFrameworkName)/$(Version)/" />
+    </ItemGroup>
+    <WriteLinesToFile
+      Lines="$(SourceRevisionId);$(Version)"
+      File="@(_VersionFile)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FilesToPublish Include="@(_VersionFile)" />
+      <FileWrites Include="@(_VersionFile)" />
+    </ItemGroup>
+  </Target>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />

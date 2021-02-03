@@ -231,6 +231,7 @@ typedef struct MonoAotOptions {
 	gboolean deterministic;
 	char *tool_prefix;
 	char *ld_flags;
+	char *ld_name;
 	char *mtriple;
 	char *llvm_path;
 	char *temp_path;
@@ -8311,7 +8312,9 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "tool-prefix=")) {
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
 		} else if (str_begins_with (arg, "ld-flags=")) {
-			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));			
+			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));
+		} else if (str_begins_with (arg, "ld-name=")) {
+			opts->ld_name = g_strdup (arg + strlen ("ld-name="));
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
 		// Intentionally undocumented x2-- deprecated
@@ -12520,17 +12523,25 @@ compile_asm (MonoAotCompile *acfg)
 	GString *str;
 
 	str = g_string_new ("");
+	const char *ld_binary_name = acfg->aot_opts.ld_name;
 #if defined(LD_NAME)
-	g_string_append_printf (str, "%s%s %s", tool_prefix, LD_NAME, LD_OPTIONS);
+	if (ld_binary_name == NULL) {
+		ld_binary_name = LD_NAME;
+	}
+	g_string_append_printf (str, "%s%s %s", tool_prefix, ld_binary_name, LD_OPTIONS);
 #else
+	if (ld_binary_name == NULL) {
+		ld_binary_name = "ld";
+	}
+
 	// Default (linux)
 	if (acfg->aot_opts.tool_prefix)
 		/* Cross compiling */
-		g_string_append_printf (str, "\"%sld\" %s", tool_prefix, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
 	else if (acfg->aot_opts.llvm_only)
 		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
 	else
-		g_string_append_printf (str, "\"%sld\"", tool_prefix);
+		g_string_append_printf (str, "\"%s%s\"", tool_prefix, ld_binary_name);
 	g_string_append_printf (str, " -shared");
 #endif
 	g_string_append_printf (str, " -o %s %s %s %s",

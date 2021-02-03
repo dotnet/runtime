@@ -21,6 +21,7 @@ static volatile guint32 stat_gc_handles_max_allocated = 0;
 #endif
 
 
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
 typedef struct {
         size_t num_handles [HANDLE_TYPE_MAX];
 } GCHandleClassEntry;
@@ -28,6 +29,7 @@ typedef struct {
 static gboolean do_gchandle_stats = FALSE;
 
 static SgenHashTable gchandle_class_hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_STATISTICS, INTERNAL_MEM_STAT_GCHANDLE_CLASS, sizeof (GCHandleClassEntry), g_str_hash, g_str_equal);
+#endif
 
 /*
  * A table of GC handle data, implementing a simple lock-free bitmap allocator.

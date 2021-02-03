@@ -1796,11 +1796,15 @@ typedef enum CorAttributeTargets
 #define FORWARD_INTEROP_STUB_METHOD_TYPE        "System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute"
 
 #define FRIEND_ASSEMBLY_TYPE_W                  W("System.Runtime.CompilerServices.InternalsVisibleToAttribute")
-#define FRIEND_ASSEMBLY_TYPE                     "System.Runtime.CompilerServices.InternalsVisibleToAttribute"
+#define FRIEND_ASSEMBLY_TYPE                    "System.Runtime.CompilerServices.InternalsVisibleToAttribute"
+#define FRIEND_ASSEMBLY_TYPE_NAMESPACE          "System.Runtime.CompilerServices"
+#define FRIEND_ASSEMBLY_TYPE_NAME               "InternalsVisibleToAttribute"
 #define FRIEND_ASSEMBLY_SIG                     {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 2, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING, ELEMENT_TYPE_BOOLEAN}
 
 #define SUBJECT_ASSEMBLY_TYPE_W                 W("System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute")
-#define SUBJECT_ASSEMBLY_TYPE                    "System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute"
+#define SUBJECT_ASSEMBLY_TYPE                   "System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute"
+#define SUBJECT_ASSEMBLY_TYPE_NAMESPACE         "System.Runtime.CompilerServices"
+#define SUBJECT_ASSEMBLY_TYPE_NAME              "IgnoresAccessChecksToAttribute"
 #define SUBJECT_ASSEMBLY_SIG                    {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
 #define DISABLED_PRIVATE_REFLECTION_TYPE_W      W("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")
@@ -1817,6 +1821,12 @@ typedef enum CorAttributeTargets
 
 #define NONVERSIONABLE_TYPE_W                   W("System.Runtime.Versioning.NonVersionableAttribute")
 #define NONVERSIONABLE_TYPE                      "System.Runtime.Versioning.NonVersionableAttribute"
+
+#define DEBUGGABLE_ATTRIBUTE_TYPE_W             W("System.Diagnostics.DebuggableAttribute")
+#define DEBUGGABLE_ATTRIBUTE_TYPE               "System.Diagnostics.DebuggableAttribute"
+#define DEBUGGABLE_ATTRIBUTE_TYPE_NAMESPACE     "System.Diagnostics"
+#define DEBUGGABLE_ATTRIBUTE_TYPE_NAME          "DebuggableAttribute"
+
 
 // Keep in sync with CompilationRelaxations.cs
 typedef enum CompilationRelaxationsEnum

@@ -6,28 +6,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-// it's not part of the BCL but runtime needs it for native-to-managed callbacks in AOT
-// To be replaced with NativeCallableAttribute
-public class MonoPInvokeCallbackAttribute : Attribute
-{
-    public MonoPInvokeCallbackAttribute(Type delegateType) { }
-}
-
 public static class Program
 {
     // Defined in main.m
     [DllImport("__Internal")]
-    private extern static void ios_set_text(string value);
+    private static extern void ios_set_text(string value);
 
     [DllImport("__Internal")]
-    private extern static void ios_register_button_click(Action action);
-
-    private static Action buttonClickHandler = null;
+    unsafe private static extern void ios_register_button_click(delegate* unmanaged<void> callback);
 
     private static int counter = 0;
 
     // Called by native code, see main.m
-    [MonoPInvokeCallback(typeof(Action))]
+    [UnmanagedCallersOnly]
     private static void OnButtonClick()
     {
         ios_set_text("OnButtonClick! #" + counter++);
@@ -39,10 +30,11 @@ public static class Program
     public static async Task Main(string[] args)
 #endif
     {
-        // Register a managed callback (will be called by UIButton, see main.m)
-        // Also, keep the handler alive so GC won't collect it.
-        ios_register_button_click(buttonClickHandler = OnButtonClick);
-
+        unsafe {
+            // Register a managed callback (will be called by UIButton, see main.m)
+            delegate* unmanaged<void> unmanagedPtr = &OnButtonClick;
+            ios_register_button_click(unmanagedPtr);
+        }
         const string msg = "Hello World!\n.NET 5.0";
         for (int i = 0; i < msg.Length; i++)
         {

@@ -27,6 +27,7 @@ struct Agnostic_CORINFO_SIG_INFO
     DWORDLONG args;
     DWORD     pSig_Index;
     DWORD     cbSig;
+    DWORDLONG sigHandle; // used instead of cbSig/pSig_Index on crossgen2 if (cbSig == 0) && (pSig != nullptr)
     DWORDLONG scope;
     DWORD     token;
 };
@@ -128,13 +129,17 @@ struct Agnostic_CORINFO_RESOLVED_TOKENout
 
 struct Agnostic_GetArgType_Key
 {
+    // Partial CORINFO_SIG_INFO data
     DWORD     flags;
     DWORD     numArgs;
     DWORD     sigInst_classInstCount;
     DWORD     sigInst_classInst_Index;
     DWORD     sigInst_methInstCount;
     DWORD     sigInst_methInst_Index;
+    DWORDLONG sigHandle; // used instead of cbSig/pSig_Index on crossgen2 if (cbSig == 0) && (pSig != nullptr)
     DWORDLONG scope;
+
+    // Other getArgType() arguments
     DWORDLONG args;
 };
 
@@ -146,6 +151,7 @@ struct Agnostic_GetArgClass_Key
     DWORD     sigInst_methInst_Index;
     DWORDLONG scope;
     DWORDLONG args;
+    DWORDLONG sigHandle; // used instead of cbSig/pSig_Index on crossgen2 if (cbSig == 0) && (pSig != nullptr)
 };
 
 struct Agnostic_GetBoundaries
