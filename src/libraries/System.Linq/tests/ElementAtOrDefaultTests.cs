@@ -11,39 +11,23 @@ namespace System.Linq.Tests
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
-            var q1 = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
-                    where x > int.MinValue
-                    select x;
-            Assert.Equal(q1.ElementAtOrDefault(3), q1.ElementAtOrDefault(3));
-
-            var q2 = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
+            var q = Repeat(_ => from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
                 where x > int.MinValue
-                select x;
-            Assert.Equal(q2.ElementAtOrDefault(new Index(3)), q2.ElementAtOrDefault(new Index(3)));
-
-            var q3 = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
-                where x > int.MinValue
-                select x;
-            Assert.Equal(q3.ElementAtOrDefault(^6), q3.ElementAtOrDefault(^6));
+                select x, 3);
+            Assert.Equal(q[0].ElementAtOrDefault(3), q[0].ElementAtOrDefault(3));
+            Assert.Equal(q[1].ElementAtOrDefault(new Index(3)), q[1].ElementAtOrDefault(new Index(3)));
+            Assert.Equal(q[2].ElementAtOrDefault(^6), q[2].ElementAtOrDefault(^6));
         }
 
         [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
-            var q1 = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
-                    where !string.IsNullOrEmpty(x)
-                    select x;
-            Assert.Equal(q1.ElementAtOrDefault(4), q1.ElementAtOrDefault(4));
-
-            var q2 = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
+            var q = Repeat(_ => from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
                 where !string.IsNullOrEmpty(x)
-                select x;
-            Assert.Equal(q2.ElementAtOrDefault(new Index(4)), q2.ElementAtOrDefault(new Index(4)));
-
-            var q3 = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
-                where !string.IsNullOrEmpty(x)
-                select x;
-            Assert.Equal(q3.ElementAtOrDefault(^2), q3.ElementAtOrDefault(^2));
+                select x, 3);
+            Assert.Equal(q[0].ElementAtOrDefault(4), q[0].ElementAtOrDefault(4));
+            Assert.Equal(q[1].ElementAtOrDefault(new Index(4)), q[1].ElementAtOrDefault(new Index(4)));
+            Assert.Equal(q[2].ElementAtOrDefault(^2), q[2].ElementAtOrDefault(^2));
         }
 
         public static IEnumerable<object[]> TestData()
