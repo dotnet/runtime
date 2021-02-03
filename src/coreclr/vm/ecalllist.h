@@ -929,6 +929,8 @@ FCFuncEnd()
 #ifdef FEATURE_OBJCBRIDGE
 FCFuncStart(gObjCBridgeFuncs)
     QCFuncElement("TrySetGlobalMessageSendCallback", ObjCBridgeNative::TrySetGlobalMessageSendCallback)
+    QCFuncElement("TryInitializeReferenceTracker", ObjCBridgeNative::TryInitializeReferenceTracker)
+    QCFuncElement("CreateReferenceTrackingHandleInternal", ObjCBridgeNative::CreateReferenceTrackingHandle)
 FCFuncEnd()
 #endif // FEATURE_OBJCBRIDGE
 

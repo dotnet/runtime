@@ -31,6 +31,9 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
 #ifdef FEATURE_COMWRAPPERS
         ComWrappersNative::OnBackgroundGCStarted();
 #endif // FEATURE_COMWRAPPERS
+#ifdef FEATURE_OBJCBRIDGE
+        ObjCBridgeNative::OnBackgroundGCStarted();
+#endif // FEATURE_OBJCBRIDGE
     }
 }
 
@@ -59,5 +62,8 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
 #ifdef FEATURE_COMWRAPPERS
         ComWrappersNative::OnBackgroundGCFinished();
 #endif // FEATURE_COMWRAPPERS
+#ifdef FEATURE_OBJCBRIDGE
+        ObjCBridgeNative::OnBackgroundGCFinished();
+#endif // FEATURE_OBJCBRIDGE
     }
 }

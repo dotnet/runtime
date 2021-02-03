@@ -39,9 +39,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// Request native reference tracking for the supplied object.
         /// </summary>
         /// <param name="obj">The object to track.</param>
-        /// <param name="initialReferencedState">If the supplied object starts out as referenced or not.</param>
-        /// <param name="scratchMemorySizeInBytes">Request size in bytes of scratch memory.</param>
-        /// <param name="scratchMemory">A pointer to a pointer sized allocation.</param>
+        /// <param name="scratchMemory">A pointer to scratch memory.</param>
         /// <returns>Reference tracking GC handle.</returns>
         /// <remarks>
         /// Reference tracking in the <see cref="Bridge"/> must be initialized prior to calling
@@ -52,20 +50,19 @@ namespace System.Runtime.InteropServices.ObjectiveC
         ///
         /// The "Is Referenced" callback passed to InitializeReferenceTracking
         /// will be passed the <paramref name="scratchMemory"/> returned from this function.
-        /// The memory it points at will be zeroed out and available
-        /// until <paramref name="obj"/> is collected by the GC. The memory pointed to by
-        /// <paramref name="scratchMemory"/> can be used for any purpose by the caller of this function
-        /// and usable during the "Is Referenced" callback.
+        /// The memory it points at is 2 pointers' worth (for example, 16 bytes on a 64-bit platform) and
+        /// will be zeroed out and available until <paramref name="obj"/> is collected by the GC.
+        /// The memory pointed to by <paramref name="scratchMemory"/> can be used for any purpose by the
+        /// caller of this function and usable during the "Is Referenced" callback.
         ///
         /// Calling this function multiple times with the same <paramref name="obj"/> will
-        /// return the same handle value and scratch value.
+        /// return a new handle each time but the same scratch memory. The
+        /// scratch memory is only guaranteed to be zero initialized on the first call.
         ///
         /// The caller is responsible for freeing the returned <see cref="GCHandle"/>.
         /// </remarks>
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
-            bool initialReferencedState,
-            int scratchMemorySizeInBytes,
             out IntPtr scratchMemory)
             => throw new PlatformNotSupportedException();
 

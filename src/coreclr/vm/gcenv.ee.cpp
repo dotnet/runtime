@@ -272,9 +272,7 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
     ETW::TypeSystemLog::Cleanup();
 #endif
 
-#ifdef FEATURE_COMINTEROP
     Interop::OnGCStarted(condemned);
-#endif // FEATURE_COMINTEROP
 
     if (condemned == max_gen)
     {
@@ -291,9 +289,7 @@ void GCToEEInterface::GcDone(int condemned)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_COMINTEROP
     Interop::OnGCFinished(condemned);
-#endif // FEATURE_COMINTEROP
 }
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
@@ -318,8 +314,14 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
         return isRooted;
 #endif
 #ifdef FEATURE_OBJCBRIDGE
-    // [TODO] FEATURE_OBJCBRIDGE
+    bool isReferenced = false;
+    if (ObjCBridgeNative::IsTrackedReference((OBJECTREF)pObject, &isReferenced))
+        return isReferenced;
 #endif
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)) && defined(FEATURE_OBJCBRIDGE)
+#error COM and Objective-C are not supported at the same time.
+#endif
+
     return false;
 }
 
@@ -1080,7 +1082,7 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
 #ifdef FEATURE_OBJCBRIDGE
     else if (pMT->IsTrackedReferenceWithFinalizer())
     {
-        // [TODO] Call out for "entered finalizer queue" callback.
+        ObjCBridgeNative::OnEnteredFinalizerQueue((OBJECTREF)obj);
         return false;
     }
 #endif // FEATURE_OBJCBRIDGE
