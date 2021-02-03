@@ -27,11 +27,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 // Arguments:
 //    spDelta                 - the value to add to SP. Must be negative or zero.
+//    regTmp                  - an available temporary register.
 //
 // Return Value:
 //    None.
 //
-void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta)
+void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp)
 {
     assert(spDelta < 0);
 
@@ -39,7 +40,11 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta)
     // function that does a probe, which will in turn call this function.
     assert((target_size_t)(-spDelta) <= compiler->eeGetPageSize());
 
-    inst_RV_IV(INS_sub, REG_SPBASE, (target_ssize_t)-spDelta, EA_PTRSIZE);
+#ifdef TARGET_ARM64
+    genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -spDelta, regTmp);
+#else
+    genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -spDelta, INS_FLAGS_DONT_CARE, regTmp);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -58,7 +63,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta)
 void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp)
 {
     GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, regTmp, REG_SP, 0);
-    genStackPointerConstantAdjustment(spDelta);
+    genStackPointerConstantAdjustment(spDelta, regTmp);
 }
 
 //------------------------------------------------------------------------
