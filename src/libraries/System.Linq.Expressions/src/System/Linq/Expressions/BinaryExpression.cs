@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -404,7 +405,7 @@ namespace System.Linq.Expressions
                 new TrueReadOnlyCollection<Expression>(
                     Assign(left, Left),
                     Condition(
-                        Property(left, "HasValue"),
+                        GetHasValueProperty(left),
                         Condition(
                             Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
                             left,
@@ -413,7 +414,7 @@ namespace System.Linq.Expressions
                                 new TrueReadOnlyCollection<Expression>(
                                     Assign(right, Right),
                                     Condition(
-                                        Property(right, "HasValue"),
+                                        GetHasValueProperty(right),
                                         Convert(
                                             Call(
                                                 Method,
@@ -431,6 +432,14 @@ namespace System.Linq.Expressions
                     )
                 )
             );
+        }
+
+        [DynamicDependency("HasValue", typeof(Nullable<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The property will be preserved by the DynamicDependency.")]
+        private static MemberExpression GetHasValueProperty(ParameterExpression nullable)
+        {
+            return Property(nullable, "HasValue");
         }
     }
 
