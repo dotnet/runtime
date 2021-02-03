@@ -48,7 +48,6 @@
 
     <!-- Include both the project file and its sources as an input. -->
     <ItemGroup>
-      <TasksSrc Include="%(ProjectReferenceWithConfiguration.Identity)" />
       <TasksSrc Include="%(ProjectReferenceWithConfiguration.RelativeDir)%(ProjectReferenceWithConfiguration.RecursiveDir)**\*" />
     </ItemGroup>
   </Target>
