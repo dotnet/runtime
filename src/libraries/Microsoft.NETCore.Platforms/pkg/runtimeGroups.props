@@ -35,8 +35,8 @@
       <Architectures>wasm</Architectures>
     </RuntimeGroup>
 
-    <RuntimeGroup Include="catalyst">
-      <Parent>unix</Parent>
+    <RuntimeGroup Include="maccatalyst">
+      <Parent>ios</Parent>
       <Architectures>x64;arm64</Architectures>
       <Versions>13;14</Versions>
     </RuntimeGroup>

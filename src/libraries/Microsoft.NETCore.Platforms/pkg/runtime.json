@@ -560,57 +560,6 @@
         "browser"
       ]
     },
-    "catalyst": {
-      "#import": [
-        "unix"
-      ]
-    },
-    "catalyst-arm64": {
-      "#import": [
-        "catalyst",
-        "unix-arm64"
-      ]
-    },
-    "catalyst-x64": {
-      "#import": [
-        "catalyst",
-        "unix-x64"
-      ]
-    },
-    "catalyst.13": {
-      "#import": [
-        "catalyst"
-      ]
-    },
-    "catalyst.13-arm64": {
-      "#import": [
-        "catalyst.13",
-        "catalyst-arm64"
-      ]
-    },
-    "catalyst.13-x64": {
-      "#import": [
-        "catalyst.13",
-        "catalyst-x64"
-      ]
-    },
-    "catalyst.14": {
-      "#import": [
-        "catalyst.13"
-      ]
-    },
-    "catalyst.14-arm64": {
-      "#import": [
-        "catalyst.14",
-        "catalyst.13-arm64"
-      ]
-    },
-    "catalyst.14-x64": {
-      "#import": [
-        "catalyst.14",
-        "catalyst.13-x64"
-      ]
-    },
     "centos": {
       "#import": [
         "rhel"
@@ -1470,6 +1419,57 @@
       "#import": [
         "linuxmint.19.2",
         "linuxmint.19.1-x64"
+      ]
+    },
+    "maccatalyst": {
+      "#import": [
+        "ios"
+      ]
+    },
+    "maccatalyst-arm64": {
+      "#import": [
+        "maccatalyst",
+        "ios-arm64"
+      ]
+    },
+    "maccatalyst-x64": {
+      "#import": [
+        "maccatalyst",
+        "ios-x64"
+      ]
+    },
+    "maccatalyst.13": {
+      "#import": [
+        "maccatalyst"
+      ]
+    },
+    "maccatalyst.13-arm64": {
+      "#import": [
+        "maccatalyst.13",
+        "maccatalyst-arm64"
+      ]
+    },
+    "maccatalyst.13-x64": {
+      "#import": [
+        "maccatalyst.13",
+        "maccatalyst-x64"
+      ]
+    },
+    "maccatalyst.14": {
+      "#import": [
+        "maccatalyst.13"
+      ]
+    },
+    "maccatalyst.14-arm64": {
+      "#import": [
+        "maccatalyst.14",
+        "maccatalyst.13-arm64"
+      ]
+    },
+    "maccatalyst.14-x64": {
+      "#import": [
+        "maccatalyst.14",
+        "maccatalyst.13-x64"
       ]
     },
     "ol": {
