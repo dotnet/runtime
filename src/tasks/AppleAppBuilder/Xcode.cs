@@ -191,14 +191,17 @@ internal class Xcode
             switch (Target)
             {
                 case TargetNames.iOS:
+                    sdk = "iphoneos";
                     args.Append(" -arch arm64")
-                        .Append(" -sdk iphoneos");
+                        .Append(" -sdk " + sdk);
                     break;
                 case TargetNames.tvOS:
+                    sdk = "appletvos";
                     args.Append(" -arch arm64")
-                        .Append(" -sdk appletvos");
+                        .Append(" -sdk " + sdk);
                     break;
                 default:
+                    sdk = "maccatalyst";
                     args.Append(" -scheme \"" + Path.GetFileNameWithoutExtension(xcodePrjPath) + "\"")
                         .Append(" -destination \"platform=macOS,arch=arm64,variant=Mac Catalyst\"")
                         .Append(" -UseModernBuildSystem=YES")
@@ -211,14 +214,17 @@ internal class Xcode
             switch (Target)
             {
                 case TargetNames.iOS:
+                    sdk = "iphonesimulator";
                     args.Append(" -arch x86_64")
-                        .Append(" -sdk iphonesimulator");
+                        .Append(" -sdk " + sdk);
                     break;
                 case TargetNames.tvOS:
+                    sdk = "appletvsimulator";
                     args.Append(" -arch x86_64")
-                        .Append(" -sdk appletvsimulator");
+                        .Append(" -sdk " + sdk);
                     break;
                 default:
+                    sdk = "maccatalyst";
                     args.Append(" -scheme \"" + Path.GetFileNameWithoutExtension(xcodePrjPath) + "\"")
                         .Append(" -destination \"platform=macOS,arch=x86_64,variant=Mac Catalyst\"")
                         .Append(" -UseModernBuildSystem=YES")
