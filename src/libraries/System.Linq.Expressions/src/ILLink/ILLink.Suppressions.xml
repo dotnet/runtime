@@ -73,11 +73,5 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Linq.Expressions.Expression.PropertyOrField(System.Linq.Expressions.Expression,System.String)</property>
     </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Linq.Expressions.ExpressionStringBuilder.VisitExtension(System.Linq.Expressions.Expression)</property>
-    </attribute>
   </assembly>
 </linker>
