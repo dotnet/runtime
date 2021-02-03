@@ -20,21 +20,8 @@
 #define sparseMC // Support filling in details where guesses are okay and will still generate good code. (i.e. helper
                  // function addresses)
 
-#if 0
-// Enable these to get verbose logging during record or playback.
-#define DEBUG_REC(x)                                                                                                   \
-    printf("rec");                                                                                                     \
-    x;                                                                                                                 \
-    printf("\n");
-
-#define DEBUG_REP(x)                                                                                                   \
-    printf("rep");                                                                                                     \
-    x;                                                                                                                 \
-    printf("\n");
-#else
-#define DEBUG_REC(x)
-#define DEBUG_REP(x)
-#endif
+bool g_debugRec = false;
+bool g_debugRep = false;
 
 // static variable initialization
 Hash MethodContext::m_hash;
@@ -605,11 +592,13 @@ const char* toString(CorInfoType cit)
 
 const char* toString(CorInfoTypeWithMod cit)
 {
-    switch (cit)
+    // Need to cast `cit` to numeric type to avoid clang compiler warnings
+    // "case value not in enumerated type 'CorInfoTypeWithMod'".
+    switch ((unsigned)cit)
     {
-        case CORINFO_TYPE_BYREF | CORINFO_TYPE_MOD_PINNED:
+        case (unsigned)(CORINFO_TYPE_BYREF | CORINFO_TYPE_MOD_PINNED):
             return "pinned byref";
-        case CORINFO_TYPE_CLASS | CORINFO_TYPE_MOD_PINNED:
+        case (unsigned)(CORINFO_TYPE_CLASS | CORINFO_TYPE_MOD_PINNED):
             return "pinned class";
         default:
             return toString((CorInfoType)(cit & CORINFO_TYPE_MASK));
@@ -1393,6 +1382,7 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         value.instParamLookup.handle     = CastHandle(pResult->instParamLookup.handle);
         value.wrapperDelegateInvoke      = (DWORD)pResult->wrapperDelegateInvoke;
     }
+
     value.exceptionCode = (DWORD)exceptionCode;
 
     GetCallInfo->Add(key, value);
@@ -1478,50 +1468,59 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     value = GetCallInfo->Get(key);
 
-    pResult->hMethod     = (CORINFO_METHOD_HANDLE)value.hMethod;
-    pResult->methodFlags = (unsigned)value.methodFlags;
-    pResult->classFlags  = (unsigned)value.classFlags;
-    pResult->sig         = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap);
-    if (flags & CORINFO_CALLINFO_VERIFICATION)
+    if (value.exceptionCode != 0)
     {
-        pResult->verMethodFlags = (unsigned)value.verMethodFlags;
-        pResult->verSig         = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.verSig, GetCallInfo, SigInstHandleMap);
-    }
-    pResult->accessAllowed                   = (CorInfoIsAccessAllowedResult)value.accessAllowed;
-    pResult->callsiteCalloutHelper.helperNum = (CorInfoHelpFunc)value.callsiteCalloutHelper.helperNum;
-    pResult->callsiteCalloutHelper.numArgs   = (unsigned)value.callsiteCalloutHelper.numArgs;
-    for (int i = 0; i < CORINFO_ACCESS_ALLOWED_MAX_ARGS; i++)
-    {
-        pResult->callsiteCalloutHelper.args[i].constant = (size_t)value.callsiteCalloutHelper.args[i].constant;
-        pResult->callsiteCalloutHelper.args[i].argType =
-            (CorInfoAccessAllowedHelperArgType)value.callsiteCalloutHelper.args[i].argType;
-    }
-    pResult->thisTransform                            = (CORINFO_THIS_TRANSFORM)value.thisTransform;
-    pResult->kind                                     = (CORINFO_CALL_KIND)value.kind;
-    pResult->nullInstanceCheck                        = (bool)value.nullInstanceCheck;
-    pResult->contextHandle                            = (CORINFO_CONTEXT_HANDLE)value.contextHandle;
-    pResult->exactContextNeedsRuntimeLookup           = (bool)value.exactContextNeedsRuntimeLookup;
-    pResult->stubLookup.lookupKind.needsRuntimeLookup = value.stubLookup.lookupKind.needsRuntimeLookup != 0;
-    pResult->stubLookup.lookupKind.runtimeLookupKind =
-        (CORINFO_RUNTIME_LOOKUP_KIND)value.stubLookup.lookupKind.runtimeLookupKind;
-    if (pResult->stubLookup.lookupKind.needsRuntimeLookup)
-    {
-        pResult->stubLookup.runtimeLookup = SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(value.stubLookup.runtimeLookup);
+        // If there was an exception, the stored data is ignored.
+        ZeroMemory(pResult, sizeof(*pResult));
     }
     else
     {
-        pResult->stubLookup.constLookup.accessType = (InfoAccessType)value.stubLookup.constLookup.accessType;
-        pResult->stubLookup.constLookup.handle     = (CORINFO_GENERIC_HANDLE)value.stubLookup.constLookup.handle;
+        pResult->hMethod = (CORINFO_METHOD_HANDLE)value.hMethod;
+        pResult->methodFlags = (unsigned)value.methodFlags;
+        pResult->classFlags = (unsigned)value.classFlags;
+        pResult->sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap);
+        if (flags & CORINFO_CALLINFO_VERIFICATION)
+        {
+            pResult->verMethodFlags = (unsigned)value.verMethodFlags;
+            pResult->verSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.verSig, GetCallInfo, SigInstHandleMap);
+        }
+        pResult->accessAllowed = (CorInfoIsAccessAllowedResult)value.accessAllowed;
+        pResult->callsiteCalloutHelper.helperNum = (CorInfoHelpFunc)value.callsiteCalloutHelper.helperNum;
+        pResult->callsiteCalloutHelper.numArgs = (unsigned)value.callsiteCalloutHelper.numArgs;
+        for (int i = 0; i < CORINFO_ACCESS_ALLOWED_MAX_ARGS; i++)
+        {
+            pResult->callsiteCalloutHelper.args[i].constant = (size_t)value.callsiteCalloutHelper.args[i].constant;
+            pResult->callsiteCalloutHelper.args[i].argType =
+                (CorInfoAccessAllowedHelperArgType)value.callsiteCalloutHelper.args[i].argType;
+        }
+        pResult->thisTransform = (CORINFO_THIS_TRANSFORM)value.thisTransform;
+        pResult->kind = (CORINFO_CALL_KIND)value.kind;
+        pResult->nullInstanceCheck = (bool)value.nullInstanceCheck;
+        pResult->contextHandle = (CORINFO_CONTEXT_HANDLE)value.contextHandle;
+        pResult->exactContextNeedsRuntimeLookup = (bool)value.exactContextNeedsRuntimeLookup;
+        pResult->stubLookup.lookupKind.needsRuntimeLookup = value.stubLookup.lookupKind.needsRuntimeLookup != 0;
+        pResult->stubLookup.lookupKind.runtimeLookupKind =
+            (CORINFO_RUNTIME_LOOKUP_KIND)value.stubLookup.lookupKind.runtimeLookupKind;
+        if (pResult->stubLookup.lookupKind.needsRuntimeLookup)
+        {
+            pResult->stubLookup.runtimeLookup = SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(value.stubLookup.runtimeLookup);
+        }
+        else
+        {
+            pResult->stubLookup.constLookup.accessType = (InfoAccessType)value.stubLookup.constLookup.accessType;
+            pResult->stubLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)value.stubLookup.constLookup.handle;
+        }
+        if (pResult->kind == CORINFO_VIRTUALCALL_STUB)
+        {
+            cr->CallTargetTypes->Add(CastPointer(pResult->codePointerLookup.constLookup.addr),
+                (DWORD)CORINFO_VIRTUALCALL_STUB);
+        }
+        pResult->instParamLookup.accessType = (InfoAccessType)value.instParamLookup.accessType;
+        pResult->instParamLookup.handle = (CORINFO_GENERIC_HANDLE)value.instParamLookup.handle;
+        pResult->wrapperDelegateInvoke = (bool)value.wrapperDelegateInvoke;
     }
-    if (pResult->kind == CORINFO_VIRTUALCALL_STUB)
-    {
-        cr->CallTargetTypes->Add(CastPointer(pResult->codePointerLookup.constLookup.addr),
-                                 (DWORD)CORINFO_VIRTUALCALL_STUB);
-    }
-    pResult->instParamLookup.accessType = (InfoAccessType)value.instParamLookup.accessType;
-    pResult->instParamLookup.handle     = (CORINFO_GENERIC_HANDLE)value.instParamLookup.handle;
-    pResult->wrapperDelegateInvoke      = (bool)value.wrapperDelegateInvoke;
-    *exceptionCode                      = (DWORD)value.exceptionCode;
+
+    *exceptionCode = (DWORD)value.exceptionCode;
 
     DEBUG_REP(dmpGetCallInfo(key, value));
 }
