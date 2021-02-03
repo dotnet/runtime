@@ -25,6 +25,8 @@
 #include "interoputil.h"
 #include "frames.h"
 #include "typeparse.h"
+#include "encee.h"
+#include "threadsuspend.h"
 
 #include "appdomainnative.hpp"
 #include "../binder/inc/bindertracing.h"
@@ -1406,4 +1408,58 @@ void QCALLTYPE AssemblyNative::TraceSatelliteSubdirectoryPathProbed(LPCWSTR file
     BinderTracing::PathProbed(filePath, BinderTracing::PathSource::SatelliteSubdirectory, hr);
 
     END_QCALL;
+}
+
+// static
+INT32 QCALLTYPE AssemblyNative::ApplyHotReloadUpdate(
+    QCall::AssemblyHandle assembly,
+    UINT8* metadataDelta,
+    INT32 metadataDeltaLength,
+    UINT8* ilDelta,
+    INT32 ilDeltaLength,
+    UINT8* pdbDelta,
+    INT32 pdbDeltaLength)
+{
+    QCALL_CONTRACT;
+
+    INT32 result = E_NOTIMPL;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(assembly != nullptr);
+    _ASSERTE(metadataDelta != nullptr);
+    _ASSERTE(metadataDeltaLength > 0);
+    _ASSERTE(ilDelta != nullptr);
+    _ASSERTE(ilDeltaLength > 0);
+
+#ifdef EnC_SUPPORTED
+    GCX_COOP();
+    {
+        if (!CORDebuggerAttached())
+        {
+            // Suspend the runtime.
+            ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
+
+            Module* pModule = assembly->GetDomainAssembly()->GetModule();
+            if (pModule->IsEditAndContinueEnabled())
+            {
+                result = ((EditAndContinueModule*)pModule)->ApplyEditAndContinue(metadataDeltaLength, metadataDelta, ilDeltaLength, ilDelta);
+            }
+            else
+            {
+                result = E_INVALIDARG;
+            }
+
+            ThreadSuspend::RestartEE(FALSE, TRUE);
+        }
+        else
+        {
+            result = E_ACCESSDENIED;
+        }
+    }
+#endif
+
+    END_QCALL;
+
+    return result;
 }
