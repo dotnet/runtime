@@ -27,7 +27,7 @@ jobs:
   displayName: Docker Linux
   timeoutInMinutes: 150
   pool:
-    name: NetCorePublic-Pool
+    name: NetCorePublic-Int-Pool
     queue: BuildPool.Ubuntu.1604.Amd64.Open
 
   steps:
@@ -67,7 +67,7 @@ jobs:
   displayName: Docker NanoServer
   timeoutInMinutes: 150
   pool:
-    name: NetCorePublic-Pool
+    name: NetCorePublic-Int-Pool
     queue: BuildPool.Server.Amd64.VS2019.Open
 
   steps:
