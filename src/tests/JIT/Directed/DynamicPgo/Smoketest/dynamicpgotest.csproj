@@ -4,6 +4,7 @@
     <CLRTestPriority>0</CLRTestPriority>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="dynamicpgotest.cs" />
@@ -11,10 +12,12 @@
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
+set COMPlus_TieredCompilation=1
 set COMPlus_TieredPGO=1
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
+export COMPlus_TieredCompilation=1
 export COMPlus_TieredPGO=1
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
