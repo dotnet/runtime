@@ -6,6 +6,10 @@
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    public static partial class OptionsBuilderValidationExtensions
+    {
+        public static Microsoft.Extensions.Options.OptionsBuilder<TOptions> ValidateOnStart<TOptions>(this Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder) where TOptions : class, new() { throw null; }
+    }
     public static partial class OptionsServiceCollectionExtensions
     {
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddOptions(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
