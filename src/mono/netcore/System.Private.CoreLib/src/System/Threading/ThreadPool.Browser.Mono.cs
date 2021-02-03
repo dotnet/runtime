@@ -34,6 +34,8 @@ namespace System.Threading
 
         internal const bool EnableWorkerTracking = false;
 
+        internal const bool EnableDispatchAutoreleasePool = false;
+
         private static bool _callbackQueued;
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
