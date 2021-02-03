@@ -8,7 +8,6 @@ namespace System.Linq.Tests
 {
     public class TakeTests : EnumerableTests
     {
-
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -1071,25 +1070,25 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken1.ToArray());
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken1.ToList());
 
-            var taken2 = NumberRangeGuaranteedNotCollectionType(1, 100).Skip(42).Take(0..int.MaxValue);
+            var taken2 = NumberRangeGuaranteedNotCollectionType(1, 100).Take(42..int.MaxValue);
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken2);
             Assert.Equal(100 - 42, taken2.Count());
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken2.ToArray());
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken2.ToList());
 
-            var taken3 = NumberRangeGuaranteedNotCollectionType(1, 100).Skip(42).Take(^int.MaxValue..int.MaxValue);
+            var taken3 = NumberRangeGuaranteedNotCollectionType(1, 100).Take(^(100 - 42)..int.MaxValue);
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken3);
             Assert.Equal(100 - 42, taken3.Count());
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken3.ToArray());
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken3.ToList());
 
-            var taken4 = NumberRangeGuaranteedNotCollectionType(1, 100).Skip(42).Take(int.MaxValue..^0);
+            var taken4 = NumberRangeGuaranteedNotCollectionType(1, 100).Take(42..^0);
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken4);
             Assert.Equal(100 - 42, taken4.Count());
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken4.ToArray());
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken4.ToList());
 
-            var taken5 = NumberRangeGuaranteedNotCollectionType(1, 100).Skip(42).Take(^int.MaxValue..^0);
+            var taken5 = NumberRangeGuaranteedNotCollectionType(1, 100).Take(^(100 - 42)..^0);
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken5);
             Assert.Equal(100 - 42, taken5.Count());
             Assert.Equal(Enumerable.Range(43, 100 - 42), taken5.ToArray());
@@ -1276,29 +1275,32 @@ namespace System.Linq.Tests
             // Unlike Skip, Take can tell straightaway that it can return a sequence with no elements if count <= 0.
             // The enumerable it returns is a specialized empty iterator that has no connections to the source. Hence,
             // after MoveNext returns false under those circumstances, it won't invoke Dispose on our enumerator.
-            int expected = count <= 0 ? 0 : -1;
-            Assert.Equal(expected, state[0]);
+            int expected0 = count <= 0 ? 0 : -1;
+            Assert.Equal(expected0, state[0]);
 
             int end = Math.Max(0, count);
             IEnumerator<int> iterator1 = source[1].Take(0..end).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator1.MoveNext()));
             Assert.False(iterator1.MoveNext());
-            Assert.Equal(expected, state[1]);
+            int expected1 = end == 0 ? 0 : -1; // When startIndex is not from end and endIndex is not from end and startIndex >= endIndex, Take(Range) returns an empty array.
+            Assert.Equal(expected1, state[1]);
 
             IEnumerator<int> iterator2 = source[2].Take(^Math.Max(sourceCount, end)..end).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator2.MoveNext()));
             Assert.False(iterator2.MoveNext());
-            Assert.Equal(expected, state[2]);
+            int expected2 = Math.Max(sourceCount, end) == 0 ? 0 : -1; // When startIndex is ^0, Take(Range) returns an empty iterator.
+            Assert.Equal(expected2, state[2]);
 
             IEnumerator<int> iterator3 = source[3].Take(0..^Math.Max(0, sourceCount - end)).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator3.MoveNext()));
             Assert.False(iterator3.MoveNext());
-            Assert.Equal(expected, state[3]);
+            Assert.Equal(-1, state[3]);
 
             IEnumerator<int> iterator4 = source[4].Take(^Math.Max(sourceCount, end)..^Math.Max(0, sourceCount - end)).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator4.MoveNext()));
             Assert.False(iterator4.MoveNext());
-            Assert.Equal(expected, state[4]);
+            int expected4 = Math.Max(sourceCount, end) == 0 ? 0 : -1; // When startIndex is ^0, Take(Range) returns an empty iterator.
+            Assert.Equal(expected4, state[4]);
         }
 
         [Fact]
@@ -1438,16 +1440,16 @@ namespace System.Linq.Tests
             int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
             // Multiple elements in the middle.
-            Assert.Equal(source[^9..5],source.Take(^9..5));
+            Assert.Equal(source[^9..5], source.Take(^9..5));
             Assert.Equal(source[2..7], source.Take(2..7));
             Assert.Equal(source[2..^4], source.Take(2..^4));
-            Assert.Equal(source[^7..^4],source.Take(^7..^4));
+            Assert.Equal(source[^7..^4], source.Take(^7..^4));
 
             // Range with default index.
-            Assert.Equal(source[^9..],source.Take(^9..));
-            Assert.Equal(source[2..],source.Take(2..));
-            Assert.Equal(source[..^4],source.Take(..^4));
-            Assert.Equal(source[..6],source.Take(..6));
+            Assert.Equal(source[^9..], source.Take(^9..));
+            Assert.Equal(source[2..], source.Take(2..));
+            Assert.Equal(source[..^4], source.Take(..^4));
+            Assert.Equal(source[..6], source.Take(..6));
 
             // All.
             Assert.Equal(source[..], source.Take(..));
