@@ -1300,7 +1300,7 @@ void Assembly::UpdateCachedFriendAssemblyInfo()
     }
 }
 
-ReleaseHolder<FriendAssemblyDescriptor> Assembly::GetFriendAssemblyInfo(bool *pfNoFriendAssemblies)
+ReleaseHolder<FriendAssemblyDescriptor> Assembly::GetFriendAssemblyInfo()
 {
     CacheFriendAssemblyInfo();
 
@@ -1317,45 +1317,21 @@ bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, FieldDesc *pFD
 {
     WRAPPER_NO_CONTRACT;
 
-    bool noFriendAssemblies = false;
-    ReleaseHolder<FriendAssemblyDescriptor> friendAssemblyInfo = GetFriendAssemblyInfo(&noFriendAssemblies);
-
-    if (noFriendAssemblies)
-    {
-        return false;
-    }
-
-    return friendAssemblyInfo->GrantsFriendAccessTo(pAccessingAssembly, pFD);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pFD);
 }
 
 bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
 
-    bool noFriendAssemblies = false;
-    ReleaseHolder<FriendAssemblyDescriptor> friendAssemblyInfo = GetFriendAssemblyInfo(&noFriendAssemblies);
-
-    if (noFriendAssemblies)
-    {
-        return false;
-    }
-
-    return friendAssemblyInfo->GrantsFriendAccessTo(pAccessingAssembly, pMD);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMD);
 }
 
 bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodTable *pMT)
 {
     WRAPPER_NO_CONTRACT;
 
-    bool noFriendAssemblies = false;
-    ReleaseHolder<FriendAssemblyDescriptor> friendAssemblyInfo = GetFriendAssemblyInfo(&noFriendAssemblies);
-
-    if (noFriendAssemblies)
-    {
-        return false;
-    }
-
-    return friendAssemblyInfo->GrantsFriendAccessTo(pAccessingAssembly, pMT);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMT);
 }
 
 bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
@@ -1368,21 +1344,12 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
     }
     CONTRACTL_END;
 
-    bool noFriendAssemblies = false;
-    ReleaseHolder<FriendAssemblyDescriptor> friendAssemblyInfo = GetFriendAssemblyInfo(&noFriendAssemblies);
-
-    if (noFriendAssemblies)
-    {
-        return false;
-    }
-
-
     if (pAccessedAssembly->IsDisabledPrivateReflection())
     {
         return false;
     }
 
-    return friendAssemblyInfo->IgnoresAccessChecksTo(pAccessedAssembly);
+    return GetFriendAssemblyInfo()->IgnoresAccessChecksTo(pAccessedAssembly);
 }
 
 

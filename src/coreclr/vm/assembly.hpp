@@ -559,7 +559,7 @@ private:
 
     void CacheFriendAssemblyInfo();
 #ifndef DACCESS_COMPILE
-    ReleaseHolder<FriendAssemblyDescriptor> GetFriendAssemblyInfo(bool *pfNoFriendAssemblies);
+    ReleaseHolder<FriendAssemblyDescriptor> GetFriendAssemblyInfo();
 #endif
 public:
     void UpdateCachedFriendAssemblyInfo();
