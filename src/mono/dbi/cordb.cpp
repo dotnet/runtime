@@ -4,42 +4,47 @@
 // File: CORDB.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-appdomain.h>
 #include <cordb-assembly.h>
 #include <cordb-breakpoint.h>
 #include <cordb-code.h>
 #include <cordb-eval.h>
-#include <cordb-frame.h>
 #include <cordb-function.h>
 #include <cordb-process.h>
 #include <cordb-stepper.h>
-#include <cordb-symbol.h>
 #include <cordb-thread.h>
 #include <cordb.h>
 
+#ifndef HOST_WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#endif
+
+
+
 int convert_mono_type_2_icordbg_size(int type) {
   switch (type) {
-  case MONO_TYPE_VOID:
+  case ELEMENT_TYPE_VOID:
     return 0;
-  case MONO_TYPE_BOOLEAN:
-  case MONO_TYPE_I1:
-  case MONO_TYPE_U1:
+  case ELEMENT_TYPE_BOOLEAN:
+  case ELEMENT_TYPE_I1:
+  case ELEMENT_TYPE_U1:
     return 1;
     break;
-  case MONO_TYPE_CHAR:
-  case MONO_TYPE_I2:
-  case MONO_TYPE_U2:
+  case ELEMENT_TYPE_CHAR:
+  case ELEMENT_TYPE_I2:
+  case ELEMENT_TYPE_U2:
     return 2;
-  case MONO_TYPE_I4:
-  case MONO_TYPE_U4:
-  case MONO_TYPE_R4:
+  case ELEMENT_TYPE_I4:
+  case ELEMENT_TYPE_U4:
+  case ELEMENT_TYPE_R4:
     return 4;
-  case MONO_TYPE_I8:
-  case MONO_TYPE_U8:
-  case MONO_TYPE_R8:
+  case ELEMENT_TYPE_I8:
+  case ELEMENT_TYPE_U8:
+  case ELEMENT_TYPE_R8:
     return 8;
   }
   return 0;
@@ -147,10 +152,10 @@ HRESULT Cordb::CanLaunchOrAttach(
 
 Cordb::Cordb() {
   pCallback = NULL;
-  breakpoints = g_ptr_array_new();
-  threads = g_ptr_array_new();
-  functions = g_ptr_array_new();
-  modules = g_hash_table_new(NULL, NULL);
+  breakpoints = new ArrayList();
+  threads = new ArrayList();
+  functions = new ArrayList();
+  modules = new ArrayList();
 #ifdef LOGGING
   InitializeLogging();
 #endif
@@ -158,8 +163,8 @@ Cordb::Cordb() {
 
 CordbFunction *Cordb::findFunction(int id) {
   int i = 0;
-  while (i < functions->len) {
-    CordbFunction *function = (CordbFunction *)g_ptr_array_index(functions, i);
+  while (i < functions->GetCount()) {
+    CordbFunction *function = (CordbFunction *)functions->Get(i);
     if (function->id == id) {
       return function;
     }
@@ -170,8 +175,8 @@ CordbFunction *Cordb::findFunction(int id) {
 
 CordbFunction *Cordb::findFunctionByToken(int token) {
   int i = 0;
-  while (i < functions->len) {
-    CordbFunction *function = (CordbFunction *)g_ptr_array_index(functions, i);
+  while (i < functions->GetCount()) {
+    CordbFunction *function = (CordbFunction*)functions->Get(i);
     if (function->token == token) {
       return function;
     }
@@ -220,20 +225,32 @@ HRESULT Cordb::DebugActiveProcessEx(
   return S_OK;
 }
 
+HRESULT Cordb::GetModule(int module_id, ICorDebugModule** pModule)
+{
+    for (int i = 0; i < modules->GetCount(); i++) {
+        CordbModule* module = (CordbModule*)modules->Get(i);
+        if (module->id == module_id) {
+            *pModule = module;
+            return S_OK;
+        }
+    }
+    return S_FALSE;
+}
+
 Connection::Connection(CordbProcess *proc, Cordb *cordb) {
   ppProcess = proc;
   ppCordb = cordb;
   pCorDebugAppDomain = NULL;
-  received_replies = g_hash_table_new(NULL, NULL);
-  received_packets_to_process = g_ptr_array_new();
+  received_replies = new ArrayList();
+  received_packets_to_process = new ArrayList();
   is_answer_pending = false;
-  pending_eval = g_ptr_array_new();
+  pending_eval = new ArrayList();
 }
 
-CordbThread *Connection::findThread(GPtrArray *threads, long thread_id) {
+CordbThread *Connection::findThread(ArrayList *threads, long thread_id) {
   int i = 0;
-  while (i < threads->len) {
-    CordbThread *thread = (CordbThread *)g_ptr_array_index(threads, i);
+  while (i < threads->GetCount()) {
+    CordbThread *thread = (CordbThread *)threads->Get(i);
     if (thread->thread_id == thread_id) {
       return thread;
     }
@@ -288,38 +305,45 @@ void Connection::receive() {
     dbg_lock();
     if (header.flags == REPLY_PACKET) {
       ReceivedReplyPacket *rp =
-          (ReceivedReplyPacket *)g_malloc0(sizeof(ReceivedReplyPacket));
+          (ReceivedReplyPacket *)malloc(sizeof(ReceivedReplyPacket));
       rp->error = header.error;
       rp->error_2 = header.error_2;
+      rp->id = header.id;
       rp->buf = recvbuf;
-      g_hash_table_insert(received_replies, (gpointer)(gssize)(header.id), rp);
+      received_replies->Append(rp);
     } else {
-      g_ptr_array_add(received_packets_to_process, recvbuf);
+      received_packets_to_process->Append(recvbuf);
     }
     dbg_unlock();
   }
 }
 
 MdbgProtBuffer *Connection::get_answer(int cmdId) {
-  ReceivedReplyPacket *ret = NULL;
-  while (ret == NULL) {
+  ReceivedReplyPacket * rrp = NULL;
+  while (rrp == NULL || rrp->id != cmdId) {
     dbg_lock();
-    ret = (ReceivedReplyPacket *)g_hash_table_lookup(received_replies,
-                                                     (gpointer)(gssize)(cmdId));
+    for (int i = received_replies->GetCount() - 1; i >= 0; i--) {
+        rrp = (ReceivedReplyPacket*)received_replies->Get(i);
+        if (rrp->id == cmdId)
+            break;
+    }
     dbg_unlock();
   }
-  return ret->buf;
+  return rrp->buf;
 }
 
 ReceivedReplyPacket *Connection::get_answer_with_error(int cmdId) {
-  ReceivedReplyPacket *ret = NULL;
-  while (ret == NULL) {
+  ReceivedReplyPacket * rrp = NULL;
+  while (rrp == NULL || rrp->id != cmdId) {
     dbg_lock();
-    ret = (ReceivedReplyPacket *)g_hash_table_lookup(received_replies,
-                                                     (gpointer)(gssize)(cmdId));
+    for (int i = received_replies->GetCount() - 1; i >= 0; i--) {
+        rrp = (ReceivedReplyPacket*)received_replies->Get(i);
+        if (rrp->id == cmdId)
+            break;
+    }
     dbg_unlock();
   }
-  return ret;
+  return rrp;
 }
 
 void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
@@ -353,7 +377,7 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
     } break;
     case MDBGPROT_EVENT_KIND_THREAD_START: {
       CordbThread *thread = new CordbThread(this, ppProcess, thread_id);
-      g_ptr_array_add(ppCordb->threads, thread);
+      ppCordb->threads->Append(thread);
       ppCordb->pCallback->CreateThread(pCorDebugAppDomain, thread);
     } break;
     case MDBGPROT_EVENT_KIND_APPDOMAIN_CREATE: {
@@ -379,8 +403,7 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
       ppProcess->suspended = true;
       ICorDebugModule *pModule = new CordbModule(
           this, ppProcess, (CordbAssembly *)pAssembly, assembly_id);
-      g_hash_table_insert(ppCordb->modules, GINT_TO_POINTER(assembly_id),
-                          pModule);
+      ppCordb->modules->Append(pModule);
       ppCordb->pCallback->LoadModule(pCorDebugAppDomain, pModule);
     } break;
     case MDBGPROT_EVENT_KIND_BREAKPOINT: {
@@ -391,15 +414,14 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
       CordbThread *thread = findThread(ppCordb->threads, thread_id);
       if (thread == NULL) {
         thread = new CordbThread(this, ppProcess, thread_id);
-        g_ptr_array_add(ppCordb->threads, thread);
+        ppCordb->threads->Append(thread);
         ppProcess->Stop(false);
         ppCordb->pCallback->CreateThread(pCorDebugAppDomain, thread);
       }
       int i = 0;
       CordbFunctionBreakpoint *breakpoint;
-      while (i < ppCordb->breakpoints->len) {
-        breakpoint = (CordbFunctionBreakpoint *)g_ptr_array_index(
-            ppCordb->breakpoints, i);
+      while (i < ppCordb->breakpoints->GetCount()) {
+          breakpoint = (CordbFunctionBreakpoint*)ppCordb->breakpoints->Get(i);
         if (breakpoint->offset == offset &&
             breakpoint->code->func->id == method_id) {
           ppCordb->pCallback->Breakpoint(
@@ -418,7 +440,7 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
       CordbThread *thread = findThread(ppCordb->threads, thread_id);
       if (thread == NULL) {
         thread = new CordbThread(this, ppProcess, thread_id);
-        g_ptr_array_add(ppCordb->threads, thread);
+        ppCordb->threads->Append(thread);
         ppProcess->Stop(false);
         ppCordb->pCallback->CreateThread(pCorDebugAppDomain, thread);
       }
@@ -438,23 +460,28 @@ int Connection::process_packet(bool is_answer) {
 
 void Connection::process_packet_from_queue() {
   int i = 0;
-  while (i < received_packets_to_process->len) {
+  while (i < received_packets_to_process->GetCount()) {
     MdbgProtBuffer *req =
-        (MdbgProtBuffer *)g_ptr_array_index(received_packets_to_process, i);
-    process_packet_internal(req);
-    dbg_lock();
-    g_ptr_array_remove_index_fast(received_packets_to_process, i);
-    dbg_unlock();
-    delete req;
-    i--;
+        (MdbgProtBuffer *)received_packets_to_process->Get(i);
+    if (req) {
+        process_packet_internal(req);
+        dbg_lock();
+        received_packets_to_process->Set(i, NULL);
+        dbg_unlock();
+        delete req;
+    }
+    i++;
   }
-  while (i < pending_eval->len) {
-    CordbEval *eval = (CordbEval *)g_ptr_array_index(pending_eval, i);
-    ReceivedReplyPacket *recvbuf = get_answer_with_error(eval->cmdId);
-    eval->EvalComplete(recvbuf->buf);
-    dbg_lock();
-    g_ptr_array_remove_index_fast(pending_eval, i);
-    dbg_unlock();
+  while (i < pending_eval->GetCount()) {
+    CordbEval *eval = (CordbEval *)pending_eval->Get(i);
+      if (eval) {
+          ReceivedReplyPacket* recvbuf = get_answer_with_error(eval->cmdId);
+          if (recvbuf)
+              eval->EvalComplete(recvbuf->buf);
+          dbg_lock();
+          pending_eval->Set(i, NULL);
+          dbg_unlock();
+      }
     i--;
   }
 }
@@ -604,7 +631,7 @@ void Connection::transport_handshake() {
   iResult = recv(connect_socket, (char *)recvbuf.buf, buflen, 0);
 
   // Send an initial buffer
-  m_dbgprot_buffer_add_data(&sendbuf, (guint8 *)"DWP-Handshake", 13);
+  m_dbgprot_buffer_add_data(&sendbuf, (uint8_t *)"DWP-Handshake", 13);
   send_packet(sendbuf);
 }
 

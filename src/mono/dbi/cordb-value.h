@@ -11,10 +11,10 @@
 #include <cordb.h>
 
 union CordbContent {
-  gint16 charValue;
-  gint8 booleanValue;
-  gint32 intValue;
-  gint64 longValue;
+  int16_t charValue;
+  int8_t booleanValue;
+  int32_t intValue;
+  int64_t longValue;
   void *pointerValue;
 };
 

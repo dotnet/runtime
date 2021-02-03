@@ -4,22 +4,15 @@
 // File: CORDB-PROCESS.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-appdomain.h>
-#include <cordb-frame.h>
-#include <cordb-function.h>
 #include <cordb-process.h>
-#include <cordb-stepper.h>
-#include <cordb-thread.h>
 #include <cordb.h>
 
 using namespace std;
 
 CordbProcess::CordbProcess() : CordbBaseMono(NULL) {
   suspended = false;
-  appdomains = g_ptr_array_new();
+  appdomains = new ArrayList();
 }
 
 HRESULT CordbProcess::EnumerateLoaderHeapMemoryRegions(

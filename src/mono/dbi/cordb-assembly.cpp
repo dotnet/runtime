@@ -4,9 +4,6 @@
 // File: CORDB-ASSEMBLY.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-appdomain.h>
 #include <cordb-assembly.h>
 #include <cordb-class.h>
@@ -225,12 +222,12 @@ HRESULT CordbModule::GetName(
 
   if (cchName < strlen(assembly_name) + 1) {
     *pcchName = strlen(assembly_name) + 1;
-    g_free(assembly_name);
+    free(assembly_name);
     return S_OK;
   }
   mbstowcs(szName, assembly_name, strlen(assembly_name) + 1);
   *pcchName = strlen(assembly_name) + 1;
-  g_free(assembly_name);
+  free(assembly_name);
   return S_OK;
 }
 
@@ -270,7 +267,7 @@ HRESULT CordbModule::GetFunctionFromToken(
   func = pProcess->cordb->findFunction(id);
   if (func == NULL) {
     func = new CordbFunction(conn, methodDef, id, this);
-    g_ptr_array_add(pProcess->cordb->functions, func);
+   pProcess->cordb->functions->Append(func);
   }
   *ppFunction = func;
   return S_OK;

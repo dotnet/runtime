@@ -7,6 +7,7 @@
 #ifndef __MONO_DEBUGGER_CORDB_PROCESS_H__
 #define __MONO_DEBUGGER_CORDB_PROCESS_H__
 
+#include <arraylist.h>
 #include <cordb.h>
 
 class CordbProcess : public CordbBaseMono,
@@ -20,7 +21,7 @@ class CordbProcess : public CordbBaseMono,
                      public ICorDebugProcess10,
                      public ICorDebugProcess11 {
 public:
-  GPtrArray *appdomains;
+  ArrayList *appdomains;
   int suspended;
   Cordb *cordb;
   CordbProcess();

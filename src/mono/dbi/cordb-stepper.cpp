@@ -4,11 +4,7 @@
 // File: CORDB-STEPPER.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-frame.h>
-#include <cordb-process.h>
 #include <cordb-stepper.h>
 #include <cordb-thread.h>
 #include <cordb.h>
@@ -108,7 +104,6 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepOut(void) {
                                MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
   m_dbgprot_buffer_free(&sendbuf);
 
-  m_dbgprot_buffer_free(&sendbuf);
   MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
 
   LOG((LF_CORDB, LL_INFO1000000, "CordbStepper - StepOut - IMPLEMENTED\n"));

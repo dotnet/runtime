@@ -4,15 +4,11 @@
 // File: CORDB-FRAME.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-code.h>
 #include <cordb-frame.h>
 #include <cordb-function.h>
 #include <cordb-process.h>
 #include <cordb-register.h>
-#include <cordb-stepper.h>
 #include <cordb-thread.h>
 #include <cordb-value.h>
 
@@ -124,7 +120,7 @@ HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetFunction(
   CordbFunction *func = thread->ppProcess->cordb->findFunction(methodId);
   if (!func) {
     func = new CordbFunction(conn, 0, methodId, NULL);
-    g_ptr_array_add(thread->ppProcess->cordb->functions, func);
+    thread->ppProcess->cordb->functions->Append(func);
   }
 
   *ppFunction = static_cast<ICorDebugFunction *>(func);

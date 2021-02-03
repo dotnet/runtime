@@ -4,29 +4,21 @@
 // File: CORDB-SYMBOL.CPP
 //
 
-#include <mono/utils/atomic.h>
-
 #include "corerror.h"
 #include "mdlog.h"
 #include "posterror.h"
+#include "metamodel.h"
+#include "metamodelpub.h"
 #include "rwutil.h"
-#include "sstring.h"
 #include "stdafx.h"
 #include "stgio.h"
-#include "switches.h"
 
 #include "importhelper.h"
-#include "mdinternalrw.h"
 
 #include <metamodelrw.h>
 
 #include <cordb-assembly.h>
-#include <cordb-frame.h>
-#include <cordb-function.h>
-#include <cordb-process.h>
-#include <cordb-stepper.h>
 #include <cordb-symbol.h>
-#include <cordb-thread.h>
 #include <cordb.h>
 
 using namespace std;
@@ -35,7 +27,6 @@ RegMeta::RegMeta(CordbAssembly *cordbAssembly, CordbModule *cordbModule) {
   module_id = -1;
   pCordbAssembly = cordbAssembly;
   this->cordbModule = cordbModule;
-  parameters = g_hash_table_new(NULL, NULL);
   token_id = 0;
 
   m_pStgdb = new CLiteWeightStgdbRW();

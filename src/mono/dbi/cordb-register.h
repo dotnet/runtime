@@ -10,11 +10,11 @@
 #include <cordb.h>
 
 class CordbRegisteSet : public CordbBaseMono, public ICorDebugRegisterSet {
-  guint8 *ctx;
-  guint32 ctx_len;
+  uint8_t *ctx;
+  uint32_t ctx_len;
 
 public:
-  CordbRegisteSet(Connection *conn, guint8 *ctx, guint32 ctx_len);
+  CordbRegisteSet(Connection *conn, uint8_t *ctx, uint32_t ctx_len);
   HRESULT STDMETHODCALLTYPE
   QueryInterface(/* [in] */ REFIID id, /* [iid_is][out] */
                  _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);

@@ -19,8 +19,8 @@ public:
   CordbProcess *pProcess;
   RegMeta *pCordbSymbol;
   CordbAssembly *pAssembly;
-  guint8 *assembly_metadata_blob;
-  guint32 assembly_metadata_len;
+  uint8_t *assembly_metadata_blob;
+  int32_t assembly_metadata_len;
   unsigned long dwFlags;
 
   CordbModule(Connection *conn, CordbProcess *process, CordbAssembly *assembly,

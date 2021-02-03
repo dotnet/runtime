@@ -4,21 +4,11 @@
 // File: CORDB-CODE.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-blocking-obj.h>
 #include <cordb-breakpoint.h>
-#include <cordb-chain.h>
-#include <cordb-class.h>
 #include <cordb-code.h>
-#include <cordb-frame.h>
 #include <cordb-function.h>
 #include <cordb-process.h>
-#include <cordb-stepper.h>
-#include <cordb-thread.h>
-#include <cordb-type.h>
-#include <cordb-value.h>
 #include <cordb.h>
 
 using namespace std;
@@ -65,7 +55,7 @@ HRESULT __stdcall CordbCode::CreateBreakpoint(
   // add it in a list to not recreate a already created breakpoint
   CordbFunctionBreakpoint *bp = new CordbFunctionBreakpoint(conn, this, offset);
   *ppBreakpoint = static_cast<ICorDebugFunctionBreakpoint *>(bp);
-  g_ptr_array_add(this->func->module->pProcess->cordb->breakpoints, bp);
+  conn->ppCordb->breakpoints->Append(bp);
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbCode - CreateBreakpoint - IMPLEMENTED\n"));
   return S_OK;
@@ -83,8 +73,8 @@ HRESULT __stdcall CordbCode::GetCode(ULONG32 startOffset, ULONG32 endOffset,
   m_dbgprot_buffer_free(&localbuf);
 
   MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-  guint8 *code = m_dbgprot_decode_byte_array(bAnswer->buf, &bAnswer->buf,
-                                             bAnswer->end, pcBufferSize);
+  uint8_t *code = m_dbgprot_decode_byte_array(bAnswer->buf, &bAnswer->buf,
+                                             bAnswer->end, (int32_t*)pcBufferSize);
 
   memcpy(buffer, code, *pcBufferSize);
   LOG((LF_CORDB, LL_INFO1000000, "CordbCode - GetCode - IMPLEMENTED\n"));

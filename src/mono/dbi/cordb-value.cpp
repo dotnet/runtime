@@ -4,15 +4,8 @@
 // File: CORDB-VALUE.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-breakpoint.h>
 #include <cordb-class.h>
-#include <cordb-frame.h>
-#include <cordb-function.h>
-#include <cordb-stepper.h>
-#include <cordb-thread.h>
 #include <cordb-type.h>
 #include <cordb-value.h>
 #include <cordb.h>
@@ -564,33 +557,33 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
       bAnswer->buf, &bAnswer->buf, bAnswer->end);
   CordbContent value;
   switch (type) {
-  case MONO_TYPE_BOOLEAN:
-  case MONO_TYPE_I1:
-  case MONO_TYPE_U1:
+  case ELEMENT_TYPE_BOOLEAN:
+  case ELEMENT_TYPE_I1:
+  case ELEMENT_TYPE_U1:
     value.booleanValue =
         m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
     break;
-  case MONO_TYPE_CHAR:
-  case MONO_TYPE_I2:
-  case MONO_TYPE_U2:
+  case ELEMENT_TYPE_CHAR:
+  case ELEMENT_TYPE_I2:
+  case ELEMENT_TYPE_U2:
     value.charValue =
         m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
     break;
-  case MONO_TYPE_I4:
-  case MONO_TYPE_U4:
-  case MONO_TYPE_R4:
+  case ELEMENT_TYPE_I4:
+  case ELEMENT_TYPE_U4:
+  case ELEMENT_TYPE_R4:
     value.intValue =
         m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
     break;
-  case MONO_TYPE_I8:
-  case MONO_TYPE_U8:
-  case MONO_TYPE_R8:
+  case ELEMENT_TYPE_I8:
+  case ELEMENT_TYPE_U8:
+  case ELEMENT_TYPE_R8:
     value.longValue =
         m_dbgprot_decode_long(bAnswer->buf, &bAnswer->buf, bAnswer->end);
     break;
-  case MONO_TYPE_CLASS:
-  case MONO_TYPE_SZARRAY:
-  case MONO_TYPE_STRING: {
+  case ELEMENT_TYPE_CLASS:
+  case ELEMENT_TYPE_SZARRAY:
+  case ELEMENT_TYPE_STRING: {
     int object_id =
         m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
     CordbReferenceValue *refValue =
@@ -601,7 +594,7 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
   case MDBGPROT_VALUE_TYPE_ID_NULL: {
     CorElementType type = (CorElementType)m_dbgprot_decode_byte(
         bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    if (type == MONO_TYPE_CLASS || type == MONO_TYPE_STRING) {
+    if (type == ELEMENT_TYPE_CLASS || type == ELEMENT_TYPE_STRING) {
       int klass_id = (CorElementType)m_dbgprot_decode_id(
           bAnswer->buf, &bAnswer->buf, bAnswer->end);
 
@@ -634,7 +627,7 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
           new CordbReferenceValue(conn, type, -1, klass);
       refValue->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
     }
-    if (type == MONO_TYPE_SZARRAY) {
+    if (type == ELEMENT_TYPE_SZARRAY) {
       CordbClass *klass = NULL;
       int type_id =
           m_dbgprot_decode_byte(bAnswer->buf, &bAnswer->buf, bAnswer->end);

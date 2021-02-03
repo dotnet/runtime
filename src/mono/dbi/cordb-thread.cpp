@@ -4,9 +4,6 @@
 // File: CORDB-THREAD.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-appdomain.h>
 #include <cordb-blocking-obj.h>
 #include <cordb-chain.h>

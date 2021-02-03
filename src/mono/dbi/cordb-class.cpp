@@ -4,17 +4,12 @@
 // File: CORDB-CLASS.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-breakpoint.h>
 #include <cordb-class.h>
-#include <cordb-frame.h>
-#include <cordb-function.h>
-#include <cordb-stepper.h>
-#include <cordb-thread.h>
 #include <cordb-value.h>
 #include <cordb.h>
+
+#include "cordb-assembly.h"
 
 using namespace std;
 
@@ -27,8 +22,7 @@ CordbClass::CordbClass(Connection *conn, mdToken token, int module_id)
 HRESULT STDMETHODCALLTYPE CordbClass::GetModule(ICorDebugModule **pModule) {
   LOG((LF_CORDB, LL_INFO1000000, "CordbClass - GetModule - IMPLEMENTED\n"));
   if (pModule) {
-    *pModule = (ICorDebugModule *)g_hash_table_lookup(
-        conn->ppCordb->modules, GINT_TO_POINTER(module_id));
+      return conn->ppCordb->GetModule(module_id, pModule);
   }
   return S_OK;
 }

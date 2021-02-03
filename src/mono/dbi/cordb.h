@@ -12,14 +12,11 @@
 #include "corhdr.h"
 #include "xcordebug.h"
 
-#include <mono/metadata/blob.h>
-#include <mono/metadata/metadata.h>
-#include <mono/metadata/tokentype.h>
 #include <mono/mini/debugger-protocol.h>
-#include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-publib.h>
 
-#include <stdio.h>
+#include "arraylist.h"
+#include "utsem.h"
 
 #ifdef HOST_WIN32
 #include <windows.h>
@@ -32,14 +29,23 @@
       return S_FALSE;                                                          \
   } while (0)
 
-#define dbg_lock() mono_os_mutex_lock(&debug_mutex.m);
+
+static UTSemReadWrite* m_pSemReadWrite = new UTSemReadWrite();
+
+#define dbg_lock()  m_pSemReadWrite->LockRead();
+#define dbg_unlock()  m_pSemReadWrite->UnlockRead();
+
+/*#define dbg_lock() mono_os_mutex_lock(&debug_mutex.m);
 #define dbg_unlock() mono_os_mutex_unlock(&debug_mutex.m);
-static MonoCoopMutex debug_mutex;
+static MonoCoopMutex debug_mutex;*/
 
 #ifdef _DEBUG
 #define LOGGING
-#include <log.h>
+#include "stdafx.h"
+#include "log.h"
 #endif
+
+#include "arraylist.h"
 
 class Cordb;
 class CordbProcess;
@@ -56,6 +62,7 @@ class CordbClass;
 typedef struct ReceivedReplyPacket {
   int error;
   int error_2;
+  int id;
   MdbgProtBuffer *buf;
 } ReceivedReplyPacket;
 
@@ -63,10 +70,10 @@ int convert_mono_type_2_icordbg_size(int type);
 
 class Cordb : public ICorDebug, public ICorDebugRemote {
 public:
-  GPtrArray *breakpoints;
-  GPtrArray *threads;
-  GPtrArray *functions;
-  GHashTable *modules;
+  ArrayList *breakpoints;
+  ArrayList *threads;
+  ArrayList *functions;
+  ArrayList *modules;
 
   ICorDebugManagedCallback *pCallback;
   Cordb();
@@ -138,19 +145,20 @@ public:
       /* [in] */ DWORD dwProcessId,
       /* [in] */ BOOL fWin32Attach,
       /* [out] */ ICorDebugProcess **ppProcess);
+  HRESULT GetModule(int module_id, ICorDebugModule** pModule);
 };
 
 class Connection {
-  SOCKET connect_socket;
+  int connect_socket;
   bool is_answer_pending;
 
 public:
   CordbProcess *ppProcess;
   Cordb *ppCordb;
   CordbAppDomain *pCorDebugAppDomain;
-  GHashTable *received_replies;
-  GPtrArray *pending_eval;
-  GPtrArray *received_packets_to_process;
+  ArrayList *received_replies;
+  ArrayList *pending_eval;
+  ArrayList *received_packets_to_process;
   Connection(CordbProcess *proc, Cordb *cordb);
   void loop_send_receive();
   void process_packet_internal(MdbgProtBuffer *recvbuf);
@@ -167,7 +175,7 @@ public:
   int process_packet(bool is_answer = false);
   MdbgProtBuffer *get_answer(int cmdId);
   ReceivedReplyPacket *get_answer_with_error(int cmdId);
-  CordbThread *findThread(GPtrArray *threads, long thread_id);
+  CordbThread *findThread(ArrayList *threads, long thread_id);
 };
 
 class CordbBaseMono {

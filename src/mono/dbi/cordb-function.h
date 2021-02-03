@@ -19,9 +19,9 @@ public:
   int id;
   mdToken token;
   CordbCode *code;
-  CordbModule *module;
+  ICorDebugModule *module;
 
-  CordbFunction(Connection *conn, mdToken token, int id, CordbModule *module);
+  CordbFunction(Connection *conn, mdToken token, int id, ICorDebugModule *module);
   HRESULT STDMETHODCALLTYPE
   QueryInterface(/* [in] */ REFIID id, /* [iid_is][out] */
                  _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);

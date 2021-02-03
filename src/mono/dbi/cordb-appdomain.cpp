@@ -4,16 +4,8 @@
 // File: CORDB-APPDOMAIN.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-appdomain.h>
-#include <cordb-assembly.h>
-#include <cordb-frame.h>
-#include <cordb-function.h>
 #include <cordb-process.h>
-#include <cordb-stepper.h>
-#include <cordb-thread.h>
 #include <cordb.h>
 
 using namespace std;
@@ -21,7 +13,7 @@ using namespace std;
 CordbAppDomain::CordbAppDomain(Connection *conn, ICorDebugProcess *ppProcess)
     : CordbBaseMono(conn) {
   pProcess = ppProcess;
-  g_ptr_array_add(((CordbProcess *)(ppProcess))->appdomains, this);
+  ((CordbProcess*)(ppProcess))->appdomains->Append(this);
 }
 
 HRESULT CordbAppDomain::Stop(/* [in] */ DWORD dwTimeoutIgnored) {
@@ -244,12 +236,11 @@ HRESULT STDMETHODCALLTYPE CordbAppDomainEnum::Next(ULONG celt,
        "CordbAppDomainEnum - Next - NOT IMPLEMENTED\n"));
   *pceltFetched = celt;
   for (int i = 0; i < celt; i++) {
-    if (current_pos >= pProcess->appdomains->len) {
+    if (current_pos >= pProcess->appdomains->GetCount()) {
       *pceltFetched = 0;
       return S_FALSE;
     }
-    CordbAppDomain *appdomain =
-        (CordbAppDomain *)g_ptr_array_index(pProcess->appdomains, current_pos);
+    CordbAppDomain* appdomain = (CordbAppDomain*)pProcess->appdomains->Get(current_pos);
     appdomain->QueryInterface(IID_ICorDebugAppDomain,
                               (void **)values + current_pos);
     current_pos++;
@@ -279,7 +270,7 @@ HRESULT STDMETHODCALLTYPE CordbAppDomainEnum::Clone(ICorDebugEnum **ppEnum) {
 HRESULT STDMETHODCALLTYPE CordbAppDomainEnum::GetCount(ULONG *pcelt) {
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbAppDomainEnum - GetCount - IMPLEMENTED\n"));
-  *pcelt = pProcess->appdomains->len;
+  *pcelt = pProcess->appdomains->GetCount();
   return S_OK;
 }
 

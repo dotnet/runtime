@@ -4,21 +4,14 @@
 // File: CORDB-FUNCTION.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-code.h>
-#include <cordb-frame.h>
 #include <cordb-function.h>
-#include <cordb-process.h>
-#include <cordb-stepper.h>
-#include <cordb-thread.h>
 #include <cordb.h>
 
 using namespace std;
 
 CordbFunction::CordbFunction(Connection *conn, mdToken token, int id,
-                             CordbModule *module)
+    ICorDebugModule *module)
     : CordbBaseMono(conn) {
   this->token = token;
   this->id = id;
@@ -50,29 +43,27 @@ ULONG __stdcall CordbFunction::AddRef(void) { return 0; }
 
 ULONG __stdcall CordbFunction::Release(void) { return 0; }
 
-HRESULT __stdcall CordbFunction::GetModule(ICorDebugModule **ppModule) {
-  if (module == NULL) {
+HRESULT __stdcall CordbFunction::GetModule(ICorDebugModule** ppModule) {
     MdbgProtBuffer localbuf;
-    m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, id);
-    int cmdId = conn->send_event(MDBGPROT_CMD_SET_METHOD,
-                                 MDBGPROT_CMD_METHOD_ASSEMBLY, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
+    if (!module) {
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, id);
+        int cmdId = conn->send_event(MDBGPROT_CMD_SET_METHOD,
+            MDBGPROT_CMD_METHOD_ASSEMBLY, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
 
-    MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
+        MdbgProtBuffer* bAnswer = conn->get_answer(cmdId);
 
-    int module_id =
-        m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        int module_id =
+            m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        conn->ppCordb->GetModule(module_id, &module);
+    }
 
-    module = (CordbModule *)g_hash_table_lookup(conn->ppCordb->modules,
-                                                GINT_TO_POINTER(module_id));
-  }
+    if (!module)
+      return S_FALSE;
 
-  *ppModule = static_cast<ICorDebugModule *>(this->module);
-
-  if (!*ppModule)
-    return S_FALSE;
-  return S_OK;
+    *ppModule = module;
+    return S_OK;
 }
 
 HRESULT __stdcall CordbFunction::GetClass(ICorDebugClass **ppClass) {

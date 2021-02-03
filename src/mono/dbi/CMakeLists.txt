@@ -4,21 +4,16 @@ project(mscordbi)
 include_directories(
   ${PROJECT_BINARY_DIR}/
   ${PROJECT_BINARY_DIR}/../..
-  ${PROJECT_BINARY_DIR}/../mono/eglib
   ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${CMAKE_CURRENT_BINARY_DIR}/../
   ${PROJECT_SOURCE_DIR}/../mono/mini/  
   ${PROJECT_SOURCE_DIR}/../
-  ${PROJECT_SOURCE_DIR}/../mono/eglib
   ${PROJECT_SOURCE_DIR}/../dbi
   ${PROJECT_SOURCE_DIR}/../../coreclr/md/enc
   ${PROJECT_SOURCE_DIR}/../../coreclr/inc
   ${PROJECT_SOURCE_DIR}/../../coreclr/pal/prebuilt/inc
   ${PROJECT_SOURCE_DIR}/../../coreclr/md/inc
   ${PROJECT_SOURCE_DIR}/../../coreclr/md/compiler)
-
-
-include(../mono/eglib/CMakeLists.txt)
 
 
 set(UTILCODE_COMMON_SOURCES_BASE
@@ -195,6 +190,7 @@ add_library(utilcode STATIC "${UTILCODE_COMMON_SOURCES}")
 target_link_libraries(mscordbi mdruntimerw-dbi utilcode ${OS_LIBS})
 target_precompile_headers(mdruntimerw-dbi PRIVATE ${PROJECT_SOURCE_DIR}/../../coreclr/md/enc/stdafx.h)
 target_precompile_headers(utilcode PRIVATE ${PROJECT_SOURCE_DIR}/../../coreclr/utilcode/stdafx.h)
+target_precompile_headers(mscordbi PRIVATE ${PROJECT_SOURCE_DIR}/../../coreclr/utilcode/stdafx.h)
 
 if(HOST_AMD64)
   add_compile_definitions(TARGET_AMD64)

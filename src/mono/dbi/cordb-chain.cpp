@@ -4,19 +4,10 @@
 // File: CORDB-CHAIN.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-blocking-obj.h>
-#include <cordb-breakpoint.h>
 #include <cordb-chain.h>
-#include <cordb-class.h>
 #include <cordb-frame.h>
-#include <cordb-function.h>
-#include <cordb-stepper.h>
 #include <cordb-thread.h>
-#include <cordb-type.h>
-#include <cordb-value.h>
 #include <cordb.h>
 
 using namespace std;

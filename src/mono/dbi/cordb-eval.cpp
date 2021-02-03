@@ -12,6 +12,8 @@
 #include <cordb.h>
 
 #include "corerror.h"
+#include "metamodel.h"
+#include "metamodelpub.h"
 #include "rwutil.h"
 #include "stdafx.h"
 
@@ -42,29 +44,29 @@ HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(
     ppArgs[i]->GetAddress((CORDB_ADDRESS *)&cc);
     m_dbgprot_buffer_add_byte(&localbuf, ty);
     switch (ty) {
-    case MONO_TYPE_BOOLEAN:
-    case MONO_TYPE_I1:
-    case MONO_TYPE_U1:
+    case ELEMENT_TYPE_BOOLEAN:
+    case ELEMENT_TYPE_I1:
+    case ELEMENT_TYPE_U1:
       m_dbgprot_buffer_add_int(&localbuf, cc->booleanValue);
       break;
-    case MONO_TYPE_CHAR:
-    case MONO_TYPE_I2:
-    case MONO_TYPE_U2:
+    case ELEMENT_TYPE_CHAR:
+    case ELEMENT_TYPE_I2:
+    case ELEMENT_TYPE_U2:
       m_dbgprot_buffer_add_int(&localbuf, cc->charValue);
       break;
-    case MONO_TYPE_I4:
-    case MONO_TYPE_U4:
-    case MONO_TYPE_R4:
+    case ELEMENT_TYPE_I4:
+    case ELEMENT_TYPE_U4:
+    case ELEMENT_TYPE_R4:
       m_dbgprot_buffer_add_int(&localbuf, cc->intValue);
       break;
-    case MONO_TYPE_I8:
-    case MONO_TYPE_U8:
-    case MONO_TYPE_R8:
+    case ELEMENT_TYPE_I8:
+    case ELEMENT_TYPE_U8:
+    case ELEMENT_TYPE_R8:
       m_dbgprot_buffer_add_long(&localbuf, cc->longValue);
       break;
-    case MONO_TYPE_CLASS:
-    case MONO_TYPE_SZARRAY:
-    case MONO_TYPE_STRING:
+    case ELEMENT_TYPE_CLASS:
+    case ELEMENT_TYPE_SZARRAY:
+    case ELEMENT_TYPE_STRING:
       m_dbgprot_buffer_add_id(&localbuf, cc->intValue);
       break;
     }
@@ -72,7 +74,7 @@ HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(
   cmdId = conn->send_event(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_INVOKE_METHOD,
                            &localbuf);
   m_dbgprot_buffer_free(&localbuf);
-  g_ptr_array_add(conn->pending_eval, this);
+  conn->pending_eval->Append(this);
   return S_OK;
 }
 
@@ -81,8 +83,7 @@ void CordbEval::EvalComplete(MdbgProtBuffer *bAnswer) {
   m_dbgprot_decode_byte(bAnswer->buf, &bAnswer->buf, bAnswer->end);
   CordbObjectValue::CreateCordbValue(conn, bAnswer, &ppValue);
   conn->ppCordb->pCallback->EvalComplete(
-      static_cast<ICorDebugAppDomain *>(
-          g_ptr_array_index(thread->ppProcess->appdomains, 0)),
+      static_cast<ICorDebugAppDomain*>(thread->ppProcess->appdomains->Get(0)),
       static_cast<ICorDebugThread *>(thread),
       static_cast<ICorDebugEval *>(this));
 }
@@ -139,7 +140,7 @@ HRESULT STDMETHODCALLTYPE CordbEval::NewStringWithLength(LPCWSTR string,
   this->cmdId =
       conn->send_event(MDBGPROT_CMD_SET_APPDOMAIN,
                        MDBGPROT_CMD_APPDOMAIN_CREATE_STRING, &localbuf);
-  g_ptr_array_add(conn->pending_eval, this);
+  conn->pending_eval->Append(this);
   return S_OK;
 }
 

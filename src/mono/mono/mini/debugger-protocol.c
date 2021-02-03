@@ -1,8 +1,18 @@
 #include "debugger-protocol.h"
-#include <mono/utils/atomic.h>
-#include "glib.h"
 
-static int packet_id = 0;
+#ifdef DBI_COMPONENT
+#define g_malloc malloc
+#define g_free free
+#define g_assert assert
+#define g_realloc realloc
+#define mono_atomic_inc_i32 InterlockedIncrement
+#include "stdafx.h"
+#else
+#include <glib.h>
+#include <mono/utils/atomic.h>
+#endif
+
+static LONG packet_id = 0;
 
 /*
  * Functions to decode protocol data
@@ -96,7 +106,7 @@ m_dbgprot_decode_string (uint8_t *buf, uint8_t **endbuf, uint8_t *limit)
 }
 
 uint8_t*
-m_dbgprot_decode_byte_array (uint8_t *buf, uint8_t **endbuf, uint8_t *limit, uint32_t *len)
+m_dbgprot_decode_byte_array (uint8_t *buf, uint8_t **endbuf, uint8_t *limit, int32_t *len)
 {
 	*len = m_dbgprot_decode_int (buf, &buf, limit);
 	uint8_t* s;
@@ -267,7 +277,7 @@ m_dbgprot_event_to_string (MdbgProtEventKind event)
 	case MDBGPROT_EVENT_KIND_USER_LOG: return "USER_LOG";
 	case MDBGPROT_EVENT_KIND_CRASH: return "CRASH";
 	default:
-		g_assert_not_reached ();
+		g_assert ( 1 );
 		return "";
 	}
 }

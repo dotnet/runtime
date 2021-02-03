@@ -4,16 +4,9 @@
 // File: CORDB-BREAKPOINT.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-breakpoint.h>
 #include <cordb-code.h>
-#include <cordb-frame.h>
 #include <cordb-function.h>
-#include <cordb-process.h>
-#include <cordb-stepper.h>
-#include <cordb-thread.h>
 #include <cordb.h>
 
 using namespace std;

@@ -4,16 +4,8 @@
 // File: CORDB-REGISTER.CPP
 //
 
-#include <fstream>
-#include <iostream>
-
 #include <cordb-assembly.h>
-#include <cordb-frame.h>
-#include <cordb-function.h>
-#include <cordb-process.h>
 #include <cordb-register.h>
-#include <cordb-stepper.h>
-#include <cordb-thread.h>
 #include <cordb.h>
 
 using namespace std;
@@ -24,7 +16,7 @@ HRESULT __stdcall CordbRegisteSet::GetRegistersAvailable(ULONG64 *pAvailable) {
   return E_NOTIMPL;
 }
 
-CordbRegisteSet::CordbRegisteSet(Connection *conn, guint8 *ctx, guint32 ctx_len)
+CordbRegisteSet::CordbRegisteSet(Connection *conn, uint8_t *ctx, uint32_t ctx_len)
     : CordbBaseMono(conn) {
   this->ctx = ctx;
   this->ctx_len = ctx_len;

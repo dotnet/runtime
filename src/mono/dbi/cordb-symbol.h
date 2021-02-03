@@ -16,7 +16,6 @@ class CLiteWeightStgdbRW;
 
 class RegMeta : public IMetaDataImport2, public IMetaDataAssemblyImport {
   int token_id;
-  GHashTable *parameters;
   CordbAssembly *pCordbAssembly;
   CordbModule *cordbModule;
   CLiteWeightStgdbRW *m_pStgdb;
