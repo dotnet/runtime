@@ -17,7 +17,7 @@
 
 namespace
 {
-    BOOL g_CallbacksSet;
+    BOOL g_ReferenceTrackerInitialized;
     ObjCBridgeNative::BeginEndCallback g_BeginEndCallback;
     ObjCBridgeNative::IsReferencedCallback g_IsReferencedCallback;
     ObjCBridgeNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
@@ -53,7 +53,7 @@ BOOL QCALLTYPE ObjCBridgeNative::TryInitializeReferenceTracker(
     // while they are being set.
     {
         GCX_COOP();
-        if (FastInterlockCompareExchange((LONG*)&g_CallbacksSet, TRUE, FALSE) == FALSE)
+        if (FastInterlockCompareExchange((LONG*)&g_ReferenceTrackerInitialized, TRUE, FALSE) == FALSE)
         {
             g_BeginEndCallback = beginEndCallback;
             g_IsReferencedCallback = isReferencedCallback;
@@ -80,6 +80,10 @@ void* QCALLTYPE ObjCBridgeNative::CreateReferenceTrackingHandle(
 
     BEGIN_QCALL;
 
+    // The reference tracking system must be initialized.
+    if (!g_ReferenceTrackerInitialized)
+        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ReferenceTrackerNotInitialized"));
+
     // Switch to Cooperative mode since object references
     // are being manipulated.
     {
@@ -93,6 +97,10 @@ void* QCALLTYPE ObjCBridgeNative::CreateReferenceTrackingHandle(
         GCPROTECT_BEGIN(gc);
 
         gc.objRef = obj.Get();
+
+        // The object's type must be marked appropriately and with a finalizer.
+        if (!gc.objRef->GetMethodTable()->IsTrackedReferenceWithFinalizer())
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_TrackedNativeReferenceNoFinalizer"));
 
         // Initialize the syncblock for this instance.
         SyncBlock* syncBlock = gc.objRef->GetSyncBlock();

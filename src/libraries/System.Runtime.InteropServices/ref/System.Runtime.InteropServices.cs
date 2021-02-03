@@ -1815,8 +1815,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
             delegate* unmanaged<System.IntPtr, void> trackedObjectEnteredFinalization) { }
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
-            bool initialReferencedState,
-            int scratchMemorySizeInBytes,
             out System.IntPtr scratchMemory) => throw null;
         public enum MsgSendFunction
         {
