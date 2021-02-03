@@ -358,19 +358,16 @@ namespace System
                         {
                             number.Scale++;
                         }
-                        else
+                        else if (digCount < maxDigCount)
                         {
-                            if (digCount < maxDigCount)
+                            // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part, so we keep a count of the number of trailing zeros and update digCount later
+                            if (ch == '0')
                             {
-                                // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part, so we keep a count of the number of trailing zeros and update digCount later
-                                if (ch == '0')
-                                {
-                                    numberOfTrailingZeros++;
-                                }
-                                else
-                                {
-                                    numberOfTrailingZeros = 0;
-                                }
+                                numberOfTrailingZeros++;
+                            }
+                            else
+                            {
+                                numberOfTrailingZeros = 0;
                             }
                         }
                         state |= StateNonZero;

@@ -272,11 +272,13 @@ namespace System.Tests
             yield return new object[] { (567.89).ToString(), defaultStyle, null, 567.89 };
             yield return new object[] { (-567.89).ToString(), defaultStyle, null, -567.89 };
             yield return new object[] { "1E23", defaultStyle, null, 1E23 };
-            yield return new object[] { "9007199254740997.0", defaultStyle, invariantFormat, 9007199254740996 };
+            yield return new object[] { "9007199254740997.0", defaultStyle, invariantFormat, 9007199254740996.0 };
             yield return new object[] { "5.005", defaultStyle, invariantFormat, 5.005 };
             yield return new object[] { "5.050", defaultStyle, invariantFormat, 5.05 };
-            yield return new object[] { "5005.0", defaultStyle, invariantFormat, 5005 };
-            yield return new object[] { "50050.0", defaultStyle, invariantFormat, 50050 };
+            yield return new object[] { "5005.0", defaultStyle, invariantFormat, 5005.0 };
+            yield return new object[] { "50050.0", defaultStyle, invariantFormat, 50050.0 };
+            yield return new object[] { "5005", defaultStyle, invariantFormat, 5005.0 };
+            yield return new object[] { "50050", defaultStyle, invariantFormat, 50050.0 };
 
             yield return new object[] { (123.1).ToString(), NumberStyles.AllowDecimalPoint, null, 123.1 };
             yield return new object[] { (1000.0).ToString("N0"), NumberStyles.AllowThousands, null, 1000.0 };
