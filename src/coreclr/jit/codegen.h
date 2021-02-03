@@ -348,6 +348,10 @@ protected:
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed);
 
+#ifdef TARGET_ARMARCH
+    void genEmitStackProbeHelperCall(int currentSpToFinalSp, regNumber initReg, bool* pInitRegZeroed);
+#endif
+
 #if defined(TARGET_ARM)
 
     bool genInstrWithConstant(

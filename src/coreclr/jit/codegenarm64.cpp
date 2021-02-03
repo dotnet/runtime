@@ -4904,6 +4904,25 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 #endif // PROFILING_SUPPORTED
 
+void CodeGen::genEmitStackProbeHelperCall(int currentSpToFinalSp, regNumber initReg, bool* pInitRegZeroed)
+{
+    assert(compiler->compGeneratingProlog);
+
+    const bool reportUnwindData = false;
+    genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, currentSpToFinalSp,
+                         REG_STACK_PROBE_HELPER_ARG, reportUnwindData);
+    regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
+
+    genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
+    GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG);
+
+    if ((genRegMask(initReg) &
+         (RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET | RBM_STACK_PROBE_HELPER_TRASH)) != RBM_NONE)
+    {
+        *pInitRegZeroed = false;
+    }
+}
+
 /*****************************************************************************
  * Unit testing of the ARM64 emitter: generate a bunch of instructions into the prolog
  * (it's as good a place as any), then use COMPlus_JitLateDisasm=* to see if the late

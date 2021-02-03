@@ -1850,33 +1850,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
     else
     {
-        // Generate the following code:
-        //
-        //    movw  r4, #frameSize
-        //    sub   r4, sp, r4
-        //    bl    CORINFO_HELP_STACK_PROBE
-        //    mov   sp, r4
-        //
-        // If frameSize can not be encoded by movw immediate this becomes:
-        //
-        //    movw  r4, #frameSizeLo16
-        //    movt  r4, #frameSizeHi16
-        //    sub   r4, sp, r4
-        //    bl    CORINFO_HELP_STACK_PROBE
-        //    mov   sp, r4
-
-        genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, frameSize,
-                             INS_FLAGS_DONT_CARE, REG_STACK_PROBE_HELPER_ARG);
-        regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
-        genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
-        compiler->unwindPadding();
-        GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG);
-
-        if ((genRegMask(initReg) & (RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
-                                    RBM_STACK_PROBE_HELPER_TRASH)) != RBM_NONE)
-        {
-            *pInitRegZeroed = false;
-        }
+        genEmitStackProbeHelperCall(frameSize, initReg, pInitRegZeroed);
     }
 
     compiler->unwindAllocStack(frameSize);
@@ -1886,6 +1860,39 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         psiAdjustStackLevel(frameSize);
     }
 #endif // USING_SCOPE_INFO
+}
+
+void CodeGen::genEmitStackProbeHelperCall(int currentSpToFinalSp, regNumber initReg, bool* pInitRegZeroed)
+{
+    // Generate the following code:
+    //
+    //    movw  r4, #currentSpToFinalSp
+    //    sub   r4, sp, r4
+    //    bl    CORINFO_HELP_STACK_PROBE
+    //    mov   sp, r4
+    //
+    // If frameSize can not be encoded by movw immediate this becomes:
+    //
+    //    movw  r4, #currentSpToFinalSpLo16
+    //    movt  r4, #currentSpToFinalSpHi16
+    //    sub   r4, sp, r4
+    //    bl    CORINFO_HELP_STACK_PROBE
+    //    mov   sp, r4
+
+    genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, currentSpToFinalSp,
+                         INS_FLAGS_DONT_CARE, REG_STACK_PROBE_HELPER_ARG);
+    regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
+
+    genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
+    compiler->unwindPadding();
+
+    GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG);
+
+    if ((genRegMask(initReg) &
+         (RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET | RBM_STACK_PROBE_HELPER_TRASH)) != RBM_NONE)
+    {
+        *pInitRegZeroed = false;
+    }
 }
 
 #endif // TARGET_ARM
