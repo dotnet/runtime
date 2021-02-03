@@ -100,7 +100,7 @@ namespace System.Diagnostics.Tracing
                 WriteThreadEvent(50, ActiveWorkerThreadCount);
 
 #if FEATURE_EVENTSOURCE_XPLAT
-                XplatEventLogger.LogThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+                XplatEventLogger.ThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
 #endif // FEATURE_EVENTSOURCE_XPLAT
             }
         }
@@ -115,7 +115,7 @@ namespace System.Diagnostics.Tracing
             {
                 WriteThreadEvent(51, ActiveWorkerThreadCount);
 #if FEATURE_EVENTSOURCE_XPLAT
-                XplatEventLogger.LogThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+                XplatEventLogger.ThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
 #endif
             }
         }
@@ -131,7 +131,7 @@ namespace System.Diagnostics.Tracing
             {
                 WriteThreadEvent(57, ActiveWorkerThreadCount);
 #if FEATURE_EVENTSOURCE_XPLAT
-                XplatEventLogger.LogThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+                XplatEventLogger.ThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
 #endif
             }
         }
@@ -184,7 +184,7 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(55, 4, data);
 
 #if FEATURE_EVENTSOURCE_XPLAT
-            XplatEventLogger.LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
+            XplatEventLogger.ThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
 #endif
         }
 
@@ -243,7 +243,7 @@ namespace System.Diagnostics.Tracing
             data[10].Reserved = 0;
             WriteEventCore(56, 11, data);
 #if FEATURE_EVENTSOURCE_XPLAT
-            XplatEventLogger.LogThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID);
+            XplatEventLogger.ThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID);
 #endif // FEATURE_EVENTSOURCE_XPLAT
         }
 
@@ -271,7 +271,7 @@ namespace System.Diagnostics.Tracing
             data[3].Reserved = 0;
             WriteEventCore(63, 4, data);
 #if FEATURE_EVENTSOURCE_XPLAT
-            XplatEventLogger.LogThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
+            XplatEventLogger.ThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
 #endif // FEATURE_EVENTSOURCE_XPLAT
         }
 
@@ -305,7 +305,7 @@ namespace System.Diagnostics.Tracing
             data[2].Reserved = 0;
             WriteEventCore(64, 3, data);
 #if FEATURE_EVENTSOURCE_XPLAT
-            XplatEventLogger.LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
+            XplatEventLogger.ThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
 #endif
         }
 
@@ -338,7 +338,7 @@ namespace System.Diagnostics.Tracing
             data[1].Reserved = 0;
             WriteEventCore(60, 2, data);
 #if FEATURE_EVENTSOURCE_XPLAT
-            XplatEventLogger.LogThreadPoolWorkingThreadCount(Count, ClrInstanceID);
+            XplatEventLogger.ThreadPoolWorkingThreadCount(Count, ClrInstanceID);
 #endif // FEATURE_EVENTSOURCE_XPLAT
         }
     }
