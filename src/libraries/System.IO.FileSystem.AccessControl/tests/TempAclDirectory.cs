@@ -14,36 +14,53 @@ namespace System.IO
     /// </summary>
     public sealed class TempAclDirectory : TempDirectory
     {
+        internal readonly List<DirectoryInfo> CreatedSubdirectories = new();
+        internal readonly List<FileInfo> CreatedSubfiles = new();
         protected override void DeleteDirectory()
+        {
+            try
+            {
+                foreach (DirectoryInfo subdir in CreatedSubdirectories)
+                {
+                    ResetFullControlToDirectory(subdir);
+                }
+
+                foreach (FileInfo subfile in CreatedSubfiles)
+                {
+                    ResetFullControlToFile(subfile);
+                }
+
+                var rootDirInfo = new DirectoryInfo(Path);
+                ResetFullControlToDirectory(rootDirInfo);
+                rootDirInfo.Delete(recursive: true);
+            }
+            catch { /* Do not throw because we call this on finalize */ }
+        }
+
+        private void ResetFullControlToDirectory(DirectoryInfo dirInfo)
         {
             try
             {
                 var identity = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
                 var accessRule = new FileSystemAccessRule(identity, FileSystemRights.FullControl, AccessControlType.Allow);
-
-                foreach (string dirPath in Directory.EnumerateDirectories(Path, "*", SearchOption.AllDirectories))
-                {
-                    var dirInfo = new DirectoryInfo(dirPath);
-                    var dirSecurity = new DirectorySecurity(dirPath, AccessControlSections.Access);
-                    dirSecurity.AddAccessRule(accessRule);
-                    dirInfo.SetAccessControl(dirSecurity);
-                }
-
-                foreach (string filePath in Directory.EnumerateFiles(Path, "*", SearchOption.AllDirectories))
-                {
-                    var fileInfo = new FileInfo(filePath);
-                    var fileSecurity = new FileSecurity(filePath, AccessControlSections.Access);
-                    fileSecurity.AddAccessRule(accessRule);
-                    fileInfo.SetAccessControl(fileSecurity);
-                }
-
-                var rootDirInfo = new DirectoryInfo(Path);
-                var rootSecurity = new DirectorySecurity(Path, AccessControlSections.Access);
-                rootSecurity.AddAccessRule(accessRule);
-                rootDirInfo.SetAccessControl(rootSecurity);
-                rootDirInfo.Delete(recursive: true);
+                var security = new DirectorySecurity(dirInfo.FullName, AccessControlSections.Access);
+                security.AddAccessRule(accessRule);
+                dirInfo.SetAccessControl(security);
             }
-            catch { /* Do not throw because we call this on finalize */ }
+            catch { /* Skip silently if dir does not exist */ }
+        }
+
+        private void ResetFullControlToFile(FileInfo fileInfo)
+        {
+            try
+            {
+                var identity = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+                var accessRule = new FileSystemAccessRule(identity, FileSystemRights.FullControl, AccessControlType.Allow);
+                var security = new FileSecurity(fileInfo.FullName, AccessControlSections.Access);
+                security.AddAccessRule(accessRule);
+                fileInfo.SetAccessControl(security);
+            }
+            catch { /* Skip silently if file does not exist */ }
         }
     }
 }
