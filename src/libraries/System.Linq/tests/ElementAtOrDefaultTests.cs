@@ -11,73 +11,121 @@ namespace System.Linq.Tests
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
-            var q = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
+            var q1 = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
                     where x > int.MinValue
                     select x;
+            Assert.Equal(q1.ElementAtOrDefault(3), q1.ElementAtOrDefault(3));
 
-            Assert.Equal(q.ElementAtOrDefault(3), q.ElementAtOrDefault(3));
+            var q2 = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
+                where x > int.MinValue
+                select x;
+            Assert.Equal(q2.ElementAtOrDefault(new Index(3)), q2.ElementAtOrDefault(new Index(3)));
+
+            var q3 = from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
+                where x > int.MinValue
+                select x;
+            Assert.Equal(q3.ElementAtOrDefault(^6), q3.ElementAtOrDefault(^6));
         }
 
         [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
-            var q = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
+            var q1 = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
                     where !string.IsNullOrEmpty(x)
                     select x;
+            Assert.Equal(q1.ElementAtOrDefault(4), q1.ElementAtOrDefault(4));
 
-            Assert.Equal(q.ElementAtOrDefault(4), q.ElementAtOrDefault(4));
+            var q2 = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
+                where !string.IsNullOrEmpty(x)
+                select x;
+            Assert.Equal(q2.ElementAtOrDefault(new Index(4)), q2.ElementAtOrDefault(new Index(4)));
+
+            var q3 = from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
+                where !string.IsNullOrEmpty(x)
+                select x;
+            Assert.Equal(q3.ElementAtOrDefault(^2), q3.ElementAtOrDefault(^2));
         }
 
         public static IEnumerable<object[]> TestData()
         {
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(9, 1), 0, 9 };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(9, 10), 9, 18 };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(-4, 10), 3, -1 };
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(9, 1), 0, 1, 9 };
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(9, 10), 9, 1, 18 };
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(-4, 10), 3, 7, -1 };
 
-            yield return new object[] { new int[] { 1, 2, 3, 4 }, 4, 0 };
-            yield return new object[] { new int[0], 0, 0 };
-            yield return new object[] { new int[] { -4 }, 0, -4 };
-            yield return new object[] { new int[] { 9, 8, 0, -5, 10 }, 4, 10 };
+            yield return new object[] { new int[] { 1, 2, 3, 4 }, 4, 0, 0 };
+            yield return new object[] { new int[0], 0, 0, 0 };
+            yield return new object[] { new int[] { -4 }, 0, 1, -4 };
+            yield return new object[] { new int[] { 9, 8, 0, -5, 10 }, 4, 1, 10 };
 
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(-4, 5), -1, 0 };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(5, 5), 5, 0 };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(0, 0), 0, 0 };
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(-4, 5), -1, 6, 0 };
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(5, 5), 5, 0, 0 };
+            yield return new object[] { NumberRangeGuaranteedNotCollectionType(0, 0), 0, 0, 0 };
         }
 
         [Theory]
         [MemberData(nameof(TestData))]
-        public void ElementAtOrDefault(IEnumerable<int> source, int index, int expected)
+        public void ElementAtOrDefault(IEnumerable<int> source, int index, int indexFromEnd, int expected)
         {
             Assert.Equal(expected, source.ElementAtOrDefault(index));
+
+            if (index > 0)
+            {
+                Assert.Equal(expected, source.ElementAtOrDefault(new Index(index)));
+            }
+
+            Assert.Equal(expected, source.ElementAtOrDefault(^indexFromEnd));
         }
 
         [Theory]
         [MemberData(nameof(TestData))]
-        public void ElementAtOrDefaultRunOnce(IEnumerable<int> source, int index, int expected)
+        public void ElementAtOrDefaultRunOnce(IEnumerable<int> source, int index, int indexFromEnd, int expected)
         {
             Assert.Equal(expected, source.RunOnce().ElementAtOrDefault(index));
+
+            if (index > 0)
+            {
+                Assert.Equal(expected, source.RunOnce().ElementAtOrDefault(new Index(index)));
+            }
+
+            Assert.Equal(expected, source.RunOnce().ElementAtOrDefault(^indexFromEnd));
         }
 
         [Fact]
-        public void NullableArray_NegativeIndex_ReturnsNull()
+        public void NullableArray_InvalidIndex_ReturnsNull()
         {
             int?[] source = { 9, 8 };
             Assert.Null(source.ElementAtOrDefault(-1));
+            Assert.Null(source.ElementAtOrDefault(3));
+            Assert.Null(source.ElementAtOrDefault(int.MaxValue));
+            Assert.Null(source.ElementAtOrDefault(int.MinValue));
+
+            Assert.Null(source.ElementAtOrDefault(^3));
+            Assert.Null(source.ElementAtOrDefault(new Index(3)));
+            Assert.Null(source.ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(source.ElementAtOrDefault(^int.MaxValue));
         }
 
         [Fact]
-        public void NullableArray_ValidIndex_ReturnsCorrectObjecvt()
+        public void NullableArray_ValidIndex_ReturnsCorrectObject()
         {
             int?[] source = { 9, 8, null, -5, 10 };
 
             Assert.Null(source.ElementAtOrDefault(2));
             Assert.Equal(-5, source.ElementAtOrDefault(3));
+
+            Assert.Null(source.ElementAtOrDefault(new Index(2)));
+            Assert.Equal(-5, source.ElementAtOrDefault(new Index(3)));
+
+            Assert.Null(source.ElementAtOrDefault(^3));
+            Assert.Equal(-5, source.ElementAtOrDefault(^2));
         }
 
         [Fact]
         public void NullSource_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(2));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(new Index(2)));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(^2));
         }
     }
 }

@@ -56,20 +56,20 @@ namespace System.Linq
             Debug.Assert(startIndex >= 0);
             Debug.Assert(endIndex >= 0);
 
-            using IEnumerator<TSource> e = source.GetEnumerator();
-            int currentIndex = -1;
             if (isStartIndexFromEnd)
             {
+                if (startIndex == 0)
+                {
+                    yield break;
+                }
+
+                using IEnumerator<TSource> e = source.GetEnumerator();
                 if (!e.MoveNext())
                 {
                     yield break;
                 }
 
-                checked
-                {
-                    currentIndex++;
-                }
-
+                int index = 0;
                 Queue<TSource> queue = new();
                 queue.Enqueue(e.Current);
 
@@ -77,7 +77,7 @@ namespace System.Linq
                 {
                     checked
                     {
-                        currentIndex++;
+                        index++;
                     }
 
                     if (queue.Count == startIndex)
@@ -88,7 +88,7 @@ namespace System.Linq
                     queue.Enqueue(e.Current);
                 }
 
-                int count = checked(currentIndex + 1);
+                int count = checked(index + 1);
                 Debug.Assert(queue.Count == Math.Min(count, startIndex));
 
                 startIndex = count - startIndex;
@@ -107,32 +107,29 @@ namespace System.Linq
                 }
 
                 Debug.Assert(endIndex - startIndex <= queue.Count);
-                for (int index = startIndex; index < endIndex; index++)
+                for (int rangeIndex = startIndex; rangeIndex < endIndex; rangeIndex++)
                 {
                     yield return queue.Dequeue();
                 }
             }
             else
             {
+                using IEnumerator<TSource> e = source.GetEnumerator();
                 if (!e.MoveNext())
                 {
                     yield break;
                 }
 
-                checked
-                {
-                    currentIndex++;
-                }
-
-                while (currentIndex < startIndex && e.MoveNext())
+                int index = 0;
+                while (index < startIndex && e.MoveNext())
                 {
                     checked
                     {
-                        currentIndex++;
+                        index++;
                     }
                 }
 
-                if (currentIndex != startIndex)
+                if (index != startIndex)
                 {
                     yield break;
                 }
@@ -168,7 +165,7 @@ namespace System.Linq
                     }
 
                     yield return e.Current;
-                    while (checked(++currentIndex) < endIndex && e.MoveNext())
+                    while (checked(++index) < endIndex && e.MoveNext())
                     {
                         yield return e.Current;
                     }
