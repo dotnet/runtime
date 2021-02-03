@@ -11982,10 +11982,6 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     {
         if (pDataCur->m_pMD == pMD)
         {
-            *pSchema = pDataCur->m_schema.GetElements();
-            *pCountSchemaItems = pDataCur->m_schema.GetCount();
-            *pInstrumentationData = pDataCur->m_pInstrumentationData;
-            hr = pDataCur->m_hr;
             break;
         }
     }
@@ -11998,12 +11994,12 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
         m_foundPgoData = newPgoData;
         newPgoData.SuppressRelease();
         
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_schema, &newPgoData->m_pInstrumentationData);
+        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema, &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData);
         pDataCur = m_foundPgoData;
     }
 
-    *pSchema = pDataCur->m_schema.GetElements();
-    *pCountSchemaItems = pDataCur->m_schema.GetCount();
+    *pSchema = pDataCur->m_schema;
+    *pCountSchemaItems = pDataCur->m_cSchemaElems;
     *pInstrumentationData = pDataCur->m_pInstrumentationData;
     hr = pDataCur->m_hr;
 #else
@@ -12677,7 +12673,10 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
             COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(ftn);
 
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
-        if (CORProfilerTrackTransitions())
+
+        // If we're a reverse IL stub, we need to use the TrackTransitions variant
+        // so we have the target MethodDesc entrypoint to tell the debugger about.
+        if (CORProfilerTrackTransitions() || ftn->IsILStub())
         {
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
         }
@@ -12778,7 +12777,14 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
             optType = methodInfo->ILCodeSize % OPT_RANDOM;
 
         if (g_pConfig->JitMinOpts())
+        {
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
+        }
+        else
+        {
+            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+        }
 
         if (optType == OPT_SIZE)
         {

@@ -1,23 +1,23 @@
 <Project>
-  <!-- Invoke roslynildiff to apply the DeltaScript to the output assembly to
+  <!-- Invoke hotreload-delta-gen to apply the DeltaScript to the output assembly to
        create the .dmeta, .dil and .dpdb files on the OutputPath -->
   <!-- Have to be careful about AfterTargets. If we happen to go after a design-time target, we could get into an infinite loop. -->
   <Target Name="CompileDiff" AfterTargets="Build">
-    <Message Importance="High" Condition="'$(RoslynILDiffFullPath)' == ''" Text="WARNING: RoslynILDiffFullPath property is unset.  Using default which may be wrong on your system" />
-    <Error Condition="'$(DeltaScript)' == ''" Text="DeltaScript property not set in project - don't know how to invoke roslynildiff" />
+    <Message Importance="High" Condition="'$(HotreloadDeltaGenFullPath)' == ''" Text="WARNING: HotreloadDeltaGenFullPath property is unset.  Will run 'hotreload-delta-gen' assuming it is on the PATH" />
+    <Error Condition="'$(DeltaScript)' == ''" Text="DeltaScript property not set in project - don't know how to invoke hotreload-delta-gen" />
     <PropertyGroup>
-      <RoslynILDiffFullPath Condition="'$(RoslynILDiffFullPath)' == ''">/Users/alklig/work/roslynildiff/roslynildiff</RoslynILDiffFullPath>
-      <RoslynILDiffArgs>-msbuild:$(MSBuildProjectFullPath)</RoslynILDiffArgs>
+      <HotreloadDeltaGenFullPath Condition="'$(HotreloadDeltaGenFullPath)' == ''">hotreload-delta-gen</HotreloadDeltaGenFullPath>
+      <HotreloadDeltaGenArgs>-msbuild:$(MSBuildProjectFullPath)</HotreloadDeltaGenArgs>
       <!-- HACK: have to pass config and RID  so that this target works for a 'dotnet publish' run.
-	   What other properties do  I need to pass? Maybe roslynildiff should just expose an MSBuild task so we can pass everything -->
-      <RoslynILDiffArgs Condition="'$(Configuration)' != ''">$(RoslynILDiffArgs) -p:Configuration=$(Configuration)</RoslynILDiffArgs>
-      <RoslynILDiffArgs Condition="'$(RuntimeIdentifier)' != ''">$(RoslynILDiffArgs) -p:RuntimeIdentifier=$(RuntimeIdentifier)</RoslynILDiffArgs>
-      <RoslynILDiffArgs>$(RoslynILDiffArgs) -script:$(DeltaScript)</RoslynILDiffArgs>
+	         What other properties do  I need to pass? Maybe hotreload-delta-gen should just expose an MSBuild task so we can pass everything -->
+      <HotreloadDeltaGenArgs Condition="'$(Configuration)' != ''">$(HotreloadDeltaGenArgs) -p:Configuration=$(Configuration)</HotreloadDeltaGenArgs>
+      <HotreloadDeltaGenArgs Condition="'$(RuntimeIdentifier)' != ''">$(HotreloadDeltaGenArgs) -p:RuntimeIdentifier=$(RuntimeIdentifier)</HotreloadDeltaGenArgs>
+      <HotreloadDeltaGenArgs>$(HotreloadDeltaGenArgs) -script:$(DeltaScript)</HotreloadDeltaGenArgs>
     </PropertyGroup>
-    <Exec Command="$(RoslynILDiffFullPath) $(RoslynILDiffArgs)"/>
+    <Exec Command="$(HotreloadDeltaGenFullPath) $(HotreloadDeltaGenArgs)"/>
   </Target>
 
-  <!-- Computes the names of the files that roslynildiff will produce, given the name of the base assembly and the
+  <!-- Computes the names of the files that hotreload-delta-gen will produce, given the name of the base assembly and the
        number of deltas -->
   <UsingTask TaskName="ComputeDeltaFileOutputNames" TaskFactory="RoslynCodeTaskFactory"
 	     AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" >

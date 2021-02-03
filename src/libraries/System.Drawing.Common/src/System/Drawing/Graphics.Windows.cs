@@ -243,37 +243,31 @@ namespace System.Drawing
             int destWidth = blockRegionSize.Width;
             int destHeight = blockRegionSize.Height;
 
-            using (DeviceContext dc = DeviceContext.FromHwnd(IntPtr.Zero))
+            IntPtr screenDC = Interop.User32.GetDC(IntPtr.Zero);
+            try
             {
-                // The DC of the screen.
-                IntPtr screenDC = dc.Hdc;
-
-                // The DC of the current graphics object.
                 IntPtr targetDC = GetHdc();
+                int result = Interop.Gdi32.BitBlt(
+                    targetDC,
+                    destinationX,
+                    destinationY,
+                    destWidth,
+                    destHeight,
+                    screenDC,
+                    sourceX,
+                    sourceY,
+                    (Interop.Gdi32.RasterOp)copyPixelOperation);
 
-                try
+                //a zero result indicates a win32 exception has been thrown
+                if (result == 0)
                 {
-                    int result = Interop.Gdi32.BitBlt(
-                        targetDC,
-                        destinationX,
-                        destinationY,
-                        destWidth,
-                        destHeight,
-                        screenDC,
-                        sourceX,
-                        sourceY,
-                        (Interop.Gdi32.RasterOp)copyPixelOperation);
-
-                    //a zero result indicates a win32 exception has been thrown
-                    if (result == 0)
-                    {
-                        throw new Win32Exception();
-                    }
+                    throw new Win32Exception();
                 }
-                finally
-                {
-                    ReleaseHdc();
-                }
+            }
+            finally
+            {
+                Interop.User32.ReleaseDC(IntPtr.Zero, screenDC);
+                ReleaseHdc();
             }
         }
 

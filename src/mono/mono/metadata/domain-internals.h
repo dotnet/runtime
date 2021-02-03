@@ -665,6 +665,11 @@ void mono_assembly_cleanup_domain_bindings (guint32 domain_id);
 
 MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines);
 
+typedef void (*MonoJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
+
+void
+mono_jit_info_table_foreach_internal (MonoDomain *domain, MonoJitInfoFunc func, gpointer user_data);
+
 void mono_enable_debug_domain_unload (gboolean enable);
 
 void

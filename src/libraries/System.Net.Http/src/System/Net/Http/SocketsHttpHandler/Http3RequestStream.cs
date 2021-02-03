@@ -499,15 +499,7 @@ namespace System.Net.Http
             _sendBuffer.Commit(2);
 
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
-            if (normalizedMethod.Http3EncodedBytes != null)
-            {
-                BufferBytes(normalizedMethod.Http3EncodedBytes);
-            }
-            else
-            {
-                BufferLiteralHeaderWithStaticNameReference(H3StaticTable.MethodGet, normalizedMethod.Method);
-            }
-
+            BufferBytes(normalizedMethod.Http3EncodedBytes);
             BufferIndexedHeader(H3StaticTable.SchemeHttps);
 
             if (request.HasHeaders && request.Headers.Host != null)
@@ -753,10 +745,13 @@ namespace System.Net.Http
                     case Http3FrameType.Headers:
                     case Http3FrameType.Data:
                         return ((Http3FrameType)frameType, payloadLength);
-                    case Http3FrameType.Settings:
+                    case Http3FrameType.Settings: // These frames should only be received on a control stream, not a response stream.
                     case Http3FrameType.GoAway:
                     case Http3FrameType.MaxPushId:
-                        // These frames should only be received on a control stream, not a response stream.
+                    case Http3FrameType.ReservedHttp2Priority: // These frames are explicitly reserved and must never be sent.
+                    case Http3FrameType.ReservedHttp2Ping:
+                    case Http3FrameType.ReservedHttp2WindowUpdate:
+                    case Http3FrameType.ReservedHttp2Continuation:
                         throw new Http3ConnectionException(Http3ErrorCode.UnexpectedFrame);
                     case Http3FrameType.DuplicatePush:
                     case Http3FrameType.PushPromise:

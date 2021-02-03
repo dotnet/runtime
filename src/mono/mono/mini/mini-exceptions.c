@@ -2184,12 +2184,45 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 		mono_error_assert_ok (error);
 		if (*dynamic_methods) {
 			/* These methods could go away anytime, so save a reference to them in the exception object */
+			MonoDomain *domain = mono_domain_get ();
+#ifdef ENABLE_NETCORE
+			int methods_len = g_slist_length (*dynamic_methods);
+			MonoArray *old_methods = mono_ex->dynamic_methods;
+			int old_methods_len = 0;
+
+			if (old_methods) {
+				old_methods_len = mono_array_length_internal (old_methods);
+				methods_len += old_methods_len;
+			}
+
+			MonoArray *all_methods = mono_array_new_checked (domain, mono_defaults.object_class, methods_len, error);
+			mono_error_assert_ok (error);
+
+			if (old_methods)
+				mono_array_full_copy_unchecked_size (old_methods, all_methods, mono_defaults.object_class, old_methods_len);
+			int index = old_methods_len;
+
+			for (GSList *l = *dynamic_methods; l; l = l->next) {
+				g_assert (domain->method_to_dyn_method);
+
+				mono_domain_lock (domain);
+				MonoGCHandle dis_link = (MonoGCHandle)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
+				mono_domain_unlock (domain);
+
+				if (dis_link) {
+					MonoObject *o = mono_gchandle_get_target_internal (dis_link);
+					mono_array_set_internal (all_methods, MonoObject *, index, o);
+					index++;
+				}
+			}
+
+			MONO_OBJECT_SETREF_INTERNAL (mono_ex, dynamic_methods, all_methods);
+#else
 			GSList *l;
 			MonoMList *list = (MonoMList*)mono_ex->dynamic_methods;
 
 			for (l = *dynamic_methods; l; l = l->next) {
 				MonoGCHandle dis_link;
-				MonoDomain *domain = mono_domain_get ();
 
 				if (domain->method_to_dyn_method) {
 					mono_domain_lock (domain);
@@ -2206,6 +2239,7 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 			}
 
 			MONO_OBJECT_SETREF_INTERNAL (mono_ex, dynamic_methods, list);
+#endif
 
 			g_slist_free (*dynamic_methods);
 			*dynamic_methods = NULL;

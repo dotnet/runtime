@@ -38,6 +38,11 @@ namespace System.Net.Http.Functional.Tests
             return handler;
         }
 
+        protected Http3LoopbackServer CreateHttp3LoopbackServer()
+        {
+            return new Http3LoopbackServer(UseQuicImplementationProvider);
+        }
+
         protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, UseQuicImplementationProvider);
 
         protected static HttpClientHandler CreateHttpClientHandler(string useVersionString) =>

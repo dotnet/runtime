@@ -218,6 +218,12 @@ inline Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::CreateAgnostic_CORINFO_SIG_I
     sig.sigInst_methInstCount  = (DWORD)sigInfo.sigInst.methInstCount;
     sig.args                   = CastHandle(sigInfo.args);
     sig.cbSig                  = (DWORD)sigInfo.cbSig;
+    if ((sigInfo.cbSig == 0) && (sigInfo.pSig != nullptr))
+    {
+        // In this case, assume it is crossgen2 and pSig is actually a "handle" (some kind of pointer
+        // to an object), not a pointer to an array of signature bytes. Store the handle itself.
+        sig.sigHandle = CastHandle((void*)sigInfo.pSig);
+    }
     sig.scope                  = CastHandle(sigInfo.scope);
     sig.token                  = (DWORD)sigInfo.token;
     return sig;
@@ -232,7 +238,9 @@ inline void SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(
 {
     unsigned handleInstIndex;
 
-    if (handleInstCount > 0)
+    // We shouldn't need to check (handleInstArray != nullptr), but often, crossgen2 sets (leaves?)
+    // handleInstCount > 0 and handleInstArray == nullptr.
+    if ((handleInstCount > 0) && (handleInstArray != nullptr))
     {
         if (handleMap == nullptr)
             handleMap = new DenseLightWeightMap<DWORDLONG>(); // this updates the caller
@@ -254,6 +262,13 @@ inline void SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(
     }
     else
     {
+        if (handleInstCount > 0)
+        {
+            // This is really a VM/crossgen bug.
+            LogVerbose("(handleInstCount > 0) but (handleInstArray == nullptr)!");
+            handleInstCount = 0;
+        }
+
         handleInstIndex = (DWORD)-1;
     }
 
@@ -376,8 +391,16 @@ inline CORINFO_SIG_INFO SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(const Agnost
     sig.flags           = (unsigned)sigInfo.flags;
     sig.numArgs         = (unsigned)sigInfo.numArgs;
     sig.args            = (CORINFO_ARG_LIST_HANDLE)sigInfo.args;
-    sig.cbSig           = (unsigned int)sigInfo.cbSig;
-    sig.pSig            = (PCCOR_SIGNATURE)buffers->GetBuffer(sigInfo.pSig_Index);
+    if (sigInfo.sigHandle != 0)
+    {
+        sig.cbSig = 0;
+        sig.pSig = (PCCOR_SIGNATURE)sigInfo.sigHandle;
+    }
+    else
+    {
+        sig.cbSig = (unsigned int)sigInfo.cbSig;
+        sig.pSig  = (PCCOR_SIGNATURE)buffers->GetBuffer(sigInfo.pSig_Index);
+    }
     sig.scope           = (CORINFO_MODULE_HANDLE)sigInfo.scope;
     sig.token           = (mdToken)sigInfo.token;
 

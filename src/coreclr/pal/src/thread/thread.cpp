@@ -2600,6 +2600,7 @@ CPalThread::FreeSignalAlternateStack()
         // ss_size is >= MINSIGSTKSZ even in this case.
         ss.ss_size = MINSIGSTKSZ;
         ss.ss_flags = SS_DISABLE;
+        ss.ss_sp = NULL;
         int st = sigaltstack(&ss, &oss);
         if ((st == 0) && (oss.ss_flags != SS_DISABLE))
         {

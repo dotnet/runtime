@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 
 namespace System.Security.Principal
@@ -67,7 +68,7 @@ namespace System.Security.Principal
             get { return m_identity; }
         }
 
-        public override bool IsInRole(string? role)
+        public override bool IsInRole([NotNullWhen(true)] string? role)
         {
             if (role == null || m_roles == null)
                 return false;
