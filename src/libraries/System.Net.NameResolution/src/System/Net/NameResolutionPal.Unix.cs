@@ -292,7 +292,10 @@ namespace System.Net
 
             public void RegisterForCancellation(CancellationToken cancellationToken)
             {
-                if (!cancellationToken.CanBeCanceled) return;
+                if (!cancellationToken.CanBeCanceled)
+                {
+                    return;
+                }
 
                 lock (this)
                 {
@@ -305,11 +308,9 @@ namespace System.Net
                     _cancellationTokenRegistration = cancellationToken.UnsafeRegister(static o =>
                     {
                         var self = (GetHostEntryForNameState)o!;
-
                         lock (self)
                         {
                             GetHostEntryForNameContext* context = self._cancellationContext;
-
                             if (context is not null)
                             {
                                 Interop.Sys.CancelGetHostEntryForNameAsync(context->CancelHandle);
