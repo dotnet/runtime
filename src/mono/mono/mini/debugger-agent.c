@@ -2184,7 +2184,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 
 	g_assert (info);
 
-	ip = MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx);
+	ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
 	tid = mono_thread_info_get_tid (info);
 
 	// FIXME: Races when the thread leaves managed code before hitting a single step
@@ -2295,7 +2295,7 @@ debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
 		/* not attached */
 		ji = NULL;
 	} else {
-		ji = mono_jit_info_table_find_internal ( domain, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx), TRUE, TRUE);
+		ji = mono_jit_info_table_find_internal (domain, MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx)), TRUE, TRUE);
 	}
 
 	/* This is signal safe */
