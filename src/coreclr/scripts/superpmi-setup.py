@@ -382,7 +382,11 @@ def main(main_args):
     # payload
     input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
     exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
-    partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory)
+    exclude_files = native_binaries_to_ignore
+    if coreclr_args.collection_name == "crossgen2":
+        # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
+        exclude_files += [ "Microsoft.Build.dll" ]
+    partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory, exclude_files)
 
     # Set variables
     print('Setting pipeline variables:')

@@ -244,7 +244,8 @@ collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pas
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen", action="store_true", help="Run crossgen on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
-collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="Pass a sequence of managed dlls or directories to recursively use while collecting with PMI, crossgen, or crossgen2. Required if --pmi, --crossgen, or --crossgen2 is specified.")
+collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI, crossgen, or crossgen2. Required if --pmi, --crossgen, or --crossgen2 is specified.")
+collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
@@ -684,6 +685,7 @@ class SuperPMICollect:
 
         if coreclr_args.pmi or coreclr_args.crossgen or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
+            self.exclude = coreclr_args.exclude
 
         self.coreclr_args = coreclr_args
 
@@ -816,11 +818,19 @@ class SuperPMICollect:
                         env[complus_var] = value
                         print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, complus_var, value)
 
-            # If we need them, collect all the assemblies we're going to use for the collection(s)
+            # If we need them, collect all the assemblies we're going to use for the collection(s).
+            # Remove the files matching the `-exclude` arguments (case-insensitive) from the list.
             if self.coreclr_args.pmi or self.coreclr_args.crossgen or self.coreclr_args.crossgen2:
                 assemblies = []
                 for item in self.assemblies:
-                    assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]))
+                    assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude)))
+                if len(assemblies) == 0:
+                    logging.error("No assemblies found using `-assemblies` and `-exclude` arguments!")
+                else:
+                    logging.debug("Using assemblies:")
+                    for item in assemblies:
+                        logging.debug("  %s", item)
+                    logging.debug("") # add trailing empty line
 
             ################################################################################################ Do collection using given collection command (e.g., script)
             if self.collection_command is not None:
@@ -2921,6 +2931,11 @@ def setup_args(args):
                             modify_arg=lambda items: [item for item in items if os.path.isdir(item) or os.path.isfile(item)])
 
         coreclr_args.verify(args,
+                            "exclude",
+                            lambda unused: True,
+                            "Unable to set exclude")
+
+        coreclr_args.verify(args,
                             "pmi_location",
                             lambda unused: True,
                             "Unable to set pmi_location")
@@ -2977,6 +2992,10 @@ def setup_args(args):
 
         if (args.collection_command is not None) and (len(args.assemblies) > 0):
             print("Don't specify `-assemblies` if a collection command is given")
+            sys.exit(1)
+
+        if (args.collection_command is not None) and (len(args.exclude) > 0):
+            print("Don't specify `-exclude` if a collection command is given")
             sys.exit(1)
 
         if ((args.pmi is True) or (args.crossgen is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
