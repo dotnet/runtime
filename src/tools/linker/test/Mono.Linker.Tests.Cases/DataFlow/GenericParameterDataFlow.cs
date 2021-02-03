@@ -10,6 +10,7 @@ using BindingFlags = System.Reflection.BindingFlags;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
+	[ExpectedNoWarnings]
 	public class GenericParameterDataFlow
 	{
 		public static void Main ()
@@ -95,7 +96,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
 			[RecognizedReflectionAccessPattern]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 			public static Type ReturnRequiresPublicFields ()
 			{
 				return typeof (T);
@@ -235,6 +236,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		[RecognizedReflectionAccessPattern]
 		static void TestBaseTypeGenericRequirements ()
 		{
 			new DerivedTypeWithInstantiatedGenericOnBase ();
