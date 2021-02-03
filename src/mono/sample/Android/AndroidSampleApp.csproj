@@ -8,6 +8,7 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+    <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
   </PropertyGroup>
 
   <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
@@ -44,7 +45,7 @@
     </ItemGroup>
 
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" 
-             Condition="'$(RunAOTCompilation)' == 'true'"/>
+             Condition="'$(ForceAOT)' == 'true'"/>
     <RemoveDir Directories="$(ApkDir)" />
 
     <PropertyGroup>
@@ -65,13 +66,13 @@
     <Message Importance="High" Text="Path: $(PublishDir)" />
     <Message Importance="High" Text="SourceDir: $(OutputPath)" />
 
-    <MonoAOTCompiler
-        Condition="'$(ForceAOT)' == 'true'"
+    <MonoAOTCompiler Condition="'$(ForceAOT)' == 'true'"
         CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\android-$(TargetArchitecture)\mono-aot-cross"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
+        AotModulesTablePath="$(BundleDir)\modules.c"
         UseLLVM="$(UseLLVM)"
         LLVMPath="$(MicrosoftNetCoreAppRuntimePackDir)native\cross\android-$(TargetArchitecture)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
@@ -81,6 +82,7 @@
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="HelloAndroid"
         ForceInterpreter="$(MonoForceInterpreter)"
+        ForceAOT="$(ForceAOT)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(AssemblyName).dll"
