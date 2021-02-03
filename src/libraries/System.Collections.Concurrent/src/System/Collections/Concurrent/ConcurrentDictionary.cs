@@ -1051,6 +1051,8 @@ namespace System.Collections.Concurrent
         private static void ThrowKeyNotFoundException(TKey key) =>
             throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
 
+        public IEqualityComparer<TKey> Comparer => _comparer ?? _defaultComparer;
+
         /// <summary>
         /// Gets the number of key/value pairs contained in the <see
         /// cref="ConcurrentDictionary{TKey,TValue}"/>.
