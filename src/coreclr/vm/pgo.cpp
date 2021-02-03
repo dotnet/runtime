@@ -1064,7 +1064,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
             instrumentationDataSize = lastSchema.Offset + lastSchema.Count * InstrumentationKindToSize(lastSchema.InstrumentationKind) - found->header.countsOffset;
         }
         *pAllocatedData = new BYTE[schemaDataSize + instrumentationDataSize];
-        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)pAllocatedData;
+        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)*pAllocatedData;
         *pCountSchemaItems = schemaArray.GetCount();
         memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaDataSize);
         schemaArray.CloseRawBuffer();
