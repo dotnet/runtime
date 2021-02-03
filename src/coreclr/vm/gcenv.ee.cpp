@@ -1077,6 +1077,13 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
         FinalizeWeakReference(obj);
         return true;
     }
+#ifdef FEATURE_OBJCBRIDGE
+    else if (pMT->IsTrackedReferenceWithFinalizer())
+    {
+        // [TODO] Call out for "entered finalizer queue" callback.
+        return false;
+    }
+#endif // FEATURE_OBJCBRIDGE
 
     return false;
 }
