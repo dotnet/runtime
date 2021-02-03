@@ -1459,7 +1459,8 @@ bool MulticoreJitManager::IsMethodSupported(MethodDesc * pMethod)
     }
     CONTRACTL_END;
 
-    return !pMethod->IsDynamicMethod() &&
+    return pMethod->HasILHeader() &&
+           !pMethod->IsDynamicMethod() &&
            !pMethod->GetLoaderAllocator()->IsCollectible();
 }
 

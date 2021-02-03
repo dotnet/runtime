@@ -940,14 +940,6 @@ void MulticoreJitProfilePlayer::CompileMethodInfoRecord(Module *pModule, MethodD
                 return;
             }
         }
-        else if (pMethod->IsNDirect())
-        {
-            // NDirect Stub
-            if (GetStubForInteropMethod(pMethod))
-            {
-                return;
-            }
-        }
     }
 
     m_stats.m_nFilteredMethods++;
