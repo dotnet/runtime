@@ -691,8 +691,10 @@ namespace System.Threading
                     //
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
-                    if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS() ||
-                        (OperatingSystem.IsMacOS() && ThreadPool.EnableDispatchAutoreleasePool))
+                    if ((OperatingSystem.IsIOS() ||
+                        OperatingSystem.IsTvOS() ||
+                        OperatingSystem.IsWatchOS() ||
+                        OperatingSystem.IsMacOS()) && ThreadPool.EnableDispatchAutoreleasePool)
                     {
                         DispatchItemWithAutoreleasePool(workItem, currentThread);
                     }
