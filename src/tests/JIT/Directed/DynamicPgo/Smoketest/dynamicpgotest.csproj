@@ -14,11 +14,13 @@
 $(CLRTestBatchPreCommands)
 set COMPlus_TieredCompilation=1
 set COMPlus_TieredPGO=1
+set
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
 export COMPlus_TieredCompilation=1
 export COMPlus_TieredPGO=1
+export
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
 </Project>
