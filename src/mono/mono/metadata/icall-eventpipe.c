@@ -80,12 +80,22 @@ typedef struct _EventPipeFireMethodEventsData{
 	ep_rt_mono_fire_method_rundown_events_func method_events_func;
 } EventPipeFireMethodEventsData;
 
+typedef struct _EventPipeSampleProfileData {
+	EventPipeStackContents stack_contents;
+	uint64_t thread_id;
+	uintptr_t thread_ip;
+	uint32_t payload_data;
+} EventPipeSampleProfileData;
+
 gboolean ep_rt_mono_initialized;
 MonoNativeTlsKey ep_rt_mono_thread_holder_tls_id;
 gpointer ep_rt_mono_rand_provider;
 
 static ep_rt_thread_holder_alloc_func thread_holder_alloc_callback_func;
 static ep_rt_thread_holder_free_func thread_holder_free_callback_func;
+
+static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
+static uint32_t _ep_rt_mono_max_sampled_thread_count = 32;
 
 /*
  * Forward declares of all static functions.
@@ -162,6 +172,19 @@ gboolean
 eventpipe_walk_managed_stack_for_thread (
 	ep_rt_thread_handle_t thread,
 	EventPipeStackContents *stack_contents);
+
+static
+gboolean
+eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	gpointer data);
+
+static
+gboolean
+eventpipe_sample_profiler_write_sampling_event_for_threads (
+	ep_rt_thread_handle_t sampling_thread,
+	EventPipeEvent *sampling_event);
 
 static
 gboolean
@@ -568,6 +591,97 @@ eventpipe_walk_managed_stack_for_thread (
 }
 
 static
+inline
+EventPipeSampleProfilerSampleType
+eventpipe_sample_profiler_get_sample_type (
+	uintptr_t thread_ip,
+	MonoJitInfo *ji)
+{
+	EventPipeSampleProfilerSampleType sample_type;
+	if (ji && (uintptr_t)ji->code_start <= thread_ip && thread_ip < ((uintptr_t)ji->code_start + ji->code_size))
+		sample_type = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+	else
+		sample_type = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+	return sample_type;
+}
+
+static
+gboolean
+eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	gpointer data)
+{
+	g_assert_checked (frame != NULL);
+	g_assert_checked (data != NULL);
+
+	EventPipeSampleProfileData *sample_data = (EventPipeSampleProfileData *)data;
+	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR)
+		sample_data->payload_data = eventpipe_sample_profiler_get_sample_type (sample_data->thread_ip, frame->ji);
+	return eventpipe_walk_managed_stack_for_thread_func (frame, ctx, &sample_data->stack_contents);
+}
+
+static
+gboolean
+eventpipe_sample_profiler_write_sampling_event_for_threads (
+	ep_rt_thread_handle_t sampling_thread,
+	EventPipeEvent *sampling_event)
+{
+	// Runtime suspend/resume, runtime internal methods currently implemented in sgen-stw.c.
+	extern void mono_suspend_runtime (MonoThreadInfoFlags flags);
+	extern void mono_resume_runtime (MonoThreadInfoFlags flags);
+
+	// Sample profiler only runs on one thread, no need to synchorinize.
+	if (!_ep_rt_mono_sampled_thread_callstacks)
+		_ep_rt_mono_sampled_thread_callstacks = g_array_sized_new (FALSE, FALSE, sizeof (EventPipeSampleProfileData), _ep_rt_mono_max_sampled_thread_count);
+
+	// Make sure there is room based on previous max number of sampled threads.
+	// NOTE, there is a chance there are more threads than max, if that's the case we will
+	// miss those threads in this sample, but will be included in next when max has been adjusted.
+	g_array_set_size (_ep_rt_mono_sampled_thread_callstacks, _ep_rt_mono_max_sampled_thread_count);
+	uint32_t thread_count = 0;
+
+	mono_suspend_runtime (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+
+	// Record all info needed in sample events while runtime is suspended, must be async safe.
+	FOREACH_THREAD_SAFE_EXCLUDE (thread_info, MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE) {
+		if (!mono_thread_info_is_running (thread_info)) {
+			MonoThreadUnwindState *thread_state = mono_thread_info_get_suspend_state (thread_info);
+			if (thread_state->valid) {
+				if (thread_count < _ep_rt_mono_max_sampled_thread_count) {
+					EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, thread_count);
+					data->thread_id = mono_thread_info_get_tid (thread_info);
+					data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&thread_state->ctx);
+					data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
+					ep_stack_contents_init (&data->stack_contents);
+					mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_sample_profiler_walk_managed_stack_for_thread_func, thread_state, MONO_UNWIND_SIGNAL_SAFE, data);
+				}
+				thread_count++;
+			}
+		}
+	} FOREACH_THREAD_SAFE_END
+
+	mono_resume_runtime (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+
+	// Fire sample event for threads. Must be done after runtime is resumed since it's not async safe.
+	// Since we can't keep thread info around after runtime as been suspended, use an empty
+	// adapter instance and only set recorded tid as parameter inside adapter.
+	THREAD_INFO_TYPE adapter = { 0 };
+	for (uint32_t i = 0; i < thread_count; ++i) {
+		if (thread_count < _ep_rt_mono_max_sampled_thread_count) {
+			EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, i);
+			mono_thread_info_set_tid (&adapter, data->thread_id);
+			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&data->payload_data, sizeof (data->payload_data));
+		}
+	}
+
+	// Current thread count will be our next maximum sampled threads.
+	_ep_rt_mono_max_sampled_thread_count = thread_count;
+
+	return TRUE;
+}
+
+static
 gboolean
 eventpipe_method_get_simple_assembly_name (
 	ep_rt_method_desc_t *method,
@@ -643,6 +757,7 @@ mono_eventpipe_init (
 		table->ep_rt_mono_get_managed_cmd_line = mono_runtime_get_managed_cmd_line;
 		table->ep_rt_mono_execute_rundown = eventpipe_execute_rundown;
 		table->ep_rt_mono_walk_managed_stack_for_thread = eventpipe_walk_managed_stack_for_thread;
+		table->ep_rt_mono_sample_profiler_write_sampling_event_for_threads = eventpipe_sample_profiler_write_sampling_event_for_threads;
 		table->ep_rt_mono_method_get_simple_assembly_name = eventpipe_method_get_simple_assembly_name;
 		table->ep_rt_mono_method_get_full_name = evetpipe_method_get_full_name;
 	}
@@ -664,9 +779,13 @@ mono_eventpipe_init (
 void
 mono_eventpipe_fini (void)
 {
+	if (_ep_rt_mono_sampled_thread_callstacks)
+		g_array_free (_ep_rt_mono_sampled_thread_callstacks, TRUE);
+
 	if (ep_rt_mono_initialized)
 		mono_rand_close (ep_rt_mono_rand_provider);
 
+	_ep_rt_mono_sampled_thread_callstacks = NULL;
 	ep_rt_mono_rand_provider = NULL;
 	thread_holder_alloc_callback_func = NULL;
 	thread_holder_free_callback_func = NULL;
