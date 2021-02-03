@@ -1051,20 +1051,7 @@ namespace System.Collections.Concurrent
         private static void ThrowKeyNotFoundException(TKey key) =>
             throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
 
-        public IEqualityComparer<TKey> Comparer
-        {
-            get
-            {
-                if (typeof(TKey) == typeof(string))
-                {
-                    return (IEqualityComparer<TKey>)IInternalStringEqualityComparer.GetUnderlyingEqualityComparer((IEqualityComparer<string?>?)_comparer);
-                }
-                else
-                {
-                    return _comparer ?? EqualityComparer<TKey>.Default;
-                }
-            }
-        }
+        public IEqualityComparer<TKey> Comparer => _comparer ?? _defaultComparer;
 
         /// <summary>
         /// Gets the number of key/value pairs contained in the <see
