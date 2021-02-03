@@ -2945,8 +2945,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
 
-    opts.compExpandCallsEarly = false;
-
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -3981,16 +3979,7 @@ _SetMinOpts:
         }
     }
 
-#if defined(DEBUG)
-    if (opts.OptimizationEnabled())
-    {
-        if (JitConfig.JitExpandCallsEarly().contains(info.compMethodName, info.compClassName,
-                                                     &info.compMethodInfo->args))
-        {
-            opts.compExpandCallsEarly = true;
-        }
-    }
-#endif // DEBUG
+    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() != 0);
 
     fgCanRelocateEHRegions = true;
 }

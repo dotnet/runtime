@@ -183,7 +183,6 @@ CONFIG_METHODSET(JitNoProcedureSplittingEH, W("JitNoProcedureSplittingEH")) // D
                                                                             // exception handling
 CONFIG_METHODSET(JitStressOnly, W("JitStressOnly")) // Internal Jit stress mode: stress only the specified method(s)
 CONFIG_METHODSET(JitUnwindDump, W("JitUnwindDump")) // Dump the unwind codes for the method
-CONFIG_METHODSET(JitExpandCallsEarly, W("JitExpandCallsEarly")) // Expand Call targets early for specified method
 ///
 /// NGEN
 ///
@@ -460,6 +459,10 @@ CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_In
 CONFIG_INTEGER(JitMinimalProfiling, W("JitMinimalProfiling"), 0)
 CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 0)
 CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 0)
+
+// Control when Virtual Calls are expanded
+CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
+                                                                 // phase)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

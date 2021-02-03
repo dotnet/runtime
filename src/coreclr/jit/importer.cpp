@@ -8250,7 +8250,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 if (opts.compExpandCallsEarly == true)
                 {
                     // Mark this method to expand the virtual call target early in fgMorpgCall
-                    call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPANDED_EARLY;
+                    call->AsCall()->SetExpandedEarly();
                 }
                 break;
             }

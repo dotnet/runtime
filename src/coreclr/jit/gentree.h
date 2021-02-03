@@ -4505,19 +4505,24 @@ struct GenTreeCall final : public GenTree
         gtCallMoreFlags |= GTF_CALL_M_GUARDED;
     }
 
-    void SetExpRuntimeLookup() // Bug should use gtCallMoreFlags
+    void SetExpRuntimeLookup()
     {
         gtCallMoreFlags |= GTF_CALL_M_EXP_RUNTIME_LOOKUP;
     }
 
-    void ClearExpRuntimeLookup() // Bug should use gtCallMoreFlags
+    void ClearExpRuntimeLookup()
     {
         gtCallMoreFlags &= ~GTF_CALL_M_EXP_RUNTIME_LOOKUP;
     }
 
-    bool IsExpRuntimeLookup() const // Bug should use gtCallMoreFlags
+    bool IsExpRuntimeLookup() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
+    }
+
+    void SetExpandedEarly()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_EXPANDED_EARLY;
     }
 
     bool IsExpandedEarly() const
