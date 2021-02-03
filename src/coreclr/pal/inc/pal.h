@@ -143,6 +143,12 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #endif // !_MSC_VER
 #endif // !THROW_DECL
 
+#ifdef __sun
+#define MATH_THROW_DECL
+#else
+#define MATH_THROW_DECL THROW_DECL
+#endif
+
 #if defined(_MSC_VER)
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 #else
@@ -3882,11 +3888,7 @@ PALIMPORT int    __cdecl memcmp(const void *, const void *, size_t);
 PALIMPORT void * __cdecl memset(void *, int, size_t);
 PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
 PALIMPORT void * __cdecl memchr(const void *, int, size_t);
-PALIMPORT long long int __cdecl atoll(const char *)
-#ifndef __sun
-THROW_DECL
-#endif
-;
+PALIMPORT long long int __cdecl atoll(const char *) MATH_THROW_DECL;
 PALIMPORT size_t __cdecl strlen(const char *);
 PALIMPORT int __cdecl strcmp(const char*, const char *);
 PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);
@@ -4052,21 +4054,13 @@ PALIMPORT int __cdecl _finite(double);
 PALIMPORT int __cdecl _isnan(double);
 PALIMPORT double __cdecl _copysign(double, double);
 PALIMPORT double __cdecl acos(double);
-PALIMPORT double __cdecl acosh(double) THROW_DECL;
+PALIMPORT double __cdecl acosh(double) MATH_THROW_DECL;
 PALIMPORT double __cdecl asin(double);
-PALIMPORT double __cdecl asinh(double) THROW_DECL;
-PALIMPORT double __cdecl atan(double) THROW_DECL;
-PALIMPORT double __cdecl atanh(double)
-#ifndef __sun
-THROW_DECL
-#endif
-;
+PALIMPORT double __cdecl asinh(double) MATH_THROW_DECL;
+PALIMPORT double __cdecl atan(double) MATH_THROW_DECL;
+PALIMPORT double __cdecl atanh(double) MATH_THROW_DECL;
 PALIMPORT double __cdecl atan2(double, double);
-PALIMPORT double __cdecl cbrt(double)
-#ifndef __sun
-THROW_DECL
-#endif
-;
+PALIMPORT double __cdecl cbrt(double) MATH_THROW_DECL;
 PALIMPORT double __cdecl ceil(double);
 PALIMPORT double __cdecl cos(double);
 PALIMPORT double __cdecl cosh(double);
@@ -4074,10 +4068,10 @@ PALIMPORT double __cdecl exp(double);
 PALIMPORT double __cdecl fabs(double);
 PALIMPORT double __cdecl floor(double);
 PALIMPORT double __cdecl fmod(double, double);
-PALIMPORT double __cdecl fma(double, double, double) THROW_DECL;
+PALIMPORT double __cdecl fma(double, double, double) MATH_THROW_DECL;
 PALIMPORT int __cdecl ilogb(double);
 PALIMPORT double __cdecl log(double);
-PALIMPORT double __cdecl log2(double) THROW_DECL;
+PALIMPORT double __cdecl log2(double) MATH_THROW_DECL;
 PALIMPORT double __cdecl log10(double);
 PALIMPORT double __cdecl modf(double, double*);
 PALIMPORT double __cdecl pow(double, double);
@@ -4092,25 +4086,13 @@ PALIMPORT int __cdecl _finitef(float);
 PALIMPORT int __cdecl _isnanf(float);
 PALIMPORT float __cdecl _copysignf(float, float);
 PALIMPORT float __cdecl acosf(float);
-PALIMPORT float __cdecl acoshf(float) THROW_DECL;
+PALIMPORT float __cdecl acoshf(float) MATH_THROW_DECL;
 PALIMPORT float __cdecl asinf(float);
-PALIMPORT float __cdecl asinhf(float) THROW_DECL;
-PALIMPORT float __cdecl atanf(float)
-#ifndef __sun
-THROW_DECL
-#endif
-;
-PALIMPORT float __cdecl atanhf(float)
-#ifndef __sun
-THROW_DECL
-#endif
-;
+PALIMPORT float __cdecl asinhf(float) MATH_THROW_DECL;
+PALIMPORT float __cdecl atanf(float) MATH_THROW_DECL;
+PALIMPORT float __cdecl atanhf(float) MATH_THROW_DECL;
 PALIMPORT float __cdecl atan2f(float, float);
-PALIMPORT float __cdecl cbrtf(float)
-#ifndef __sun
-THROW_DECL
-#endif
-;
+PALIMPORT float __cdecl cbrtf(float) MATH_THROW_DECL;
 PALIMPORT float __cdecl ceilf(float);
 PALIMPORT float __cdecl cosf(float);
 PALIMPORT float __cdecl coshf(float);
@@ -4118,10 +4100,10 @@ PALIMPORT float __cdecl expf(float);
 PALIMPORT float __cdecl fabsf(float);
 PALIMPORT float __cdecl floorf(float);
 PALIMPORT float __cdecl fmodf(float, float);
-PALIMPORT float __cdecl fmaf(float, float, float) THROW_DECL;
+PALIMPORT float __cdecl fmaf(float, float, float) MATH_THROW_DECL;
 PALIMPORT int __cdecl ilogbf(float);
 PALIMPORT float __cdecl logf(float);
-PALIMPORT float __cdecl log2f(float) THROW_DECL;
+PALIMPORT float __cdecl log2f(float) MATH_THROW_DECL;
 PALIMPORT float __cdecl log10f(float);
 PALIMPORT float __cdecl modff(float, float*);
 PALIMPORT float __cdecl powf(float, float);
