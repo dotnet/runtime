@@ -8,19 +8,8 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
-    // Currently with EventPipe there isn't a way to move events from the native side to the managed side and get the same
-    // experience. For now, the same provider name and guid are used as the native side and a temporary change has been made to
-    // EventPipe in CoreCLR to get thread pool events in performance profiles when the portable thread pool is enabled, as that
-    // seems to be the easiest way currently and the closest to the experience when the portable thread pool is disabled.
-    // TODO: Long-term options (also see https://github.com/dotnet/runtime/issues/38763):
-    // - Use NativeRuntimeEventSource instead, change its guid to match the provider guid from the native side, and fix the
-    //   underlying issues such that duplicate events are not sent. This should get the same experience as sending events from
-    //   the native side, and would allow easily moving other events from the native side to the managed side in the future if
-    //   necessary.
-    // - Use a different provider name and guid (maybe "System.Threading.ThreadPool"), update PerfView and dotnet-trace to
-    //   enable the provider by default when the Threading or other ThreadPool-related keywords are specified for the runtime
-    //   provider, and update PerfView with a trace event parser for the new provider so that it knows about the events and may
-    //   use them to identify thread pool threads.
+    // This is part of the NativeRuntimeEventsource, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
+    // It contains the handwritten implementation of the ThreadPool events.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
