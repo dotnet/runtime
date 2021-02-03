@@ -683,7 +683,8 @@ namespace System.Numerics
 
         public static BigInteger Parse(string value, NumberStyles style, IFormatProvider? provider)
         {
-            return BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
+            (int sign, uint[]? bits) = BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
+            return new BigInteger(sign, bits);
         }
 
         public static bool TryParse([NotNullWhen(true)] string? value, out BigInteger result)
@@ -693,22 +694,31 @@ namespace System.Numerics
 
         public static bool TryParse([NotNullWhen(true)] string? value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result);
+            bool success = BigNumber.TryParseBigInteger(
+                value, style, NumberFormatInfo.GetInstance(provider), out int sign, out uint[]? bits);
+
+            result = new BigInteger(sign, bits);
+            return success;
         }
 
         public static BigInteger Parse(ReadOnlySpan<char> value, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
-            return BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
+            (int sign, uint[]? bits) = BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
+            return new BigInteger(sign, bits);
         }
 
         public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result)
         {
-            return BigNumber.TryParseBigInteger(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result);
+            bool success = BigNumber.TryParseBigInteger(
+                value, style, NumberFormatInfo.GetInstance(provider), out int sign, out uint[]? bits);
+
+            result = new BigInteger(sign, bits);
+            return success;
         }
 
         public static int Compare(BigInteger left, BigInteger right)
