@@ -10,14 +10,6 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
-        // TODO: make internal
-        public static Socket CreateForPipeSafeHandle(IntPtr handle, bool ownsHandle)
-        {
-            var socketHandle = new SafeSocketHandle(handle, ownsHandle);
-            socketHandle.IsPipe = true;
-            return new Socket(socketHandle);
-        }
-
         [SupportedOSPlatform("windows")]
         public Socket(SocketInformation socketInformation)
         {
@@ -85,24 +77,24 @@ namespace System.Net.Sockets
         private static unsafe void LoadSocketTypeFromHandle(
             SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening, out bool isSocket)
         {
+            if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus stat) == -1)
+            {
+                throw new SocketException((int)SocketError.NotSocket);
+            }
+            isSocket = (stat.Mode & Interop.Sys.FileTypes.S_IFSOCK) == Interop.Sys.FileTypes.S_IFSOCK;
+
+            // If it is not a socket, treat it like a pipe.
+            handle.IsPipe = !isSocket;
+
             if (handle.IsPipe)
             {
                 addressFamily = AddressFamily.Unknown;
                 socketType = SocketType.Unknown;
                 protocolType = ProtocolType.Unknown;
                 isListening = false;
-                isSocket = false;
             }
             else
             {
-                // Validate that the supplied handle is indeed a socket.
-                if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus stat) == -1 ||
-                    (stat.Mode & Interop.Sys.FileTypes.S_IFSOCK) != Interop.Sys.FileTypes.S_IFSOCK)
-                {
-                    throw new SocketException((int)SocketError.NotSocket);
-                }
-                isSocket = true;
-
                 // On Linux, GetSocketType will be able to query SO_DOMAIN, SO_TYPE, and SO_PROTOCOL to get the
                 // address family, socket type, and protocol type, respectively.  On macOS, this will only succeed
                 // in getting the socket type, and the others will be unknown.  Subsequently the Socket ctor

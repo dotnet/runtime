@@ -289,6 +289,7 @@ namespace System.Net.Sockets
                     case Interop.Error.SUCCESS:
                     case Interop.Error.EINVAL:
                     case Interop.Error.ENOPROTOOPT:
+                    case Interop.Error.ENOTSOCK:
                         errorCode = CloseHandle(handle);
                         break;
 
