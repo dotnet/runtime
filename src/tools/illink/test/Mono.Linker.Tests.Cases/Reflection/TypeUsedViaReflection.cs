@@ -7,6 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[KeptMember (".cctor()")]
+	[ExpectedNoWarnings ()]
 	public class TypeUsedViaReflection
 	{
 		public static void Main ()
@@ -357,6 +358,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[ExpectedWarning ("IL2026", "'System.Reflection.Assembly.GetType(String,Boolean)'")]
+		[ExpectedWarning ("IL2057", "'System.Type.GetType(String,Boolean)'")]
 		static Type GetTypeFromAssembly (Assembly assembly, string name, bool caseSensitive)
 		{
 			return assembly == null ? Type.GetType (name, caseSensitive) : assembly.GetType (name, caseSensitive);

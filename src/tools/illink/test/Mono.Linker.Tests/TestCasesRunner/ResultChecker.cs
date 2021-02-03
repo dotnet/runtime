@@ -606,6 +606,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		void VerifyLoggedMessages (AssemblyDefinition original, LinkerTestLogger logger, bool checkRemainingErrors)
 		{
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
+			List<(IMemberDefinition, CustomAttribute)> expectedNoWarningsAttributes = new List<(IMemberDefinition, CustomAttribute)> ();
 			foreach (var testType in original.AllDefinedTypes ()) {
 				foreach (var attrProvider in testType.AllMembers ().Append (testType)) {
 					foreach (var attr in attrProvider.CustomAttributes) {
@@ -644,58 +645,115 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						case nameof (ExpectedWarningAttribute): {
 								var expectedWarningCode = (string) attr.GetConstructorArgumentValue (0);
 								if (!expectedWarningCode.StartsWith ("IL")) {
-									Assert.Fail ($"The warning code specified in ExpectedWarning attribute must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
+									Assert.Fail ($"The warning code specified in {nameof (ExpectedWarningAttribute)} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
 								}
-
-								int expectedWarningCodeNumber = int.Parse (expectedWarningCode.Substring (2));
 								var expectedMessageContains = ((CustomAttributeArgument[]) attr.GetConstructorArgumentValue (1)).Select (a => (string) a.Value).ToArray ();
-
 								string fileName = (string) attr.GetPropertyValue ("FileName");
 								int? sourceLine = (int?) attr.GetPropertyValue ("SourceLine");
 								int? sourceColumn = (int?) attr.GetPropertyValue ("SourceColumn");
 
+								int expectedWarningCodeNumber = int.Parse (expectedWarningCode.Substring (2));
 								var actualMethod = attrProvider as MethodDefinition;
 
+								var matchedMessages = loggedMessages.Where (mc => {
+									if (mc.Category != MessageCategory.Warning || mc.Code != expectedWarningCodeNumber)
+										return false;
+
+									foreach (var expectedMessage in expectedMessageContains)
+										if (!mc.Text.Contains (expectedMessage))
+											return false;
+
+									if (fileName != null) {
+										// Note: string.Compare(string, StringComparison) doesn't exist in .NET Framework API set
+										if (mc.Origin?.FileName?.IndexOf (fileName, StringComparison.OrdinalIgnoreCase) < 0)
+											return false;
+
+										if (sourceLine != null && mc.Origin?.SourceLine != sourceLine.Value)
+											return false;
+
+										if (sourceColumn != null && mc.Origin?.SourceColumn != sourceColumn.Value)
+											return false;
+									} else {
+										if (mc.Origin?.MemberDefinition?.FullName == attrProvider.FullName)
+											return true;
+
+										if (loggedMessages.Any (m => m.Text.Contains (attrProvider.FullName)))
+											return true;
+
+										return false;
+									}
+
+									return true;
+								}).ToList ();
+
 								Assert.IsTrue (
-									logger.GetLoggedMessages ().Any (mc => {
-										if (mc.Category != MessageCategory.Warning || mc.Code != expectedWarningCodeNumber)
-											return false;
-
-										foreach (var expectedMessage in expectedMessageContains)
-											if (!mc.Text.Contains (expectedMessage))
-												return false;
-
-										if (fileName != null) {
-											// Note: string.Compare(string, StringComparison) doesn't exist in .NET Framework API set
-											if (mc.Origin?.FileName?.IndexOf (fileName, StringComparison.OrdinalIgnoreCase) < 0)
-												return false;
-
-											if (sourceLine != null && mc.Origin?.SourceLine != sourceLine.Value)
-												return false;
-
-											if (sourceColumn != null && mc.Origin?.SourceColumn != sourceColumn.Value)
-												return false;
-										} else {
-											if (mc.Origin?.MemberDefinition?.FullName == attrProvider.FullName)
-												return true;
-
-											if (loggedMessages.Any (m => m.Text.Contains (attrProvider.FullName)))
-												return true;
-
-											return false;
-										}
-
-										return true;
-									}),
+									matchedMessages.Count > 0,
 									$"Expected to find warning: {(fileName != null ? (fileName + (sourceLine != null ? $"({sourceLine},{sourceColumn})" : "")) + ": " : "")}" +
 									$"warning {expectedWarningCode}: {(fileName == null ? (actualMethod?.GetDisplayName () ?? attrProvider.FullName) + ": " : "")}" +
 									$"and message containing {string.Join (" ", expectedMessageContains.Select (m => "'" + m + "'"))}, " +
 									$"but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
+
+								foreach (var matchedMessage in matchedMessages)
+									loggedMessages.Remove (matchedMessage);
 							}
+							break;
+
+						// These are validated in VerifyRecordedReflectionPatterns as well, but we need to remove any warnings these might refer to from the list
+						// so that we can correctly validate presense of warnings
+						case nameof (UnrecognizedReflectionAccessPatternAttribute): {
+								string expectedWarningCode = null;
+								if (attr.ConstructorArguments.Count >= 5) {
+									expectedWarningCode = (string) attr.ConstructorArguments[4].Value;
+									if (expectedWarningCode != null && !expectedWarningCode.StartsWith ("IL"))
+										Assert.Fail ($"The warning code specified in {nameof (UnrecognizedReflectionAccessPatternAttribute)} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'");
+								}
+
+								if (expectedWarningCode != null) {
+									int expectedWarningCodeNumber = int.Parse (expectedWarningCode.Substring (2));
+
+									var matchedMessages = loggedMessages.Where (mc => mc.Category == MessageCategory.Warning && mc.Code == expectedWarningCodeNumber).ToList ();
+									foreach (var matchedMessage in matchedMessages)
+										loggedMessages.Remove (matchedMessage);
+								}
+							}
+							break;
+
+						case nameof (ExpectedNoWarningsAttribute):
+							// Postpone processing of negative checks, to make it possible to mark some warnings as expected (will be removed from the list above)
+							// and then do the negative check on the rest.
+							expectedNoWarningsAttributes.Add ((attrProvider, attr));
 							break;
 						}
 					}
 				}
+			}
+
+			foreach ((var attrProvider, var attr) in expectedNoWarningsAttributes) {
+				var unexpectedWarningCode = attr.ConstructorArguments.Count == 0 ? (string) null : (string) attr.GetConstructorArgumentValue (0);
+				if (unexpectedWarningCode != null && !unexpectedWarningCode.StartsWith ("IL")) {
+					Assert.Fail ($"The warning code specified in ExpectedWarning attribute must start with the 'IL' prefix. Specified value: '{unexpectedWarningCode}'.");
+				}
+
+				int? unexpectedWarningCodeNumber = unexpectedWarningCode == null ? null : int.Parse (unexpectedWarningCode.Substring (2));
+
+				MessageContainer? unexpectedWarningMessage = null;
+				foreach (var mc in logger.GetLoggedMessages ()) {
+					if (mc.Category != MessageCategory.Warning)
+						continue;
+
+					if (unexpectedWarningCodeNumber != null && unexpectedWarningCodeNumber.Value != mc.Code)
+						continue;
+
+					// This is a hacky way to say anything in the "subtree" of the attrProvider
+					if (mc.Origin?.MemberDefinition?.FullName.Contains (attrProvider.FullName) != true)
+						continue;
+
+					unexpectedWarningMessage = mc;
+					break;
+				}
+
+				Assert.IsNull (unexpectedWarningMessage,
+					$"Unexpected warning found: {unexpectedWarningMessage}");
 			}
 
 			if (checkRemainingErrors) {
@@ -811,7 +869,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							var codeString = (string) attr.ConstructorArguments[4].Value;
 							if (codeString != null) {
 								if (!codeString.StartsWith ("IL"))
-									throw new InvalidOperationException ($"invalid message code {codeString}");
+									Assert.Fail ($"The warning code specified in {nameof (UnrecognizedReflectionAccessPatternAttribute)} must start with the 'IL' prefix. Specified value: '{codeString}'");
 								expectedMessageCode = int.Parse (codeString.Substring (2));
 							}
 						}

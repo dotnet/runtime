@@ -21,7 +21,6 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 	[ExpectedWarning ("IL2023", "GetTypeMethod", FileName = "LinkAttributeErrorCases.xml")]
 	[ExpectedWarning ("IL2024", "methodParameter", "MethodWithParameter", FileName = "LinkAttributeErrorCases.xml")]
 	[ExpectedWarning ("IL2029", FileName = "LinkAttributeErrorCases.xml")]
-	[ExpectedWarning ("IL2029", FileName = "LinkAttributeErrorCases.xml")]
 	[ExpectedWarning ("IL2051", FileName = "LinkAttributeErrorCases.xml")]
 	[ExpectedWarning ("IL2052", "NonExistentPropertyName", FileName = "LinkAttributeErrorCases.xml")]
 	[ExpectedWarning ("IL2053", "StringValue", "IntProperty", FileName = "LinkAttributeErrorCases.xml")]
