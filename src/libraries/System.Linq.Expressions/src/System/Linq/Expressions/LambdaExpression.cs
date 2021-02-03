@@ -102,6 +102,21 @@ namespace System.Linq.Expressions
             }
         }
 
+        [DynamicDependency("Compile()", typeof(LambdaExpression))]
+        [DynamicDependency("Compile()", typeof(Expression<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The 'Compile' methods will be preserved by the DynamicDependency.")]
+        internal static MethodInfo GetCompileMethod(Type lambdaExpressionType)
+        {
+            Debug.Assert(lambdaExpressionType.IsAssignableTo(typeof(LambdaExpression)));
+
+            MethodInfo result = lambdaExpressionType.GetMethod("Compile", Type.EmptyTypes)!;
+            Debug.Assert(result.DeclaringType == typeof(LambdaExpression) ||
+                (result.DeclaringType!.IsGenericType && result.DeclaringType.GetGenericTypeDefinition() == typeof(Expression<>)));
+
+            return result;
+        }
+
         /// <summary>
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
