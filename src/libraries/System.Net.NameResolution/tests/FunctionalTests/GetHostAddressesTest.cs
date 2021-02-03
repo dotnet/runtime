@@ -178,25 +178,34 @@ namespace System.Net.NameResolution.Tests
         {
             const int NumberOfRequests = 100;
 
-            using CancellationTokenSource cts = new();
-            List<Task> tasks = new(capacity: NumberOfRequests);
-
-            for (int i = 0; i < NumberOfRequests; ++i)
+            // Retry until it is canceled, to notice hangs if cancellation doesn't work.
+            while (true)
             {
-                Task task = Dns.GetHostAddressesAsync(TestSettings.UncachedHost, cts.Token);
-                tasks.Add(task);
+                using CancellationTokenSource cts = new();
+                List<Task> tasks = new(capacity: NumberOfRequests);
+
+                for (int i = 0; i < NumberOfRequests; ++i)
+                {
+                    Task task = Dns.GetHostAddressesAsync(TestSettings.UncachedHost, cts.Token);
+                    tasks.Add(task);
+                }
+
+                cts.Cancel();
+
+                try
+                {
+                    await Task.WhenAll(tasks);
+                }
+                catch { }
+
+                foreach (Task task in tasks)
+                {
+                    if (task.Exception?.InnerException is OperationCanceledException)
+                    {
+                        return;
+                    }
+                }
             }
-
-            cts.Cancel();
-
-            try
-            {
-                await Task.WhenAll(tasks);
-                throw new SkipTestException("GetHostAddressesAsync should fail but it did not.");
-            }
-            catch { }
-
-            Assert.Contains(tasks, t => t.Exception?.InnerException is OperationCanceledException);
         }
     }
 }
