@@ -629,25 +629,25 @@ jobs:
 #    jobParameters:
 #      liveRuntimeBuildConfig: release
 #
-#- template: /eng/pipelines/common/platform-matrix.yml
-#  parameters:
-#    jobTemplate: /eng/pipelines/libraries/build-job.yml
-#    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#    platforms:
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
 #    - Linux_arm64
 #    - Linux_musl_x64
 #    - Linux_x64
 #    - OSX_arm64
 #    - OSX_x64
-#    - windows_x64
+    - windows_x64
 #    - FreeBSD_x64
-#    jobParameters:
-#      testScope: innerloop
-#      testBuildPlatforms:
+    jobParameters:
+      testScope: innerloop
+      testBuildPlatforms:
 #      - Linux_x64
-#      - windows_x64
+      - windows_x64
 #      - OSX_x64
-#      liveRuntimeBuildConfig: release
+      liveRuntimeBuildConfig: release
 #
 ##
 ## Libraries Build that only run when libraries is changed
