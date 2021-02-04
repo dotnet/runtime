@@ -22,7 +22,6 @@
     <PmiAssembliesDirectory>%HELIX_WORKITEM_PAYLOAD%\binaries</PmiAssembliesDirectory>
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
-    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\.dotnet;%PATH%" Condition=" '$(CollectionType)' == 'crossgen2' "/>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
     <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --$(CollectionType) -pmi_location $(SuperPMIDirectory)\pmi.dll </WorkItemCommand>
@@ -33,7 +32,6 @@
     <PmiAssembliesDirectory>$HELIX_WORKITEM_PAYLOAD/binaries</PmiAssembliesDirectory>
     <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
-    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/.dotnet:$PATH" Condition=" '$(CollectionType)' == 'crossgen2' "/>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
     <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --$(CollectionType) -pmi_location $(SuperPMIDirectory)/pmi.dll </WorkItemCommand>
@@ -47,6 +45,18 @@
     <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
     <EnableXUnitReporter>false</EnableXUnitReporter>
     <WorkItemTimeout>5:00</WorkItemTimeout>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\.dotnet;%PATH%" Condition=" '$(CollectionType)' == 'crossgen2' "/>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(AGENT_OS)' != 'Windows_NT' ">
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/.dotnet:$PATH" Condition=" '$(CollectionType)' == 'crossgen2' "/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
   </PropertyGroup>
 
   <ItemGroup>
