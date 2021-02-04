@@ -44,8 +44,18 @@ jobs:
       name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     ${{ if and(ne(parameters.testGroup, 'clrTools'), ne(parameters.compilerName, 'gcc')) }}:
-      name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}_{5}_', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.pgoType) }}
-      displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4} {5}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.pgoType) }}
+      name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}_{5}_',
+        parameters.runtimeVariant,
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.buildConfig,
+        parameters.pgoType) }}
+      displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4} {5}',
+        parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup,
+        parameters.archType,
+        parameters.buildConfig,
+        parameters.pgoType) }}
     ${{ if eq(parameters.testGroup, 'clrTools') }}:
       name: ${{ format('coreclr_{0}_tools_unittests_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR {0} Tools Unit Tests {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}

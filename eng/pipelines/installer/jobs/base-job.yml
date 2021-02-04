@@ -299,7 +299,16 @@ jobs:
   - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
     - evaluate_paths
   - ${{ parameters.dependsOn }}
-  - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+  - ${{ if eq(parameters.pgoType, 'PGO') }}:
+    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}_{6}_',
+        parameters.runtimeFlavor,
+        parameters.runtimeVariant,
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.liveRuntimeBuildConfig,
+        parameters.pgoType) }}
+  - ${{ if and(ne(parameters.pgoType, 'PGO'), ne(parameters.liveRuntimeBuildConfig, '')) }}:
     - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
         parameters.runtimeFlavor,
         parameters.runtimeVariant,
@@ -307,7 +316,7 @@ jobs:
         parameters.osSubgroup,
         parameters.archType,
         parameters.liveRuntimeBuildConfig) }}
-  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+  - ${{ if and(ne(parameters.pgoType, 'PGO'), eq(parameters.liveRuntimeBuildConfig, '')) }}:
     - libraries_build_${{ format('{0}{1}_{2}_{3}',
         parameters.osGroup,
         parameters.osSubgroup,
