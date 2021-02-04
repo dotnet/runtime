@@ -77,6 +77,12 @@ jobs:
   - name: SignType
     value: test
 
+  - name: pgoInstrumentArg
+    value:
+    - ${{ if eq(parameters.pgoType, 'PGO') }}:
+      - name: pgoInstrumentArg
+        value: '-pgoInstrument'
+
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
     - name: SignType
@@ -117,6 +123,7 @@ jobs:
         build.cmd -subset host+packs -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
+        $(pgoInstrumentArg)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
