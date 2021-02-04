@@ -1,13 +1,13 @@
 MONO_CONFIG=Release
 MONO_ARCH=x64
-DOTNET := ../../../../.././dotnet.sh
+DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT=false
 
 all: runtimepack run
 
 runtimepack:
-	../../../../.././build.sh Mono+Libs -os Android -arch $(MONO_ARCH) -c $(MONO_CONFIG)
+	../../../../build.sh Mono+Libs -os Android -arch $(MONO_ARCH) -c $(MONO_CONFIG)
 
 run:
 	$(DOTNET) publish \
@@ -20,4 +20,4 @@ run:
 	/p:RunActivity=false
 
 clean:
-	rm -rf ../../../../../artifacts/bin/AndroidSampleApp
+	rm -rf ../../../../artifacts/bin/AndroidSampleApp
