@@ -50,9 +50,9 @@ parser.add_argument("-source_directory", help="path to source directory")
 parser.add_argument("-core_root_directory", help="path to core_root directory")
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
-parser.add_argument("-collection_name", help="Name of the SPMI collection to be done")
-parser.add_argument("-input_directory", help="directory containing assemblies for which superpmi collection to "
-                                                  "be done")
+parser.add_argument("-collection_name", help="Name of the SPMI collection to be done (e.g., libraries, tests)")
+parser.add_argument("-collection_type", help="Type of the SPMI collection to be done (crossgen, crossgen2, pmi)")
+parser.add_argument("-input_directory", help="directory containing assemblies for which superpmi collection to be done")
 parser.add_argument("-max_size", help="Max size of each partition in MB")
 is_windows = platform.system() == "Windows"
 native_binaries_to_ignore = [
@@ -128,6 +128,11 @@ def setup_args(args):
                         "collection_name",
                         lambda unused: True,
                         "Unable to set collection_name")
+
+    coreclr_args.verify(args,
+                        "collection_type",
+                        lambda unused: True,
+                        "Unable to set collection_type")
 
     coreclr_args.verify(args,
                         "input_directory",
@@ -380,7 +385,7 @@ def main(main_args):
     pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
 
     # Copy ".dotnet" to correlation_payload_directory for crossgen2 job; it is needed to invoke crossgen2.dll
-    if coreclr_args.collection_name == "crossgen2":
+    if coreclr_args.collection_type == "crossgen2":
         dotnet_src_directory = path.join(source_directory, ".dotnet")
         dotnet_dst_directory = path.join(correlation_payload_directory, ".dotnet")
         print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
@@ -390,7 +395,7 @@ def main(main_args):
     input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
     exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
     exclude_files = native_binaries_to_ignore
-    if coreclr_args.collection_name == "crossgen2":
+    if coreclr_args.collection_type == "crossgen2":
         # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
         exclude_files += [ "Microsoft.Build.dll" ]
     partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory, exclude_files)
