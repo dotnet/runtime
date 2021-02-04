@@ -2310,8 +2310,8 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(remoteEP));
             }
 
-            Task<int> task = SendToAsync(buffer.AsMemory().Slice(offset, size), socketFlags, remoteEP).AsTask();
-            return TaskToApm.Begin(task, callback, state);
+            Task<int> t = SendToAsync(buffer.AsMemory().Slice(offset, size), socketFlags, remoteEP).AsTask();
+            return TaskToApm.Begin(t, callback, state);
         }
 
         public int EndSendTo(IAsyncResult asyncResult)
