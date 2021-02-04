@@ -62,19 +62,24 @@ namespace ILLink.RoslynAnalyzer.Tests
 			foreach (var attr in attrs) {
 				switch (attr.Name.ToString ()) {
 				case "ExpectedWarning":
-					var expectedMessageContains = attr.ArgumentList!.Arguments.Select (m => GetStringFromExpr (m.Expression)).ToList ();
-					if (!expectedMessageContains[0].StartsWith ("IL"))
+					var expectedWarningCode = attr.ArgumentList!.Arguments[0];
+					if (!GetStringFromExpr (expectedWarningCode.Expression).Contains ("IL"))
 						break;
-					expectedMessageContains.RemoveAt (0);
+					List<string> expectedMessages = new List<string> ();
+					foreach (var argument in attr.ArgumentList!.Arguments) {
+						if (argument.NameEquals != null)
+							Assert.True (false, $"Analyzer does not support named arguments at this moment: {argument.NameEquals} {argument.Expression}");
+						expectedMessages.Add (GetStringFromExpr (argument.Expression));
+					}
+					expectedMessages.RemoveAt (0);
 					Assert.True (
 						filtered.Any (mc => {
-							foreach (var expectedMessage in expectedMessageContains) {
+							foreach (var expectedMessage in expectedMessages)
 								if (!mc.Contains (expectedMessage))
 									return false;
-							}
 							return true;
 						}),
-					$"Expected to find warning containing:{string.Join (" ", expectedMessageContains.Select (m => "'" + m + "'"))}" +
+					$"Expected to find warning containing:{string.Join (" ", expectedMessages.Select (m => "'" + m + "'"))}" +
 					$", but no such message was found.{ Environment.NewLine}In diagnostics: {string.Join (Environment.NewLine, filtered)}");
 					break;
 				case "LogContains": {
