@@ -472,6 +472,7 @@ CEEInfo::ConvToJitSig(
 
     sigRet->pSig = pSig;
     sigRet->cbSig = cbSig;
+    sigRet->methodSignature = 0;
     sigRet->retTypeClass = 0;
     sigRet->retTypeSigClass = 0;
     sigRet->scope = scopeHnd;
