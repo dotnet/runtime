@@ -63,7 +63,7 @@ namespace System.IO
             using var directory = new TempAclDirectory();
             using var file = new TempFile(Path.Combine(directory.Path, "file.txt"));
             var fileInfo = new FileInfo(file.Path);
-            FileSecurity fileSecurity = fileInfo.GetAccessControl(AccessControlSections.Access);
+            FileSecurity fileSecurity = fileInfo.GetAccessControl();
             Assert.NotNull(fileSecurity);
             Assert.Equal(typeof(FileSystemRights), fileSecurity.AccessRightType);
         }
@@ -149,15 +149,12 @@ namespace System.IO
             Assert.Throws<ArgumentNullException>("fileStream", () => FileSystemAclExtensions.SetAccessControl((FileStream)null, fileSecurity: null));
         }
 
-        [Theory]
-        [InlineData(FileMode.Append)]
-        [InlineData(FileMode.Open)]
-        [InlineData(FileMode.OpenOrCreate)]
-        public void SetAccessControl_FileStream_FileSecurity_InvalidFileSecurityObject(FileMode mode)
+        [Fact]
+        public void SetAccessControl_FileStream_FileSecurity_InvalidFileSecurityObject()
         {
             using var directory = new TempAclDirectory();
             using var file = new TempFile(Path.Combine(directory.Path, "file.txt"));
-            using FileStream fileStream = File.Open(file.Path, mode, FileAccess.Write, FileShare.None);
+            using FileStream fileStream = File.Open(file.Path, FileMode.Open, FileAccess.Write, FileShare.None);
             AssertExtensions.Throws<ArgumentNullException>("fileSecurity", () => FileSystemAclExtensions.SetAccessControl(fileStream, fileSecurity: null));
         }
 
