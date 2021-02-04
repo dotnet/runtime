@@ -116,9 +116,7 @@ jobs:
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
     - ${{ if and(eq(parameters.buildConfig, 'Release'),
-                 and(eq(parameters.osGroup, 'windows'),
-                 not(or(eq(parameters.archType, 'arm64'),
-                 eq(parameters.archType, 'arm')))),
+                 and(eq(parameters.osGroup, 'windows'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm')))),
                  ne(parameters.pgoType, 'pgo')) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
