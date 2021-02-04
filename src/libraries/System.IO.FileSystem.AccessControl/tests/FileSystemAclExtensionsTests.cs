@@ -29,7 +29,7 @@ namespace System.IO
         {
             using var directory = new TempAclDirectory();
             var directoryInfo = new DirectoryInfo(directory.Path);
-            DirectorySecurity directorySecurity = directoryInfo.GetAccessControl(AccessControlSections.Access);
+            DirectorySecurity directorySecurity = directoryInfo.GetAccessControl();
             Assert.NotNull(directorySecurity);
             Assert.Equal(typeof(FileSystemRights), directorySecurity.AccessRightType);
         }
@@ -97,7 +97,7 @@ namespace System.IO
         {
             using var directory = new TempAclDirectory();
             using var file = new TempFile(Path.Combine(directory.Path, "file.txt"));
-            using FileStream fileStream = File.Open(file.Path, FileMode.Append, FileAccess.Write, FileShare.Delete);
+            using FileStream fileStream = File.Open(file.Path, FileMode.Append, FileAccess.Write, FileShare.None);
             FileSecurity fileSecurity = FileSystemAclExtensions.GetAccessControl(fileStream);
             Assert.NotNull(fileSecurity);
             Assert.Equal(typeof(FileSystemRights), fileSecurity.AccessRightType);
@@ -154,7 +154,7 @@ namespace System.IO
         {
             using var directory = new TempAclDirectory();
             using var file = new TempFile(Path.Combine(directory.Path, "file.txt"));
-            using FileStream fileStream = File.Open(file.Path, FileMode.Open, FileAccess.Write, FileShare.None);
+            using FileStream fileStream = File.Open(file.Path, FileMode.Append, FileAccess.Write, FileShare.None);
             AssertExtensions.Throws<ArgumentNullException>("fileSecurity", () => FileSystemAclExtensions.SetAccessControl(fileStream, fileSecurity: null));
         }
 
@@ -231,7 +231,7 @@ namespace System.IO
         }
 
         [Theory]
-        // Must have at least one Read, otherwise the TempAclDirectory will fail to delete that item on dispose
+        // Must have at least one ReadData, otherwise the TempAclDirectory will fail to delete that item on dispose
         [MemberData(nameof(RightsToAllow))]
         public void DirectoryInfo_Create_AllowSpecific_AccessRules(FileSystemRights rights)
         {
