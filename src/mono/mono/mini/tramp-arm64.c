@@ -376,7 +376,6 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 {
 	guint8 *code, *start;
 	guint32 buf_len = 32;
-	MonoDomain *domain = mono_domain_get ();
 
 	start = code = mono_mem_manager_code_reserve (mem_manager, buf_len);
 
