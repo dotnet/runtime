@@ -223,7 +223,7 @@ namespace System.Tests
         public static void MaxValue()
         {
             Assert.Equal(3.40282347E+38f, float.MaxValue);
-            Assert.Equal(0x7F7FFFFFu,  SingleToUInt32Bits(float.MaxValue));
+            Assert.Equal(0x7F7FFFFFu, SingleToUInt32Bits(float.MaxValue));
         }
 
         [Fact]
@@ -443,6 +443,7 @@ namespace System.Tests
                 yield return testData;
             }
 
+
             yield return new object[] { float.MinValue, "G", null, "-3.4028235E+38" };
             yield return new object[] { float.MaxValue, "G", null, "3.4028235E+38" };
 
@@ -450,6 +451,11 @@ namespace System.Tests
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { float.Epsilon, "G", invariantFormat, "1E-45" };
+            yield return new object[] { 32.5f, "C100", invariantFormat, "¤32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "P100", invariantFormat, "3,250.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { 32.5f, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { 32.5f, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
         }
 
         [Fact]
@@ -493,6 +499,9 @@ namespace System.Tests
             float f = 123.0f;
             Assert.Throws<FormatException>(() => f.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => f.ToString("Y", null)); // Invalid format
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => f.ToString("E" + intMaxPlus1String));
         }
 
         [Theory]

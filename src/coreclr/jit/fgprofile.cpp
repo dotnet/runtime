@@ -211,6 +211,236 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
     return true;
 }
 
+typedef jitstd::vector<ICorJitInfo::PgoInstrumentationSchema> Schema;
+
+//------------------------------------------------------------------------
+// Instrumentor: base class for count and class instrumentation
+//
+class Instrumentor
+{
+protected:
+    Compiler* m_comp;
+    unsigned  m_schemaCount;
+    unsigned  m_instrCount;
+
+protected:
+    Instrumentor(Compiler* comp) : m_comp(comp), m_schemaCount(0), m_instrCount(0)
+    {
+    }
+
+public:
+    virtual bool ShouldProcess(BasicBlock* block)
+    {
+        return false;
+    }
+    virtual void Prepare()
+    {
+    }
+    virtual void BuildSchemaElements(BasicBlock* block, Schema& schema)
+    {
+    }
+    virtual void Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory)
+    {
+    }
+    virtual void InstrumentMethodEntry(Schema& schema, BYTE* profileMemory)
+    {
+    }
+    virtual void SuppressProbes()
+    {
+    }
+    unsigned SchemaCount()
+    {
+        return m_schemaCount;
+    }
+    unsigned InstrCount()
+    {
+        return m_instrCount;
+    }
+};
+
+//------------------------------------------------------------------------
+// NonInstrumentor: instrumentor that does not instrument anything
+//
+class NonInstrumentor : public Instrumentor
+{
+public:
+    NonInstrumentor(Compiler* comp) : Instrumentor(comp)
+    {
+    }
+};
+
+//------------------------------------------------------------------------
+// BlockCountInstrumentor: instrumentor that adds a counter to each
+//   non-internal imported basic block
+//
+class BlockCountInstrumentor : public Instrumentor
+{
+public:
+    BlockCountInstrumentor(Compiler* comp) : Instrumentor(comp)
+    {
+    }
+    bool ShouldProcess(BasicBlock* block) override
+    {
+        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+    }
+    void Prepare() override;
+    void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
+    void Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory) override;
+    void InstrumentMethodEntry(Schema& schema, BYTE* profileMemory) override;
+};
+
+//------------------------------------------------------------------------
+// BlockCountInstrumentor::Prepare: prepare for count instrumentation
+//
+void BlockCountInstrumentor::Prepare()
+{
+
+#ifdef DEBUG
+    // Set schema index to invalid value
+    //
+    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    {
+        block->bbCountSchemaIndex = -1;
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// BlockCountInstrumentor::BuildSchemaElements: create schema elements for a block counter
+//
+// Arguments:
+//   block -- block to instrument
+//   schema -- schema that we're building
+//
+void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
+{
+    // Remember the schema index for this block.
+    //
+    assert(block->bbCountSchemaIndex == -1);
+    block->bbCountSchemaIndex = (int)schema.size();
+
+    // Assign the current block's IL offset into the profile data
+    // (make sure IL offset is sane)
+    //
+    IL_OFFSET offset = block->bbCodeOffs;
+    assert((int)offset >= 0);
+
+    ICorJitInfo::PgoInstrumentationSchema schemaElem;
+    schemaElem.Count               = 1;
+    schemaElem.Other               = 0;
+    schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
+    schemaElem.ILOffset            = offset;
+    schemaElem.Offset              = 0;
+
+    schema.push_back(schemaElem);
+
+    m_schemaCount++;
+}
+
+//------------------------------------------------------------------------
+// BlockCountInstrumentor::Instrument: add counter probe to block
+//
+// Arguments:
+//   block -- block of interest
+//   schema -- instrumentation schema
+//   profileMemory -- profile data slab
+//
+void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory)
+{
+    const int schemaIndex = (int)block->bbCountSchemaIndex;
+
+    assert(block->bbCodeOffs == (IL_OFFSET)schema[schemaIndex].ILOffset);
+    assert(schema[schemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount);
+    size_t addrOfCurrentExecutionCount = (size_t)(schema[schemaIndex].Offset + profileMemory);
+
+    // Read Basic-Block count value
+    GenTree* valueNode =
+        m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+
+    // Increment value by 1
+    GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, TYP_INT, valueNode, m_comp->gtNewIconNode(1));
+
+    // Write new Basic-Block count value
+    GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+    GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
+
+    m_comp->fgNewStmtAtBeg(block, asgNode);
+
+    m_instrCount++;
+}
+
+//------------------------------------------------------------------------
+// BlockCountInstrumentor::InstrumentMethodEntry: add any special method entry instrumentation
+//
+// Arguments:
+//   schema -- instrumentation schema
+//   profileMemory -- profile data slab
+//
+// Notes:
+//   When prejitting, add the method entry callback node
+//
+void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profileMemory)
+{
+    Compiler::Options& opts = m_comp->opts;
+    Compiler::Info&    info = m_comp->info;
+
+    // Nothing to do, if not prejitting.
+    //
+    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    {
+        return;
+    }
+
+    // Find the address of the entry block's counter.
+    //
+    BasicBlock* const block            = m_comp->fgFirstBB;
+    const int         firstSchemaIndex = block->bbCountSchemaIndex;
+    assert(block->bbCodeOffs == (IL_OFFSET)schema[firstSchemaIndex].ILOffset);
+    assert(schema[firstSchemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount);
+    size_t addrOfFirstExecutionCount = (size_t)(schema[firstSchemaIndex].Offset + profileMemory);
+
+    GenTree* arg;
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (opts.IsReadyToRun())
+    {
+        mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+
+        CORINFO_RESOLVED_TOKEN resolvedToken;
+        resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
+        resolvedToken.tokenScope   = info.compScopeHnd;
+        resolvedToken.token        = currentMethodToken;
+        resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
+
+        info.compCompHnd->resolveToken(&resolvedToken);
+
+        arg = m_comp->impTokenToHandle(&resolvedToken);
+    }
+    else
+#endif
+    {
+        arg = m_comp->gtNewIconEmbMethHndNode(info.compMethodHnd);
+    }
+
+    GenTreeCall::Use* args = m_comp->gtNewCallArgs(arg);
+    GenTree*          call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
+
+    // Read Basic-Block count value
+    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
+
+    // Compare Basic-Block count value against zero
+    GenTree*   relop = m_comp->gtNewOperNode(GT_NE, TYP_INT, valueNode, m_comp->gtNewIconNode(0, TYP_INT));
+    GenTree*   colon = new (m_comp, GT_COLON) GenTreeColon(TYP_VOID, m_comp->gtNewNothingNode(), call);
+    GenTree*   cond  = m_comp->gtNewQmarkNode(TYP_VOID, relop, colon);
+    Statement* stmt  = m_comp->gtNewStmt(cond);
+
+    m_comp->fgEnsureFirstBBisScratch();
+    m_comp->fgInsertStmtAtEnd(block, stmt);
+}
+
+//------------------------------------------------------------------------
+// ClassProbeVisitor: invoke functor on each virtual call in a tree
+//
 template <class TFunctor>
 class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor<TFunctor>>
 {
@@ -244,135 +474,351 @@ public:
 };
 
 //------------------------------------------------------------------------
+// BuildClassProbeSchemaGen: functor that creates class probe schema elements
+//
+class BuildClassProbeSchemaGen
+{
+private:
+    Schema&   m_schema;
+    unsigned& m_schemaCount;
+
+public:
+    BuildClassProbeSchemaGen(Schema& schema, unsigned& schemaCount) : m_schema(schema), m_schemaCount(schemaCount)
+    {
+    }
+
+    void operator()(Compiler* compiler, GenTreeCall* call)
+    {
+        ICorJitInfo::PgoInstrumentationSchema schemaElem;
+        schemaElem.Count = 1;
+        schemaElem.Other = ICorJitInfo::ClassProfile::CLASS_FLAG;
+        if (call->IsVirtualStub())
+        {
+            schemaElem.Other |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
+        }
+        else
+        {
+            assert(call->IsVirtualVtable());
+        }
+
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount;
+        schemaElem.ILOffset            = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
+        schemaElem.Offset              = 0;
+
+        m_schema.push_back(schemaElem);
+
+        // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
+        schemaElem.Count               = ICorJitInfo::ClassProfile::SIZE;
+        m_schema.push_back(schemaElem);
+
+        m_schemaCount++;
+    }
+};
+
+//------------------------------------------------------------------------
+// ClassProbeInserter: functor that adds class probe instrumentation
+//
+class ClassProbeInserter
+{
+    Schema&   m_schema;
+    BYTE*     m_profileMemory;
+    int*      m_currentSchemaIndex;
+    unsigned& m_instrCount;
+
+public:
+    ClassProbeInserter(Schema& schema, BYTE* profileMemory, int* pCurrentSchemaIndex, unsigned& instrCount)
+        : m_schema(schema)
+        , m_profileMemory(profileMemory)
+        , m_currentSchemaIndex(pCurrentSchemaIndex)
+        , m_instrCount(instrCount)
+    {
+    }
+
+    void operator()(Compiler* compiler, GenTreeCall* call)
+    {
+        JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n", compiler->dspTreeID(call),
+                call->gtClassProfileCandidateInfo->probeIndex, call->gtClassProfileCandidateInfo->ilOffset);
+
+        // We transform the call from (CALLVIRT obj, ... args ...) to
+        // to
+        //      (CALLVIRT
+        //        (COMMA
+        //          (ASG tmp, obj)
+        //          (COMMA
+        //            (CALL probe_fn tmp, &probeEntry)
+        //            tmp)))
+        //         ... args ...)
+        //
+
+        assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
+
+        // Sanity check that we're looking at the right schema entry
+        //
+        assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
+        assert(m_schema[*m_currentSchemaIndex].InstrumentationKind ==
+               ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount);
+
+        // Figure out where the table is located.
+        //
+        BYTE* classProfile = m_schema[*m_currentSchemaIndex].Offset + m_profileMemory;
+        *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
+
+        // Grab a temp to hold the 'this' object as it will be used three times
+        //
+        unsigned const tmpNum             = compiler->lvaGrabTemp(true DEBUGARG("class profile tmp"));
+        compiler->lvaTable[tmpNum].lvType = TYP_REF;
+
+        // Generate the IR...
+        //
+        GenTree* const          classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
+        GenTree* const          tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTreeCall::Use* const args             = compiler->gtNewCallArgs(tmpNode, classProfileNode);
+        GenTree* const helperCallNode = compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
+        GenTree* const tmpNode2       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const callCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+        GenTree* const tmpNode3       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const asgNode = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
+        GenTree* const asgCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
+
+        // Update the call
+        //
+        call->gtCallThisArg->SetNode(asgCommaNode);
+
+        JITDUMP("Modified call is now\n");
+        DISPTREE(call);
+
+        // Restore the stub address on the call
+        //
+        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
+
+        m_instrCount++;
+    }
+};
+
+//------------------------------------------------------------------------
+// SuppressProbesFunctor: functor that resets IR back to the state
+//   it had if there were no class probes.
+//
+class SuppressProbesFunctor
+{
+private:
+    unsigned& m_cleanupCount;
+
+public:
+    SuppressProbesFunctor(unsigned& cleanupCount) : m_cleanupCount(cleanupCount)
+    {
+    }
+
+    void operator()(Compiler* compiler, GenTreeCall* call)
+    {
+        // Restore the stub address on the call
+        //
+        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
+
+        m_cleanupCount++;
+    }
+};
+
+//------------------------------------------------------------------------
+// ClassProbeInstrumentor: instrumentor that adds a class probe to each
+//   virtual call in the basic block
+//
+class ClassProbeInstrumentor : public Instrumentor
+{
+public:
+    ClassProbeInstrumentor(Compiler* comp) : Instrumentor(comp)
+    {
+    }
+    bool ShouldProcess(BasicBlock* block) override
+    {
+        return ((block->bbFlags & (BBF_INTERNAL | BBF_IMPORTED)) == BBF_IMPORTED);
+    }
+    void Prepare() override;
+    void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
+    void Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory) override;
+    void SuppressProbes() override;
+};
+
+//------------------------------------------------------------------------
+// ClassProbeInstrumentor::Prepare: prepare for class instrumentation
+//
+void ClassProbeInstrumentor::Prepare()
+{
+
+#ifdef DEBUG
+    // Set schema index to invalid value
+    //
+    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    {
+        block->bbClassSchemaIndex = -1;
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// ClassProbeInstrumentor::BuildSchemaElements: create schema elements for a class probe
+//
+// Arguments:
+//   block -- block to instrument
+//   schema -- schema that we're building
+//
+void ClassProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
+{
+    if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
+    {
+        return;
+    }
+
+    // Remember the schema index for this block.
+    //
+    block->bbClassSchemaIndex = (int)schema.size();
+
+    // Scan the statements and identify the class probes
+    //
+    BuildClassProbeSchemaGen                    schemaGen(schema, m_schemaCount);
+    ClassProbeVisitor<BuildClassProbeSchemaGen> visitor(m_comp, schemaGen);
+    for (Statement* stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
+}
+
+//------------------------------------------------------------------------
+// ClassProbeInstrumentor::Instrument: add class probes to block
+//
+// Arguments:
+//   block -- block of interest
+//   schema -- instrumentation schema
+//   profileMemory -- profile data slab
+//
+void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE* profileMemory)
+{
+    if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
+    {
+        return;
+    }
+
+    // Would be nice to avoid having to search here by tracking
+    // candidates more directly.
+    //
+    JITDUMP("Scanning for calls to profile in " FMT_BB "\n", block->bbNum);
+
+    // Scan the statements and add class probes
+    //
+    int classSchemaIndex = block->bbClassSchemaIndex;
+    assert((classSchemaIndex >= 0) && (classSchemaIndex < (int)schema.size()));
+
+    ClassProbeInserter                    insertProbes(schema, profileMemory, &classSchemaIndex, m_instrCount);
+    ClassProbeVisitor<ClassProbeInserter> visitor(m_comp, insertProbes);
+    for (Statement* stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
+}
+
+//------------------------------------------------------------------------
+// ClassProbeInstrumentor::SuppressProbes: clean up if we're not instrumenting
+//
+// Notes:
+//   Currently we're hijacking the gtCallStubAddr of the call node to hold
+//   a pointer to the profile candidate info.
+//
+//   We must undo this, if not instrumenting.
+//
+void ClassProbeInstrumentor::SuppressProbes()
+{
+    unsigned                                 cleanupCount = 0;
+    SuppressProbesFunctor                    suppressProbes(cleanupCount);
+    ClassProbeVisitor<SuppressProbesFunctor> visitor(m_comp, suppressProbes);
+
+    for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+    {
+        if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
+        {
+            continue;
+        }
+
+        for (Statement* stmt : block->Statements())
+        {
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+    }
+
+    assert(cleanupCount == m_comp->info.compClassProbeCount);
+}
+
+//------------------------------------------------------------------------
 // fgInstrumentMethod: add instrumentation probes to the method
+//
+// Returns:
+//   appropriate phase status
 //
 // Note:
 //
 //   By default this instruments each non-internal block with
 //   a counter probe.
 //
-//   Probes data is held in a runtime-allocated slab of Entries, with
-//   each Entry an (IL offset, count) pair. This method determines
-//   the number of Entrys needed and initializes each entry's IL offset.
+//   Optionally adds class probes to virtual and interface calls.
 //
-//   Options (many not yet implemented):
-//   * suppress count instrumentation for methods with
-//     a single block, or
-//   * instrument internal blocks (requires same internal expansions
-//     for BBOPT and BBINSTR, not yet guaranteed)
-//   * use spanning tree for minimal count probing
-//   * add class profile probes for virtual and interface call sites
-//   * record indirection cells for VSD calls
+//   Probe structure is described by a schema array, which is created
+//   here based on flowgraph and IR structure.
 //
-void Compiler::fgInstrumentMethod()
+PhaseStatus Compiler::fgInstrumentMethod()
 {
     noway_assert(!compIsForInlining());
-    jitstd::vector<ICorJitInfo::PgoInstrumentationSchema> schema(getAllocator());
 
-    // Count the number of basic blocks in the method
-    // that will get block count probes.
+    // Choose instrumentation technology.
     //
-    int         countOfBlocks = 0;
-    BasicBlock* block;
-    for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    Instrumentor* countInst = new (this, CMK_Pgo) BlockCountInstrumentor(this);
+    Instrumentor* classInst = nullptr;
+
+    if (JitConfig.JitClassProfiling() > 0)
     {
-        // We don't want to profile any un-imported blocks
-        //
-        if ((block->bbFlags & BBF_IMPORTED) == 0)
-        {
-            continue;
-        }
-
-        if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) != 0)
-        {
-            class BuildClassProbeSchemaGen
-            {
-                jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* m_schema;
-
-            public:
-                BuildClassProbeSchemaGen(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema)
-                    : m_schema(schema)
-                {
-                }
-                void operator()(Compiler* compiler, GenTreeCall* call)
-                {
-                    ICorJitInfo::PgoInstrumentationSchema schemaElem;
-                    schemaElem.Count = 1;
-                    schemaElem.Other = ICorJitInfo::ClassProfile::CLASS_FLAG;
-                    if (call->IsVirtualStub())
-                    {
-                        schemaElem.Other |= ICorJitInfo::ClassProfile::INTERFACE_FLAG;
-                    }
-                    else
-                    {
-                        assert(call->IsVirtualVtable());
-                    }
-
-                    schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount;
-                    schemaElem.ILOffset            = jitGetILoffs(call->gtClassProfileCandidateInfo->ilOffset);
-                    schemaElem.Offset              = 0;
-
-                    m_schema->push_back(schemaElem);
-
-                    // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
-                    schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
-                    schemaElem.Count               = ICorJitInfo::ClassProfile::SIZE;
-                    m_schema->push_back(schemaElem);
-                }
-            };
-            // Scan the statements and identify the class probes
-            //
-            BuildClassProbeSchemaGen                    schemaGen(&schema);
-            ClassProbeVisitor<BuildClassProbeSchemaGen> visitor(this, schemaGen);
-            for (Statement* stmt : block->Statements())
-            {
-                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-            }
-        }
-
-        if (block->bbFlags & BBF_INTERNAL)
-        {
-            continue;
-        }
-
-        // Assign the current block's IL offset into the profile data
-        // (make sure IL offset is sane)
-        //
-        IL_OFFSET offset = block->bbCodeOffs;
-        assert((int)offset >= 0);
-
-        ICorJitInfo::PgoInstrumentationSchema schemaElem;
-        schemaElem.Count               = 1;
-        schemaElem.Other               = 0;
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
-        schemaElem.ILOffset            = offset;
-        schemaElem.Offset              = 0;
-
-        schema.push_back(schemaElem);
-
-        countOfBlocks++;
+        classInst = new (this, CMK_Pgo) ClassProbeInstrumentor(this);
+    }
+    else
+    {
+        classInst = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
-    // We've already counted the number of class probes
-    // when importing.
+    // Do any up-front work.
     //
-    int countOfCalls = info.compClassProbeCount;
-    assert(((countOfCalls * 2) + countOfBlocks) == (int)schema.size());
+    countInst->Prepare();
+    classInst->Prepare();
 
-    // Optionally bail out, if there are less than three blocks and no call sites to profile.
-    // One block is common. We don't expect to see zero or two blocks here.
+    // Walk the flow graph to build up the instrumentation schema.
     //
-    // Note we have to at least visit all the profile call sites to properly restore their
-    // stub addresses. So we can't bail out early if there are any of these.
-    //
-    if ((JitConfig.JitMinimalProfiling() > 0) && (countOfBlocks < 3) && (countOfCalls == 0))
+    Schema schema(getAllocator(CMK_Pgo));
+    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
-        JITDUMP("Not instrumenting method: %d blocks and %d calls\n", countOfBlocks, countOfCalls);
-        assert(countOfBlocks == 1);
-        return;
+        if (countInst->ShouldProcess(block))
+        {
+            countInst->BuildSchemaElements(block, schema);
+        }
+
+        if (classInst->ShouldProcess(block))
+        {
+            classInst->BuildSchemaElements(block, schema);
+        }
     }
 
-    JITDUMP("Instrumenting method, %d blocks and %d calls\n", countOfBlocks, countOfCalls);
+    // Verify we created schema for the calls needing class probes.
+    // (we counted those when importing)
+    //
+    assert(classInst->SchemaCount() == info.compClassProbeCount);
+
+    // Optionally, if there were no class probes and only one count probe,
+    // suppress instrumentation.
+    //
+    if ((JitConfig.JitMinimalProfiling() > 0) && (countInst->SchemaCount() == 1) && (classInst->SchemaCount() == 0))
+    {
+        JITDUMP("Not instrumenting method: only one counter, and no class probes\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    JITDUMP("Instrumenting method: %d count probes and %d class probes\n", countInst->SchemaCount(),
+            classInst->SchemaCount());
 
     // Allocate the profile buffer
     //
@@ -381,249 +827,161 @@ void Compiler::fgInstrumentMethod()
     HRESULT res = info.compCompHnd->allocPgoInstrumentationBySchema(info.compMethodHnd, schema.data(),
                                                                     (UINT32)schema.size(), &profileMemory);
 
-    // We may not be able to instrument, if so we'll set this false.
-    // We can't just early exit, because we have to clean up calls that we might have profiled.
+    // Deal with allocation failures.
     //
-    bool instrument = true;
-
     if (!SUCCEEDED(res))
     {
-        JITDUMP("Unable to instrument -- block counter allocation failed: 0x%x\n", res);
-        instrument = false;
+        JITDUMP("Unable to instrument: schema allocation failed: 0x%x\n", res);
+
         // The E_NOTIMPL status is returned when we are profiling a generic method from a different assembly
+        //
         if (res != E_NOTIMPL)
         {
-            noway_assert(!"Error: failed to allocate profileBlockCounts");
-            return;
+            noway_assert(!"Error: unexpected hresult from allocPgoInstrumentationBySchema");
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
+
+        // Do any cleanup we might need to do...
+        //
+        countInst->SuppressProbes();
+        classInst->SuppressProbes();
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Add the instrumentation code
+    //
+    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->bbNext)
+    {
+        if (countInst->ShouldProcess(block))
+        {
+            countInst->Instrument(block, schema, profileMemory);
+        }
+
+        if (classInst->ShouldProcess(block))
+        {
+            classInst->Instrument(block, schema, profileMemory);
         }
     }
 
-    // For each BasicBlock (non-Internal)
-    //  1. Assign the blocks bbCodeOffs to the ILOffset field of this blocks profile data.
-    //  2. Add an operation that increments the ExecutionCount field at the beginning of the block.
+    // Verify we instrumented everthing we created schemas for.
     //
-    // Each (non-Internal) block has it own BlockCounts tuple [ILOffset, ExecutionCount]
-    // To start we initialize our current one with the first one that we allocated
+    assert(countInst->InstrCount() == countInst->SchemaCount());
+    assert(classInst->InstrCount() == classInst->SchemaCount());
+
+    // Add any special entry instrumentation. This does not
+    // use the schema mechanism.
     //
-    int currentSchemaIndex = 0;
+    countInst->InstrumentMethodEntry(schema, profileMemory);
+    classInst->InstrumentMethodEntry(schema, profileMemory);
 
-    // Hold the address of the first blocks ExecutionCount
-    size_t addrOfFirstExecutionCount = 0;
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
 
-    for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
+//------------------------------------------------------------------------
+// fgIncorporateProfileData: add block/edge profile data to the flowgraph
+//
+// Returns:
+//   appropriate phase status
+//
+PhaseStatus Compiler::fgIncorporateProfileData()
+{
+    assert(fgHaveProfileData());
+
+    // Summarize profile data
+    //
+    fgNumProfileRuns = 0;
+    for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
     {
-        // We don't want to profile any un-imported blocks
-        //
-        if ((block->bbFlags & BBF_IMPORTED) == 0)
+        switch (fgPgoSchema[iSchema].InstrumentationKind)
         {
-            continue;
+            case ICorJitInfo::PgoInstrumentationKind::NumRuns:
+                fgNumProfileRuns += fgPgoSchema[iSchema].Other;
+                break;
+
+            case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+                fgPgoBlockCounts++;
+                break;
+
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+                fgPgoClassProfiles++;
+                break;
+
+            default:
+                break;
         }
+    }
 
-        // We may see class probes in internal blocks, thanks to the
-        // block splitting done by the indirect call transformer.
-        //
-        if (JitConfig.JitClassProfiling() > 0)
+    assert(fgPgoBlockCounts > 0);
+
+    if (fgNumProfileRuns == 0)
+    {
+        fgNumProfileRuns = 1;
+    }
+
+    JITDUMP("Profile summary: %d runs, %d block probes, %d class profiles\n", fgNumProfileRuns, fgPgoBlockCounts,
+            fgPgoClassProfiles);
+
+    fgIncorporateBlockCounts();
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgIncorporateBlockCounts: read block count based profile data
+//   and set block weights
+//
+// Notes:
+//   Count data for inlinees is scaled (usually down).
+//
+//   Since we are now running before the importer, we do not know which
+//   blocks will be imported, and we should not see any internal blocks.
+//
+// Todo:
+//   Normalize counts.
+//
+//   Take advantage of the (likely) correspondence between block order
+//   and schema order?
+//
+//   Find some other mechanism for handling cases where handler entry
+//   blocks must be in the hot section.
+//
+void Compiler::fgIncorporateBlockCounts()
+{
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        BasicBlock::weight_t profileWeight;
+
+        if (fgGetProfileWeightForBasicBlock(block->bbCodeOffs, &profileWeight))
         {
-            // Only works when jitting.
-            assert(!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
-
-            if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) != 0)
+            if (compIsForInlining())
             {
-                // Would be nice to avoid having to search here by tracking
-                // candidates more directly.
-                //
-                JITDUMP("Scanning for calls to profile in " FMT_BB "\n", block->bbNum);
-
-                class ClassProbeInserter
+                if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
                 {
-                    jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* m_schema;
-                    BYTE*                                                  m_profileMemory;
-                    int*                                                   m_currentSchemaIndex;
-                    bool                                                   m_instrument;
-
-                public:
-                    int m_count = 0;
-
-                    ClassProbeInserter(jitstd::vector<ICorJitInfo::PgoInstrumentationSchema>* schema,
-                                       BYTE*                                                  profileMemory,
-                                       int*                                                   pCurrentSchemaIndex,
-                                       bool                                                   instrument)
-                        : m_schema(schema)
-                        , m_profileMemory(profileMemory)
-                        , m_currentSchemaIndex(pCurrentSchemaIndex)
-                        , m_instrument(instrument)
-                    {
-                    }
-                    void operator()(Compiler* compiler, GenTreeCall* call)
-                    {
-                        JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n", compiler->dspTreeID(call),
-                                call->gtClassProfileCandidateInfo->probeIndex,
-                                call->gtClassProfileCandidateInfo->ilOffset);
-
-                        m_count++;
-                        if (m_instrument)
-                        {
-                            // We transform the call from (CALLVIRT obj, ... args ...) to
-                            // to
-                            //      (CALLVIRT
-                            //        (COMMA
-                            //          (ASG tmp, obj)
-                            //          (COMMA
-                            //            (CALL probe_fn tmp, &probeEntry)
-                            //            tmp)))
-                            //         ... args ...)
-                            //
-
-                            assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
-
-                            // Figure out where the table is located.
-                            //
-                            BYTE* classProfile = (*m_schema)[*m_currentSchemaIndex].Offset + m_profileMemory;
-                            *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
-
-                            // Grab a temp to hold the 'this' object as it will be used three times
-                            //
-                            unsigned const tmpNum = compiler->lvaGrabTemp(true DEBUGARG("class profile tmp"));
-                            compiler->lvaTable[tmpNum].lvType = TYP_REF;
-
-                            // Generate the IR...
-                            //
-                            GenTree* const classProfileNode =
-                                compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
-                            GenTree* const          tmpNode = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                            GenTreeCall::Use* const args    = compiler->gtNewCallArgs(tmpNode, classProfileNode);
-                            GenTree* const          helperCallNode =
-                                compiler->gtNewHelperCallNode(CORINFO_HELP_CLASSPROFILE, TYP_VOID, args);
-                            GenTree* const tmpNode2 = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                            GenTree* const callCommaNode =
-                                compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
-                            GenTree* const tmpNode3 = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-                            GenTree* const asgNode =
-                                compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
-                            GenTree* const asgCommaNode =
-                                compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
-
-                            // Update the call
-                            //
-                            call->gtCallThisArg->SetNode(asgCommaNode);
-
-                            JITDUMP("Modified call is now\n");
-                            DISPTREE(call);
-                        }
-
-                        // Restore the stub address on the call, whether instrumenting or not.
-                        //
-                        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
-                    }
-                };
-
-                // Scan the statements and add class probes
-                //
-                ClassProbeInserter insertProbes(&schema, profileMemory, &currentSchemaIndex, instrument);
-                ClassProbeVisitor<ClassProbeInserter> visitor(this, insertProbes);
-                for (Statement* stmt : block->Statements())
-                {
-                    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+                    double scaledWeight = impInlineInfo->profileScaleFactor * profileWeight;
+                    profileWeight       = (BasicBlock::weight_t)scaledWeight;
                 }
+            }
 
-                // Bookkeeping
-                //
-                assert(insertProbes.m_count <= countOfCalls);
-                countOfCalls -= insertProbes.m_count;
-                JITDUMP("\n%d calls remain to be visited\n", countOfCalls);
+            block->setBBProfileWeight(profileWeight);
+
+            if (profileWeight == BB_ZERO_WEIGHT)
+            {
+                block->bbSetRunRarely();
             }
             else
             {
-                JITDUMP("No calls to profile in " FMT_BB "\n", block->bbNum);
+                block->bbFlags &= ~BBF_RUN_RARELY;
             }
-        }
 
-        // We won't need count probes in internal blocks.
-        //
-        // TODO, perhaps: profile the flow early expansion ... we would need
-        // some non-il based keying scheme.
-        //
-        if ((block->bbFlags & BBF_INTERNAL) != 0)
-        {
-            continue;
-        }
-
-        // One less block
-        countOfBlocks--;
-
-        if (instrument)
-        {
-            assert(block->bbCodeOffs == (IL_OFFSET)schema[currentSchemaIndex].ILOffset);
-            size_t addrOfCurrentExecutionCount = (size_t)(schema[currentSchemaIndex].Offset + profileMemory);
-            if (addrOfFirstExecutionCount == 0)
-                addrOfFirstExecutionCount = addrOfCurrentExecutionCount;
-            currentSchemaIndex++;
-
-            // Read Basic-Block count value
-            GenTree* valueNode =
-                gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
-
-            // Increment value by 1
-            GenTree* rhsNode = gtNewOperNode(GT_ADD, TYP_INT, valueNode, gtNewIconNode(1));
-
-            // Write new Basic-Block count value
-            GenTree* lhsNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
-            GenTree* asgNode = gtNewAssignNode(lhsNode, rhsNode);
-
-            fgNewStmtAtBeg(block, asgNode);
-        }
-    }
-
-    if (!instrument)
-    {
-        return;
-    }
-
-    // Check that we allocated and initialized the same number of BlockCounts tuples
-    //
-    noway_assert(countOfBlocks == 0);
-    noway_assert(countOfCalls == 0);
-
-    // When prejitting, add the method entry callback node
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-    {
-        GenTree* arg;
-
-#ifdef FEATURE_READYTORUN_COMPILER
-        if (opts.IsReadyToRun())
-        {
-            mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
-
-            CORINFO_RESOLVED_TOKEN resolvedToken;
-            resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
-            resolvedToken.tokenScope   = info.compScopeHnd;
-            resolvedToken.token        = currentMethodToken;
-            resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
-
-            info.compCompHnd->resolveToken(&resolvedToken);
-
-            arg = impTokenToHandle(&resolvedToken);
-        }
-        else
+#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
+            // Handle a special case -- some handler entries can't have zero profile count.
+            //
+            if (this->bbIsHandlerBeg(block) && block->isRunRarely())
+            {
+                JITDUMP("Suppressing zero count for " FMT_BB " as it is a handler entry\n", block->bbNum);
+                block->makeBlockHot();
+            }
 #endif
-        {
-            arg = gtNewIconEmbMethHndNode(info.compMethodHnd);
         }
-
-        GenTreeCall::Use* args = gtNewCallArgs(arg);
-        GenTree*          call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
-
-        // Read Basic-Block count value
-        GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
-
-        // Compare Basic-Block count value against zero
-        GenTree*   relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
-        GenTree*   colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
-        GenTree*   cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
-        Statement* stmt  = gtNewStmt(cond);
-
-        fgEnsureFirstBBisScratch();
-        fgInsertStmtAtEnd(fgFirstBB, stmt);
     }
 }
 

@@ -17,7 +17,7 @@ namespace System.Text
         // Maximum number of characters that this instance of this fallback could return
         public override int MaxCharCount => 0;
 
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is DecoderExceptionFallback;
 
         public override int GetHashCode() => 879;

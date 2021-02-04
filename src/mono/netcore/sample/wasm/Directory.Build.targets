@@ -1,13 +1,8 @@
 <Project>
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
-
-  <PropertyGroup>
-    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
-  </PropertyGroup>
-
-  <Target Name="PrepareForWasmBuild">
+  <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
     </ItemGroup>
   </Target>
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
 </Project>

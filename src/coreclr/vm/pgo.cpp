@@ -55,7 +55,7 @@ const char* const         PgoManager::s_TypeHandle = "TypeHandle: %s\n";
 struct HistogramEntry
 {
     // Class that was observed at runtime
-    CORINFO_CLASS_HANDLE m_mt;
+    INT_PTR m_mt; // This may be an "unknown type handle"
     // Number of observations in the table
     unsigned             m_count;
 };
@@ -83,7 +83,6 @@ Histogram::Histogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigne
 
     for (unsigned k = 0; k < entryCount; k++)
     {
-
         if (histogramEntries[k] == 0)
         {
             continue;
@@ -91,17 +90,7 @@ Histogram::Histogram(uint32_t histogramCount, INT_PTR* histogramEntries, unsigne
         
         m_totalCount++;
 
-        if (IsUnknownTypeHandle(histogramEntries[k]))
-        {
-            if (AddTypeHandleToUnknownTypeHandleMask(histogramEntries[k], &unknownTypeHandleMask))
-            {
-                m_unknownTypes++;
-            }
-            // An unknown type handle will adjust total count but not set of entries
-            continue;
-        }
-
-        CORINFO_CLASS_HANDLE currentEntry = (CORINFO_CLASS_HANDLE)histogramEntries[k];
+        INT_PTR currentEntry = histogramEntries[k];
         
         bool found = false;
         unsigned h = 0;
@@ -141,7 +130,13 @@ void PgoManager::Initialize()
 
 void PgoManager::Shutdown()
 {
-    WritePgoData();
+    static bool written = false;
+
+    if (!written)
+    {
+        written = true;
+        WritePgoData();
+    }
 }
 
 void PgoManager::VerifyAddress(void* address)
@@ -149,8 +144,83 @@ void PgoManager::VerifyAddress(void* address)
     // TODO Insert an assert to check that an address is a valid pgo address
 }
 
+class SArrayByteWriterFunctor
+{
+    SArray<uint8_t>& m_byteData;
+public:
+    SArrayByteWriterFunctor(SArray<uint8_t>& byteData) :
+        m_byteData(byteData)
+    {}
+
+    bool operator()(uint8_t data) const
+    {
+        m_byteData.Append(data);
+        return true;
+    }
+};
+
+class SchemaWriterFunctor
+{
+
+public:
+    StackSArray<uint8_t> byteData;
+    StackSArray<TypeHandle> typeHandlesEncountered;
+private:
+    const PgoManager::HeaderList *pgoData;
+    SArrayByteWriterFunctor byteWriter;
+public:
+    SchemaAndDataWriter<SArrayByteWriterFunctor> writer;
+
+    SchemaWriterFunctor(PgoManager::HeaderList *pgoData) :
+        pgoData(pgoData),
+        byteWriter(byteData),
+        writer(byteWriter, pgoData->header.GetData())
+    {}
+
+    bool operator()(const ICorJitInfo::PgoInstrumentationSchema &schema)
+    {
+        if (!writer.AppendSchema(schema))
+            return false;
+
+        auto lambda = [&](int64_t thWritten)
+        {
+            if (thWritten != 0)
+            {
+                TypeHandle th = *(TypeHandle*)&thWritten;
+                if (!th.IsNull())
+                {
+                    typeHandlesEncountered.Append(th);
+                }
+            }
+        };
+
+        if (!writer.AppendDataFromLastSchema(lambda))
+        {
+            return false;
+        }
+
+        return true;
+    }
+};
+
 void PgoManager::WritePgoData()
 {
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
+    {
+        EnumeratePGOHeaders([](HeaderList *pgoData)
+        {
+            SchemaWriterFunctor schemaWriter(pgoData);
+            if (ReadInstrumentationSchemaWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, schemaWriter))
+            {
+                if (!schemaWriter.writer.Finish())
+                    return false;
+                ETW::MethodLog::LogMethodInstrumentationData(pgoData->header.method, schemaWriter.byteData.GetCount(), schemaWriter.byteData.GetElements(), schemaWriter.typeHandlesEncountered.GetElements(), schemaWriter.typeHandlesEncountered.GetCount());
+            }
+
+            return true;
+        });
+    }
+
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) == 0)
     {
         return;
@@ -205,7 +275,7 @@ void PgoManager::WritePgoData()
         uint8_t* data = pgoData->header.GetData();
 
         unsigned lastOffset  = 0;
-        if (!ReadInstrumentationDataWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, [data, pgoDataFile] (const ICorJitInfo::PgoInstrumentationSchema &schema)
+        auto lambda = [data, pgoDataFile] (const ICorJitInfo::PgoInstrumentationSchema &schema)
         {
             fprintf(pgoDataFile, s_RecordString, schema.InstrumentationKind, schema.ILOffset, schema.Count, schema.Other);
             for (int32_t iEntry = 0; iEntry < schema.Count; iEntry++)
@@ -252,8 +322,9 @@ void PgoManager::WritePgoData()
                 }
             }
             return true;
-        }
-        ))
+        };
+
+        if (!ReadInstrumentationSchemaWithLayout(pgoData->header.GetData(), pgoData->header.SchemaSizeMax(), pgoData->header.countsOffset, lambda))
         {
             return true;;
         }
@@ -577,7 +648,7 @@ HRESULT PgoManager::ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::
 {
     // Determine size of compressed schema representation
     size_t headerSize = headerInitialSize;
-    if (!WriteInstrumentationToBytes(pSchema, countSchemaItems, [&headerSize](uint8_t byte) { headerSize = headerSize + 1; return true; }))
+    if (!WriteInstrumentationSchemaToBytes(pSchema, countSchemaItems, [&headerSize](uint8_t byte) { headerSize = headerSize + 1; return true; }))
     {
         return E_NOTIMPL;
     }
@@ -602,6 +673,7 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
     *pInstrumentationData = NULL;
     int codehash;
     unsigned ilSize;
+
     if (!GetVersionResilientILCodeHashCode(pMD, &codehash, &ilSize))
     {
         return E_NOTIMPL;
@@ -625,13 +697,24 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         prevSchema = pSchema[iSchema];
     }
 
-    S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(pSchema[countSchemaItems - 1].Offset + InstrumentationKindToSize(pSchema[countSchemaItems - 1].InstrumentationKind));
+    S_SIZE_T allocationSize = S_SIZE_T(sizeof(HeaderList)) + S_SIZE_T(pSchema[countSchemaItems - 1].Offset) + S_SIZE_T(pSchema[countSchemaItems - 1].Count) * S_SIZE_T(InstrumentationKindToSize(pSchema[countSchemaItems - 1].InstrumentationKind));
     
     if (allocationSize.IsOverflow())
     {
         return E_NOTIMPL;
     }
     size_t unsafeAllocationSize = allocationSize.Value();
+    if (unsafeAllocationSize % sizeof(size_t) == 4)
+    {
+        allocationSize = allocationSize + S_SIZE_T(4);
+
+        if (allocationSize.IsOverflow())
+        {
+            return E_NOTIMPL;
+        }
+        unsafeAllocationSize = allocationSize.Value();
+    }
+
     HeaderList* pHeaderList = NULL;
 
     if (pMD->IsDynamicMethod())
@@ -696,11 +779,12 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
 }
 
 #ifndef DACCESS_COMPILE
-HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
+HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData)
 {
     // Initialize our out params
-    pSchema->Clear();
+    *pAllocatedData = NULL;
     *pInstrumentationData = NULL;
+    *pCountSchemaItems = 0;
 
     PgoManager *mgr;
     if (!pMD->IsDynamicMethod())
@@ -715,7 +799,7 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJit
     HRESULT hr = E_NOTIMPL;
     if (mgr != NULL)
     {
-        hr = mgr->getPgoInstrumentationResultsInstance(pMD, pSchema, pInstrumentationData);
+        hr = mgr->getPgoInstrumentationResultsInstance(pMD, pAllocatedData, ppSchema, pCountSchemaItems, pInstrumentationData);
     }
 
     // If not found in the data from the current run, look in the data from the text file
@@ -729,8 +813,11 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJit
             Header *found = s_textFormatPgoData.Lookup(CodeAndMethodHash(codehash, methodhash));
             if (found != NULL)
             {
-                if (ReadInstrumentationDataWithLayoutIntoSArray(found->GetData(), found->countsOffset, found->countsOffset, pSchema))
+                StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
+
+                if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->GetData(), found->countsOffset, found->countsOffset, &schemaArray))
                 {
+                    
                     EX_TRY
                     {
                         // TypeHandles can't reliably be loaded at ReadPGO time
@@ -739,9 +826,9 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJit
                         // terminated strings in the TypeHandle slots, and this will
                         // translate any of those into loaded TypeHandles as appropriate
 
-                        for (unsigned iSchema = 0; iSchema < pSchema->GetCount(); iSchema++)
+                        for (unsigned iSchema = 0; iSchema < schemaArray.GetCount(); iSchema++)
                         {
-                            ICorJitInfo::PgoInstrumentationSchema *schema = &(*pSchema)[iSchema];
+                            ICorJitInfo::PgoInstrumentationSchema *schema = &(schemaArray)[iSchema];
                             if ((schema->InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask) == ICorJitInfo::PgoInstrumentationKind::TypeHandle)
                             {
                                 for (int iEntry = 0; iEntry < schema->Count; iEntry++)
@@ -775,6 +862,12 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJit
                             }
                         }
 
+                        *pAllocatedData = new BYTE[schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema)];
+                        memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema));
+                        schemaArray.CloseRawBuffer();
+                        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)pAllocatedData;
+
+                        *pCountSchemaItems = schemaArray.GetCount();
                         *pInstrumentationData = found->GetData();
                         hr = S_OK;
                     }
@@ -783,7 +876,6 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJit
                         hr = E_FAIL;
                     }
                     EX_END_CATCH(RethrowTerminalExceptions)
-
                 }
                 else
                 {
@@ -796,13 +888,145 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJit
 
     return hr;
 }
+
+class R2RInstrumentationDataReader
+{
+    ReadyToRunInfo *m_pReadyToRunInfo;
+    Module* m_pModule;
+    PEDecoder* m_pNativeImage;
+
+public:
+    StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
+    StackSArray<BYTE> instrumentationData;
+
+    R2RInstrumentationDataReader(ReadyToRunInfo *pReadyToRunInfo, Module* pModule, PEDecoder* pNativeImage) :
+        m_pReadyToRunInfo(pReadyToRunInfo),
+        m_pModule(pModule),
+        m_pNativeImage(pNativeImage)
+    {}
+
+    bool operator()(const ICorJitInfo::PgoInstrumentationSchema &schema, int64_t dataItem, int32_t iDataItem)
+    {
+        if (iDataItem == 0)
+        {
+            schemaArray.Append(schema);
+            schemaArray[schemaArray.GetCount() - 1].Offset = instrumentationData.GetCount();
+        }
+
+        if ((schema.InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask) == ICorJitInfo::PgoInstrumentationKind::TypeHandle)
+        {
+            intptr_t typeHandleData = 0;
+            if (dataItem != 0)
+            {
+                uint32_t importSection = dataItem & 0xF;
+                int64_t typeIndex = dataItem >> 4;
+                if (importSection != 0xF)
+                {
+                    COUNT_T countImportSections;
+                    PTR_CORCOMPILE_IMPORT_SECTION pImportSections = m_pReadyToRunInfo->GetImportSections(&countImportSections);
+
+                    if (importSection >= countImportSections)
+                    {
+                        _ASSERTE(!"Malformed pgo type handle data");
+                        return false;
+                    }
+
+                    PTR_CORCOMPILE_IMPORT_SECTION pImportSection = &pImportSections[importSection];
+                    COUNT_T cbData;
+                    TADDR pData = m_pNativeImage->GetDirectoryData(&pImportSection->Section, &cbData);
+                    uint32_t fixupIndex = (uint32_t)typeIndex;
+                    PTR_SIZE_T fixupAddress = dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR));
+                    if (!m_pModule->FixupNativeEntry(pImportSections + importSection, fixupIndex, fixupAddress))
+                    {
+                        return false;
+                    }
+
+                    typeHandleData = *(intptr_t*)fixupAddress;
+                }
+                else
+                {
+                    typeHandleData = HashToPgoUnknownTypeHandle((uint32_t)typeIndex);
+                }
+            }
+
+            BYTE* pTypeHandleData = (BYTE*)&typeHandleData;
+            for (size_t i = 0; i < sizeof(intptr_t); i++)
+            {
+                instrumentationData.Append(pTypeHandleData[i]);
+            }
+        }
+        else if ((schema.InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask) == ICorJitInfo::PgoInstrumentationKind::FourByte)
+        {
+            BYTE* pFourByteData = (BYTE*)&dataItem;
+            for (int i = 0; i < 4; i++)
+            {
+                instrumentationData.Append(pFourByteData[i]);
+            }
+        }
+        else if ((schema.InstrumentationKind & ICorJitInfo::PgoInstrumentationKind::MarshalMask) == ICorJitInfo::PgoInstrumentationKind::EightByte)
+        {
+            BYTE* pEightByteData = (BYTE*)&dataItem;
+            for (int i = 0; i < 8; i++)
+            {
+                instrumentationData.Append(pEightByteData[i]);
+            }
+        }
+
+        return true;
+    }
+};
+
+HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
+                                                              Module* pModule,
+                                                              PEDecoder* pNativeImage,
+                                                              BYTE* pR2RFormatData,
+                                                              size_t pR2RFormatDataMaxSize,
+                                                              BYTE** pAllocatedData,
+                                                              ICorJitInfo::PgoInstrumentationSchema** ppSchema,
+                                                              UINT32 *pCountSchemaItems,
+                                                              BYTE**pInstrumentationData)
+{
+    *pAllocatedData = NULL;
+    *ppSchema = NULL;
+    *pInstrumentationData = NULL;
+    *pCountSchemaItems = 0;
+
+    R2RInstrumentationDataReader r2rReader(pReadyToRunInfo, pModule, pNativeImage);
+
+    if (!ReadInstrumentationData(pR2RFormatData, pR2RFormatDataMaxSize, r2rReader))
+    {
+        return E_NOTIMPL;
+    }
+    else
+    {
+        while (r2rReader.instrumentationData.GetCount() & (sizeof(int64_t) - 1))
+        {
+            r2rReader.instrumentationData.Append(0);
+        }
+        size_t schemaDataSize = r2rReader.schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema);
+        NewArrayHolder<BYTE> allocatedData = new BYTE[r2rReader.instrumentationData.GetCount() + schemaDataSize];
+
+        *pInstrumentationData = (BYTE*)allocatedData;
+        *pCountSchemaItems = r2rReader.schemaArray.GetCount();
+        memcpy(allocatedData, r2rReader.instrumentationData.OpenRawBuffer(), r2rReader.instrumentationData.GetCount());
+        r2rReader.instrumentationData.CloseRawBuffer();
+        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)(((BYTE*)allocatedData) + r2rReader.instrumentationData.GetCount());
+        memcpy(*ppSchema, r2rReader.schemaArray.OpenRawBuffer(), schemaDataSize);
+        r2rReader.schemaArray.CloseRawBuffer();
+
+        allocatedData.SuppressRelease();
+        *pAllocatedData = allocatedData;
+        return S_OK;
+    }
+}
 #endif // DACCESS_COMPILE
 
-HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
+HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE** pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData)
 {
     // Initialize our out params
-    pSchema->Clear();
+    *pAllocatedData = NULL;
     *pInstrumentationData = NULL;
+    *pCountSchemaItems = 0;
 
     HeaderList *found;
 
@@ -819,12 +1043,43 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, SArray
 
     if (found == NULL)
     {
+        // Prefer live collected data over data from pgo input, but if live data isn't present, use the data from the R2R file
+        // Consider merging this data with the live data instead in the future
+        if (pMD->GetModule()->IsReadyToRun() && pMD->GetModule()->GetReadyToRunInfo()->GetPgoInstrumentationData(pMD, pAllocatedData, ppSchema, pCountSchemaItems, pInstrumentationData))
+        {
+            return S_OK;
+        }
+
         return E_NOTIMPL;
     }
 
-    if (ReadInstrumentationDataWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, found->header.countsOffset, pSchema))
+    StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
+    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, found->header.countsOffset, &schemaArray))
     {
-        *pInstrumentationData = found->header.GetData();
+        size_t schemaDataSize = schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema);
+        size_t instrumentationDataSize = 0;
+        if (schemaArray.GetCount() > 0)
+        {
+            auto lastSchema = schemaArray[schemaArray.GetCount() - 1];
+            instrumentationDataSize = lastSchema.Offset + lastSchema.Count * InstrumentationKindToSize(lastSchema.InstrumentationKind) - found->header.countsOffset;
+        }
+        *pAllocatedData = new BYTE[schemaDataSize + instrumentationDataSize];
+        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)pAllocatedData;
+        *pCountSchemaItems = schemaArray.GetCount();
+        memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaDataSize);
+        schemaArray.CloseRawBuffer();
+        
+        size_t* pInstrumentationDataDst = (size_t*)((*pAllocatedData) + schemaDataSize);
+        size_t* pInstrumentationDataDstEnd = (size_t*)((*pAllocatedData) + schemaDataSize + instrumentationDataSize);
+        *pInstrumentationData = (BYTE*)pInstrumentationDataDst;
+        volatile size_t*pSrc = (volatile size_t*)found->header.GetData();
+        // Use a volatile memcpy to copy the instrumentation data into a temporary buffer
+        // This allows the instrumentation data to be made stable for reading during the execution of the jit
+        // and since the copy moves through a volatile pointer, there will be no tearing of individual data elements
+        for (;pInstrumentationDataDst < pInstrumentationDataDstEnd; pInstrumentationDataDst++, pSrc++)
+        {
+            *pInstrumentationDataDst = *pSrc;
+        }
         return S_OK;
     }
     else
@@ -845,9 +1100,11 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
     *pLikelihood = 0;
     *pNumberOfClasses = 0;
 
-    StackSArray<ICorJitInfo::PgoInstrumentationSchema> schema;
+    NewArrayHolder<BYTE> allocatedData;
+    ICorJitInfo::PgoInstrumentationSchema* schema;
     BYTE* pInstrumentationData;
-    HRESULT hr = getPgoInstrumentationResults(pMD, &schema, &pInstrumentationData);
+    UINT32 cSchema;
+    HRESULT hr = getPgoInstrumentationResults(pMD, &allocatedData, &schema, &cSchema, &pInstrumentationData);
 
     // Failed to find any sort of profile data for this method
     //
@@ -857,14 +1114,14 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
     }
 
     // TODO This logic should be moved to the JIT
-    for (COUNT_T i = 0; i < schema.GetCount(); i++)
+    for (COUNT_T i = 0; i < cSchema; i++)
     {
         if (schema[i].ILOffset != (int32_t)ilOffset)
             continue;
 
         if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount) &&
             (schema[i].Count == 1) &&
-            ((i + 1) < schema.GetCount()) &&
+            ((i + 1) < cSchema) &&
             (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle))
         {
             // Form a histogram
@@ -888,22 +1145,30 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
 
                 case 1:
                 {
+                    if (IsUnknownTypeHandle(h.m_histogram[0].m_mt))
+                    {
+                        return NULL;
+                    }
                     *pLikelihood = 100;
-                    return h.m_histogram[0].m_mt;
+                    return (CORINFO_CLASS_HANDLE)h.m_histogram[0].m_mt;
                 }
                 break;
 
                 case 2:
                 {
-                    if (h.m_histogram[0].m_count >= h.m_histogram[1].m_count)
+                    if ((h.m_histogram[0].m_count >= h.m_histogram[1].m_count) && !IsUnknownTypeHandle(h.m_histogram[0].m_mt))
                     {
                         *pLikelihood = (100 * h.m_histogram[0].m_count) / h.m_totalCount;
-                        return h.m_histogram[0].m_mt;
+                        return (CORINFO_CLASS_HANDLE)h.m_histogram[0].m_mt;
+                    }
+                    else if (!IsUnknownTypeHandle(h.m_histogram[1].m_mt))
+                    {
+                        *pLikelihood = (100 * h.m_histogram[1].m_count) / h.m_totalCount;
+                        return (CORINFO_CLASS_HANDLE)h.m_histogram[1].m_mt;
                     }
                     else
                     {
-                        *pLikelihood = (100 * h.m_histogram[1].m_count) / h.m_totalCount;
-                        return h.m_histogram[1].m_mt;
+                        return NULL;
                     }
                 }
                 break;
@@ -912,22 +1177,22 @@ CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize
                 {
                     // Find maximum entry and return it
                     //
-                    unsigned maxIndex = 0;
-                    unsigned maxCount = 0;
+                    unsigned maxKnownIndex = 0;
+                    unsigned maxKnownCount = 0;
 
                     for (unsigned m = 0; m < h.m_histogram.GetCount(); m++)
                     {
-                        if (h.m_histogram[m].m_count > maxCount)
+                        if ((h.m_histogram[m].m_count > maxKnownCount) && !IsUnknownTypeHandle(h.m_histogram[m].m_mt))
                         {
-                            maxIndex = m;
-                            maxCount = h.m_histogram[m].m_count;
+                            maxKnownIndex = m;
+                            maxKnownCount = h.m_histogram[m].m_count;
                         }
                     }
 
-                    if (maxCount > 0)
+                    if (maxKnownCount > 0)
                     {
-                        *pLikelihood = (100 * maxCount) / h.m_totalCount;
-                        return h.m_histogram[maxIndex].m_mt;
+                        *pLikelihood = (100 * maxKnownCount) / h.m_totalCount;;
+                        return (CORINFO_CLASS_HANDLE)h.m_histogram[maxKnownIndex].m_mt;
                     }
 
                     return NULL;
@@ -955,8 +1220,10 @@ HRESULT PgoManager::allocPgoInstrumentationBySchema(MethodDesc* pMD, ICorJitInfo
 
 // Stub version for !FEATURE_PGO builds
 //
-HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchema, BYTE**pInstrumentationData)
+HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, NewArrayHolder<BYTE> *pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData)
 {
+    *pAllocatedData = NULL;
+    *pCountSchemaItems = 0;
     *pInstrumentationData = NULL;
     return E_NOTIMPL;
 }
@@ -967,8 +1234,10 @@ void PgoManager::VerifyAddress(void* address)
 
 // Stub version for !FEATURE_PGO builds
 //
-CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset)
+CORINFO_CLASS_HANDLE PgoManager::getLikelyClass(MethodDesc* pMD, unsigned ilSize, unsigned ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
 {
+    *pLikelihood = 0;
+    *pNumberOfClasses = 0;
     return NULL;
 }
 

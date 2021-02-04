@@ -46,47 +46,46 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-function(extract_mono_corlib_version)
-  file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/configure.ac corlib_version_line REGEX ^MONO_CORLIB_VERSION=)
+#
+# This is the version of the corlib-runtime interface. When
+# making changes to this interface (by changing the layout
+# of classes the runtime knows about, changing icall signature or
+# semantics etc), change this variable.
+#
+# This must be unique relative to corlib interface and semantics.
+#
+# If you change corlib such that a runtime change is required, or
+# vice versa, change this string. Examples include removing icalls,
+# adding icalls, changing icall signatures, and changing type layouts
+# that both sides know.
+#
+# It is an arbitrary string and should be parsed as such.
+# A guid works and is encouraged.
+#
+# There is no ordering of corlib versions, no old or new,
+# an exact match is required between corlib and runtime.
+#
+# This line is parsed by other tools, it should remain in the format they expect.
+#
+set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
 
-  if(corlib_version_line STREQUAL "")
-    message(FATAL_ERROR "Couldn't find MONO_CORLIB_VERSION from configure.ac")
-  endif()
+set(ENABLE_NETCORE 1)
 
-  string(REGEX REPLACE "MONO_CORLIB_VERSION=([0-9a-fA-F\-]+)" "\\1" corlib_version ${corlib_version_line})
-
-  if(corlib_version STREQUAL "")
-    message(FATAL_ERROR "Couldn't parse corlib version")
-  endif()
-
-  set(MONO_CORLIB_VERSION "\"${corlib_version}\"" PARENT_SCOPE)
-endfunction()
-
-extract_mono_corlib_version()
-
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mono.proj")
-  set(ENABLE_NETCORE 1)
-endif()
-
-if(ENABLE_NETCORE)
-  set(DISABLE_REMOTING 1)
-  set(DISABLE_REFLECTION_EMIT_SAVE 1)
-  set(DISABLE_APPDOMAINS 1)
-  set(DISABLE_SHADOW_COPY 1)
-  set(DISABLE_CLEANUP 1)
-  set(DISABLE_ASSEMBLY_REMAPPING 1)
-  set(DISABLE_SECURITY 1)
-  set(DISABLE_MDB 1)
-  set(DISABLE_COM 1)
-  set(DISABLE_GAC 1)
-  set(DISABLE_PERFCOUNTERS 1)
-  set(DISABLE_ATTACH 1)
-  set(DISABLE_CONFIG 1)
-  set(DISABLE_CFGDIR_CONFIG 1)
-  set(DISABLE_VERIFIER 1)
-else()
-  message(FATAL_ERROR "Building without -DENABLE_NETCORE=1 is not supported.")
-endif()
+set(DISABLE_REMOTING 1)
+set(DISABLE_REFLECTION_EMIT_SAVE 1)
+set(DISABLE_APPDOMAINS 1)
+set(DISABLE_SHADOW_COPY 1)
+set(DISABLE_CLEANUP 1)
+set(DISABLE_ASSEMBLY_REMAPPING 1)
+set(DISABLE_SECURITY 1)
+set(DISABLE_MDB 1)
+set(DISABLE_COM 1)
+set(DISABLE_GAC 1)
+set(DISABLE_PERFCOUNTERS 1)
+set(DISABLE_ATTACH 1)
+set(DISABLE_CONFIG 1)
+set(DISABLE_CFGDIR_CONFIG 1)
+set(DISABLE_VERIFIER 1)
 
 # Dependencies between options
 if(DISABLE_ASSEMBLY_REMAPPING)

@@ -272,13 +272,14 @@ public:
             OFFSET_MASK    = 0x3FFFFFFF
         };
 
-        UINT32 ILOffset;
         UINT32 Count;
         CORINFO_CLASS_HANDLE ClassTable[SIZE];
     };
 
     enum class PgoInstrumentationKind
     {
+        // This must be kept in sync with PgoInstrumentationKind in PgoFormat.cs
+
         // Schema data types
         None = 0,
         FourByte = 1,
@@ -293,17 +294,17 @@ public:
         Align8Byte = 0x20,
         AlignPointer = 0x30,
 
-        // Mask of all schema data types
+        // Mask of all schema alignment types
         AlignMask = 0x30,
 
         DescriptorMin = 0x40,
 
         Done = None, // All instrumentation schemas must end with a record which is "Done"
-        BasicBlockIntCount = DescriptorMin | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
-        TypeHandleHistogramCount = (DescriptorMin * 1) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
-        TypeHandleHistogramTypeHandle = (DescriptorMin * 1) | TypeHandle, // TypeHandle that is part of a type histogram
-        Version = (DescriptorMin * 2) | None, // Version is encoded in the Other field of the schema
-        NumRuns = (DescriptorMin * 3) | None, // Number of runs is encoded in the Other field of the schema
+        BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
+        TypeHandleHistogramCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
+        TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
+        Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
+        NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
     };
 
     struct PgoInstrumentationSchema

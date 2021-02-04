@@ -475,22 +475,15 @@ namespace System.IO
 
                 static ParsedEvent ParseEvent(byte* nativeEventPath)
                 {
-                    int byteCount = 0;
                     Debug.Assert(nativeEventPath != null);
-                    byte* temp = nativeEventPath;
 
-                    // Finds the position of null character.
-                    while (*temp != 0)
-                    {
-                        temp++;
-                        byteCount++;
-                    }
+                    ReadOnlySpan<byte> eventPath = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(nativeEventPath);
+                    Debug.Assert(!eventPath.IsEmpty, "Empty events are not supported");
 
-                    Debug.Assert(byteCount > 0, "Empty events are not supported");
-                    char[] tempBuffer = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetMaxCharCount(byteCount));
+                    char[] tempBuffer = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetMaxCharCount(eventPath.Length));
 
                     // Converting an array of bytes to UTF-8 char array
-                    int charCount = Encoding.UTF8.GetChars(new ReadOnlySpan<byte>(nativeEventPath, byteCount), tempBuffer);
+                    int charCount = Encoding.UTF8.GetChars(eventPath, tempBuffer);
                     return new ParsedEvent(tempBuffer.AsSpan(0, charCount), tempBuffer);
                 }
 

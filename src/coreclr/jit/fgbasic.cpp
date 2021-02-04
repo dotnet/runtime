@@ -168,6 +168,9 @@ void Compiler::fgInit()
     fgPgoSchema          = nullptr;
     fgPgoData            = nullptr;
     fgPgoSchemaCount     = 0;
+    fgNumProfileRuns     = 0;
+    fgPgoBlockCounts     = 0;
+    fgPgoClassProfiles   = 0;
     fgPredListSortVector = nullptr;
 }
 
@@ -2202,35 +2205,6 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
         curBBdesc->bbCodeOffs    = curBBoffs;
         curBBdesc->bbCodeOffsEnd = nxtBBoffs;
-
-        BasicBlock::weight_t profileWeight;
-
-        if (fgGetProfileWeightForBasicBlock(curBBoffs, &profileWeight))
-        {
-            if (compIsForInlining())
-            {
-                if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
-                {
-                    double scaledWeight = impInlineInfo->profileScaleFactor * profileWeight;
-                    profileWeight       = (BasicBlock::weight_t)scaledWeight;
-                }
-            }
-
-            curBBdesc->setBBProfileWeight(profileWeight);
-
-            if (profileWeight == 0)
-            {
-                curBBdesc->bbSetRunRarely();
-            }
-            else
-            {
-                // Note that bbNewBasicBlock (called from fgNewBasicBlock) may have
-                // already marked the block as rarely run.  In that case (and when we know
-                // that the block profile weight is non-zero) we want to unmark that.
-
-                curBBdesc->bbFlags &= ~BBF_RUN_RARELY;
-            }
-        }
 
         switch (jmpKind)
         {

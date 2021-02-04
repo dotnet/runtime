@@ -324,7 +324,7 @@ namespace Internal.JitInterface
                 tw.Write(")");
                 if (decl.ReturnType.IsBOOL || decl.ReturnType.IsBoolean)
                 {
-                    tw.Write(" ? 1 : 0");
+                    tw.Write($" ? ({decl.ReturnType.UnmanagedTypeName})1 : ({decl.ReturnType.UnmanagedTypeName})0");
                 }
                 tw.Write(";");
                 tw.Write(@"

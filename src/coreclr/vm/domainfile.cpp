@@ -1838,14 +1838,6 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
 }
 #endif // FEATURE_PREJIT
 
-
-
-
-
-// <TODO>@todo Find a better place for these</TODO>
-#define DE_CUSTOM_VALUE_NAMESPACE        "System.Diagnostics"
-#define DE_DEBUGGABLE_ATTRIBUTE_NAME     "DebuggableAttribute"
-
 // <TODO>@todo .INI file is a temporary workaround for Beta 1</TODO>
 #define DE_INI_FILE_SECTION_NAME          W(".NET Framework Debugging Control")
 #define DE_INI_FILE_KEY_TRACK_INFO        W("GenerateTrackingInfo")
@@ -2080,9 +2072,7 @@ HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
         mdAssembly asTK = TokenFromRid(mdtAssembly, 1);
 
         hr = mdImport->GetCustomAttributeByName(asTK,
-                                                DE_CUSTOM_VALUE_NAMESPACE
-                                                NAMESPACE_SEPARATOR_STR
-                                                DE_DEBUGGABLE_ATTRIBUTE_NAME,
+                                                DEBUGGABLE_ATTRIBUTE_TYPE,
                                                 (const void**)&blob,
                                                 &size);
 
@@ -2131,7 +2121,7 @@ HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
                 }
 
                 LOG((LF_CORDB, LL_INFO10, "Assembly %S: has %s=%d,%d bits = 0x%x\n", GetDebugName(),
-                     DE_DEBUGGABLE_ATTRIBUTE_NAME,
+                     DEBUGGABLE_ATTRIBUTE_TYPE_NAME,
                      blob[2], blob[3], *pdwFlags));
             }
         }
