@@ -8,7 +8,7 @@
       - MonoAOTEnableLLVM - enable LLVM for an AOT-only Mono
       - MonoAOTLLVMDir - [optional] the directory where LLVM is located, for an AOT-only Mono
       - MonoVerboseBuild - enable verbose build
-      - MonoMetadataUpdate - enable experimental method body replacement code
+      - MonoMetadataUpdate - enable experimental method body replacement code (in Directory.Build.props)
       - MonoThreadSuspend - coop,hybrid,preemptive - default thread suspend mode
   -->
 
@@ -48,13 +48,6 @@
     <MonoCCompiler Condition="$(MonoCCompiler.StartsWith('-'))">$(MonoCCompiler.TrimStart('-'))</MonoCCompiler>
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'clang'">clang++</MonoCxxCompiler>
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
-  </PropertyGroup>
-
-  <!-- default metadata update support for specific platforms -->
-  <PropertyGroup>
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == '' and ('$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')">true</MonoMetadataUpdate>
-
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">false</MonoMetadataUpdate>
   </PropertyGroup>
 
   <!-- default thread suspend for specific platforms -->
@@ -328,9 +321,8 @@
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
 
-    <!-- Experimental features -->
+    <!-- Devloop features -->
     <ItemGroup Condition="'$(MonoMetadataUpdate)' == 'true'">
-      <!-- FIXME: Add sanity check that the interpreter is enabled -->
       <_MonoCMakeArgs Include="-DENABLE_METADATA_UPDATE=1" />
     </ItemGroup>
 
@@ -449,8 +441,7 @@
       <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
-      <!-- Experimental features -->
-      <!-- FIXME: Add sanity check that the interpreter is enabled -->
+      <!-- Devloop features -->
       <MonoAOTCMakeArgs Condition="'$(MonoMetadataUpdate)' == 'true'" Include="-DENABLE_METADATA_UPDATE=1" />
 
       <!-- thread suspend -->

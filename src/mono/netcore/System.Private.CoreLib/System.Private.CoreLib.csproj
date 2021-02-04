@@ -18,13 +18,6 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
-  <!-- default metadata update support for specific platforms -->
-  <PropertyGroup>
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == '' and ('$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')">true</MonoMetadataUpdate>
-    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">false</MonoMetadataUpdate>
-  </PropertyGroup>
-
-
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
   <ItemGroup Label="Embedded Resources">
     <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
