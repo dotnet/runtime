@@ -145,6 +145,7 @@ static
 void
 eventpipe_fire_method_events (
 	MonoJitInfo *ji,
+	MonoMethod *method,
 	EventPipeFireMethodEventsData *events_data);
 
 static
@@ -307,6 +308,7 @@ static
 void
 eventpipe_fire_method_events (
 	MonoJitInfo *ji,
+	MonoMethod *method,
 	EventPipeFireMethodEventsData *events_data)
 {
 	g_assert_checked (ji != NULL);
@@ -326,7 +328,6 @@ eventpipe_fire_method_events (
 
 	//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
 
-	MonoMethod *method = jinfo_get_method (ji);
 	if (method) {
 		method_id = (uint64_t)method;
 		method_token = method->token;
@@ -423,8 +424,11 @@ eventpipe_fire_method_events_func (
 	EventPipeFireMethodEventsData *events_data = (EventPipeFireMethodEventsData *)user_data;
 	g_assert_checked (events_data != NULL);
 
-	if (ji && !ji->is_trampoline && !ji->async)
-		eventpipe_fire_method_events (ji, events_data);
+	if (ji && !ji->is_trampoline && !ji->async) {
+		MonoMethod *method = jinfo_get_method (ji);
+		if (method && !m_method_is_wrapper (method))
+			eventpipe_fire_method_events (ji, method, events_data);
+	}
 }
 
 static
@@ -573,7 +577,8 @@ eventpipe_walk_managed_stack_for_thread_func (
 		if (!frame->ji)
 			return FALSE;
 		MonoMethod *method = frame->ji->async ? NULL : frame->actual_method;
-		ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
+		if (method && !m_method_is_wrapper (method))
+			ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
 		return ep_stack_contents_get_length ((EventPipeStackContents *)data) >= EP_MAX_STACK_DEPTH;
 	default:
 		g_assert_not_reached ();
@@ -598,21 +603,6 @@ eventpipe_walk_managed_stack_for_thread (
 }
 
 static
-inline
-EventPipeSampleProfilerSampleType
-eventpipe_sample_profiler_get_sample_type (
-	uintptr_t thread_ip,
-	MonoJitInfo *ji)
-{
-	EventPipeSampleProfilerSampleType sample_type;
-	if (ji && (uintptr_t)ji->code_start <= thread_ip && thread_ip < ((uintptr_t)ji->code_start + ji->code_size))
-		sample_type = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
-	else
-		sample_type = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
-	return sample_type;
-}
-
-static
 gboolean
 eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 	MonoStackFrameInfo *frame,
@@ -623,8 +613,14 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 	g_assert_checked (data != NULL);
 
 	EventPipeSampleProfileData *sample_data = (EventPipeSampleProfileData *)data;
-	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR)
-		sample_data->payload_data = eventpipe_sample_profiler_get_sample_type (sample_data->thread_ip, frame->ji);
+
+	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR) {
+		if (frame->type == FRAME_TYPE_MANAGED_TO_NATIVE)
+			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+		else
+			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+	}
+
 	return eventpipe_walk_managed_stack_for_thread_func (frame, ctx, &sample_data->stack_contents);
 }
 
@@ -645,7 +641,9 @@ eventpipe_sample_profiler_write_sampling_event_for_threads (
 	// NOTE, there is a chance there are more threads than max, if that's the case we will
 	// miss those threads in this sample, but will be included in next when max has been adjusted.
 	g_array_set_size (_ep_rt_mono_sampled_thread_callstacks, _ep_rt_mono_max_sampled_thread_count);
-	uint32_t thread_count = 0;
+
+	uint32_t filtered_thread_count = 0;
+	uint32_t sampled_thread_count = 0;
 
 	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
 
@@ -654,17 +652,18 @@ eventpipe_sample_profiler_write_sampling_event_for_threads (
 		if (!mono_thread_info_is_running (thread_info)) {
 			MonoThreadUnwindState *thread_state = mono_thread_info_get_suspend_state (thread_info);
 			if (thread_state->valid) {
-				if (thread_count < _ep_rt_mono_max_sampled_thread_count) {
-					EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, thread_count);
+				if (sampled_thread_count < _ep_rt_mono_max_sampled_thread_count) {
+					EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, sampled_thread_count);
 					data->thread_id = mono_thread_info_get_tid (thread_info);
 					data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&thread_state->ctx);
 					data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
-					ep_stack_contents_init (&data->stack_contents);
+					ep_stack_contents_reset (&data->stack_contents);
 					mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_sample_profiler_walk_managed_stack_for_thread_func, thread_state, MONO_UNWIND_SIGNAL_SAFE, data);
+					sampled_thread_count++;
 				}
-				thread_count++;
 			}
 		}
+		filtered_thread_count++;
 	} FOREACH_THREAD_SAFE_END
 
 	mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
@@ -673,16 +672,16 @@ eventpipe_sample_profiler_write_sampling_event_for_threads (
 	// Since we can't keep thread info around after runtime as been suspended, use an empty
 	// adapter instance and only set recorded tid as parameter inside adapter.
 	THREAD_INFO_TYPE adapter = { 0 };
-	for (uint32_t i = 0; i < thread_count; ++i) {
-		if (thread_count < _ep_rt_mono_max_sampled_thread_count) {
-			EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, i);
+	for (uint32_t i = 0; i < sampled_thread_count; ++i) {
+		EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, i);
+		if (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length(&data->stack_contents) > 0) {
 			mono_thread_info_set_tid (&adapter, data->thread_id);
 			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&data->payload_data, sizeof (data->payload_data));
 		}
 	}
 
 	// Current thread count will be our next maximum sampled threads.
-	_ep_rt_mono_max_sampled_thread_count = thread_count;
+	_ep_rt_mono_max_sampled_thread_count = filtered_thread_count;
 
 	return TRUE;
 }
