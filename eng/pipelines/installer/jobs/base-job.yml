@@ -20,7 +20,7 @@ parameters:
   displayName: ''
   runtimeVariant: ''
   pool: ''
-  pgoType: ''
+  pgoInstrument: ''
 
   packageDistroList:
   - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
@@ -299,8 +299,8 @@ jobs:
   - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
     - evaluate_paths
   - ${{ parameters.dependsOn }}
-  - ${{ if eq(parameters.pgoType, 'PGO') }}:
-    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}_{6}_',
+  - ${{ if eq(parameters.pgoType, 'pgo') }}:
+    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}{6}',
         parameters.runtimeFlavor,
         parameters.runtimeVariant,
         parameters.osGroup,
@@ -308,7 +308,7 @@ jobs:
         parameters.archType,
         parameters.liveRuntimeBuildConfig,
         parameters.pgoType) }}
-  - ${{ if and(ne(parameters.pgoType, 'PGO'), ne(parameters.liveRuntimeBuildConfig, '')) }}:
+  - ${{ if and(ne(parameters.pgoType, 'pgo'), ne(parameters.liveRuntimeBuildConfig, '')) }}:
     - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
         parameters.runtimeFlavor,
         parameters.runtimeVariant,
@@ -316,7 +316,7 @@ jobs:
         parameters.osSubgroup,
         parameters.archType,
         parameters.liveRuntimeBuildConfig) }}
-  - ${{ if and(ne(parameters.pgoType, 'PGO'), eq(parameters.liveRuntimeBuildConfig, '')) }}:
+  - ${{ if and(ne(parameters.pgoType, 'pgo'), eq(parameters.liveRuntimeBuildConfig, '')) }}:
     - libraries_build_${{ format('{0}{1}_{2}_{3}',
         parameters.osGroup,
         parameters.osSubgroup,
