@@ -206,6 +206,9 @@ void Arm64SingleStepper::Apply(T_CONTEXT *pCtx)
     //     control in the breakpoint fixup logic we can then reset the PC to its proper location.
 
     unsigned int idxNextInstruction = 0;
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     if (TryEmulate(pCtx, opcode, false))
     {
