@@ -714,6 +714,8 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCal
             case CorInfoCallConvExtension::Fastcall:
                 callConvLocal = CorInfoCallConvExtension::FastcallMemberFunction;
                 break;
+            default:
+                break;
             }
         }
     }

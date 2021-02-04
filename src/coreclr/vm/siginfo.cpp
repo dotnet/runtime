@@ -5439,6 +5439,8 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
         case CorInfoCallConvExtension::Fastcall:
             *callConvOut = CorInfoCallConvExtension::FastcallMemberFunction;
             break;
+        default:
+            break;
         }
     }
 
