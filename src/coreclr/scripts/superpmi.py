@@ -1986,6 +1986,24 @@ def determine_mcs_tool_path(coreclr_args):
     return find_tool(coreclr_args, mcs_tool_name)
 
 
+def determine_dotnet_tool_name(coreclr_args):
+    """ Determine the dotnet tool name based on the OS
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+
+    Return:
+        (str) Name of the dotnet tool to use
+    """
+
+    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+        return "dotnet"
+    elif coreclr_args.host_os == "windows":
+        return "dotnet.exe"
+    else:
+        raise RuntimeError("Unsupported OS.")
+
+
 def determine_jit_ee_version(coreclr_args):
     """ Determine the JIT-EE version to use.
 
@@ -3020,10 +3038,11 @@ def setup_args(args):
                 sys.exit(1)
 
             # Which dotnet will we use to run it?
-            dotnet_tool_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
-            dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_tool_name))
+            dotnet_script_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
+            dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_script_name))
             if not os.path.exists(dotnet_tool_path):
-                dotnet_tool_path = find_tool(coreclr_args, "dotnet", search_core_root=False, search_product_location=False, search_path=True)  # Only search path
+                dotnet_tool_name = determine_dotnet_tool_name(coreclr_args)
+                dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True)  # Only search path
                 if dotnet_tool_path is None:
                     print("`--crossgen2` is specified, but couldn't find a `dotnet` to run it")
                     sys.exit(1)
@@ -3032,6 +3051,10 @@ def setup_args(args):
             coreclr_args.dotnet_tool_path = dotnet_tool_path
             logging.debug("Using crossgen2 tool %s", coreclr_args.crossgen2_tool_path)
             logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
+
+        if coreclr_args.temp_dir is not None:
+            coreclr_args.temp_dir = os.path.abspath(coreclr_args.temp_dir)
+            logging.debug("Using temp_dir %s", coreclr_args.temp_dir)
 
     elif coreclr_args.mode == "replay":
 
@@ -3172,6 +3195,10 @@ def setup_args(args):
                             "coredistools_location",
                             os.path.isfile,
                             "Unable to find coredistools.")
+
+        if coreclr_args.temp_dir is not None:
+            coreclr_args.temp_dir = os.path.abspath(coreclr_args.temp_dir)
+            logging.debug("Using temp_dir %s", coreclr_args.temp_dir)
 
     elif coreclr_args.mode == "upload":
 

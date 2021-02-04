@@ -379,6 +379,13 @@ def main(main_args):
     workitem_directory = path.join(source_directory, "workitem")
     pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
 
+    # Copy ".dotnet" to correlation_payload_directory for crossgen2 job; it is needed to invoke crossgen2.dll
+    if coreclr_args.collection_name == "crossgen2":
+        dotnet_src_directory = path.join(source_directory, ".dotnet")
+        dotnet_dst_directory = path.join(correlation_payload_directory, ".dotnet")
+        print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
+        copy_directory(dotnet_src_directory, dotnet_dst_directory)
+
     # payload
     input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
     exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
