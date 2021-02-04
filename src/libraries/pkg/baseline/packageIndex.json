@@ -1543,9 +1543,10 @@
     "runtime.native.System.IO.Ports": {
       "StableVersions": [
         "4.6.0",
-        "5.0.0"
+        "5.0.0",
+        "5.0.1"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "5.0.1",
       "InboxOn": {}
     },
     "SMDiagnostics": {
@@ -3538,9 +3539,10 @@
         "4.4.0",
         "4.5.0",
         "4.6.0",
-        "5.0.0"
+        "5.0.0",
+        "5.0.1"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "5.0.1",
       "InboxOn": {
         "uap10.0.16299": "4.0.1.0"
       },
