@@ -36,7 +36,7 @@ namespace System.Resources.Tests
         public static void VerifyFeatureSwitchGeneratesTheRightException()
         {
             var remoteInvokeOptions = new RemoteInvokeOptions();
-            remoteInvokeOptions.RuntimeConfigurationOptions.Add("System.Resources.ResourceManager.CustomResourceTypes.AreSupported", false);
+            remoteInvokeOptions.RuntimeConfigurationOptions.Add("System.Resources.ResourceManager.AllowCustomResourceTypes", false);
 
             using var handle = RemoteExecutor.Invoke(() =>
             {

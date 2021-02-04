@@ -129,7 +129,7 @@ namespace System.Resources
             ReadResources();
         }
 
-        internal static bool AllowCustomResourceTypes { get; } = AppContext.TryGetSwitch("System.Resources.ResourceManager.CustomResourceTypes.AreSupported", out bool allowReflection) ? allowReflection : true;
+        internal static bool AllowCustomResourceTypes { get; } = AppContext.TryGetSwitch("System.Resources.ResourceManager.AllowCustomResourceTypes", out bool allowReflection) ? allowReflection : true;
 
         public void Close()
         {
