@@ -4,7 +4,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Globalization;
 using System.Text;
 
@@ -205,7 +204,19 @@ namespace Microsoft.Extensions.Logging
             var enumerable = value as IEnumerable;
             if (enumerable != null)
             {
-                return string.Join(", ", enumerable.Cast<object>().Select(o => o ?? NullValue));
+                var vsb = new ValueStringBuilder(stackalloc char[256]);
+                bool first = true;
+                foreach (object e in enumerable)
+                {
+                    if (!first)
+                    {
+                        vsb.Append(", ");
+                    }
+
+                    vsb.Append(e != null ? e.ToString() : NullValue);
+                    first = false;
+                }
+                return vsb.ToString();
             }
 
             return value;
