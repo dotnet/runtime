@@ -1,4 +1,4 @@
-TOP=../../../../../../
+TOP=../../../../../
 DOTNET:=$(TOP)./dotnet.sh
 DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 
