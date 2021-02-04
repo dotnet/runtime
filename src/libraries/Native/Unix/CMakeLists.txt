@@ -77,6 +77,9 @@ if(CLR_CMAKE_TARGET_BROWSER)
 endif()
 
 if(CLR_CMAKE_TARGET_MACCATALYST)
+    # -target overrides -mmacosx-version-min so suppress warning about that
+    add_compile_options(-Wno-overriding-t-option)
+    add_link_options(-Wno-overriding-t-option)
     if (CLR_CMAKE_TARGET_ARCH_AMD64)
         add_compile_options(-target x86_64-apple-ios13.5-macabi)
         add_link_options(-target x86_64-apple-ios13.5-macabi)

@@ -388,6 +388,12 @@ if (CLR_CMAKE_HOST_UNIX)
   if(CLR_CMAKE_HOST_OSX)
     # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
     if(CLR_CMAKE_TARGET_MACCATALYST)
+      # Somewhere between CMake 3.17 and 3.19.4, it became impossible to not pass
+      # a value for mmacosx-version-min (blank CMAKE_OSX_DEPLOYMENT_TARGET gets
+      # replaced with a default value, and always gets expanded to an OS version.
+      # We need to disable the warning that -tagret replaces -mmacosx-version-min
+      add_compile_options(-Wno-overriding-t-option)
+      add_link_options(-Wno-overriding-t-option)
       if(CLR_CMAKE_HOST_ARCH_ARM64)
         add_compile_options(-target arm64-apple-ios14.2-macabi)
         add_link_options(-target arm64-apple-ios14.2-macabi)
