@@ -5420,6 +5420,14 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
 
     if (useMemberFunctionVariant)
     {
+        if (*callConvOut == CorInfoCallConvExtension::Managed)
+        {
+            // In this case, the only specified calling convention is CallConvMemberFunction.
+            // Set *callConvOut to the default unmanaged calling convention.
+            *callConvOut = MetaSig::GetDefaultUnmanagedCallingConvention();
+            found = true;
+        }
+
         switch (*callConvOut)
         {
         case CorInfoCallConvExtension::C:

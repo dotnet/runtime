@@ -7139,7 +7139,8 @@ void Compiler::impCheckForPInvokeCall(
     }
 
     // AMD64 convention is same for native and managed
-    if (unmanagedCallConv == CorInfoCallConvExtension::C)
+    if (unmanagedCallConv == CorInfoCallConvExtension::C ||
+        unmanagedCallConv == CorInfoCallConvExtension::CMemberFunction)
     {
         call->gtFlags |= GTF_CALL_POP_ARGS;
     }

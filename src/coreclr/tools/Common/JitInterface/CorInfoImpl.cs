@@ -643,14 +643,13 @@ namespace Internal.JitInterface
                 _ => null
             };
 
-        private static CorInfoCallConvExtension? GetMemberFunctionCallingConventionVariant(CorInfoCallConvExtension baseCallConv) =>
-            // Look for a recognized calling convention in metadata.
+        private static CorInfoCallConvExtension GetMemberFunctionCallingConventionVariant(CorInfoCallConvExtension baseCallConv) =>
             baseCallConv switch
             {
                 CorInfoCallConvExtension.C => CorInfoCallConvExtension.CMemberFunction,
                 CorInfoCallConvExtension.Stdcall => CorInfoCallConvExtension.StdcallMemberFunction,
                 CorInfoCallConvExtension.Fastcall => CorInfoCallConvExtension.FastcallMemberFunction,
-                c => c
+                var c => c
             };
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, CORINFO_SIG_INFO* sig)

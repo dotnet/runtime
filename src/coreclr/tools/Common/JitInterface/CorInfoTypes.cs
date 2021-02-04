@@ -379,7 +379,7 @@ namespace Internal.JitInterface
         C,
         Stdcall,
         Thiscall,
-        Fastcall
+        Fastcall,
         // New calling conventions supported with the extensible calling convention encoding go here.
         CMemberFunction,
         StdcallMemberFunction,
