@@ -1,0 +1,7 @@
+<Project>
+
+  <PropertyGroup>
+    <GitHubRepositoryName>runtime</GitHubRepositoryName>
+  </PropertyGroup>
+
+</Project>
