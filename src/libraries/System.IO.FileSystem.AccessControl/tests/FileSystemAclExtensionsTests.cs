@@ -177,29 +177,41 @@ namespace System.IO
         {
             DirectoryInfo info = null;
             var security = new DirectorySecurity();
-            Assert.Throws<ArgumentNullException>("directoryInfo", () => DirectoryInfo_Create_Framework(info, security));
+            Assert.Throws<ArgumentNullException>("directoryInfo", () => DirectoryInfo_Create_SelectFramework(info, security));
         }
 
         [Fact]
         public void DirectoryInfo_Create_NullDirectorySecurity()
         {
             var info = new DirectoryInfo("path");
-            Assert.Throws<ArgumentNullException>("directorySecurity", () => DirectoryInfo_Create_Framework(info, null));
+            Assert.Throws<ArgumentNullException>("directorySecurity", () => DirectoryInfo_Create_SelectFramework(info, null));
         }
 
         [Fact]
         public void DirectoryInfo_Create_NotFound()
         {
-            var directory = new TempAclDirectory();
-            string path = Path.Combine(directory.Path, "ParentDoesNotExist");
-            directory.Dispose(); // Delete parent folder
+            using var tempRootDir = new TempAclDirectory();
+            string dirPath = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString(), "ParentDoesNotExist");
 
-            var info = new DirectoryInfo(path);
-            DirectorySecurity security = GetDirectorySecurity(FileSystemRights.FullControl);
-            DirectoryInfo_Create_Framework(info, security);
+            var dirInfo = new DirectoryInfo(dirPath);
+            var security = new DirectorySecurity();
+            // Fails because the DirectorySecurity lacks any rights to create parent folder
+            Assert.Throws<UnauthorizedAccessException>(() =>  DirectoryInfo_Create_SelectFramework(dirInfo, security));
         }
 
-        private void DirectoryInfo_Create_Framework(DirectoryInfo info, DirectorySecurity security)
+        [Fact]
+        public void DirectoryInfo_Create_NotFound_FullControl()
+        {
+            using var tempRootDir = new TempAclDirectory();
+            string dirPath = Path.Combine(tempRootDir.Path, Guid.NewGuid().ToString(), "ParentDoesNotExist");
+
+            var dirInfo = new DirectoryInfo(dirPath);
+            var security = GetDirectorySecurity(FileSystemRights.FullControl);
+            // Succeeds because it creates the missing parent folder
+            DirectoryInfo_Create_SelectFramework(dirInfo, security);
+        }
+
+        private void DirectoryInfo_Create_SelectFramework(DirectoryInfo info, DirectorySecurity security)
         {
             if (PlatformDetection.IsNetFramework)
             {
