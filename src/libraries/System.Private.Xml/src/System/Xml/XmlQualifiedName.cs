@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -86,7 +87,7 @@ namespace System.Xml
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public override bool Equals(object? other)
+        public override bool Equals([NotNullWhen(true)] object? other)
         {
             if ((object)this == other)
             {

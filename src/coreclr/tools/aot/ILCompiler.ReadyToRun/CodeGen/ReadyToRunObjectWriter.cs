@@ -66,6 +66,11 @@ namespace ILCompiler.DependencyAnalysis
         private readonly SymbolFileBuilder _symbolFileBuilder;
 
         /// <summary>
+        /// Set to non-null when generating callchain profile info.
+        /// </summary>
+        private readonly ProfileFileBuilder _profileFileBuilder;
+
+        /// <summary>
         /// True when the map file builder should emit a textual map file
         /// </summary>
         private bool _generateMapFile;
@@ -130,6 +135,8 @@ namespace ILCompiler.DependencyAnalysis
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
+            bool generateProfileFile,
+            CallChainProfile callChainProfile,
             int customPESectionAlignment)
         {
             _objectFilePath = objectFilePath;
@@ -147,7 +154,7 @@ namespace ILCompiler.DependencyAnalysis
             bool generateMap = (generateMapFile || generateMapCsvFile);
             bool generateSymbols = (generatePdbFile || generatePerfMapFile);
 
-            if (generateMap || generateSymbols)
+            if (generateMap || generateSymbols || generateProfileFile)
             {
                 _outputInfoBuilder = new OutputInfoBuilder();
 
@@ -159,6 +166,11 @@ namespace ILCompiler.DependencyAnalysis
                 if (generateSymbols)
                 {
                     _symbolFileBuilder = new SymbolFileBuilder(_outputInfoBuilder);
+                }
+
+                if (generateProfileFile)
+                {
+                    _profileFileBuilder = new ProfileFileBuilder(_outputInfoBuilder, callChainProfile, _nodeFactory.Target);
                 }
             }
         }
@@ -270,7 +282,7 @@ namespace ILCompiler.DependencyAnalysis
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section);
                     lastWrittenObjectNode = node;
 
-                    if ((_generatePdbFile || _generatePerfMapFile) && node is MethodWithGCInfo methodNode)
+                    if (_outputInfoBuilder != null && node is MethodWithGCInfo methodNode)
                     {
                         _outputInfoBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
                     }
@@ -348,6 +360,12 @@ namespace ILCompiler.DependencyAnalysis
                         }
                         _symbolFileBuilder.SavePerfMap(path, _objectFilePath);
                     }
+
+                    if (_profileFileBuilder != null)
+                    {
+                        string path = Path.ChangeExtension(_objectFilePath, ".profile");
+                        _profileFileBuilder.SaveProfile(path);
+                    }
                 }
 
                 succeeded = true;
@@ -417,6 +435,8 @@ namespace ILCompiler.DependencyAnalysis
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
+            bool generateProfileFile,
+            CallChainProfile callChainProfile,
             int customPESectionAlignment)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
@@ -431,6 +451,8 @@ namespace ILCompiler.DependencyAnalysis
                 pdbPath: pdbPath,
                 generatePerfMapFile: generatePerfMapFile,
                 perfMapPath: perfMapPath,
+                generateProfileFile: generateProfileFile,
+                callChainProfile,
                 customPESectionAlignment);
             objectWriter.EmitPortableExecutable();
         }

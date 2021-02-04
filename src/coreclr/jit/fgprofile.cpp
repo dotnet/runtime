@@ -877,6 +877,114 @@ PhaseStatus Compiler::fgInstrumentMethod()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+//------------------------------------------------------------------------
+// fgIncorporateProfileData: add block/edge profile data to the flowgraph
+//
+// Returns:
+//   appropriate phase status
+//
+PhaseStatus Compiler::fgIncorporateProfileData()
+{
+    assert(fgHaveProfileData());
+
+    // Summarize profile data
+    //
+    fgNumProfileRuns = 0;
+    for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
+    {
+        switch (fgPgoSchema[iSchema].InstrumentationKind)
+        {
+            case ICorJitInfo::PgoInstrumentationKind::NumRuns:
+                fgNumProfileRuns += fgPgoSchema[iSchema].Other;
+                break;
+
+            case ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount:
+                fgPgoBlockCounts++;
+                break;
+
+            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramCount:
+                fgPgoClassProfiles++;
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    assert(fgPgoBlockCounts > 0);
+
+    if (fgNumProfileRuns == 0)
+    {
+        fgNumProfileRuns = 1;
+    }
+
+    JITDUMP("Profile summary: %d runs, %d block probes, %d class profiles\n", fgNumProfileRuns, fgPgoBlockCounts,
+            fgPgoClassProfiles);
+
+    fgIncorporateBlockCounts();
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgIncorporateBlockCounts: read block count based profile data
+//   and set block weights
+//
+// Notes:
+//   Count data for inlinees is scaled (usually down).
+//
+//   Since we are now running before the importer, we do not know which
+//   blocks will be imported, and we should not see any internal blocks.
+//
+// Todo:
+//   Normalize counts.
+//
+//   Take advantage of the (likely) correspondence between block order
+//   and schema order?
+//
+//   Find some other mechanism for handling cases where handler entry
+//   blocks must be in the hot section.
+//
+void Compiler::fgIncorporateBlockCounts()
+{
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        BasicBlock::weight_t profileWeight;
+
+        if (fgGetProfileWeightForBasicBlock(block->bbCodeOffs, &profileWeight))
+        {
+            if (compIsForInlining())
+            {
+                if (impInlineInfo->profileScaleState == InlineInfo::ProfileScaleState::KNOWN)
+                {
+                    double scaledWeight = impInlineInfo->profileScaleFactor * profileWeight;
+                    profileWeight       = (BasicBlock::weight_t)scaledWeight;
+                }
+            }
+
+            block->setBBProfileWeight(profileWeight);
+
+            if (profileWeight == BB_ZERO_WEIGHT)
+            {
+                block->bbSetRunRarely();
+            }
+            else
+            {
+                block->bbFlags &= ~BBF_RUN_RARELY;
+            }
+
+#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
+            // Handle a special case -- some handler entries can't have zero profile count.
+            //
+            if (this->bbIsHandlerBeg(block) && block->isRunRarely())
+            {
+                JITDUMP("Suppressing zero count for " FMT_BB " as it is a handler entry\n", block->bbNum);
+                block->makeBlockHot();
+            }
+#endif
+        }
+    }
+}
+
 bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop)
 {
     bool result = false;
