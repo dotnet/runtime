@@ -12057,7 +12057,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         }
         return;
     }
-    
+
     regNumber srcReg     = genConsumeReg(op1);
     var_types targetType = treeNode->TypeGet();
     regNumber targetReg  = treeNode->GetRegNum();

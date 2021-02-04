@@ -2014,19 +2014,6 @@ instruction CodeGen::ins_FloatCompare(var_types type)
     return (type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
 }
 
-instruction CodeGen::ins_CopyIntToFloat(var_types srcType, var_types dstType)
-{
-    // On SSE2/AVX - the same instruction is used for moving double/quad word to XMM/YMM register.
-    assert((srcType == TYP_INT) || (srcType == TYP_UINT) || (srcType == TYP_LONG) || (srcType == TYP_ULONG));
-
-#if !defined(TARGET_64BIT)
-    // No 64-bit registers on x86.
-    assert((srcType != TYP_LONG) && (srcType != TYP_ULONG));
-#endif // !defined(TARGET_64BIT)
-
-    return INS_movd;
-}
-
 instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 {
     switch (oper)
@@ -2146,21 +2133,6 @@ instruction CodeGen::ins_FloatCopy(var_types type)
     return INS_vmov;
 }
 
-instruction CodeGen::ins_CopyIntToFloat(var_types srcType, var_types dstType)
-{
-    assert((dstType == TYP_FLOAT) || (dstType == TYP_DOUBLE));
-    assert((srcType == TYP_INT) || (srcType == TYP_UINT) || (srcType == TYP_LONG) || (srcType == TYP_ULONG));
-
-    if ((srcType == TYP_LONG) || (srcType == TYP_ULONG))
-    {
-        return INS_vmov_i2d;
-    }
-    else
-    {
-        return INS_vmov_i2f;
-    }
-}
-
 instruction CodeGen::ins_FloatCompare(var_types type)
 {
     // Not used and not implemented
@@ -2273,16 +2245,7 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
     unreached();
 }
 
-#elif defined(TARGET_ARM64)
-instruction CodeGen::ins_CopyIntToFloat(var_types srcType, var_types dstType)
-{
-    assert((dstType == TYP_FLOAT) || (dstType == TYP_DOUBLE));
-    assert((srcType == TYP_INT) || (srcType == TYP_UINT) || (srcType == TYP_LONG) || (srcType == TYP_ULONG));
-
-    return INS_mov;
-}
-
-#endif // TARGET_ARM64
+#endif // TARGET_ARM
 
 /*****************************************************************************
  *

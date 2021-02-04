@@ -531,17 +531,13 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             // For AVX2, move it to all 4 of the 64-bit lanes using:
             //     vpbroadcastq targetReg, targetReg
 
-            instruction ins;
-
             regNumber op1loReg = genConsumeReg(op1lo);
-            ins                = ins_CopyIntToFloat(TYP_INT, TYP_FLOAT);
-            inst_RV_RV(ins, targetReg, op1loReg, TYP_INT, emitTypeSize(TYP_INT));
+            inst_RV_RV(ins_Copy(op1loReg, TYP_FLOAT), targetReg, op1loReg, TYP_INT);
 
             regNumber tmpReg = simdNode->GetSingleTempReg();
 
             regNumber op1hiReg = genConsumeReg(op1hi);
-            ins                = ins_CopyIntToFloat(TYP_INT, TYP_FLOAT);
-            inst_RV_RV(ins, tmpReg, op1hiReg, TYP_INT, emitTypeSize(TYP_INT));
+            inst_RV_RV(ins_Copy(op1loReg, TYP_FLOAT), tmpReg, op1hiReg, TYP_INT);
 
             ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, TYP_SIMD16);
             GetEmitter()->emitIns_R_I(ins, EA_16BYTE, tmpReg, 4); // shift left by 4 bytes
@@ -600,9 +596,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
         regNumber srcReg = genConsumeReg(op1);
         if (baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_LONG || baseType == TYP_ULONG)
         {
-            ins = ins_CopyIntToFloat(baseType, TYP_FLOAT);
-            assert(ins != INS_invalid);
-            inst_RV_RV(ins, targetReg, srcReg, baseType, emitTypeSize(baseType));
+            inst_RV_RV(ins_Copy(srcReg, TYP_FLOAT), targetReg, srcReg, baseType, emitTypeSize(baseType));
             srcReg = targetReg;
         }
 
@@ -653,17 +647,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
         {
             if (op1Reg != targetReg)
             {
-                if (varTypeIsFloating(baseType))
-                {
-                    ins = ins_Copy(targetType);
-                }
-                else if (baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_LONG || baseType == TYP_ULONG)
-                {
-                    ins = ins_CopyIntToFloat(baseType, TYP_FLOAT);
-                }
-
-                assert(ins != INS_invalid);
-                inst_RV_RV(ins, targetReg, op1Reg, baseType, emitTypeSize(baseType));
+                inst_RV_RV(ins_Copy(op1Reg, TYP_FLOAT), targetReg, op1Reg, baseType, emitTypeSize(baseType));
             }
         }
 
