@@ -158,7 +158,7 @@ jobs:
     - windows_x64
     jobParameters:
       testGroup: innerloop
-      pgoInstrument: true
+      pgoType: 'PGO'
 
 #
 # Build CoreCLR Formatting Job
@@ -745,7 +745,7 @@ jobs:
       isOfficialBuild: ${{ variables.isOfficialBuild }}
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-      pgoInstrument: true
+      pgoType: 'PGO'
     platforms:
     - windows_x64
 
