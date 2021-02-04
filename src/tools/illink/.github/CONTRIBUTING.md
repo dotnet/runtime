@@ -21,7 +21,7 @@ investigate bugs, regressions and problems.
 License
 =======
 
-Check the [LICENSE](https://github.com/mono/linker/blob/master/LICENSE) file.
+Check the [LICENSE](https://github.com/mono/linker/blob/main/LICENSE) file.
 
 CLA
 =======

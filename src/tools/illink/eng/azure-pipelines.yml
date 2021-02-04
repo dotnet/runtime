@@ -3,6 +3,7 @@ trigger:
   branches:
     include:
     - master
+    - main
     - release/*
     - mono-*
 
@@ -10,6 +11,7 @@ pr:
   branches:
     include:
     - master
+    - main
     - release/*
     - mono-*
     - feature/*
