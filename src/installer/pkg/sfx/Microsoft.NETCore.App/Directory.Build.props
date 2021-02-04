@@ -3,7 +3,8 @@
 
   <PropertyGroup>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
-    <SharedFrameworkName Condition="'$(PgoOptimize)' != ''">$(SharedFrameworkName).PGO</SharedFrameworkName>
+    <SharedFrameworkName Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</SharedFrameworkName>
+    <IsShipping Condition="'$(PgoInstrument)' != ''">true</IsShipping>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
   </PropertyGroup>
 
@@ -94,6 +95,7 @@
     <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="clretwrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="clrjit.dll" IsNative="true" />
+    <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="pgort140.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
