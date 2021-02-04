@@ -56,12 +56,12 @@ public:
         return {(int)height};
     }
 
-    virtual E GetE()
+    virtual E INSTANCE_CALLCONV GetE()
     {
         return dummy;
     }
 
-    virtual long GetWidthAsLong()
+    virtual long INSTANCE_CALLCONV GetWidthAsLong()
     {
         return (long)width;
     }
