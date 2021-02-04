@@ -320,7 +320,7 @@ enum {
 // the LLVM backend, treat SIMD datatypes as regular value types.
 #define MONO_CLASS_IS_SIMD(cfg, klass) ( ((cfg)->opt & MONO_OPT_SIMD) && ( COMPILE_LLVM (cfg) ) && m_class_is_simd_type (klass) )
 #else
-#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass))
+#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass) && (( COMPILE_LLVM (cfg) ) || mini_type_stack_size (m_class_get_byval_arg (klass), NULL) == 16))
 #endif
 
 #else

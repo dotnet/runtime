@@ -642,7 +642,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	klass = mono_class_from_mono_type_internal (type);
 	size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
 
-	if (!sig->pinvoke && (!is_return && (size <= 16))) {
+	if (!sig->pinvoke && ((is_return && (size == 8)) || (!is_return && (size <= 16)))) {
 		/* We pass and return vtypes of size 8 in a register */
 	} else if (!sig->pinvoke || (size == 0) || (size > 16)) {
 		pass_on_stack = TRUE;
