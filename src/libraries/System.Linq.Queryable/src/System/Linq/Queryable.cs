@@ -614,6 +614,19 @@ namespace System.Linq
                     ));
         }
 
+        [DynamicDependency("Chunk`1", typeof(Enumerable))]
+        public static IQueryable<TSource[]> Chunk<TSource>(this IQueryable<TSource> source, int maxSize)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource[]>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Chunk_TSource_1(typeof(TSource)),
+                    source.Expression, Expression.Constant(maxSize)
+                    ));
+        }
+
         [DynamicDependency("Concat`1", typeof(Enumerable))]
         public static IQueryable<TSource> Concat<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
