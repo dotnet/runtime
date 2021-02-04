@@ -128,7 +128,7 @@ jobs:
         value: '-ninja'
 
     - name: pgoInstrument
-      value: '${{ neq(parameters.pgoType, 'PGO') }}'
+      value: ${{ neq(parameters.pgoType, 'PGO') }}
 
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
