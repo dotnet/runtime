@@ -1836,14 +1836,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return ins_Copy(dstType);
     }
 #if defined(TARGET_XARCH)
-    if (dstIsFloatReg)
-    {
-        return INS_mov_i2xmm;
-    }
-    else
-    {
-        return INS_mov_xmm2i;
-    }
+    return INS_movd;
 #elif defined(TARGET_ARM64)
     if (dstIsFloatReg)
     {
@@ -2031,7 +2024,7 @@ instruction CodeGen::ins_CopyIntToFloat(var_types srcType, var_types dstType)
     assert((srcType != TYP_LONG) && (srcType != TYP_ULONG));
 #endif // !defined(TARGET_64BIT)
 
-    return INS_mov_i2xmm;
+    return INS_movd;
 }
 
 instruction CodeGen::ins_CopyFloatToInt(var_types srcType, var_types dstType)
@@ -2044,7 +2037,7 @@ instruction CodeGen::ins_CopyFloatToInt(var_types srcType, var_types dstType)
     assert((dstType != TYP_LONG) && (dstType != TYP_ULONG));
 #endif // !defined(TARGET_64BIT)
 
-    return INS_mov_xmm2i;
+    return INS_movd;
 }
 
 instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)

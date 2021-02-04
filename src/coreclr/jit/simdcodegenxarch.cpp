@@ -845,12 +845,12 @@ void CodeGen::genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode)
 // prepare mask
 #ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X5300000053000000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_ULONG);
 #else
         if (compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X53000000);
-            inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_UINT);
+            inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_UINT);
         }
         else
         {
@@ -910,14 +910,13 @@ void CodeGen::genSIMDLo64BitConvert(SIMDIntrinsicID intrinsicID,
     instruction ins = getOpForSIMDIntrinsic(intrinsicID, baseType);
     if (intrinsicID == SIMDIntrinsicConvertToDouble)
     {
-        // Note that for mov_xmm2i, the int register is always in the reg2 position
-        inst_RV_RV(INS_mov_xmm2i, tmpReg, tmpIntReg, TYP_LONG);
+        inst_RV_RV(INS_movd, tmpIntReg, tmpReg, TYP_LONG);
         inst_RV_RV(ins, targetReg, tmpIntReg, baseType, emitActualTypeSize(baseType));
     }
     else
     {
         inst_RV_RV(ins, tmpIntReg, tmpReg, baseType, emitActualTypeSize(baseType));
-        inst_RV_RV(INS_mov_i2xmm, targetReg, tmpIntReg, TYP_LONG);
+        inst_RV_RV(INS_movd, targetReg, tmpIntReg, TYP_LONG);
     }
 }
 
@@ -1008,10 +1007,10 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
 // prepare mask for converting upper 32 bits
 #ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X4530000000000000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_ULONG);
 #else
         GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X45300000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_UINT);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_UINT);
         GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
 #endif
         if (level == SIMD_AVX2_Supported)
@@ -1030,10 +1029,10 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
 // prepare mask for converting lower 32 bits
 #ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X4330000000000000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_ULONG);
 #else
         GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X43300000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_UINT);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_UINT);
         GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
 #endif
         if (level == SIMD_AVX2_Supported)
@@ -1123,7 +1122,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
 
         // prepare mask for converting upper 32 bits
         GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X45300000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_UINT);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_UINT);
         GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
 
         if (level == SIMD_AVX2_Supported)
@@ -1141,7 +1140,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
 
         // prepare mask for converting lower 32 bits
         GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X43300000);
-        inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_UINT);
+        inst_RV_RV(INS_movd, tmpReg, tmpIntReg, TYP_UINT);
         GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
 
         if (level == SIMD_AVX2_Supported)
@@ -1905,8 +1904,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
 
             assert(tmpReg != REG_NA);
             ins = ins_CopyFloatToInt(TYP_FLOAT, baseType);
-            // (Note that for mov_xmm2i, the int register is always in the reg2 position.)
-            inst_RV_RV(ins, tmpReg, targetReg, baseType);
+            inst_RV_RV(ins, targetReg, tmpReg, baseType);
         }
     }
 
@@ -1988,8 +1986,7 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
 
         // Move the value from xmm reg to an int reg
         instruction ins = ins_CopyFloatToInt(TYP_FLOAT, TYP_INT);
-        // (Note that for mov_xmm2i, the int register is always in the reg2 position.
-        inst_RV_RV(ins, op2Reg, tmpReg, baseType);
+        inst_RV_RV(ins, tmpReg, op2Reg, baseType);
 
         assert((index >= 0) && (index <= 15));
 

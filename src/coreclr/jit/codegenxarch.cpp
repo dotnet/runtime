@@ -2743,7 +2743,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
         else
         {
-            emit->emitIns_R_R(INS_mov_i2xmm, EA_PTRSIZE, srcXmmReg, srcIntReg);
+            emit->emitIns_R_R(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
 #ifdef TARGET_X86
             // For x86, we need one more to convert it from 8 bytes to 16 bytes.
@@ -5041,7 +5041,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             regNumber   targetReg = compiler->getCallArgIntRegister(argNode->GetRegNum());
             instruction ins       = ins_CopyFloatToInt(argNode->TypeGet(), TYP_LONG);
-            inst_RV_RV(ins, argNode->GetRegNum(), targetReg);
+            inst_RV_RV(ins, targetReg, argNode->GetRegNum());
         }
 #endif // FEATURE_VARARG
     }
