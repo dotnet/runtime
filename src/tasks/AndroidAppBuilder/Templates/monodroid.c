@@ -189,15 +189,12 @@ mono_droid_runtime_init (void)
         mono_jit_parse_options (1, options);
     }
 
-    if (force_interpreter) {
-        LOG_INFO("Interp Enabled");
-        mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
-    } 
-#if FORCE_AOT    
-    else if (force_AOT) {
-        register_aot_modules();
-        mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
-    }
+#if FORCE_INTERPRETER
+    LOG_INFO("Interp Enabled");
+    mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
+#elif FORCE_AOT    
+    register_aot_modules();
+    mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
 #endif
 
     mono_jit_init_version ("dotnet.android", "mobile");
