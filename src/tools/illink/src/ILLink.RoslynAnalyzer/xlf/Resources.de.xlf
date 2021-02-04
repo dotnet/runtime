@@ -22,14 +22,24 @@
         <target state="new">Avoid accessing Assembly file path when publishing as a single file</target>
         <note />
       </trans-unit>
-      <trans-unit id="RequiresUnreferencedCodeAnalyzerMessage">
+      <trans-unit id="RequiresAssemblyFilesMessage">
+        <source>Using member '{0}' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.{1}{2}</source>
+        <target state="new">Using member '{0}' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.{1}{2}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAssemblyFilesTitle">
+        <source>Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file</source>
+        <target state="new">Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresUnreferencedCodeMessage">
         <source>Using method '{0}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. {1}. {2}</source>
         <target state="new">Using method '{0}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. {1}. {2}</target>
         <note />
       </trans-unit>
-      <trans-unit id="RequiresUnreferencedCodeAnalyzerTitle">
-        <source>RequiresUnreferencedCodeAnalyzer</source>
-        <target state="new">RequiresUnreferencedCodeAnalyzer</target>
+      <trans-unit id="RequiresUnreferencedCodeTitle">
+        <source>Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code</source>
+        <target state="new">Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code</target>
         <note />
       </trans-unit>
     </body>

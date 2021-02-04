@@ -20,9 +20,9 @@ namespace ILLink.RoslynAnalyzer
 
 		static readonly DiagnosticDescriptor s_requiresUnreferencedCodeRule = new DiagnosticDescriptor (
 			DiagnosticId,
-			new LocalizableResourceString (nameof (Resources.RequiresUnreferencedCodeAnalyzerTitle),
+			new LocalizableResourceString (nameof (Resources.RequiresUnreferencedCodeTitle),
 			Resources.ResourceManager, typeof (Resources)),
-			new LocalizableResourceString (nameof (Resources.RequiresUnreferencedCodeAnalyzerMessage),
+			new LocalizableResourceString (nameof (Resources.RequiresUnreferencedCodeMessage),
 			Resources.ResourceManager, typeof (Resources)),
 			DiagnosticCategory.Trimming,
 			DiagnosticSeverity.Warning,

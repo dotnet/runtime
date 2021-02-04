@@ -83,12 +83,16 @@ namespace ILLink.RoslynAnalyzer
 						return;
 
 					if (member.TryGetRequiresAssemblyFileAttribute (out AttributeData? requiresAssemblyFilesAttribute)) {
+						var message = requiresAssemblyFilesAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Message").Value.Value?.ToString ();
+						message = message != null ? " " + message + "." : message;
+						var url = requiresAssemblyFilesAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Url").Value.Value?.ToString ();
+						url = url != null ? " " + url : url;
 						operationContext.ReportDiagnostic (Diagnostic.Create (
 							s_requiresAssemblyFilesRule,
 							operationContext.Operation.Syntax.GetLocation (),
 							member.OriginalDefinition.ToString (),
-							requiresAssemblyFilesAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Message").Value.Value?.ToString (),
-							requiresAssemblyFilesAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Url").Value.Value?.ToString ()));
+							message,
+							url));
 					}
 				}
 			});

@@ -117,10 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="RequiresUnreferencedCodeAnalyzerTitle" xml:space="preserve">
-    <value>RequiresUnreferencedCodeAnalyzer</value>
+  <data name="RequiresUnreferencedCodeTitle" xml:space="preserve">
+    <value>Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code</value>
   </data>
-  <data name="RequiresUnreferencedCodeAnalyzerMessage" xml:space="preserve">
+  <data name="RequiresUnreferencedCodeMessage" xml:space="preserve">
     <value>Using method '{0}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. {1}. {2}</value>
   </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
@@ -135,10 +135,10 @@
   <data name="AvoidAssemblyGetFilesInSingleFileMessage" xml:space="preserve">
     <value>'{0}' will throw for assemblies embedded in a single-file app</value>
   </data>
-  <data name="RequiresAssemblyFilesMessage" xml:space="preserve">
-    <value />
-  </data>
   <data name="RequiresAssemblyFilesTitle" xml:space="preserve">
-    <value />
+    <value>Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file</value>
+  </data>
+  <data name="RequiresAssemblyFilesMessage" xml:space="preserve">
+    <value>Using member '{0}' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.{1}{2}</value>
   </data>
 </root>

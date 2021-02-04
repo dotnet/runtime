@@ -1509,3 +1509,49 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
     </assembly>
   </linker>
   ```
+
+## Single-File Warning Codes
+
+#### `IL3000`: 'member' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'
+
+- Calls to 'System.Reflection.Assembly.Location', 'System.Reflection.AssemblyName.CodeBase' and 'System.Reflection.AssemblyName.EscapedCodeBase' return an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'
+
+  ``` C#
+  void TestMethod()
+  {
+      var a = Assembly.GetExecutingAssembly();
+      // IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
+      _ = a.Location;
+  }
+  ```
+
+#### `IL3001`: Assemblies embedded in a single-file app cannot have additional files in the manifest.
+
+- Calls to 'Assembly.GetFile(s)' methods for assemblies embedded inside the single-file bundle always throws an exception. Consider using embedded resources and the 'Assembly.GetManifestResourceStream' method.
+
+  ``` C#
+  void TestMethod()
+  {
+      var a = Assembly.GetExecutingAssembly();
+      // IL3001: Assemblies embedded in a single-file app cannot have additional files in the manifest.
+      _ = a.GetFiles();
+  }
+  ```
+
+#### `IL3002`: Using member 'member' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. [message]. [url]
+
+- The linker found a call to a member annotated with 'RequiresAssemblyFilesAttribute' which can break functionality of a single-file application.
+
+  ```C#
+  [RequiresAssemblyFiles(Message="Use 'MethodFriendlyToSingleFile' instead", Url="http://help/assemblyfiles")]
+  void MethodWithAssemblyFilesUsage()
+  {
+  }
+
+  void TestMethod()
+  {
+      // IL3002: Using member 'MethodWithAssemblyFilesUsage' which has 'RequiresAssemblyFilesAttribute'
+      // can break functionality when embedded in a single-file app. Use 'MethodFriendlyToSingleFile' instead. http://help/assemblyfiles
+      MethodWithAssemblyFilesUsage();
+  }
+  ```

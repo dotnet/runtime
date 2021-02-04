@@ -56,7 +56,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresInDynamicDependency ();
 		}
 
-		[ExpectedWarning ("IL2026", "--RequiresWithMessageOnly--")]
+		[ExpectedWarning ("IL2026", "Message for --RequiresWithMessageOnly--.")]
 		static void TestRequiresWithMessageOnlyOnMethod ()
 		{
 			RequiresWithMessageOnly ();
@@ -67,7 +67,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[ExpectedWarning ("IL2026", "--RequiresWithMessageAndUrl--. https://helpurl")]
+		[ExpectedWarning ("IL2026", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl")]
 		static void TestRequiresWithMessageAndUrlOnMethod ()
 		{
 			RequiresWithMessageAndUrl ();
@@ -78,7 +78,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[ExpectedWarning ("IL2026", "--ConstructorRequires--")]
+		[ExpectedWarning ("IL2026", "Message for --ConstructorRequires--.")]
 		static void TestRequiresOnConstructor ()
 		{
 			new ConstructorRequires ();
@@ -92,8 +92,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 		}
 
-		[ExpectedWarning ("IL2026", "--getter PropertyRequires--")]
-		[ExpectedWarning ("IL2026", "--setter PropertyRequires--")]
+		[ExpectedWarning ("IL2026", "Message for --getter PropertyRequires--.")]
+		[ExpectedWarning ("IL2026", "Message for --setter PropertyRequires--.")]
 		static void TestRequiresOnPropertyGetterAndSetter ()
 		{
 			_ = PropertyRequires;
@@ -108,7 +108,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			set { }
 		}
 
-		[ExpectedWarning ("IL2026", "--RequiresAndCallsOtherRequiresMethods--")]
+		[ExpectedWarning ("IL2026", "Message for --RequiresAndCallsOtherRequiresMethods--.")]
 		static void TestRequiresSuppressesWarningsFromReflectionAnalysis ()
 		{
 			RequiresAndCallsOtherRequiresMethods<TestType> ();
