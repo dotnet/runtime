@@ -495,7 +495,7 @@ register_trampoline_jit_info (MonoDomain *domain, MonoTrampInfo *info)
 	MonoJitInfo *ji;
 
 	ji = (MonoJitInfo *)mono_domain_alloc0 (domain, mono_jit_info_size ((MonoJitInfoFlags)0, 0, 0));
-	mono_jit_info_init (ji, NULL, info->code, info->code_size, (MonoJitInfoFlags)0, 0, 0);
+	mono_jit_info_init (ji, NULL, (guint8*)MINI_FTNPTR_TO_ADDR (info->code), info->code_size, (MonoJitInfoFlags)0, 0, 0);
 	ji->d.tramp_info = info;
 	ji->is_trampoline = TRUE;
 
@@ -2357,7 +2357,7 @@ create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 
 	jinfo = (MonoJitInfo *)mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO);
 	jinfo->d.method = wrapper;
-	jinfo->code_start = info->code;
+	jinfo->code_start = MINI_FTNPTR_TO_ADDR (info->code);
 	jinfo->code_size = info->code_size;
 	jinfo->unwind_info = mono_cache_unwind_info (uw_info, info_len);
 
@@ -2602,7 +2602,9 @@ lookup_start:
 			if (!mono_runtime_class_init_full (vtable, error))
 				return NULL;
 			MONO_PROFILER_RAISE (jit_done, (method, info));
-			return mono_create_ftnptr (target_domain, info->code_start);
+
+			code = MINI_ADDR_TO_FTNPTR (info->code_start);
+			return mono_create_ftnptr (target_domain, code);
 		}
 	}
 
@@ -2632,7 +2634,7 @@ lookup_start:
 				 * The suspend code needs to be able to lookup these methods by ip in async context,
 				 * so preload their jit info.
 				 */
-				MonoJitInfo *ji = mono_jit_info_table_find (domain, code);
+				MonoJitInfo *ji = mini_jit_info_table_find (domain, code, NULL);
 				g_assert (ji);
 			}
 
@@ -2905,7 +2907,7 @@ mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *met
 			mono_atomic_inc_i32 (&mono_jit_stats.methods_lookups);
 			if (ji)
 				*ji = info;
-			return info->code_start;
+			return MINI_ADDR_TO_FTNPTR (info->code_start);
 		}
 	}
 
@@ -3595,8 +3597,10 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	}
 #endif
 
-	if (domain)
-		ji = mono_jit_info_table_find_internal (domain, mono_arch_ip_from_context (ctx), TRUE, TRUE);
+	if (domain) {
+		gpointer ip = MINI_FTNPTR_TO_ADDR (mono_arch_ip_from_context (ctx));
+		ji = mono_jit_info_table_find_internal (domain, ip, TRUE, TRUE);
+	}
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	if (mono_handle_soft_stack_ovf (jit_tls, ji, ctx, info, (guint8*)info->si_addr))
@@ -3821,12 +3825,13 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 
 	if (!method) {
 		MonoJitInfo *ji;
+		gpointer lookup_addr = MINI_FTNPTR_TO_ADDR (addr);
 
 		g_assert (addr);
-		ji = mono_jit_info_table_find_internal (domain, mono_get_addr_from_ftnptr (addr), TRUE, TRUE);
+		ji = mono_jit_info_table_find_internal (domain, mono_get_addr_from_ftnptr (lookup_addr), TRUE, TRUE);
 		/* Shared code */
 		if (!ji && domain != mono_get_root_domain ())
-			ji = mono_jit_info_table_find_internal (mono_get_root_domain (), mono_get_addr_from_ftnptr (addr), TRUE, TRUE);
+			ji = mono_jit_info_table_find_internal (mono_get_root_domain (), mono_get_addr_from_ftnptr (lookup_addr), TRUE, TRUE);
 		if (ji) {
 			if (ji->is_trampoline) {
 				/* Could be an unbox trampoline etc. */

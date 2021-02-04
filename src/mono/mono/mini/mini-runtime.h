@@ -22,7 +22,6 @@ typedef struct
 	GHashTable *jump_target_got_slot_hash;
 	GHashTable *jump_target_hash;
 	/* Maps methods/klasses to the address of the given type of trampoline */
-	GHashTable *class_init_trampoline_hash;
 	GHashTable *jump_trampoline_hash;
 	GHashTable *jit_trampoline_hash;
 	GHashTable *delegate_trampoline_hash;
@@ -438,6 +437,12 @@ jinfo_get_method (MonoJitInfo *ji)
 	return mono_jit_info_get_method (ji);
 }
 
+static inline gpointer
+jinfo_get_ftnptr (MonoJitInfo *ji)
+{
+	return MINI_ADDR_TO_FTNPTR (ji->code_start);
+}
+
 /* main function */
 MONO_API int         mono_main                      (int argc, char* argv[]);
 MONO_API void        mono_set_defaults              (int verbose_level, guint32 opts);
@@ -637,7 +642,7 @@ void mini_register_sigterm_handler (void);
 	mono_codeman_disable_write (); \
 	mono_arch_flush_icache ((buf), (size)); \
 	if ((int)type != -1) \
-		MONO_PROFILER_RAISE (jit_code_buffer, ((buf), (size), (type), (arg))); \
+		MONO_PROFILER_RAISE (jit_code_buffer, ((buf), (size), (MonoProfilerCodeBufferType)(type), (arg))); \
 	} while (0)
 
 #endif /* __MONO_MINI_RUNTIME_H__ */
