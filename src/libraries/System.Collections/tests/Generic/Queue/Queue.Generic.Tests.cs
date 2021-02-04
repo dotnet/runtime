@@ -323,7 +323,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void Queue_Generic_EnsureCapacity_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
+        public void Queue_Generic_EnsureCapacity_RequestingLargerCapacity_DoesInvalidateEnumeration(int count)
         {
             Queue<T> queue = GenericQueueFactory(count);
             IEnumerator<T> copiedEnumerator = new List<T>(queue).GetEnumerator();
@@ -331,11 +331,7 @@ namespace System.Collections.Tests
 
             queue.EnsureCapacity(count + 1);
 
-            while (enumerator.MoveNext())
-            {
-                copiedEnumerator.MoveNext();
-                Assert.Equal(copiedEnumerator.Current, enumerator.Current);
-            }
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
 
         [Fact]

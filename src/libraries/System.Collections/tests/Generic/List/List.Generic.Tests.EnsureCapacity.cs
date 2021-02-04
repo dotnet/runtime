@@ -14,20 +14,16 @@ namespace System.Collections.Tests
     {
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void EnsureCapacity_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
+        public void EnsureCapacity_RequestingLargerCapacity_DoesInvalidateEnumeration(int count)
         {
             List<T> list = GenericListFactory(count);
             IEnumerator<T> copiedListEnumerator = new List<T>(list).GetEnumerator();
             IEnumerator<T> enumerator = list.GetEnumerator();
             var capacity = list.Capacity;
-        
+
             list.EnsureCapacity(capacity + 1);
-        
-            while (enumerator.MoveNext())
-            {
-                copiedListEnumerator.MoveNext();
-                Assert.Equal(copiedListEnumerator.Current, enumerator.Current);
-            }
+
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
 
         [Fact]
