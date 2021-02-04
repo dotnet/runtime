@@ -2310,7 +2310,7 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(remoteEP));
             }
 
-            Task<int> t = SendToAsync(buffer.AsMemory().Slice(offset, size), socketFlags, remoteEP).AsTask();
+            Task<int> t = SendToAsync(buffer.AsMemory(offset, size), socketFlags, remoteEP).AsTask();
             return TaskToApm.Begin(t, callback, state);
         }
 
@@ -2406,7 +2406,7 @@ namespace System.Net.Sockets
             ValidateBufferArguments(buffer, offset, size);
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
-            Task<SocketReceiveMessageFromResult> t = ReceiveMessageFromAsync(new Memory<byte>(buffer, offset, size), socketFlags, remoteEP).AsTask();
+            Task<SocketReceiveMessageFromResult> t = ReceiveMessageFromAsync(buffer.AsMemory(offset, size), socketFlags, remoteEP).AsTask();
             // In case of synchronous completion, ReceiveMessageFromAsync() returns a completed task.
             // When this happens, we need to update 'remoteEP' in order to conform to the historical behavior of BeginReceiveMessageFrom().
             if (t.IsCompletedSuccessfully)
@@ -2447,7 +2447,7 @@ namespace System.Net.Sockets
             ValidateBufferArguments(buffer, offset, size);
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
-            Task<SocketReceiveFromResult> t = ReceiveFromAsync(new Memory<byte>(buffer, offset, size), socketFlags, remoteEP).AsTask();
+            Task<SocketReceiveFromResult> t = ReceiveFromAsync(buffer.AsMemory(offset, size), socketFlags, remoteEP).AsTask();
             // In case of synchronous completion, ReceiveFromAsync() returns a completed task.
             // When this happens, we need to update 'remoteEP' in order to conform to the historical behavior of BeginReceiveFrom().
             if (t.IsCompletedSuccessfully)
