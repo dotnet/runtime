@@ -387,7 +387,7 @@ if (CLR_CMAKE_HOST_UNIX)
   # Specify the minimum supported version of macOS
   if(CLR_CMAKE_HOST_OSX)
     # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
-    if(CLR_CMAKE_TARGET_CATALYST)
+    if(CLR_CMAKE_TARGET_MACCATALYST)
       if(CLR_CMAKE_HOST_ARCH_ARM64)
         add_compile_options(-target arm64-apple-ios13.2-macabi)
         add_link_options(-target arm64-apple-ios13.2-macabi)
@@ -410,7 +410,7 @@ if (CLR_CMAKE_HOST_UNIX)
       endif()
       add_compile_options(${MACOS_VERSION_MIN_FLAGS})
       add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
-    endif(CLR_CMAKE_TARGET_CATALYST)
+    endif(CLR_CMAKE_TARGET_MACCATALYST)
   endif(CLR_CMAKE_HOST_OSX)
 
 endif(CLR_CMAKE_HOST_UNIX)

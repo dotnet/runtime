@@ -25,7 +25,7 @@ elseif (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
-elseif (CLR_CMAKE_TARGET_CATALYST)
+elseif (CLR_CMAKE_TARGET_MACCATALYST)
     set(PAL_UNIX_NAME \"MACCATALYST\")
 elseif (CLR_CMAKE_TARGET_IOS)
     set(PAL_UNIX_NAME \"IOS\")
@@ -505,7 +505,7 @@ if(CLR_CMAKE_TARGET_IOS)
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
     unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
     unset(HAVE_FORK) # exists but blocked by kernel
-elseif(CLR_CMAKE_TARGET_CATALYST)
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
@@ -790,7 +790,7 @@ check_symbol_exists(
     "unistd.h;grp.h"
     HAVE_GETGROUPLIST)
 
-if(CLR_CMAKE_TARGET_CATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
 else()

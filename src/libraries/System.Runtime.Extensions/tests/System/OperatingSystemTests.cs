@@ -11,7 +11,7 @@ namespace System.Tests
         {
             "Android",
             "macOS",
-            "MacCatalyst",
+            //"MacCatalyst",
             "iOS",
             "tvOS",
             "watchOS",
@@ -123,11 +123,13 @@ namespace System.Tests
             AssertVersionChecks(true, (major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("osx", major, minor, build));
         }
 
+        /* Disable Mac Catalyst tests until Arcade and xharness are ready
         [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]
         public static void TestIsOSPlatform_MacCatalyst() => TestIsOSPlatform("MacCatalyst", OperatingSystem.IsMacCatalyst);
 
         [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]
         public static void TestIsOSVersionAtLeast_MacCatalyst() => TestIsOSVersionAtLeast("MacCatalyst");
+        */
 
         [Fact, PlatformSpecific(TestPlatforms.tvOS)]
         public static void TestIsOSPlatform_TvOS() => TestIsOSPlatform("tvOS", OperatingSystem.IsTvOS);

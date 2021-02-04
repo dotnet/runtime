@@ -207,7 +207,7 @@ namespace System
         /// Indicates whether the current application is running on Mac Catalyst.
         /// </summary>
         public static bool IsMacCatalyst() =>
-#if TARGET_CATALYST
+#if TARGET_MACCATALYST
             true;
 #else
             false;

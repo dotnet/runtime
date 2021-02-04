@@ -90,7 +90,7 @@ build_native()
     fi
 
     if [[ "$targetOS" == MacCatalyst ]]; then
-        cmakeArgs="-DCLR_CMAKE_TARGET_CATALYST=1 $cmakeArgs"
+        cmakeArgs="-DCLR_CMAKE_TARGET_MACCATALYST=1 $cmakeArgs"
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then

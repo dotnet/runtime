@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.6.2)
 include(CheckCCompilerFlag)
 
-if(CLR_CMAKE_TARGET_CATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
      # CMake 3.14.5 contains bug fixes for iOS
      cmake_minimum_required(VERSION 3.14.5)
  endif()
@@ -13,7 +13,7 @@ include(../../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
-if(CLR_CMAKE_TARGET_CATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
 endif()
@@ -76,7 +76,7 @@ if(CLR_CMAKE_TARGET_BROWSER)
     set(STATIC_LIB_DESTINATION .)
 endif()
 
-if(CLR_CMAKE_TARGET_CATALYST)
+if(CLR_CMAKE_TARGET_MACCATALYST)
     if (CLR_CMAKE_TARGET_ARCH_AMD64)
         add_compile_options(-target x86_64-apple-ios13.2-macabi)
         add_link_options(-target x86_64-apple-ios13.2-macabi)
@@ -178,7 +178,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_BROWSER)
-elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_CATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -198,7 +198,7 @@ endif ()
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_TARGET_UNIX)
-    if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_CATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
         if(CLR_CMAKE_TARGET_OSX)
             add_definitions(-DTARGET_OSX)
             set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-bind_at_load")
@@ -226,7 +226,7 @@ include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_CATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     add_subdirectory(System.IO.Ports.Native)
 endif()
 
@@ -238,7 +238,7 @@ add_subdirectory(System.Native)
 
 if(CLR_CMAKE_TARGET_BROWSER)
     # skip for now
-elseif(CLR_CMAKE_TARGET_CATALYST)
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
     add_subdirectory(System.Net.Security.Native)
     # System.Security.Cryptography.Native is intentionally disabled on iOS
     # it is only used for interacting with OpenSSL which isn't useful there
@@ -262,7 +262,7 @@ else()
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
-if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_CATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()
 
