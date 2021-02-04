@@ -2,7 +2,7 @@
 
 namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods
 {
-	class VirtualMethodGetsPerservedIfBaseMethodGetsInvoked
+	class VirtualMethodGetsPreservedIfBaseMethodGetsInvoked
 	{
 		public static void Main ()
 		{

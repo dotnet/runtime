@@ -44,10 +44,6 @@ namespace Mono.Linker
 		protected readonly LinkContext context;
 
 		protected readonly Dictionary<AssemblyDefinition, AssemblyAction> assembly_actions = new Dictionary<AssemblyDefinition, AssemblyAction> ();
-		protected readonly Dictionary<MethodDefinition, MethodAction> method_actions = new Dictionary<MethodDefinition, MethodAction> ();
-		protected readonly Dictionary<MethodDefinition, object> method_stub_values = new Dictionary<MethodDefinition, object> ();
-		protected readonly Dictionary<FieldDefinition, object> field_values = new Dictionary<FieldDefinition, object> ();
-		protected readonly HashSet<FieldDefinition> field_init = new HashSet<FieldDefinition> ();
 		protected readonly HashSet<TypeDefinition> fieldType_init = new HashSet<TypeDefinition> ();
 
 		// Annotations.Mark will add unmarked items to marked_pending, to be fully marked later ("processed") by MarkStep.
@@ -77,6 +73,7 @@ namespace Mono.Linker
 			FlowAnnotations = new FlowAnnotations (context);
 			VirtualMethodsWithAnnotationsToValidate = new HashSet<MethodDefinition> ();
 			TypeMapInfo = new TypeMapInfo ();
+			MemberActions = new MemberActionStore (context);
 		}
 
 		public bool ProcessSatelliteAssemblies { get; set; }
@@ -92,6 +89,8 @@ namespace Mono.Linker
 		internal HashSet<MethodDefinition> VirtualMethodsWithAnnotationsToValidate { get; }
 
 		TypeMapInfo TypeMapInfo { get; }
+
+		public MemberActionStore MemberActions { get; }
 
 		[Obsolete ("Use Tracer in LinkContext directly")]
 		public void PrepareDependenciesDump ()
@@ -120,10 +119,7 @@ namespace Mono.Linker
 
 		public MethodAction GetAction (MethodDefinition method)
 		{
-			if (method_actions.TryGetValue (method, out MethodAction action))
-				return action;
-
-			return MethodAction.Nothing;
+			return MemberActions.GetAction (method);
 		}
 
 		public void SetAction (AssemblyDefinition assembly, AssemblyAction action)
@@ -138,27 +134,12 @@ namespace Mono.Linker
 
 		public void SetAction (MethodDefinition method, MethodAction action)
 		{
-			method_actions[method] = action;
-		}
-
-		public void SetMethodStubValue (MethodDefinition method, object value)
-		{
-			method_stub_values[method] = value;
-		}
-
-		public void SetFieldValue (FieldDefinition field, object value)
-		{
-			field_values[field] = value;
-		}
-
-		public void SetSubstitutedInit (FieldDefinition field)
-		{
-			field_init.Add (field);
+			MemberActions.PrimarySubstitutionInfo.SetMethodAction (method, action);
 		}
 
 		public bool HasSubstitutedInit (FieldDefinition field)
 		{
-			return field_init.Contains (field);
+			return MemberActions.HasSubstitutedInit (field);
 		}
 
 		public void SetSubstitutedInit (TypeDefinition type)
@@ -409,12 +390,12 @@ namespace Mono.Linker
 
 		public bool TryGetMethodStubValue (MethodDefinition method, out object value)
 		{
-			return method_stub_values.TryGetValue (method, out value);
+			return MemberActions.TryGetMethodStubValue (method, out value);
 		}
 
 		public bool TryGetFieldUserValue (FieldDefinition field, out object value)
 		{
-			return field_values.TryGetValue (field, out value);
+			return MemberActions.TryGetFieldUserValue (field, out value);
 		}
 
 		public HashSet<EmbeddedResource> GetResourcesToRemove (AssemblyDefinition assembly)

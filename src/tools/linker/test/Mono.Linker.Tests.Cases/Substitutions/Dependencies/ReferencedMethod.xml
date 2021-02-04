@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="library">
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.Dependencies.ReferencedMethod">
+      <method signature="System.Void ConvertToThrowMethod()" body="remove" />
+    </type>
+  </assembly>
+</linker>

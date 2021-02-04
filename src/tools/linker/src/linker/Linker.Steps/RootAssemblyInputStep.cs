@@ -80,7 +80,7 @@ namespace Mono.Linker.Steps
 			if (loaded != null)
 				return loaded;
 
-			Context.Resolver.CacheAssembly (assembly);
+			Context.Resolver.CacheAssemblyWithPath (assembly);
 			Context.RegisterAssembly (assembly);
 			return assembly;
 		}

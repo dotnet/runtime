@@ -12,3 +12,10 @@ namespace System
 }
 
 #endif
+
+namespace System
+{
+	public class UsedCorelibType
+	{
+	}
+}

@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	{
 		public static void Main ()
 		{
-			var typeName = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflectionTypeDoesntExist+Full, DoesntExist";
+			var typeName = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflectionTypeDoesntExist+DoesntExist, test";
 			var typeKept = Type.GetType (typeName, false);
 		}
 

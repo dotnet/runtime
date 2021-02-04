@@ -203,11 +203,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		// This is a workaround for the inability to lazy load assemblies. The type name resolver will not load new assemblies
-		// and since the KeptAttribute is otherwise not referenced by the test anywhere (the test-validation attributes are removed before processing normally)
-		// it would not resolve from name - since its assembly is not loaded.
-		// Adding DynamicDependency solves this problem as it is basically the only attribute which has the ability to load new assemblies.
-		[DynamicDependency (DynamicallyAccessedMemberTypes.None, typeof (KeptAttribute))]
 		static void TestFromStringConstantWithGenericAndAssemblyQualified ()
 		{
 			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericAndAssemblyQualified`1[[Mono.Linker.Tests.Cases.Expectations.Assertions.KeptAttribute,Mono.Linker.Tests.Cases.Expectations]]");

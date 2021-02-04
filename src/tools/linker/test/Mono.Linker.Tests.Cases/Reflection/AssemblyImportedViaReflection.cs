@@ -5,7 +5,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
-	[IgnoreTestCase ("Requires support for using a type in an unreferences assembly via reflection")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/AssemblyDependency.cs" }, addAsReference: false)]
 	[KeptAssembly ("library.dll")]
 	[KeptTypeInAssembly ("library.dll", "Mono.Linker.Tests.Cases.Reflection.Dependencies.AssemblyDependency")]

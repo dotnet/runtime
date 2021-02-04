@@ -6,35 +6,35 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class MarkExportedTypesTargetStep : BaseStep
+	public static class MarkExportedTypesTarget
 	{
-		protected override void ProcessAssembly (AssemblyDefinition assembly)
+		public static void ProcessAssembly (AssemblyDefinition assembly, LinkContext context)
 		{
 			if (!assembly.MainModule.HasExportedTypes)
 				return;
 
 			foreach (var type in assembly.MainModule.ExportedTypes)
-				InitializeExportedType (type);
+				InitializeExportedType (type, context);
 		}
 
-		void InitializeExportedType (ExportedType exportedType)
+		static void InitializeExportedType (ExportedType exportedType, LinkContext context)
 		{
-			if (!Annotations.IsMarked (exportedType))
+			if (!context.Annotations.IsMarked (exportedType))
 				return;
 
-			if (!Annotations.TryGetPreservedMembers (exportedType, out TypePreserveMembers members))
+			if (!context.Annotations.TryGetPreservedMembers (exportedType, out TypePreserveMembers members))
 				return;
 
 			TypeDefinition type = exportedType.Resolve ();
 			if (type == null) {
-				if (!Context.IgnoreUnresolved)
-					Context.LogError ($"Exported type '{type.Name}' cannot be resolved", 1038);
+				if (!context.IgnoreUnresolved)
+					context.LogError ($"Exported type '{type.Name}' cannot be resolved", 1038);
 
 				return;
 			}
 
-			Context.Annotations.Mark (type, new DependencyInfo (DependencyKind.ExportedType, exportedType));
-			Annotations.SetMembersPreserve (type, members);
+			context.Annotations.Mark (type, new DependencyInfo (DependencyKind.ExportedType, exportedType));
+			context.Annotations.SetMembersPreserve (type, members);
 		}
 	}
 }

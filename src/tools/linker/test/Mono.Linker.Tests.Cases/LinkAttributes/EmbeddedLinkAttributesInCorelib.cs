@@ -34,6 +34,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 		{
 			AttributedMethod ();
 			var _ = new AttributedClass ();
+			var _2 = new UsedCorelibType ();
 		}
 
 		[Kept]

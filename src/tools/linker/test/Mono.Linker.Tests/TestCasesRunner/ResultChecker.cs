@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -278,6 +278,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							case nameof (KeptReferencesInAssemblyAttribute):
 								VerifyKeptReferencesInAssembly (checkAttrInAssembly);
 								break;
+							case nameof (ExpectedInstructionSequenceOnMemberInAssemblyAttribute):
+								if (linkedType == null)
+									Assert.Fail ($"Type `{expectedTypeName}` should have been kept");
+								VerifyExpectedInstructionSequenceOnMemberInAssembly (checkAttrInAssembly, linkedType);
+								break;
 							default:
 								UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
 								break;
@@ -542,15 +547,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType)
 		{
-			var originalMethodMember = originalType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
-			if (originalMethodMember != null) {
-				var linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+			return TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out MethodDefinition _originalMethod, out MethodDefinition _linkedMethod);
+		}
+
+		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType, out MethodDefinition originalMethod, out MethodDefinition linkedMethod)
+		{
+			originalMethod = originalType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+			if (originalMethod != null) {
+				linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
 				if (linkedMethod == null)
 					Assert.Fail ($"Method `{memberName}` on Type `{originalType}` should have been kept");
 
 				return true;
 			}
 
+			linkedMethod = null;
 			return false;
 		}
 
@@ -961,6 +972,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					}
 				}
 			}
+		}
+
+		void VerifyExpectedInstructionSequenceOnMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
+			var memberName = (string) inAssemblyAttribute.ConstructorArguments[2].Value;
+
+			if (TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out MethodDefinition originalMethod, out MethodDefinition linkedMethod)) {
+				Func<MethodDefinition, string[]> valueCollector = m => m.Body.Instructions.Select (ins => AssemblyChecker.FormatInstruction (ins).ToLower ()).ToArray ();
+				var linkedValues = valueCollector (linkedMethod);
+				var srcValues = valueCollector (originalMethod);
+
+				var expected = ((CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[3].Value)?.Select (arg => arg.Value.ToString ()).ToArray ();
+				Assert.That (
+					linkedValues,
+					Is.EquivalentTo (expected),
+					$"Expected method `{originalMethod} to have its {nameof (ExpectedInstructionSequenceOnMemberInAssemblyAttribute)} modified, however, the sequence does not match the expected value\n{FormattingUtils.FormatSequenceCompareFailureMessage2 (linkedValues, expected, srcValues)}");
+
+				return;
+			}
+
+			Assert.Fail ($"Invalid test assertion.  No method named `{memberName}` exists on the original type `{originalType}`");
 		}
 
 		static string GetFullMemberNameFromReflectionAccessPatternAttribute (CustomAttribute attr, int constructorArgumentsOffset)
