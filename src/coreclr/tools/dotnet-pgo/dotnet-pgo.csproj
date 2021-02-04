@@ -13,7 +13,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Common\Pgo\PgoFormat.cs" Link="PgoFormat.cs" />
     <Compile Include="..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="TypeSystemEntityOrUnknown.cs" />
   </ItemGroup>
 

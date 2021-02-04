@@ -18,7 +18,8 @@ namespace System.Threading.Tasks
             null
 #endif
         )]
-    internal sealed class TplEventSource : EventSource
+    [EventSourceAutoGenerate]
+    internal sealed partial class TplEventSource : EventSource
     {
         /// Used to determine if tasks should generate Activity IDs for themselves
         internal bool TasksSetActivityIds;        // This keyword is set
@@ -43,12 +44,12 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// Defines the singleton instance for the TPL ETW provider.
-        /// The TPL Event provider GUID is {2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5}.
         /// </summary>
         public static readonly TplEventSource Log = new TplEventSource();
 
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private TplEventSource() : base(new Guid(0x2e5dba47, 0xa3d2, 0x4d16, 0x8e, 0xe0, 0x66, 0x71, 0xff, 0xdc, 0xd7, 0xb5), "System.Threading.Tasks.TplEventSource") { }
+        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
+        // as you can't make a constructor partial.
+        private TplEventSource(int _) { }
 
         /// <summary>Configured behavior of a task wait operation.</summary>
         public enum TaskWaitBehavior : int

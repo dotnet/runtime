@@ -33,6 +33,12 @@ namespace System.Net.WebSockets.Client.Tests
                 }
                 Assert.Equal(WebSocketState.Closed, cws.State);
                 Assert.Equal(exceptionMessage, ex.Message);
+
+                // Other operations throw after failed connect
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.ReceiveAsync(new byte[1], default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.SendAsync(new byte[1], WebSocketMessageType.Binary, true, default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, default));
             }
         }
 

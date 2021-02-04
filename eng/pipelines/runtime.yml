@@ -1056,10 +1056,6 @@ jobs:
 #          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
 #          eq(variables['isFullMatrix'], true))
 #
-##
-## Libraries Test Execution against a checked runtime
-## Only if CoreCLR or Libraries is changed
-##
 #- template: /eng/pipelines/common/platform-matrix.yml
 #  parameters:
 #    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
@@ -1078,3 +1074,4 @@ jobs:
 #          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
 #          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
 #          eq(variables['isFullMatrix'], true))
+#

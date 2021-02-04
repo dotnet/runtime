@@ -72,7 +72,7 @@
 #cmakedefine PACKAGE_URL 1
 
 /* Version of the corlib-runtime interface */
-#define MONO_CORLIB_VERSION @MONO_CORLIB_VERSION@
+#cmakedefine MONO_CORLIB_VERSION "@MONO_CORLIB_VERSION@"
 
 /* Disables the IO portability layer */
 #cmakedefine DISABLE_PORTABILITY 1

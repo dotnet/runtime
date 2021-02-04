@@ -88,9 +88,6 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 static char *
 mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s, MonoError *error);
 
-static void
-array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size);
-
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (pointer, "System.Reflection", "Pointer")
 static GENERATE_GET_CLASS_WITH_CACHE (remoting_services, "System.Runtime.Remoting", "RemotingServices")
@@ -6338,11 +6335,11 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 	g_assert (size == mono_array_length_internal (dest));
 	size *= mono_array_element_size (klass);
 
-	array_full_copy_unchecked_size (src, dest, klass, size);
+	mono_array_full_copy_unchecked_size (src, dest, klass, size);
 }
 
-static void
-array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size)
+void
+mono_array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size)
 {
 	if (mono_gc_is_moving ()) {
 		MonoClass *element_class = m_class_get_element_class (klass);
@@ -6352,8 +6349,7 @@ array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klas
 			else
 				mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
 		} else {
-			mono_array_memcpy_refs_internal
- (dest, 0, src, 0, mono_array_length_internal (src));
+			mono_array_memcpy_refs_internal (dest, 0, src, 0, mono_array_length_internal (src));
 		}
 	} else {
 		mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
@@ -6405,7 +6401,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, Mo
 
 	MonoGCHandle dst_handle;
 	dst_handle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, o), TRUE);
-	array_full_copy_unchecked_size (MONO_HANDLE_RAW (array_handle), MONO_HANDLE_RAW (o), klass, size);
+	mono_array_full_copy_unchecked_size (MONO_HANDLE_RAW (array_handle), MONO_HANDLE_RAW (o), klass, size);
 	mono_gchandle_free_internal (dst_handle);
 
 	MONO_HANDLE_ASSIGN (result, o);

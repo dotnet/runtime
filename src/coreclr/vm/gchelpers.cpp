@@ -803,7 +803,7 @@ OBJECTREF   DupArrayForCloning(BASEARRAYREF pRef)
 //
 // Helper for parts of the EE which are allocating arrays
 //
-OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAllocateInLargeHeap)
+OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAllocateInPinnedHeap)
 {
     CONTRACTL {
         THROWS;
@@ -823,7 +823,7 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAll
     _ASSERTE(arrayType.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 #endif //_DEBUG
 
-    GC_ALLOC_FLAGS flags = bAllocateInLargeHeap ? GC_ALLOC_LARGE_OBJECT_HEAP : GC_ALLOC_NO_FLAGS;
+    GC_ALLOC_FLAGS flags = bAllocateInPinnedHeap ? GC_ALLOC_PINNED_OBJECT_HEAP : GC_ALLOC_NO_FLAGS;
     return AllocateSzArray(arrayType, (INT32) cElements, flags);
 }
 

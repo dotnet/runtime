@@ -261,7 +261,7 @@ namespace System.Net.Mail
             }
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value == null)
             {

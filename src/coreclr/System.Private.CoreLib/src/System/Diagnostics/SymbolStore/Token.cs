@@ -9,6 +9,8 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Diagnostics.SymbolStore
 {
     internal struct SymbolToken
@@ -21,7 +23,7 @@ namespace System.Diagnostics.SymbolStore
 
         public override int GetHashCode() { return m_token; }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is SymbolToken)
                 return Equals((SymbolToken)obj);

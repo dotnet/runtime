@@ -182,7 +182,7 @@ namespace System.Net.Sockets.Tests
                     tcs.TrySetResult(result);
                 }
                 catch (Exception e) { tcs.TrySetException(e); }
-                
+
             }, null);
             return tcs.Task;
         }
@@ -440,6 +440,20 @@ namespace System.Net.Sockets.Tests
             Task.Run(() => s.Receive((Span<byte>)buffer, SocketFlags.None));
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
             Task.Run(() => s.Send((ReadOnlySpan<byte>)buffer, SocketFlags.None));
+        public override Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
+            Task.Run(() =>
+            {
+                SocketFlags socketFlags = SocketFlags.None;
+                IPPacketInformation ipPacketInformation;
+                int received = s.ReceiveMessageFrom((Span<byte>)buffer, ref socketFlags, ref endPoint, out ipPacketInformation);
+                return new SocketReceiveMessageFromResult
+                {
+                    ReceivedBytes = received,
+                    SocketFlags = socketFlags,
+                    RemoteEndPoint = endPoint,
+                    PacketInformation = ipPacketInformation
+                };
+            });
         public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
             Task.Run(() => s.SendFile(fileName, preBuffer, postBuffer, flags));
         public override bool UsesSync => true;

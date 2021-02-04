@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -84,6 +85,48 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReceiveSent_UDP_Success(bool ipv4)
+        {
+            const int Offset = 10;
+            const int DatagramSize = 256;
+            const int DatagramsToSend = 16;
+
+            IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            using Socket receiver = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using Socket sender = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+
+            ConfigureNonBlocking(sender);
+            ConfigureNonBlocking(receiver);
+
+            receiver.BindToAnonymousPort(address);
+            sender.BindToAnonymousPort(address);
+
+            byte[] sendBuffer = new byte[DatagramSize];
+            var receiveInternalBuffer = new byte[DatagramSize + Offset];
+            var emptyBuffer = new byte[Offset];
+            ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(receiveInternalBuffer, Offset, DatagramSize);
+
+            Random rnd = new Random(0);
+
+            IPEndPoint remoteEp = new IPEndPoint(ipv4 ? IPAddress.Any : IPAddress.IPv6Any, 0);
+
+            for (int i = 0; i < DatagramsToSend; i++)
+            {
+                rnd.NextBytes(sendBuffer);
+                sender.SendTo(sendBuffer, receiver.LocalEndPoint);
+
+                SocketReceiveFromResult result = await ReceiveFromAsync(receiver, receiveBuffer, remoteEp);
+
+                Assert.Equal(DatagramSize, result.ReceivedBytes);
+                AssertExtensions.SequenceEqual(emptyBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, 0, Offset));
+                AssertExtensions.SequenceEqual(sendBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, Offset, DatagramSize));
+                Assert.Equal(sender.LocalEndPoint, result.RemoteEndPoint);
+            }
+        }
+
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ClosedBeforeOperation_Throws_ObjectDisposedException(bool closeOrDispose)
@@ -99,7 +142,6 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/47561")]
         public async Task ClosedDuringOperation_Throws_ObjectDisposedExceptionOrSocketException(bool closeOrDispose)
         {
             if (UsesSync && PlatformDetection.IsOSX)
@@ -109,25 +151,42 @@ namespace System.Net.Sockets.Tests
                 return;
             }
 
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            socket.BindToAnonymousPort(IPAddress.Any);
-
-            Task receiveTask = ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint());
-            await Task.Delay(100);
-            if (closeOrDispose) socket.Close();
-            else socket.Dispose();
-
-            if (UsesApm)
+            int msDelay = 100;
+            if (UsesSync)
             {
-                await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask)
-                    .TimeoutAfter(CancellationTestTimeout);
+                // In sync case Dispose may happen before the operation is started,
+                // in that case we would see an ObjectDisposedException instead of a SocketException.
+                // We may need to try the run a couple of times to deal with the timing race.
+                await RetryHelper.ExecuteAsync(() => RunTestAsync(), maxAttempts: 10, retryWhen: e => e is XunitException);
             }
             else
             {
-                SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask)
-                    .TimeoutAfter(CancellationTestTimeout);
-                SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
-                Assert.Equal(expectedError, ex.SocketErrorCode);
+                await RunTestAsync();
+            }
+
+            async Task RunTestAsync()
+            {
+                using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socket.BindToAnonymousPort(IPAddress.Any);
+
+                Task receiveTask = ReceiveFromAsync(socket, new byte[1], GetGetDummyTestEndpoint());
+                await Task.Delay(msDelay);
+                msDelay *= 2;
+                if (closeOrDispose) socket.Close();
+                else socket.Dispose();
+
+                if (DisposeDuringOperationResultsInDisposedException)
+                {
+                    await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask)
+                        .TimeoutAfter(CancellationTestTimeout);
+                }
+                else
+                {
+                    SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask)
+                        .TimeoutAfter(CancellationTestTimeout);
+                    SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
+                    Assert.Equal(expectedError, ex.SocketErrorCode);
+                }
             }
         }
 

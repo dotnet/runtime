@@ -14,6 +14,8 @@
     <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64;wasm</Platforms>
+    
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
@@ -142,7 +144,6 @@
 
   <!-- Sources -->
   <ItemGroup>
-      <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeHandles.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Array.Mono.cs" />
@@ -292,6 +293,10 @@
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
     <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb"

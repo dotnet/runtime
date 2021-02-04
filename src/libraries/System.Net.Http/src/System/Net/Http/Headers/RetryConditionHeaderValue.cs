@@ -56,7 +56,7 @@ namespace System.Net.Http.Headers
             return HttpDateParser.DateToString(_date.Value);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             RetryConditionHeaderValue? other = obj as RetryConditionHeaderValue;
 

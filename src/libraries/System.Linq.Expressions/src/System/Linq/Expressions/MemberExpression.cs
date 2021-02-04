@@ -173,7 +173,10 @@ namespace System.Linq.Expressions
         /// <param name="type">The <see cref="Type"/> containing the field.</param>
         /// <param name="fieldName">The field to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
-        public static MemberExpression Field(Expression? expression, Type type, string fieldName)
+        public static MemberExpression Field(
+            Expression? expression,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] Type type,
+            string fieldName)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(fieldName, nameof(fieldName));
@@ -220,7 +223,10 @@ namespace System.Linq.Expressions
         /// <param name="type">The <see cref="Type"/> containing the property.</param>
         /// <param name="propertyName">The property to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
-        public static MemberExpression Property(Expression? expression, Type type, string propertyName)
+        public static MemberExpression Property(
+            Expression? expression,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties| DynamicallyAccessedMemberTypes.NonPublicProperties)] Type type,
+            string propertyName)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(propertyName, nameof(propertyName));
