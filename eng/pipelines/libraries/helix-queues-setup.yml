@@ -96,7 +96,7 @@ jobs:
         - OSX.1015.Amd64.Open
     
     # OSX arm64
-    - ${{ if eq(parameters.platform, 'OSX_x64') }}:
+    - ${{ if eq(parameters.platform, 'OSX_arm64') }}:
       - OSX.1100.ARM64.Open
 
     # Android
