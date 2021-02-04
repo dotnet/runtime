@@ -768,10 +768,12 @@ class_is_task (MonoClass *klass)
 	if (!klass)
 		return 0;
 
+	/*
 	char * class_name = mono_class_get_name (klass);
 	EM_ASM({
 		console.debug("class_is_task(", Module.UTF8ToString ($0), ")");
 	}, class_name);
+	*/
 
 	if (!task_class && !resolved_task_class) {
 		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
