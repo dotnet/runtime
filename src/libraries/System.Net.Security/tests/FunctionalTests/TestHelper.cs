@@ -222,10 +222,10 @@ namespace System.Net.Security.Tests
                 return (protocol?.ToString() ?? "null").Replace(", ", "-");
             }
 
-            var args = string.Join("-", protocols.Select(p => ProtocolToString(p)));
-            var name = $"{testMethodName}-{args}";
+            var args = string.Join(".", protocols.Select(p => ProtocolToString(p)));
+            var name = testMethodName.Length > 63 ? testMethodName.Substring(0, 63) : testMethodName;
 
-            return name.Length > 63 ? name.Substring(0, 63) : name;
+            return $"{name}.{args}";
         }
     }
 }
