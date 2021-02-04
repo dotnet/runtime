@@ -13,7 +13,7 @@ while [[ -h $source ]]; do
   [[ $source != /* ]] && source="$scriptroot/$source"
 done
 
-scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
+scriptroot="$( cd -P "$( dirname "$source" )" && pwd )/.."
 
 capture="common"
 commonArgs=

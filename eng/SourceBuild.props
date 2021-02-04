@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <GitHubRepositoryName>runtime</GitHubRepositoryName>
+
+    <BaseInnerSourceBuildCommand>$(RepositoryEngineeringDir)build-source-build.sh</BaseInnerSourceBuildCommand>
   </PropertyGroup>
 
   <Target Name="ApplySourceBuildPatchFiles"
