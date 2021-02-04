@@ -631,7 +631,7 @@ namespace System.Diagnostics
                             if (_eventSource.IsEnabled(EventLevel.Informational, Keywords.Messages))
                             {
 #if SPAN_BASED_STRING_CONCAT
-                                _eventSource.Message(string.Concat("DiagnosticSource: Parsing Explicit Transform '", filterAndPayloadSpec.AsSpan(specStartIdx, endIdx - specStartIdx), stackalloc char[] { '\'' }));
+                                _eventSource.Message(string.Concat("DiagnosticSource: Parsing Explicit Transform '", filterAndPayloadSpec.AsSpan(specStartIdx, endIdx - specStartIdx), "'"));
 #else
                                 _eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
 #endif
@@ -745,7 +745,7 @@ namespace System.Diagnostics
                                 if (_eventSource.IsEnabled(EventLevel.Informational, Keywords.Messages))
                                 {
 #if SPAN_BASED_STRING_CONCAT
-                                    _eventSource.Message(string.Concat("DiagnosticSource: Parsing Explicit Transform '", filterAndPayloadSpec.AsSpan(specStartIdx, endIdx - specStartIdx), stackalloc char[] { '\'' }));
+                                    _eventSource.Message(string.Concat("DiagnosticSource: Parsing Explicit Transform '", filterAndPayloadSpec.AsSpan(specStartIdx, endIdx - specStartIdx), "'"));
 #else
                                     _eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
 #endif

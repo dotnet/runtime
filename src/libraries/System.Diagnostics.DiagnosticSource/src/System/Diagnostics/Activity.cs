@@ -1215,7 +1215,7 @@ namespace System.Diagnostics
             //generate overflow suffix
             string overflowSuffix = ((int)GetRandomNumber()).ToString("x8");
 #if SPAN_BASED_STRING_CONCAT
-            return string.Concat(parentId.AsSpan(0, trimPosition), overflowSuffix, stackalloc char[] { '#' });
+            return string.Concat(parentId.AsSpan(0, trimPosition), overflowSuffix, "#");
 #else
             return parentId.Substring(0, trimPosition) + overflowSuffix + '#';
 #endif
