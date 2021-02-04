@@ -154,7 +154,7 @@ namespace System.IO
         {
             using var directory = new TempAclDirectory();
             using var file = new TempFile(Path.Combine(directory.Path, "file.txt"));
-            using FileStream fileStream = File.Open(file.Path, FileMode.Open, FileAccess.Write, FileShare.Delete);
+            using FileStream fileStream = File.Open(file.Path, FileMode.Open, FileAccess.Write, FileShare.None);
             AssertExtensions.Throws<ArgumentNullException>("fileSecurity", () => FileSystemAclExtensions.SetAccessControl(fileStream, fileSecurity: null));
         }
 
