@@ -36,11 +36,11 @@
 #define TV_GETTIME SGEN_TV_GETTIME
 #define TV_ELAPSED SGEN_TV_ELAPSED
 
-typedef void (*thread_suspeneded_func)(gpointer thread_id, gpointer thread_ip);
-typedef void (*thread_resumed_func)(gpointer thread_id);
+typedef void (*unified_suspend_thread_stopped_func)(THREAD_INFO_TYPE *thread_info);
+typedef void (*unified_suspend_thread_restarted_func)(THREAD_INFO_TYPE *thread_info);
 
-static void unified_suspend_restart_world (MonoThreadInfoFlags flags, thread_resumed_func resumed_callback);
-static void unified_suspend_stop_world (MonoThreadInfoFlags flags, thread_suspeneded_func suspended_callback);
+static void unified_suspend_restart_world (MonoThreadInfoFlags flags, unified_suspend_thread_restarted_func thread_restarted_callback);
+static void unified_suspend_stop_world (MonoThreadInfoFlags flags, unified_suspend_thread_stopped_func thread_stopped_callback);
 
 static TV_DECLARE (end_of_last_stw);
 
@@ -107,6 +107,28 @@ static unsigned long max_stw_pause_time = 0;
 static guint64 time_stop_world;
 static guint64 time_restart_world;
 
+static
+void
+sgen_client_stop_world_thread_stopped_callback (THREAD_INFO_TYPE *info)
+{
+	info->client_info.ctx = mono_thread_info_get_suspend_state (info)->ctx;
+
+	/* Once we remove the old suspend code, we should directly access the state in MonoThread */
+	info->client_info.stack_start = (gpointer) ((char*)MONO_CONTEXT_GET_SP (&info->client_info.ctx) - REDZONE_SIZE);
+
+	if (info->client_info.stack_start < info->client_info.info.stack_start_limit
+			|| info->client_info.stack_start >= info->client_info.info.stack_end) {
+		/*
+			* Thread context is in unhandled state, most likely because it is
+			* dying. We don't scan it.
+			* FIXME We should probably rework and check the valid flag instead.
+			*/
+		info->client_info.stack_start = NULL;
+	}
+
+	sgen_binary_protocol_thread_suspend ((gpointer)(gsize)mono_thread_info_get_tid (info), (gpointer) (MONO_CONTEXT_GET_IP (&info->client_info.ctx)));
+}
+
 /* LOCKING: assumes the GC lock is held */
 void
 sgen_client_stop_world (int generation, gboolean serial_collection)
@@ -128,7 +150,7 @@ sgen_client_stop_world (int generation, gboolean serial_collection)
 	SGEN_LOG (3, "stopping world n %d from %p %p", sgen_global_stop_count, mono_thread_info_current (), (gpointer) (gsize) mono_native_thread_id_get ());
 	TV_GETTIME (stop_world_time);
 
-	unified_suspend_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC, sgen_binary_protocol_thread_suspend);
+	unified_suspend_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC, sgen_client_stop_world_thread_stopped_callback);
 
 	SGEN_LOG (3, "world stopped");
 
@@ -143,6 +165,13 @@ sgen_client_stop_world (int generation, gboolean serial_collection)
 	sgen_memgov_collection_start (generation);
 	if (sgen_need_bridge_processing ())
 		sgen_bridge_reset_data ();
+}
+
+static
+void
+sgen_client_stop_world_thread_restarted_callback (THREAD_INFO_TYPE *info)
+{
+	sgen_binary_protocol_thread_restart ((gpointer) mono_thread_info_get_tid (info));
 }
 
 /* LOCKING: assumes the GC lock is held */
@@ -169,7 +198,7 @@ sgen_client_restart_world (int generation, gboolean serial_collection, gint64 *s
 
 	TV_GETTIME (start_handshake);
 
-	unified_suspend_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC, sgen_binary_protocol_thread_restart);
+	unified_suspend_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC, sgen_client_stop_world_thread_restarted_callback);
 
 	TV_GETTIME (end_sw);
 
@@ -263,7 +292,7 @@ is_thread_in_current_stw (SgenThreadInfo *info, int *reason)
 
 static
 void
-unified_suspend_stop_world (MonoThreadInfoFlags flags, thread_suspeneded_func suspended_callback)
+unified_suspend_stop_world (MonoThreadInfoFlags flags, unified_suspend_thread_stopped_func thread_stopped_callback)
 {
 	int sleep_duration = -1;
 
@@ -398,8 +427,6 @@ unified_suspend_stop_world (MonoThreadInfoFlags flags, thread_suspeneded_func su
 	}
 
 	FOREACH_THREAD_EXCLUDE (info, flags) {
-		gpointer stopped_ip;
-
 		int reason = 0;
 		if (!is_thread_in_current_stw (info, &reason)) {
 			g_assert (!info->client_info.suspend_done || info == mono_thread_info_current ());
@@ -410,33 +437,19 @@ unified_suspend_stop_world (MonoThreadInfoFlags flags, thread_suspeneded_func su
 
 		g_assert (info->client_info.suspend_done);
 
-		info->client_info.ctx = mono_thread_info_get_suspend_state (info)->ctx;
-
-		/* Once we remove the old suspend code, we should directly access the state in MonoThread */
-		info->client_info.stack_start = (gpointer) ((char*)MONO_CONTEXT_GET_SP (&info->client_info.ctx) - REDZONE_SIZE);
-
-		if (info->client_info.stack_start < info->client_info.info.stack_start_limit
-			 || info->client_info.stack_start >= info->client_info.info.stack_end) {
-			/*
-			 * Thread context is in unhandled state, most likely because it is
-			 * dying. We don't scan it.
-			 * FIXME We should probably rework and check the valid flag instead.
-			 */
-			info->client_info.stack_start = NULL;
-		}
-
-		stopped_ip = (gpointer) (MONO_CONTEXT_GET_IP (&info->client_info.ctx));
-
-		if (suspended_callback)
-			suspended_callback ((gpointer)(gsize)mono_thread_info_get_tid (info), stopped_ip);
+		if (thread_stopped_callback)
+			thread_stopped_callback (info);
 
 		THREADS_STW_DEBUG ("[STW-SUSPEND-END] thread %p is suspended, stopped_ip = %p, stack = %p -> %p\n",
-			mono_thread_info_get_tid (info), stopped_ip, info->client_info.stack_start, info->client_info.stack_start ? info->client_info.info.stack_end : NULL);
+			mono_thread_info_get_tid (info),
+			(gpointer)(MONO_CONTEXT_GET_IP (&(mono_thread_info_get_suspend_state (info)->ctx))),
+			info->client_info.stack_start ? info->client_info.stack_start : NULL, info->client_info.stack_start ? info->client_info.info.stack_end : NULL);
+
 	} FOREACH_THREAD_END
 }
 
 static void
-unified_suspend_restart_world (MonoThreadInfoFlags flags, thread_resumed_func resumed_callback)
+unified_suspend_restart_world (MonoThreadInfoFlags flags, unified_suspend_thread_restarted_func thread_restarted_callback)
 {
 	THREADS_STW_DEBUG ("[STW-END] *** BEGIN RESUME ***\n");
 	FOREACH_THREAD_EXCLUDE (info, flags) {
@@ -444,8 +457,8 @@ unified_suspend_restart_world (MonoThreadInfoFlags flags, thread_resumed_func re
 		if (is_thread_in_current_stw (info, &reason)) {
 			g_assert (mono_thread_info_begin_resume (info));
 			THREADS_STW_DEBUG ("[STW-RESUME-WORLD] RESUME thread %p\n", mono_thread_info_get_tid (info));
-			if (resumed_callback)
-				resumed_callback ((gpointer) mono_thread_info_get_tid (info));
+			if (thread_restarted_callback)
+				thread_restarted_callback (info);
 		} else {
 			THREADS_STW_DEBUG ("[STW-RESUME-WORLD] IGNORE thread %p, reason %d\n", mono_thread_info_get_tid (info), reason);
 		}
@@ -456,7 +469,7 @@ unified_suspend_restart_world (MonoThreadInfoFlags flags, thread_resumed_func re
 }
 
 void
-mono_suspend_runtime (MonoThreadInfoFlags flags)
+mono_stop_world (MonoThreadInfoFlags flags)
 {
 	LOCK_GC;
 	acquire_gc_locks ();
@@ -464,13 +477,8 @@ mono_suspend_runtime (MonoThreadInfoFlags flags)
 }
 
 void
-mono_resume_runtime (MonoThreadInfoFlags flags)
+mono_restart_world (MonoThreadInfoFlags flags)
 {
-	FOREACH_THREAD_ALL (info) {
-		info->client_info.stack_start = NULL;
-		memset (&info->client_info.ctx, 0, sizeof (MonoContext));
-	} FOREACH_THREAD_END
-
 	unified_suspend_restart_world (flags, NULL);
 	release_gc_locks ();
 	UNLOCK_GC;

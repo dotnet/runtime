@@ -98,6 +98,13 @@ static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
 static uint32_t _ep_rt_mono_max_sampled_thread_count = 32;
 
 /*
+ * Unified runtime stop/restart world, currently implemented in sgen-stw.c.
+ * Will take and release the LOCK_GC.
+ */
+extern void mono_stop_world (MonoThreadInfoFlags flags);
+extern void mono_restart_world (MonoThreadInfoFlags flags);
+
+/*
  * Forward declares of all static functions.
  */
 
@@ -627,9 +634,8 @@ eventpipe_sample_profiler_write_sampling_event_for_threads (
 	ep_rt_thread_handle_t sampling_thread,
 	EventPipeEvent *sampling_event)
 {
-	// Runtime suspend/resume, runtime internal methods currently implemented in sgen-stw.c.
-	extern void mono_suspend_runtime (MonoThreadInfoFlags flags);
-	extern void mono_resume_runtime (MonoThreadInfoFlags flags);
+	// Follows CoreClr implementation of sample profiler. Generic invasive/expensive way to do CPU sample profiling relying on STW and stackwalks.
+	// TODO: Investigate alternatives on platforms supporting Signals/SuspendThread (see Mono profiler) or CPU PMU's (see ETW/perf_event_open).
 
 	// Sample profiler only runs on one thread, no need to synchorinize.
 	if (!_ep_rt_mono_sampled_thread_callstacks)
@@ -641,7 +647,7 @@ eventpipe_sample_profiler_write_sampling_event_for_threads (
 	g_array_set_size (_ep_rt_mono_sampled_thread_callstacks, _ep_rt_mono_max_sampled_thread_count);
 	uint32_t thread_count = 0;
 
-	mono_suspend_runtime (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
 
 	// Record all info needed in sample events while runtime is suspended, must be async safe.
 	FOREACH_THREAD_SAFE_EXCLUDE (thread_info, MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE) {
@@ -661,7 +667,7 @@ eventpipe_sample_profiler_write_sampling_event_for_threads (
 		}
 	} FOREACH_THREAD_SAFE_END
 
-	mono_resume_runtime (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+	mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
 
 	// Fire sample event for threads. Must be done after runtime is resumed since it's not async safe.
 	// Since we can't keep thread info around after runtime as been suspended, use an empty
