@@ -180,14 +180,14 @@ namespace System.IO
         {
             DirectoryInfo info = null;
             var security = new DirectorySecurity();
-            Assert.Throws<ArgumentNullException>("directoryInfo", () => DirectoryInfo_Create_SelectFramework(info, security));
+            Assert.Throws<ArgumentNullException>("directoryInfo", () => CreateDirectoryWithSecurity(info, security));
         }
 
         [Fact]
         public void DirectoryInfo_Create_NullDirectorySecurity()
         {
             var info = new DirectoryInfo("path");
-            Assert.Throws<ArgumentNullException>("directorySecurity", () => DirectoryInfo_Create_SelectFramework(info, null));
+            Assert.Throws<ArgumentNullException>("directorySecurity", () => CreateDirectoryWithSecurity(info, null));
         }
 
         [Fact]
@@ -199,7 +199,7 @@ namespace System.IO
             var dirInfo = new DirectoryInfo(dirPath);
             var security = new DirectorySecurity();
             // Fails because the DirectorySecurity lacks any rights to create parent folder
-            Assert.Throws<UnauthorizedAccessException>(() =>  DirectoryInfo_Create_SelectFramework(dirInfo, security));
+            Assert.Throws<UnauthorizedAccessException>(() =>  CreateDirectoryWithSecurity(dirInfo, security));
         }
 
         [Fact]
@@ -211,10 +211,10 @@ namespace System.IO
             var dirInfo = new DirectoryInfo(dirPath);
             var security = GetDirectorySecurity(FileSystemRights.FullControl);
             // Succeeds because it creates the missing parent folder
-            DirectoryInfo_Create_SelectFramework(dirInfo, security);
+            CreateDirectoryWithSecurity(dirInfo, security);
         }
 
-        private void DirectoryInfo_Create_SelectFramework(DirectoryInfo info, DirectorySecurity security)
+        private void CreateDirectoryWithSecurity(DirectoryInfo info, DirectorySecurity security)
         {
             if (PlatformDetection.IsNetFramework)
             {
@@ -240,7 +240,7 @@ namespace System.IO
         [InlineData(FileSystemRights.Read | FileSystemRights.Write)]
         [InlineData(FileSystemRights.Read | FileSystemRights.Write | FileSystemRights.ExecuteFile)]
         [InlineData(FileSystemRights.ReadAndExecute)]
-        public void DirectoryInfo_Create_DirectorySecurityWithSpecificAccessRule(FileSystemRights rights)
+        public void DirectoryInfo_Create_DirectorySecurity_SpecificAccessRule(FileSystemRights rights)
         {
             using var tempRootDir = new TempAclDirectory();
             string path = Path.Combine(tempRootDir.Path, "directory");
@@ -293,7 +293,7 @@ namespace System.IO
             var security = new FileSecurity();
 
             Assert.Throws<ArgumentNullException>("fileInfo", () =>
-                FileInfo_Create_Framework(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
+                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Fact]
@@ -302,7 +302,7 @@ namespace System.IO
             var info = new FileInfo("path");
 
             Assert.Throws<ArgumentNullException>("fileSecurity", () =>
-                FileInfo_Create_Framework(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, null));
+                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, null));
         }
 
         [Fact]
@@ -314,7 +314,7 @@ namespace System.IO
             var security = new FileSecurity();
 
             Assert.Throws<DirectoryNotFoundException>(() =>
-                FileInfo_Create_Framework(fileInfo, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
+                CreateFileWithSecurity(fileInfo, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Theory]
@@ -327,7 +327,7 @@ namespace System.IO
             var info = new FileInfo("path");
 
             Assert.Throws<ArgumentOutOfRangeException>("mode", () =>
-                FileInfo_Create_Framework(info, invalidMode, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
+                CreateFileWithSecurity(info, invalidMode, FileSystemRights.WriteData, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Theory]
@@ -339,7 +339,7 @@ namespace System.IO
             var info = new FileInfo("path");
 
             Assert.Throws<ArgumentOutOfRangeException>("share", () =>
-                FileInfo_Create_Framework(info, FileMode.CreateNew, FileSystemRights.WriteData, invalidFileShare, DefaultBufferSize, FileOptions.None, security));
+                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, invalidFileShare, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Theory]
@@ -351,7 +351,7 @@ namespace System.IO
             var info = new FileInfo("path");
 
             Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () =>
-                FileInfo_Create_Framework(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, invalidBufferSize, FileOptions.None, security));
+                CreateFileWithSecurity(info, FileMode.CreateNew, FileSystemRights.WriteData, FileShare.Delete, invalidBufferSize, FileOptions.None, security));
         }
 
         [Theory]
@@ -369,7 +369,7 @@ namespace System.IO
             var info = new FileInfo("path");
 
             Assert.Throws<ArgumentException>(() =>
-                FileInfo_Create_Framework(info, mode, rights, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
+                CreateFileWithSecurity(info, mode, rights, FileShare.Delete, DefaultBufferSize, FileOptions.None, security));
         }
 
         [Fact]
@@ -379,7 +379,7 @@ namespace System.IO
             Verify_FileSecurity_CreateFile(security);
         }
 
-        private void FileInfo_Create_Framework(FileInfo info, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity security)
+        private void CreateFileWithSecurity(FileInfo info, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity security)
         {
             if (PlatformDetection.IsNetFramework)
             {
@@ -391,14 +391,20 @@ namespace System.IO
             }
         }
 
-        [Fact]
-        public void FileInfo_Create_FileSecurity_SpecificAccessRule()
+        [Theory]
+        // Must have at least one Read, otherwise the TempAclDirectory will fail to delete that item on dispose
+        [InlineData(FileSystemRights.FullControl)]
+        [InlineData(FileSystemRights.Read)]
+        [InlineData(FileSystemRights.Read | FileSystemRights.Write)]
+        [InlineData(FileSystemRights.Read | FileSystemRights.Write | FileSystemRights.ExecuteFile)]
+        [InlineData(FileSystemRights.ReadAndExecute)]
+        public void FileInfo_Create_FileSecurity_SpecificAccessRule(FileSystemRights rights)
         {
             using var tempRootDir = new TempAclDirectory();
             string path = Path.Combine(tempRootDir.Path, "file.txt");
             var fileInfo = new FileInfo(path);
 
-            FileSecurity expectedSecurity = GetFileSecurity(FileSystemRights.FullControl);
+            FileSecurity expectedSecurity = GetFileSecurity(rights);
 
             using FileStream stream = fileInfo.Create(
                 FileMode.Create,
