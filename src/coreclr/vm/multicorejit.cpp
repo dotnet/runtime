@@ -1139,7 +1139,9 @@ void MulticoreJitManager::SetProfileRoot(const WCHAR * pProfilePath)
 
 #endif
 
-    if (g_SystemInfo.dwNumberOfProcessors >= 2)
+    unsigned minNumCpus = (unsigned)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitMinNumCpus);
+
+    if (g_SystemInfo.dwNumberOfProcessors >= minNumCpus)
     {
         if (InterlockedCompareExchange(& m_fSetProfileRootCalled, SETPROFILEROOTCALLED, 0) == 0) // Only allow the first call per appdomain
         {
@@ -1169,8 +1171,8 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBin
         return;
     }
 
-    // Need extra processor for multicore JIT feature
-    _ASSERTE(g_SystemInfo.dwNumberOfProcessors >= 2);
+    // Check if need extra processor for multicore JIT feature
+    _ASSERTE(g_SystemInfo.dwNumberOfProcessors >= (unsigned)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitMinNumCpus));
 
 #ifdef PROFILING_SUPPORTED
 
