@@ -137,10 +137,10 @@ jobs:
       - name: ninjaArg
         value: '-ninja'
 
-    - name: pgoInstrument
+    - name: pgoInstrumentArg
       value: ''
     - ${{ if eq(parameters.pgoType, 'PGO' )}}:
-      - name: pgoInstrument
+      - name: pgoInstrumentArg
         value: '-pgoInstrument '
 
     - name: SignType
@@ -196,7 +196,7 @@ jobs:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(ninjaArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(ninjaArg) $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(ninjaArg) $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
