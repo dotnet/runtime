@@ -510,5 +510,6 @@ if (CLR_CMAKE_TARGET_WIN32)
   # Copy PGO dependency to target dir
   set(PGORT_DLL "pgort140.dll")
   find_path(PGORT_DIR ${PGORT_DLL} REQUIRED)
-  _install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX} ADDITIONAL_DESTINATIONS sharedFramework)
+  _install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX})
+  _install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX}/sharedFramework)
 endif ()
