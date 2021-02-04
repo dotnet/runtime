@@ -3,6 +3,9 @@ From: Tom Deseyn <tom.deseyn@gmail.com>
 Date: Mon, 16 Nov 2020 16:49:49 +0100
 Subject: [PATCH] runtime: remove netcoreapp2.x targets
 
+dagood: (6.0) changed patch to remove netcoreapp2.0 centrally in
+src/libraries/Directory.Build.props instead of a find-replace across
+all files.
 ---
  eng/empty.csproj                    |  1 +
  src/libraries/Directory.Build.props | 18 ++++++++++++++++++

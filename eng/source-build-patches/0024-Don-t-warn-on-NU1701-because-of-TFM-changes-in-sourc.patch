@@ -4,6 +4,7 @@ Date: Tue, 13 Oct 2020 17:00:34 +0000
 Subject: [PATCH] Pin System.ComponentModel.Annotations to version that can be
  added to sbrp
 
+dagood: (6.0) Note: this patch's filename doesn't match.
 ---
  .../src/Microsoft.Extensions.Options.DataAnnotations.csproj     | 2 +-
  .../ref/Microsoft.Extensions.Options.csproj                     | 2 +-

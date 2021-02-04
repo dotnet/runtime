@@ -3,6 +3,7 @@ From: Tom Deseyn <tom.deseyn@gmail.com>
 Date: Thu, 22 Oct 2020 10:07:49 +0200
 Subject: [PATCH] runtime: trim clr.tools
 
+dagood: (6.0) used '$(DotNetBuildFromSource)' != 'true' in fixup
 ---
  eng/Subsets.props | 7 ++++---
  1 file changed, 4 insertions(+), 3 deletions(-)
