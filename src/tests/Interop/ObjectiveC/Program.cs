@@ -89,6 +89,8 @@ namespace BridgeTests
                 FinalizeCount++;
             }
 
+            public IntPtr Scratch { get => (IntPtr)_contract; }
+
             public void SetScratch(IntPtr scratch, uint count)
             {
                 _contract = (ScratchContract*)scratch;
@@ -132,6 +134,17 @@ namespace BridgeTests
             return h;
         }
 
+        static void Validate_AllocAndFreeAnotherHandle<T>(GCHandle handle) where T : Base, new()
+        {
+            var obj = (T)handle.Target;
+            GCHandle h = Bridge.CreateReferenceTrackingHandle(obj, out IntPtr s);
+
+            // Validate the scratch is the same but the GCHandles are distinct.
+            Assert.AreEqual(obj.Scratch, s);
+            Assert.AreNotEqual(handle, h);
+            h.Free();
+        }
+
         static unsafe void Validate_ReferenceTracking_Scenario()
         {
             Console.WriteLine($"Running {nameof(Validate_ReferenceTracking_Scenario)}...");
@@ -157,14 +170,17 @@ namespace BridgeTests
             {
                 GCHandle h = AllocAndTrackObject<Base>();
                 handles.Add(h);
+                Validate_AllocAndFreeAnotherHandle<Base>(h);
             }
             {
                 GCHandle h = AllocAndTrackObject<Derived>();
                 handles.Add(h);
+                Validate_AllocAndFreeAnotherHandle<Derived>(h);
             }
             {
                 GCHandle h = AllocAndTrackObject<DerivedWithFinalizer>();
                 handles.Add(h);
+                Validate_AllocAndFreeAnotherHandle<DerivedWithFinalizer>(h);
             }
 
             // Trigger the GC
