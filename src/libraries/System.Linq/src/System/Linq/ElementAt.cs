@@ -57,8 +57,9 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="index" /> is outside the bounds of <paramref name="source" /> sequence.</exception>
-        /// <returns>The element at the specified position in the source sequence.</returns>
+        ///   <paramref name="index" /> is outside the bounds of the <paramref name="source" /> sequence.
+        /// </exception>
+        /// <returns>The element at the specified position in the <paramref name="source" /> sequence.</returns>
         public static TSource ElementAt<TSource>(this IEnumerable<TSource> source, Index index)
         {
             if (source == null)
@@ -172,9 +173,11 @@ namespace System.Linq
         /// <param name="index">The index of the element to retrieve, which is either from the start or the end.</param>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="source" /> is <see langword="null" />.</exception>
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
         /// <returns>
-        ///   <see langword="default" /> if index is outside the bounds of the source sequence; otherwise, the element at the specified position in the source sequence.</returns>
+        ///   <see langword="default" /> if <paramref name="index" /> is outside the bounds of the <paramref name="source" /> sequence; otherwise, the element at the specified position in the <paramref name="source" /> sequence.
+        /// </returns>
         public static TSource? ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, Index index)
         {
             if (source == null)

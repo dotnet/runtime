@@ -27,7 +27,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
-        /// <returns>An <see cref="IEnumerable{T}" /> that contains the specified range of elements from the source sequence.</returns>
+        /// <returns>An <see cref="IEnumerable{T}" /> that contains the specified <paramref name="range" /> of elements from the <paramref name="source" /> sequence.</returns>
         public static IEnumerable<TSource> Take<TSource>(this IEnumerable<TSource> source, Range range)
         {
             if (source == null)

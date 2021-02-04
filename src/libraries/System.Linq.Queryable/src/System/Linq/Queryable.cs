@@ -389,6 +389,14 @@ namespace System.Linq
                     ));
         }
 
+        /// <summary>Returns a specified range of contiguous elements from a sequence.</summary>
+        /// <param name="source">The sequence to return elements from.</param>
+        /// <param name="range">The range of elements to return, which has start and end indexes either from the start or the end.</param>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <returns>An <see cref="IQueryable{T}" /> that contains the specified <paramref name="range" /> of elements from the <paramref name="source" /> sequence.</returns>
         [DynamicDependency("Take`1", typeof(Enumerable))]
         public static IQueryable<TSource> Take<TSource>(this IQueryable<TSource> source, Range range)
         {
@@ -973,6 +981,17 @@ namespace System.Linq
                     ));
         }
 
+        /// <summary>Returns the element at a specified index in a sequence.</summary>
+        /// <param name="source">An <see cref="IQueryable{T}" /> to return an element from.</param>
+        /// <param name="index">The index of the element to retrieve, which is either from the start or the end.</param>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="index" /> is outside the bounds of the <paramref name="source" /> sequence.
+        /// </exception>
+        /// <returns>The element at the specified position in the <paramref name="source" /> sequence.</returns>
         [DynamicDependency("ElementAt`1", typeof(Enumerable))]
         public static TSource ElementAt<TSource>(this IQueryable<TSource> source, Index index)
         {
@@ -1001,6 +1020,16 @@ namespace System.Linq
                     ));
         }
 
+        /// <summary>Returns the element at a specified index in a sequence or a default value if the index is out of range.</summary>
+        /// <param name="source">An <see cref="IQueryable{T}" /> to return an element from.</param>
+        /// <param name="index">The index of the element to retrieve, which is either from the start or the end.</param>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <returns>
+        ///   <see langword="default" /> if index is outside the bounds of the <paramref name="source" /> sequence; otherwise, the element at the specified position in the <paramref name="source" /> sequence.
+        /// </returns>
         [DynamicDependency("ElementAtOrDefault`1", typeof(Enumerable))]
         public static TSource? ElementAtOrDefault<TSource>(this IQueryable<TSource> source, Index index)
         {
