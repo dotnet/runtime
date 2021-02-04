@@ -20,6 +20,14 @@ namespace System.Linq
                 TakeIterator<TSource>(source, count);
         }
 
+        /// <summary>Returns a specified range of contiguous elements from a sequence.</summary>
+        /// <param name="source">The sequence to return elements from.</param>
+        /// <param name="range">The range of elements to return, which has start and end indexes either from the start or the end.</param>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <returns>An <see cref="IEnumerable{T}" /> that contains the specified range of elements from the source sequence.</returns>
         public static IEnumerable<TSource> Take<TSource>(this IEnumerable<TSource> source, Range range)
         {
             if (source == null)
