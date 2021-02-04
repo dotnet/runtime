@@ -87,13 +87,13 @@ In this document, the following terms are used:
 
 ## .NET Runtimes
 
-### .NET Core / .NET 
+### .NET Core / .NET
 
-.NET Core has been the name for the open source, cross-platform stack that 
-ASP.NET Core and UWP applications are built on. For more details, 
+.NET Core has been the name for the open source, cross-platform stack that
+ASP.NET Core and UWP applications are built on. For more details,
 read [Introducing .NET Core][introducing-net-core].
 
-.NET Core has become future of the platform, and we refer to it just as .NET today. 
+.NET Core has become future of the platform, and we refer to it just as .NET today.
 For more details, read [Introducing .NET 5][introducing-net-5].
 
 ### .NET Framework
@@ -143,13 +143,13 @@ Unity - the world's most popular game engine - is scripted by C#, powered by a c
 Originally, CoreCLR was the runtime of Silverlight and was designed to run on multiple
 platforms, specifically Windows and OS X.
 
-Today, the [CoreCLR runtime](https://github.com/dotnet/runtime/tree/master/src/coreclr) 
+Today, the [CoreCLR runtime](https://github.com/dotnet/runtime/tree/master/src/coreclr)
 is part of unified .NET platform. It is optimized for cloud (e.g. ASP.NET) and
 desktop (e.g. WinForms, WPF) scenarios.
 
 ## Ahead-Of-Time Compilation (AOT)
 
-Most flavors of .NET runtime come with at least partial AOT compilation. A variety of AOT technologies 
+Most flavors of .NET runtime come with at least partial AOT compilation. A variety of AOT technologies
 with unique characteristics were developed for .NET runtimes over the years.
 
 ### ReadyToRun
