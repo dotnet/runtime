@@ -12,28 +12,27 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class OptionsBuilderValidationExtensions
     {
         /// <summary>
-        /// Enforces options validation check in startup time rather then in runtime.
+        /// Enforces options validation check on start rather then in runtime.
         /// </summary>
         /// <typeparam name="TOptions">The type of options.</typeparam>
         /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure options instance.</param>
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
         public static OptionsBuilder<TOptions> ValidateOnStart<TOptions>(this OptionsBuilder<TOptions> optionsBuilder)
-            where TOptions : class, new()
+            where TOptions : class
         {
-            _ = optionsBuilder ?? throw new ArgumentNullException(nameof(optionsBuilder));
+            if (optionsBuilder == null)
+            {
+                throw new ArgumentNullException(nameof(optionsBuilder));
+            }
 
-            // This will only add the hosted service once
-            _ = optionsBuilder.Services.AddHostedService<ValidationHostedService>();
-
-                _ = optionsBuilder
-                        .Services
-                        .AddOptions<ValidatorOptions>()
-                        .Configure<IOptionsMonitor<TOptions>>((vo, options) =>
-                        {
-                            // This adds an action that resolves the options value to force evaluation
-                            // We don't care about the result as duplicates aren't important
-                            _ = vo.Validators.TryAdd(typeof(TOptions), () => _ = options.Get(optionsBuilder.Name));
-                        });
+            optionsBuilder.Services.AddHostedService<ValidationHostedService>();
+            optionsBuilder.Services.AddOptions<ValidatorOptions>()
+                .Configure<IOptionsMonitor<TOptions>>((vo, options) =>
+                {
+                    // This adds an action that resolves the options value to force evaluation
+                    // We don't care about the result as duplicates are not important
+                    vo.Validators[typeof(TOptions)] = () => options.Get(optionsBuilder.Name);
+                });
 
             return optionsBuilder;
         }

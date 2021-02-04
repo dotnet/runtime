@@ -6,10 +6,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options.Tests;
 using Xunit;
 
-namespace Microsoft.Extensions.Options.DataAnnotations.Tests
+namespace Microsoft.Extensions.Options.Tests
 {
     public class OptionsBuilderValidationTests
     {
@@ -19,6 +18,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOptionsOnStartWithDefaultError()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -41,6 +41,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOptionsOnStartWithCustomError()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -67,6 +68,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOptionsOnStartRatherThanLazySameType() // shouldn this fail?
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -92,6 +94,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOptionsLazyThanEagerSameType()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -117,6 +120,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOptionsLazyThanEagerDifferentTypes()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -143,6 +147,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOptionsOnStartAndSomeLazyDifferentTypes()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -169,6 +174,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOptionsOnStartWithMultipleDefaultErrors()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -196,6 +202,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOptionOnStartsWithMixedOverloads()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -224,6 +231,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOnStartDataAnnotationsLongSyntax()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -257,6 +265,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOnStartMixDataAnnotationsLongSyntax()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -292,6 +301,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOnStartDataAnnotationsShortSyntax()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -325,6 +335,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task CanValidateOnStartMixDataAnnotationsShortSyntax()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -360,17 +371,15 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
-        public void Test_WhenValidateOnStartThrowsIfArgumentNull()
+        public void ValidateOnStart_NullOptionsBuilder_Throws()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
                 OptionsBuilder<AnnotatedOptions> optionsBuilder = null;
-#pragma warning disable CS8604 // Possible null reference argument.
                 optionsBuilder.ValidateOnStart();
-#pragma warning restore CS8604 // Possible null reference argument.
             });
 
-            _ = Assert.Throws<ArgumentNullException>(() => { _ = hostBuilder.Build(); });
+            Assert.Throws<ArgumentNullException>(() => hostBuilder.Build());
         }
 
         internal class FakeService { }
@@ -381,6 +390,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ValidateOnStart_NamedOptions_FailsOnStartForFailedValidation()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -408,6 +418,7 @@ namespace Microsoft.Extensions.Options.DataAnnotations.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task Test_IVfalidationSuccessful()
         {
             var hostBuilder = CreateHostBuilder(services =>

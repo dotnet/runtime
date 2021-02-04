@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
             if (exceptions.Count == 1)
             {
                 // Rethrow if it's a single error
-                throw exceptions[0];
+                ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
             }
 
             if (exceptions.Count > 1)
