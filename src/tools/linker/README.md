@@ -44,4 +44,4 @@ The same script can be used to run all tests from the terminal. We also have int
 
 ## CI Build & Test Status
 
-[![Build Status](https://dev.azure.com/dnceng/public/_apis/build/status/mono/linker-ci?branchName=master)](https://dev.azure.com/dnceng/public/_build/latest?definitionId=364&branchName=master)
+[![Build Status](https://dev.azure.com/dnceng/public/_apis/build/status/mono/linker-ci?branchName=main)](https://dev.azure.com/dnceng/public/_build/latest?definitionId=364&branchName=main)
