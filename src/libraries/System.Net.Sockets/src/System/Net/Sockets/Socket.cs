@@ -2407,6 +2407,8 @@ namespace System.Net.Sockets
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
             Task<SocketReceiveMessageFromResult> t = ReceiveMessageFromAsync(new Memory<byte>(buffer, offset, size), socketFlags, remoteEP).AsTask();
+            // In case of synchronous completion, ReceiveMessageFromAsync() returns a completed task.
+            // When this happens, we need to update 'remoteEP' in order to conform to the historical behavior of BeginReceiveMessageFrom().
             if (t.IsCompletedSuccessfully)
             {
                 EndPoint resultEp = t.Result.RemoteEndPoint;
@@ -2446,6 +2448,8 @@ namespace System.Net.Sockets
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
             Task<SocketReceiveFromResult> t = ReceiveFromAsync(new Memory<byte>(buffer, offset, size), socketFlags, remoteEP).AsTask();
+            // In case of synchronous completion, ReceiveFromAsync() returns a completed task.
+            // When this happens, we need to update 'remoteEP' in order to conform to the historical behavior of BeginReceiveFrom().
             if (t.IsCompletedSuccessfully)
             {
                 EndPoint resultEp = t.Result.RemoteEndPoint;
