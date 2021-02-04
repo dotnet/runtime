@@ -1,0 +1,39 @@
+From c23a864f1047e37521b9cd2a1b4788eba588398d Mon Sep 17 00:00:00 2001
+From: Tom Deseyn <tom.deseyn@gmail.com>
+Date: Thu, 22 Oct 2020 10:07:49 +0200
+Subject: [PATCH] runtime: trim clr.tools
+
+---
+ eng/Subsets.props | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/eng/Subsets.props b/eng/Subsets.props
+index ce3049f51cb..a2363fcd2b0 100644
+--- a/eng/Subsets.props
++++ b/eng/Subsets.props
+@@ -49,6 +49,7 @@
+     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages</DefaultMonoSubsets>
+ 
+     <DefaultLibrariesSubsets>libs.native+libs.ref+libs.src+libs.pretest+libs.packages</DefaultLibrariesSubsets>
++    <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">libs.native+libs.ref+libs.src+libs.packages</DefaultLibrariesSubsets>
+ 
+     <DefaultHostSubsets>host.native+host.pkg+host.tools+host.tests</DefaultHostSubsets>
+     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' == 'Mono'"></DefaultHostSubsets>
+@@ -188,11 +189,11 @@
+     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\runincontext\runincontext.csproj;
+                              $(CoreClrProjectRoot)tools\r2rdump\R2RDump.csproj;
+                              $(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj;
+-                             $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
+-                             $(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
++                             $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj" Category="clr" Condition="'$(DotNetBuildFromSource)' != 'true'" />
++    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
+ 
+     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.ReadyToRun.Tests\ILCompiler.TypeSystem.ReadyToRun.Tests.csproj"
+-      Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
++      Test="true" Category="clr" Condition="'$(__DistroRid)' != 'linux-musl-x64' and '$(DotNetBuildFromSource)' != 'true'"/>
+   </ItemGroup>
+ 
+   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
+-- 
+2.25.4
+
