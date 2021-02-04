@@ -379,7 +379,7 @@ namespace System.Drawing
             }
             finally
             {
-                Interop.Gdi32.SelectClipRgn(hDC, hRgn);
+                Interop.Gdi32.SelectClipRgn(dc, hSaveRgn);
                 // We need to delete the region handle after restoring the region as GDI+ uses a copy of the handle.
                 Interop.Gdi32.DeleteObject(hSaveRgn);
             }
