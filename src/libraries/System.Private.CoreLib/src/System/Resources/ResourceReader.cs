@@ -129,7 +129,7 @@ namespace System.Resources
             ReadResources();
         }
 
-        internal static bool AllowCustomResourceTypes { get; } = AppContext.TryGetSwitch("System.Resources.ResourceManager.CustomResourceTypes.IsSupported", out bool allowReflection) ? allowReflection : true;
+        internal static bool AllowCustomResourceTypes { get; } = AppContext.TryGetSwitch("System.Resources.ResourceManager.CustomResourceTypes.AreSupported", out bool allowReflection) ? allowReflection : true;
 
         public void Close()
         {
@@ -920,30 +920,24 @@ namespace System.Resources
         // and initialize Reflection.
         private Type FindType(int typeIndex)
         {
+            if (!AllowCustomResourceTypes)
+            {
+                throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
+            }
+
             if (typeIndex < 0 || typeIndex >= _typeTable.Length)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_InvalidType);
             }
-            if (_typeTable[typeIndex] == null)
-            {
-                if (AllowCustomResourceTypes)
-                {
-                    UseReflectionToGetType(typeIndex);
-                }
-                else
-                {
-                    throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
-                }
-            }
-            Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
-            return _typeTable[typeIndex]!;
+
+            return _typeTable[typeIndex] ?? UseReflectionToGetType(typeIndex);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
             Justification = "We don't want to add another RequiresUnreferencedCode attribute here since " +
             "we are already going to get one warning on ManifestBasedResourceGroveler.InternalGetResourceSetFromSerializedData " +
             "when the Custom types feature switch is enabled, and we only want user to get one warning for this feature switch.")]
-        private void UseReflectionToGetType(int typeIndex)
+        private Type UseReflectionToGetType(int typeIndex)
         {
             long oldPos = _store.BaseStream.Position;
             try
@@ -951,6 +945,7 @@ namespace System.Resources
                 _store.BaseStream.Position = _typeNamePositions[typeIndex];
                 string typeName = _store.ReadString();
                 _typeTable[typeIndex] = Type.GetType(typeName, true);
+                return _typeTable[typeIndex]!;
             }
             // If serialization isn't supported, we convert FileNotFoundException to
             // NotSupportedException for consistency with v2. This is a corner-case, but the

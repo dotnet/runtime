@@ -78,6 +78,10 @@ namespace System.Resources
         // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
             Justification = "ResourceReader.CreateUntypedDelegate method doesn't have trimming annotations.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:BinaryFormatterDeserialize",
+            Justification = "This code path will only ever be called if Custom Resource Types is enabled. We are already " +
+            "throwing a warning to the user saying that this path is unsafe for trimming, so supressing this message so that " +
+            "they only get one warning for the feature switch.")]
         private bool InitializeBinaryFormatter()
         {
             // If BinaryFormatter support is disabled for the app, the linker will replace this entire

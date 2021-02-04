@@ -3674,6 +3674,6 @@
     <value>The argv[0] argument cannot include a double quote.</value>
   </data>
   <data name="ResourceManager_ReflectionNotAllowed" xml:space="preserve">
-    <value>Use of ResourceManager for non primitive types is disabled. Set the MSBuild Property CustomTypeResourcesSupport to true in order to enable it.</value>
+    <value>Use of ResourceManager for custom types is disabled. Set the MSBuild Property CustomResourceTypesSupport to true in order to enable it.</value>
   </data>
 </root>

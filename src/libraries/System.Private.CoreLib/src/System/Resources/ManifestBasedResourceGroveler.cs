@@ -278,7 +278,7 @@ namespace System.Resources
             }
         }
 
-        [RequiresUnreferencedCode("The CustomTypeResourcesSupport feature switch has been enabled for this app which is being trimmed. " +
+        [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
             "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private static ResourceSet InternalGetResourceSetFromSerializedData(Stream store, string readerTypeName, string? resSetTypeName, ResourceManager.ResourceManagerMediator mediator)
         {
