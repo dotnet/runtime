@@ -1882,8 +1882,6 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
         {
             // We need a temp xmm register if the baseType is not floating point and
             // accessing non-zero'th element.
-            instruction ins;
-
             if (byteShiftCnt != 0)
             {
                 assert(tmpReg != REG_NA);
@@ -1894,7 +1892,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
                 }
 
                 assert((byteShiftCnt > 0) && (byteShiftCnt <= 32));
-                ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
+                instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
                 GetEmitter()->emitIns_R_I(ins, emitActualTypeSize(simdType), tmpReg, byteShiftCnt);
             }
             else
@@ -1903,8 +1901,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             }
 
             assert(tmpReg != REG_NA);
-            ins = ins_CopyFloatToInt(TYP_FLOAT, baseType);
-            inst_RV_RV(ins, targetReg, tmpReg, baseType);
+            inst_RV_RV(ins_Copy(tmpReg, baseType), targetReg, tmpReg, baseType);
         }
     }
 
@@ -1985,8 +1982,8 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
         assert(genIsValidIntReg(tmpReg));
 
         // Move the value from xmm reg to an int reg
-        instruction ins = ins_CopyFloatToInt(TYP_FLOAT, TYP_INT);
-        inst_RV_RV(ins, tmpReg, op2Reg, baseType);
+        // Another error, op2Reg is our xmm source but it was passed second.
+        inst_RV_RV(ins_Copy(op2Reg, TYP_INT), tmpReg, op2Reg, baseType);
 
         assert((index >= 0) && (index <= 15));
 
