@@ -463,6 +463,7 @@ jobs:
     buildConfig: debug
     platforms:
     - OSX_x64
+    - OSX_arm64
     - Linux_x64
     - Linux_arm64
     # - Linux_musl_arm64
@@ -567,6 +568,7 @@ jobs:
     buildConfig: release
     platforms:
     - OSX_x64
+    - OSX_arm64
     - Linux_arm64
     jobParameters:
       condition: >-
@@ -882,6 +884,7 @@ jobs:
     platforms:
     - windows_x64
     - OSX_x64
+    - OSX_arm64
     - Linux_arm64
     - Linux_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
