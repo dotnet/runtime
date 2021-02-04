@@ -4,8 +4,6 @@
 /src/libraries/Common/src/System/Net/Http/aspnetcore/               @dotnet/http
 /src/libraries/Common/tests/Tests/System/Net/aspnetcore/            @dotnet/http
 /src/libraries/System.Text.Json/                                    @steveharter @layomia @Jozkee @eiriktsarpalis
-/src/libraries/System.Buffers/
-/src/libraries/System.Memory/
 
 # CoreCLR Code Owners
 
