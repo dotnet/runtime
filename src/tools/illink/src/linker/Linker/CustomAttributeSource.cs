@@ -1,31 +1,51 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Mono.Cecil;
 
 namespace Mono.Linker
 {
 	public class CustomAttributeSource
 	{
-		private readonly Dictionary<ICustomAttributeProvider, IEnumerable<CustomAttribute>> _xmlCustomAttributes;
-		private readonly Dictionary<ICustomAttributeProvider, IEnumerable<Attribute>> _internalAttributes;
+		public AttributeInfo PrimaryAttributeInfo { get; }
+		private readonly Dictionary<AssemblyDefinition, AttributeInfo> _embeddedXmlInfos;
+		readonly LinkContext _context;
 
-		public CustomAttributeSource ()
+		public CustomAttributeSource (LinkContext context)
 		{
-			_xmlCustomAttributes = new Dictionary<ICustomAttributeProvider, IEnumerable<CustomAttribute>> ();
-			_internalAttributes = new Dictionary<ICustomAttributeProvider, IEnumerable<Attribute>> ();
+			PrimaryAttributeInfo = new AttributeInfo ();
+			_embeddedXmlInfos = new Dictionary<AssemblyDefinition, AttributeInfo> ();
+			_context = context;
 		}
 
-		public void AddCustomAttributes (ICustomAttributeProvider provider, IEnumerable<CustomAttribute> customAttributes)
+		public static AssemblyDefinition GetAssemblyFromCustomAttributeProvider (ICustomAttributeProvider provider)
 		{
-			if (!_xmlCustomAttributes.ContainsKey (provider))
-				_xmlCustomAttributes[provider] = customAttributes;
-			else
-				_xmlCustomAttributes[provider] = _xmlCustomAttributes[provider].Concat (customAttributes);
+			return provider switch
+			{
+				MemberReference mr => mr.Module.Assembly,
+				AssemblyDefinition ad => ad,
+				ModuleDefinition md => md.Assembly,
+				InterfaceImplementation ii => ii.InterfaceType.Module.Assembly,
+				GenericParameterConstraint gpc => gpc.ConstraintType.Module.Assembly,
+				ParameterDefinition pd => pd.ParameterType.Module.Assembly,
+				MethodReturnType mrt => mrt.ReturnType.Module.Assembly,
+				_ => throw new NotImplementedException (provider.GetType ().ToString ()),
+			};
+		}
+
+		public bool TryGetEmbeddedXmlInfo (ICustomAttributeProvider provider, out AttributeInfo xmlInfo)
+		{
+			var assembly = GetAssemblyFromCustomAttributeProvider (provider);
+
+			if (!_embeddedXmlInfos.TryGetValue (assembly, out xmlInfo)) {
+				xmlInfo = EmbeddedXmlInfo.ProcessAttributes (assembly, _context);
+				_embeddedXmlInfos.Add (assembly, xmlInfo);
+			}
+
+			return xmlInfo != null;
 		}
 
 		public IEnumerable<CustomAttribute> GetCustomAttributes (ICustomAttributeProvider provider)
@@ -35,7 +55,15 @@ namespace Mono.Linker
 					yield return customAttribute;
 			}
 
-			if (_xmlCustomAttributes.TryGetValue (provider, out var annotations)) {
+			if (PrimaryAttributeInfo.CustomAttributes.TryGetValue (provider, out var annotations)) {
+				foreach (var customAttribute in annotations)
+					yield return customAttribute;
+			}
+
+			if (!TryGetEmbeddedXmlInfo (provider, out var embeddedXml))
+				yield break;
+
+			if (embeddedXml.CustomAttributes.TryGetValue (provider, out annotations)) {
 				foreach (var customAttribute in annotations)
 					yield return customAttribute;
 			}
@@ -46,23 +74,26 @@ namespace Mono.Linker
 			if (provider.HasCustomAttributes)
 				return true;
 
-			if (_xmlCustomAttributes.ContainsKey (provider))
+			if (PrimaryAttributeInfo.CustomAttributes.ContainsKey (provider))
 				return true;
 
-			return false;
-		}
+			if (!TryGetEmbeddedXmlInfo (provider, out var embeddedXml))
+				return false;
 
-		public void AddInternalAttributes (ICustomAttributeProvider provider, IEnumerable<Attribute> attributes)
-		{
-			if (!_internalAttributes.ContainsKey (provider))
-				_internalAttributes[provider] = attributes;
-			else
-				_internalAttributes[provider] = _internalAttributes[provider].Concat (attributes);
+			return embeddedXml.CustomAttributes.ContainsKey (provider);
 		}
 
 		public IEnumerable<Attribute> GetInternalAttributes (ICustomAttributeProvider provider)
 		{
-			if (_internalAttributes.TryGetValue (provider, out var annotations)) {
+			if (PrimaryAttributeInfo.InternalAttributes.TryGetValue (provider, out var annotations)) {
+				foreach (var attribute in annotations)
+					yield return attribute;
+			}
+
+			if (!TryGetEmbeddedXmlInfo (provider, out var embeddedXml))
+				yield break;
+
+			if (embeddedXml.InternalAttributes.TryGetValue (provider, out annotations)) {
 				foreach (var attribute in annotations)
 					yield return attribute;
 			}
@@ -70,7 +101,13 @@ namespace Mono.Linker
 
 		public bool HasInternalAttributes (ICustomAttributeProvider provider)
 		{
-			return _internalAttributes.ContainsKey (provider) ? true : false;
+			if (PrimaryAttributeInfo.InternalAttributes.ContainsKey (provider))
+				return true;
+
+			if (!TryGetEmbeddedXmlInfo (provider, out var embeddedXml))
+				return false;
+
+			return embeddedXml.InternalAttributes.ContainsKey (provider);
 		}
 
 		public bool HasAttributes (ICustomAttributeProvider provider) =>

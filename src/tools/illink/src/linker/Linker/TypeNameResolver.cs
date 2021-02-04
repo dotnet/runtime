@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection.Runtime.TypeParsing;
 using Mono.Cecil;
 
@@ -31,8 +31,8 @@ namespace Mono.Linker
 				return ResolveTypeName (null, assemblyQualifiedTypeName);
 			}
 
-			foreach (var assemblyDefiniton in _context.GetAssemblies ()) {
-				var foundType = ResolveTypeName (assemblyDefiniton, parsedTypeName);
+			foreach (var assemblyDefinition in _context.GetReferencedAssemblies ()) {
+				var foundType = ResolveTypeName (assemblyDefinition, parsedTypeName);
 				if (foundType != null)
 					return foundType;
 			}
@@ -49,7 +49,7 @@ namespace Mono.Linker
 		{
 			if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
 				// In this case we ignore the assembly parameter since the type name has assembly in it
-				var assemblyFromName = _context.GetLoadedAssembly (assemblyQualifiedTypeName.AssemblyName.Name);
+				var assemblyFromName = _context.TryResolve (assemblyQualifiedTypeName.AssemblyName.Name);
 				return ResolveTypeName (assemblyFromName, assemblyQualifiedTypeName.TypeName);
 			}
 

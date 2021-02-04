@@ -16,7 +16,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 	[SetupCompileBefore (
 		"LibWithConstantSubstitution.dll",
 		new[] { "Dependencies/LibWithConstantSubstitution.cs" },
-		resources: new object[] { "Dependencies/LibWithConstantSubstitution.xml" })]
+		resources: new object[] { new string[] { "Dependencies/LibWithConstantSubstitution.xml", "ILLink.Substitutions.xml" } })]
+	[IgnoreSubstitutions (false)]
 	[KeptModuleReference ("unknown")]
 	public class BodiesWithSubstitutions
 	{
@@ -367,14 +368,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		static class ConstantSubstitutionsFromNewAssembly
 		{
-			// This is a bug currently - delay loaded assemblies don't process substitutions - yet
-			// The method should not be kept ideally
-			[Kept]
 			static void NotReached () { }
 			[Kept] static void Reached () { }
 
 			[Kept]
-			// [ExpectBodyModified] same bug as above
+			[ExpectBodyModified]
 			public static void Test ()
 			{
 				if (LibWithConstantSubstitution.ReturnFalse ())

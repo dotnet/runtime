@@ -166,7 +166,7 @@ namespace Mono.Linker
 			var set_optimizations = new List<(CodeOptimizations, string, bool)> ();
 			bool dumpDependencies = false;
 			string dependenciesFileName = null;
-			bool removeCAS = true;
+			context.StripSecurity = true;
 			bool new_mvid_used = false;
 			bool deterministic_used = false;
 
@@ -221,7 +221,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--strip-security":
-						if (!GetBoolParam (token, l => removeCAS = l))
+						if (!GetBoolParam (token, l => context.StripSecurity = l))
 							return -1;
 
 						continue;
@@ -649,29 +649,14 @@ namespace Mono.Linker
 			if (_needAddBypassNGenStep)
 				p.AddStepAfter (typeof (SweepStep), new AddBypassNGenStep ());
 
-			if (removeCAS)
-				p.AddStepBefore (typeof (MarkStep), new RemoveSecurityStep ());
-
-			p.AddStepBefore (typeof (MarkStep), new MarkExportedTypesTargetStep ());
-
 			p.AddStepBefore (typeof (OutputStep), new SealerStep ());
 
 			//
 			// Pipeline setup with all steps enabled
 			//
 			// RootAssemblyInputStep or ResolveFromXmlStep [at least one of them]
-			// LoadReferencesStep
-			// BlacklistStep
-			//   dynamically adds steps:
-			//     ResolveFromXmlStep [optional, possibly many]
-			//     BodySubstituterStep [optional, possibly many]
-			//     LinkAttributesStep [optional, possibly many]
 			// LinkAttributesStep [optional, possibly many]
-			// DynamicDependencyLookupStep
 			// BodySubstituterStep [optional]
-			// RemoveSecurityStep [optional]
-			// RemoveUnreachableBlocksStep
-			// MarkExportedTypesTargetStep
 			// MarkStep
 			// ReflectionBlockedStep [optional]
 			// ProcessWarningsStep
@@ -683,7 +668,6 @@ namespace Mono.Linker
 			// RegenerateGuidStep [optional]
 			// SealerStep
 			// OutputStep
-			//
 
 			foreach (string custom_step in custom_steps) {
 				if (!AddCustomStep (p, custom_step))
@@ -775,7 +759,7 @@ namespace Mono.Linker
 
 		protected virtual void AddLinkAttributesStep (Pipeline pipeline, string file)
 		{
-			pipeline.AddStepAfter (typeof (BlacklistStep), new LinkAttributesStep (new XPathDocument (file), file));
+			pipeline.AddStepBefore (typeof (MarkStep), new LinkAttributesStep (new XPathDocument (file), file));
 		}
 
 		static void AddBodySubstituterStep (Pipeline pipeline, string file)
@@ -1168,9 +1152,6 @@ namespace Mono.Linker
 		static Pipeline GetStandardPipeline ()
 		{
 			Pipeline p = new Pipeline ();
-			p.AppendStep (new LoadReferencesStep ());
-			p.AppendStep (new BlacklistStep ());
-			p.AppendStep (new DynamicDependencyLookupStep ());
 			p.AppendStep (new MarkStep ());
 			p.AppendStep (new ValidateVirtualMethodAnnotationsStep ());
 			p.AppendStep (new ProcessWarningsStep ());

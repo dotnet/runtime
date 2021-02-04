@@ -3,11 +3,11 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class RemoveSecurityStep : BaseStep
+	public static class RemoveSecurity
 	{
-		protected override void ProcessAssembly (AssemblyDefinition assembly)
+		public static void ProcessAssembly (AssemblyDefinition assembly, LinkContext context)
 		{
-			if (Annotations.GetAction (assembly) == AssemblyAction.Link) {
+			if (context.Annotations.GetAction (assembly) == AssemblyAction.Link) {
 				ClearSecurityDeclarations (assembly);
 				RemoveCustomAttributesThatAreForSecurity (assembly);
 

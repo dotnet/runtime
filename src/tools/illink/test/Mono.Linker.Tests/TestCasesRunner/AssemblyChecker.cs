@@ -384,7 +384,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				attr => GetStringArrayAttributeValue (attr).Select (v => v.ToLower ()).ToArray ());
 		}
 
-		static string FormatInstruction (Instruction instr)
+		public static string FormatInstruction (Instruction instr)
 		{
 			switch (instr.OpCode.Code) {
 			case Code.Ldc_I4:
@@ -443,7 +443,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				attr => GetStringOrTypeArrayAttributeValue (attr).ToArray ());
 		}
 
-		protected static void VerifyBodyProperties (MethodDefinition src, MethodDefinition linked, string sequenceAttributeName, string expectModifiedAttributeName,
+		public static void VerifyBodyProperties (MethodDefinition src, MethodDefinition linked, string sequenceAttributeName, string expectModifiedAttributeName,
 			string propertyDescription,
 			Func<MethodDefinition, string[]> valueCollector,
 			Func<CustomAttribute, string[]> getExpectFromSequenceAttribute)

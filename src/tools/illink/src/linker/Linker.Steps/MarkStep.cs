@@ -44,14 +44,13 @@ namespace Mono.Linker.Steps
 
 	public partial class MarkStep : IStep
 	{
-
 		protected LinkContext _context;
 		protected Queue<(MethodDefinition, DependencyInfo)> _methods;
 		protected List<MethodDefinition> _virtual_methods;
 		protected Queue<AttributeProviderPair> _assemblyLevelAttributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, IMemberDefinition)> _lateMarkedAttributes;
 		protected List<TypeDefinition> _typesWithInterfaces;
-		protected bool _dynamicInterfaceCastableImplementationTypesDiscovered;
+		protected HashSet<AssemblyDefinition> _dynamicInterfaceCastableImplementationTypesDiscovered;
 		protected List<TypeDefinition> _dynamicInterfaceCastableImplementationTypes;
 		protected List<MethodBody> _unreachableBodies;
 
@@ -85,6 +84,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.DynamicDependency,
 			DependencyKind.ReferencedBySpecialAttribute,
 			DependencyKind.TypePreserve,
+			DependencyKind.XmlDescriptor,
 		};
 
 		static readonly DependencyKind[] _typeReasons = new DependencyKind[] {
@@ -119,6 +119,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.FieldMarshalSpec,
 			DependencyKind.ReturnTypeMarshalSpec,
 			DependencyKind.DynamicInterfaceCastableImplementation,
+			DependencyKind.XmlDescriptor,
 		};
 
 		static readonly DependencyKind[] _methodReasons = new DependencyKind[] {
@@ -165,6 +166,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.ParameterMarshalSpec,
 			DependencyKind.FieldMarshalSpec,
 			DependencyKind.ReturnTypeMarshalSpec,
+			DependencyKind.XmlDescriptor,
 		};
 #endif
 
@@ -175,7 +177,7 @@ namespace Mono.Linker.Steps
 			_assemblyLevelAttributes = new Queue<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, IMemberDefinition)> ();
 			_typesWithInterfaces = new List<TypeDefinition> ();
-			_dynamicInterfaceCastableImplementationTypesDiscovered = false;
+			_dynamicInterfaceCastableImplementationTypesDiscovered = new HashSet<AssemblyDefinition> ();
 			_dynamicInterfaceCastableImplementationTypes = new List<TypeDefinition> ();
 			_unreachableBodies = new List<MethodBody> ();
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
@@ -196,16 +198,40 @@ namespace Mono.Linker.Steps
 
 		void Initialize ()
 		{
+			InitializeCorelibAttributeXml ();
+
 			foreach (AssemblyDefinition assembly in _context.GetAssemblies ())
 				InitializeAssembly (assembly);
 
 			ProcessMarkedPending ();
 		}
 
+		void InitializeCorelibAttributeXml ()
+		{
+			// Pre-load corelib and process its attribute XML first. This is necessary because the
+			// corelib attribute XML can contain modifications to other assemblies.
+			// We could just mark it here, but the attribute processing isn't necessarily tied to marking,
+			// so this would rely on implementation details of corelib.
+			var coreLib = _context.TryResolve (PlatformAssemblies.CoreLib);
+			if (coreLib == null)
+				return;
+
+			var xmlInfo = EmbeddedXmlInfo.ProcessAttributes (coreLib, _context);
+			if (xmlInfo == null)
+				return;
+
+			// Because the attribute XML can reference other assemblies, they must go in the global store,
+			// instead of the per-assembly stores.
+			foreach (var (provider, annotations) in xmlInfo.CustomAttributes)
+				_context.CustomAttributes.PrimaryAttributeInfo.AddCustomAttributes (provider, annotations);
+			foreach (var (provider, annotations) in xmlInfo.InternalAttributes)
+				_context.CustomAttributes.PrimaryAttributeInfo.AddInternalAttributes (provider, annotations);
+		}
+
 		protected virtual void InitializeAssembly (AssemblyDefinition assembly)
 		{
 			var action = _context.Annotations.GetAction (assembly);
-			if (action == AssemblyAction.Copy || action == AssemblyAction.Save)
+			if (IsFullyPreservedAction (action))
 				MarkAssembly (assembly, new DependencyInfo (DependencyKind.AssemblyAction, action));
 		}
 
@@ -315,9 +341,16 @@ namespace Mono.Linker.Steps
 
 		void Process ()
 		{
-			while (ProcessPrimaryQueue () || ProcessLazyAttributes () || ProcessLateMarkedAttributes ()) {
+			while (ProcessPrimaryQueue () || ProcessMarkedPending () || ProcessLazyAttributes () || ProcessLateMarkedAttributes () || MarkFullyPreservedAssemblies ()) {
 
 				// deal with [TypeForwardedTo] pseudo-attributes
+
+				// This marks all exported types that resolve to a marked type. Note that it
+				// may mark unused exported types that happen to resolve to a type which was
+				// marked from a different reference. This seems incorrect.
+				// Note also that we may still remove type forwarder assemblies with marked exports in SweepStep,
+				// if they don't contain other used code.
+				// https://github.com/mono/linker/issues/1740
 				foreach (AssemblyDefinition assembly in _context.GetAssemblies ()) {
 					if (!assembly.MainModule.HasExportedTypes)
 						continue;
@@ -344,6 +377,49 @@ namespace Mono.Linker.Steps
 			}
 
 			ProcessPendingTypeChecks ();
+		}
+
+		static bool IsFullyPreservedAction (AssemblyAction action) => action == AssemblyAction.Copy || action == AssemblyAction.Save;
+
+		bool MarkFullyPreservedAssemblies ()
+		{
+			// Fully mark any assemblies with copy/save action.
+
+			// Unresolved references could get the copy/save action if this is the default action.
+			bool scanReferences = IsFullyPreservedAction (_context.CoreAction) || IsFullyPreservedAction (_context.UserAction);
+
+			if (!scanReferences) {
+				// Unresolved references could get the copy/save action if it was set explicitly
+				// for some referenced assembly that has not been resolved yet
+				foreach (var (assemblyName, action) in _context.Actions) {
+					if (!IsFullyPreservedAction (action))
+						continue;
+
+					var assembly = _context.GetLoadedAssembly (assemblyName);
+					if (assembly == null) {
+						scanReferences = true;
+						break;
+					}
+
+					// The action should not change from the explicit command-line action
+					Debug.Assert (_context.Annotations.GetAction (assembly) == action);
+				}
+			}
+
+			// Beware: this works on loaded assemblies, not marked assemblies, so it should not be tied to marking.
+			// We could further optimize this to only iterate through assemblies if the last mark iteration loaded
+			// a new assembly, since this is the only way that the set we need to consider could have changed.
+			var assembliesToCheck = scanReferences ? _context.GetReferencedAssemblies ().ToArray () : _context.GetAssemblies ();
+			bool markedNewAssembly = false;
+			foreach (var assembly in assembliesToCheck) {
+				var action = _context.Annotations.GetAction (assembly);
+				if (!IsFullyPreservedAction (action))
+					continue;
+				if (!Annotations.IsProcessed (assembly))
+					markedNewAssembly = true;
+				MarkAssembly (assembly, new DependencyInfo (DependencyKind.AssemblyAction, null));
+			}
+			return markedNewAssembly;
 		}
 
 		bool ProcessPrimaryQueue ()
@@ -474,15 +550,16 @@ namespace Mono.Linker.Steps
 
 		void DiscoverDynamicCastableImplementationInterfaces ()
 		{
-			Debug.Assert (!_dynamicInterfaceCastableImplementationTypesDiscovered);
-
-			foreach (var assembly in _context.GetAssemblies ()) {
+			// We could potentially avoid loading all references here: https://github.com/mono/linker/issues/1788
+			foreach (var assembly in _context.GetReferencedAssemblies ().ToArray ()) {
 				switch (Annotations.GetAction (assembly)) {
 				// We only need to search assemblies where we don't mark everything
 				// Assemblies that are fully marked already mark these types.
 				case AssemblyAction.Link:
 				case AssemblyAction.AddBypassNGen:
 				case AssemblyAction.AddBypassNGenUsed:
+					if (!_dynamicInterfaceCastableImplementationTypesDiscovered.Add (assembly))
+						continue;
 
 					foreach (TypeDefinition type in assembly.MainModule.Types)
 						CheckIfTypeOrNestedTypesIsDynamicCastableImplementation (type);
@@ -490,8 +567,6 @@ namespace Mono.Linker.Steps
 					break;
 				}
 			}
-
-			_dynamicInterfaceCastableImplementationTypesDiscovered = true;
 
 			void CheckIfTypeOrNestedTypesIsDynamicCastableImplementation (TypeDefinition type)
 			{
@@ -507,9 +582,7 @@ namespace Mono.Linker.Steps
 
 		void ProcessDynamicCastableImplementationInterfaces ()
 		{
-			if (!_dynamicInterfaceCastableImplementationTypesDiscovered) {
-				DiscoverDynamicCastableImplementationInterfaces ();
-			}
+			DiscoverDynamicCastableImplementationInterfaces ();
 
 			// We may mark an interface type later on.  Which means we need to reprocess any time with one or more interface implementations that have not been marked
 			// and if an interface type is found to be marked and implementation is not marked, then we need to mark that implementation
@@ -682,7 +755,7 @@ namespace Mono.Linker.Steps
 		void MarkCustomAttributes (ICustomAttributeProvider provider, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 			if (provider.HasCustomAttributes) {
-				bool providerInLinkedAssembly = Annotations.GetAction (GetAssemblyFromCustomAttributeProvider (provider)) == AssemblyAction.Link;
+				bool providerInLinkedAssembly = Annotations.GetAction (CustomAttributeSource.GetAssemblyFromCustomAttributeProvider (provider)) == AssemblyAction.Link;
 				bool markOnUse = _context.KeepUsedAttributeTypesOnly && providerInLinkedAssembly;
 
 				foreach (CustomAttribute ca in provider.CustomAttributes) {
@@ -723,13 +796,13 @@ namespace Mono.Linker.Steps
 			var isPreserveDependency = IsUserDependencyMarker (ca.AttributeType);
 			var isDynamicDependency = ca.AttributeType.IsTypeOf<DynamicDependencyAttribute> ();
 
-			if (!((isPreserveDependency || isDynamicDependency) && provider is MemberReference mr))
+			if (!((isPreserveDependency || isDynamicDependency) && provider is IMemberDefinition member))
 				return false;
 
 			if (isPreserveDependency)
-				MarkUserDependency (mr, ca, sourceLocationMember);
+				MarkUserDependency (member, ca, sourceLocationMember);
 
-			if (_context.KeepDependencyAttributes || Annotations.GetAction (mr.Module.Assembly) != AssemblyAction.Link) {
+			if (_context.KeepDependencyAttributes || Annotations.GetAction ((member as MemberReference).Module.Assembly) != AssemblyAction.Link) {
 				MarkCustomAttribute (ca, reason, sourceLocationMember);
 			} else {
 				// Record the custom attribute so that it has a reason, without actually marking it.
@@ -744,7 +817,7 @@ namespace Mono.Linker.Steps
 			Debug.Assert (context is MethodDefinition || context is FieldDefinition);
 			AssemblyDefinition assembly;
 			if (dynamicDependency.AssemblyName != null) {
-				assembly = _context.GetLoadedAssembly (dynamicDependency.AssemblyName);
+				assembly = _context.TryResolve (dynamicDependency.AssemblyName);
 				if (assembly == null) {
 					_context.LogWarning ($"Unresolved assembly '{dynamicDependency.AssemblyName}' in 'DynamicDependencyAttribute'", 2035, context);
 					return;
@@ -824,38 +897,26 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected static AssemblyDefinition GetAssemblyFromCustomAttributeProvider (ICustomAttributeProvider provider)
-		{
-			return provider switch
-			{
-				MemberReference mr => mr.Module.Assembly,
-				AssemblyDefinition ad => ad,
-				ModuleDefinition md => md.Assembly,
-				InterfaceImplementation ii => ii.InterfaceType.Module.Assembly,
-				GenericParameterConstraint gpc => gpc.ConstraintType.Module.Assembly,
-				ParameterDefinition pd => pd.ParameterType.Module.Assembly,
-				MethodReturnType mrt => mrt.ReturnType.Module.Assembly,
-				_ => throw new NotImplementedException (provider.GetType ().ToString ()),
-			};
-		}
 
 		protected virtual bool IsUserDependencyMarker (TypeReference type)
 		{
-			return DynamicDependencyLookupStep.IsPreserveDependencyAttribute (type);
+			return type.Name == "PreserveDependencyAttribute" && type.Namespace == "System.Runtime.CompilerServices";
 		}
 
-		protected virtual void MarkUserDependency (MemberReference context, CustomAttribute ca, IMemberDefinition sourceLocationMember)
+		protected virtual void MarkUserDependency (IMemberDefinition context, CustomAttribute ca, IMemberDefinition sourceLocationMember)
 		{
+			_context.LogWarning ($"'PreserveDependencyAttribute' is deprecated. Use 'DynamicDependencyAttribute' instead.", 2033, context);
+
 			if (!DynamicDependency.ShouldProcess (_context, ca))
 				return;
 
 			AssemblyDefinition assembly;
 			var args = ca.ConstructorArguments;
 			if (args.Count >= 3 && args[2].Value is string assemblyName) {
-				assembly = _context.GetLoadedAssembly (assemblyName);
+				assembly = _context.TryResolve (assemblyName);
 				if (assembly == null) {
 					_context.LogWarning (
-						$"Could not resolve dependency assembly '{assemblyName}' specified in a 'PreserveDependency' attribute", 2003, context.Resolve ());
+						$"Could not resolve dependency assembly '{assemblyName}' specified in a 'PreserveDependency' attribute", 2003, context);
 					return;
 				}
 			} else {
@@ -864,10 +925,10 @@ namespace Mono.Linker.Steps
 
 			TypeDefinition td;
 			if (args.Count >= 2 && args[1].Value is string typeName) {
-				td = _context.TypeNameResolver.ResolveTypeName (assembly ?? context.Module.Assembly, typeName)?.Resolve ();
+				td = _context.TypeNameResolver.ResolveTypeName (assembly ?? (context as MemberReference).Module.Assembly, typeName)?.Resolve ();
 				if (td == null) {
 					_context.LogWarning (
-						$"Could not resolve dependency type '{typeName}' specified in a `PreserveDependency` attribute", 2004, context.Resolve ());
+						$"Could not resolve dependency type '{typeName}' specified in a `PreserveDependency` attribute", 2004, context);
 					return;
 				}
 			} else {
@@ -901,7 +962,7 @@ namespace Mono.Linker.Steps
 				return;
 
 			_context.LogWarning (
-				$"Could not resolve dependency member '{member}' declared in type '{td.GetDisplayName ()}' specified in a `PreserveDependency` attribute", 2005, context.Resolve ());
+				$"Could not resolve dependency member '{member}' declared in type '{td.GetDisplayName ()}' specified in a `PreserveDependency` attribute", 2005, context);
 		}
 
 		bool MarkDependencyMethod (TypeDefinition type, string name, string[] signature, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
@@ -1237,15 +1298,21 @@ namespace Mono.Linker.Steps
 			return !Annotations.SetProcessed (provider);
 		}
 
-
 		protected void MarkAssembly (AssemblyDefinition assembly, DependencyInfo reason)
 		{
 			Annotations.Mark (assembly, reason);
 			if (CheckProcessed (assembly))
 				return;
 
-			var action = _context.Annotations.GetAction (assembly);
-			if (action == AssemblyAction.Copy || action == AssemblyAction.Save) {
+			EmbeddedXmlInfo.ProcessDescriptors (assembly, _context);
+
+			// Security attributes do not respect the attributes XML
+			if (_context.StripSecurity)
+				RemoveSecurity.ProcessAssembly (assembly, _context);
+
+			MarkExportedTypesTarget.ProcessAssembly (assembly, _context);
+
+			if (IsFullyPreservedAction (_context.Annotations.GetAction (assembly))) {
 				MarkEntireAssembly (assembly);
 				return;
 			}
@@ -1277,7 +1344,7 @@ namespace Mono.Linker.Steps
 
 		void ProcessModuleType (AssemblyDefinition assembly)
 		{
-			// The <Modue> type may have an initializer, in which case we want to keep it.
+			// The <Module> type may have an initializer, in which case we want to keep it.
 			TypeDefinition moduleType = assembly.MainModule.Types.FirstOrDefault (t => t.MetadataToken.RID == 1);
 			if (moduleType != null && moduleType.HasMethods) {
 				MarkType (moduleType, new DependencyInfo (DependencyKind.TypeInAssembly, assembly), null);
@@ -1306,7 +1373,7 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
-				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (resolved.DeclaringType) && Annotations.GetAction (GetAssemblyFromCustomAttributeProvider (assemblyLevelAttribute.Provider)) == AssemblyAction.Link)
+				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (resolved.DeclaringType) && Annotations.GetAction (CustomAttributeSource.GetAssemblyFromCustomAttributeProvider (assemblyLevelAttribute.Provider)) == AssemblyAction.Link)
 					continue;
 
 				if (!ShouldMarkTopLevelCustomAttribute (assemblyLevelAttribute, resolved)) {
@@ -1454,7 +1521,7 @@ namespace Mono.Linker.Steps
 
 		protected virtual bool IgnoreScope (IMetadataScope scope)
 		{
-			AssemblyDefinition assembly = ResolveAssembly (scope);
+			AssemblyDefinition assembly = _context.Resolve (scope);
 			return Annotations.GetAction (assembly) != AssemblyAction.Link;
 		}
 
@@ -1541,7 +1608,6 @@ namespace Mono.Linker.Steps
 			if (type.HasMethods && ShouldMarkTypeStaticConstructor (type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
 				MarkStaticConstructor (type, new DependencyInfo (DependencyKind.TriggersCctorForCalledMethod, reason.Source), sourceLocationMember);
 
-			// Check type being used was not removed by the LinkerRemovableAttribute
 			if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type)) {
 				// Don't warn about references from the removed attribute itself (for example the .ctor on the attribute
 				// will call MarkType on the attribute type itself). 
@@ -1562,7 +1628,8 @@ namespace Mono.Linker.Steps
 
 			MarkModule (type.Scope as ModuleDefinition, new DependencyInfo (DependencyKind.ScopeOfType, type));
 			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type), type);
-			MarkType (type.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, type), type);
+			if (type.DeclaringType != null)
+				MarkType (type.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, type), type);
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type), type);
 			MarkSecurityDeclarations (type, new DependencyInfo (DependencyKind.CustomAttribute, type), type);
 
@@ -1677,7 +1744,7 @@ namespace Mono.Linker.Steps
 					string targetTypeName = (string) property.Argument.Value;
 					TypeName typeName = TypeParser.ParseTypeName (targetTypeName);
 					if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
-						AssemblyDefinition assembly = _context.GetLoadedAssembly (assemblyQualifiedTypeName.AssemblyName.Name);
+						AssemblyDefinition assembly = _context.TryResolve (assemblyQualifiedTypeName.AssemblyName.Name);
 						return _context.TypeNameResolver.ResolveTypeName (assembly, targetTypeName)?.Resolve ();
 					}
 
@@ -2542,12 +2609,6 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		AssemblyDefinition ResolveAssembly (IMetadataScope scope)
-		{
-			AssemblyDefinition assembly = _context.Resolve (scope);
-			return assembly;
-		}
-
 		protected (MethodReference, DependencyInfo) GetOriginalMethod (MethodReference method, DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 			while (method is MethodSpecification specification) {
@@ -2960,7 +3021,7 @@ namespace Mono.Linker.Steps
 			case MethodAction.ForceParse:
 				return true;
 			case MethodAction.Parse:
-				AssemblyDefinition assembly = ResolveAssembly (method.DeclaringType.Scope);
+				AssemblyDefinition assembly = _context.Resolve (method.DeclaringType.Scope);
 				switch (Annotations.GetAction (assembly)) {
 				case AssemblyAction.Link:
 				case AssemblyAction.Copy:

@@ -5,7 +5,6 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
-	[IgnoreTestCase ("Requires support for using a type in an unreferences assembly via reflection")]
 	[SetupCompileBefore ("base.dll", new[] { "Dependencies/AssemblyImportedViaReflectionWithDerivedType_Base.cs" })]
 	[SetupCompileBefore ("reflection.dll", new[] { "Dependencies/AssemblyImportedViaReflectionWithDerivedType_Reflect.cs" }, references: new[] { "base.dll" }, addAsReference: false)]
 	[KeptAssembly ("base.dll")]

@@ -1,12 +1,10 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {
-	[IgnoreTestCase ("Currently failing")]
 	[SetupCompileBefore ("base.dll", new[] { "Dependencies/DynamicDependencyMethodInNonReferencedAssemblyBase.cs" })]
 	[SetupCompileBefore ("base2.dll", new[] { "Dependencies/DynamicDependencyMethodInNonReferencedAssemblyBase2.cs" }, references: new[] { "base.dll" }, addAsReference: false)]
 	[SetupCompileBefore ("reference.dll", new[] { "Dependencies/DynamicDependencyMethodInNonReferencedAssemblyChainedLibrary.cs" }, references: new[] { "base.dll" }, addAsReference: false)]
@@ -29,7 +27,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		}
 
 		[Kept]
-		[DynamicDependency (".ctor()", "Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.DynamicDependencyMethodInNonReferencedAssemblyChainedReferenceLibrary", "library")]
+		[DynamicDependency ("#ctor()", "Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.DynamicDependencyMethodInNonReferencedAssemblyChainedReferenceLibrary", "library")]
 		static void Dependency ()
 		{
 		}

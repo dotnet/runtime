@@ -39,7 +39,6 @@ namespace Mono.Linker
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<(TypeDefinition InstanceType, InterfaceImplementation ImplementationProvider)>> default_interface_implementations = new Dictionary<MethodDefinition, List<(TypeDefinition, InterfaceImplementation)>> ();
 
-
 		void EnsureProcessed (AssemblyDefinition assembly)
 		{
 			if (!assemblies.Add (assembly))

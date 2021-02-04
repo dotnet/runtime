@@ -3,18 +3,22 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+using Mono.Linker.Tests.Cases.Attributes.Dependencies;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes
 {
 #if !NETCOREAPP
 	[IgnoreTestCase ("Requires support for default interface methods")]
 #endif
+	[SetupCompileBefore ("interface.dll", new[] { "Dependencies/IReferencedAssembly.cs" })]
+	[SetupCompileBefore ("impl.dll", new[] { "Dependencies/IReferencedAssemblyImpl.cs" },
+		references: new[] { "interface.dll" }, addAsReference: false)]
+	[KeptMemberInAssembly ("interface.dll", typeof (IReferencedAssembly), "Foo()")]
+	[KeptMemberInAssembly ("impl", "Mono.Linker.Tests.Cases.Attributes.Dependencies.IReferencedAssemblyImpl", "Foo()")]
+	[KeptInterfaceOnTypeInAssembly ("impl", "Mono.Linker.Tests.Cases.Attributes.Dependencies.IReferencedAssemblyImpl",
+		"interface", "Mono.Linker.Tests.Cases.Attributes.Dependencies.IReferencedAssembly")]
 	public class TypeWithDynamicInterfaceCastableImplementationAttributeIsKept
 	{
 		public static void Main ()
@@ -23,6 +27,9 @@ namespace Mono.Linker.Tests.Cases.Attributes
 			Foo foo = new Foo ();
 			GetBar (foo).Bar ();
 			IReferenced baz = GetBaz (foo);
+			var bar = new DynamicCastableImplementedInOtherAssembly ();
+			IReferencedAssembly iReferenced = GetReferencedInterface (bar);
+			iReferenced.Foo ();
 #endif
 		}
 
@@ -37,6 +44,12 @@ namespace Mono.Linker.Tests.Cases.Attributes
 		private static IReferenced GetBaz (object obj)
 		{
 			return (IReferenced) obj;
+		}
+
+		[Kept]
+		static IReferencedAssembly GetReferencedInterface (object obj)
+		{
+			return (IReferencedAssembly) obj;
 		}
 #endif
 	}
@@ -59,6 +72,27 @@ namespace Mono.Linker.Tests.Cases.Attributes
 		public bool IsInterfaceImplemented (RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
 		{
 			return interfaceType.Equals (typeof (IReferencedInIDynamicInterfaceCastableType).TypeHandle);
+		}
+	}
+
+	[Kept]
+	[KeptMember (".ctor()")]
+	class DynamicCastableImplementedInOtherAssembly : IDynamicInterfaceCastable
+	{
+		[Kept]
+		public bool IsInterfaceImplemented (RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+		{
+			return interfaceType.Equals (typeof (IReferencedAssembly).TypeHandle);
+		}
+
+		[Kept]
+		public RuntimeTypeHandle GetInterfaceImplementation (RuntimeTypeHandle interfaceType)
+		{
+			if (interfaceType.Equals (typeof (IReferencedAssembly).TypeHandle)) {
+				var type = Type.GetType ("Mono.Linker.Tests.Cases.Attributes.Dependencies.IReferencedAssemblyImpl,impl");
+				return type.TypeHandle;
+			}
+			return default;
 		}
 	}
 
