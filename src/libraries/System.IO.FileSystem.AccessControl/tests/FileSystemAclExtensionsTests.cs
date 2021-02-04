@@ -97,7 +97,7 @@ namespace System.IO
         {
             using var directory = new TempAclDirectory();
             using var file = new TempFile(Path.Combine(directory.Path, "file.txt"));
-            using FileStream fileStream = File.Open(file.Path, FileMode.Open, FileAccess.Write, FileShare.Delete);
+            using FileStream fileStream = File.Open(file.Path, FileMode.Append, FileAccess.Write, FileShare.Delete);
             FileSecurity fileSecurity = FileSystemAclExtensions.GetAccessControl(fileStream);
             Assert.NotNull(fileSecurity);
             Assert.Equal(typeof(FileSystemRights), fileSecurity.AccessRightType);
@@ -166,7 +166,7 @@ namespace System.IO
         {
             using var directory = new TempAclDirectory();
             using var file = new TempFile(Path.Combine(directory.Path, "file.txt"));
-            using FileStream fileStream = File.Open(file.Path, FileMode.Open, FileAccess.Write, FileShare.Delete);
+            using FileStream fileStream = File.Open(file.Path, FileMode.Append, FileAccess.Write, FileShare.None);
             var fileSecurity = new FileSecurity();
             FileSystemAclExtensions.SetAccessControl(fileStream, fileSecurity);
         }
@@ -235,12 +235,8 @@ namespace System.IO
 
         [Theory]
         // Must have at least one Read, otherwise the TempAclDirectory will fail to delete that item on dispose
-        [InlineData(FileSystemRights.FullControl)]
-        [InlineData(FileSystemRights.Read)]
-        [InlineData(FileSystemRights.Read | FileSystemRights.Write)]
-        [InlineData(FileSystemRights.Read | FileSystemRights.Write | FileSystemRights.ExecuteFile)]
-        [InlineData(FileSystemRights.ReadAndExecute)]
-        public void DirectoryInfo_Create_DirectorySecurity_SpecificAccessRule(FileSystemRights rights)
+        [MemberData(nameof(RightsToAllow))]
+        public void DirectoryInfo_Create_AllowSpecific_AccessRules(FileSystemRights rights)
         {
             using var tempRootDir = new TempAclDirectory();
             string path = Path.Combine(tempRootDir.Path, "directory");
@@ -258,7 +254,7 @@ namespace System.IO
 
         [Theory]
         [MemberData(nameof(RightsToDeny))]
-        public void DirectoryInfo_Create_MultipleAddAccessRules(FileSystemRights rightsToDeny)
+        public void DirectoryInfo_Create_DenySpecific_AddAccessRules(FileSystemRights rightsToDeny)
         {
             var expectedSecurity = new DirectorySecurity();
             var identity = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
@@ -393,12 +389,8 @@ namespace System.IO
 
         [Theory]
         // Must have at least one Read, otherwise the TempAclDirectory will fail to delete that item on dispose
-        [InlineData(FileSystemRights.FullControl)]
-        [InlineData(FileSystemRights.Read)]
-        [InlineData(FileSystemRights.Read | FileSystemRights.Write)]
-        [InlineData(FileSystemRights.Read | FileSystemRights.Write | FileSystemRights.ExecuteFile)]
-        [InlineData(FileSystemRights.ReadAndExecute)]
-        public void FileInfo_Create_FileSecurity_SpecificAccessRule(FileSystemRights rights)
+        [MemberData(nameof(RightsToAllow))]
+        public void FileInfo_Create_AllowSpecific_AccessRules(FileSystemRights rights)
         {
             using var tempRootDir = new TempAclDirectory();
             string path = Path.Combine(tempRootDir.Path, "file.txt");
@@ -425,7 +417,7 @@ namespace System.IO
 
         [Theory]
         [MemberData(nameof(RightsToDeny))]
-        public void FileInfo_Create_MultipleAddAccessRules(FileSystemRights rightsToDeny)
+        public void FileInfo_Create_DenySpecific_AccessRules(FileSystemRights rightsToDeny)
         {
             var expectedSecurity = new FileSecurity();
 
@@ -525,9 +517,36 @@ namespace System.IO
             // yield return new object[] { FileSystemRights.ReadData }; // Minimum right required to delete a file or directory
             yield return new object[] { FileSystemRights.ReadExtendedAttributes };
             yield return new object[] { FileSystemRights.ReadPermissions };
-            // yield return new object[] { FileSystemRights.Synchronize }; CreateFile always requires Synchronize access
+            // yield return new object[] { FileSystemRights.Synchronize }; // CreateFile always requires Synchronize access
             yield return new object[] { FileSystemRights.TakeOwnership };
             //yield return new object[] { FileSystemRights.Traverse }; // Traverse == ExecuteFile
+            yield return new object[] { FileSystemRights.Write };
+            yield return new object[] { FileSystemRights.WriteAttributes };
+            // yield return new object[] { FileSystemRights.WriteData }; // WriteData == CreateFiles
+            yield return new object[] { FileSystemRights.WriteExtendedAttributes };
+        }
+
+        public static IEnumerable<object[]> RightsToAllow()
+        {
+            yield return new object[] { FileSystemRights.AppendData };
+            yield return new object[] { FileSystemRights.ChangePermissions };
+            // yield return new object[] { FileSystemRights.CreateDirectories }; // CreateDirectories == AppendData
+            yield return new object[] { FileSystemRights.CreateFiles };
+            yield return new object[] { FileSystemRights.Delete };
+            yield return new object[] { FileSystemRights.DeleteSubdirectoriesAndFiles };
+            yield return new object[] { FileSystemRights.ExecuteFile };
+            yield return new object[] { FileSystemRights.FullControl };
+            // yield return new object[] { FileSystemRights.ListDirectory }; ListDirectory == ReadData
+            yield return new object[] { FileSystemRights.Modify };
+            yield return new object[] { FileSystemRights.Read };
+            yield return new object[] { FileSystemRights.ReadAndExecute };
+            yield return new object[] { FileSystemRights.ReadAttributes };
+            // yield return new object[] { FileSystemRights.ReadData }; // Minimum right required to delete a file or directory
+            yield return new object[] { FileSystemRights.ReadExtendedAttributes };
+            yield return new object[] { FileSystemRights.ReadPermissions };
+            yield return new object[] { FileSystemRights.Synchronize };
+            yield return new object[] { FileSystemRights.TakeOwnership };
+            // yield return new object[] { FileSystemRights.Traverse }; // Traverse == ExecuteFile
             yield return new object[] { FileSystemRights.Write };
             yield return new object[] { FileSystemRights.WriteAttributes };
             // yield return new object[] { FileSystemRights.WriteData }; // WriteData == CreateFiles
