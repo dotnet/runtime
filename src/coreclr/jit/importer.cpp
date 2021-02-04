@@ -7109,7 +7109,8 @@ void Compiler::impCheckForPInvokeCall(
 
     // If we can't get the unmanaged calling convention or the calling convention is unsupported in the JIT,
     // return here without inlining the native call.
-    if (unmanagedCallConv == CorInfoCallConvExtension::Managed || unmanagedCallConv == CorInfoCallConvExtension::Fastcall ||
+    if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
+        unmanagedCallConv == CorInfoCallConvExtension::Fastcall ||
         unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
     {
         return;
