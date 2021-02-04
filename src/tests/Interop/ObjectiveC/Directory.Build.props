@@ -3,6 +3,5 @@
 
   <!-- Properties for all ObjectiveC managed test assets -->
   <PropertyGroup>
-    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
   </PropertyGroup>
 </Project>
