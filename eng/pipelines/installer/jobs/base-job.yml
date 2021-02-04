@@ -78,10 +78,10 @@ jobs:
     value: test
 
   - name: pgoInstrumentArg
-    value:
-    - ${{ if eq(parameters.pgoType, 'PGO') }}:
-      - name: pgoInstrumentArg
-        value: '-pgoInstrument'
+    value: ''
+  - ${{ if eq(parameters.pgoType, 'PGO' )}}:
+    - name: pgoInstrumentArg
+      value: '-pgoInstrument '
 
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
