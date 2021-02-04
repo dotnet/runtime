@@ -980,9 +980,10 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetHashCode doesn't include font name in .NET Framework")]
         public void GetHashCode_DifferentNameSameSizeStyleUnit_HashCodeIsNotSame()
         {
-            using (FontFamily family1 = FontFamily.GenericMonospace)
+            using (FontFamily family1 = FontFamily.GenericSansSerif)
             using (var font1 = new Font(family1, 1, FontStyle.Bold, GraphicsUnit.Point))
             //Create a font with just the different name, Size, Style, and unit same.
             using (FontFamily family2 = FontFamily.GenericSerif)
