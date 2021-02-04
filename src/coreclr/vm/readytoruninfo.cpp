@@ -602,7 +602,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     {
         if (!AcquireImage(pModule, pLayout, pHeader))
         {
-            DoLog("Ready to Run disabled - module already loaded in another AppDomain");
+            DoLog("Ready to Run disabled - module already loaded in another assembly load context");
             return NULL;
         }
     }
