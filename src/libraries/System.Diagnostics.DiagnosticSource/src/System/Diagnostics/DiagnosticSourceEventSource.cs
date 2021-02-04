@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System;
 
 namespace System.Diagnostics
 {
@@ -628,7 +629,13 @@ namespace System.Diagnostics
                         if (specStartIdx < endIdx)
                         {
                             if (_eventSource.IsEnabled(EventLevel.Informational, Keywords.Messages))
+                            {
+#if SPAN_BASED_STRING_CONCAT
+                                _eventSource.Message(string.Concat("DiagnosticSource: Parsing Explicit Transform '", filterAndPayloadSpec.AsSpan(specStartIdx, endIdx - specStartIdx), "'"));
+#else
                                 _eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
+#endif
+                            }
 
                             _explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, _explicitTransforms);
                         }
@@ -736,7 +743,14 @@ namespace System.Diagnostics
                             if (specStartIdx < endIdx)
                             {
                                 if (_eventSource.IsEnabled(EventLevel.Informational, Keywords.Messages))
+                                {
+#if SPAN_BASED_STRING_CONCAT
+                                    _eventSource.Message(string.Concat("DiagnosticSource: Parsing Explicit Transform '", filterAndPayloadSpec.AsSpan(specStartIdx, endIdx - specStartIdx), "'"));
+#else
                                     _eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
+#endif
+                                }
+
 
                                 _explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, _explicitTransforms);
                             }
@@ -1011,7 +1025,7 @@ namespace System.Diagnostics
             }
 #endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
-            private void Dispose()
+                                    private void Dispose()
             {
                 if (_diagnosticsListenersSubscription != null)
                 {
@@ -1105,7 +1119,7 @@ namespace System.Diagnostics
             internal ActivitySamplingResult SamplingResult { get; set; }
 #endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
-            #region private
+#region private
 
             // Given a type generate all the implicit transforms for type (that is for every field
             // generate the spec that fetches it).
@@ -1144,7 +1158,7 @@ namespace System.Diagnostics
             private ConcurrentDictionary<Type, TransformSpec?>? _implicitTransformsTable; // If there is more than one object type for an implicit transform, they go here.
             private readonly TransformSpec? _explicitTransforms;             // payload to include because the user explicitly indicated how to fetch the field.
             private readonly DiagnosticSourceEventSource _eventSource;      // Where the data is written to.
-            #endregion
+#endregion
         }
 
         // This olds one the implicit transform for one type of object.
@@ -1219,7 +1233,7 @@ namespace System.Diagnostics
             /// </summary>
             public TransformSpec? Next;
 
-            #region private
+#region private
             /// <summary>
             /// A PropertySpec represents information needed to fetch a property from
             /// and efficiently. Thus it represents a '.PROP' in a TransformSpec
@@ -1271,7 +1285,7 @@ namespace System.Diagnostics
                 /// </summary>
                 public PropertySpec? Next;
 
-                #region private
+#region private
                 /// <summary>
                 /// PropertyFetch is a helper class. It takes a PropertyInfo and then knows how
                 /// to efficiently fetch that property from a .NET object (See Fetch method).
@@ -1369,7 +1383,7 @@ namespace System.Diagnostics
                     /// </summary>
                     public virtual object? Fetch(object? obj) { return null; }
 
-                    #region private
+#region private
 
                     private sealed class RefTypedFetchProperty<TObject, TProperty> : PropertyFetch
                     {
@@ -1435,17 +1449,17 @@ namespace System.Diagnostics
                             return string.Join(",", (IEnumerable<ElementType>)obj);
                         }
                     }
-                    #endregion
+#endregion
                 }
 
                 private readonly string _propertyName;
                 private volatile PropertyFetch? _fetchForExpectedType;
-                #endregion
+#endregion
             }
 
             private readonly string _outputName = null!;
             private readonly PropertySpec? _fetches;
-            #endregion
+#endregion
         }
 
         /// <summary>
@@ -1458,13 +1472,13 @@ namespace System.Diagnostics
         {
             public CallbackObserver(Action<T> callback) { _callback = callback; }
 
-            #region private
+#region private
             public void OnCompleted() { }
             public void OnError(Exception error) { }
             public void OnNext(T value) { _callback(value); }
 
             private readonly Action<T> _callback;
-            #endregion
+#endregion
         }
 
         // A linked list of IObservable subscriptions (which are IDisposable).
@@ -1481,13 +1495,13 @@ namespace System.Diagnostics
             public Subscriptions? Next;
         }
 
-        #endregion
+#endregion
 
         private FilterAndTransform? _specs;                 // Transformation specifications that indicate which sources/events are forwarded.
 #if EVENTSOURCE_ACTIVITY_SUPPORT
         private FilterAndTransform? _activitySourceSpecs;   // ActivitySource Transformation specifications that indicate which sources/events are forwarded.
         private ActivityListener? _activityListener;
 #endif // EVENTSOURCE_ACTIVITY_SUPPORT
-        #endregion
+#endregion
     }
 }

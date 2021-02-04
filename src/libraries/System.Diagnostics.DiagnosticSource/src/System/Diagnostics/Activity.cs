@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System;
 
 namespace System.Diagnostics
 {
@@ -1213,7 +1214,11 @@ namespace System.Diagnostics
 
             //generate overflow suffix
             string overflowSuffix = ((int)GetRandomNumber()).ToString("x8");
+#if SPAN_BASED_STRING_CONCAT
+            return string.Concat(parentId.AsSpan(0, trimPosition), overflowSuffix, '#'.ToString());
+#else
             return parentId.Substring(0, trimPosition) + overflowSuffix + '#';
+#endif
         }
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
