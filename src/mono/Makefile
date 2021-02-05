@@ -1,4 +1,4 @@
-ifeq ($(wildcard ../../../.dotnet),)
+ifeq ($(wildcard ../../.dotnet),)
   $(info Downloading local dotnet...)
 endif
 
@@ -9,16 +9,16 @@ CORECLR_TESTS_CONFIG=Release
 MONO_RUNTIME_CONFIG=Release
 
 # auto detect configurations for mono runtime and coreclr tests
-ifeq ($(words $(wildcard ../../../artifacts/bin/mono/*.*.*)), 1)
-	MONO_RUNTIME_CONFIG := $(word 3,$(subst ., ,$(notdir $(wildcard ../../../artifacts/bin/mono/*.*.*))))
+ifeq ($(words $(wildcard ../../artifacts/bin/mono/*.*.*)), 1)
+	MONO_RUNTIME_CONFIG := $(word 3,$(subst ., ,$(notdir $(wildcard ../../artifacts/bin/mono/*.*.*))))
 endif
 
-ifeq ($(words $(wildcard ../../../artifacts/tests/coreclr/*.*.*)), 1)
-	CORECLR_TESTS_CONFIG := $(word 3,$(subst ., ,$(notdir $(wildcard ../../../artifacts/tests/coreclr/*.*.*))))
+ifeq ($(words $(wildcard ../../artifacts/tests/coreclr/*.*.*)), 1)
+	CORECLR_TESTS_CONFIG := $(word 3,$(subst ., ,$(notdir $(wildcard ../../artifacts/tests/coreclr/*.*.*))))
 endif
 
-ifeq ($(words $(wildcard ../../../artifacts/bin/testhost/*-*-*-*)), 1)
-	LIBRARIES_TESTS_CONFIG := $(word 3,$(subst -, ,$(notdir $(wildcard ../../../artifacts/bin/testhost/*-*-*-*))))
+ifeq ($(words $(wildcard ../../artifacts/bin/testhost/*-*-*-*)), 1)
+	LIBRARIES_TESTS_CONFIG := $(word 3,$(subst -, ,$(notdir $(wildcard ../../artifacts/bin/testhost/*-*-*-*))))
 endif
 
 MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:LibrariesTestConfig=$(LIBRARIES_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj
@@ -34,11 +34,11 @@ run-sample-coreclr:
 
 # build System.Private.CoreLib.dll
 bcl corelib:
-	../../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.CoreLib
+	../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.CoreLib
 
 # build runtime and copy to artifacts
 runtime:
-	../../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.Runtime
+	../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.Runtime
 
 # copy mono runtime bits from artifacts to $(DST)
 copy-runtime-files-to:
@@ -58,5 +58,5 @@ run-tests-coreclr-all:
 #   make run-tests-corefx-System.Runtime 
 # for `System.Runtime.Tests` (the rule builds both the lib and the test if needed)
 run-tests-corefx-%:
-	$(DOTNET) build ../../../src/libraries/$*/tests -c $(LIBRARIES_TESTS_CONFIG) /p:RuntimeFlavor=mono /t:Test
+	$(DOTNET) build ../../src/libraries/$*/tests -c $(LIBRARIES_TESTS_CONFIG) /p:RuntimeFlavor=mono /t:Test
 

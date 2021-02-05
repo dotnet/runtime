@@ -885,11 +885,38 @@ PhaseStatus Compiler::fgInstrumentMethod()
 //
 PhaseStatus Compiler::fgIncorporateProfileData()
 {
-    assert(fgHaveProfileData());
+    // Are we doing profile stress?
+    //
+    if (fgStressBBProf() > 0)
+    {
+        JITDUMP("JitStress -- incorporating random profile data\n");
+        fgIncorporateBlockCounts();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    // Do we have profile data?
+    //
+    if (!fgHaveProfileData())
+    {
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+        {
+            JITDUMP("BBOPT set, but no profile data available (hr=%08x)\n", fgPgoQueryResult);
+        }
+        else
+        {
+            JITDUMP("BBOPT not set\n");
+        }
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
     // Summarize profile data
     //
-    fgNumProfileRuns = 0;
+    JITDUMP("Have profile data: %d schema records (schema at %p, data at %p)\n", fgPgoSchemaCount, dspPtr(fgPgoSchema),
+            dspPtr(fgPgoData));
+
+    fgNumProfileRuns      = 0;
+    unsigned otherRecords = 0;
+
     for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
     {
         switch (fgPgoSchema[iSchema].InstrumentationKind)
@@ -907,19 +934,20 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 break;
 
             default:
+                otherRecords++;
                 break;
         }
     }
-
-    assert(fgPgoBlockCounts > 0);
 
     if (fgNumProfileRuns == 0)
     {
         fgNumProfileRuns = 1;
     }
 
-    JITDUMP("Profile summary: %d runs, %d block probes, %d class profiles\n", fgNumProfileRuns, fgPgoBlockCounts,
-            fgPgoClassProfiles);
+    JITDUMP("Profile summary: %d runs, %d block probes, %d class profiles, %d other records\n", fgNumProfileRuns,
+            fgPgoBlockCounts, fgPgoClassProfiles, otherRecords);
+
+    assert(fgPgoBlockCounts > 0);
 
     fgIncorporateBlockCounts();
     return PhaseStatus::MODIFIED_EVERYTHING;

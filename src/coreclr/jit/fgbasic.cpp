@@ -2251,6 +2251,10 @@ void Compiler::fgFindBasicBlocks()
     {
         printf("*************** In fgFindBasicBlocks() for %s\n", info.compFullName);
     }
+
+    // Call this here so any dump printing it inspires doesn't appear in the bb table.
+    //
+    fgStressBBProf();
 #endif
 
     // Allocate the 'jump target' bit vector

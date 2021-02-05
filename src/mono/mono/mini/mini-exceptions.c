@@ -359,6 +359,8 @@ is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 	guint32 offset;
 	guint16 clause;
 
+	ip = MINI_FTNPTR_TO_ADDR (ip);
+
 	if (ei->try_start > ip || ip >= ei->try_end)
 		return FALSE;
 
@@ -578,6 +580,7 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 		else
 			real_ip = (const char*)ip;
 
+		real_ip = (const char*)MINI_FTNPTR_TO_ADDR (real_ip);
 		if ((real_ip >= start) && (real_ip <= start + ji->code_size))
 			offset = real_ip - start;
 		else
@@ -1999,6 +2002,11 @@ mini_jit_info_table_find_ext (MonoDomain *domain, gpointer addr, gboolean allow_
 
 	if (out_domain)
 		*out_domain = NULL;
+
+	// FIXME: Transition all callers to this function
+	// or add it to mono_jit_info_table_find
+	ji = mono_jit_info_table_find_internal (domain, addr, TRUE, allow_trampolines);
+	addr = MINI_FTNPTR_TO_ADDR (addr);
 
 	ji = mono_jit_info_table_find_internal (domain, addr, TRUE, allow_trampolines);
 	if (ji) {
@@ -3604,7 +3612,7 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	if (!ji)
 		return FALSE;
 
-	ip = MONO_CONTEXT_GET_IP (ctx);
+	ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (ctx));
 
 	for (i = 0; i < ji->num_clauses; ++i) {
 		MonoJitExceptionInfo *ei = ji->clauses + i;
@@ -3612,7 +3620,7 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 			continue;
 		/*If ip points to the first instruction it means the handler block didn't start
 		 so we can leave its execution to the EH machinery*/
-		if (ei->handler_start <= ip && ip < ei->data.handler_end) {
+		if (MINI_FTNPTR_TO_ADDR (ei->handler_start) <= ip && ip < MINI_FTNPTR_TO_ADDR (ei->data.handler_end)) {
 			pdata->ji = ji;
 			pdata->ei = ei;
 			pdata->ctx = *ctx;
@@ -3631,13 +3639,13 @@ install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
 	gpointer ip;
 	guint8 *bp;
 
-	ip = MONO_CONTEXT_GET_IP (ctx);
+	ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (ctx));
 
 	for (i = 0; i < ji->num_clauses; ++i) {
 		clause = &ji->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 			continue;
-		if (clause->handler_start <= ip && clause->data.handler_end > ip)
+		if (MINI_FTNPTR_TO_ADDR (clause->handler_start) <= ip && MINI_FTNPTR_TO_ADDR (clause->data.handler_end) > ip)
 			break;
 	}
 
