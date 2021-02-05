@@ -5,6 +5,5 @@
 
 Commonly Used Types:
 Microsoft.Extensions.DependencyModel.DependencyContext</PackageDescription>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
   </PropertyGroup>
 </Project>
