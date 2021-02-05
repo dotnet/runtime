@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text
 {
@@ -69,7 +70,7 @@ namespace System.Text
         // Maximum number of characters that this instance of this fallback could return
         public override int MaxCharCount => _strDefault.Length;
 
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is DecoderReplacementFallback that &&
             _strDefault == that._strDefault;
 

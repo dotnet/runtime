@@ -545,10 +545,12 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 				ERROR_DECL (error);
 				func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method, error);
 				mono_error_cleanup (error);
-				if (!func)
-					func = (TestMethod)(gpointer)cfg->native_code;
+				if (!func) {
+					func = (TestMethod)MINI_ADDR_TO_FTNPTR (cfg->native_code);
+				}
 #else
-					func = (TestMethod)(gpointer)cfg->native_code;
+				func = (TestMethod)(gpointer)cfg->native_code;
+				func = MINI_ADDR_TO_FTNPTR (func);
 #endif
 				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), (gpointer)func);
 			}

@@ -567,7 +567,6 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 //  1. Dll in localized path (<dir passed>\<lang name (en-US format)>\mscorrc.dll)
 //  2. Dll in localized (parent) path (<dir passed>\<lang name> (en format)\mscorrc.dll)
 //  3. Dll in root path (<dir passed>\mscorrc.dll)
-//  4. Dll in current path   (<current dir>\mscorrc.dll)
 //*****************************************************************************
 HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
                                    SString& rcPath)
@@ -647,12 +646,6 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
         }
     }
     EX_CATCH_HRESULT(hr);
-
-    // Last ditch search effort in current directory
-    if (FAILED(hr))
-    {
-        hr = LoadResourceFile(pHInst, m_pResourceFile);
-    }
 
     return hr;
 }

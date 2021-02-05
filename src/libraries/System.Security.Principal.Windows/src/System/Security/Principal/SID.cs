@@ -719,7 +719,7 @@ namespace System.Security.Principal
 
 #region Inherited properties and methods
 
-        public override bool Equals(object? o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             return (this == o as SecurityIdentifier); // invokes operator==
         }

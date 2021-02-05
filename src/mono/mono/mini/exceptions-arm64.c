@@ -60,7 +60,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	/* Restore sp, ctx is no longer valid */
 	arm_movspx (code, ARMREG_SP, ARMREG_IP0); 
 	/* Branch to pc */
-	arm_brx (code, ARMREG_IP1);
+	code = mono_arm_emit_brx (code, ARMREG_IP1);
 	/* Not reached */
 	arm_brk (code, 0);
 
@@ -71,7 +71,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	if (info)
 		*info = mono_tramp_info_create ("restore_context", start, code - start, ji, unwind_ops);
 
-	return start;
+	return MINI_ADDR_TO_FTNPTR (start);
 }
 
 gpointer
@@ -135,7 +135,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	arm_ldrx (code, ARMREG_FP, ARMREG_R0, MONO_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_FP * 8));
 
 	/* Make the call */
-	arm_blrx (code, ARMREG_R1);
+	code = mono_arm_emit_blrx (code, ARMREG_R1);
 	/* For filters, the result is in R0 */
 
 	/* Restore fp */
@@ -162,7 +162,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	if (info)
 		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
 
-	return start;
+	return MINI_ADDR_TO_FTNPTR (start);
 }
 
 static gpointer 
@@ -255,7 +255,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 
 		code = mono_arm_emit_imm64 (code, ARMREG_LR, (guint64)icall_func);
 	}
-	arm_blrx (code, ARMREG_LR);
+	code = mono_arm_emit_blrx (code, ARMREG_LR);
 	/* This shouldn't return */
 	arm_brk (code, 0x0);
 
@@ -266,7 +266,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	if (info)
 		*info = mono_tramp_info_create (tramp_name, start, code - start, ji, unwind_ops);
 
-	return start;
+	return MINI_ADDR_TO_FTNPTR (start);
 }
 
 gpointer 
@@ -434,8 +434,6 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 							 host_mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
-	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
-
 	memset (frame, 0, sizeof (StackFrameInfo));
 	frame->ji = ji;
 
@@ -446,7 +444,6 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
-
 
 		if (ji->is_trampoline)
 			frame->type = FRAME_TYPE_TRAMPOLINE;
@@ -460,6 +457,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		for (int i = 0; i < 8; i++)
 			(regs + MONO_MAX_IREGS) [i] = *((host_mgreg_t*)&new_ctx->fregs [8 + i]);
 
+		gpointer ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (ctx));
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8*)ji->code_start,
 						   (guint8*)ji->code_start + ji->code_size,
 						   (guint8*)ip, NULL, regs, MONO_MAX_IREGS + 8,
@@ -550,8 +548,10 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 	/* The others in registers */
 	UCONTEXT_REG_R0 (sigctx) = (gsize)obj;
 
-	UCONTEXT_REG_PC (sigctx) = (gsize)handle_signal_exception;
-	UCONTEXT_REG_SP (sigctx) = UCONTEXT_REG_SP (sigctx) - MONO_ARCH_REDZONE_SIZE;
+	gpointer addr = (gpointer)handle_signal_exception;
+	UCONTEXT_REG_SET_PC (sigctx, addr);
+	host_mgreg_t sp = UCONTEXT_REG_SP (sigctx) - MONO_ARCH_REDZONE_SIZE;
+	UCONTEXT_REG_SET_SP (sigctx, sp);
 #endif
 
 	return TRUE;
@@ -597,11 +597,15 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 void
 mono_arch_undo_ip_adjustment (MonoContext *ctx)
 {
-	ctx->pc++;
+	gpointer pc = (gpointer)ctx->pc;
+	pc = (gpointer)((guint64)MINI_FTNPTR_TO_ADDR (pc) + 1);
+	ctx->pc = (host_mgreg_t)MINI_ADDR_TO_FTNPTR (pc);
 }
 
 void
 mono_arch_do_ip_adjustment (MonoContext *ctx)
 {
-	ctx->pc--;
+	gpointer pc = (gpointer)ctx->pc;
+	pc = (gpointer)((guint64)MINI_FTNPTR_TO_ADDR (pc) - 1);
+	ctx->pc = (host_mgreg_t)MINI_ADDR_TO_FTNPTR (pc);
 }

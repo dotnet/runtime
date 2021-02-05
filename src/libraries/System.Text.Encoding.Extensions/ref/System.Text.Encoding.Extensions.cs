@@ -41,7 +41,7 @@ namespace System.Text
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark) { }
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidBytes) { }
         public override System.ReadOnlySpan<byte> Preamble { get { throw null; } }
-        public override bool Equals(object? value) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe override int GetByteCount(char* chars, int count) { throw null; }
         public override int GetByteCount(char[] chars, int index, int count) { throw null; }
@@ -70,7 +70,7 @@ namespace System.Text
         public UTF32Encoding(bool bigEndian, bool byteOrderMark) { }
         public UTF32Encoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidCharacters) { }
         public override System.ReadOnlySpan<byte> Preamble { get { throw null; } }
-        public override bool Equals(object? value) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe override int GetByteCount(char* chars, int count) { throw null; }
         public override int GetByteCount(char[] chars, int index, int count) { throw null; }
@@ -99,7 +99,7 @@ namespace System.Text
         public UTF7Encoding() { }
         [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "SYSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public UTF7Encoding(bool allowOptionals) { }
-        public override bool Equals(object? value) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe override int GetByteCount(char* chars, int count) { throw null; }
         public override int GetByteCount(char[] chars, int index, int count) { throw null; }
@@ -127,7 +127,7 @@ namespace System.Text
         public UTF8Encoding(bool encoderShouldEmitUTF8Identifier) { }
         public UTF8Encoding(bool encoderShouldEmitUTF8Identifier, bool throwOnInvalidBytes) { }
         public override System.ReadOnlySpan<byte> Preamble { get { throw null; } }
-        public override bool Equals(object? value) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe override int GetByteCount(char* chars, int count) { throw null; }
         public override int GetByteCount(char[] chars, int index, int count) { throw null; }

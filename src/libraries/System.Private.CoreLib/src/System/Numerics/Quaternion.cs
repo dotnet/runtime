@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -581,7 +582,7 @@ namespace System.Numerics
         /// <summary>Returns a boolean indicating whether the given Object is equal to this Quaternion instance.</summary>
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this Quaternion; False otherwise.</returns>
-        public override readonly bool Equals(object? obj)
+        public override readonly bool Equals([NotNullWhen(true)] object? obj)
         {
             return (obj is Quaternion other) && Equals(other);
         }

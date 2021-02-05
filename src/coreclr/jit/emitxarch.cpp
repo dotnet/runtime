@@ -2673,12 +2673,12 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
     paddingBytes       = min(paddingBytes, MAX_ENCODED_SIZE); // We may need to skip up to 15 bytes of code
     instrDescAlign* id = emitNewInstrAlign();
     id->idCodeSize(paddingBytes);
-    emitCurIGsize += paddingBytes;
-
     id->idaIG = emitCurIG;
 
     /* Append this instruction to this IG's alignment list */
-    id->idaNext        = emitCurIGAlignList;
+    id->idaNext = emitCurIGAlignList;
+
+    emitCurIGsize += paddingBytes;
     emitCurIGAlignList = id;
 }
 
@@ -9430,8 +9430,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     assert(0 <= paddingToAdd && paddingToAdd < emitComp->opts.compJitAlignLoopBoundary);
 
 #ifdef DEBUG
-    bool     displayAlignmentDetails = (emitComp->opts.disAsm /*&& emitComp->opts.disAddr*/) || emitComp->verbose;
-    unsigned paddingNeeded           = emitCalculatePaddingForLoopAlignment(ig, (size_t)dst, displayAlignmentDetails);
+    unsigned paddingNeeded = emitCalculatePaddingForLoopAlignment(ig, (size_t)dst, true);
 
     // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
     if (emitComp->opts.compJitAlignLoopAdaptive)

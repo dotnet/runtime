@@ -181,7 +181,7 @@ internal static partial class Interop
                     }
                 }
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException || ex.InnerException is IOException)
             {
                 contents = null;
                 return false;

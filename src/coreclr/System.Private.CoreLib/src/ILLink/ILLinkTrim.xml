@@ -24,5 +24,10 @@
     <type fullname="System.Collections.Generic.IReadOnlyCollection`1" />
     <type fullname="System.Collections.Generic.IList`1" />
     <type fullname="System.Collections.Generic.IReadOnlyList`1" />
+
+    <!-- Indicator for illink that all instance methods are instantiated -->
+    <type fullname="System.SZArrayHelper">
+      <method name=".ctor" />
+    </type>
   </assembly>
 </linker>

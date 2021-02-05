@@ -116,18 +116,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return referenceHandle;
         }
 
-        public EntityHandle GetTypeRef(MetadataType type)
+        public EntityHandle GetTypeRef(TypeDesc type)
         {
             if (_typeRefs.TryGetValue(type, out var handle))
             {
                 return handle;
             }
 
-            if (type.IsParameterizedType)
-            {
-                throw new ArgumentException("type");
-            }
-            else if (type.IsFunctionPointer)
+            if (type.IsFunctionPointer)
             {
                 throw new ArgumentException("type");
             }
@@ -136,20 +132,22 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             if (type.IsTypeDefinition)
             {
+                MetadataType metadataType = (MetadataType)type;
+
                 // Make a typeref
-                StringHandle typeName = _metadataBuilder.GetOrAddString(type.Name);
-                StringHandle typeNamespace = type.Namespace != null ? _metadataBuilder.GetOrAddString(type.Namespace) : default(StringHandle);
+                StringHandle typeName = _metadataBuilder.GetOrAddString(metadataType.Name);
+                StringHandle typeNamespace = metadataType.Namespace != null ? _metadataBuilder.GetOrAddString(metadataType.Namespace) : default(StringHandle);
                 EntityHandle resolutionScope;
 
-                if (type.ContainingType == null)
+                if (metadataType.ContainingType == null)
                 {
                     // non-nested type
-                    resolutionScope = GetAssemblyRef(type.Module.Assembly);
+                    resolutionScope = GetAssemblyRef(metadataType.Module.Assembly);
                 }
                 else
                 {
                     // nested type
-                    resolutionScope = GetTypeRef((MetadataType)type.ContainingType);
+                    resolutionScope = GetTypeRef((MetadataType)metadataType.ContainingType);
                 }
 
                 typeHandle = _metadataBuilder.AddTypeReference(resolutionScope, typeNamespace, typeName);
@@ -303,6 +301,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             else if (type.IsFunctionPointer)
             {
                 FunctionPointerType fnptrType = (FunctionPointerType)type;
+                blobBuilder.WriteByte((byte)SignatureTypeCode.FunctionPointer);
                 EncodeMethodSignature(blobBuilder, fnptrType.Signature, signatureDataEmitter);
             }
             else if (type.IsByRef)

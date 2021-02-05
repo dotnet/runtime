@@ -157,6 +157,11 @@ namespace System
                 low = tmp;
                 return high;
             }
+            else if (ArmBase.Arm64.IsSupported)
+            {
+                low = a * b;
+                return ArmBase.Arm64.MultiplyHigh(a, b);
+            }
 
             return SoftwareFallback(a, b, out low);
 
@@ -191,6 +196,12 @@ namespace System
         /// <returns>The high 64-bit of the product of the specied numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
+            if (ArmBase.Arm64.IsSupported)
+            {
+                low = a * b;
+                return ArmBase.Arm64.MultiplyHigh(a, b);
+            }
+
             ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
             low = (long)ulow;
             return (long)high - ((a >> 63) & b) - ((b >> 63) & a);

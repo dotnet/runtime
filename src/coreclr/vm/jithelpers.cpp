@@ -5248,7 +5248,7 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
 
     ICorJitInfo::ClassProfile* const classProfile = (ICorJitInfo::ClassProfile*) tableAddress;
     volatile unsigned* pCount = (volatile unsigned*) &classProfile->Count;
-    const unsigned count = *pCount++;
+    const unsigned count = (*pCount)++;
     const unsigned S = ICorJitInfo::ClassProfile::SIZE;
     const unsigned N = ICorJitInfo::ClassProfile::SAMPLE_INTERVAL;
     _ASSERTE(N >= S);
@@ -5360,7 +5360,7 @@ EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 #endif
 
 // This is a slower version of the reverse PInvoke enter function.
-NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* traceAddr)
+NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunk* pThunk = NULL)
 {
     _ASSERTE(frame != NULL);
 
@@ -5389,11 +5389,11 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, voi
     // Increment/DecrementTraceCallCount() will bump
     // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall((const BYTE*)traceAddr);
+        g_pDebugInterface->TraceCall(pThunk ? (const BYTE*)pThunk->GetManagedTarget() : (const BYTE*)returnAddr);
 #endif // DEBUGGING_SUPPORTED
 }
 
-NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* traceAddr)
+NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunk* pThunk = NULL)
 {
     frame->currentThread->RareDisablePreemptiveGC();
 #ifdef DEBUGGING_SUPPORTED
@@ -5403,7 +5403,7 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
     // Increment/DecrementTraceCallCount() will bump
     // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall((const BYTE*)traceAddr);
+        g_pDebugInterface->TraceCall(pThunk ? (const BYTE*)pThunk->GetManagedTarget() : (const BYTE*)returnAddr);
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -5445,12 +5445,16 @@ void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnterTrackTransitions, ReversePInvoke
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
         {
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress());
+            // If we're in an IL stub, we want to trace the address of the target method,
+            // not the next instruction in the stub.
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg : (UMEntryThunk*)NULL);
         }
     }
     else
     {
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress());
+        // If we're in an IL stub, we want to trace the address of the target method,
+        // not the next instruction in the stub.
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg  : (UMEntryThunk*)NULL);
     }
 
 #ifndef FEATURE_EH_FUNCLETS
