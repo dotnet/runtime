@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Xml;
 
 namespace Microsoft.Extensions.Configuration.Xml
@@ -70,7 +69,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                                     else
                                     {
                                         // check if this element has appeared before, elements are considered siblings if their element names match
-                                        XmlConfigurationElement sibling = parent.Children.FirstOrDefault(e => element.IsSiblingOf(e));
+                                        XmlConfigurationElement sibling = parent.FindSiblingInChildren(element);
 
                                         if (sibling != null)
                                         {
@@ -103,7 +102,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                             }
                             break;
                         case XmlNodeType.EndElement:
-                            if (currentPath.Any())
+                            if (currentPath.Count != 0)
                             {
                                 XmlConfigurationElement parent = currentPath.Pop();
 
@@ -118,7 +117,7 @@ namespace Microsoft.Extensions.Configuration.Xml
 
                         case XmlNodeType.CDATA:
                         case XmlNodeType.Text:
-                            if (currentPath.Any())
+                            if (currentPath.Count != 0)
                             {
                                 XmlConfigurationElement parent = currentPath.Peek();
 

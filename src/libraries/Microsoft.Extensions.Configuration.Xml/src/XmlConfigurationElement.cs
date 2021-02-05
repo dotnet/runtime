@@ -37,7 +37,21 @@ namespace Microsoft.Extensions.Configuration.Xml
             LineInfo = lineInfo;
         }
 
-        public bool IsSiblingOf(XmlConfigurationElement xmlConfigurationElement)
+        public XmlConfigurationElement FindSiblingInChildren(XmlConfigurationElement element)
+        {
+            if (element is null) throw new ArgumentNullException(nameof(element));
+
+            for (int i = 0; i < Children.Count; i++) {
+                var child = Children[i];
+
+                if (child.IsSiblingOf(element))
+                    return child;
+            }
+
+            return null;
+        }
+
+        private bool IsSiblingOf(XmlConfigurationElement xmlConfigurationElement)
         {
             if (xmlConfigurationElement is null)
             {
