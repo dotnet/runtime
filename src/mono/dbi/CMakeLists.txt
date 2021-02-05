@@ -134,3 +134,4 @@ if(CLR_CMAKE_HOST_UNIX)
 endif()
 
 target_link_libraries(mscordbi ${COREDBI_LIBRARIES} )
+install(TARGETS mscordbi DESTINATION lib)
