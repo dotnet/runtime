@@ -126,7 +126,19 @@ def execute(coreclr_args, output_mch_name):
             " --envvar COMPlus_JitName:" + shim_name + " --iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart\"",
 
             # superpmi.py collect arguments
-            "-temp_dir", performance_directory, "--skip_cleanup", "-output_mch_path", output_mch_name, "--use_zapdisable", "-log_file", log_file])
+
+            # Path to core_root because the script will be ran from "performance" repo.
+            "-core_root", core_root,
+
+            # Specify that temp_dir is current performance directory, because in order to execute
+            # microbenchmarks, it needs access to the source code.
+            # Also, skip cleaning up once done, because the superpmi script is being
+            # executed from the same folder.
+            "-temp_dir", performance_directory, "--skip_cleanup",
+
+            # Disable ReadyToRun so we always JIT R2R methods and collect them
+            "--use_zapdisable",
+            "-output_mch_path", output_mch_name, "-log_file", log_file])
 
 
 def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):

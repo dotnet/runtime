@@ -375,9 +375,15 @@ def setup_microbenchmark(workitem_directory, arch):
         build_env_vars["DOTNET_MULTILEVEL_LOOKUP"] = "0"
         build_env_vars["UseSharedCompilation"] = "false"
 
-        run_command(["python", "scripts/dotnet.py", "install", "--architecture", arch, "--install-dir", dotnet_directory])
+        run_command([get_python_name(), "scripts/dotnet.py", "install", "--architecture", arch, "--install-dir", dotnet_directory])
         run_command([dotnet_exe, "restore", "src/benchmarks/micro/MicroBenchmarks.csproj", "--packages", artifacts_packages_directory], _env=build_env_vars)
         run_command([dotnet_exe, "build", "src/benchmarks/micro/MicroBenchmarks.csproj", "--configuration", "Release", "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory, "-o", artifacts_directory], _env=build_env_vars)
+
+def get_python_name():
+    if is_windows:
+        return "py -3"
+    else:
+        return "python3"
 
 def set_pipeline_variable(name, value):
     """ This method sets pipeline variable.
@@ -478,10 +484,7 @@ def main(main_args):
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
     set_pipeline_variable("WorkItemDirectory", workitem_directory)
     set_pipeline_variable("InputArtifacts", input_artifacts)
-    if is_windows:
-        set_pipeline_variable("Python", "py -3")
-    else:
-        set_pipeline_variable("Python", "python3")
+    set_pipeline_variable("Python", get_python_name())
     set_pipeline_variable("Architecture", arch)
     set_pipeline_variable("Creator", creator)
     set_pipeline_variable("Queue", helix_queue)
