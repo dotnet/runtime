@@ -198,9 +198,7 @@ mono_draw_code_cfg (MonoCompile *cfg, FILE *fp)
 void
 mono_draw_graph (MonoCompile *cfg, MonoGraphOptions draw_options)
 {
-#if defined(HAVE_SYSTEM) && !defined(MAC_CATALYST)
 	char *com;
-#endif
 	const char *fn;
 	FILE *fp;
 	int _i G_GNUC_UNUSED;
@@ -225,7 +223,7 @@ mono_draw_graph (MonoCompile *cfg, MonoGraphOptions draw_options)
 
 	fclose (fp);
 
-#if defined(HAVE_SYSTEM) && !defined(MAC_CATALYST)
+#ifdef HAVE_SYSTEM
 	//com = g_strdup_printf ("dot %s -Tpng -o %s.png; eog %s.png", fn, fn, fn);
 	com = g_strdup_printf ("dot %s -Tps -o %s.ps;gv %s.ps", fn, fn, fn);
 	_i = system (com);

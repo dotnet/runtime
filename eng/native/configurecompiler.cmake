@@ -395,6 +395,7 @@ if (CLR_CMAKE_HOST_UNIX)
       # Somewhere between CMake 3.17 and 3.19.4, it became impossible to not pass
       # a value for mmacosx-version-min (blank CMAKE_OSX_DEPLOYMENT_TARGET gets
       # replaced with a default value, and always gets expanded to an OS version.
+      # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
       # We need to disable the warning that -tagret replaces -mmacosx-version-min
       add_compile_options(-Wno-overriding-t-option)
       add_link_options(-Wno-overriding-t-option)

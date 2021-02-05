@@ -164,3 +164,7 @@ if(HOST_IOS)
     set(HAVE_SIGNAL 0)
   endif()
 endif()
+
+if(MAC_CATALYST)
+  set(HAVE_SYSTEM 0)
+endif()

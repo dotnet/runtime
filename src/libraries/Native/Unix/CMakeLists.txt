@@ -78,6 +78,7 @@ endif()
 
 if(CLR_CMAKE_TARGET_MACCATALYST)
     # -target overrides -mmacosx-version-min so suppress warning about that
+    # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
     add_compile_options(-Wno-overriding-t-option)
     add_link_options(-Wno-overriding-t-option)
     if (CLR_CMAKE_TARGET_ARCH_AMD64)
