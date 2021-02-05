@@ -1,4 +1,30 @@
-<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="printItems">
+
+   <!--
+    This is useful for local testing to print the produced helix items
+    To use this when you are changing how items are produced, uncomment the target
+    and replace the Project item at the top of the file with this:
+    <Project DefaultTargets="printItems">
+
+    Once you've done that you can run this to see the results:
+    dotnet msbuild .\superpmi.proj /v:n
+   -->
+
+   <!-- <PropertyGroup>
+     <HelixTargetQueues>Some_Queue</HelixTargetQueues>
+     <InputArtifacts>D:\git\runtime\workitem\pmiAssembliesDirectory\libraries</InputArtifacts>
+     <MchFileTag>x64.checked</MchFileTag>
+     <CollectionName>benchmarks</CollectionName>
+     <CollectionType>pmi</CollectionType>
+   </PropertyGroup>
+  <Target Name="printItems">
+        <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
+     dir: %(HelixWorkItem.PayloadDirectory)
+     pre: %(HelixWorkItem.PreCommands)
+     command: %(HelixWorkItem.Command)
+     post: %(HelixWorkItem.PostCommands)
+     timeout: %(HelixWorkItem.Timeout)  '"/>
+  </Target> -->
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
     <FileSeparatorChar>\</FileSeparatorChar>
@@ -138,35 +164,9 @@
   <ItemGroup Condition="'$(CollectionName)' == 'benchmarks'">
     <HelixWorkItem Include="@(BDN_Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
-      <Command>$(WorkItemCommand) --partition-count $(PartitionCount) --partition-index %(HelixWorkItem.Index) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
+      <Command>$(WorkItemCommand) --partition_count $(PartitionCount) --partition_index %(HelixWorkItem.Index) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
-    <!--
-    This is useful for local testing to print the produced helix items
-    To use this when you are changing how items are produced, uncomment the target
-    and replace the Project item at the top of the file with this:
-    <Project DefaultTargets="printItems">
-
-    Once you've done that you can run this to see the results:
-    dotnet msbuild .\superpmi.proj /v:n
-   -->
-<!--    
-   <PropertyGroup>
-     <HelixTargetQueues>Some_Queue</HelixTargetQueues>
-     <InputArtifacts>D:\git\runtime\workitem\pmiAssembliesDirectory\libraries</InputArtifacts>
-     <MchFileTag>x64.checked</MchFileTag>
-     <CollectionName>benchmarks</CollectionName>
-   </PropertyGroup>
-  <Target Name="printItems">
-        <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
-     dir: %(HelixWorkItem.PayloadDirectory)
-     pre: %(HelixWorkItem.PreCommands)
-     command: %(HelixWorkItem.Command)
-     post: %(HelixWorkItem.PostCommands)
-     timeout: %(HelixWorkItem.Timeout)  '"/>
-  </Target> -->
-  
-
 </Project>

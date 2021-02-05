@@ -31,6 +31,8 @@ parser.add_argument("-core_root", help="Path to Core_Root directory")
 parser.add_argument("-shim_name", help="Name of collector shim")
 parser.add_argument("-output_mch_path", help="Absolute path to the mch file to produce")
 parser.add_argument("-log_file", help="Name of the log file")
+parser.add_argument("-partition_count", help="Total number of partitions")
+parser.add_argument("-partition_index", help="Partition index to do the collection for")
 
 
 def setup_args(args):
@@ -83,12 +85,12 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "partition_count",
-                        lambda unused: True,
+                        lambda partition_count: partition_count.isnumeric(),
                         "Unable to set partition_count")
 
     coreclr_args.verify(args,
                         "partition_index",
-                        lambda unused: True,
+                        lambda partition_index: partition_index.isnumeric(),
                         "Unable to set partition_index")
 
     return coreclr_args
