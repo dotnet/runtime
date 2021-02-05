@@ -7,6 +7,7 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 include(CMakePushCheckState)
+include(CheckLibraryExists)
 
 # CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
 if(POLICY CMP0075)
@@ -578,10 +579,7 @@ check_symbol_exists(
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
 
-check_symbol_exists(
-    pthread_condattr_setclock
-    pthread.h
-    HAVE_PTHREAD_CONDATTR_SETCLOCK)
+check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
 check_symbol_exists(
     futimes
