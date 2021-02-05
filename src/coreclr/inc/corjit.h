@@ -272,7 +272,6 @@ public:
             OFFSET_MASK    = 0x3FFFFFFF
         };
 
-        UINT32 ILOffset;
         UINT32 Count;
         CORINFO_CLASS_HANDLE ClassTable[SIZE];
     };

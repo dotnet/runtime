@@ -542,7 +542,8 @@ namespace ILCompiler
                         mibcFiles,
                         jsonProfile,
                         _typeSystemContext,
-                        compilationGroup);
+                        compilationGroup,
+                        _commandLineOptions.EmbedPgoData);
 
                     if (_commandLineOptions.Partial)
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);

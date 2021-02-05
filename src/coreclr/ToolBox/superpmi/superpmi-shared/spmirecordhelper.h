@@ -218,6 +218,7 @@ inline Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::CreateAgnostic_CORINFO_SIG_I
     sig.sigInst_methInstCount  = (DWORD)sigInfo.sigInst.methInstCount;
     sig.args                   = CastHandle(sigInfo.args);
     sig.cbSig                  = (DWORD)sigInfo.cbSig;
+    sig.methodSignature        = CastPointer(sigInfo.methodSignature);
     sig.scope                  = CastHandle(sigInfo.scope);
     sig.token                  = (DWORD)sigInfo.token;
     return sig;
@@ -387,6 +388,7 @@ inline CORINFO_SIG_INFO SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(const Agnost
     sig.args            = (CORINFO_ARG_LIST_HANDLE)sigInfo.args;
     sig.cbSig           = (unsigned int)sigInfo.cbSig;
     sig.pSig            = (PCCOR_SIGNATURE)buffers->GetBuffer(sigInfo.pSig_Index);
+    sig.methodSignature = (MethodSignatureInfo*)sigInfo.methodSignature;
     sig.scope           = (CORINFO_MODULE_HANDLE)sigInfo.scope;
     sig.token           = (mdToken)sigInfo.token;
 

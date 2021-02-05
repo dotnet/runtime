@@ -27,6 +27,7 @@ struct Agnostic_CORINFO_SIG_INFO
     DWORDLONG args;
     DWORD     pSig_Index;
     DWORD     cbSig;
+    DWORDLONG methodSignature;
     DWORDLONG scope;
     DWORD     token;
 };
@@ -128,13 +129,17 @@ struct Agnostic_CORINFO_RESOLVED_TOKENout
 
 struct Agnostic_GetArgType_Key
 {
+    // Partial CORINFO_SIG_INFO data
     DWORD     flags;
     DWORD     numArgs;
     DWORD     sigInst_classInstCount;
     DWORD     sigInst_classInst_Index;
     DWORD     sigInst_methInstCount;
     DWORD     sigInst_methInst_Index;
+    DWORDLONG methodSignature;
     DWORDLONG scope;
+
+    // Other getArgType() arguments
     DWORDLONG args;
 };
 
@@ -144,6 +149,7 @@ struct Agnostic_GetArgClass_Key
     DWORD     sigInst_classInst_Index;
     DWORD     sigInst_methInstCount;
     DWORD     sigInst_methInst_Index;
+    DWORDLONG methodSignature;
     DWORDLONG scope;
     DWORDLONG args;
 };

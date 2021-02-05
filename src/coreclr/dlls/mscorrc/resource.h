@@ -244,7 +244,6 @@
 #define IDS_EE_VARARG_NOT_SUPPORTED             0x1a0f
 
 #define IDS_EE_INVALID_CA                       0x1a10
-#define IDS_EE_INVALID_CA_EX                    0x1a11
 
 #define IDS_EE_THREADSTART_STATE                0x1a12
 

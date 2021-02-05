@@ -222,7 +222,10 @@ bool pal::get_loaded_library(
     pal::proc_t proc = pal::get_symbol(dll_maybe, symbol_name);
     Dl_info info;
     if (dladdr(proc, &info) == 0)
+    {
+        dlclose(dll_maybe);
         return false;
+    }
 
     *dll = dll_maybe;
     path->assign(info.dli_fname);

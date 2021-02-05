@@ -5539,6 +5539,7 @@ protected:
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
+    HRESULT                                fgPgoQueryResult;
     UINT32                                 fgNumProfileRuns;
     UINT32                                 fgPgoBlockCounts;
     UINT32                                 fgPgoClassProfiles;

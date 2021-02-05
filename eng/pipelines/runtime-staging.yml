@@ -147,7 +147,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_x64
-    - Android_arm64
+    #- Android_arm64  # disabled due to https://github.com/dotnet/runtime/issues/47850
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
