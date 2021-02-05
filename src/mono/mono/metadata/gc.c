@@ -25,13 +25,11 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-gc.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
 #include <mono/metadata/attach.h>
-#include <mono/metadata/console-io.h>
 #include <mono/metadata/w32process.h>
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-memory-model.h>
@@ -650,8 +648,6 @@ ves_icall_System_GC_get_ephemeron_tombstone (MonoError *error)
 	return MONO_HANDLE_NEW (MonoObject, mono_domain_get ()->ephemeron_tombstone);
 }
 
-#if ENABLE_NETCORE
-
 MonoGCHandle
 ves_icall_System_GCHandle_InternalAlloc (MonoObjectHandle obj, gint32 type, MonoError *error)
 {
@@ -693,88 +689,6 @@ ves_icall_System_GCHandle_InternalSet (MonoGCHandle handle, MonoObjectHandle obj
 {
 	mono_gchandle_set_target_handle (handle, obj);
 }
-
-#else
-
-MonoObjectHandle
-ves_icall_System_GCHandle_GetTarget (MonoGCHandle handle, MonoError *error)
-{
-	return mono_gchandle_get_target_handle (handle);
-}
-
-/*
- * if type == -1, change the target of the handle, otherwise allocate a new handle.
- */
-MonoGCHandle
-ves_icall_System_GCHandle_GetTargetHandle (MonoObjectHandle obj, MonoGCHandle handle, gint32 type, MonoError *error)
-{
-	if (type == -1) {
-		mono_gchandle_set_target_handle (handle, obj);
-		/* the handle doesn't change */
-		return handle;
-	}
-	switch (type) {
-	case HANDLE_WEAK:
-		return mono_gchandle_new_weakref_from_handle (obj);
-	case HANDLE_WEAK_TRACK:
-		return mono_gchandle_new_weakref_from_handle_track_resurrection (obj);
-	case HANDLE_NORMAL:
-		return mono_gchandle_from_handle (obj, FALSE);
-	case HANDLE_PINNED:
-		return mono_gchandle_from_handle (obj, TRUE);
-	default:
-		g_assert_not_reached ();
-	}
-	return NULL;
-}
-
-void
-ves_icall_System_GCHandle_FreeHandle (MonoGCHandle handle)
-{
-	mono_gchandle_free_internal (handle);
-}
-
-gpointer
-ves_icall_System_GCHandle_GetAddrOfPinnedObject (MonoGCHandle handle)
-{
-	// Handles seem to only be in the way here, and the object is pinned.
-
-	MonoObject *obj;
-	guint32 gch = MONO_GC_HANDLE_TO_UINT (handle);
-
-	if (MONO_GC_HANDLE_TYPE (gch) != HANDLE_PINNED)
-		return (gpointer)-2;
-
-	obj = mono_gchandle_get_target_internal (handle);
-	if (obj) {
-		MonoClass *klass = mono_object_class (obj);
-
-		// FIXME This would be a good place for
-		// object->GetAddrOfPinnedObject()
-		// or klass->GetAddrOfPinnedObject(obj);
-
-		if (klass == mono_defaults.string_class) {
-			return mono_string_chars_internal ((MonoString*)obj);
-		} else if (m_class_get_rank (klass)) {
-			return mono_array_addr_internal ((MonoArray*)obj, char, 0);
-		} else {
-			/* the C# code will check and throw the exception */
-			/* FIXME: missing !klass->blittable test, see bug #61134 */
-			if (mono_class_is_auto_layout (klass))
-				return (gpointer)-1;
-			return mono_object_get_data (obj);
-		}
-	}
-	return NULL;
-}
-
-MonoBoolean
-ves_icall_System_GCHandle_CheckCurrentDomain (MonoGCHandle gchandle)
-{
-	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
-}
-
-#endif
 
 static MonoCoopSem finalizer_sem;
 static volatile gboolean finished;
@@ -922,8 +836,6 @@ static void
 mono_runtime_do_background_work (void)
 {
 	mono_threads_perform_thread_dump ();
-
-	mono_console_handle_async_ops ();
 
 	mono_attach_maybe_start ();
 

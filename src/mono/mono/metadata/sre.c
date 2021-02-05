@@ -1405,12 +1405,10 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 
 	mono_domain_assemblies_lock (domain);
 	domain->domain_assemblies = g_slist_append (domain->domain_assemblies, assembly);
-#ifdef ENABLE_NETCORE
 	// TODO: potentially relax the locking here?
 	mono_alc_assemblies_lock (alc);
 	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, assembly);
 	mono_alc_assemblies_unlock (alc);
-#endif
 	mono_domain_assemblies_unlock (domain);
 
 	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);
@@ -4332,18 +4330,8 @@ ensure_complete_type (MonoClass *klass, MonoError *error)
 	error_init (error);
 
 	if (image_is_dynamic (klass->image) && !klass->wastypebuilder && mono_class_has_ref_info (klass)) {
-#ifndef ENABLE_NETCORE
-		MonoReflectionTypeBuilderHandle tb = mono_class_get_ref_info (klass);
-
-		mono_domain_try_type_resolve_typebuilder (mono_domain_get (), tb, error);
-		goto_if_nok (error, exit);
-
-		// Asserting here could break a lot of code
-		//g_assert (klass->wastypebuilder);
-#else
 		// TODO: make this work on netcore when working on SRE.TypeBuilder
 		g_assert_not_reached ();
-#endif
 	}
 
 	if (mono_class_is_ginst (klass)) {
@@ -4441,15 +4429,8 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 			/* Already created */
 			result = klass;
 		} else {
-#ifndef ENABLE_NETCORE
-			mono_domain_try_type_resolve_typebuilder (mono_domain_get (), tb, error);
-			goto_if_nok (error, return_null);
-			result = type->data.klass;
-			g_assert (result);
-#else
 			// TODO: make this work on netcore when working on SRE.TypeBuilder
 			g_assert_not_reached();
-#endif
 		}
 
 		*handle_class = mono_defaults.typehandle_class;
@@ -4684,20 +4665,6 @@ ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilderHandle mb,
 
 	return mono_image_create_method_token (MONO_HANDLE_GETVAL (mb, dynamic_image), MONO_HANDLE_CAST (MonoObject, method), opt_param_types, error);
 }
-
-#ifndef ENABLE_NETCORE
-void
-ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilderHandle mb, HANDLE file, MonoError* error)
-{
-	mono_image_create_pefile (MONO_HANDLE_RAW (mb), file, error);
-}
-
-void
-ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilderHandle mb, MonoError* error)
-{
-	mono_image_build_metadata (MONO_HANDLE_RAW (mb), error);
-}
-#endif
 
 void
 ves_icall_ModuleBuilder_RegisterToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, guint32 token, MonoError *error)

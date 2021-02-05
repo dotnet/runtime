@@ -2,8 +2,6 @@
 # Configure options
 #
 
-option (ENABLE_NETCORE "Enables the support for .NET Core Features in the MonoVM")
-
 option (DISABLE_PORTABILITY "Disables the IO portability layer")
 option (DISABLE_AOT "Disable AOT Compiler")
 option (DISABLE_PROFILER "Disable default profiler support")

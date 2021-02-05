@@ -63,7 +63,6 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/runtime.h>
@@ -2439,11 +2438,6 @@ suspend_vm (void)
 		 */
 		tp_suspend = TRUE;
 	mono_loader_unlock ();
-
-#ifndef ENABLE_NETCORE
-	if (tp_suspend)
-		mono_threadpool_suspend ();
-#endif
 }
 
 /*
@@ -2482,11 +2476,6 @@ resume_vm (void)
 	if (suspend_count == 0)
 		tp_resume = TRUE;
 	mono_loader_unlock ();
-
-#ifndef ENABLE_NETCORE
-	if (tp_resume)
-		mono_threadpool_resume ();
-#endif
 }
 
 /*
@@ -6671,11 +6660,6 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 			mono_environment_exitcode_set (exit_code);
 
-			/* Suspend all managed threads since the runtime is going away */
-#ifndef ENABLE_NETCORE
-			PRINT_DEBUG_MSG (1, "Suspending all threads...\n");
-			mono_thread_suspend_all_other_threads ();
-#endif
 			PRINT_DEBUG_MSG (1, "Shutting down the runtime...\n");
 			mono_runtime_quit_internal ();
 			transport_close2 ();

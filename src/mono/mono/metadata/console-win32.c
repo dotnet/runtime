@@ -26,20 +26,9 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/metadata.h>
-#include <mono/metadata/console-io.h>
 #include <mono/metadata/exception.h>
 #include <mono/utils/w32subset.h>
 #include "icall-decl.h"
-
-void
-mono_console_init (void)
-{
-}
-
-void
-mono_console_handle_async_ops (void)
-{
-}
 
 #if HAVE_API_SUPPORT_WIN32_CONSOLE
 MonoBoolean

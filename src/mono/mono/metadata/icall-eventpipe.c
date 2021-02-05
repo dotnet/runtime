@@ -2,7 +2,6 @@
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
 
-#ifdef ENABLE_NETCORE
 #include <mono/metadata/icall-decl.h>
 
 #if defined(ENABLE_PERFTRACING) && !defined(DISABLE_EVENTPIPE)
@@ -1082,6 +1081,3 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData (
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* ENABLE_NETCORE */
-
-MONO_EMPTY_SOURCE_FILE (icall_eventpipe);

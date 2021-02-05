@@ -72,7 +72,6 @@
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-time.h>
 #include <mono/metadata/w32handle.h>
-#include <mono/metadata/threadpool.h>
 
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep.h>
@@ -81,13 +80,9 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "tasklets.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#ifndef ENABLE_NETCORE
-#include "version.h"
-#endif
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "llvmonly-runtime.h"
@@ -373,16 +368,6 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 	if (caller->domain_neutral && !callee->domain_neutral)
 		return FALSE;
 
-#ifndef ENABLE_NETCORE
-	MonoMethod *cmethod;
-
-	cmethod = jinfo_get_method (caller);
-	if ((cmethod->klass == mono_defaults.appdomain_class) &&
-		(strstr (cmethod->name, "InvokeInDomain"))) {
-		 /* The InvokeInDomain methods change the current appdomain */
-		return FALSE;
-	}
-#endif
 	return TRUE;
 }
 
@@ -4618,10 +4603,6 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_simd_intrinsics_init ();
 #endif
 
-#ifndef ENABLE_NETCORE
-	mono_tasklets_init ();
-#endif
-
 	register_trampolines (domain);
 
 	if (mono_compile_aot)
@@ -5065,10 +5046,6 @@ mini_cleanup (MonoDomain *domain)
 
 #ifndef MONO_CROSS_COMPILE
 	mono_runtime_cleanup (domain);
-#endif
-
-#ifndef ENABLE_NETCORE
-	mono_threadpool_cleanup ();
 #endif
 
 	MONO_PROFILER_RAISE (runtime_shutdown_end, ());

@@ -1004,9 +1004,6 @@ typedef struct {
 	MonoClass *iremotingtypeinfo_class;
 #endif
 	MonoClass *mono_method_message_class;
-#ifndef ENABLE_NETCORE
-	MonoClass *appdomain_class;
-#endif
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
 	MonoClass *stack_frame_class;
@@ -1021,13 +1018,8 @@ typedef struct {
 	MonoClass *critical_finalizer_object; /* MAYBE NULL */
 	MonoClass *generic_ireadonlylist_class;
 	MonoClass *generic_ienumerator_class;
-#ifdef ENABLE_NETCORE
 	MonoClass *alc_class;
 	MonoClass *appcontext_class;
-#endif
-#ifndef ENABLE_NETCORE
-	MonoMethod *threadpool_perform_wait_callback_method;
-#endif
 } MonoDefaults;
 
 #ifdef DISABLE_REMOTING
@@ -1101,9 +1093,6 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
 #endif
 
 MonoClass* mono_class_get_appdomain_class (void);
-#ifndef ENABLE_NETCORE
-GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_setup);
-#endif
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
@@ -1112,10 +1101,8 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (valuetype)
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(handleref)
 
-#ifdef ENABLE_NETCORE
 GENERATE_GET_CLASS_WITH_CACHE_DECL (assembly_load_context)
 GENERATE_GET_CLASS_WITH_CACHE_DECL (native_library)
-#endif
 
 /* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
 extern MonoDefaults mono_defaults;
@@ -1614,12 +1601,8 @@ m_field_get_offset (MonoClassField *field)
 static inline MonoMemoryManager*
 m_class_get_mem_manager (MonoDomain *domain, MonoClass *klass)
 {
-#ifdef ENABLE_NETCORE
 	// FIXME:
 	return mono_domain_memory_manager (domain);
-#else
-	return mono_domain_memory_manager (domain);
-#endif
 }
 
 static inline void *
@@ -1637,12 +1620,8 @@ m_class_alloc0 (MonoDomain *domain, MonoClass *klass, guint size)
 static inline MonoMemoryManager*
 m_method_get_mem_manager (MonoDomain *domain, MonoMethod *method)
 {
-#ifdef ENABLE_NETCORE
 	// FIXME:
 	return mono_domain_memory_manager (domain);
-#else
-	return mono_domain_memory_manager (domain);
-#endif
 }
 
 static inline void *

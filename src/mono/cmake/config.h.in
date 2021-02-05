@@ -338,9 +338,6 @@
 /* The size of `long long', as computed by sizeof. */
 #define SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
 
-/* Enables the support for .NET Core Features in the MonoVM */
-#cmakedefine ENABLE_NETCORE 1
-
 /* Xen-specific behaviour */
 #cmakedefine MONO_XEN_OPT 1
 

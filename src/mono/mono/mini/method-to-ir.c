@@ -97,11 +97,7 @@
  * while the jit only sees one method, so we have to inline things ourselves.
  */
 /* Used by LLVM AOT */
-#ifdef ENABLE_NETCORE
 #define LLVM_AOT_INLINE_LENGTH_LIMIT 30
-#else
-#define LLVM_AOT_INLINE_LENGTH_LIMIT INLINE_LENGTH_LIMIT
-#endif
 
 /* Used to LLVM JIT */
 #define LLVM_JIT_INLINE_LENGTH_LIMIT 100
@@ -3495,7 +3491,6 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 			return TRUE;
 	}
 
-#if defined(ENABLE_NETCORE)
 	/*
 	 * In corelib code, methods which need to do a stack walk declare a StackCrawlMark local and pass it as an
 	 * arguments until it reaches an icall. Its hard to detect which methods do that especially with
@@ -3509,7 +3504,7 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 			(!strcmp (cname, "Activator")))
 			return TRUE;
 	}
-#endif
+
 	return FALSE;
 }
 
@@ -7496,19 +7491,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if ((m_class_get_parent (cmethod->klass) == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke"))
 				delegate_invoke = TRUE;
 
-#ifndef ENABLE_NETCORE
-			if ((cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_sharable_method (cfg, cmethod, fsig, sp))) {
-				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-					mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
-					emit_widen = FALSE;
-				}
-
-				if (inst_tailcall) // FIXME
-					mono_tailcall_print ("missed tailcall intrins_sharable %s -> %s\n", method->name, cmethod->name);
-				goto call_end;
-			}
-#endif
-
 			/*
 			 * Implement a workaround for the inherent races involved in locking:
 			 * Monitor.Enter ()
@@ -7746,11 +7728,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
-#ifdef ENABLE_NETCORE
 			if (save_last_error) {
 				mono_emit_jit_icall (cfg, mono_marshal_clear_last_error, NULL);
 			}
-#endif
 
 			/* Tail prefix / tailcall optimization */
 
@@ -9258,7 +9238,6 @@ calli_end:
 				}
 			}
 
-#ifdef ENABLE_NETCORE
 			// Optimize
 			// 
 			//    box
@@ -9380,7 +9359,6 @@ calli_end:
 					}
 				}
 			}
-#endif
 
 			gboolean is_true;
 
