@@ -219,7 +219,7 @@ namespace System.ComponentModel
     }
     public partial class ComponentConverter : System.ComponentModel.ReferenceConverter
     {
-        public ComponentConverter(System.Type type) : base (default(System.Type)) { }
+        public ComponentConverter(System.Type type) : base(default(System.Type)) { }
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -415,9 +415,9 @@ namespace System.ComponentModel
     }
     public abstract partial class EventDescriptor : System.ComponentModel.MemberDescriptor
     {
-        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected EventDescriptor(string name, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
+        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr) : base(default(System.ComponentModel.MemberDescriptor)) { }
+        protected EventDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base(default(System.ComponentModel.MemberDescriptor)) { }
+        protected EventDescriptor(string name, System.Attribute[] attrs) : base(default(System.ComponentModel.MemberDescriptor)) { }
         public abstract System.Type ComponentType { get; }
         public abstract System.Type EventType { get; }
         public abstract bool IsMulticast { get; }
@@ -705,7 +705,7 @@ namespace System.ComponentModel
         protected LicenseProvider() { }
         public abstract System.ComponentModel.License GetLicense(System.ComponentModel.LicenseContext context, System.Type type, object instance, bool allowExceptions);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed partial class LicenseProviderAttribute : System.Attribute
     {
         public static readonly System.ComponentModel.LicenseProviderAttribute Default;
@@ -1011,9 +1011,9 @@ namespace System.ComponentModel
     }
     public abstract partial class PropertyDescriptor : System.ComponentModel.MemberDescriptor
     {
-        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
-        protected PropertyDescriptor(string name, System.Attribute[] attrs) : base (default(System.ComponentModel.MemberDescriptor)) { }
+        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr) : base(default(System.ComponentModel.MemberDescriptor)) { }
+        protected PropertyDescriptor(System.ComponentModel.MemberDescriptor descr, System.Attribute[] attrs) : base(default(System.ComponentModel.MemberDescriptor)) { }
+        protected PropertyDescriptor(string name, System.Attribute[] attrs) : base(default(System.ComponentModel.MemberDescriptor)) { }
         public abstract System.Type ComponentType { get; }
         public virtual System.ComponentModel.TypeConverter Converter { get { throw null; } }
         public virtual bool IsLocalizable { get { throw null; } }
@@ -1115,7 +1115,7 @@ namespace System.ComponentModel
         Document = 2,
         Component = 3,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple = true)]
     public sealed partial class ProvidePropertyAttribute : System.Attribute
     {
         public ProvidePropertyAttribute(string propertyName, string receiverTypeName) { }
@@ -1222,7 +1222,7 @@ namespace System.ComponentModel
         public override int GetHashCode() { throw null; }
         public override bool IsDefaultAttribute() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true, Inherited=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
     public sealed partial class ToolboxItemFilterAttribute : System.Attribute
     {
         public ToolboxItemFilterAttribute(string filterString) { }
@@ -1285,8 +1285,8 @@ namespace System.ComponentModel
         protected System.ComponentModel.PropertyDescriptorCollection SortProperties(System.ComponentModel.PropertyDescriptorCollection props, string[] names) { throw null; }
         protected abstract partial class SimplePropertyDescriptor : System.ComponentModel.PropertyDescriptor
         {
-            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType) : base (default(System.ComponentModel.MemberDescriptor)) { }
-            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType, System.Attribute[] attributes) : base (default(System.ComponentModel.MemberDescriptor)) { }
+            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType) : base(default(System.ComponentModel.MemberDescriptor)) { }
+            protected SimplePropertyDescriptor(System.Type componentType, string name, System.Type propertyType, System.Attribute[] attributes) : base(default(System.ComponentModel.MemberDescriptor)) { }
             public override System.Type ComponentType { get { throw null; } }
             public override bool IsReadOnly { get { throw null; } }
             public override System.Type PropertyType { get { throw null; } }
@@ -1609,8 +1609,8 @@ namespace System.ComponentModel.Design
     public delegate void DesignerTransactionCloseEventHandler(object sender, System.ComponentModel.Design.DesignerTransactionCloseEventArgs e);
     public partial class DesignerVerb : System.ComponentModel.Design.MenuCommand
     {
-        public DesignerVerb(string text, System.EventHandler handler) : base (default(System.EventHandler), default(System.ComponentModel.Design.CommandID)) { }
-        public DesignerVerb(string text, System.EventHandler handler, System.ComponentModel.Design.CommandID startCommandID) : base (default(System.EventHandler), default(System.ComponentModel.Design.CommandID)) { }
+        public DesignerVerb(string text, System.EventHandler handler) : base(default(System.EventHandler), default(System.ComponentModel.Design.CommandID)) { }
+        public DesignerVerb(string text, System.EventHandler handler, System.ComponentModel.Design.CommandID startCommandID) : base(default(System.EventHandler), default(System.ComponentModel.Design.CommandID)) { }
         public string Description { get { throw null; } set { } }
         public string Text { get { throw null; } }
         public override string ToString() { throw null; }
@@ -1634,6 +1634,14 @@ namespace System.ComponentModel.Design
         protected override void OnValidate(object value) { }
         public void Remove(System.ComponentModel.Design.DesignerVerb value) { }
     }
+//    public class RuntimeLicenseContext : System.ComponentModel.LicenseContext
+//    {
+//#pragma warning disable CS3008 // Identifier is not CLS-compliant
+//        public System.Collections.Hashtable _savedLicenseKeys;
+//#pragma warning restore CS3008 // Identifier is not CLS-compliant
+//        public override string GetSavedLicenseKey(System.Type type, System.Reflection.Assembly resourceAssembly) { throw null; }
+//    }
+
     public partial class DesigntimeLicenseContext : System.ComponentModel.LicenseContext
     {
         public DesigntimeLicenseContext() { }
@@ -1645,6 +1653,7 @@ namespace System.ComponentModel.Design
     {
         internal DesigntimeLicenseContextSerializer() { }
         public static void Serialize(System.IO.Stream o, string cryptoKey, System.ComponentModel.Design.DesigntimeLicenseContext context) { }
+        //public static void Deserialize(System.IO.Stream o, string cryptoKey, System.ComponentModel.Design.RuntimeLicenseContext context) { }
     }
     public enum HelpContextType
     {
@@ -1653,7 +1662,7 @@ namespace System.ComponentModel.Design
         Selection = 2,
         ToolWindowSelection = 3,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple = false, Inherited = false)]
     public sealed partial class HelpKeywordAttribute : System.Attribute
     {
         public static readonly System.ComponentModel.Design.HelpKeywordAttribute Default;
@@ -2030,7 +2039,7 @@ namespace System.ComponentModel.Design.Serialization
         public object Pop() { throw null; }
         public void Push(object context) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false)]
     public sealed partial class DefaultSerializationProviderAttribute : System.Attribute
     {
         public DefaultSerializationProviderAttribute(string providerTypeName) { }
@@ -2132,7 +2141,7 @@ namespace System.ComponentModel.Design.Serialization
         public object Value { get { throw null; } set { } }
     }
     public delegate void ResolveNameEventHandler(object sender, System.ComponentModel.Design.Serialization.ResolveNameEventArgs e);
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = true, Inherited = true)]
     [System.ObsoleteAttribute("This attribute has been deprecated. Use DesignerSerializerAttribute instead. For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)). https://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed partial class RootDesignerSerializerAttribute : System.Attribute
     {

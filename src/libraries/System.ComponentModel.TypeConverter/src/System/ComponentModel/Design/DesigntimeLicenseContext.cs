@@ -42,7 +42,9 @@ namespace System.ComponentModel.Design
 
     internal class RuntimeLicenseContext : LicenseContext
     {
-        internal Hashtable _savedLicenseKeys;
+#pragma warning disable CS3008 // Identifier is not CLS-compliant
+        public Hashtable _savedLicenseKeys;
+#pragma warning restore CS3008 // Identifier is not CLS-compliant
 
         /// <summary>
         /// This method takes a file URL and converts it to a local path. The trick here is that

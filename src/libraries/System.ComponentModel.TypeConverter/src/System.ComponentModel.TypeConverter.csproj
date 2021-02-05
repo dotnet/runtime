@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
@@ -15,6 +15,7 @@
     <Compile Include="System\ComponentModel\DateTimeConverter.cs" />
     <Compile Include="System\ComponentModel\DateTimeOffsetConverter.cs" />
     <Compile Include="System\ComponentModel\DecimalConverter.cs" />
+    <Compile Include="System\ComponentModel\Design\LocalAppContextSwitches.cs" />
     <Compile Include="System\ComponentModel\DoubleConverter.cs" />
     <Compile Include="System\ComponentModel\EnumConverter.cs" />
     <Compile Include="System\ComponentModel\GuidConverter.cs" />
@@ -232,6 +233,9 @@
     <Compile Include="System\ComponentModel\Design\Serialization\RootDesignerSerializerAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentResourceManager.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverter.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
@@ -252,6 +256,7 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Text.Json" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Xml.XDocument" />
