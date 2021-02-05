@@ -1284,17 +1284,23 @@ mono_wasm_create_method_signature_info (MonoClass *klass, MonoMethod *method)
 		return 0;
 
 	int parameter_count = mono_signature_get_param_count (sig);
-	int allocation_size = sizeof(wasm_method_signature_info) + 
+	int allocation_size = sizeof(wasm_method_signature_info) /* + 
 		(parameter_count * sizeof(int)) +
-		(parameter_count * sizeof(MonoClass *)) +
+		(parameter_count * sizeof(MonoClass *)) */ +
 		12;
 
 	wasm_method_signature_info *result = malloc (allocation_size);
 	memset (result, 0, allocation_size);
 
 	result->parameter_count = parameter_count;
-	result->parameter_marshal_types = (((void *)result) + sizeof(wasm_method_signature_info) + 4);
-	result->parameter_classes = ((void *)result->parameter_marshal_types) + (sizeof(int) * parameter_count) + 4;
+	result->parameter_marshal_types = malloc(sizeof(int) * (parameter_count + 1));
+	memset(result->parameter_marshal_types, 0, parameter_count * sizeof(int));
+	
+	// (((char *)result) + sizeof(wasm_method_signature_info) + 4);
+	result->parameter_classes = malloc(sizeof (MonoClass *) * (parameter_count + 1));
+	memset(result->parameter_classes, 0, parameter_count * sizeof(MonoClass *));
+	
+	// ((char *)result->parameter_marshal_types) + (sizeof(int) * parameter_count) + 4;
 
 	EM_ASM({
 		console.debug("creating signature info for method result", Module.UTF8ToString ($0));
