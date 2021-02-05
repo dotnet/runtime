@@ -43,7 +43,6 @@ set(metadata_win32_sources
     w32error-win32.c)
 
 set(metadata_unix_sources
-    console-unix.c
     w32mutex-unix.c
     w32semaphore-unix.c
     w32event-unix.c
@@ -86,7 +85,6 @@ set(metadata_common_sources
     class-setup-vtable.c
     cominterop.c
     cominterop.h
-    console-io.h
     coree.c
     coree.h
     coree-internals.h
@@ -101,11 +99,8 @@ set(metadata_common_sources
     exception.c
     exception.h
     exception-internals.h
-    w32file.c
     w32file.h
     w32file-internals.h
-    filewatcher.c
-    filewatcher.h
     gc-internals.h
     icall.c
     icall-internals.h
@@ -160,7 +155,6 @@ set(metadata_common_sources
     opcodes.c
     property-bag.h
     property-bag.c
-    w32socket.c
     w32socket.h
     w32socket-internals.h
     w32process.c
@@ -168,12 +162,9 @@ set(metadata_common_sources
     w32process-internals.h
     profiler.c
     profiler-private.h
-    rand.h
-    rand.c
     remoting.h
     remoting.c
     runtime.c
-    mono-security.c
     security.h
     security-core-clr.c
     security-core-clr.h
@@ -185,11 +176,6 @@ set(metadata_common_sources
     tabledefs.h
     threads.c
     threads-types.h
-    threadpool.c
-    threadpool.h
-    threadpool-worker.h
-    threadpool-io.c
-    threadpool-io.h
     verify.c
     verify-internals.h
     wrapper-types.h
@@ -237,7 +223,6 @@ set(metadata_common_sources
     qcall-def.h
     loaded-images-internals.h
     loaded-images.c
-    loaded-images-netcore.c
     abi-details.h
     abi.c
     memory-manager.c

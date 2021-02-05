@@ -50,11 +50,6 @@ mono_loaded_images_remove_image (MonoImage *image);
 MonoLoadedImages*
 mono_image_get_loaded_images_for_modules (MonoImage *image);
 
-#ifndef ENABLE_NETCORE
-MonoLoadedImages*
-mono_get_global_loaded_images (void);
-#endif
-
 MonoImage *
 mono_find_image_owner (void *ptr);
 

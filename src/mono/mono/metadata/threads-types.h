@@ -161,11 +161,6 @@ gint64 ves_icall_System_Threading_Interlocked_Exchange_Long(gint64 *location, gi
 ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*res);
 
-#ifndef ENABLE_NETCORE
-ICALL_EXPORT
-gpointer ves_icall_System_Threading_Interlocked_Exchange_IntPtr(gpointer *location, gpointer value);
-#endif
-
 ICALL_EXPORT
 gfloat ves_icall_System_Threading_Interlocked_Exchange_Single(gfloat *location, gfloat value);
 
@@ -183,11 +178,6 @@ gint64 ves_icall_System_Threading_Interlocked_CompareExchange_Long(gint64 *locat
 
 ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*comparand, MonoObject *volatile*res);
-
-#ifndef ENABLE_NETCORE
-ICALL_EXPORT
-gpointer ves_icall_System_Threading_Interlocked_CompareExchange_IntPtr(gpointer *location, gpointer value, gpointer comparand);
-#endif
 
 ICALL_EXPORT
 gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location, gfloat value, gfloat comparand);
@@ -363,9 +353,6 @@ mono_thread_set_name (MonoInternalThread *thread,
 		MONO_THREAD_NAME_WINDOWS_CONSTANT (name),               \
 		(flags) | MonoSetThreadNameFlag_Constant, NULL)
 
-#ifndef ENABLE_NETCORE
-void mono_thread_suspend_all_other_threads (void);
-#endif
 gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
 
 void mono_thread_push_appdomain_ref (MonoDomain *domain);
