@@ -81,6 +81,16 @@ def setup_args(args):
                         lambda unused: True,
                         "Unable to set shim_name")
 
+    coreclr_args.verify(args,
+                        "partition_count",
+                        lambda unused: True,
+                        "Unable to set partition_count")
+
+    coreclr_args.verify(args,
+                        "partition_index",
+                        lambda unused: True,
+                        "Unable to set partition_index")
+
     return coreclr_args
 
 
@@ -97,6 +107,8 @@ def execute(coreclr_args, output_mch_name):
     performance_directory = coreclr_args.performance_directory
     shim_name = coreclr_args.shim_name
     log_file = coreclr_args.log_file
+    partition_count = coreclr_args.partition_count
+    partition_index = coreclr_args.partition_index
 
     with ChangeDir(performance_directory):
         print("Inside " + performance_directory)
@@ -108,6 +120,7 @@ def execute(coreclr_args, output_mch_name):
 
             # dotnet command to execute Microbenchmarks.dll
             dotnet_exe, "\"artifacts/Microbenchmarks.dll --filter *IniArray* --corerun " + path.join(core_root, corerun_exe_name) +
+            " --partition_count " + partition_count + " --partition_index " + partition_index +
             " --envvar COMPlus_JitName:" + shim_name + " --iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart\"",
 
             # superpmi.py collect arguments
