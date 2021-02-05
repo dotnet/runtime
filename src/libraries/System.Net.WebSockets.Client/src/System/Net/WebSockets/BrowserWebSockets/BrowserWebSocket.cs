@@ -575,7 +575,38 @@ namespace System.Net.WebSockets
             }
         }
 
-        public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
+        public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
+        {
+            _writeBuffer = null;
+
+            WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
+
+            try
+            {
+                ThrowOnInvalidState(State, WebSocketState.Connecting, WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent);
+            }
+            catch (Exception exc)
+            {
+                return Task.FromException(exc);
+            }
+            return CloseOutputAsyncCore(closeStatus, statusDescription, cancellationToken);
+        }
+
+        private Task CloseOutputAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
+        {
+            try
+            {
+                _innerWebSocketCloseStatus = closeStatus;
+                _innerWebSocketCloseStatusDescription = statusDescription;
+                _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
+                _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
+                return Task.CompletedTask;
+            }
+            catch (Exception exc)
+            {
+                return Task.FromException(exc);
+            }
+        }
 
         private void ThrowIfNotConnected()
         {
