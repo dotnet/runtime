@@ -924,22 +924,30 @@ namespace System.Resources
             "the user to only get one error.")]
         private Type FindType(int typeIndex)
         {
-            if (!AllowCustomResourceTypes)
-            {
-                throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
-            }
-
             if (typeIndex < 0 || typeIndex >= _typeTable.Length)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_InvalidType);
             }
 
-            return _typeTable[typeIndex] ?? UseReflectionToGetType(typeIndex);
+            if (_typeTable[typeIndex] == null)
+            {
+                if (AllowCustomResourceTypes)
+                {
+                    UseReflectionToGetType(typeIndex);
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
+                }
+            }
+
+            Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
+            return _typeTable[typeIndex]!;
         }
 
         [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
             "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
-        private Type UseReflectionToGetType(int typeIndex)
+        private void UseReflectionToGetType(int typeIndex)
         {
             long oldPos = _store.BaseStream.Position;
             try
@@ -947,8 +955,6 @@ namespace System.Resources
                 _store.BaseStream.Position = _typeNamePositions[typeIndex];
                 string typeName = _store.ReadString();
                 _typeTable[typeIndex] = Type.GetType(typeName, true);
-                Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
-                return _typeTable[typeIndex]!;
             }
             // If serialization isn't supported, we convert FileNotFoundException to
             // NotSupportedException for consistency with v2. This is a corner-case, but the

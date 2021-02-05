@@ -51,9 +51,14 @@ namespace System.Resources
             "the user to only get one error.")]
         private object DeserializeObject(int typeIndex)
         {
-            if (!_permitDeserialization || !AllowCustomResourceTypes)
+            if (!_permitDeserialization)
             {
                 throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+            }
+
+            if (!AllowCustomResourceTypes)
+            {
+                throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
             }
 
             if (Volatile.Read(ref _binaryFormatter) is null)
@@ -80,8 +85,6 @@ namespace System.Resources
         }
 
         // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "ResourceReader.CreateUntypedDelegate method doesn't have trimming annotations.")]
         [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
             "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private bool InitializeBinaryFormatter()

@@ -45,7 +45,6 @@
     <EmbeddedResource Include="Resources\TestResx.fr-FR.resx"/>
     <EmbeddedResource Include="Resources\TestClassWithoutNeutralResources.fr.resx"/>
     <EmbeddedResource Include="Resources\CustomReader.resx" />
-    <EmbeddedResource Include="Resources\CustomType.resources" />
     <Content Include="Resources\TestResx.netstandard17.resources"
           Link="%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
