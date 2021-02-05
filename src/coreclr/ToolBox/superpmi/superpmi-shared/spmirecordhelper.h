@@ -259,8 +259,8 @@ inline void SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(
     {
         if (handleInstCount > 0)
         {
-            // This is really a VM/crossgen bug.
-            LogVerbose("(handleInstCount > 0) but (handleInstArray == nullptr)!");
+            // This is really a VM/crossgen2 bug (or, a by-design crossgen2 feature to avoid creating
+            // an array the JIT doesn't look at).
             handleInstCount = 0;
         }
 

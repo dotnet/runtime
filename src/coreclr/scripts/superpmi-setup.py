@@ -55,18 +55,35 @@ parser.add_argument("-collection_type", help="Type of the SPMI collection to be 
 parser.add_argument("-input_directory", help="directory containing assemblies for which superpmi collection to be done")
 parser.add_argument("-max_size", help="Max size of each partition in MB")
 is_windows = platform.system() == "Windows"
+
 native_binaries_to_ignore = [
     "System.IO.Compression.Native.dll",
     "clretwrc.dll",
     "clrgc.dll",
     "clrjit.dll",
+    "clrjit_unix_arm_arm.dll",
+    "clrjit_unix_arm_arm64.dll",
     "clrjit_unix_arm_x64.dll",
+    "clrjit_unix_arm_x86.dll",
+    "clrjit_unix_arm64_arm64.dll",
     "clrjit_unix_arm64_x64.dll",
+    "clrjit_unix_armel_x86.dll",
+    "clrjit_unix_osx_arm64_arm64.dll",
+    "clrjit_unix_osx_arm64_x64.dll",
+    "clrjit_unix_x64_arm64.dll",
     "clrjit_unix_x64_x64.dll",
+    "clrjit_win_arm_arm.dll",
+    "clrjit_win_arm_arm64.dll",
     "clrjit_win_arm_x64.dll",
+    "clrjit_win_arm_x86.dll",
+    "clrjit_win_arm64_arm64.dll",
     "clrjit_win_arm64_x64.dll",
+    "clrjit_win_x64_arm64.dll",
     "clrjit_win_x64_x64.dll",
+    "clrjit_win_x86_arm.dll",
+    "clrjit_win_x86_arm64.dll",
     "clrjit_win_x86_x64.dll",
+    "clrjit_win_x86_x86.dll",
     "coreclr.dll",
     "CoreConsole.exe",
     "coredistools.dll",
@@ -78,17 +95,19 @@ native_binaries_to_ignore = [
     "ilasm.exe",
     "ildasm.exe",
     "jitinterface_x64.dll",
-    "linuxnonjit.dll",
     "mcs.exe",
+    "Microsoft.DiaSymReader.Native.amd64.dll",
+    "Microsoft.DiaSymReader.Native.x86.dll",
     "mscordaccore.dll",
     "mscordbi.dll",
     "mscorrc.dll",
-    "protononjit.dll",
+    "msdia140.dll",
     "superpmi.exe",
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
 ]
+
 MAX_FILES_COUNT = 1500
 
 def setup_args(args):

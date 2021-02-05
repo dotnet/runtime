@@ -491,6 +491,30 @@ def run_and_log(command, log_level=logging.DEBUG):
         logging.log(log_level, line)
     return proc.returncode
 
+
+def write_file_to_log(filepath, log_level=logging.DEBUG):
+    """ Read the text of a file and write it to the logger. If the file doesn't exist, don't output anything.
+
+    Args:
+        filepath (string) : file to log
+        log_level (int)   : log level to use for logging output
+
+    Returns:
+        Nothing
+    """
+    if not os.path.exists(filepath):
+        return
+
+    logging.log(log_level, "============== Contents of " + filepath)
+
+    with open(filepath) as file_handle:
+        lines = file_handle.readlines()
+        lines = [item.strip() for item in lines]
+        for line in lines:
+            logging.log(log_level, line)
+
+    logging.log(log_level, "============== End contents of " + filepath)
+
 # Functions to verify the OS and architecture. They take an instance of CoreclrArguments,
 # which is used to find the list of legal OS and architectures
 
@@ -889,6 +913,13 @@ class SuperPMICollect:
                             os.remove(stdout_filepath)
                         if is_zero_length_file(stderr_filepath):
                             os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
                     except OSError as ose:
                         if "[WinError 32] The process cannot access the file because it is being used by another " \
                            "process:" in format(ose):
@@ -960,6 +991,13 @@ class SuperPMICollect:
                             os.remove(stdout_filepath)
                         if is_zero_length_file(stderr_filepath):
                             os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
                     except OSError as ose:
                         if "[WinError 32] The process cannot access the file because it is being used by another " \
                            "process:" in format(ose):
@@ -1039,13 +1077,7 @@ class SuperPMICollect:
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
                     # Log what is in the response file
-                    with open(rsp_filepath) as rsp_file_handle:
-                        rsp_lines = rsp_file_handle.readlines()
-                        rsp_lines = [item.strip() for item in rsp_lines]
-                        logging.debug("============== Contents of " + rsp_filepath)
-                        for line in rsp_lines:
-                            logging.debug(line)
-                        logging.debug("============== End contents of " + rsp_filepath)
+                    write_file_to_log(rsp_filepath)
 
                     command = [self.coreclr_args.dotnet_tool_path, self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
                     command_string = " ".join(command)
@@ -1073,6 +1105,13 @@ class SuperPMICollect:
                             os.remove(stdout_filepath)
                         if is_zero_length_file(stderr_filepath):
                             os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
                     except OSError as ose:
                         if "[WinError 32] The process cannot access the file because it is being used by another " \
                            "process:" in format(ose):
@@ -2785,8 +2824,9 @@ def setup_args(args):
                 os.makedirs(coreclr_args.spmi_location)
     else:
         log_file = coreclr_args.log_file
-        log_dir = os.path.basename(log_file)
+        log_dir = os.path.dirname(log_file)
         if not os.path.isdir(log_dir):
+            print("Creating log directory {} for log file {}".format(log_dir, log_file))
             os.makedirs(log_dir)
 
     if log_file is not None:
