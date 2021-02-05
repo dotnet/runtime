@@ -1435,7 +1435,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void NonEmptySource_ConsistentWithCountable()
+        public void NonEmptySource_ConsistencyWithCountable()
         {
             int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
@@ -1481,7 +1481,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void NonEmptySource_ConsistentWithCountable_NotList()
+        public void NonEmptySource_ConsistencyWithCountable_NotList()
         {
             int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
@@ -1527,7 +1527,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void NonEmptySource_ConsistentWithCountable_ListPartition()
+        public void NonEmptySource_ConsistencyWithCountable_ListPartition()
         {
             int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
@@ -1573,7 +1573,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void NonEmptySource_ConsistentWithCountable_EnumerablePartition()
+        public void NonEmptySource_ConsistencyWithCountable_EnumerablePartition()
         {
             int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 

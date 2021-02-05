@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -73,53 +74,57 @@ namespace System.Linq
             }
 
             int indexFromEnd = index.Value;
-            if (indexFromEnd > 0)
+            Debug.Assert(indexFromEnd >= 0);
+            if (indexFromEnd == 0)
             {
-                if (source is IPartition<TSource> partition)
-                {
-                    int count = partition.GetCount(onlyIfCheap: true);
-                    if (count == 0)
-                    {
-                        ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-                    }
-                    else if (count > 0)
-                    {
-                        if (indexFromEnd <= count)
-                        {
-                            TSource? element = partition.TryGetElementAt(count - indexFromEnd, out bool found);
-                            if (found)
-                            {
-                                return element!;
-                            }
-                        }
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
 
-                        ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-                    }
-                }
-                else if (source is IList<TSource> list)
+            if (source is IPartition<TSource> partition)
+            {
+                int count = partition.GetCount(onlyIfCheap: true);
+                if (count == 0)
                 {
-                    return list[index];
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                 }
 
-                using IEnumerator<TSource> e = source.GetEnumerator();
-                if (e.MoveNext())
+                if (count > 0)
                 {
-                    Queue<TSource> queue = new();
-                    queue.Enqueue(e.Current);
-                    while (e.MoveNext())
+                    if (indexFromEnd <= count)
                     {
-                        if (queue.Count == indexFromEnd)
+                        TSource? element = partition.TryGetElementAt(count - indexFromEnd, out bool found);
+                        if (found)
                         {
-                            queue.Dequeue();
+                            return element!;
                         }
-
-                        queue.Enqueue(e.Current);
                     }
 
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                }
+            }
+            else if (source is IList<TSource> list)
+            {
+                return list[index];
+            }
+
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (e.MoveNext())
+            {
+                Queue<TSource> queue = new();
+                queue.Enqueue(e.Current);
+                while (e.MoveNext())
+                {
                     if (queue.Count == indexFromEnd)
                     {
-                        return queue.Dequeue();
+                        queue.Dequeue();
                     }
+
+                    queue.Enqueue(e.Current);
+                }
+
+                if (queue.Count == indexFromEnd)
+                {
+                    return queue.Dequeue();
                 }
             }
 
@@ -191,54 +196,52 @@ namespace System.Linq
             }
 
             int indexFromEnd = index.Value;
-            if (indexFromEnd > 0)
+            Debug.Assert(indexFromEnd >= 0);
+            if (indexFromEnd == 0)
             {
-                if (source is IPartition<TSource> partition)
-                {
-                    int count = partition.GetCount(onlyIfCheap: true);
-                    if (count == 0)
-                    {
-                        return default;
-                    }
+                return default;
+            }
 
-                    if (count > 0)
-                    {
-                        return indexFromEnd <= count
-                            ? partition.TryGetElementAt(count - indexFromEnd, out bool _)
-                            : default;
-                    }
-                }
-                else if (source is IList<TSource> list)
-                {
-                    int count = list.Count;
-                    return indexFromEnd <= count ? list[count - indexFromEnd] : default;
-                }
-
-                using IEnumerator<TSource> e = source.GetEnumerator();
-                if (!e.MoveNext())
+            if (source is IPartition<TSource> partition)
+            {
+                int count = partition.GetCount(onlyIfCheap: true);
+                if (count == 0)
                 {
                     return default;
                 }
 
-                Queue<TSource> queue = new();
-                queue.Enqueue(e.Current);
-                while (e.MoveNext())
+                if (count > 0)
                 {
-                    if (queue.Count == indexFromEnd)
-                    {
-                        queue.Dequeue();
-                    }
-
-                    queue.Enqueue(e.Current);
-                }
-
-                if (queue.Count == indexFromEnd)
-                {
-                    return queue.Dequeue();
+                    return indexFromEnd <= count
+                        ? partition.TryGetElementAt(count - indexFromEnd, out bool _)
+                        : default;
                 }
             }
+            else if (source is IList<TSource> list)
+            {
+                int count = list.Count;
+                return indexFromEnd <= count ? list[count - indexFromEnd] : default;
+            }
 
-            return default;
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (!e.MoveNext())
+            {
+                return default;
+            }
+
+            Queue<TSource> queue = new();
+            queue.Enqueue(e.Current);
+            while (e.MoveNext())
+            {
+                if (queue.Count == indexFromEnd)
+                {
+                    queue.Dequeue();
+                }
+
+                queue.Enqueue(e.Current);
+            }
+
+            return queue.Count == indexFromEnd ? queue.Dequeue() : default;
         }
     }
 }

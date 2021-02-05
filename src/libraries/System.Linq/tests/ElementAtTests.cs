@@ -12,8 +12,8 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsIntQuery()
         {
             var q = Repeat(_ => from x in new[] { 9999, 0, 888, -1, 66, -777, 1, 2, -12345 }
-                where x > int.MinValue
-                select x, 3);
+                                where x > int.MinValue
+                                select x, 3);
             Assert.Equal(q[0].ElementAt(3), q[0].ElementAt(3));
             Assert.Equal(q[1].ElementAt(new Index(3)), q[1].ElementAt(new Index(3)));
             Assert.Equal(q[2].ElementAt(^6), q[2].ElementAt(^6));
@@ -23,8 +23,8 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsStringQuery()
         {
             var q = Repeat(_ => from x in new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS", string.Empty }
-                where !string.IsNullOrEmpty(x)
-                select x,3);
+                                where !string.IsNullOrEmpty(x)
+                                select x, 3);
             Assert.Equal(q[0].ElementAt(4), q[0].ElementAt(4));
             Assert.Equal(q[1].ElementAt(new Index(4)), q[1].ElementAt(new Index(4)));
             Assert.Equal(q[2].ElementAt(^2), q[2].ElementAt(^2));
@@ -116,6 +116,246 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(2));
             AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(new Index(2)));
             AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(^2));
+        }
+
+        [Fact]
+        public void MutableSource()
+        {
+            var source = new List<int>() { 0, 1, 2, 3, 4 };
+            Assert.Equal(2, source.ElementAt(2));
+            Assert.Equal(2, source.ElementAt(new Index(2)));
+            Assert.Equal(2, source.ElementAt(^3));
+
+            source.InsertRange(3, new[] { -1, -2 });
+            source.RemoveAt(0);
+            Assert.Equal(-1, source.ElementAt(2));
+            Assert.Equal(-1, source.ElementAt(new Index(2)));
+            Assert.Equal(-1, source.ElementAt(^4));
+        }
+
+        [Fact]
+        public void MutableSourceNotList()
+        {
+            var source = new List<int>() { 0, 1, 2, 3, 4 };
+            var query1 = Repeat(_ => ForceNotCollection(source).Select(i => i), 3);
+            Assert.Equal(2, query1[0].ElementAt(2));
+            Assert.Equal(2, query1[1].ElementAt(new Index(2)));
+            Assert.Equal(2, query1[2].ElementAt(^3));
+
+            var query2 = Repeat(_ => ForceNotCollection(source).Select(i => i), 3);
+            source.InsertRange(3, new[] { -1, -2 });
+            source.RemoveAt(0);
+            Assert.Equal(-1, query2[0].ElementAt(2));
+            Assert.Equal(-1, query2[1].ElementAt(new Index(2)));
+            Assert.Equal(-1, query2[2].ElementAt(^4));
+        }
+
+        [Fact]
+        public void NonEmptySource_Consistency()
+        {
+            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+            Assert.Equal(5, source.ElementAt(5));
+            Assert.Equal(5, source.ElementAt(new Index(5)));
+            Assert.Equal(5, source.ElementAt(^5));
+
+            Assert.Equal(0, source.ElementAt(0));
+            Assert.Equal(0, source.ElementAt(new Index(0)));
+            Assert.Equal(0, source.ElementAt(^10));
+
+            Assert.Equal(9, source.ElementAt(9));
+            Assert.Equal(9, source.ElementAt(new Index(9)));
+            Assert.Equal(9, source.ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^11));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(10)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void NonEmptySource_Consistency_NotList()
+        {
+            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+            Assert.Equal(5, ForceNotCollection(source).ElementAt(5));
+            Assert.Equal(5, ForceNotCollection(source).ElementAt(new Index(5)));
+            Assert.Equal(5, ForceNotCollection(source).ElementAt(^5));
+
+            Assert.Equal(0, ForceNotCollection(source).ElementAt(0));
+            Assert.Equal(0, ForceNotCollection(source).ElementAt(new Index(0)));
+            Assert.Equal(0, ForceNotCollection(source).ElementAt(^10));
+
+            Assert.Equal(9, ForceNotCollection(source).ElementAt(9));
+            Assert.Equal(9, ForceNotCollection(source).ElementAt(new Index(9)));
+            Assert.Equal(9, ForceNotCollection(source).ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^11));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(10)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void NonEmptySource_Consistency_ListPartition()
+        {
+            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+            Assert.Equal(5, ListPartition(source).ElementAt(5));
+            Assert.Equal(5, ListPartition(source).ElementAt(new Index(5)));
+            Assert.Equal(5, ListPartition(source).ElementAt(^5));
+
+            Assert.Equal(0, ListPartition(source).ElementAt(0));
+            Assert.Equal(0, ListPartition(source).ElementAt(new Index(0)));
+            Assert.Equal(0, ListPartition(source).ElementAt(^10));
+
+            Assert.Equal(9, ListPartition(source).ElementAt(9));
+            Assert.Equal(9, ListPartition(source).ElementAt(new Index(9)));
+            Assert.Equal(9, ListPartition(source).ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(^11));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(new Index(10)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void NonEmptySource_Consistency_EnumerablePartition()
+        {
+            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+            Assert.Equal(5, EnumerablePartition(source).ElementAt(5));
+            Assert.Equal(5, EnumerablePartition(source).ElementAt(new Index(5)));
+            Assert.Equal(5, EnumerablePartition(source).ElementAt(^5));
+
+            Assert.Equal(0, EnumerablePartition(source).ElementAt(0));
+            Assert.Equal(0, EnumerablePartition(source).ElementAt(new Index(0)));
+            Assert.Equal(0, EnumerablePartition(source).ElementAt(^10));
+
+            Assert.Equal(9, EnumerablePartition(source).ElementAt(9));
+            Assert.Equal(9, EnumerablePartition(source).ElementAt(new Index(9)));
+            Assert.Equal(9, EnumerablePartition(source).ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(^11));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(new Index(10)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void EmptySource_Consistency()
+        {
+            int[] source = {  };
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void EmptySource_Consistency_NotList()
+        {
+            int[] source = { };
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void EmptySource_Consistency_ListPartition()
+        {
+            int[] source = { };
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(new Index(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(new Index(0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartition(source).ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void EmptySource_Consistency_EnumerablePartition()
+        {
+            int[] source = { };
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(new Index(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(new Index(0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(new Index(int.MaxValue)));
         }
     }
 }

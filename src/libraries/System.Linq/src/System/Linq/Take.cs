@@ -41,6 +41,8 @@ namespace System.Linq
             bool isEndIndexFromEnd = end.IsFromEnd;
             int startIndex = start.Value;
             int endIndex = end.Value;
+            Debug.Assert(startIndex >= 0);
+            Debug.Assert(endIndex >= 0);
 
             if (!isStartIndexFromEnd && !isEndIndexFromEnd)
             {
