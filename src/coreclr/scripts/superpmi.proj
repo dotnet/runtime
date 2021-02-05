@@ -48,7 +48,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
-    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\.dotnet;%PATH%" Condition=" '$(CollectionType)' == 'crossgen2' "/>
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\.dotnet%3B%PATH%" Condition=" '$(CollectionType)' == 'crossgen2' "/>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(AGENT_OS)' != 'Windows_NT' ">

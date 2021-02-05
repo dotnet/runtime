@@ -309,6 +309,7 @@ def partition_files(src_directory, dst_directory, max_size, exclude_directories=
         exclude_files ([string]): List of files names to be excluded.
     """
 
+    print('Partitioning files from {0} to {1}'.format(src_directory, dst_directory))
     sorted_by_size = get_files_sorted_by_size(src_directory, exclude_directories, exclude_files)
     partitions = first_fit(sorted_by_size, max_size)
 
@@ -396,6 +397,7 @@ def main(main_args):
     exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
     exclude_files = native_binaries_to_ignore
     if coreclr_args.collection_type == "crossgen2":
+        print('Adding exclusions for crossgen2')
         # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
         exclude_files += [ "Microsoft.Build.dll" ]
     partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory, exclude_files)

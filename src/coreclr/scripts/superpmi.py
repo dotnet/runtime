@@ -1712,7 +1712,7 @@ class SuperPMIReplayAsmDiffs:
                         path_var = os.environ.get("PATH")
                         if path_var is not None:
                             jit_analyze_file = "jit-analyze.bat" if platform.system() == "Windows" else "jit-analyze.sh"
-                            jit_analyze_path = find_file(jit_analyze_file, path_var.split(";"))
+                            jit_analyze_path = find_file(jit_analyze_file, path_var.split(os.pathsep))
                             if jit_analyze_path is not None:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
                                 command = [ jit_analyze_path, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
@@ -1838,7 +1838,7 @@ def determine_pmi_location(coreclr_args):
         logging.info("Using PMI at %s", pmi_location)
     else:
         path_var = os.environ.get("PATH")
-        pmi_location = find_file("pmi.dll", path_var.split(";")) if path_var is not None else None
+        pmi_location = find_file("pmi.dll", path_var.split(os.pathsep)) if path_var is not None else None
         if pmi_location is not None:
             logging.info("Using PMI found on PATH at %s", pmi_location)
         else:
@@ -1914,7 +1914,7 @@ def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_loc
     if search_path:
         path_var = os.environ.get("PATH")
         if path_var is not None:
-            tool_path = find_file(tool_name, path_var.split(";"))
+            tool_path = find_file(tool_name, path_var.split(os.pathsep))
             if tool_path is not None:
                 logging.debug("Using %s from PATH: %s", tool_name, tool_path)
                 return tool_path
