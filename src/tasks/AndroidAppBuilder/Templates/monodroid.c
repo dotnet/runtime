@@ -22,8 +22,6 @@
 
 static char *bundle_path;
 static char *executable;
-static bool force_interpreter;
-static bool force_AOT;
 
 #define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
@@ -232,7 +230,7 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jboolean j_forceInterpreter, jboolean j_forceAOT)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName)
 {
     char file_dir[2048];
     char cache_dir[2048];
@@ -245,8 +243,6 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
 
     bundle_path = file_dir;
     executable = entryPointLibName;
-    force_interpreter = (bool)j_forceInterpreter;
-    force_AOT = (bool)j_forceAOT;
 
     setenv ("HOME", bundle_path, true);
     setenv ("TMPDIR", cache_dir, true);
