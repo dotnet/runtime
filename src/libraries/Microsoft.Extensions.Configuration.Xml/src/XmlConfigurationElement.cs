@@ -44,8 +44,8 @@ namespace Microsoft.Extensions.Configuration.Xml
                 throw new ArgumentNullException(nameof(xmlConfigurationElement));
             }
 
-            return string.Equals(ElementName, xmlConfigurationElement.ElementName)
-                && string.Equals(Name, xmlConfigurationElement.Name);
+            return string.Equals(ElementName, xmlConfigurationElement.ElementName, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(Name, xmlConfigurationElement.Name, StringComparison.OrdinalIgnoreCase);
         }
     }
 }
