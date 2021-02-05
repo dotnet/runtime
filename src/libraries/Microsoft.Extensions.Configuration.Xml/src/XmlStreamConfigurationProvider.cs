@@ -54,14 +54,15 @@ namespace Microsoft.Extensions.Configuration.Xml
                         case XmlNodeType.Element:
                             {
                                 var element = new XmlConfigurationElement(reader.LocalName, GetName(reader), GetLineInfo(reader));
-                                XmlConfigurationElement parent = currentPath.Count != 0 ? currentPath.Peek() : null;
 
-                                if (parent == null)
+                                if (currentPath.Count == 0)
                                 {
                                     root = element;
                                 }
                                 else
                                 {
+                                    var parent = currentPath.Peek();
+
                                     if (parent.Children == null)
                                     {
                                         parent.Children = new List<XmlConfigurationElement>();
