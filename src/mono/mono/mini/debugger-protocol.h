@@ -10,8 +10,8 @@
  * Wire Protocol definitions
  */
 
-#define MAJOR_VERSION 3
-#define MINOR_VERSION 0
+#define MAJOR_VERSION 2
+#define MINOR_VERSION 59
 
 typedef enum {
 	MDBGPROT_CMD_COMPOSITE = 100

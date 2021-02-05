@@ -475,10 +475,12 @@ namespace System.Linq.Expressions.Compiler
             FreeLocal(locLeft);
             FreeLocal(locRight);
 
-            EmitBinaryOperator(op, leftType.GetNonNullableType(), rightType.GetNonNullableType(), resultType.GetNonNullableType(), liftedToNull: false);
+            Type resultNonNullableType = resultType.GetNonNullableType();
+
+            EmitBinaryOperator(op, leftType.GetNonNullableType(), rightType.GetNonNullableType(), resultNonNullableType, liftedToNull: false);
 
             // construct result type
-            ConstructorInfo ci = resultType.GetConstructor(new Type[] { resultType.GetNonNullableType() })!;
+            ConstructorInfo ci = TypeUtils.GetNullableConstructor(resultType, resultNonNullableType);
             _ilg.Emit(OpCodes.Newobj, ci);
             _ilg.Emit(OpCodes.Stloc, locResult);
             _ilg.Emit(OpCodes.Br_S, labEnd);
