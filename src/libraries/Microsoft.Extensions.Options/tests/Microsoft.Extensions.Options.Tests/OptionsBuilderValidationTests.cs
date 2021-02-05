@@ -18,8 +18,20 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        public void ValidateOnStart_NullOptionsBuilder_Throws()
+        {
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                OptionsBuilder<AnnotatedOptions> optionsBuilder = null;
+                optionsBuilder.ValidateOnStart();
+            });
+
+            Assert.Throws<ArgumentNullException>(() => hostBuilder.Build());
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOptionsOnStartWithDefaultError()
+        public async Task ValidateOnStart_ConfigureAndValidateThenCallValidateOnStart_ValidatesFailure()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
@@ -36,23 +48,42 @@ namespace Microsoft.Extensions.Options.Tests
                     await host.StartAsync();
                 });
 
-                ValidateFailure<ComplexOptions>(error);
+                ValidateFailure<ComplexOptions>(error, 1);
             }
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOptionsOnStartWithCustomError()
+        public async Task ValidateOnStart_CallFirstThenConfigureAndValidate_ValidatesFailure()
+        {
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddOptions<ComplexOptions>()
+                    .ValidateOnStart()
+                    .Configure(o => o.Boolean = false)
+                    .Validate(o => o.Boolean);
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
+                {
+                    await host.StartAsync();
+                });
+
+                ValidateFailure<ComplexOptions>(error, 1);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public async Task ValidateOnStart_ErrorMessageSpecified_FailsWithCustomError()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddOptions<ComplexOptions>()
                     .Configure(o => o.Boolean = false)
-                    .Validate(o => o.Boolean, "first Boolean must be true.")
-                    .ValidateOnStart();
-                services.AddOptions<ComplexOptions>()
-                    .Configure(o => o.Boolean = true)
-                    .Validate(o => !o.Boolean, "second Boolean must be false.")
+                    .Validate(o => o.Boolean, "Boolean must be true.")
                     .ValidateOnStart();
             });
 
@@ -63,48 +94,31 @@ namespace Microsoft.Extensions.Options.Tests
                     await host.StartAsync();
                 });
 
-                ValidateFailure<ComplexOptions>(error, 1, "second Boolean must be false.");
+                ValidateFailure<ComplexOptions>(error, 1, "Boolean must be true.");
             }
+        }
+
+        internal class FakeService { }
+
+        internal class FakeSettings
+        {
+            public string Name { get; set; }
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOptionsOnStartRatherThanLazySameType() // shouldn this fail?
+        public async Task ValidateOnStart_NamedOptions_ValidatesFailureOnStart()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
-                services.AddOptions<ComplexOptions>()
-                    .Configure(o => o.Boolean = false)
-                    .Validate(o => o.Boolean, "first Boolean must be true.")
-                    .ValidateOnStart();
-                services.AddOptions<ComplexOptions>()
-                    .Configure(o => o.Boolean = true)
-                    .Validate(o => !o.Boolean, "second Boolean must be false.");
-            });
-
-            using (var host = hostBuilder.Build())
-            {
-                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
-                {
-                    await host.StartAsync();
-                });
-
-                ValidateFailure<ComplexOptions>(error, 1, "second Boolean must be false.");
-            }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOptionsLazyThanEagerSameType()
-        {
-            var hostBuilder = CreateHostBuilder(services =>
-            {
-                services.AddOptions<ComplexOptions>()
-                    .Configure(o => o.Boolean = false)
-                    .Validate(o => o.Boolean, "first Boolean must be true.");
-                services.AddOptions<ComplexOptions>()
-                    .Configure(o => o.Boolean = true)
-                    .Validate(o => !o.Boolean, "second Boolean must be false.")
+                services.AddOptions().AddSingleton(new FakeService());
+                services
+                    .AddOptions<FakeSettings>("named")
+                    .Configure<FakeService>((o, _) =>
+                    {
+                        o.Name = "named";
+                    })
+                    .Validate(o => o.Name == null, "trigger validation failure for named option!")
                     .ValidateOnStart();
             });
 
@@ -115,20 +129,89 @@ namespace Microsoft.Extensions.Options.Tests
                     await host.StartAsync();
                 });
 
-                ValidateFailure<ComplexOptions>(error, 1, "second Boolean must be false.");
+                ValidateFailure<FakeSettings>(error, 1, "trigger validation failure for named option!");
             }
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOptionsLazyThanEagerDifferentTypes()
+        private async Task ValidateOnStart_AddOptionsMultipleTimesForSameType_LastValidateOnStartCallGetsTriggered()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
+                services.AddOptions<ComplexOptions>("bad_configuration1")
+                    .Configure(o => o.Boolean = false)
+                    .Validate(o => o.Boolean, "bad_configuration1")
+                    .ValidateOnStart();
+
+                services.AddOptions<ComplexOptions>("bad_configuration2")
+                    .Configure(o =>
+                    {
+                        o.Boolean = false;
+                        o.Integer = 11;
+                    })
+                    .Validate(o => o.Boolean, "Boolean")
+                    .Validate(o => o.Integer > 12, "Integer")
+                    .ValidateOnStart();
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
+                {
+                    await host.StartAsync();
+                });
+
+                ValidateFailure<ComplexOptions>(error, 2, "Boolean", "Integer");
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        private async Task ValidateOnStart_AddBothLazyAndEagerValidationOnSameType_SkipsLazyValidationWhenHostStarts()
+        {
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                // Adds eager validation using ValidateOnStart
+                services.AddOptions<ComplexOptions>("correct_configuration")
+                    .Configure(o => o.Boolean = true)
+                    .Validate(o => o.Boolean, "correct_configuration")
+                    .ValidateOnStart();
+
+                // Adds lazy validation, skipping validation on start
+                services.AddOptions<ComplexOptions>("bad_configuration")
+                    .Configure(o => o.Boolean = false)
+                    .Validate(o => o.Boolean, "bad_configuration");
+            });
+
+            // For the lazily added "bad_configuration", validation failure does not occur when host starts
+            using (var host = hostBuilder.Build())
+            {
+                try
+                {
+                    await host.StartAsync();
+                }
+    #pragma warning disable CA1031 // Do not catch general exception types
+                catch (Exception ex)
+    #pragma warning restore CA1031 // Do not catch general exception types
+                {
+                    Assert.True(false, "Expected no exception, but got: " + ex.Message);
+                }
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        public async Task ValidateOnStart_AddBothLazyAndEagerValidationOnDifferentTypes_SkipsLazyValidationWhenHostStarts()
+        {
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                // Lazy validation
                 services.AddOptions<NestedOptions>()
                     .Configure(o => o.Integer = 11)
                     .Validate(o => o.Integer > 12, "Integer");
 
+                // Eager validation
                 services.AddOptions<ComplexOptions>()
                     .Configure(o => o.Boolean = false)
                     .Validate(o => o.Boolean, "first Boolean must be true.")
@@ -148,34 +231,7 @@ namespace Microsoft.Extensions.Options.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOptionsOnStartAndSomeLazyDifferentTypes()
-        {
-            var hostBuilder = CreateHostBuilder(services =>
-            {
-                services.AddOptions<NestedOptions>()
-                    .Configure(o => o.Integer = 11)
-                    .Validate(o => o.Integer > 12, "Integer")
-                    .ValidateOnStart();
-
-                services.AddOptions<ComplexOptions>()
-                    .Configure(o => o.Boolean = false)
-                    .Validate(o => o.Boolean, "first Boolean must be true.");
-            });
-
-            using (var host = hostBuilder.Build())
-            {
-                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
-                {
-                    await host.StartAsync();
-                });
-
-                ValidateFailure<NestedOptions>(error, 1, "Integer");
-            }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOptionsOnStartWithMultipleDefaultErrors()
+        public async Task ValidateOnStart_MultipleErrorsInOneValidationCall_ValidatesFailureWithMultipleErrors()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
@@ -203,7 +259,7 @@ namespace Microsoft.Extensions.Options.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOptionOnStartsWithMixedOverloads()
+        public async Task ValidateOnStart_MultipleErrorsInOneValidationCallUsingCustomErrors_FailuresContainCustomErrors()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
@@ -232,7 +288,7 @@ namespace Microsoft.Extensions.Options.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOnStartDataAnnotationsLongSyntax()
+        public async Task ValidateOnStart_CallValidateDataAnnotations_ValidationSuccessful()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
@@ -266,7 +322,7 @@ namespace Microsoft.Extensions.Options.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOnStartMixDataAnnotationsLongSyntax()
+        public async Task ValidateOnStart_CallValidateAndValidateDataAnnotations_FailuresCaughtFromBothValidateAndValidateDataAnnotations()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
@@ -302,54 +358,20 @@ namespace Microsoft.Extensions.Options.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOnStartDataAnnotationsShortSyntax()
+        public async Task ValidateOnStart_CallValidateOnStartFirst_ValidationSuccessful()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddOptions<AnnotatedOptions>()
-                    .Configure(o =>
-                    {
-                        o.StringLength = "111111";
-                        o.IntRange = 10;
-                        o.Custom = "nowhere";
-                        o.Dep1 = "Not dep2";
-                    })
-                    .ValidateDataAnnotations()
-                    .ValidateOnStart();
-            });
-
-            using (var host = hostBuilder.Build())
-            {
-                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
-                {
-                    await host.StartAsync();
-                });
-
-                ValidateFailure<AnnotatedOptions>(error, 5,
-                    "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                    "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                    "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                    "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                    "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.");
-            }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task CanValidateOnStartMixDataAnnotationsShortSyntax()
-        {
-            var hostBuilder = CreateHostBuilder(services =>
-            {
-                services.AddOptions<AnnotatedOptions>()
-                    .Configure(o =>
-                    {
-                        o.StringLength = "111111";
-                        o.IntRange = 10;
-                        o.Custom = "nowhere";
-                        o.Dep1 = "Not dep2";
-                    })
-                    .ValidateDataAnnotations()
                     .ValidateOnStart()
+                    .Configure(o =>
+                    {
+                        o.StringLength = "111111";
+                        o.IntRange = 10;
+                        o.Custom = "nowhere";
+                        o.Dep1 = "Not dep2";
+                    })
+                    .ValidateDataAnnotations()
                     .Validate(o => o.Custom != "nowhere", "I don't want to go to nowhere!");
             });
 
@@ -371,55 +393,8 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public void ValidateOnStart_NullOptionsBuilder_Throws()
-        {
-            var hostBuilder = CreateHostBuilder(services =>
-            {
-                OptionsBuilder<AnnotatedOptions> optionsBuilder = null;
-                optionsBuilder.ValidateOnStart();
-            });
-
-            Assert.Throws<ArgumentNullException>(() => hostBuilder.Build());
-        }
-
-        internal class FakeService { }
-
-        internal class FakeSettings
-        {
-            public string Name { get; set; }
-        }
-
-        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task ValidateOnStart_NamedOptions_FailsOnStartForFailedValidation()
-        {
-            var hostBuilder = CreateHostBuilder(services =>
-            {
-                services.AddOptions().AddSingleton(new FakeService());
-                services
-                    .AddOptions<FakeSettings>("named")
-                    .Configure<FakeService>((o, _) =>
-                    {
-                        o.Name = "named";
-                    })
-                    .Validate(o => o.Name == null, "trigger validation failure for named option!")
-                    .ValidateOnStart();
-            });
-
-            using (var host = hostBuilder.Build())
-            {
-                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
-                {
-                    await host.StartAsync();
-                });
-
-                ValidateFailure<FakeSettings>(error, 1, "trigger validation failure for named option!");
-            }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task Test_IVfalidationSuccessful()
+        public async Task ValidateOnStart_ConfigureBasedOnDataAnnotationRestrictions_ValidationSuccessful()
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
@@ -463,9 +438,9 @@ namespace Microsoft.Extensions.Options.Tests
             foreach (var error in errorsToMatch)
             {
 #if NETCOREAPP
-                Assert.True(e.Failures.FirstOrDefault(predicate: f => f.Contains(error, StringComparison.CurrentCulture)) != null, "Did not find: " + error);
+                Assert.True(e.Failures.FirstOrDefault(predicate: f => f.Contains(error, StringComparison.CurrentCulture)) != null, "Did not find: " + error + " " + e.Failures.First());
 #else
-                Assert.True(e.Failures.FirstOrDefault(predicate: f => f.IndexOf(error, StringComparison.CurrentCulture) >= 0) != null, "Did not find: " + error);
+                Assert.True(e.Failures.FirstOrDefault(predicate: f => f.IndexOf(error, StringComparison.CurrentCulture) >= 0) != null, "Did not find: " + error + " " + e.Failures.First());
 #endif
             }
         }
