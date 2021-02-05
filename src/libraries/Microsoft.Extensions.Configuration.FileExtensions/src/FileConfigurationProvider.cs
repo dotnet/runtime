@@ -76,9 +76,10 @@ namespace Microsoft.Extensions.Configuration
             }
             else
             {
-                static Stream OpenRead(IFileInfo fileInfo)
+                static Stream OpenRead(IFileInfo fileInfo, IFileProvider provider)
                 {
-                    if (fileInfo.PhysicalPath != null)
+                    if (fileInfo.PhysicalPath != null
+                        && provider is PhysicalFileProvider && !provider.GetType().IsSubclassOf(typeof(PhysicalFileProvider)))
                     {
                         // The default physical file info assumes asynchronous IO which results in unnecessary overhead
                         // especially since the configuration system is synchronous. This uses the same settings
@@ -95,7 +96,7 @@ namespace Microsoft.Extensions.Configuration
                     return fileInfo.CreateReadStream();
                 }
 
-                using Stream stream = OpenRead(file);
+                using Stream stream = OpenRead(file, Source.FileProvider);
                 try
                 {
                     Load(stream);
