@@ -45,9 +45,13 @@ namespace System.Resources
             ReadResources();
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
+            "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+            "the user to only get one error.")]
         private object DeserializeObject(int typeIndex)
         {
-            if (!_permitDeserialization)
+            if (!_permitDeserialization || !AllowCustomResourceTypes)
             {
                 throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
             }
@@ -78,10 +82,8 @@ namespace System.Resources
         // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
             Justification = "ResourceReader.CreateUntypedDelegate method doesn't have trimming annotations.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:BinaryFormatterDeserialize",
-            Justification = "This code path will only ever be called if Custom Resource Types is enabled. We are already " +
-            "throwing a warning to the user saying that this path is unsafe for trimming, so supressing this message so that " +
-            "they only get one warning for the feature switch.")]
+        [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
+            "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private bool InitializeBinaryFormatter()
         {
             // If BinaryFormatter support is disabled for the app, the linker will replace this entire

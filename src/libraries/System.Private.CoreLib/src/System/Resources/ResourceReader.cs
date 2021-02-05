@@ -918,6 +918,10 @@ namespace System.Resources
         // This allows us to delay-initialize the Type[].  This might be a
         // good startup time savings, since we might have to load assemblies
         // and initialize Reflection.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "UseReflectionToGetType will get trimmed out when AllowCustomResourceTypes is set to false. " +
+            "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+            "the user to only get one error.")]
         private Type FindType(int typeIndex)
         {
             if (!AllowCustomResourceTypes)
@@ -933,10 +937,8 @@ namespace System.Resources
             return _typeTable[typeIndex] ?? UseReflectionToGetType(typeIndex);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
-            Justification = "We don't want to add another RequiresUnreferencedCode attribute here since " +
-            "we are already going to get one warning on ManifestBasedResourceGroveler.InternalGetResourceSetFromSerializedData " +
-            "when the Custom types feature switch is enabled, and we only want user to get one warning for this feature switch.")]
+        [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
+            "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private Type UseReflectionToGetType(int typeIndex)
         {
             long oldPos = _store.BaseStream.Position;
@@ -945,6 +947,7 @@ namespace System.Resources
                 _store.BaseStream.Position = _typeNamePositions[typeIndex];
                 string typeName = _store.ReadString();
                 _typeTable[typeIndex] = Type.GetType(typeName, true);
+                Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
                 return _typeTable[typeIndex]!;
             }
             // If serialization isn't supported, we convert FileNotFoundException to

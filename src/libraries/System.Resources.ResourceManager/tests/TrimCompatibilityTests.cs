@@ -40,9 +40,8 @@ namespace System.Resources.Tests
 
             using var handle = RemoteExecutor.Invoke(() =>
             {
-                // System.Resources.Tests.Resources.CustomType resources where built using BinaryFormatter to preserialize custom types.
-                ResourceManager rm = new ResourceManager("System.Resources.Tests.Resources.CustomType", typeof(TrimCompatibilityTests).Assembly);
-                Assert.Throws<NotSupportedException>(() => rm.GetObject("CustomObject"));
+                ResourceManager rm = new ResourceManager("System.Resources.Tests.Resources.CustomReader", typeof(TrimCompatibilityTests).Assembly);
+                Assert.Throws<NotSupportedException>(() => rm.GetObject("myGuid"));
             }, remoteInvokeOptions);
         }
     }
