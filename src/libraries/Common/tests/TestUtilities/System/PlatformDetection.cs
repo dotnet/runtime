@@ -50,6 +50,9 @@ namespace System
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => !IsBrowser;
 
+        public static bool IsSpeedOptimized => !IsBrowser;
+        public static bool IsSizeOptimized => !IsSpeedOptimized;
+
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
 
