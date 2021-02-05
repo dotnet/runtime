@@ -78,7 +78,7 @@ namespace System.DirectoryServices.Tests
         internal static LdapConfiguration GetConfiguration(string configFile)
         {
             if (!File.Exists(configFile))
-                return null;
+                Environment.FailFast("LDAP test configuration file not found: " + configFile);
 
             LdapConfiguration ldapConfig = null;
             try
@@ -101,6 +101,7 @@ namespace System.DirectoryServices.Tests
                     else
                     {
                         // No configuration in the XML - presumably they didn't set up test servers
+                        Environment.FailFast(configFile);
                         return null;
                     }
 

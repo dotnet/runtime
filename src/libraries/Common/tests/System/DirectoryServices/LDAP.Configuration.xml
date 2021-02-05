@@ -56,10 +56,10 @@ ACTIVE DIRECTORY
 For Active Directory, it is necessary to set up a VM that is a Domain Controller. Typical settings look like this, depending on the values you choose during the setup wizard (observe the default port is different, and user is prefixed by the AD user domain):
 
 <!--
-    <ServerName>danmose-ldap</ServerName>
-    <SearchDN>DC=danmose-ldap,DC=com</SearchDN>
+    <ServerName>danmose-ldap.danmose-domain.com</ServerName>
+    <SearchDN>DC=danmose-domain,DC=com</SearchDN>
     <Port>389</Port>
-    <User>DANMOSE-LDAP0\Administrator</User>
+    <User>danmose-domain\Administrator</User>
     <Password>%TESTPASSWORD%</Password>
     <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
 -->
@@ -70,10 +70,19 @@ If you are running your AD server as a VM on the same machine that you are runni
 `Get-NetIPInterface | where {$_.InterfaceAlias -eq 'vEthernet (WSL)' -or $_.InterfaceAlias -eq 'vEthernet (Default Switch)'} | Set-NetIPInterface -Forwarding Enabled`
 The WSL2 VM should now be able to see the AD VM by IP address.
 
+As DS prefers to connect via computer name, you will need to add entries to your test machine's C:\Windows\System32\drivers\etc\hosts to resolve the machine and the domain it hosts, for example
+172.21.148.98 danmose-ldap.danmose-domain.com
+172.21.148.98 danmose-domain.com
+
 Note:
     `Password` is read from the environment if it is surrounded by %, eg %TESTPASSWORD%
 
     </CommentThatAllowsDoubleHyphens>
 
-    <!-- Put your configuration XML here -->
+    <ServerName>danmose-ldap.danmose-domain.com</ServerName>
+    <SearchDN>DC=danmose-domain,DC=com</SearchDN>
+    <Port>389</Port>
+    <User>danmose-domain\Administrator</User>
+    <Password>%TESTPASSWORD%</Password>
+    <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
 </Configuration>

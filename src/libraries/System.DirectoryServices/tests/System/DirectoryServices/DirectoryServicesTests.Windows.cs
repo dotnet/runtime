@@ -34,8 +34,8 @@ namespace System.DirectoryServices.Tests
                         Assert.True(iads.ADsPath.IndexOf(LdapConfiguration.Configuration.ServerName, StringComparison.OrdinalIgnoreCase) >= 0);
 
                         IADsSecurityDescriptor iadsSD = (IADsSecurityDescriptor) de.Properties["ntSecurityDescriptor"].Value;
-                        Assert.True(LdapConfiguration.Configuration.Domain.IndexOf(iadsSD.Owner.Split('\\')[0], StringComparison.OrdinalIgnoreCase) >= 0);
-                        Assert.True(LdapConfiguration.Configuration.Domain.IndexOf(iadsSD.Group.Split('\\')[0], StringComparison.OrdinalIgnoreCase) >= 0);
+                        Assert.Contains(iadsSD.Owner.Split('\\')[0], LdapConfiguration.Configuration.UserName, StringComparison.OrdinalIgnoreCase);
+                        Assert.Contains(iadsSD.Group.Split('\\')[0], LdapConfiguration.Configuration.Domain, StringComparison.OrdinalIgnoreCase);
                     }
                 }
                 finally
