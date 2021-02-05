@@ -848,6 +848,20 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task ArgumentDeserialization_Honors_JsonNumberHandling()
+        {
+            ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes obj = await Serializer.DeserializeWrapper<ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes>(ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes.s_json);
+            obj.Verify();
+
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Contains(@"""A"":1", json);
+            Assert.Contains(@"""B"":""NaN""", json);
+            Assert.Contains(@"""C"":2", json);
+            Assert.Contains(@"""D"":""3""", json);
+            Assert.Contains(@"""E"":""4""", json);
+        }
+
+        [Fact]
         public async Task ArgumentDeserialization_Honors_JsonPropertyName()
         {
             Point_MembersHave_JsonPropertyName point = new Point_MembersHave_JsonPropertyName(1, 2);
