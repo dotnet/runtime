@@ -3801,6 +3801,13 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public event EventHandler<EventWrittenEventArgs>? EventWritten;
 
+        static EventListener()
+        {
+#if FEATURE_PERFTRACING
+            GC.KeepAlive(NativeRuntimeEventSource.Log);
+#endif
+        }
+
         /// <summary>
         /// Create a new EventListener in which all events start off turned off (use EnableEvents to turn
         /// them on).
