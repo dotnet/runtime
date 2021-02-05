@@ -1691,7 +1691,6 @@ mono_internal_thread_handle_ptr (MonoInternalThreadHandle h)
 	return MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (h));
 }
 
-gboolean          mono_image_create_pefile (MonoReflectionModuleBuilder *module, gpointer file, MonoError *error);
 guint32       mono_image_insert_string (MonoReflectionModuleBuilderHandle module, MonoStringHandle str, MonoError *error);
 guint32       mono_image_create_token  (MonoDynamicImage *assembly, MonoObjectHandle obj, gboolean create_methodspec, gboolean register_token, MonoError *error);
 void          mono_dynamic_image_free (MonoDynamicImage *image);
@@ -1733,9 +1732,6 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 
 gboolean
 mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, MonoError *error);
-
-gboolean
-mono_image_build_metadata (MonoReflectionModuleBuilder *module, MonoError *error);
 
 gboolean
 mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoStringHandleOut string_handle, MonoError *error);
