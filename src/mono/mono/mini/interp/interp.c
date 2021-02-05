@@ -2151,6 +2151,7 @@ do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval
 	interp_pop_lmf (&ext);
 
 	goto exit_icall; // prevent unused label warning in some configurations
+	/* If an exception is thrown from native code, execution will continue here */
 exit_icall:
 	return NULL;
 }

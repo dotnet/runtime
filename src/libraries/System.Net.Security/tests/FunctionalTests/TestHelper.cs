@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
@@ -157,7 +159,7 @@ namespace System.Net.Security.Tests
                     intermedPub3.Dispose();
                     CertificateAuthority intermediateAuthority3 = new CertificateAuthority(intermedCert3, null, null, null);
 
-                    RSA  eeKey = (RSA)endEntity.PrivateKey;
+                    RSA eeKey = (RSA)endEntity.PrivateKey;
                     endEntity = intermediateAuthority3.CreateEndEntity(
                         $"CN=\"A SSL Test\", O=\"testName\"",
                         eeKey,
@@ -211,6 +213,19 @@ namespace System.Net.Security.Tests
 
             Assert.Equal(s_pong, buffer);
             await t;
+        }
+
+        internal static string GetTestSNIName(string testMethodName, params SslProtocols?[] protocols)
+        {
+            static string ProtocolToString(SslProtocols? protocol)
+            {
+                return (protocol?.ToString() ?? "null").Replace(", ", "-");
+            }
+
+            var args = string.Join(".", protocols.Select(p => ProtocolToString(p)));
+            var name = testMethodName.Length > 63 ? testMethodName.Substring(0, 63) : testMethodName;
+
+            return $"{name}.{args}";
         }
     }
 }

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
@@ -19,6 +18,7 @@ namespace System.Security.Cryptography
         public static SymmetricAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
+        [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static SymmetricAlgorithm? Create(string algName) =>
             (SymmetricAlgorithm?)CryptoConfigForwarder.CreateFromName(algName);
 
