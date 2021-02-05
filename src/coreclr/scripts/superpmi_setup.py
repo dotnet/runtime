@@ -449,7 +449,7 @@ def main(main_args):
     # Workitem directories
     workitem_directory = path.join(source_directory, "workitem")
     pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
-    input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
+    input_artifacts = ""
 
     # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
     # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
@@ -463,6 +463,7 @@ def main(main_args):
     #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
 
         # payload
+        input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
         exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
     exclude_files = native_binaries_to_ignore
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory)
