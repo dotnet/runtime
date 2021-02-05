@@ -223,7 +223,6 @@ set(metadata_common_sources
     dynamic-image.c
     sre.c
     sre-encode.c
-    sre-save.c
     custom-attrs.c
     fdhandle.h
     fdhandle.c
