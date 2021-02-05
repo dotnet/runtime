@@ -74,6 +74,7 @@ var BindingSupportLib = {
 			this.mono_wasm_string_array_new = Module.cwrap ('mono_wasm_string_array_new', 'number', ['number']);
 			this.mono_wasm_create_method_signature_info = Module.cwrap ('mono_wasm_create_method_signature_info', 'number', ['number']);
 			this.mono_wasm_unbox_rooted = Module.cwrap ('mono_wasm_unbox_rooted', 'number', ['number']);
+			this.mono_wasm_get_class_for_bind_or_invoke = Module.cwrap ('mono_wasm_get_class_for_bind_or_invoke', 'number', ['number', 'number']);
 
 			this._box_buffer = Module._malloc(32);
 			this._unbox_buffer_size = 65536;
@@ -990,15 +991,18 @@ var BindingSupportLib = {
 			return MarshalTypeNames[mtype] || String(mtype);
 		},
 
-		get_method_signature_info: function (methodPtr) {
+		get_method_signature_info: function (classPtr, methodPtr) {
+			if (!classPtr)
+				throw new Error("Class ptr not provided");
 			if (!methodPtr)
 				throw new Error("Method ptr not provided");
 				
 			if (!this._method_signature_info_table)
 				this._method_signature_info_table = new Map ();
 			var result = this._method_signature_info_table.get (methodPtr);
+			var classMismatch = !!result && (result.classPtr !== classPtr);
 			if (!result) {
-				infoPtr = this.mono_wasm_create_method_signature_info (methodPtr);
+				infoPtr = this.mono_wasm_create_method_signature_info (classPtr, methodPtr);
 
 /*
 typedef struct wasm_method_signature_info {
@@ -1026,11 +1030,15 @@ typedef struct wasm_method_signature_info {
 						"marshalType": Module.HEAPU32[off32 + 0], 
 						"class": Module.HEAPU32[off32 + 1] 
 					},
-					"parameters": parms
+					"parameters": parms,
+					"classPtr": classPtr
 				};
 
 				Module._free (infoPtr);
-				this._method_signature_info_table.set (methodPtr, result);
+				if (classMismatch)
+					console.log("WARNING: Class ptr mismatch for signature info, so caching is disabled");
+				else
+					this._method_signature_info_table.set (methodPtr, result);
 				// console.log(methodPtr, JSON.stringify(result));
 			}
 			return result;
@@ -1076,7 +1084,7 @@ typedef struct wasm_method_signature_info {
 				if (!convMethod)
 					this._class_converter_cache.set (klass, null);
 				else {
-					var sigInfo = this.get_method_signature_info (convMethod);
+					var sigInfo = this.get_method_signature_info (klass, convMethod);
 					var signature = "m";
 					var boundConverter = this.bind_method (
 						convMethod, 0, signature, "ManagedToJS_class" + klass
@@ -1136,7 +1144,7 @@ typedef struct wasm_method_signature_info {
 				if (!convMethod)
 					this._struct_unboxer_cache.set (classPtr, null);
 				else {
-					var sigInfo = this.get_method_signature_info (convMethod);
+					var sigInfo = this.get_method_signature_info (classPtr, convMethod);
 					var signature = "m";
 					var boundConverter = this.bind_method (
 						convMethod, 0, signature, "ManagedToJS_class" + classPtr
@@ -1199,7 +1207,7 @@ typedef struct wasm_method_signature_info {
 
 				var convMethod = this.find_method (classPtr, "JSToManaged", 1);
 				// FIXME
-				var sigInfo = this.get_method_signature_info (convMethod);
+				var sigInfo = this.get_method_signature_info (classPtr, convMethod);
 				// Return unboxed so it can go directly into the arguments list
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
 				// console.log("jstm signature", signature);
@@ -1243,8 +1251,9 @@ typedef struct wasm_method_signature_info {
 			return result;
 		},
 
-		_create_converter_for_marshal_string: function (method, args_marshal) {
-			var sigInfo = this.get_method_signature_info (method);
+		// FIXME
+		_create_converter_for_marshal_string: function (classPtr, method, args_marshal) {
+			var sigInfo = this.get_method_signature_info (classPtr, method);
 
 			var primitiveConverters = this._primitive_converters;
 			if (!primitiveConverters)
@@ -1310,7 +1319,7 @@ typedef struct wasm_method_signature_info {
 			};
 		},
 
-		_get_converter_for_marshal_string: function (method, args_marshal) {
+		_get_converter_for_marshal_string: function (classPtr, method, args_marshal) {
 			if (!this._signature_converters)
 				this._signature_converters = new Map();
 
@@ -1323,7 +1332,7 @@ typedef struct wasm_method_signature_info {
 			}
 
 			if (!converter) {
-				converter = this._create_converter_for_marshal_string (method, args_marshal);
+				converter = this._create_converter_for_marshal_string (classPtr, method, args_marshal);
 				if (converter.method) {
 					if (!map)
 						this._signature_converters.set (args_marshal, map = new Map ());
@@ -1337,8 +1346,8 @@ typedef struct wasm_method_signature_info {
 			return converter;
 		},
 
-		_compile_converter_for_marshal_string: function (method, args_marshal) {
-			var converter = this._get_converter_for_marshal_string (method, args_marshal);
+		_compile_converter_for_marshal_string: function (classPtr, method, args_marshal) {
+			var converter = this._get_converter_for_marshal_string (classPtr, method, args_marshal);
 			if (typeof (converter.args_marshal) !== "string")
 				throw new Error ("Corrupt converter for '" + args_marshal + "'");
 
@@ -1620,7 +1629,11 @@ typedef struct wasm_method_signature_info {
 
 			// check if the method signature needs argument mashalling
 			if (needs_converter) {
-				converter = this._compile_converter_for_marshal_string (method, args_marshal);
+				var classPtr = this.mono_wasm_get_class_for_bind_or_invoke (this_arg, method);
+				if (!classPtr)
+					throw new Error (`Could not get class ptr for call_method with this (${this_arg}) and method (${method})`);
+
+				converter = this._compile_converter_for_marshal_string (classPtr, method, args_marshal);
 
 				is_result_marshaled = this._decide_if_result_is_marshaled (converter, args.length);
 
@@ -1691,8 +1704,12 @@ typedef struct wasm_method_signature_info {
 			this_arg = this_arg | 0;
 
 			var converter = null;
-			if (typeof (args_marshal) === "string")
-				converter = this._compile_converter_for_marshal_string (method, args_marshal);
+			if (typeof (args_marshal) === "string") {
+				var classPtr = this.mono_wasm_get_class_for_bind_or_invoke (this_arg, method);
+				if (!classPtr)
+					throw new Error (`Could not get class ptr for bind_method with this (${this_arg}) and method (${method})`);
+				converter = this._compile_converter_for_marshal_string (classPtr, method, args_marshal);
+			}
 
 			var closure = {
 				library_mono: MONO,

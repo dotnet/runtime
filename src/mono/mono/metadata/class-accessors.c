@@ -86,7 +86,7 @@ mono_class_get_flags (MonoClass *klass)
 		g_assertf (0, "%s: unexpected GC filler class", __func__);
 		break;
 	}
-	g_assertf (0, "%s: unexpected class kind %d", __func__, kind);
+	g_assertf (0, "%s: unexpected class kind %d at offset %d", __func__, kind, klass);
 	g_assert_not_reached ();
 }
 

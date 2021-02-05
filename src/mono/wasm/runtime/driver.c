@@ -1257,13 +1257,26 @@ void build_signature_info_record (MonoType *type, int* resultMtype, MonoClass** 
 	*/
 }
 
+// FIXME
+MONO_API MonoGenericContext*
+mono_class_get_context (MonoClass *klass);
+
+// FIXME
+MONO_API MonoMethodSignature *
+mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context);
+
 EMSCRIPTEN_KEEPALIVE wasm_method_signature_info * 
-mono_wasm_create_method_signature_info (MonoMethod *method) 
+mono_wasm_create_method_signature_info (MonoClass *klass, MonoMethod *method) 
 {
 	if (!method)
 		return 0;
 
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *raw_sig = mono_method_signature (method);
+	if (!raw_sig)
+		return 0;
+
+	MonoGenericContext *generic_ctx = mono_class_get_context (klass);
+	MonoMethodSignature *sig = mono_metadata_get_inflated_signature (raw_sig, generic_ctx);
 	if (!sig)
 		return 0;
 
@@ -1280,7 +1293,15 @@ mono_wasm_create_method_signature_info (MonoMethod *method)
 	result->parameter_marshal_types = (((void *)result) + sizeof(wasm_method_signature_info) + 4);
 	result->parameter_classes = ((void *)result->parameter_marshal_types) + (sizeof(int) * parameter_count) + 4;
 
+	EM_ASM({
+		console.debug("creating signature info for method result", Module.UTF8ToString ($0));
+	}, mono_method_get_full_name (method));
+
 	build_signature_info_record (mono_signature_get_return_type (sig), &result->result_marshal_type, &result->result_class);
+
+	EM_ASM({
+		console.debug("creating signature info for method params", Module.UTF8ToString ($0));
+	}, mono_method_get_full_name (method));
 
 	int i = 0;
 	void *iter = 0;
@@ -1322,4 +1343,14 @@ mono_wasm_unbox_rooted (MonoObject *obj)
 	if (!obj)
 		return 0;
 	return mono_object_unbox (obj);
+}
+
+EMSCRIPTEN_KEEPALIVE MonoClass * 
+mono_wasm_get_class_for_bind_or_invoke (MonoObject *this_arg, MonoMethod *method) {
+	if (this_arg)
+		return mono_object_get_class (this_arg);
+	else if (method)
+		return mono_method_get_class (method);
+	else
+		return 0;
 }
