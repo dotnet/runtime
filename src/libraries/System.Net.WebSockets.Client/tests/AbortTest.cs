@@ -110,7 +110,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45468", TestPlatforms.Browser)]
         public async Task ClientWebSocket_Abort_CloseOutputAsync(Uri server)
         {
             await TestCancellation(async (cws) =>

@@ -91,7 +91,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45468", TestPlatforms.Browser)]
         public async Task CloseOutputAsync_Cancel_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
