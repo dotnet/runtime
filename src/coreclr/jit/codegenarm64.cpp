@@ -2234,7 +2234,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             // ldr wz, [SP, #0]
             GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SP, 0);
 
-            inst_RV_IV(INS_sub, REG_SP, amount, EA_PTRSIZE);
+            genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, amount, rsGetRsvdReg());
 
             lastTouchDelta = amount;
 
