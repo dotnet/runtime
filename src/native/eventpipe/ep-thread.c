@@ -38,6 +38,7 @@ ep_thread_alloc (void)
 	memset (instance->session_state, 0, sizeof (instance->session_state));
 
 	instance->writing_event_in_progress = UINT32_MAX;
+	instance->unregistered = 0;
 
 ep_on_exit:
 	return instance;
@@ -141,6 +142,7 @@ ep_thread_unregister (EventPipeThread *thread)
 		while (!ep_rt_thread_list_iterator_end (&_ep_threads, &iterator)) {
 			if (ep_rt_thread_list_iterator_value (&iterator) == thread) {
 				ep_rt_thread_list_remove (&_ep_threads, thread);
+				ep_rt_volatile_store_uint32_t(&thread->unregistered, 1);
 				ep_thread_release (thread);
 				found = true;
 				break;

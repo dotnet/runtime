@@ -125,6 +125,7 @@ struct _EventPipeBufferManager_Internal {
 	// The total amount of allocations we can do after one sequence
 	// point before triggering the next one
 	size_t sequence_point_alloc_budget;
+
 #ifdef EP_CHECKED_BUILD
 	volatile int64_t num_events_stored;
 	volatile int64_t num_events_dropped;
@@ -168,6 +169,12 @@ void
 ep_buffer_manager_init_sequence_point_thread_list (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeSequencePoint *sequence_point);
+
+void
+ep_buffer_manager_enter_lock(EventPipeBufferManager *buffer_manager, ep_timestamp_t wait_start);
+
+void
+ep_buffer_manager_exit_lock(EventPipeBufferManager *buffer_manager);
 
 // Write an event to the input thread's current event buffer.
 // An optional event_thread can be provided for sample profiler events.
