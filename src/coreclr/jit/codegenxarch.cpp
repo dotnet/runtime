@@ -1735,7 +1735,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genLockedInstructions(treeNode->AsOp());
             break;
 
-        case GT_XXOR:
+        case GT_XORR:
         case GT_XAND:
             NYI("Interlocked.Or and Interlocked.And aren't implemented for x86 yet.");
             break;

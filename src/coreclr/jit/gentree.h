@@ -1522,7 +1522,7 @@ public:
         switch (gtOper)
         {
             case GT_XADD:
-            case GT_XXOR:
+            case GT_XORR:
             case GT_XAND:
             case GT_XCHG:
             case GT_LOCKADD:
