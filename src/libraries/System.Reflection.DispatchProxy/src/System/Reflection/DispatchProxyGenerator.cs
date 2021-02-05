@@ -252,6 +252,8 @@ namespace System.Reflection
                 _fields.Add(tb.DefineField("_methodInfos", typeof(MethodInfo[]), FieldAttributes.Private));
 
                 _methodInfos = new List<MethodInfo>();
+
+                _assembly.EnsureTypeIsVisible(proxyBaseType);
             }
 
             private void Complete()
