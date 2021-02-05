@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using Internal.Cryptography;
@@ -46,7 +47,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public CngPropertyOptions Options { get; private set; }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is CngProperty && Equals((CngProperty)obj);
         }

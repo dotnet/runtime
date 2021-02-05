@@ -4,6 +4,7 @@
 using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -1468,7 +1469,7 @@ namespace System
         //  Syntax is:
         //      scheme = alpha *(alpha | digit | '+' | '-' | '.')
         //
-        public static bool CheckSchemeName(string? schemeName)
+        public static bool CheckSchemeName([NotNullWhen(true)] string? schemeName)
         {
             if (string.IsNullOrEmpty(schemeName) || !UriHelper.IsAsciiLetter(schemeName[0]))
             {
@@ -1619,7 +1620,7 @@ namespace System
         // Throws:
         //  Nothing
         //
-        public override bool Equals(object? comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             if (comparand is null)
             {

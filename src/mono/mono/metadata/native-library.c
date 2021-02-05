@@ -1578,16 +1578,19 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_FreeLib (gpointer lib, Mo
 	native_library_lock ();
 
 	module = netcore_handle_lookup (lib);
-	if (!module)
-		goto leave;
+	if (module) {
+		ref_count = mono_refcount_dec (module);
+		if (ref_count > 0)
+			goto leave;
 
-	ref_count = mono_refcount_dec (module);
-	if (ref_count > 0)
-		goto leave;
-
-	g_hash_table_remove (native_library_module_map, module->handle);
-	g_hash_table_add (native_library_module_blocklist, module);
-	mono_dl_close (module);
+		g_hash_table_remove (native_library_module_map, module->handle);
+		g_hash_table_add (native_library_module_blocklist, module);
+		mono_dl_close (module);
+	} else {
+		MonoDl raw_module = { 0 };
+		raw_module.handle = lib;
+		mono_dl_close (&raw_module);
+	}
 
 leave:
 	native_library_unlock ();
@@ -1610,16 +1613,18 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_GetSymbol (gpointer lib, 
 	native_library_lock ();
 
 	module = netcore_handle_lookup (lib);
-	if (!module)
-		mono_error_set_generic_error (error, "System", "DllNotFoundException", "%p: %s", lib, symbol_name);
-	goto_if_nok (error, leave);
+	if (module) {
+		mono_dl_symbol (module, symbol_name, &symbol);
+		if (!symbol)
+			mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s: %s", module->full_name, symbol_name);
+	} else {
+		MonoDl raw_module = { 0 };
+		raw_module.handle = lib;
+		mono_dl_symbol (&raw_module, symbol_name, &symbol);
+		if (!symbol)
+			mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%p: %s", lib, symbol_name);
+	}
 
-	mono_dl_symbol (module, symbol_name, &symbol);
-	if (!symbol)
-		mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s: %s", module->full_name, symbol_name);
-	goto_if_nok (error, leave);
-
-leave:
 	native_library_unlock ();
 
 leave_nolock:

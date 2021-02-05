@@ -5539,7 +5539,10 @@ protected:
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
+    HRESULT                                fgPgoQueryResult;
     UINT32                                 fgNumProfileRuns;
+    UINT32                                 fgPgoBlockCounts;
+    UINT32                                 fgPgoClassProfiles;
 
     unsigned fgStressBBProf()
     {
@@ -5562,6 +5565,8 @@ protected:
     void fgComputeProfileScale();
     bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weight);
     PhaseStatus fgInstrumentMethod();
+    PhaseStatus fgIncorporateProfileData();
+    void        fgIncorporateBlockCounts();
 
 public:
     // fgIsUsingProfileWeights - returns true if we have real profile data for this method

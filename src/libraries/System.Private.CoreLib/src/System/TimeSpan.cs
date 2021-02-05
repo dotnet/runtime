@@ -166,7 +166,7 @@ namespace System
             return new TimeSpan(_ticks >= 0 ? _ticks : -_ticks);
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is TimeSpan)
             {

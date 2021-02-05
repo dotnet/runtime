@@ -8,7 +8,7 @@
       - MonoAOTEnableLLVM - enable LLVM for an AOT-only Mono
       - MonoAOTLLVMDir - [optional] the directory where LLVM is located, for an AOT-only Mono
       - MonoVerboseBuild - enable verbose build
-      - MonoMetadataUpdate - enable experimental method body replacement code
+      - MonoMetadataUpdate - enable experimental method body replacement code (in Directory.Build.props)
       - MonoThreadSuspend - coop,hybrid,preemptive - default thread suspend mode
   -->
 
@@ -206,7 +206,7 @@
       <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,assert_messages</_MonoMinimal>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,com,jit,reflection_emit_save,portability,assembly_remapping,attach,verifier,appdomains,shadowcopy,security,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,logging,remoting,shared_perfcounters,sgen_debug_helpers,sgen_binary_protocol,soft_debug,interpreter,cleanup,mdb,gac,threads,eventpipe,qcalls$(_MonoMinimal)"/>
+      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,portability,sgen_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,logging,shared_perfcounters,sgen_debug_helpers,sgen_binary_protocol,soft_debug,interpreter,threads,eventpipe,qcalls$(_MonoMinimal)"/>
       <_MonoCMakeArgs Include="-DENABLE_INTERP_LIB=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_ICALL_TABLES=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
@@ -244,11 +244,11 @@
     </ItemGroup>
     <!-- iOS simulator specific options -->
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=com,remoting,shared_perfcounters,gac"/>
+      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=shared_perfcounters"/>
     </ItemGroup>
     <!-- iOS device specific options -->
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,com,jit,portability,assembly_remapping,attach,verifier,appdomains,security,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,remoting,shared_perfcounters,gac" />
+      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,portability,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,shared_perfcounters" />
       <_MonoCMakeArgs Include="-DENABLE_VISIBILITY_HIDDEN=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=0"/>
@@ -271,7 +271,7 @@
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="-DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a" />
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DCMAKE_ANDROID_ARCH_ABI=x86" />
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DCMAKE_ANDROID_ARCH_ABI=x86_64" />
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,portability,attach,verifier,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,security,shared_handles,gac,cfgdir_config" />
+      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,portability,sgen_remset,logging,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying" />
       <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_CRASH_REPORTING=1"/>
       <_MonoCMakeArgs Include="-DENABLE_PERFTRACING=0"/>
@@ -321,9 +321,8 @@
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
     </ItemGroup>
 
-    <!-- Experimental features -->
+    <!-- Devloop features -->
     <ItemGroup Condition="'$(MonoMetadataUpdate)' == 'true'">
-      <!-- FIXME: Add sanity check that the interpreter is enabled -->
       <_MonoCMakeArgs Include="-DENABLE_METADATA_UPDATE=1" />
     </ItemGroup>
 
@@ -434,7 +433,7 @@
       <MonoAOTCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross', 'out'))"/>
       <MonoAOTCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
       <!-- FIXME: Disable more -->
-      <MonoAOTCMakeArgs Include="-DENABLE_MINIMAL=com,remoting" />
+      <MonoAOTCMakeArgs Include="-DENABLE_MINIMAL=" />
       <MonoAOTCMakeArgs Include="-DENABLE_ICALL_SYMBOL_MAP=1" />
       <MonoAOTCMakeArgs Include="-DDISABLE_SHARED_LIBS=1" />
       <MonoAOTCMakeArgs Include="-DDISABLE_LIBS=1" />
@@ -442,8 +441,7 @@
       <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
-      <!-- Experimental features -->
-      <!-- FIXME: Add sanity check that the interpreter is enabled -->
+      <!-- Devloop features -->
       <MonoAOTCMakeArgs Condition="'$(MonoMetadataUpdate)' == 'true'" Include="-DENABLE_METADATA_UPDATE=1" />
 
       <!-- thread suspend -->

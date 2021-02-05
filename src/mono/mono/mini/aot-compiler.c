@@ -231,6 +231,7 @@ typedef struct MonoAotOptions {
 	gboolean deterministic;
 	char *tool_prefix;
 	char *ld_flags;
+	char *ld_name;
 	char *mtriple;
 	char *llvm_path;
 	char *temp_path;
@@ -1302,7 +1303,11 @@ static void
 arm64_emit_plt_entry (MonoAotCompile *acfg, const char *got_symbol, int offset, int info_offset)
 {
 	arm64_emit_load_got_slot (acfg, ARMREG_R16, offset / sizeof (target_mgreg_t));
+#ifdef MONO_ARCH_ENABLE_PTRAUTH
+	fprintf (acfg->fp, "braaz x16\n");
+#else
 	fprintf (acfg->fp, "br x16\n");
+#endif
 	/* Used by mono_aot_get_plt_info_offset () */
 	fprintf (acfg->fp, "%s %d\n", acfg->inst_directive, info_offset);
 }
@@ -1326,7 +1331,7 @@ arm64_emit_tramp_page_common_code (MonoAotCompile *acfg, int pagesize, int arg_r
 	arm_ldrp (code, arg_reg, ARMREG_IP0, 0);
 	/* Address */
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP0, TARGET_SIZEOF_VOID_P);
-	arm_brx (code, ARMREG_IP0);
+	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	/* Emit it */
 	emit_code_bytes (acfg, buf, code - buf);
@@ -1435,7 +1440,7 @@ arm64_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	arm_subx (code, ARMREG_IP0, ARMREG_IP0, ARMREG_IP1);
 	/* Address */
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP0, 0);
-	arm_brx (code, ARMREG_IP0);
+	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	/* Emit it */
 	emit_code_bytes (acfg, buf, code - buf);
@@ -1482,13 +1487,13 @@ arm64_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP1, TARGET_SIZEOF_VOID_P);
 	/* Load vtable slot */
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP0, 0);
-	arm_brx (code, ARMREG_IP0);
+	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	/* No match */
 	mono_arm_patch (labels [2], code, MONO_R_ARM64_CBZ);
 	/* Load fail addr */
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP1, TARGET_SIZEOF_VOID_P);
-	arm_brx (code, ARMREG_IP0);
+	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	emit_code_bytes (acfg, buf, code - buf);
 
@@ -1505,7 +1510,11 @@ arm64_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_siz
 	arm64_emit_load_got_slot (acfg, ARMREG_R17, offset + 1);
 	/* Load generic trampoline address from first GOT slot */
 	arm64_emit_load_got_slot (acfg, ARMREG_R16, offset);
+#ifdef MONO_ARCH_ENABLE_PTRAUTH
+	fprintf (acfg->fp, "braaz x16\n");
+#else
 	fprintf (acfg->fp, "br x16\n");
+#endif
 	*tramp_size = 7 * 4;
 }
 
@@ -1526,7 +1535,11 @@ arm64_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp
 	arm64_emit_load_got_slot (acfg, MONO_ARCH_RGCTX_REG, offset);
 	/* Load generic trampoline address from second GOT slot */
 	arm64_emit_load_got_slot (acfg, ARMREG_R16, offset + 1);
+#ifdef MONO_ARCH_ENABLE_PTRAUTH
+	fprintf (acfg->fp, "braaz x16\n");
+#else
 	fprintf (acfg->fp, "br x16\n");
+#endif
 	*tramp_size = 7 * 4;
 }
 
@@ -1560,13 +1573,13 @@ arm64_emit_imt_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP1, TARGET_SIZEOF_VOID_P);
 	/* Load vtable slot */
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP0, 0);
-	arm_brx (code, ARMREG_IP0);
+	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	/* No match */
 	mono_arm_patch (labels [2], code, MONO_R_ARM64_CBZ);
 	/* Load fail addr */
 	arm_ldrp (code, ARMREG_IP0, ARMREG_IP1, TARGET_SIZEOF_VOID_P);
-	arm_brx (code, ARMREG_IP0);
+	code = mono_arm_emit_brx (code, ARMREG_IP0);
 
 	emit_code_bytes (acfg, buf, code - buf);
 
@@ -1581,7 +1594,11 @@ arm64_emit_gsharedvt_arg_trampoline (MonoAotCompile *acfg, int offset, int *tram
 	arm64_emit_load_got_slot (acfg, ARMREG_R17, offset);
 	/* Load generic trampoline address from second GOT slot */
 	arm64_emit_load_got_slot (acfg, ARMREG_R16, offset + 1);
+#ifdef MONO_ARCH_ENABLE_PTRAUTH
+	fprintf (acfg->fp, "braaz x16\n");
+#else
 	fprintf (acfg->fp, "br x16\n");
+#endif
 	*tramp_size = 7 * 4;
 }
 
@@ -7600,7 +7617,7 @@ emit_trampoline_full (MonoAotCompile *acfg, MonoTrampInfo *info, gboolean emit_t
 	g_assert (info);
 
 	name = info->name;
-	code = info->code;
+	code = (guint8*)MINI_FTNPTR_TO_ADDR (info->code);
 	code_size = info->code_size;
 	ji = info->ji;
 	unwind_ops = info->unwind_ops;
@@ -8311,7 +8328,9 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "tool-prefix=")) {
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
 		} else if (str_begins_with (arg, "ld-flags=")) {
-			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));			
+			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));
+		} else if (str_begins_with (arg, "ld-name=")) {
+			opts->ld_name = g_strdup (arg + strlen ("ld-name="));
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
 		// Intentionally undocumented x2-- deprecated
@@ -12386,6 +12405,8 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_OPTIONS "-arch i386"
 #elif defined(TARGET_X86) && !defined(TARGET_MACH)
 #define AS_OPTIONS "--32"
+#elif defined(MONO_ARCH_ENABLE_PTRAUTH)
+#define AS_OPTIONS "-arch arm64e"
 #else
 #define AS_OPTIONS ""
 #endif
@@ -12415,7 +12436,11 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_OPTIONS "--shared"
 #elif defined(TARGET_ARM64) && defined(TARGET_OSX)
 #define LD_NAME "clang"
+#if defined(TARGET_OSX) && __has_feature(ptrauth_intrinsics)
+#define LD_OPTIONS "--shared -arch arm64e"
+#else
 #define LD_OPTIONS "--shared"
+#endif
 #elif defined(TARGET_WIN32_MSVC)
 #define LD_NAME "link.exe"
 #define LD_OPTIONS "/DLL /MACHINE:X64 /NOLOGO /INCREMENTAL:NO"
@@ -12458,7 +12483,7 @@ compile_asm (MonoAotCompile *acfg)
 	}
 
 #ifdef TARGET_OSX
-	g_string_append (acfg->as_args, "-c -x assembler");
+	g_string_append (acfg->as_args, "-c -x assembler ");
 #endif
 
 	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS,
@@ -12520,17 +12545,25 @@ compile_asm (MonoAotCompile *acfg)
 	GString *str;
 
 	str = g_string_new ("");
+	const char *ld_binary_name = acfg->aot_opts.ld_name;
 #if defined(LD_NAME)
-	g_string_append_printf (str, "%s%s %s", tool_prefix, LD_NAME, LD_OPTIONS);
+	if (ld_binary_name == NULL) {
+		ld_binary_name = LD_NAME;
+	}
+	g_string_append_printf (str, "%s%s %s", tool_prefix, ld_binary_name, LD_OPTIONS);
 #else
+	if (ld_binary_name == NULL) {
+		ld_binary_name = "ld";
+	}
+
 	// Default (linux)
 	if (acfg->aot_opts.tool_prefix)
 		/* Cross compiling */
-		g_string_append_printf (str, "\"%sld\" %s", tool_prefix, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
 	else if (acfg->aot_opts.llvm_only)
 		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
 	else
-		g_string_append_printf (str, "\"%sld\"", tool_prefix);
+		g_string_append_printf (str, "\"%s%s\"", tool_prefix, ld_binary_name);
 	g_string_append_printf (str, " -shared");
 #endif
 	g_string_append_printf (str, " -o %s %s %s %s",

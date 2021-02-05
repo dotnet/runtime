@@ -1763,7 +1763,7 @@ namespace System.Diagnostics
         {
             return _hexString == traceId._hexString;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is ActivityTraceId traceId)
                 return _hexString == traceId._hexString;
@@ -1948,7 +1948,7 @@ namespace System.Diagnostics
         {
             return _hexString == spanId._hexString;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is ActivitySpanId spanId)
                 return _hexString == spanId._hexString;

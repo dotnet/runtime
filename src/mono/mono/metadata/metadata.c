@@ -1339,6 +1339,9 @@ dword_align (const unsigned char *ptr)
 	return (const unsigned char *) (((gsize) (ptr + 3)) & ~3);
 }
 
+static void
+mono_metadata_decode_row_slow (const MonoTableInfo *t, int idx, guint32 *res, int res_size);
+
 /**
  * mono_metadata_decode_row:
  * \param t table to extract information from.
@@ -1351,8 +1354,17 @@ dword_align (const unsigned char *ptr)
 void
 mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
-	mono_image_effective_table (&t, &idx);
+	if (G_UNLIKELY (mono_metadata_has_updates ())) {
+		mono_metadata_decode_row_slow (t, idx, res, res_size);
+	} else {
+		mono_metadata_decode_row_raw (t, idx, res, res_size);
+	}
+}
 
+void
+mono_metadata_decode_row_slow (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
+{
+	mono_image_effective_table (&t, &idx);
 	mono_metadata_decode_row_raw (t, idx, res, res_size);
 }
 
@@ -1470,6 +1482,11 @@ mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const M
 	return TRUE;
 }
 
+static guint32
+mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col);
+static guint32
+mono_metadata_decode_row_col_slow (const MonoTableInfo *t, int idx, guint col);
+
 /**
  * mono_metadata_decode_row_col:
  * \param t table to extract information from.
@@ -1482,11 +1499,32 @@ mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const M
 guint32
 mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 {
+	if (G_UNLIKELY (mono_metadata_has_updates ())) {
+		return mono_metadata_decode_row_col_slow (t, idx, col);
+	} else {
+		return mono_metadata_decode_row_col_raw (t, idx, col);
+	}
+}
+
+guint32
+mono_metadata_decode_row_col_slow (const MonoTableInfo *t, int idx, guint col)
+{
+	mono_image_effective_table (&t, &idx);
+	return mono_metadata_decode_row_col_raw (t, idx, col);
+}
+
+/**
+ * mono_metadata_decode_row_col_raw:
+ *
+ * Same as \c mono_metadata_decode_row_col but doesn't look for the effective
+ * table on metadata updates.
+ */
+guint32
+mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
+{
 	int i;
 	const char *data;
 	int n;
-
-	mono_image_effective_table (&t, &idx);
 
 	guint32 bitfield = t->size_bitfield;
 	
