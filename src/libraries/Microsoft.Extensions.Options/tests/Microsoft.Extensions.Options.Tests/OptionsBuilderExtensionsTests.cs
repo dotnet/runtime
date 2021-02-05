@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Options.Tests
 {
-    public class OptionsBuilderValidationTests
+    public class OptionsBuilderExtensionsTests
     {
         public static IHostBuilder CreateHostBuilder(Action<IServiceCollection> configure)
         {

@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Extension methods for adding configuration related options services to the DI container via <see cref="OptionsBuilder{TOptions}"/>.
     /// </summary>
-    public static class OptionsBuilderValidationExtensions
+    public static class OptionsBuilderExtensions
     {
         /// <summary>
         /// Enforces options validation check on start rather then in runtime.
