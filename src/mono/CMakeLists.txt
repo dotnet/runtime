@@ -655,6 +655,21 @@ endif()
 ######################################
 # EXTRACT VERSION
 ######################################
+if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+endif()
+if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h"
+"#define RuntimeFileMajorVersion 42\n"
+"#define RuntimeFileMinorVersion 42\n"
+"#define RuntimeFileBuildVersion 42\n"
+"#define RuntimeFileRevisionVersion 42424\n"
+"#define RuntimeProductMajorVersion 6\n"
+"#define RuntimeProductMinorVersion 0\n"
+"#define RuntimeProductPatchVersion 0\n"
+)
+endif()
+
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/_version.h" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
   string(REGEX REPLACE ".*VER_PRODUCTVERSION_STR *(.*)" "\\1" product_version_string ${product_version_string_line})
