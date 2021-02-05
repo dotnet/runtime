@@ -34,7 +34,8 @@ namespace System.Threading
 
         internal const bool EnableWorkerTracking = false;
 
-        internal const bool EnableDispatchAutoreleasePool = false;
+        // This needs to be a property since we replace its body in the linker.
+        internal static bool EnableDispatchAutoreleasePool => false;
 
         private static bool _callbackQueued;
 
