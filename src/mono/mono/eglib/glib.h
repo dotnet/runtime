@@ -959,8 +959,6 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 
 #define  g_assert_not_reached() G_STMT_START { mono_assertion_message_unreachable (__FILE__, __LINE__); eg_unreachable(); } G_STMT_END
 
-#define g_assert_netcore()     /* nothing */
-
 /* f is format -- like printf and scanf
  * Where you might have said:
  * 	if (!(expr))
