@@ -9,8 +9,9 @@
 // ============================================================================
 
 #include "common.h"
-#if defined(FEATURE_EVENTSOURCE_XPLAT)
 #include "nativeeventsource.h"
+
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
 
 void QCALLTYPE XplatEventSourceLogger::LogEventSource(__in_z int eventID, __in_z LPCWSTR eventName, __in_z LPCWSTR eventSourceName, __in_z LPCWSTR payload)
 {
@@ -33,7 +34,11 @@ BOOL QCALLTYPE XplatEventSourceLogger::IsEventSourceLoggingEnabled()
     return retVal;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadStart(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
+#endif //defined(FEATURE_EVENTSOURCE_XPLAT)
+
+#ifdef FEATURE_PERFTRACING
+
+VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadStart(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -43,7 +48,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadStart(__in_z uin
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadStop(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
+VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadStop(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -53,7 +58,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadStop(__in_z uint
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadWait(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
+VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadWait(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -63,7 +68,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadWait(__in_z uint
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentSample(__in_z double throughput, __in_z short clrInstanceID)
+VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentSample(__in_z double throughput, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -73,7 +78,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentSample
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentAdjustment(__in_z double averageThroughput, __in_z uint newWorkerThreadCount, __in_z uint reason, __in_z short clrInstanceID)
+VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentAdjustment(__in_z double averageThroughput, __in_z uint newWorkerThreadCount, __in_z uint reason, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -83,7 +88,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentAdjust
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentStats(__in_z double duration, __in_z double throughput, __in_z double threadWave, __in_z double throughputWave, __in_z double throughputErrorEstimate, __in_z double AverageThroughputErrorEstimate, __in_z double ThroughputRatio, __in_z double confidence, __in_z double newControlSetting, __in_z short newThreadWaveMagnitude, __in_z double ClrInstanceID)
+VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentStats(__in_z double duration, __in_z double throughput, __in_z double threadWave, __in_z double throughputWave, __in_z double throughputErrorEstimate, __in_z double AverageThroughputErrorEstimate, __in_z double ThroughputRatio, __in_z double confidence, __in_z double newControlSetting, __in_z short newThreadWaveMagnitude, __in_z short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -93,7 +98,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentStats(
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolIOEnqueue(__in_z void* nativeOverlapped, __in_z void* overlapped, __in_z bool multiDequeues, __in_z short ClrInstanceID)
+VOID QCALLTYPE NativeEventLogger::LogThreadPoolIOEnqueue(__in_z void* nativeOverlapped, __in_z void* overlapped, __in_z bool multiDequeues, __in_z short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -103,7 +108,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolIOEnqueue(__in_z void* nativ
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolIODequeue(__in_z void* nativeOverlapped, __in_z void* overlapped, __in_z short ClrInstanceID)
+VOID QCALLTYPE NativeEventLogger::LogThreadPoolIODequeue(__in_z void* nativeOverlapped, __in_z void* overlapped, __in_z short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -113,7 +118,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolIODequeue(__in_z void* nativ
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkingThreadCount(__in_z uint count, __in_z short ClrInstanceID)
+VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkingThreadCount(__in_z uint count, __in_z short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -122,5 +127,4 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkingThreadCount(__in_z ui
 
     END_QCALL;
 }
-
-#endif //defined(FEATURE_EVENTSOURCE_XPLAT)
+#endif // FEATURE_PERFTRACING

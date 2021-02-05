@@ -84,6 +84,7 @@
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadapter.h"
 #include "eventpipeinternal.h"
+#include "nativeeventsource.h"
 #endif //FEATURE_PERFTRACING
 
 #include "tailcallhelp.h"
