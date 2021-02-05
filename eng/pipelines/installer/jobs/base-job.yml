@@ -65,7 +65,8 @@ jobs:
       not(in(parameters.archType, 'x64', 'x86')),
       eq(parameters.runtimeFlavor, 'mono'),
       eq(parameters.isOfficialBuild, true),
-      eq(parameters.crossBuild, true)) }}
+      eq(parameters.crossBuild, true),
+      eq(parameters.pgoType, 'PGO')) }}
 
   - name: BuildAction
     value: -test
