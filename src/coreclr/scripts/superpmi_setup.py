@@ -4,7 +4,7 @@
 ## The .NET Foundation licenses this file to you under the MIT license.
 #
 ##
-# Title               : superpmi-setup.py
+# Title               : superpmi_setup.py
 #
 # Notes:
 #
@@ -41,7 +41,7 @@ import tempfile
 from os import linesep, listdir, path, walk
 from os.path import isfile, join, getsize
 from coreclr_arguments import *
-
+from superpmi import ChangeDir
 # Start of parser object creation.
 
 parser = argparse.ArgumentParser(description="description")
@@ -254,20 +254,28 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _cwd=None):
+def run_command(command_to_run, _cwd=None, _env=None, _capture_output=False):
     """ Runs the command.
 
     Args:
         command_to_run ([string]): Command to run along with arguments.
-        _cmd (string): Current working directory.
+        _cwd (string): Current working directory.
+        _env (string): Environment variables, if any.
+        _capture_output (bool): If should capture output.
+    Returns:
+        (string, string): Returns a tuple of stdout and stderr
     """
     print("Running: " + " ".join(command_to_run))
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
-        stdout, stderr = proc.communicate()
-        if len(stdout) > 0:
-            print(stdout.decode("utf-8"))
-        if len(stderr) > 0:
-            print(stderr.decode("utf-8"))
+    command_stdout = ""
+    command_stderr = ""
+    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd, env=_env) as proc:
+        command_stdout, command_stderr = proc.communicate()
+        if not _capture_output:
+            if len(command_stdout) > 0:
+                print(command_stdout.decode("utf-8"))
+            if len(command_stderr) > 0:
+                print(command_stderr.decode("utf-8"))
+    return (command_stdout, command_stderr)
 
 
 def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda path: True):
@@ -344,6 +352,32 @@ def partition_files(src_directory, dst_directory, max_size, exclude_directories=
         copy_files(src_directory, curr_dst_path, file_names)
         index += 1
 
+def setup_microbenchmark(workitem_directory, arch):
+    """ Perform setup of microbenchmarks
+
+    Args:
+        workitem_directory (string): Path to work
+    """
+    performance_directory = path.join(workitem_directory, "performance")
+
+    run_command(
+        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
+
+    with ChangeDir(performance_directory):
+
+        dotnet_directory = os.path.join(performance_directory, "tools", "dotnet")
+        dotnet_exe = os.path.join(dotnet_directory, "dotnet")
+        artifacts_directory =  os.path.join(performance_directory, "artifacts")
+        artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
+
+        build_env_vars = os.environ.copy()
+        build_env_vars["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1"
+        build_env_vars["DOTNET_MULTILEVEL_LOOKUP"] = "0"
+        build_env_vars["UseSharedCompilation"] = "false"
+
+        run_command(["python", "scripts/dotnet.py", "install", "--architecture", arch, "--install-dir", dotnet_directory])
+        run_command([dotnet_exe, "restore", "src/benchmarks/micro/MicroBenchmarks.csproj", "--packages", artifacts_packages_directory], _env=build_env_vars)
+        run_command([dotnet_exe, "build", "src/benchmarks/micro/MicroBenchmarks.csproj", "--configuration", "Release", "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory, "-o", artifacts_directory], _env=build_env_vars)
 
 def set_pipeline_variable(name, value):
     """ This method sets pipeline variable.
@@ -415,6 +449,7 @@ def main(main_args):
     # Workitem directories
     workitem_directory = path.join(source_directory, "workitem")
     pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
+    input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
 
     # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
     # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
@@ -427,10 +462,10 @@ def main(main_args):
     #     print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
     #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
 
-    # payload
-    input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
-    exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
+        # payload
+        exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
     exclude_files = native_binaries_to_ignore
+        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory)
     if coreclr_args.collection_type == "crossgen2":
         print('Adding exclusions for crossgen2')
         # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.

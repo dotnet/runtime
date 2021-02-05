@@ -146,8 +146,8 @@ Optional. Default is 'spmi' within the repo 'artifacts' directory.
 """
 
 superpmi_collect_help = """\
-Command to run SuperPMI collect over. Note that there cannot be any dotnet CLI commands
-invoked inside this command, as they will fail due to the shim JIT being set.
+Command to run SuperPMI collect over. If using this option, the user should set the COMPlus_JitName to the shim collector
+whenever appropriate.
 """
 
 replay_mch_files_help = """\
@@ -870,7 +870,10 @@ class SuperPMICollect:
 
                 collection_command_env = env_copy.copy()
                 collection_complus_env = complus_env.copy()
-                collection_complus_env["JitName"] = self.collection_shim_name
+                # Note: Do not set COMPlus_JitName to collector when doing collection using command because
+                # the command might use dotnet CLI and setting the variable here would fail the dotnet CLI.
+                # Instead, let the caller set this variable at appropriate time.
+                # collection_complus_env["JitName"] = self.collection_shim_name
                 set_and_report_env(collection_command_env, root_env, collection_complus_env)
 
                 logging.info("Collecting using command:")
