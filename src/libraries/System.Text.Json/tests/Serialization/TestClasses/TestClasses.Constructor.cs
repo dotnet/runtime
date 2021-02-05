@@ -2060,6 +2060,28 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class Point_MembersHave_JsonInclude : ITestClass
+    {
+        [JsonInclude]
+        public int X { get; }
+
+        [JsonInclude]
+        public int Y { get; }
+
+        public Point_MembersHave_JsonInclude(int x, int y) => (X, Y) = (x, y);
+
+        public void Initialize() { }
+
+        public static readonly string s_json = @"{""X"":1,""Y"":2}";
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
+        public void Verify()
+        {
+            Assert.Equal(1, X);
+            Assert.Equal(2, Y);
+        }
+    }
+
     public class Point_MultipleMembers_BindTo_OneConstructorParameter
     {
         public int X { get; }
