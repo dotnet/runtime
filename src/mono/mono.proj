@@ -209,11 +209,9 @@
       <_MonoCPPFLAGS Include="-Wno-overriding-t-option" />
       <_MonoCFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
       <_MonoCFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.5-macabi" />
-      <_MonoCFlags Include="-DMAC_CATALYST" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
       <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.5-macabi" />
-      <_MonoCXXFlags Include="-DMAC_CATALYST" />
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <_MonoLDFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
