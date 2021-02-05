@@ -43,9 +43,6 @@ namespace System.DirectoryServices.Protocols
         private static readonly LdapPartialResultsProcessor s_partialResultsProcessor = new LdapPartialResultsProcessor(s_waitHandle);
 
         private AuthType _connectionAuthType = AuthType.Negotiate;
-#pragma warning disable CA1823 // this constructor must run; it starts a thread
-        private static readonly PartialResultsRetriever s_retriever = new PartialResultsRetriever(s_waitHandle, s_partialResultsProcessor);
-#pragma warning restore
         internal bool _needDispose = true;
         internal ConnectionHandle _ldapHandle;
         internal bool _disposed;

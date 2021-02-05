@@ -61,14 +61,12 @@ namespace System.DirectoryServices.Protocols
 
         private static string CreateMessage(DirectoryResponse response, string message)
         {
-            var sb = new StringBuilder();
-            sb.Append(message ?? SR.DefaultOperationsError);
+            string result = message ?? SR.DefaultOperationsError;
             if (!string.IsNullOrEmpty(response?.ErrorMessage))
             {
-                sb.Append(' ');
-                sb.Append(response.ErrorMessage);
+                result += " " + response.ErrorMessage;
             }
-            return sb.ToString();
+            return result;
         }
     }
 

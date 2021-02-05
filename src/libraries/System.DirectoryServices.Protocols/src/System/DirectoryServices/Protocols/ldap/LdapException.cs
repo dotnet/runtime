@@ -64,7 +64,7 @@ namespace System.DirectoryServices.Protocols
         {
             // OpenLDAP codes -1 to -17 should map to 81 to 97 respectively;
             // See note above.
-            return errorCode < 0 ? 80 - errorCode : errorCode;
+            return (errorCode <= -1 && errorCode >= -17) ? 80 - errorCode : errorCode;
         }
 
         public static string MapResultCode(int errorCode)
