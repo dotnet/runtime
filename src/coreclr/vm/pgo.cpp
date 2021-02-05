@@ -1065,7 +1065,19 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
         size_t* pInstrumentationDataDst = (size_t*)((*pAllocatedData) + schemaDataSize);
         size_t* pInstrumentationDataDstEnd = (size_t*)((*pAllocatedData) + schemaDataSize + instrumentationDataSize);
         *pInstrumentationData = (BYTE*)pInstrumentationDataDst;
-        volatile size_t*pSrc = (volatile size_t*)found->header.GetData();
+        volatile size_t*pSrc = (volatile size_t*)(found->header.GetData() + found->header.countsOffset);
+#if 0
+        printf("PGO: copying %zu bytes from %p to %p ..\n", instrumentationDataSize, pSrc, pInstrumentationDataDst);
+        for (unsigned i = 0; i < schemaArray.GetCount(); i++)
+        {
+            if ((schemaArray[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) 
+                || (schemaArray[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount))
+            {
+                unsigned* ctr = (unsigned*)(((BYTE*)pSrc) + schemaArray[i].Offset);
+                printf("Base Schema[%d] offset is %zu, counter value at %p is %u\n", i, schemaArray[i].Offset, ctr, *ctr);
+            }
+        }
+#endif
         // Use a volatile memcpy to copy the instrumentation data into a temporary buffer
         // This allows the instrumentation data to be made stable for reading during the execution of the jit
         // and since the copy moves through a volatile pointer, there will be no tearing of individual data elements
@@ -1073,6 +1085,18 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
         {
             *pInstrumentationDataDst = *pSrc;
         }
+
+#if 0
+        for (unsigned i = 0; i < *pCountSchemaItems; i++)
+        {
+            if (((*ppSchema)[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) 
+                || ((*ppSchema)[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount))
+            {
+                unsigned* ctr = (unsigned*)(((BYTE*)pInstrumentationDataDst) + (*ppSchema)[i].Offset);
+                printf("Copy Schema[%d] offset is %zu, counter value at %p is %u\n", i, (*ppSchema)[i].Offset, ctr, *ctr);
+            }
+        }
+#endif
         return S_OK;
     }
     else
