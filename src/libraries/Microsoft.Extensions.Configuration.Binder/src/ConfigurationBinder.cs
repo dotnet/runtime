@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 var options = new BinderOptions();
                 configureOptions?.Invoke(options);
-                BindInstance(instance.GetType(), instance, configuration, options);
+                instance = BindInstance(instance.GetType(), instance, configuration, options);
             }
         }
 
