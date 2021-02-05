@@ -54,7 +54,7 @@ GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,(GTK_BINOP|GTK_EXOP))     // int
 
 GTNODE(LOCKADD          , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE))
 GTNODE(XAND             , GenTreeOp          ,0,GTK_BINOP)
-GTNODE(XXOR             , GenTreeOp          ,0,GTK_BINOP)
+GTNODE(XORR             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(XADD             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(XCHG             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,GTK_SPECIAL)

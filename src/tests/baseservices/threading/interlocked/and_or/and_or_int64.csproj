@@ -7,14 +7,4 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_TieredCompilation=0
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_TieredCompilation=0
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

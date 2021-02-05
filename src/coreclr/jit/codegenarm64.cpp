@@ -2787,10 +2787,10 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genLockedInstructions: Generate code for a GT_XADD, GT_XAND, GT_XXOR or GT_XCHG node.
+// genLockedInstructions: Generate code for a GT_XADD, GT_XAND, GT_XORR or GT_XCHG node.
 //
 // Arguments:
-//    treeNode - the GT_XADD/XAND/XXOR/XCHG node
+//    treeNode - the GT_XADD/XAND/XORR/XCHG node
 //
 void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
@@ -2811,7 +2811,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
         switch (treeNode->gtOper)
         {
-            case GT_XXOR:
+            case GT_XORR:
                 GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
                                             addrReg);
                 break;
@@ -2838,7 +2838,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     else
     {
         // These are imported normally if Atomics aren't supported.
-        assert(!treeNode->OperIs(GT_XXOR, GT_XAND));
+        assert(!treeNode->OperIs(GT_XORR, GT_XAND));
 
         regNumber exResultReg  = treeNode->ExtractTempReg(RBM_ALLINT);
         regNumber storeDataReg = (treeNode->OperGet() == GT_XCHG) ? dataReg : treeNode->ExtractTempReg(RBM_ALLINT);

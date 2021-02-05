@@ -4348,7 +4348,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
-                    genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XXOR : GT_XAND;
+                    genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XORR : GT_XAND;
                     retNode        = gtNewOperNode(op, genActualType(callType), op1, op2);
                     retNode->gtFlags |= GTF_GLOB_REF | GTF_ASG;
                 }
@@ -4900,6 +4900,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_Threading_Thread_get_ManagedThreadId;
             }
         }
+#ifndef TARGET_ARM64
+        // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
         else if (strcmp(className, "Interlocked") == 0)
         {
             if (strcmp(methodName, "And") == 0)
@@ -4911,6 +4913,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_Threading_Interlocked_Or;
             }
         }
+#endif
     }
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)

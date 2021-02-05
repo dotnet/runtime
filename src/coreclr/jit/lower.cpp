@@ -318,13 +318,13 @@ GenTree* Lowering::LowerNode(GenTree* node)
             CheckImmedAndMakeContained(node, node->AsCmpXchg()->gtOpComparand);
             break;
 
-        case GT_XXOR:
+        case GT_XORR:
         case GT_XAND:
         case GT_XADD:
             CheckImmedAndMakeContained(node, node->AsOp()->gtOp2);
             break;
 #elif defined(TARGET_XARCH)
-        case GT_XXOR:
+        case GT_XORR:
         case GT_XAND:
         case GT_XADD:
             if (node->IsUnusedValue())
