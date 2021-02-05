@@ -360,6 +360,27 @@ namespace System.Net.Security.Tests
                 // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
                 store.Open(OpenFlags.ReadWrite);
                 store.AddRange(clientChain);
+                store.Close();
+            }
+
+            // There is race between adding certificate to the store and building chain
+            // Make sure we can build chain before proceeding to ssl handshale
+            using (var chain = new X509Chain())
+            {
+                int count = 10;
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.DisableCertificateDownloads = false;
+                bool chainStatus = chain.Build(clientCertificate);
+                while (chain.ChainElements.Count != (clientChain.Count + 1) && count > 0)
+                {
+                    Thread.Sleep(100);
+                    count--;
+                    chainStatus = chain.Build(clientCertificate);
+                }
+
+                // Verify we can construct full chain
+                Assert.Equal(clientChain.Count + 1, chain.ChainElements.Count);
             }
 
             var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost",  };
