@@ -284,6 +284,10 @@ guint8* mono_arm_emit_load_regarray (guint8 *code, guint64 regs, int basereg, in
 /* MonoJumpInfo **ji */
 guint8* mono_arm_emit_aotconst (gpointer ji, guint8 *code, guint8 *code_start, int dreg, guint32 patch_type, gconstpointer data);
 
+guint8* mono_arm_emit_brx (guint8 *code, int reg);
+
+guint8* mono_arm_emit_blrx (guint8 *code, int reg);
+
 void mono_arm_patch (guint8 *code, guint8 *target, int relocation);
 
 void mono_arm_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow, gboolean preserve_ips);
