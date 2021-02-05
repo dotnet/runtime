@@ -544,7 +544,6 @@ namespace System.Net.WebSockets
         public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             _writeBuffer = null;
-            ThrowIfNotConnected();
 
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
 
