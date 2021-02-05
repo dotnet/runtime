@@ -25,7 +25,6 @@
 #include <mach/mach_traps.h>
 #include <servers/bootstrap.h>
 
-#include <metadata/locales.h>
 #include <mini/jit.h>
 
 #if defined(HAVE_SYS_UTSNAME_H)
@@ -427,7 +426,7 @@ mono_init_merp (const intptr_t crashed_pid, const char *signal, MonoStackHash *h
 
 	merp->moduleOffset = 0;
 
-	merp->uiLidArg = MONO_LOCALE_INVARIANT;
+	merp->uiLidArg = 0x007F; // MONO_LOCALE_INVARIANT
 #if defined (TARGET_OSX)
 	merp->osVersion = macos_version_string ();
 #else

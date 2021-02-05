@@ -14,7 +14,6 @@
 #include "gc-internals.h"
 #include "handle-decl.h"
 #include "handle.h"
-#include "locales.h"
 #include "marshal.h"
 #include "monitor.h"
 #include "mono-perfcounters.h"
