@@ -274,6 +274,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Numerics
@@ -416,11 +417,11 @@ namespace System.Numerics
             bool isNegative = HexConverter.FromChar(number.digits[0]) >= 8;
             uint partialValue = (isNegative && partialDigitCount > 0) ? 0xFFFFFFFFu : 0;
 
-            uint[]? arrayFromPool = null;
+            int[]? arrayFromPool = null;
 
-            Span<uint> bitsBuffer = (blockCount <= BigInteger.StackallocUInt32Limit)
-                ? stackalloc uint[blockCount]
-                : (arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).AsSpan(0, blockCount);
+            Span<int> bitsBuffer = (blockCount <= BigInteger.StackallocUInt32Limit)
+                ? stackalloc int[blockCount]
+                : (arrayFromPool = ArrayPool<int>.Shared.Rent(blockCount)).AsSpan(0, blockCount);
 
             int bitsBufferPos = blockCount - 1;
 
@@ -443,7 +444,7 @@ namespace System.Numerics
                 }
                 else if (blockCountNoLeadingZeros == 1)
                 {
-                    sign = (int)bitsBuffer[0];
+                    sign = bitsBuffer[0];
                     bits = null;
 
                     if ((!isNegative && sign < 0) || sign == int.MinValue)
@@ -455,7 +456,7 @@ namespace System.Numerics
                 else
                 {
                     sign = isNegative ? -1 : 1;
-                    bits = bitsBuffer.Slice(0, blockCountNoLeadingZeros).ToArray();
+                    bits = MemoryMarshal.Cast<int, uint>(bitsBuffer).Slice(0, blockCountNoLeadingZeros).ToArray();
 
                     if (isNegative)
                         NumericsHelpers.DangerousMakeTwosComplement(bits);
@@ -466,10 +467,10 @@ namespace System.Numerics
             finally
             {
                 if (arrayFromPool != null)
-                    ArrayPool<uint>.Shared.Return(arrayFromPool);
+                    ArrayPool<int>.Shared.Return(arrayFromPool);
             }
 
-            void ProcessChunk(ReadOnlySpan<char> chunkDigits, Span<uint> _bitsBuffer)
+            void ProcessChunk(ReadOnlySpan<char> chunkDigits, Span<int> _bitsBuffer)
             {
                 for (int i = 0; i < chunkDigits.Length; i++)
                 {
@@ -485,7 +486,7 @@ namespace System.Numerics
 
                     if (partialDigitCount == DigitsPerBlock)
                     {
-                        _bitsBuffer[bitsBufferPos] = partialValue;
+                        _bitsBuffer[bitsBufferPos] = (int)partialValue;
                         bitsBufferPos--;
                         partialValue = 0;
                         partialDigitCount = 0;
@@ -499,10 +500,10 @@ namespace System.Numerics
             sign = 0;
             bits = null;
 
-            Span<uint> stackBuffer = stackalloc uint[BigInteger.StackallocUInt32Limit];
-            Span<uint> currentBuffer = stackBuffer;
+            Span<int> stackBuffer = stackalloc int[BigInteger.StackallocUInt32Limit];
+            Span<int> currentBuffer = stackBuffer;
             int currentBufferSize = 0;
-            uint[]? arrayFromPool = null;
+            int[]? arrayFromPool = null;
 
             uint partialValue = 0;
             int partialDigitCount = 0;
@@ -542,13 +543,13 @@ namespace System.Numerics
                 }
                 else if (currentBufferSize == 1 && currentBuffer[0] <= int.MaxValue)
                 {
-                    sign = (int)(number.sign ? -currentBuffer[0] : currentBuffer[0]);
+                    sign = number.sign ? -currentBuffer[0] : currentBuffer[0];
                     bits = null;
                 }
                 else
                 {
                     sign = number.sign ? -1 : 1;
-                    bits = currentBuffer.Slice(0, currentBufferSize).ToArray();
+                    bits = MemoryMarshal.Cast<int, uint>(currentBuffer).Slice(0, currentBufferSize).ToArray();
                 }
 
                 return true;
@@ -556,10 +557,10 @@ namespace System.Numerics
             finally
             {
                 if (arrayFromPool != null)
-                    ArrayPool<uint>.Shared.Return(arrayFromPool);
+                    ArrayPool<int>.Shared.Return(arrayFromPool);
             }
 
-            bool ProcessChunk(ReadOnlySpan<char> chunkDigits, ref Span<uint> _currentBuffer)
+            bool ProcessChunk(ReadOnlySpan<char> chunkDigits, ref Span<int> _currentBuffer)
             {
                 int remainingIntDigitCount = Math.Max(numberScale - totalDigitCount, 0);
                 ReadOnlySpan<char> intDigitsSpan = chunkDigits.Slice(0, Math.Min(remainingIntDigitCount, chunkDigits.Length));
@@ -597,15 +598,15 @@ namespace System.Numerics
                 return true;
             }
 
-            void MultiplyAdd(ref Span<uint> _currentBuffer, uint multiplier, uint addValue)
+            void MultiplyAdd(ref Span<int> _currentBuffer, uint multiplier, uint addValue)
             {
-                Span<uint> curBits = _currentBuffer.Slice(0, currentBufferSize);
+                Span<int> curBits = _currentBuffer.Slice(0, currentBufferSize);
                 uint carry = addValue;
 
                 for (int i = 0; i < curBits.Length; i++)
                 {
-                    ulong p = (ulong)multiplier * curBits[i] + carry;
-                    curBits[i] = (uint)p;
+                    ulong p = (ulong)multiplier * (uint)curBits[i] + carry;
+                    curBits[i] = (int)p;
                     carry = (uint)(p >> 32);
                 }
 
@@ -614,17 +615,17 @@ namespace System.Numerics
 
                 if (currentBufferSize == _currentBuffer.Length)
                 {
-                    uint[]? arrayToReturn = arrayFromPool;
+                    int[]? arrayToReturn = arrayFromPool;
 
-                    arrayFromPool = ArrayPool<uint>.Shared.Rent(checked(currentBufferSize * 2));
+                    arrayFromPool = ArrayPool<int>.Shared.Rent(checked(currentBufferSize * 2));
                     _currentBuffer.CopyTo(arrayFromPool);
                     _currentBuffer = arrayFromPool;
 
                     if (arrayToReturn != null)
-                        ArrayPool<uint>.Shared.Return(arrayToReturn);
+                        ArrayPool<int>.Shared.Return(arrayToReturn);
                 }
 
-                _currentBuffer[currentBufferSize] = carry;
+                _currentBuffer[currentBufferSize] = (int)carry;
                 currentBufferSize++;
             }
         }
