@@ -29,6 +29,11 @@ get_bundle_path (void)
         return bundle_path;
     NSBundle* main_bundle = [NSBundle mainBundle];
     NSString* path = [main_bundle bundlePath];
+
+#if TARGET_OS_MACCATALYST
+    path = [path stringByAppendingString:@"/Contents/Resources"];
+#endif
+
     bundle_path = strdup ([path UTF8String]);
 
     return bundle_path;
