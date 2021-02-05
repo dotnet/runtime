@@ -201,8 +201,7 @@ namespace Microsoft.Extensions.Logging
             }
 
             // if the value implements IEnumerable, build a comma separated string.
-            var enumerable = value as IEnumerable;
-            if (enumerable != null)
+            if (value is IEnumerable enumerable)
             {
                 var vsb = new ValueStringBuilder(stackalloc char[256]);
                 bool first = true;
