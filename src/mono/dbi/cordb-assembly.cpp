@@ -225,8 +225,13 @@ HRESULT CordbModule::GetName(
     free(assembly_name);
     return S_OK;
   }
-  mbstowcs(szName, assembly_name, strlen(assembly_name) + 1);
-  *pcchName = strlen(assembly_name) + 1;
+  MultiByteToWideChar(CP_UTF8,
+                            0,
+                            assembly_name,
+                            -1,
+                            szName,
+                            cchName);
+  *pcchName = cchName;
   free(assembly_name);
   return S_OK;
 }

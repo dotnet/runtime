@@ -1,18 +1,20 @@
 #include "debugger-protocol.h"
 
-#ifdef DBI_COMPONENT
+#ifdef DBI_COMPONENT_MONO
 #define g_malloc malloc
 #define g_free free
 #define g_assert assert
 #define g_realloc realloc
 #define mono_atomic_inc_i32 InterlockedIncrement
 #include "stdafx.h"
+static LONG packet_id = 0;
 #else
 #include <glib.h>
 #include <mono/utils/atomic.h>
+static int packet_id = 0;
 #endif
 
-static LONG packet_id = 0;
+
 
 /*
  * Functions to decode protocol data
@@ -111,7 +113,7 @@ m_dbgprot_decode_byte_array (uint8_t *buf, uint8_t **endbuf, uint8_t *limit, int
 	*len = m_dbgprot_decode_int (buf, &buf, limit);
 	uint8_t* s;
 
-	if (len < 0) {
+	if (*len < 0) {
 		*endbuf = buf;
 		return NULL;
 	}

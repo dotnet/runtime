@@ -39,14 +39,14 @@ static UTSemReadWrite* m_pSemReadWrite = new UTSemReadWrite();
 #define dbg_unlock() mono_os_mutex_unlock(&debug_mutex.m);
 static MonoCoopMutex debug_mutex;*/
 
-#ifdef _DEBUG
 #define LOGGING
-#include "stdafx.h"
 #include "log.h"
-#endif
 
 #include "arraylist.h"
 
+#define CreateProcess CreateProcessW
+
+class Socket;
 class Cordb;
 class CordbProcess;
 class CordbAppDomain;
@@ -149,7 +149,7 @@ public:
 };
 
 class Connection {
-  int connect_socket;
+  Socket *connect_socket;
   bool is_answer_pending;
 
 public:

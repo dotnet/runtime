@@ -1,5 +1,3 @@
-include(clrfeatures.cmake)
-
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>:DACCESS_COMPILE>)
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>:CROSSGEN_COMPILE>)
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>:CROSS_COMPILE>)

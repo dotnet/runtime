@@ -69,6 +69,8 @@ HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(
     case ELEMENT_TYPE_STRING:
       m_dbgprot_buffer_add_id(&localbuf, cc->intValue);
       break;
+    default:
+        return E_NOTIMPL;
     }
   }
   cmdId = conn->send_event(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_INVOKE_METHOD,

@@ -71,7 +71,7 @@ ULONG STDMETHODCALLTYPE CordbValue::Release(void) { return 0; }
 
 HRESULT STDMETHODCALLTYPE CordbValue::GetExactType(ICorDebugType **ppType) {
   LOG((LF_CORDB, LL_INFO1000000, "CordbValue - GetExactType - IMPLEMENTED\n"));
-  CordbType *tp = new CordbType(type);
+  CordbType *tp = new CordbType(type, conn);
   *ppType = static_cast<ICorDebugType *>(tp);
   return S_OK;
 }
@@ -155,7 +155,7 @@ CordbReferenceValue::GetExactType(ICorDebugType **ppType) {
     return S_OK;
   }
   if (klass != NULL) {
-    cordbtype = new CordbType(type, klass);
+    cordbtype = new CordbType(type, conn, klass);
     *ppType = static_cast<ICorDebugType *>(cordbtype);
     return S_OK;
   }
@@ -193,7 +193,7 @@ CordbReferenceValue::GetExactType(ICorDebugType **ppType) {
         m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
     int token = m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
     klass = new CordbClass(conn, token, assembly_id);
-    cordbtype = new CordbType(type, klass);
+    cordbtype = new CordbType(type, conn, klass);
     *ppType = static_cast<ICorDebugType *>(cordbtype);
     return S_OK;
   }
@@ -240,12 +240,12 @@ CordbReferenceValue::GetExactType(ICorDebugType **ppType) {
       klass = new CordbClass(conn, token, module_id);
     }
 
-    cordbtype = new CordbType(type, NULL,
-                              new CordbType((CorElementType)type_id, klass));
+    cordbtype = new CordbType(type, conn, NULL,
+                              new CordbType((CorElementType)type_id, conn, klass));
     *ppType = static_cast<ICorDebugType *>(cordbtype);
     return S_OK;
   }
-  CordbType *tp = new CordbType(type);
+  CordbType *tp = new CordbType(type, conn);
   *ppType = static_cast<ICorDebugType *>(tp);
   return S_OK;
 }
@@ -375,7 +375,7 @@ HRESULT STDMETHODCALLTYPE
 CordbObjectValue::GetExactType(ICorDebugType **ppType) {
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbObjectValue - GetExactType - IMPLEMENTED\n"));
-  CordbType *tp = new CordbType(type, klass);
+  CordbType *tp = new CordbType(type, conn, klass);
   *ppType = static_cast<ICorDebugType *>(tp);
   return S_OK;
 }
@@ -451,8 +451,13 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetString(ULONG32 cchString,
       LOG((LF_CORDB, LL_INFO1000000,
            "CordbObjectValue - GetString - IMPLEMENTED\n"));
       if (cchString >= strlen(value)) {
-        mbstowcs(szString, value, strlen(value) + 1);
-        *pcchString = strlen(value);
+        MultiByteToWideChar(CP_UTF8,
+                            0,
+                            value,
+                            -1,
+                            szString,
+                            cchString);
+        *pcchString = cchString;
       }
     }
     return S_OK;
@@ -556,42 +561,8 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
   CorElementType type = (CorElementType)m_dbgprot_decode_byte(
       bAnswer->buf, &bAnswer->buf, bAnswer->end);
   CordbContent value;
-  switch (type) {
-  case ELEMENT_TYPE_BOOLEAN:
-  case ELEMENT_TYPE_I1:
-  case ELEMENT_TYPE_U1:
-    value.booleanValue =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    break;
-  case ELEMENT_TYPE_CHAR:
-  case ELEMENT_TYPE_I2:
-  case ELEMENT_TYPE_U2:
-    value.charValue =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    break;
-  case ELEMENT_TYPE_I4:
-  case ELEMENT_TYPE_U4:
-  case ELEMENT_TYPE_R4:
-    value.intValue =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    break;
-  case ELEMENT_TYPE_I8:
-  case ELEMENT_TYPE_U8:
-  case ELEMENT_TYPE_R8:
-    value.longValue =
-        m_dbgprot_decode_long(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    break;
-  case ELEMENT_TYPE_CLASS:
-  case ELEMENT_TYPE_SZARRAY:
-  case ELEMENT_TYPE_STRING: {
-    int object_id =
-        m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    CordbReferenceValue *refValue =
-        new CordbReferenceValue(conn, type, object_id);
-    refValue->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
-    return S_OK;
-  }
-  case MDBGPROT_VALUE_TYPE_ID_NULL: {
+
+  if ((MdbgProtValueTypeId)type == MDBGPROT_VALUE_TYPE_ID_NULL) {
     CorElementType type = (CorElementType)m_dbgprot_decode_byte(
         bAnswer->buf, &bAnswer->buf, bAnswer->end);
     if (type == ELEMENT_TYPE_CLASS || type == ELEMENT_TYPE_STRING) {
@@ -661,11 +632,47 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
         klass = new CordbClass(conn, token, module_id);
       }
       CordbType *cordbtype = new CordbType(
-          type, NULL, new CordbType((CorElementType)type_id, klass));
+          type, conn, NULL, new CordbType((CorElementType)type_id, conn, klass));
       CordbReferenceValue *refValue =
           new CordbReferenceValue(conn, type, -1, klass, cordbtype);
       refValue->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
     }
+    return S_OK;
+  }
+
+  switch (type) {
+  case ELEMENT_TYPE_BOOLEAN:
+  case ELEMENT_TYPE_I1:
+  case ELEMENT_TYPE_U1:
+    value.booleanValue =
+        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+    break;
+  case ELEMENT_TYPE_CHAR:
+  case ELEMENT_TYPE_I2:
+  case ELEMENT_TYPE_U2:
+    value.charValue =
+        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+    break;
+  case ELEMENT_TYPE_I4:
+  case ELEMENT_TYPE_U4:
+  case ELEMENT_TYPE_R4:
+    value.intValue =
+        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+    break;
+  case ELEMENT_TYPE_I8:
+  case ELEMENT_TYPE_U8:
+  case ELEMENT_TYPE_R8:
+    value.longValue =
+        m_dbgprot_decode_long(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+    break;
+  case ELEMENT_TYPE_CLASS:
+  case ELEMENT_TYPE_SZARRAY:
+  case ELEMENT_TYPE_STRING: {
+    int object_id =
+        m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+    CordbReferenceValue *refValue =
+        new CordbReferenceValue(conn, type, object_id);
+    refValue->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
     return S_OK;
   }
   default:

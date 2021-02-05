@@ -4,9 +4,9 @@
 // File: CORDB-PROCESS.CPP
 //
 
+#include <cordb.h>
 #include <cordb-appdomain.h>
 #include <cordb-process.h>
-#include <cordb.h>
 
 using namespace std;
 

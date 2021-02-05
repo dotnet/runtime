@@ -165,7 +165,7 @@ CordbAppDomain::GetName(/* [in] */ ULONG32 cchName,
     *pcchName = strlen("DefaultDomain") + 1;
     return S_OK;
   }
-  wcscpy(szName, L"DefaultDomain");
+  wcscpy(szName, W("DefaultDomain"));
 
   return S_OK;
 }

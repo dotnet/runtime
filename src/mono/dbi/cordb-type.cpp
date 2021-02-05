@@ -11,7 +11,7 @@
 
 using namespace std;
 
-CordbType::CordbType(CorElementType type, CordbClass *klass,
+CordbType::CordbType(CorElementType type, Connection *conn, CordbClass *klass,
                      CordbType *typeParameter)
     : CordbBaseMono(conn) {
   this->klass = klass;

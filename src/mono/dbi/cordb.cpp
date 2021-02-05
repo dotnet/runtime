@@ -14,16 +14,7 @@
 #include <cordb-stepper.h>
 #include <cordb-thread.h>
 #include <cordb.h>
-
-#ifndef HOST_WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#include <sys/types.h>
-#include <sys/socket.h>
-#endif
-
-
+#include <socket.h>
 
 int convert_mono_type_2_icordbg_size(int type) {
   switch (type) {
@@ -265,7 +256,7 @@ void Connection::receive() {
     m_dbgprot_buffer_init(&recvbuf_header, HEADER_LENGTH);
 
     int iResult =
-        recv(connect_socket, (char *)recvbuf_header.buf, HEADER_LENGTH, 0);
+        connect_socket->Receive((char *)recvbuf_header.buf, HEADER_LENGTH);
 
     if (iResult == -1) {
       ppCordb->pCallback->ExitProcess(
@@ -277,7 +268,7 @@ void Connection::receive() {
            "transport_recv () sleep returned %d, expected %d.\n", iResult,
            HEADER_LENGTH));
       iResult =
-          recv(connect_socket, (char *)recvbuf_header.buf, HEADER_LENGTH, 0);
+          connect_socket->Receive((char *)recvbuf_header.buf, HEADER_LENGTH);
       Sleep(1000);
     }
 
@@ -292,12 +283,12 @@ void Connection::receive() {
     }
 
     if (header.len - HEADER_LENGTH != 0) {
-      iResult = recv(connect_socket, (char *)recvbuf->buf,
-                     header.len - HEADER_LENGTH, 0);
+      iResult = connect_socket->Receive((char *)recvbuf->buf,
+                     header.len - HEADER_LENGTH);
       int totalRead = iResult;
       while (totalRead < header.len - HEADER_LENGTH) {
-        iResult = recv(connect_socket, (char *)recvbuf->buf + totalRead,
-                       (header.len - HEADER_LENGTH) - totalRead, 0);
+        iResult = connect_socket->Receive((char *)recvbuf->buf + totalRead,
+                       (header.len - HEADER_LENGTH) - totalRead);
         totalRead += iResult;
       }
     }
@@ -447,6 +438,9 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
       ppCordb->pCallback->StepComplete(pCorDebugAppDomain, thread,
                                        thread->stepper, STEP_NORMAL);
     } break;
+    default: {
+        LOG((LF_CORDB, LL_INFO100000, "Not implemented - %s\n", m_dbgprot_event_to_string(etype)));
+    }
     }
   }
   // m_dbgprot_buffer_free(&recvbuf);
@@ -545,77 +539,21 @@ void Connection::enable_event(MdbgProtEventKind eventKind) {
 }
 
 void Connection::close_connection() {
-  closesocket(connect_socket);
-  WSACleanup();
+    connect_socket->Close();
 }
 
 void Connection::start_connection() {
   LOG((LF_CORDB, LL_INFO100000, "Start Connection\n"));
 
-  WSADATA wsaData;
-  connect_socket = INVALID_SOCKET;
-  struct addrinfo *result = NULL, *ptr = NULL, hints;
-  int iResult;
-
-  // Initialize Winsock
-  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-  if (iResult != 0) {
-    return;
-  }
-
-  ZeroMemory(&hints, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_protocol = IPPROTO_TCP;
+  connect_socket = new Socket();
 
   LOG((LF_CORDB, LL_INFO100000, "Listening to 127.0.0.1:1003\n"));
 
-  // Resolve the server address and port
-  iResult = getaddrinfo("127.0.0.1", "1003", &hints, &result);
-  if (iResult != 0) {
-    WSACleanup();
-    return;
-  }
-
-  // Attempt to connect to an address until one succeeds
-  for (ptr = result; ptr != NULL; ptr = ptr->ai_next) {
-
-    // Create a SOCKET for connecting to server
-    connect_socket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-
-    if (connect_socket == INVALID_SOCKET) {
-      WSACleanup();
-      return;
-    }
-
-    int flag = 1;
-    if (setsockopt(connect_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&flag,
-                   sizeof(int)))
-      continue;
-
-    iResult = bind(connect_socket, ptr->ai_addr, (int)ptr->ai_addrlen);
-    if (iResult == -1)
-      continue;
-
-    iResult = listen(connect_socket, 16);
-    if (iResult == -1)
-      continue;
-
-    break;
-  }
-
-  connect_socket = accept(connect_socket, NULL, NULL);
-  if (connect_socket == -1)
+  int ret = connect_socket->OpenSocketAcceptConnection("127.0.0.1", "1003");
+  if (ret == -1)
     exit(1);
 
   LOG((LF_CORDB, LL_INFO100000, "Accepted connection from client.\n"));
-
-  freeaddrinfo(result);
-
-  if (connect_socket == INVALID_SOCKET) {
-    WSACleanup();
-    return;
-  }
 }
 
 void Connection::transport_handshake() {
@@ -628,7 +566,7 @@ void Connection::transport_handshake() {
   m_dbgprot_buffer_init(&recvbuf, buflen);
 
   int iResult;
-  iResult = recv(connect_socket, (char *)recvbuf.buf, buflen, 0);
+  iResult = connect_socket->Receive((char *)recvbuf.buf, buflen);
 
   // Send an initial buffer
   m_dbgprot_buffer_add_data(&sendbuf, (uint8_t *)"DWP-Handshake", 13);
@@ -636,10 +574,8 @@ void Connection::transport_handshake() {
 }
 
 void Connection::send_packet(MdbgProtBuffer &sendbuf) {
-  int iResult = send(connect_socket, (const char *)sendbuf.buf,
-                     m_dbgprot_buffer_len(&sendbuf), 0);
-  if (iResult == SOCKET_ERROR) {
-    WSACleanup();
+  int iResult = connect_socket->Send((const char *)sendbuf.buf, m_dbgprot_buffer_len(&sendbuf));
+  if (iResult == -1) {
     return;
   }
 }
@@ -647,14 +583,14 @@ void Connection::send_packet(MdbgProtBuffer &sendbuf) {
 void Connection::receive_packet(MdbgProtBuffer &recvbuf, int len) {
   m_dbgprot_buffer_init(&recvbuf, len);
   int iResult;
-  iResult = recv(connect_socket, (char *)recvbuf.buf, len, 0);
+  iResult = connect_socket->Receive((char *)recvbuf.buf, len);
 }
 
 void Connection::receive_header(MdbgProtHeader *header) {
   MdbgProtBuffer recvbuf;
   m_dbgprot_buffer_init(&recvbuf, 11);
   int iResult;
-  iResult = recv(connect_socket, (char *)recvbuf.buf, 11, 0);
+  iResult = connect_socket->Receive((char *)recvbuf.buf, HEADER_LENGTH);
   m_dbgprot_decode_command_header(&recvbuf, header);
 }
 

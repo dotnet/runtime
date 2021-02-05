@@ -33,8 +33,8 @@ RegMeta::RegMeta(CordbAssembly *cordbAssembly, CordbModule *cordbModule) {
   ULONG32 pcchName = 0;
   cordbModule->GetName(0, &pcchName, NULL);
 
-  wchar_t *full_path;
-  full_path = (wchar_t *)malloc(sizeof(wchar_t) * pcchName);
+  WCHAR *full_path;
+  full_path = (WCHAR *)malloc(sizeof(WCHAR) * pcchName);
   cordbModule->GetName(pcchName, &pcchName, full_path);
 
   m_pStgdb->OpenForRead(full_path, NULL, 0, 0);

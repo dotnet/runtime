@@ -17,7 +17,7 @@ class CordbType : public CordbBaseMono,
   CordbType *typeParameter;
 
 public:
-  CordbType(CorElementType type, CordbClass *klass = NULL,
+  CordbType(CorElementType type, Connection *conn, CordbClass *klass = NULL,
             CordbType *typeParameter = NULL);
   HRESULT STDMETHODCALLTYPE GetType(CorElementType *ty);
   HRESULT STDMETHODCALLTYPE GetClass(ICorDebugClass **ppClass);

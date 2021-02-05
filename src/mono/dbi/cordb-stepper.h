@@ -13,11 +13,11 @@ class CordbStepper : public CordbBaseMono,
                      public ICorDebugStepper,
                      public ICorDebugStepper2 {
   CordbThread *thread;
-  boolean hasStepped;
+  bool hasStepped;
   int eventId;
 
 public:
-  boolean isComplete;
+  bool isComplete;
   CordbStepper(Connection *conn, CordbThread *thread);
   HRESULT STDMETHODCALLTYPE IsActive(BOOL *pbActive);
   HRESULT STDMETHODCALLTYPE Deactivate(void);

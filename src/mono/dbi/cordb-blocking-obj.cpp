@@ -4,10 +4,8 @@
 // File: CORDB-BLOCKING-OBJ.CPP
 //
 
-#include <cordb-blocking-obj.h>
 #include <cordb.h>
-
-using namespace std;
+#include <cordb-blocking-obj.h>
 
 CordbBlockingObjectEnum::CordbBlockingObjectEnum(Connection *conn)
     : CordbBaseMono(conn) {}
