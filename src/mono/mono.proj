@@ -204,7 +204,7 @@
     </ItemGroup>
     <!-- Mac Catalyst specific options -->
     <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
-      <_MonoCMakeArgs Include="-DMAC_CATALYST=1" />
+      <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_VARIANT=MacCatalyst" />
       <!-- https://gitlab.kitware.com/cmake/cmake/-/issues/20132 -->
       <_MonoCPPFLAGS Include="-Wno-overriding-t-option" />
       <_MonoCFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
