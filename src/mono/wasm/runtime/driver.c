@@ -768,12 +768,10 @@ class_is_task (MonoClass *klass)
 	if (!klass)
 		return 0;
 
-	/*
-	char * class_name = mono_class_get_name (klass);
+	char * type_name = mono_type_get_name_full (mono_class_get_type(klass), MONO_TYPE_NAME_FORMAT_REFLECTION);
 	EM_ASM({
-		console.debug("class_is_task(", Module.UTF8ToString ($0), ")");
-	}, class_name);
-	*/
+		console.log("class_is_task", Module.UTF8ToString($0));
+	}, type_name);
 
 	if (!task_class && !resolved_task_class) {
 		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
@@ -1234,6 +1232,7 @@ void build_signature_info_record (MonoType *type, int* resultMtype, MonoClass** 
 		*resultClass = 0;
 		return;
 	}
+
 	int mono_type = mono_type_get_type (type);
 	MonoClass * klass = mono_type_get_class (type);
 	if (!klass) {
@@ -1275,8 +1274,12 @@ mono_wasm_create_method_signature_info (MonoClass *klass, MonoMethod *method)
 	if (!raw_sig)
 		return 0;
 
-	MonoGenericContext *generic_ctx = mono_class_get_context (klass);
-	MonoMethodSignature *sig = mono_metadata_get_inflated_signature (raw_sig, generic_ctx);
+	MonoGenericContext *generic_ctx = mono_class_get_context (klass), *sig;
+	if (!generic_ctx) {
+		sig = raw_sig;
+	} else {
+		sig = mono_metadata_get_inflated_signature (raw_sig, generic_ctx);
+	}
 	if (!sig)
 		return 0;
 
