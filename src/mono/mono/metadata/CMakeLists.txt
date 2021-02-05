@@ -101,7 +101,6 @@ set(metadata_common_sources
     exception-internals.h
     w32file.h
     w32file-internals.h
-    filewatcher.h
     gc-internals.h
     icall.c
     icall-internals.h
