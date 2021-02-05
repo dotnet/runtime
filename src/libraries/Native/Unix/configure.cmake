@@ -580,7 +580,7 @@ check_symbol_exists(
 
 check_symbol_exists(
     pthread_condattr_setclock
-    time.h
+    pthread.h
     HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
 check_symbol_exists(
