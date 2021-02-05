@@ -36,6 +36,7 @@
 #include <sys/sysctl.h>
 #include <fcntl.h>
 
+#include <mono/metadata/object-internals.h>
 #include <mono/utils/json.h>
 #include <mono/utils/mono-state.h>
 #include <utils/mono-threads-debug.h>
