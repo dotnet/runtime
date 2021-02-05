@@ -95,6 +95,13 @@ jobs:
         - (Fedora.30.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-20200512010621-4f8cef7
         - RedHat.7.Amd64
 
+    # OSX arm64
+    - ${{ if eq(parameters.platform, 'OSX_arm64') }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
+        - OSX.1100.ARM64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - OSX.1100.ARM64
+
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
