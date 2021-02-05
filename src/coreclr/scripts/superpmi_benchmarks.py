@@ -163,16 +163,14 @@ def main(main_args):
     """
     coreclr_args = setup_args(main_args)
 
-    all_output_mch_name = path.join(coreclr_args.output_mch_path, "all-" + coreclr_args.output_mch_filename + ".mch")
-    output_mch_name = path.join(coreclr_args.output_mch_path, coreclr_args.output_mch_filename + ".mch")
-    print()
+    all_output_mch_name = path.join(coreclr_args.output_mch_path + "_all.mch")
     execute(coreclr_args, all_output_mch_name)
     if os.path.isfile(all_output_mch_name):
         pass
     else:
         print("No mch file generated.")
 
-    strip_unrelated_mc(coreclr_args, all_output_mch_name, output_mch_name)
+    strip_unrelated_mc(coreclr_args, all_output_mch_name, coreclr_args.output_mch_path)
 
 
 if __name__ == "__main__":
