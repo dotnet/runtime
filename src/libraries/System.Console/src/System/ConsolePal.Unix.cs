@@ -779,7 +779,7 @@ namespace System
             // Changing the color involves writing an ANSI character sequence out to the output stream.
             // We only want to do this if we know that sequence will be interpreted by the output.
             // rather than simply displayed visibly.
-            if (Console.IsOutputRedirected)
+            if (!SupportsAnsiColor())
                 return;
 
             // See if we've already cached a format string for this foreground/background
@@ -813,11 +813,31 @@ namespace System
         /// <summary>Writes out the ANSI string to reset colors.</summary>
         private static void WriteResetColorString()
         {
-            // We only want to send the reset string if we're targeting a TTY device
-            if (!Console.IsOutputRedirected)
+            if (SupportsAnsiColor())
             {
                 WriteStdoutAnsiString(TerminalFormatStrings.Instance.Reset);
             }
+        }
+
+        /// <summary>
+        /// Tests whether ANSI color codes should be emitted or not.
+        /// <para>
+        /// If the <c>DOTNET_CONSOLE_ANSI_COLOR</c> environment variable contains <c>true</c> (case insensitive) or <c>1</c>
+        /// then ANSI color codes are supported. If the <c>DOTNET_CONSOLE_ANSI_COLOR</c> environment variable is not defined
+        /// or contains a non truthy value, then ANSI color codes are supported if the console output is not redirected.
+        /// </para>
+        /// </summary>
+        /// <returns><c>true</c> if ANSI color escape codes must be emitted, <c>false</c> if they must not be emitted.</returns>
+        /// <remarks>This was discussed in https://github.com/dotnet/runtime/issues/33980</remarks>
+        private static bool SupportsAnsiColor()
+        {
+            string? consoleAnsiColor = Environment.GetEnvironmentVariable("DOTNET_CONSOLE_ANSI_COLOR");
+            if (consoleAnsiColor != null)
+            {
+                return consoleAnsiColor == "1" || (bool.TryParse(consoleAnsiColor, out bool enabled) && enabled);
+            }
+
+            return !Console.IsOutputRedirected;
         }
 
         /// <summary>
