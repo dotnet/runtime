@@ -182,7 +182,7 @@ namespace System.IO
             }
             else if (!useAsyncIO)
             {
-                FileStreamStrategyHelper.VerifyHandleIsSync(handle);
+                FileStreamHelpers.VerifyHandleIsSync(handle);
             }
 
             if (_canSeek)

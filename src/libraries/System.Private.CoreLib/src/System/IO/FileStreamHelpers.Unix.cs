@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     // this type defines a set of stateless FileStreamStrategy helper methods
-    internal static class FileStreamStrategyHelper
+    internal static class FileStreamHelpers
     {
         // in the future we are most probably going to introduce more strategies (io_uring etc)
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)

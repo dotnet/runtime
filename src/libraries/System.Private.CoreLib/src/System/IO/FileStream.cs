@@ -45,7 +45,7 @@ namespace System.IO
             {
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
-                _strategy = WrapForDerivedType(FileStreamStrategyHelper.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync));
+                _strategy = WrapForDerivedType(FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync));
             }
             catch
             {
@@ -86,7 +86,7 @@ namespace System.IO
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
-            : this(handle, access, bufferSize, FileStreamStrategyHelper.GetDefaultIsAsync(handle, DefaultIsAsync))
+            : this(handle, access, bufferSize, FileStreamHelpers.GetDefaultIsAsync(handle, DefaultIsAsync))
         {
         }
 
@@ -94,7 +94,7 @@ namespace System.IO
         {
             ValidateHandle(handle, access, bufferSize, isAsync);
 
-            _strategy = WrapForDerivedType(FileStreamStrategyHelper.ChooseStrategy(this, handle, access, bufferSize, isAsync));
+            _strategy = WrapForDerivedType(FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, isAsync));
         }
 
         public FileStream(string path, FileMode mode) :
@@ -163,7 +163,7 @@ namespace System.IO
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
             }
 
-            _strategy = WrapForDerivedType(FileStreamStrategyHelper.ChooseStrategy(this, path, mode, access, share, bufferSize, options));
+            _strategy = WrapForDerivedType(FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options));
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
