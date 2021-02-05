@@ -203,7 +203,7 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 Assert.IsNotType<SslStream>(connection.Stream);
 
-                HttpRequestData requestData = await connection.ReadRequestDataAsync();                
+                HttpRequestData requestData = await connection.ReadRequestDataAsync();
                 string requestContent = requestData.Body is null ? (string)null : Encoding.ASCII.GetString(requestData.Body);
                 Assert.Equal(clientContent, requestContent);
                 await connection.SendResponseAsync(HttpStatusCode.OK, body: serverContent);
@@ -1416,6 +1416,144 @@ namespace System.Net.Http.Functional.Tests
             }
 
             return bytesReceived;
+        }
+
+        [OuterLoop("Uses Task.Delay")]
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_SettingsInitialWindowSize_RequestWontDeadlock()
+        {
+            // Note: if you see this test reported as [Long Running Test] you've hit the deadlock issue.
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(new Http2Options());
+            using HttpClient client = CreateHttpClient();
+
+            var tcs = new TaskCompletionSource<Http2LoopbackConnection>();
+            var cts = new CancellationTokenSource();
+
+            // Loopback server is pretty simple so we need to make sure that we start reading only when client is sending a request.
+            var serverSemaphore = new SemaphoreSlim(0, 1);      // Tells server that it can expect a request
+            var clientSemaphore = new SemaphoreSlim(1, 1);      // Tells client that server can accept a request
+            // SslStream doesn't like concurrent writes so we're serializing writes between serverReplying task and 
+            // SETTINGS frame sending loop.
+            var connectionSemaphore = new SemaphoreSlim(1, 1);  // Guards against concurrent writes on the server connection.
+
+            var serverReplying = Task.Run(async () =>
+            {
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry()
+                {
+                    SettingId = SettingId.InitialWindowSize,
+                    Value = Int32.MaxValue
+                });
+                await connection.WriteFrameAsync(new WindowUpdateFrame(Int32.MaxValue / 2, 0));
+                tcs.SetResult(connection);
+
+                while (true)
+                {
+                    try
+                    {
+                        await serverSemaphore.WaitAsync(cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+
+                    try
+                    {
+                        await connectionSemaphore.WaitAsync();
+                        (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync();
+                        await connection.SendResponseHeadersAsync(streamId);
+                    }
+                    catch (Exception ex) when (ex.Message == "Got RST")
+                    {
+                        // Result of the expected exception from the content.
+                    }
+                    finally
+                    {
+                        connectionSemaphore.Release();
+                        clientSemaphore.Release();
+                    }
+                }
+            });
+
+            var clientSending = Task.Run(async () =>
+            {
+                var random = new Random();
+                var buffer = new byte[1 << 10];
+
+                while (!cts.IsCancellationRequested)
+                {
+                    try
+                    {
+                        await clientSemaphore.WaitAsync(cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+
+                    try
+                    {
+                        serverSemaphore.Release();
+
+                        var send = 0;
+                        await client.PostAsync(server.Address, new StreamContent(new DelegateStream(
+                            canReadFunc: () => true,
+                            readFunc: (array, offset, count) =>
+                            {
+                                if (random.Next(2) < 1)
+                                {
+                                    throw new Exception("Pingu");
+                                }
+                                var copy = Math.Min(buffer.Length - send, count);
+                                if (copy == 0)
+                                {
+                                    return 0;
+                                }
+                                Buffer.BlockCopy(buffer, send, array, offset, copy);
+                                send += copy;
+                                return copy;
+                            })));
+                    }
+                    catch (Exception ex) when (ex.Message == "Pingu")
+                    {
+                        // Expected exception from the content.
+                    }
+                }
+            });
+
+            var finishedTask = await Task.WhenAny(tcs.Task, clientSending, serverReplying);
+            // Probably an exception within client/server tasks, await the task to propagate the exception.
+            if (finishedTask != tcs.Task)
+            {
+                await finishedTask;
+            }
+            var connection = await tcs.Task;
+            var random = new Random();
+
+            // The deadlock should manifest in multiple sends of the SETTINGS frame.
+            for (int i = 0; i < 100; i++)
+            {
+                await Task.Delay(random.Next(10, 100));
+                await connectionSemaphore.WaitAsync();
+
+                try
+                {
+                    await connection.ExpectSettingsAckAsync(30_000);
+                }
+                catch (TimeoutException ex)
+                {
+                    Assert.True(false, $"SETTINGS frame ACK timed out, the deadlock has been probably hit (in iteration {i}): {ex}");
+                }
+
+                Frame frame = new SettingsFrame(new SettingsEntry() { SettingId = SettingId.InitialWindowSize, Value = Int32.MaxValue });
+                await connection.WriteFrameAsync(frame);
+                connectionSemaphore.Release();
+            }
+
+            // Stop the client and thus server as well.
+            cts.Cancel();
+
+            await Task.WhenAll(clientSending, serverReplying).TimeoutAfter(5000);
         }
 
         [OuterLoop("Uses Task.Delay")]
