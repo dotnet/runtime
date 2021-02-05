@@ -7501,28 +7501,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_Prelink (MonoReflectionMethodHa
 	prelink_method (MONO_HANDLE_GETVAL (method, method), error);
 }
 
-void
-ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionTypeHandle type, MonoError *error);
-
-void
-ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionTypeHandle type, MonoError *error)
-{
-	g_assert_not_netcore ();
-
-	error_init (error);
-	MonoClass *klass = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (type, type));
-	MonoMethod* m;
-	gpointer iter = NULL;
-
-	mono_class_init_checked (klass, error);
-	return_if_nok (error);
-
-	while ((m = mono_class_get_methods (klass, &iter))) {
-		prelink_method (m, error);
-		return_if_nok (error);
-	}
-}
-
 int
 ves_icall_Interop_Sys_DoubleToString(double value, char *format, char *buffer, int bufferLength)
 {
