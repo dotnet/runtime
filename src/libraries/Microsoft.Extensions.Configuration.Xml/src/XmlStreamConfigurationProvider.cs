@@ -55,7 +55,6 @@ namespace Microsoft.Extensions.Configuration.Xml
                         case XmlNodeType.Element:
                             {
                                 var element = new XmlConfigurationElement(reader.LocalName, GetName(reader), GetLineInfo(reader));
-
                                 XmlConfigurationElement parent = currentPath.Any() ? currentPath.Peek() : null;
 
                                 if (parent == null)
