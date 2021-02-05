@@ -17,28 +17,24 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <summary>
         /// The children of this element
         /// </summary>
-        public List<XmlConfigurationElement>? Children { get; set; }
+        public List<XmlConfigurationElement> Children { get; set; }
 
         /// <summary>
         /// The siblings of this element, including itself
         /// Elements are considered siblings if they share the same element name and name attribute
         /// This list is shared by each sibling
         /// </summary>
-        public List<XmlConfigurationElement>? Siblings { get; set; }
+        public List<XmlConfigurationElement> Siblings { get; set; }
 
         public XmlConfigurationElementTextContent? TextContent { get; set; }
 
-        public List<XmlConfigurationElementAttributeValue>? Attributes { get; set; }
+        public List<XmlConfigurationElementAttributeValue> Attributes { get; set; }
 
         public XmlConfigurationElement(string elementName, string name, string lineInfo)
         {
             ElementName = elementName ?? throw new ArgumentNullException(nameof(elementName));
             Name = name;
             LineInfo = lineInfo;
-            Children = null;
-            Siblings = null;
-            TextContent = null;
-            Attributes = null;
         }
 
         public bool IsSiblingOf(XmlConfigurationElement xmlConfigurationElement)
