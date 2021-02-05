@@ -39,7 +39,7 @@ namespace System.Net.Http
             private int _pendingWindowUpdate;
             private CreditWaiter? _creditWaiter;
             private int _availableCredit;
-            private readonly object _creditSyncObject = new object(); // split from SyncObject to mitigate deadlock in OnWindowUpdate.
+            private readonly object _creditSyncObject = new object(); // split from SyncObject to avoid lock ordering problems with Http2Connection.SyncObject
 
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
