@@ -3210,7 +3210,7 @@ interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, M
 }
 
 static InterpBasicBlock*
-get_bb (TransformData *td, unsigned char *ip)
+get_bb (TransformData *td, unsigned char *ip, gboolean make_list)
 {
 	int offset = ip - td->il_code;
 	InterpBasicBlock *bb = td->offset_to_bb [offset];
@@ -3223,7 +3223,9 @@ get_bb (TransformData *td, unsigned char *ip)
 		bb->index = td->bb_count++;
 		td->offset_to_bb [offset] = bb;
 
-		td->basic_blocks = g_list_append_mempool (td->mempool, td->basic_blocks, bb);
+                /* Add the blocks in reverse order */
+                if (make_list)
+                        td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, bb);
 	}
 
 	return bb;
@@ -3235,7 +3237,7 @@ get_bb (TransformData *td, unsigned char *ip)
  *   Compute the set of IL level basic blocks.
  */
 static void
-get_basic_blocks (TransformData *td, MonoMethodHeader *header)
+get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_list)
 {
 	guint8 *start = (guint8*)td->il_code;
 	guint8 *end = (guint8*)td->il_code + td->code_size;
@@ -3246,14 +3248,14 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header)
 	const MonoOpcode *opcode;
 
 	td->offset_to_bb = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * (end - start + 1));
-	get_bb (td, start);
+	get_bb (td, start, make_list);
 
 	for (i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = header->clauses + i;
-		get_bb (td, start + c->try_offset);
-		get_bb (td, start + c->handler_offset);
+		get_bb (td, start + c->try_offset, make_list);
+		get_bb (td, start + c->handler_offset, make_list);
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER)
-			get_bb (td, start + c->data.filter_offset);
+			get_bb (td, start + c->data.filter_offset, make_list);
 	}
 
 	while (ip < end) {
@@ -3283,15 +3285,15 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header)
 			break;
 		case MonoShortInlineBrTarget:
 			target = start + cli_addr + 2 + (signed char)ip [1];
-			get_bb (td, target);
+			get_bb (td, target, make_list);
 			ip += 2;
-			get_bb (td, ip);
+			get_bb (td, ip, make_list);
 			break;
 		case MonoInlineBrTarget:
 			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
-			get_bb (td, target);
+			get_bb (td, target, make_list);
 			ip += 5;
-			get_bb (td, ip);
+			get_bb (td, ip, make_list);
 			break;
 		case MonoInlineSwitch: {
 			guint32 n = read32 (ip + 1);
@@ -3299,14 +3301,14 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header)
 			ip += 5;
 			cli_addr += 5 + 4 * n;
 			target = start + cli_addr;
-			get_bb (td, target);
+			get_bb (td, target, make_list);
 
 			for (j = 0; j < n; ++j) {
 				target = start + cli_addr + (gint32)read32 (ip);
-				get_bb (td, target);
+				get_bb (td, target, make_list);
 				ip += 4;
 			}
-			get_bb (td, ip);
+			get_bb (td, ip, make_list);
 			break;
 		}
 		case MonoInlineR:
@@ -3318,8 +3320,12 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header)
 		}
 
 		if (i == CEE_THROW || i == CEE_ENDFINALLY || i == CEE_RETHROW)
-			get_bb (td, ip);
+			get_bb (td, ip, make_list);
 	}
+
+        /* get_bb added blocks in reverse order, unreverse now */
+        if (make_list)
+                td->basic_blocks = g_list_reverse (td->basic_blocks);
 }
 
 static void
@@ -4084,7 +4090,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		exit_bb->stack_height = -1;
 	}
 
-	get_basic_blocks (td, header);
+	get_basic_blocks (td, header, td->gen_sdb_seq_points);
 
 	if (!inlining)
 		initialize_clause_bblocks (td);

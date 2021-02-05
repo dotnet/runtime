@@ -110,7 +110,7 @@ namespace System.Net.Mail
         public string DisplayName { get { throw null; } }
         public string Host { get { throw null; } }
         public string User { get { throw null; } }
-        public override bool Equals(object? value) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool TryCreate(string address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
         public static bool TryCreate(string address, string? displayName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
@@ -288,7 +288,7 @@ namespace System.Net.Mime
         public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
         public System.DateTime ReadDate { get { throw null; } set { } }
         public long Size { get { throw null; } set { } }
-        public override bool Equals(object? rparam) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? rparam) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -302,7 +302,7 @@ namespace System.Net.Mime
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
         public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
-        public override bool Equals(object? rparam) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? rparam) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }

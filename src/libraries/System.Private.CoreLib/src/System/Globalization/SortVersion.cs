@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Globalization
@@ -38,12 +39,12 @@ namespace System.Globalization
             m_SortId = customVersion;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is SortVersion otherVersion && Equals(otherVersion);
         }
 
-        public bool Equals(SortVersion? other)
+        public bool Equals([NotNullWhen(true)] SortVersion? other)
         {
             if (other == null)
             {

@@ -354,14 +354,24 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 
 	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
 
-#ifdef ICALL_TABLE_mscorlib
-	if (!strcmp (image_name, "mscorlib") || !strcmp (image_name, "System.Private.CoreLib")) {
+#if defined(ICALL_TABLE_mscorlib)
+	if (!strcmp (image_name, "mscorlib")) {
 		indexes = mscorlib_icall_indexes;
 		indexes_size = sizeof (mscorlib_icall_indexes) / 4;
 		handles = mscorlib_icall_handles;
 		funcs = mscorlib_icall_funcs;
 		assert (sizeof (mscorlib_icall_indexes [0]) == 4);
 	}
+#endif
+#if defined(ICALL_TABLE_corlib)
+	if (!strcmp (image_name, "System.Private.CoreLib")) {
+		indexes = corlib_icall_indexes;
+		indexes_size = sizeof (corlib_icall_indexes) / 4;
+		handles = corlib_icall_handles;
+		funcs = corlib_icall_funcs;
+		assert (sizeof (corlib_icall_indexes [0]) == 4);
+	}
+#endif
 #ifdef ICALL_TABLE_System
 	if (!strcmp (image_name, "System")) {
 		indexes = System_icall_indexes;
@@ -385,7 +395,6 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
 
 	return funcs [idx];
-#endif
 }
 
 static const char*
@@ -899,10 +908,8 @@ mono_wasm_get_obj_type (MonoObject *obj)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
-	if (
-		(klass == mono_get_string_class ()) &&
-		(mono_string_is_interned (obj) == obj)
-	)
+	if ((klass == mono_get_string_class ()) &&
+		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj))
 		return MARSHAL_TYPE_STRING_INTERNED;
 
 	MonoType *type = mono_class_get_type (klass);
@@ -928,10 +935,8 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
-	if (
-		(klass == mono_get_string_class ()) &&
-		(mono_string_is_interned (obj) == obj)
-	) {
+	if ((klass == mono_get_string_class ()) &&
+		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj)) {
 		*resultL = 0;
 		return MARSHAL_TYPE_STRING_INTERNED;
 	}

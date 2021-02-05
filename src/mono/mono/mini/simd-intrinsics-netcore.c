@@ -807,6 +807,7 @@ emit_invalid_operation (MonoCompile *cfg, const char* message)
 static SimdIntrinsic armbase_methods [] = {
 	{SN_LeadingSignCount},
 	{SN_LeadingZeroCount},
+	{SN_MultiplyHigh},
 	{SN_ReverseElementBits},
 	{SN_get_IsSupported}
 };
@@ -817,12 +818,26 @@ static SimdIntrinsic crc32_methods [] = {
 	{SN_get_IsSupported}
 };
 
+static SimdIntrinsic sha1_methods [] = {
+	{SN_FixedRotate, OP_XOP_X_X, SIMD_OP_ARM64_SHA1H},
+	{SN_HashUpdateChoose, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1C},
+	{SN_HashUpdateMajority, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1M},
+	{SN_HashUpdateParity, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1P},
+	{SN_ScheduleUpdate0, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1SU0},
+	{SN_ScheduleUpdate1, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA1SU1},
+	{SN_get_IsSupported}
+};
+
 static SimdIntrinsic sha256_methods [] = {
 	{SN_HashUpdate1, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H},
 	{SN_HashUpdate2, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H2},
 	{SN_ScheduleUpdate0, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA256SU0},
 	{SN_ScheduleUpdate1, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256SU1},
 	{SN_get_IsSupported}
+};
+
+static SimdIntrinsic advsimd_methods [] = {
+	{SN_Abs}
 };
 
 static MonoInst*
@@ -860,6 +875,9 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 			return emit_simd_ins_for_sig (cfg, klass, arg0_i32 ? OP_LZCNT32 : OP_LZCNT64, 0, arg0_type, fsig, args);
 		case SN_LeadingSignCount:
 			return emit_simd_ins_for_sig (cfg, klass, arg0_i32 ? OP_LSCNT32 : OP_LSCNT64, 0, arg0_type, fsig, args);
+		case SN_MultiplyHigh:
+			return emit_simd_ins_for_sig (cfg, klass,
+				(arg0_type == MONO_TYPE_I8 ? OP_ARM64_SMULH : OP_ARM64_UMULH), 0, arg0_type, fsig, args);
 		case SN_ReverseElementBits:
 			return emit_simd_ins_for_sig (cfg, klass,
 				(is_64bit ? OP_XOP_I8_I8 : OP_XOP_I4_I4),
@@ -906,6 +924,12 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		intrinsics_size = sizeof (sha256_methods);
 	}
 
+	if (is_hw_intrinsics_class (klass, "Sha1", &is_64bit)) {
+		feature = MONO_CPU_ARM64_CRYPTO;
+		intrinsics = sha1_methods;
+		intrinsics_size = sizeof (sha1_methods);
+	}
+
 	/*
 	 * Common logic for all instruction sets
 	 */
@@ -941,6 +965,45 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		if (info->op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 	}
+	
+	if (is_hw_intrinsics_class (klass, "AdvSimd", &is_64bit)) {
+		info = lookup_intrins_info (advsimd_methods, sizeof (advsimd_methods), cmethod);	
+
+		if (!info)
+			return NULL;
+
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_ADVSIMD) != 0;
+
+		switch (info -> id) {
+		case SN_Abs: {
+			SimdOp op = (SimdOp)0;
+			switch (get_underlying_type (fsig->params [0])) {
+			case MONO_TYPE_R8:
+				op = SIMD_OP_LLVM_DABS;
+				break;
+			case MONO_TYPE_R4:
+				op = SIMD_OP_LLVM_FABS;
+				break;
+			case MONO_TYPE_I1:
+				op = SIMD_OP_LLVM_I8ABS;
+				break;
+			case MONO_TYPE_I2:
+				op = SIMD_OP_LLVM_I16ABS;
+				break;
+			case MONO_TYPE_I4:
+				op = SIMD_OP_LLVM_I32ABS;
+				break;
+			case MONO_TYPE_I8:
+				op = SIMD_OP_LLVM_I64ABS;
+				break;
+			}
+
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
+		}
+		}
+		
+	}
+
 	return NULL;
 }
 #endif // TARGET_ARM64

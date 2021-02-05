@@ -23,12 +23,10 @@ protected:
 	IMetaDataEmitHelper*	m_pEmitHelper;
 	ULONG					m_ulResourceSize;
     mdFile                  m_tkFile;
-    IMetaDataEmit*          m_pOnDiskEmitter;
 
 public:
     RefClassWriter() {
         LIMITED_METHOD_CONTRACT;
-        m_pOnDiskEmitter = NULL;
     }
 
 	HRESULT		Init(ICeeGen *pCeeGen, IUnknown *pUnk, LPCWSTR szName);
@@ -67,29 +65,6 @@ public:
         LIMITED_METHOD_CONTRACT;
 		return m_ceeFile;
 	}
-
-    IMetaDataEmit* GetOnDiskEmitter() {
-        LIMITED_METHOD_CONTRACT;
-        return m_pOnDiskEmitter;
-    }
-
-    void SetOnDiskEmitter(IMetaDataEmit *pOnDiskEmitter) {
-        CONTRACTL {
-            NOTHROW;
-            GC_TRIGGERS;
-            // we know that the com implementation is ours so we use mode-any to simplify
-            // having to switch mode
-            MODE_ANY;
-            FORBID_FAULT;
-        }
-        CONTRACTL_END;
-        if (pOnDiskEmitter)
-            pOnDiskEmitter->AddRef();
-        if (m_pOnDiskEmitter)
-            m_pOnDiskEmitter->Release();
-        m_pOnDiskEmitter = pOnDiskEmitter;
-    }
-
 
 	~RefClassWriter();
 };

@@ -12,12 +12,35 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
+#include <mono/utils/checked-build.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-rand.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/profiler.h>
+#include <mono/metadata/assembly.h>
+#include <mono/metadata/class-internals.h>
+#include <mono/metadata/debug-internals.h>
+#include <mono/mini/mini-runtime.h>
+
+// Rundown flags.
+#define METHOD_FLAGS_DYNAMIC_METHOD 0x1
+#define METHOD_FLAGS_GENERIC_METHOD 0x2
+#define METHOD_FLAGS_SHARED_GENERIC_METHOD 0x4
+#define METHOD_FLAGS_JITTED_METHOD 0x8
+#define METHOD_FLAGS_JITTED_HELPER_METHOD 0x10
+
+#define MODULE_FLAGS_NATIVE_MODULE 0x2
+#define MODULE_FLAGS_DYNAMIC_MODULE 0x4
+#define MODULE_FLAGS_MANIFEST_MODULE 0x8
+
+#define ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY 0x2
+#define ASSEMBLY_FLAGS_NATIVE_ASSEMBLY 0x4
+#define ASSEMBLY_FLAGS_COLLECTIBLE_ASSEMBLY 0x8
+
+#define DOMAIN_FLAGS_DEFAULT_DOMAIN 0x1
+#define DOMAIN_FLAGS_EXECUTABLE_DOMAIN 0x2
 
 typedef enum _EventPipeActivityControlCode {
 	EP_ACTIVITY_CONTROL_GET_ID = 1,
@@ -51,6 +74,13 @@ typedef struct _EventPipeEventInstanceData {
 	uint32_t payload_len;
 } EventPipeEventInstanceData;
 
+typedef struct _EventPipeFireMethodEventsData{
+	MonoDomain *domain;
+	uint8_t *buffer;
+	size_t buffer_size;
+	ep_rt_mono_fire_method_rundown_events_func method_events_func;
+} EventPipeFireMethodEventsData;
+
 gboolean ep_rt_mono_initialized;
 MonoNativeTlsKey ep_rt_mono_thread_holder_tls_id;
 gpointer ep_rt_mono_rand_provider;
@@ -58,9 +88,119 @@ gpointer ep_rt_mono_rand_provider;
 static ep_rt_thread_holder_alloc_func thread_holder_alloc_callback_func;
 static ep_rt_thread_holder_free_func thread_holder_free_callback_func;
 
+/*
+ * Forward declares of all static functions.
+ */
+
 static
 gboolean
-rand_try_get_bytes_func (guchar *buffer, gssize buffer_size, MonoError *error)
+rand_try_get_bytes_func (
+	guchar *buffer,
+	gssize buffer_size,
+	MonoError *error);
+
+static
+EventPipeThread *
+eventpipe_thread_get (void);
+
+static
+EventPipeThread *
+eventpipe_thread_get_or_create (void);
+
+static
+void
+eventpipe_thread_exited (void);
+
+static
+void
+profiler_eventpipe_thread_exited (
+	MonoProfiler *prof,
+	uintptr_t tid);
+
+static
+gpointer
+eventpipe_thread_attach (gboolean background_thread);
+
+static
+void
+eventpipe_thread_detach (void);
+
+static
+void
+eventpipe_fire_method_events (
+	MonoJitInfo *ji,
+	EventPipeFireMethodEventsData *events_data);
+
+static
+void
+eventpipe_fire_method_events_func (
+	MonoJitInfo *ji,
+	gpointer user_data);
+
+static
+void
+eventpipe_fire_assembly_events (
+	MonoDomain *domain,
+	MonoAssembly *assembly,
+	ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func);
+
+static
+gboolean
+eventpipe_execute_rundown (
+	ep_rt_mono_fire_domain_rundown_events_func domain_events_func,
+	ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func,
+	ep_rt_mono_fire_method_rundown_events_func methods_events_func);
+
+static
+gboolean
+eventpipe_walk_managed_stack_for_thread_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	gpointer data);
+
+static
+gboolean
+eventpipe_walk_managed_stack_for_thread (
+	ep_rt_thread_handle_t thread,
+	EventPipeStackContents *stack_contents);
+
+static
+gboolean
+eventpipe_method_get_simple_assembly_name (
+	ep_rt_method_desc_t *method,
+	ep_char8_t *name,
+	size_t name_len);
+
+static
+gboolean
+evetpipe_method_get_full_name (
+	ep_rt_method_desc_t *method,
+	ep_char8_t *name,
+	size_t name_len);
+
+static
+void
+delegate_callback_data_free_func (
+	EventPipeCallback callback_func,
+	void *callback_data);
+
+static
+void
+delegate_callback_func (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_context);
+
+static
+gboolean
+rand_try_get_bytes_func (
+	guchar *buffer,
+	gssize buffer_size,
+	MonoError *error)
 {
 	g_assert (ep_rt_mono_rand_provider != NULL);
 	return mono_rand_try_get_bytes (&ep_rt_mono_rand_provider, buffer, buffer_size, error);
@@ -100,7 +240,9 @@ eventpipe_thread_exited (void)
 
 static
 void
-profiler_eventpipe_thread_exited (MonoProfiler *prof, uintptr_t tid)
+profiler_eventpipe_thread_exited (
+	MonoProfiler *prof,
+	uintptr_t tid)
 {
 	eventpipe_thread_exited ();
 }
@@ -114,7 +256,7 @@ eventpipe_thread_attach (gboolean background_thread)
 	// NOTE, under netcore, only root domain exists.
 	if (!mono_thread_current ()) {
 		thread = mono_thread_internal_attach (mono_get_root_domain ());
-		if (background_thread) {
+		if (background_thread && thread) {
 			mono_thread_set_state (thread, ThreadState_Background);
 			mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
 		}
@@ -130,6 +272,341 @@ eventpipe_thread_detach (void)
 	MonoThread *current_thread = mono_thread_current ();
 	if (current_thread)
 		mono_thread_internal_detach (current_thread);
+}
+
+static
+void
+eventpipe_fire_method_events (
+	MonoJitInfo *ji,
+	EventPipeFireMethodEventsData *events_data)
+{
+	g_assert_checked (ji != NULL);
+	g_assert_checked (events_data->domain != NULL);
+	g_assert_checked (events_data->method_events_func != NULL);
+
+	uint64_t method_id = 0;
+	uint64_t module_id = 0;
+	uint64_t method_code_start = (uint64_t)ji->code_start;
+	uint32_t method_code_size = (uint32_t)ji->code_size;
+	uint32_t method_token = 0;
+	uint32_t method_flags = 0;
+	uint8_t kind = MONO_CLASS_DEF;
+	char *method_namespace = NULL;
+	const char *method_name = NULL;
+	char *method_signature = NULL;
+
+	//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
+
+	MonoMethod *method = jinfo_get_method (ji);
+	if (method) {
+		method_id = (uint64_t)method;
+		method_token = method->token;
+
+		if (mono_jit_info_get_generic_sharing_context (ji))
+			method_flags |= METHOD_FLAGS_SHARED_GENERIC_METHOD;
+
+		if (method->dynamic)
+			method_flags |= METHOD_FLAGS_DYNAMIC_METHOD;
+
+		if (!ji->from_aot && !ji->from_llvm) {
+			method_flags |= METHOD_FLAGS_JITTED_METHOD;
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				method_flags |= METHOD_FLAGS_JITTED_HELPER_METHOD;
+		}
+
+		if (method->is_generic || method->is_inflated)
+			method_flags |= METHOD_FLAGS_GENERIC_METHOD;
+
+		method_name = method->name;
+		method_signature = mono_signature_full_name (method->signature);
+
+		if (method->klass) {
+			module_id = (uint64_t)m_class_get_image (method->klass);
+			kind = m_class_get_class_kind (method->klass);
+			if (kind == MONO_CLASS_GTD || kind == MONO_CLASS_GINST)
+				method_flags |= METHOD_FLAGS_GENERIC_METHOD;
+			method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
+		}
+	}
+
+	uint16_t offset_entries = 0;
+	uint32_t *il_offsets = NULL;
+	uint32_t *native_offsets = NULL;
+
+	MonoDebugMethodJitInfo *debug_info = method ? mono_debug_find_method (method, events_data->domain) : NULL;
+	if (debug_info) {
+		offset_entries = debug_info->num_line_numbers;
+		size_t needed_size = (offset_entries * sizeof (uint32_t) * 2);
+		if (!events_data->buffer || needed_size > events_data->buffer_size) {
+			g_free (events_data->buffer);
+			events_data->buffer_size = (size_t)(needed_size * 1.5);
+			events_data->buffer = g_new (uint8_t, events_data->buffer_size);
+		}
+
+		if (events_data->buffer) {
+			il_offsets = (uint32_t*)events_data->buffer;
+			native_offsets = il_offsets + offset_entries;
+
+			for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
+				il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
+				native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
+			}
+		}
+
+		mono_debug_free_method_jit_info (debug_info);
+	}
+
+	if (events_data->buffer && !il_offsets && !native_offsets) {
+		// No IL offset -> Native offset mapping available. Put all code on IL offset 0.
+		g_assert_checked (events_data->buffer_size >= sizeof (uint32_t) * 2);
+		offset_entries = 1;
+		il_offsets = (uint32_t*)events_data->buffer;
+		native_offsets = il_offsets + offset_entries;
+		il_offsets [0] = 0;
+		native_offsets [0] = (uint32_t)ji->code_size;
+	}
+
+	events_data->method_events_func (
+		method_id,
+		module_id,
+		method_code_start,
+		method_code_size,
+		method_token,
+		method_flags,
+		(ep_char8_t *)method_namespace,
+		(ep_char8_t *)method_name,
+		(ep_char8_t *)method_signature,
+		offset_entries,
+		il_offsets,
+		native_offsets,
+		NULL);
+
+	g_free (method_namespace);
+	g_free (method_signature);
+}
+
+static
+void
+eventpipe_fire_method_events_func (
+	MonoJitInfo *ji,
+	gpointer user_data)
+{
+	EventPipeFireMethodEventsData *events_data = (EventPipeFireMethodEventsData *)user_data;
+	g_assert_checked (events_data != NULL);
+
+	if (ji && !ji->is_trampoline && !ji->async)
+		eventpipe_fire_method_events (ji, events_data);
+}
+
+static
+void
+eventpipe_fire_assembly_events (
+	MonoDomain *domain,
+	MonoAssembly *assembly,
+	ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func)
+{
+	g_assert_checked (domain != NULL);
+	g_assert_checked (assembly != NULL);
+	g_assert_checked (assembly_events_func != NULL);
+
+	uint64_t domain_id = (uint64_t)domain;
+	uint64_t module_id = (uint64_t)assembly->image;
+	uint64_t assembly_id = (uint64_t)assembly;
+
+	// TODO: Extract all module IL/Native paths and pdb metadata when available.
+	const char *module_il_path = "";
+	const char *module_il_pdb_path = "";
+	const char *module_native_path = "";
+	const char *module_native_pdb_path = "";
+	uint8_t signature [EP_GUID_SIZE] = { 0 };
+	uint32_t module_il_pdb_age = 0;
+	uint32_t module_native_pdb_age = 0;
+
+	uint32_t reserved_flags = 0;
+	uint64_t binding_id = 0;
+
+	// Native methods are part of JIT table and already emitted.
+	// TODO: FireEtwMethodDCEndVerbose_V1_or_V2 for all native methods in module as well?
+
+	// Netcore has a 1:1 between assemblies and modules, so its always a manifest module.
+	uint32_t module_flags = MODULE_FLAGS_MANIFEST_MODULE;
+	if (assembly->image) {
+		if (assembly->image->dynamic)
+			module_flags |= MODULE_FLAGS_DYNAMIC_MODULE;
+		if (assembly->image->aot_module)
+			module_flags |= MODULE_FLAGS_NATIVE_MODULE;
+
+		module_il_path = assembly->image->filename ? assembly->image->filename : "";
+	}
+
+	uint32_t assembly_flags = 0;
+	if (assembly->dynamic)
+		assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
+
+	if (assembly->image && assembly->image->aot_module) {
+		assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
+	}
+
+	char *assembly_name = mono_stringify_assembly_name (&assembly->aname);
+
+	assembly_events_func (
+		domain_id,
+		assembly_id,
+		assembly_flags,
+		binding_id,
+		(const ep_char8_t*)assembly_name,
+		module_id,
+		module_flags,
+		reserved_flags,
+		(const ep_char8_t *)module_il_path,
+		(const ep_char8_t *)module_native_path,
+		signature,
+		module_il_pdb_age,
+		(const ep_char8_t *)module_il_pdb_path,
+		signature,
+		module_native_pdb_age,
+		(const ep_char8_t *)module_native_pdb_path,
+		NULL);
+
+	g_free (assembly_name);
+}
+
+static
+gboolean
+eventpipe_execute_rundown (
+	ep_rt_mono_fire_domain_rundown_events_func domain_events_func,
+	ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func,
+	ep_rt_mono_fire_method_rundown_events_func method_events_func)
+{
+	g_assert_checked (domain_events_func != NULL);
+	g_assert_checked (assembly_events_func != NULL);
+	g_assert_checked (method_events_func != NULL);
+
+	// Under netcore we only have root domain.
+	MonoDomain *root_domain = mono_get_root_domain ();
+	if (root_domain) {
+		uint64_t domain_id = (uint64_t)root_domain;
+
+		// Iterate all functions in use (both JIT and AOT).
+		EventPipeFireMethodEventsData events_data;
+		events_data.domain = root_domain;
+		events_data.buffer_size = 1024 * sizeof(uint32_t);
+		events_data.buffer = g_new (uint8_t, events_data.buffer_size);
+		events_data.method_events_func = method_events_func;
+		mono_jit_info_table_foreach_internal (root_domain, eventpipe_fire_method_events_func, &events_data);
+		g_free (events_data.buffer);
+
+		// Iterate all assemblies in domain.
+		GPtrArray *assemblies = mono_domain_get_assemblies (root_domain, FALSE);
+		if (assemblies) {
+			for (int i = 0; i < assemblies->len; ++i) {
+				MonoAssembly *assembly = (MonoAssembly *)g_ptr_array_index (assemblies, i);
+				if (assembly)
+					eventpipe_fire_assembly_events (root_domain, assembly, assembly_events_func);
+			}
+			g_ptr_array_free (assemblies, TRUE);
+		}
+
+		uint32_t domain_flags = DOMAIN_FLAGS_DEFAULT_DOMAIN | DOMAIN_FLAGS_EXECUTABLE_DOMAIN;
+		const char *domain_name = root_domain->friendly_name ? root_domain->friendly_name : "";
+		uint32_t domain_index = 1;
+
+		domain_events_func (
+			domain_id,
+			domain_flags,
+			(const ep_char8_t *)domain_name,
+			domain_index,
+			NULL);
+	}
+
+	return TRUE;
+}
+
+static
+gboolean
+eventpipe_walk_managed_stack_for_thread_func (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	gpointer data)
+{
+	g_assert_checked (frame != NULL);
+	g_assert_checked (data != NULL);
+
+	switch (frame->type) {
+	case FRAME_TYPE_DEBUGGER_INVOKE:
+	case FRAME_TYPE_MANAGED_TO_NATIVE:
+	case FRAME_TYPE_TRAMPOLINE:
+	case FRAME_TYPE_INTERP_TO_MANAGED:
+	case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+		return FALSE;
+	case FRAME_TYPE_MANAGED:
+	case FRAME_TYPE_INTERP:
+		if (!frame->ji)
+			return FALSE;
+		MonoMethod *method = frame->ji->async ? NULL : frame->actual_method;
+		ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
+		return ep_stack_contents_get_length ((EventPipeStackContents *)data) >= EP_MAX_STACK_DEPTH;
+	default:
+		g_assert_not_reached ();
+		return FALSE;
+	}
+}
+
+static
+gboolean
+eventpipe_walk_managed_stack_for_thread (
+	ep_rt_thread_handle_t thread,
+	EventPipeStackContents *stack_contents)
+{
+	g_assert (thread != NULL && stack_contents != NULL);
+
+	if (thread == ep_rt_thread_get_handle ())
+		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (eventpipe_walk_managed_stack_for_thread_func, NULL, MONO_UNWIND_SIGNAL_SAFE, stack_contents);
+	else
+		mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_walk_managed_stack_for_thread_func, mono_thread_info_get_suspend_state (thread), MONO_UNWIND_SIGNAL_SAFE, stack_contents);
+
+	return TRUE;
+}
+
+static
+gboolean
+eventpipe_method_get_simple_assembly_name (
+	ep_rt_method_desc_t *method,
+	ep_char8_t *name,
+	size_t name_len)
+{
+	g_assert_checked (method != NULL);
+	g_assert_checked (name != NULL);
+
+	MonoClass *method_class = mono_method_get_class (method);
+	MonoImage *method_image = method_class ? mono_class_get_image (method_class) : NULL;
+	const ep_char8_t *assembly_name = method_image ? mono_image_get_name (method_image) : NULL;
+
+	if (!assembly_name)
+		return FALSE;
+
+	g_strlcpy (name, assembly_name, name_len);
+	return TRUE;
+}
+
+static
+gboolean
+evetpipe_method_get_full_name (
+	ep_rt_method_desc_t *method,
+	ep_char8_t *name,
+	size_t name_len)
+{
+	g_assert_checked (method != NULL);
+	g_assert_checked (name != NULL);
+
+	char *full_method_name = mono_method_get_name_full (method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL);
+	if (!full_method_name)
+		return FALSE;
+
+	g_strlcpy (name, full_method_name, name_len);
+
+	g_free (full_method_name);
+	return TRUE;
 }
 
 void
@@ -165,6 +642,10 @@ mono_eventpipe_init (
 		table->ep_rt_mono_thread_detach = eventpipe_thread_detach;
 		table->ep_rt_mono_get_os_cmd_line = mono_get_os_cmd_line;
 		table->ep_rt_mono_get_managed_cmd_line = mono_runtime_get_managed_cmd_line;
+		table->ep_rt_mono_execute_rundown = eventpipe_execute_rundown;
+		table->ep_rt_mono_walk_managed_stack_for_thread = eventpipe_walk_managed_stack_for_thread;
+		table->ep_rt_mono_method_get_simple_assembly_name = eventpipe_method_get_simple_assembly_name;
+		table->ep_rt_mono_method_get_full_name = evetpipe_method_get_full_name;
 	}
 
 	thread_holder_alloc_callback_func = thread_holder_alloc_func;
