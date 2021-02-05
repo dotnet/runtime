@@ -196,7 +196,7 @@
     <!-- Disable source link when building locally. -->
     <DisableSourceLink Condition="'$(DisableSourceLink)' == '' and
                                   '$(ContinuousIntegrationBuild)' != 'true' and
-                                  '$(OfficialBuildId)' == ''">false</DisableSourceLink>
+                                  '$(OfficialBuildId)' == ''">true</DisableSourceLink>
   </PropertyGroup>
 
   <!-- RepositoryEngineeringDir isn't set when Installer tests import this file. -->
