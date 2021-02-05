@@ -332,9 +332,9 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (_strategy.IsClosed)
                 throw Error.GetFileNotOpen();
-            if (!_strategy.CanSeek)
+            if (!CanSeek)
                 throw Error.GetSeekNotSupported();
-            if (!_strategy.CanWrite)
+            if (!CanWrite)
                 throw Error.GetWriteNotSupported();
 
             _strategy.SetLength(value);
@@ -354,7 +354,7 @@ namespace System.IO
             get
             {
                 if (_strategy.IsClosed) throw Error.GetFileNotOpen();
-                if (!_strategy.CanSeek) throw Error.GetSeekNotSupported();
+                if (!CanSeek) throw Error.GetSeekNotSupported();
                 return _strategy.Length;
             }
         }
@@ -367,7 +367,7 @@ namespace System.IO
                 if (_strategy.IsClosed)
                     throw Error.GetFileNotOpen();
 
-                if (!_strategy.CanSeek)
+                if (!CanSeek)
                     throw Error.GetSeekNotSupported();
 
                 return _strategy.Position;
@@ -419,7 +419,7 @@ namespace System.IO
         {
             ValidateBufferArguments(buffer, offset, count);
             if (_strategy.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (!_strategy.CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
             return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
@@ -436,7 +436,7 @@ namespace System.IO
         {
             ValidateBufferArguments(buffer, offset, count);
             if (_strategy.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (!_strategy.CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
             return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }
