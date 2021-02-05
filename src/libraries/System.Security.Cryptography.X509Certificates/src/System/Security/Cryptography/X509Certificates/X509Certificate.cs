@@ -5,6 +5,7 @@ using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Text;
@@ -269,7 +270,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             X509Certificate? other = obj as X509Certificate;
             if (other == null)
@@ -277,7 +278,7 @@ namespace System.Security.Cryptography.X509Certificates
             return Equals(other);
         }
 
-        public virtual bool Equals(X509Certificate? other)
+        public virtual bool Equals([NotNullWhen(true)] X509Certificate? other)
         {
             if (other == null)
                 return false;

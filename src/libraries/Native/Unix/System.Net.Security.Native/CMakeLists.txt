@@ -19,6 +19,10 @@ if (GEN_SHARED_LIB)
     )
 endif()
 
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVEGSS_SOURCES ${NATIVEGSS_SOURCES} entrypoints.c)
+endif()
+
 add_library(System.Net.Security.Native-Static
     STATIC
     ${NATIVEGSS_SOURCES}
@@ -30,6 +34,17 @@ if (GEN_SHARED_LIB)
     target_link_libraries(System.Net.Security.Native
         ${NATIVE_LIBS_EXTRA}
     )
+
+    if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+        add_custom_command(TARGET System.Net.Security.Native POST_BUILD
+            COMMENT "Verifying System.Net.Security.Native entry points against entrypoints.c "
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                $<TARGET_FILE:System.Net.Security.Native>
+                ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                ${CMAKE_NM}
+            VERBATIM
+        )
+    endif()
 
     install_with_stripped_symbols (System.Net.Security.Native PROGRAMS .)
 endif()

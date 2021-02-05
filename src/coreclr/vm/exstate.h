@@ -264,48 +264,4 @@ private:
 
 extern BOOL IsWatsonEnabled();
 
-#ifndef TARGET_UNIX
-// This preprocessor definition is used to capture watson buckets
-// at AppDomain transition boundary in END_DOMAIN_TRANSITION macro.
-//
-// This essentially copies the watson bucket details from the current exception tracker
-// to the UE watson bucket tracker only if it is preallocated exception and NOT
-// thread abort. For preallocated thread abort, UE Watson bucket tracker would already have the
-// bucket details.
-//
-// It also captures buckets for non-preallocated exceptions (including non-preallocated threadabort) since
-// the object would have the IP inside it.
-#define CAPTURE_BUCKETS_AT_TRANSITION(pThread, oThrowable)                                                                                  \
-        if (IsWatsonEnabled())                                                                                                              \
-        {                                                                                                                                   \
-            /* Switch to COOP mode */                                                                                                       \
-            GCX_COOP();                                                                                                                     \
-                                                                                                                                            \
-            /* oThrowable is actually GET_THROWABLE macro; so extract the actual throwable for once and for all */                          \
-            OBJECTREF throwable = oThrowable;                                                                                               \
-            if (CLRException::IsPreallocatedExceptionObject(throwable))                                                                     \
-            {                                                                                                                               \
-                if (pThread->GetExceptionState()->GetCurrentExceptionTracker() != NULL)                                                     \
-                {                                                                                                                           \
-                    if (!IsThrowableThreadAbortException(throwable))                                                                        \
-                    {                                                                                                                       \
-                        PTR_EHWatsonBucketTracker pWatsonBucketTracker = GetWatsonBucketTrackerForPreallocatedException(throwable, FALSE);  \
-                        if (pWatsonBucketTracker != NULL)                                                                                   \
-                        {                                                                                                                   \
-                            pThread->GetExceptionState()->GetUEWatsonBucketTracker()->CopyEHWatsonBucketTracker(*(pWatsonBucketTracker));   \
-                            pThread->GetExceptionState()->GetUEWatsonBucketTracker()->CaptureUnhandledInfoForWatson(TypeOfReportedError::UnhandledException, pThread, NULL); \
-                            DEBUG_STMT(pThread->GetExceptionState()->GetUEWatsonBucketTracker()->SetCapturedAtADTransition();)              \
-                        }                                                                                                                   \
-                    }                                                                                                                       \
-                }                                                                                                                           \
-            }                                                                                                                               \
-            else                                                                                                                            \
-            {                                                                                                                               \
-                SetupWatsonBucketsForNonPreallocatedExceptions(throwable);                                                                  \
-            }                                                                                                                               \
-        }
-#else // !TARGET_UNIX
-#define CAPTURE_BUCKETS_AT_TRANSITION(pThread, oThrowable)
-#endif // TARGET_UNIX
-
 #endif // __ExState_h__

@@ -234,7 +234,9 @@ private:
             if (filesystemType == nullptr || lineLen > maxLineLen)
             {
                 free(filesystemType);
+                filesystemType = nullptr;
                 free(options);
+                options = nullptr;
                 filesystemType = (char*)malloc(lineLen+1);
                 if (filesystemType == nullptr)
                     goto done;
@@ -321,7 +323,9 @@ private:
             if (subsystem_list == nullptr || lineLen > maxLineLen)
             {
                 free(subsystem_list);
+                subsystem_list = nullptr;
                 free(cgroup_path);
+                cgroup_path = nullptr;
                 subsystem_list = (char*)malloc(lineLen+1);
                 if (subsystem_list == nullptr)
                     goto done;

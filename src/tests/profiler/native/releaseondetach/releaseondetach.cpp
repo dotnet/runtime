@@ -97,6 +97,8 @@ HRESULT ReleaseOnDetach::Shutdown()
 
 HRESULT ReleaseOnDetach::ProfilerAttachComplete()
 {
+    SHUTDOWNGUARD();
+
     HRESULT hr = pCorProfilerInfo->RequestProfilerDetach(0);
     if (FAILED(hr))
     {
@@ -113,6 +115,8 @@ HRESULT ReleaseOnDetach::ProfilerAttachComplete()
 
 HRESULT STDMETHODCALLTYPE ReleaseOnDetach::ProfilerDetachSucceeded()
 {
+    SHUTDOWNGUARD();
+
     printf("Profiler detach succeeded\n");
     _detachSucceeded = true;
     return S_OK;

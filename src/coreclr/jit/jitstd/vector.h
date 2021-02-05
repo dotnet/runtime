@@ -221,6 +221,8 @@ public:
 
     size_type size() const;
 
+    T* data() { return m_pArray; }
+
     void swap(vector<T, Allocator>& vec);
 
 private:
@@ -953,7 +955,7 @@ T* vector<T, Allocator>::iterator::operator&()
 template <typename T, typename Allocator>
 vector<T, Allocator>::iterator::operator T*()
 {
-    return &m_pElem;
+    return m_pElem;
 }
 
 // const_iterator
@@ -1151,7 +1153,7 @@ T* vector<T, Allocator>::reverse_iterator::operator&()
 template <typename T, typename Allocator>
 vector<T, Allocator>::reverse_iterator::operator T*()
 {
-    return &m_pElem;
+    return m_pElem;
 }
 
 // const_reverse_iterator

@@ -3273,11 +3273,20 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     //
     for (unsigned int i = 0; i < dstCount; ++i)
     {
+        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+
         if (isMultiRegSrc)
         {
-            BuildUse(op1, RBM_NONE, i);
+            regMaskTP srcCandidates = RBM_NONE;
+#ifdef TARGET_X86
+            var_types type = fieldVarDsc->TypeGet();
+            if (varTypeIsByte(type))
+            {
+                srcCandidates = allByteRegs();
+            }
+#endif // TARGET_X86
+            BuildUse(op1, srcCandidates, i);
         }
-        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
         assert(isCandidateVar(fieldVarDsc));
         BuildStoreLocDef(storeLoc, fieldVarDsc, nullptr, i);
         if (isMultiRegSrc && (i < (dstCount - 1)))

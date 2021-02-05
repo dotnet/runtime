@@ -143,14 +143,14 @@ LargeHeapHandleBucket::LargeHeapHandleBucket(LargeHeapHandleBucket *pNext, DWORD
 
     // Allocate the array in the large object heap.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass, TRUE);
+    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass, /* bAllocateInPinnedHeap = */TRUE);
 
     // Retrieve the pointer to the data inside the array. This is legal since the array
     // is located in the large object heap and is guaranteed not to move.
     m_pArrayDataPtr = (OBJECTREF *)HandleArrayObj->GetDataPtr();
 
     // Store the array in a strong handle to keep it alive.
-    m_hndHandleArray = pDomain->CreatePinningHandle((OBJECTREF)HandleArrayObj);
+    m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)HandleArrayObj);
 }
 
 
@@ -166,7 +166,7 @@ LargeHeapHandleBucket::~LargeHeapHandleBucket()
 
     if (m_hndHandleArray)
     {
-        DestroyPinningHandle(m_hndHandleArray);
+        DestroyStrongHandle(m_hndHandleArray);
         m_hndHandleArray = NULL;
     }
 }
@@ -517,7 +517,7 @@ ThreadStaticHandleBucket::ThreadStaticHandleBucket(ThreadStaticHandleBucket *pNe
 
     // Allocate the array on the GC heap.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass, FALSE);
+    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass);
 
     // Store the array in a strong handle to keep it alive.
     m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)HandleArrayObj);
@@ -1190,13 +1190,6 @@ void SystemDomain::CreatePreallocatedExceptions()
     }
     CONTRACTL_END;
 
-    EXCEPTIONREF pBaseException = (EXCEPTIONREF)AllocateObject(g_pExceptionClass);
-    pBaseException->SetHResult(COR_E_EXCEPTION);
-    pBaseException->SetXCode(EXCEPTION_COMPLUS);
-    _ASSERTE(g_pPreallocatedBaseException == NULL);
-    g_pPreallocatedBaseException = CreateHandle(pBaseException);
-
-
     EXCEPTIONREF pOutOfMemory = (EXCEPTIONREF)AllocateObject(g_pOutOfMemoryExceptionClass);
     pOutOfMemory->SetHResult(COR_E_OUTOFMEMORY);
     pOutOfMemory->SetXCode(EXCEPTION_COMPLUS);
@@ -1216,20 +1209,6 @@ void SystemDomain::CreatePreallocatedExceptions()
     pExecutionEngine->SetXCode(EXCEPTION_COMPLUS);
     _ASSERTE(g_pPreallocatedExecutionEngineException == NULL);
     g_pPreallocatedExecutionEngineException = CreateHandle(pExecutionEngine);
-
-
-    EXCEPTIONREF pRudeAbortException = (EXCEPTIONREF)AllocateObject(g_pThreadAbortExceptionClass);
-    pRudeAbortException->SetHResult(COR_E_THREADABORTED);
-    pRudeAbortException->SetXCode(EXCEPTION_COMPLUS);
-    _ASSERTE(g_pPreallocatedRudeThreadAbortException == NULL);
-    g_pPreallocatedRudeThreadAbortException = CreateHandle(pRudeAbortException);
-
-
-    EXCEPTIONREF pAbortException = (EXCEPTIONREF)AllocateObject(g_pThreadAbortExceptionClass);
-    pAbortException->SetHResult(COR_E_THREADABORTED);
-    pAbortException->SetXCode(EXCEPTION_COMPLUS);
-    _ASSERTE(g_pPreallocatedThreadAbortException == NULL);
-    g_pPreallocatedThreadAbortException = CreateHandle( pAbortException );
 }
 #endif // CROSSGEN_COMPILE
 

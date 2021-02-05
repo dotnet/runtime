@@ -8,8 +8,9 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// RuntimeEventSource is an EventSource that represents events emitted by the managed runtime.
     /// </summary>
-    [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = "System.Runtime")]
-    internal sealed class RuntimeEventSource : EventSource
+    [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = EventSourceName)]
+    [EventSourceAutoGenerate]
+    internal sealed partial class RuntimeEventSource : EventSource
     {
         internal const string EventSourceName = "System.Runtime";
 
@@ -46,9 +47,9 @@ namespace System.Diagnostics.Tracing
             s_RuntimeEventSource = new RuntimeEventSource();
         }
 
-        private RuntimeEventSource() : base(new Guid(0x49592C0F, 0x5A05, 0x516D, 0xAA, 0x4B, 0xA6, 0x4E, 0x02, 0x02, 0x6C, 0x89), EventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
-        {
-        }
+        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
+        // as you can't make a constructor partial.
+        private RuntimeEventSource(int _) { }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
@@ -73,7 +74,7 @@ namespace System.Diagnostics.Tracing
                 _timerCounter ??= new PollingCounter("active-timer-count", this, () => Timer.ActiveCount) { DisplayName = "Number of Active Timers" };
                 _fragmentationCounter ??= new PollingCounter("gc-fragmentation", this, () => {
                     var gcInfo = GC.GetGCMemoryInfo();
-                    return gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes;
+                    return gcInfo.HeapSizeBytes != 0 ? gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes : 0;
                  }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
 #if !MONO
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };

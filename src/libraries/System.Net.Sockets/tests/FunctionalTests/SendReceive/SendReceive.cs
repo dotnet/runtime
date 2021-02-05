@@ -873,6 +873,7 @@ namespace System.Net.Sockets.Tests
                 var socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
                 if (address.IsIPv4MappedToIPv6) socket.DualMode = true;
                 socket.BindToAnonymousPort(address);
+                ConfigureNonBlocking(socket);
 
                 Task receiveTask = ReceiveAsync(socket, new ArraySegment<byte>(new byte[1]));
 

@@ -11,6 +11,7 @@
 #include <corehost_context_contract.h>
 #include "hostfxr_exports.h"
 #include "host_context_test.h"
+#include <thread>
 #include <utils.h>
 
 namespace
@@ -672,7 +673,7 @@ bool host_context_test::mixed(
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
-            run_app_output << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc  << std::endl;
+            run_app_output << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
     };
     std::thread app_start = std::thread(run_app);
 

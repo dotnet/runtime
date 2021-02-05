@@ -77,7 +77,7 @@ void GCHeap::UpdatePostGCCounters()
     // The following is for instrumentation.
     //
     // Calculate the common ones for ETW and perf counters.
-#if defined(FEATURE_EVENT_TRACE)
+#ifdef FEATURE_EVENT_TRACE
 #ifdef MULTIPLE_HEAPS
     //take the first heap....
     gc_heap* hp1 = gc_heap::g_heaps[0];
@@ -153,9 +153,7 @@ void GCHeap::UpdatePostGCCounters()
         }
 #endif //MULTIPLE_HEAPS
     }
-#endif //FEATURE_EVENT_TRACE
 
-#ifdef FEATURE_EVENT_TRACE
     ReportGenerationBounds();
 
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
@@ -460,12 +458,12 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
     heap_segment_plan_allocated(seg) = 0;
     seg->flags = heap_segment_flags_readonly;
 
-#if defined (MULTIPLE_HEAPS) && !defined (ISOLATED_HEAPS)
+#ifdef MULTIPLE_HEAPS
     gc_heap* heap = gc_heap::g_heaps[0];
     heap_segment_heap(seg) = heap;
 #else
     gc_heap* heap = pGenGCHeap;
-#endif //MULTIPLE_HEAPS && !ISOLATED_HEAPS
+#endif //MULTIPLE_HEAPS
 
     if (heap->insert_ro_segment(seg) == FALSE)
     {
@@ -483,11 +481,11 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
 void GCHeap::UnregisterFrozenSegment(segment_handle seg)
 {
 #ifdef FEATURE_BASICFREEZE
-#if defined (MULTIPLE_HEAPS) && !defined (ISOLATED_HEAPS)
+#ifdef MULTIPLE_HEAPS
     gc_heap* heap = gc_heap::g_heaps[0];
 #else
     gc_heap* heap = pGenGCHeap;
-#endif //MULTIPLE_HEAPS && !ISOLATED_HEAPS
+#endif //MULTIPLE_HEAPS
 
     heap->remove_ro_segment(reinterpret_cast<heap_segment*>(seg));
 #else

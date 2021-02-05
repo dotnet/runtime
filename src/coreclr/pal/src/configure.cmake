@@ -13,7 +13,10 @@ if(CLR_CMAKE_TARGET_FREEBSD)
 elseif(CLR_CMAKE_TARGET_SUNOS)
   set(CMAKE_REQUIRED_INCLUDES /opt/local/include)
 endif()
-if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
+
+if(CLR_CMAKE_TARGET_OSX)
+  set(CMAKE_REQUIRED_DEFINITIONS -D_XOPEN_SOURCE)
+elseif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
   set(CMAKE_REQUIRED_DEFINITIONS "-D_BSD_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L")
 endif()
 
@@ -74,7 +77,6 @@ int main(int argc, char **argv) {
 
 set(CMAKE_REQUIRED_LIBRARIES)
 
-check_include_files(sys/sysctl.h HAVE_SYS_SYSCTL_H)
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 
@@ -110,7 +112,12 @@ set(CMAKE_REQUIRED_LIBRARIES)
 check_function_exists(fsync HAVE_FSYNC)
 check_function_exists(futimes HAVE_FUTIMES)
 check_function_exists(utimes HAVE_UTIMES)
-check_function_exists(sysctl HAVE_SYSCTL)
+if(CLR_CMAKE_TARGET_LINUX)
+  # sysctl is deprecated on Linux
+  set(HAVE_SYSCTL 0)
+else()
+  check_function_exists(sysctl HAVE_SYSCTL)
+endif()
 check_function_exists(sysinfo HAVE_SYSINFO)
 check_function_exists(sysconf HAVE_SYSCONF)
 check_function_exists(gmtime_r HAVE_GMTIME_R)

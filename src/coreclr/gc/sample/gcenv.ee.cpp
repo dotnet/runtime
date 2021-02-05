@@ -343,3 +343,11 @@ inline void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condem
 {
 
 }
+
+void GCToEEInterface::VerifySyncTableEntry()
+{
+}
+
+void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPublicKeywords, int currentPrivateLevel, int currentPrivateKeywords)
+{
+}

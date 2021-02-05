@@ -49,6 +49,10 @@ set(NATIVECRYPTO_SOURCES
 # that use OpenSSL at runtime.
 if (CLR_CMAKE_TARGET_OSX)
     set(FEATURE_DISTRO_AGNOSTIC_SSL True)
+
+    # by default uninitialized variables like the shim _ptr functions, will turn into common symbols
+    # and on OSX those have linking problems in libraries (ELF vs. Mach-O difference)
+    add_compile_options(-fno-common)
 endif()
 
 if (FEATURE_DISTRO_AGNOSTIC_SSL)
@@ -70,6 +74,7 @@ endif()
 add_library(System.Security.Cryptography.Native.OpenSsl-Static
     STATIC
     $<TARGET_OBJECTS:objlib>
+    entrypoints.c
 )
 
 set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.OpenSsl CLEAN_DIRECT_OUTPUT 1)
@@ -90,6 +95,17 @@ if (GEN_SHARED_LIB)
                 VERBATIM
             )
         endif()
+    endif()
+
+    if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+        add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
+            COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl entry points against entrypoints.c "
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                $<TARGET_FILE:System.Security.Cryptography.Native.OpenSsl>
+                ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                ${CMAKE_NM}
+            VERBATIM
+        )
     endif()
 
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl

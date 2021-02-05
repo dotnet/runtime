@@ -41,8 +41,6 @@
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 
 #if 0
-    #define APPDOMAIN_STATE
-
     // Enable to track details of EESuspension
     #define TIME_SUSPEND
 #endif // 0

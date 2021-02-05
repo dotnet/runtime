@@ -41,7 +41,7 @@ generator="Unix Makefiles"
 __UnprocessedCMakeArgs=""
 
 for i in "${@:7}"; do
-    upperI="$(echo "$i" | awk '{print toupper($0)}')"
+    upperI="$(echo "$i" | tr "[:lower:]" "[:upper:]")"
     case "$upperI" in
       # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO.
       DEBUG | CHECKED | RELEASE | RELWITHDEBINFO)
@@ -84,7 +84,10 @@ if [[ "$build_arch" == "armel" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
-cmake_command=$(command -v cmake)
+if ! cmake_command=$(command -v cmake); then
+    echo "CMake was not found in PATH."
+    exit 1
+fi
 
 if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
     cmake_command="$SCAN_BUILD_COMMAND $cmake_command"

@@ -30,8 +30,6 @@ Assembler::Assembler()
     m_pEmitter = NULL;
     m_pImporter = NULL;
 
-    m_fCPlusPlus = FALSE;
-    m_fWindowsCE = FALSE;
     char* pszFQN = new char[16];
     strcpy_s(pszFQN,16,"<Module>");
     m_pModuleClass = new Class(pszFQN);
@@ -512,15 +510,6 @@ BOOL Assembler::EmitMethodBody(Method* pMethod, BinStr* pbsOut)
                 pFH = (COR_ILMETHOD_FAT*)(pMethod->m_pbsBody->ptr());
                 pFH->SetLocalVarSigTok(pMethod->m_LocalsSig);
             }
-            //--------------------------------------------------------------------------------
-            if(m_fGeneratePDB)
-            {
-                if (FAILED(m_pPortablePdbWriter->DefineSequencePoints(pMethod)))
-                    return FALSE;
-                if (FAILED(m_pPortablePdbWriter->DefineLocalScope(pMethod)))
-                    return FALSE;
-            } // end if(fIncludeDebugInfo)
-            //-----------------------------------------------------
 
             if(m_fFoldCode)
             {
@@ -597,6 +586,15 @@ BOOL Assembler::EmitMethodBody(Method* pMethod, BinStr* pbsOut)
             }
             m_pEmitter->SetRVA(pMethod->m_Tok,pMethod->m_headerOffset);
         }
+
+        if (m_fGeneratePDB)
+        {
+            if (FAILED(m_pPortablePdbWriter->DefineSequencePoints(pMethod)))
+                return FALSE;
+            if (FAILED(m_pPortablePdbWriter->DefineLocalScope(pMethod)))
+                return FALSE;
+        }
+
         return TRUE;
     }
     else return FALSE;

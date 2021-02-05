@@ -545,10 +545,12 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 				ERROR_DECL (error);
 				func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method, error);
 				mono_error_cleanup (error);
-				if (!func)
-					func = (TestMethod)(gpointer)cfg->native_code;
+				if (!func) {
+					func = (TestMethod)MINI_ADDR_TO_FTNPTR (cfg->native_code);
+				}
 #else
-					func = (TestMethod)(gpointer)cfg->native_code;
+				func = (TestMethod)(gpointer)cfg->native_code;
+				func = MINI_ADDR_TO_FTNPTR (func);
 #endif
 				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), (gpointer)func);
 			}
@@ -2008,11 +2010,14 @@ switch_arch (char* argv[], const char* target_arch)
 static void
 apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_domain_configuration_file)
 {
+#ifndef ENABLE_NETCORE
 	g_assert (domain->setup == NULL || domain->setup->configuration_file == NULL);
 	g_assert (!domain->assembly_bindings_parsed);
 
 	mono_domain_parse_assembly_bindings (domain, 0, 0, root_domain_configuration_file);
-
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 static void

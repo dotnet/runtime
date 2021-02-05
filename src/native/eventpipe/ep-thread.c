@@ -37,10 +37,6 @@ ep_thread_alloc (void)
 	instance->os_thread_id = ep_rt_thread_id_t_to_uint64_t (ep_rt_current_thread_get_id ());
 	memset (instance->session_state, 0, sizeof (instance->session_state));
 
-	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
-		ep_raise_error_if_nok_holding_spin_lock (ep_rt_thread_list_append (&_ep_threads, instance), section1);
-	EP_SPIN_LOCK_EXIT (&_ep_threads_lock, section1)
-
 	instance->writing_event_in_progress = UINT32_MAX;
 
 ep_on_exit:
@@ -64,29 +60,9 @@ ep_thread_free (EventPipeThread *thread)
 		EP_ASSERT (thread->session_state [i] == NULL);
 	}
 #endif
-	bool found = false;
-	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
-		// Remove ourselves from the global list
-		ep_rt_thread_list_iterator_t iterator = ep_rt_thread_list_iterator_begin (&_ep_threads);
-		while (!ep_rt_thread_list_iterator_end (&_ep_threads, &iterator)) {
-			if (ep_rt_thread_list_iterator_value (&iterator) == thread) {
-				ep_rt_thread_list_remove (&_ep_threads, thread);
-				found = true;
-				break;
-			}
-			ep_rt_thread_list_iterator_next (&iterator);
-		}
-	EP_SPIN_LOCK_EXIT (&_ep_threads_lock, section1)
 
-	EP_ASSERT (found || !"We couldn't find ourselves in the global thread list");
-
-ep_on_exit:
 	ep_rt_spin_lock_free (&thread->rt_lock);
 	ep_rt_object_free (thread);
-	return;
-
-ep_on_error:
-	ep_exit_error_handler ();
 }
 
 void
@@ -126,6 +102,61 @@ ep_thread_fini (void)
 		ep_rt_thread_list_free (&_ep_threads, NULL);
 		ep_rt_spin_lock_free (&_ep_threads_lock);
 	}
+}
+
+bool
+ep_thread_register (EventPipeThread *thread)
+{
+	ep_rt_spin_lock_requires_lock_not_held (&_ep_threads_lock);
+
+	ep_return_false_if_nok (thread != NULL);
+
+	bool result = false;
+
+	ep_thread_addref (thread);
+
+	ep_rt_spin_lock_aquire (&_ep_threads_lock);
+		result = ep_rt_thread_list_append (&_ep_threads, thread);
+	ep_rt_spin_lock_release (&_ep_threads_lock);
+
+	if (!result)
+		ep_thread_release (thread);
+
+	ep_rt_spin_lock_requires_lock_not_held (&_ep_threads_lock);
+
+	return result;
+}
+
+bool
+ep_thread_unregister (EventPipeThread *thread)
+{
+	ep_rt_spin_lock_requires_lock_not_held (&_ep_threads_lock);
+
+	ep_return_false_if_nok (thread != NULL);
+
+	bool found = false;
+	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
+		// Remove ourselves from the global list
+		ep_rt_thread_list_iterator_t iterator = ep_rt_thread_list_iterator_begin (&_ep_threads);
+		while (!ep_rt_thread_list_iterator_end (&_ep_threads, &iterator)) {
+			if (ep_rt_thread_list_iterator_value (&iterator) == thread) {
+				ep_rt_thread_list_remove (&_ep_threads, thread);
+				ep_thread_release (thread);
+				found = true;
+				break;
+			}
+			ep_rt_thread_list_iterator_next (&iterator);
+		}
+	EP_SPIN_LOCK_EXIT (&_ep_threads_lock, section1)
+
+	EP_ASSERT (found || !"We couldn't find ourselves in the global thread list");
+
+ep_on_exit:
+	ep_rt_spin_lock_requires_lock_not_held (&_ep_threads_lock);
+	return found;
+
+ep_on_error:
+	ep_exit_error_handler ();
 }
 
 EventPipeThread *

@@ -479,7 +479,7 @@
     <Rule Id="IDE0076" Action="Hidden" />       <!-- InvalidSuppressMessageAttribute -->
     <Rule Id="IDE0077" Action="Hidden" />       <!-- LegacyFormatSuppressMessageAttribute -->
     <Rule Id="IDE0078" Action="Hidden" />       <!-- UsePatternCombinators -->
-    <Rule Id="IDE0079" Action="Warning" />      <!-- RemoveUnnecessarySuppression -->
+    <Rule Id="IDE0079" Action="Hidden" />       <!-- RemoveUnnecessarySuppression -->
     <Rule Id="IDE0080" Action="Hidden" />       <!-- RemoveConfusingSuppressionForIsExpression -->
     <Rule Id="IDE0081" Action="Hidden" />       <!-- RemoveUnnecessaryByVal -->
     <Rule Id="IDE0082" Action="Warning" />      <!-- ConvertTypeOfToNameOf -->

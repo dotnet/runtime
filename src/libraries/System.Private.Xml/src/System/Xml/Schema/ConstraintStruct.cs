@@ -1,16 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text;
+using System.Xml.XPath;
+using MS.Internal.Xml.XPath;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Text;
-    using System.Collections;
-    using System.Globalization;
-    using System.Diagnostics;
-    using System.Xml.XPath;
-    using MS.Internal.Xml.XPath;
-
     internal sealed class ConstraintStruct
     {
         // for each constraint
@@ -485,7 +486,7 @@ namespace System.Xml.Schema
         }
 
         // considering about derived type
-        public override bool Equals(object? other)
+        public override bool Equals([NotNullWhen(true)] object? other)
         {
             // each key sequence member can have different type
             if (other is KeySequence keySequence)

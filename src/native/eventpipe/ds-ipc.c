@@ -20,6 +20,8 @@ static ds_rt_port_array_t _ds_port_array = { 0 };
 // allows us to track which connections have sent their ResumeRuntime commands
 static DiagnosticsPort *_ds_current_port = NULL;
 
+static const uint32_t _ds_default_poll_handle_array_size = 16;
+
 static
 inline
 bool
@@ -235,11 +237,11 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 
 	ep_char8_t *ports = ds_rt_config_value_get_ports ();
 	if (ports) {
-		ds_rt_port_config_array_t port_configs;
-		ds_rt_port_config_array_t port_config_parts;
+		DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY (port_configs);
+		DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY (port_config_parts);
 
-		ds_rt_port_config_array_alloc (&port_configs);
-		ds_rt_port_config_array_alloc (&port_config_parts);
+		ds_rt_port_config_array_init (&port_configs);
+		ds_rt_port_config_array_init (&port_config_parts);
 
 		if (ds_rt_port_config_array_is_valid (&port_configs) && ds_rt_port_config_array_is_valid (&port_config_parts)) {
 			ipc_stream_factory_split_port_config (ports, ";", &port_configs);
@@ -290,8 +292,8 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 			result &= false;
 		}
 
-		ds_rt_port_config_array_free (&port_config_parts);
-		ds_rt_port_config_array_free (&port_configs);
+		ds_rt_port_config_array_fini (&port_config_parts);
+		ds_rt_port_config_array_fini (&port_configs);
 	}
 
 	// create the default listen port
@@ -329,7 +331,6 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 	DS_LOG_INFO_0 ("ds_ipc_stream_factory_get_next_available_stream - ENTER");
 
 	DiagnosticsIpcStream *stream = NULL;
-	ds_rt_ipc_poll_handle_array_t ipc_poll_handles;
 	DiagnosticsIpcPollHandle ipc_poll_handle;
 	ds_rt_port_array_t *ports = &_ds_port_array;
 	DiagnosticsPort *port = NULL;
@@ -338,8 +339,9 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 	bool connect_success = true;
 	uint32_t poll_attempts = 0;
 
-	// TODO: Convert to stack instance.
-	ds_rt_ipc_poll_handle_array_alloc (&ipc_poll_handles);
+	DS_RT_DECLARE_LOCAL_IPC_POLL_HANDLE_ARRAY (ipc_poll_handles);
+
+	ds_rt_ipc_poll_handle_array_init_capacity (&ipc_poll_handles, _ds_default_poll_handle_array_size);
 	ep_raise_error_if_nok (ds_rt_ipc_poll_handle_array_is_valid (&ipc_poll_handles));
 
 	while (!stream) {
@@ -384,6 +386,8 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 					EP_ASSERT (port != NULL);
 					if (!stream) {  // only use first signaled stream; will get others on subsequent calls
 						stream = ds_port_get_connected_stream_vcall (port, callback);
+						if (!stream)
+							saw_error = true;
 						_ds_current_port = port;
 					}
 					DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - SIG :: Poll attempt: %d, connection %d signalled.\n", poll_attempts, connection_id);
@@ -418,6 +422,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 
 ep_on_exit:
 	DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - EXIT :: Poll attempt: %d, stream using handle %d.\n", poll_attempts, ds_ipc_stream_get_handle_int32_t (stream));
+	ds_rt_ipc_poll_handle_array_fini (&ipc_poll_handles);
 	return stream;
 
 ep_on_error:

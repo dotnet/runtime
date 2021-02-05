@@ -120,13 +120,13 @@
     <value>Invalid value '{1}' for parameter '{0}'.</value>
   </data>
   <data name="CategoryHelpCorrupt" xml:space="preserve">
-    <value>Cannot load Category Help data because an invalid index '{0}' was read from the registry.</value>
+    <value>Cannot load Category Help data because an invalid index '{0}' was read from the registry. Performance counters on the machine may need to be repaired.</value>
   </data>
   <data name="CounterNameCorrupt" xml:space="preserve">
-    <value>Cannot load Counter Name data because an invalid index '{0}' was read from the registry.</value>
+    <value>Cannot load Counter Name data because an invalid index '{0}' was read from the registry. Performance counters on the machine may need to be repaired.</value>
   </data>
   <data name="CounterDataCorrupt" xml:space="preserve">
-    <value>Cannot load Performance Counter data because an unexpected registry key value type was read from '{0}'.</value>
+    <value>Cannot load Performance Counter data because an unexpected registry key value type was read from '{0}'. Performance counters on the machine may need to be repaired.</value>
   </data>
   <data name="InstanceNameTooLong" xml:space="preserve">
     <value>Instance names used for writing to custom counters must be 127 characters or less.</value>

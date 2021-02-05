@@ -195,6 +195,8 @@ elseif(CLR_CMAKE_HOST_SUNOS)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
   add_definitions(-D__EXTENSIONS__)
+elseif(CLR_CMAKE_HOST_OSX)
+  add_definitions(-D_XOPEN_SOURCE)
 endif()
 
 #------------------------------------
@@ -281,7 +283,11 @@ elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     set(ARCH_SOURCES_DIR arm)
-    set(ARCH_TARGET_NAME arm)
+    if (ARM_SOFTFP)
+      set(ARCH_TARGET_NAME armel)
+    else ()
+      set(ARCH_TARGET_NAME arm)
+    endif ()
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_ARM>)
 elseif (CLR_CMAKE_TARGET_ARCH_I386)
     set(ARCH_TARGET_NAME x86)
@@ -641,23 +647,4 @@ if (CLR_CMAKE_HOST_WIN32)
 else (CLR_CMAKE_HOST_WIN32)
     enable_language(ASM)
 
-    # Ensure that awk is present
-    find_program(AWK awk)
-    if (AWK STREQUAL "AWK-NOTFOUND")
-        message(FATAL_ERROR "AWK not found")
-    endif()
-
-    # detect linker
-    set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
-    execute_process(COMMAND ${ldVersion}
-        ERROR_QUIET
-        OUTPUT_VARIABLE ldVersionOutput)
-
-    if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold" OR "${ldVersionOutput}" MATCHES "GNU linkers")
-        set(LD_GNU 1)
-    elseif("${ldVersionOutput}" MATCHES "Solaris Link")
-        set(LD_SOLARIS 1)
-    else(CLR_CMAKE_HOST_OSX)
-        set(LD_OSX 1)
-    endif()
 endif(CLR_CMAKE_HOST_WIN32)

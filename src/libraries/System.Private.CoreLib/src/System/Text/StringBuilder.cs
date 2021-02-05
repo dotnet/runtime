@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Serialization;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Collections.Generic;
+using System.Runtime.Serialization;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Text
@@ -1808,7 +1809,7 @@ namespace System.Text
         /// Determines if the contents of this builder are equal to the contents of another builder.
         /// </summary>
         /// <param name="sb">The other builder.</param>
-        public bool Equals(StringBuilder? sb)
+        public bool Equals([NotNullWhen(true)] StringBuilder? sb)
         {
             if (sb == null)
             {

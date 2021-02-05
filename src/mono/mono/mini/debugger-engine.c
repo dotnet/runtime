@@ -1167,7 +1167,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	g_ptr_array_free (bp_reqs, TRUE);
 	g_ptr_array_free (ss_reqs, TRUE);
 
-	rt_callbacks.process_breakpoint_events (bp_events, method, ctx, 0);
+	rt_callbacks.process_breakpoint_events (bp_events, method, ctx, sp.il_offset);
 }
 
 /*
