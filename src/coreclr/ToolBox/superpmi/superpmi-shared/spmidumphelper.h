@@ -162,8 +162,8 @@ inline std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(
     FormatAgnostic_CORINFO_SIG_INST_Element(pbuf, sizeOfBuffer, " ", "cc", "ci", sigInfo.sigInst_classInstCount, sigInfo.sigInst_classInst_Index, handleMap);
     FormatAgnostic_CORINFO_SIG_INST_Element(pbuf, sizeOfBuffer, " ", "mc", "mi", sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, handleMap);
 
-    cch = sprintf_s(pbuf, sizeOfBuffer, " args-%016llX sig-%s sigHnd-%016llX scp-%016llX tok-%08X}",
-        sigInfo.args, DumpPSig(sigInfo.pSig_Index, sigInfo.cbSig, buffers).c_str(), sigInfo.sigHandle, sigInfo.scope, sigInfo.token);
+    cch = sprintf_s(pbuf, sizeOfBuffer, " args-%016llX sig-%s msig-%016llX scp-%016llX tok-%08X}",
+        sigInfo.args, DumpPSig(sigInfo.pSig_Index, sigInfo.cbSig, buffers).c_str(), sigInfo.methodSignature, sigInfo.scope, sigInfo.token);
     pbuf += cch;
     sizeOfBuffer -= cch;
 

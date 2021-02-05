@@ -1384,7 +1384,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	g_assert (code_size);
 
 	ji = (MonoJitInfo *)m_method_alloc0 (domain, method, MONO_SIZEOF_JIT_INFO);
-	ji->code_start = code;
+	ji->code_start = MINI_FTNPTR_TO_ADDR (code);
 	ji->code_size = code_size;
 	ji->d.method = method;
 
@@ -1396,10 +1396,10 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	mono_jit_info_table_add (domain, ji);
 
 	mono_domain_lock (domain);
-	g_hash_table_insert (domain_jit_info (domain)->jump_trampoline_hash, method, ji->code_start);
+	g_hash_table_insert (domain_jit_info (domain)->jump_trampoline_hash, method, code);
 	mono_domain_unlock (domain);
 
-	return ji->code_start;
+	return code;
 }
 
 static void

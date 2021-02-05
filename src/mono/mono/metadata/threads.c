@@ -46,6 +46,7 @@
 #include <mono/utils/os-event.h>
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/unlocked.h>
+#include <mono/utils/ftnptr.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32mutex.h>
@@ -3572,13 +3573,12 @@ thread_detach (MonoThreadInfo *info)
 	g_assert (info);
 	g_assert (mono_thread_info_is_current (info));
 
-	if (!mono_thread_info_try_get_internal_thread_gchandle (info, &gchandle))
-		return;
+	if (mono_thread_info_try_get_internal_thread_gchandle (info, &gchandle)) {
+		internal = (MonoInternalThread*)mono_gchandle_get_target_internal (gchandle);
+		g_assert (internal);
 
-	internal = (MonoInternalThread*) mono_gchandle_get_target_internal (gchandle);
-	g_assert (internal);
-
-	mono_thread_detach_internal (internal);
+		mono_thread_detach_internal (internal);
+	}
 
 	mono_gc_thread_detach (info);
 }
@@ -5652,6 +5652,11 @@ mono_jit_info_match (MonoJitInfo *ji, gpointer ip)
 {
 	if (!ji)
 		return FALSE;
+
+#ifdef MONO_ARCH_ENABLE_PTRAUTH
+	g_assert_not_reached ();
+#endif
+
 	return ji->code_start <= ip && (char*)ip < (char*)ji->code_start + ji->code_size;
 }
 

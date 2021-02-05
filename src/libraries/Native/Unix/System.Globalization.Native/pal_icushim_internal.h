@@ -19,7 +19,6 @@
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
-#include <unicode/uclean.h>
 #include <unicode/ucurr.h>
 #include <unicode/ucal.h>
 #include <unicode/uchar.h>

@@ -1432,8 +1432,10 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
+#ifndef DISABLE_JIT
 	if (!mono_aot_only)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
+#endif
 }
 
 /*

@@ -201,7 +201,8 @@ set(utils_common_sources
     ward.h
     options.h
     options-def.h
-    options.c)
+    options.c
+	ftnptr.h)
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources mach-support-unknown.c)
