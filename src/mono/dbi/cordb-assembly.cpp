@@ -221,7 +221,7 @@ HRESULT CordbModule::GetName(
       m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
 
   if (cchName < strlen(assembly_name) + 1) {
-    *pcchName = strlen(assembly_name) + 1;
+    *pcchName = (ULONG32)strlen(assembly_name) + 1;
     free(assembly_name);
     return S_OK;
   }

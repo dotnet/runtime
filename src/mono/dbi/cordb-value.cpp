@@ -418,7 +418,7 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetLength(ULONG32 *pcchString) {
                                  MDBGPROT_CMD_STRING_REF_GET_LENGTH, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
     MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-    *pcchString =
+    *pcchString = (ULONG32)
         m_dbgprot_decode_long(bAnswer->buf, &bAnswer->buf, bAnswer->end);
     return S_OK;
   }

@@ -9,12 +9,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CLR_DIR ${PROJECT_SOURCE_DIR}/../../coreclr)
 set(VM_DIR ${PROJECT_SOURCE_DIR}/../../coreclr/vm)
 set(CMAKE_OSX_ARCHITECTURES ${CMAKE_SYSTEM_PROCESSOR})
+set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
+set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
+set(CLR_CMAKE_HOST_ARCH ${CMAKE_GENERATOR_PLATFORM})
 
 add_definitions(-DDBI_COMPONENT_MONO)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/../..
-  ${PROJECT_SOURCE_DIR}/../mono/mini/
   ${PROJECT_SOURCE_DIR}/../
   ${PROJECT_SOURCE_DIR}/../dbi
   ${PROJECT_SOURCE_DIR}/../dbi/socket-dbi
@@ -105,9 +107,8 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/md/enc md/enc)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/utilcode utilcode)
 if (CLR_CMAKE_HOST_UNIX)
     add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/palrt palrt)
+    append("-Wno-strict-prototypes -Wno-deprecated" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 endif (CLR_CMAKE_HOST_UNIX)
-
-append("-Wno-strict-prototypes -Wno-deprecated" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
 add_library(mscordbi SHARED "${mscorbi_sources};${PROJECT_SOURCE_DIR}/../mono/mini/debugger-protocol.c;${PROJECT_SOURCE_DIR}/../../coreclr/pal/prebuilt/idl/xcordebug_i.cpp;${PROJECT_SOURCE_DIR}/../../coreclr/pal/prebuilt/idl/cordebug_i.cpp")
 

@@ -39,8 +39,10 @@ static UTSemReadWrite* m_pSemReadWrite = new UTSemReadWrite();
 #define dbg_unlock() mono_os_mutex_unlock(&debug_mutex.m);
 static MonoCoopMutex debug_mutex;*/
 
+#ifdef _DEBUG
 #define LOGGING
 #include "log.h"
+#endif
 
 #include "arraylist.h"
 

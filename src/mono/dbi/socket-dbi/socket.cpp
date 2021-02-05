@@ -6,7 +6,7 @@
 
 #include "socket.h"
 
-#ifdef HOST_WIN32
+#ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
@@ -74,7 +74,7 @@ int Socket::OpenSocketAcceptConnection(const char *address, const char *port) {
 
     freeaddrinfo(result);
 
-    return socketId;
+    return 1;
 }
 
 int Socket::Receive(char *buff, int buflen) {
@@ -82,7 +82,7 @@ int Socket::Receive(char *buff, int buflen) {
 }
 
 void Socket::Close() {
-#ifdef HOST_WIN32
+#ifdef WIN32
   closesocket (socketId);
 #else
   close (socketId);

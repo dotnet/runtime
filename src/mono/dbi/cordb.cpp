@@ -153,7 +153,7 @@ Cordb::Cordb() {
 }
 
 CordbFunction *Cordb::findFunction(int id) {
-  int i = 0;
+  DWORD i = 0;
   while (i < functions->GetCount()) {
     CordbFunction *function = (CordbFunction *)functions->Get(i);
     if (function->id == id) {
@@ -165,7 +165,7 @@ CordbFunction *Cordb::findFunction(int id) {
 }
 
 CordbFunction *Cordb::findFunctionByToken(int token) {
-  int i = 0;
+  DWORD i = 0;
   while (i < functions->GetCount()) {
     CordbFunction *function = (CordbFunction*)functions->Get(i);
     if (function->token == token) {
@@ -218,7 +218,7 @@ HRESULT Cordb::DebugActiveProcessEx(
 
 HRESULT Cordb::GetModule(int module_id, ICorDebugModule** pModule)
 {
-    for (int i = 0; i < modules->GetCount(); i++) {
+    for (DWORD i = 0; i < modules->GetCount(); i++) {
         CordbModule* module = (CordbModule*)modules->Get(i);
         if (module->id == module_id) {
             *pModule = module;
@@ -239,7 +239,7 @@ Connection::Connection(CordbProcess *proc, Cordb *cordb) {
 }
 
 CordbThread *Connection::findThread(ArrayList *threads, long thread_id) {
-  int i = 0;
+  DWORD i = 0;
   while (i < threads->GetCount()) {
     CordbThread *thread = (CordbThread *)threads->Get(i);
     if (thread->thread_id == thread_id) {
@@ -400,7 +400,7 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
     case MDBGPROT_EVENT_KIND_BREAKPOINT: {
       int method_id =
           m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
-      long offset =
+      int64_t offset =
           m_dbgprot_decode_long(recvbuf->buf, &recvbuf->buf, recvbuf->end);
       CordbThread *thread = findThread(ppCordb->threads, thread_id);
       if (thread == NULL) {
@@ -409,7 +409,7 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
         ppProcess->Stop(false);
         ppCordb->pCallback->CreateThread(pCorDebugAppDomain, thread);
       }
-      int i = 0;
+      DWORD i = 0;
       CordbFunctionBreakpoint *breakpoint;
       while (i < ppCordb->breakpoints->GetCount()) {
           breakpoint = (CordbFunctionBreakpoint*)ppCordb->breakpoints->Get(i);
@@ -426,7 +426,7 @@ void Connection::process_packet_internal(MdbgProtBuffer *recvbuf) {
     case MDBGPROT_EVENT_KIND_STEP: {
       int method_id =
           m_dbgprot_decode_id(recvbuf->buf, &recvbuf->buf, recvbuf->end);
-      long offset =
+      int64_t offset =
           m_dbgprot_decode_long(recvbuf->buf, &recvbuf->buf, recvbuf->end);
       CordbThread *thread = findThread(ppCordb->threads, thread_id);
       if (thread == NULL) {
@@ -453,7 +453,7 @@ int Connection::process_packet(bool is_answer) {
 }
 
 void Connection::process_packet_from_queue() {
-  int i = 0;
+  DWORD i = 0;
   while (i < received_packets_to_process->GetCount()) {
     MdbgProtBuffer *req =
         (MdbgProtBuffer *)received_packets_to_process->Get(i);

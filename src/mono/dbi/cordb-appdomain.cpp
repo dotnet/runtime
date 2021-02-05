@@ -162,7 +162,7 @@ CordbAppDomain::GetName(/* [in] */ ULONG32 cchName,
                         /* [length_is][size_is][out] */ WCHAR szName[]) {
   LOG((LF_CORDB, LL_INFO1000000, "CordbAppDomain - GetName - IMPLEMENTED\n"));
   if (cchName < strlen("DefaultDomain")) {
-    *pcchName = strlen("DefaultDomain") + 1;
+    *pcchName = (ULONG32)strlen("DefaultDomain") + 1;
     return S_OK;
   }
   wcscpy(szName, W("DefaultDomain"));
@@ -235,7 +235,7 @@ HRESULT STDMETHODCALLTYPE CordbAppDomainEnum::Next(ULONG celt,
   LOG((LF_CORDB, LL_INFO100000,
        "CordbAppDomainEnum - Next - NOT IMPLEMENTED\n"));
   *pceltFetched = celt;
-  for (int i = 0; i < celt; i++) {
+  for (ULONG i = 0; i < celt; i++) {
     if (current_pos >= pProcess->appdomains->GetCount()) {
       *pceltFetched = 0;
       return S_FALSE;

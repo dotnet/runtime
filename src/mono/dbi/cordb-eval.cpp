@@ -37,7 +37,7 @@ HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(
   m_dbgprot_buffer_add_int(&localbuf, 1);
   m_dbgprot_buffer_add_int(&localbuf, ((CordbFunction *)pFunction)->id);
   m_dbgprot_buffer_add_int(&localbuf, nArgs);
-  for (int i = 0; i < nArgs; i++) {
+  for (ULONG32 i = 0; i < nArgs; i++) {
     CorElementType ty;
     ppArgs[i]->GetType(&ty);
     CordbContent *cc;

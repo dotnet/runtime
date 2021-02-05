@@ -5,8 +5,6 @@
 //
 
 #include "corerror.h"
-#include "mdlog.h"
-#include "posterror.h"
 #include "metamodel.h"
 #include "metamodelpub.h"
 #include "rwutil.h"

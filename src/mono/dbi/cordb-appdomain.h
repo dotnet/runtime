@@ -79,7 +79,7 @@ public:
 };
 
 class CordbAppDomainEnum : public CordbBaseMono, public ICorDebugAppDomainEnum {
-  int current_pos;
+  DWORD current_pos;
   CordbProcess *pProcess;
 
 public:

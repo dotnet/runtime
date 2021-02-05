@@ -1,20 +1,12 @@
 #include "debugger-protocol.h"
 
 #ifdef DBI_COMPONENT_MONO
-#define g_malloc malloc
-#define g_free free
-#define g_assert assert
-#define g_realloc realloc
-#define mono_atomic_inc_i32 InterlockedIncrement
-#include "stdafx.h"
-static LONG packet_id = 0;
+#include "debugger-coreclr-compat.h"
 #else
-#include <glib.h>
-#include <mono/utils/atomic.h>
-static int packet_id = 0;
+#include "debugger-mono-compat.h"
 #endif
 
-
+static int32_t packet_id = 0;
 
 /*
  * Functions to decode protocol data
@@ -22,16 +14,16 @@ static int packet_id = 0;
 int  
 m_dbgprot_buffer_add_command_header (MdbgProtBuffer *data, int command_set, int command, MdbgProtBuffer *out)
 {
-	int id = mono_atomic_inc_i32 (&packet_id);
+	int id = dbg_rt_atomic_inc_int32_t ((volatile int32_t *)&packet_id);
 
-	int len = data->p - data->buf + HEADER_LENGTH;
+	uint32_t len = (uint32_t)(data->p - data->buf + HEADER_LENGTH);
 	m_dbgprot_buffer_init (out, len);
 	m_dbgprot_buffer_add_int (out, len);
 	m_dbgprot_buffer_add_int (out, id);
 	m_dbgprot_buffer_add_byte (out, 0); /* flags */
 	m_dbgprot_buffer_add_byte (out, command_set);
 	m_dbgprot_buffer_add_byte (out, command);
-	m_dbgprot_buffer_add_data (out, data->buf, data->p - data->buf);
+	m_dbgprot_buffer_add_data (out, data->buf, (uint32_t) (data->p - data->buf));
 	return id;
 }
 
@@ -133,26 +125,26 @@ m_dbgprot_decode_byte_array (uint8_t *buf, uint8_t **endbuf, uint8_t *limit, int
  */
 
 void
-m_dbgprot_buffer_init (MdbgProtBuffer *buf, int size)
+m_dbgprot_buffer_init (MdbgProtBuffer *buf, uint32_t size)
 {
 	buf->buf = (uint8_t *)g_malloc (size);
 	buf->p = buf->buf;
 	buf->end = buf->buf + size;
 }
 
-int
+uint32_t
 m_dbgprot_buffer_len (MdbgProtBuffer *buf)
 {
-	return buf->p - buf->buf;
+	return (uint32_t)(buf->p - buf->buf);
 }
 
 void
-m_dbgprot_buffer_make_room (MdbgProtBuffer *buf, int size)
+m_dbgprot_buffer_make_room (MdbgProtBuffer *buf, uint32_t size)
 {
 	if (buf->end - buf->p < size) {
-		int new_size = buf->end - buf->buf + size + 32;
+		int64_t new_size = buf->end - buf->buf + size + 32;
 		uint8_t *p = (uint8_t *)g_realloc (buf->buf, new_size);
-		size = buf->p - buf->buf;
+		size = (uint32_t) (buf->p - buf->buf);
 		buf->buf = p;
 		buf->p = p + size;
 		buf->end = buf->buf + new_size;
@@ -195,13 +187,13 @@ m_dbgprot_buffer_add_long (MdbgProtBuffer *buf, uint64_t l)
 }
 
 void
-m_dbgprot_buffer_add_id (MdbgProtBuffer *buf, int id)
+m_dbgprot_buffer_add_id (MdbgProtBuffer *buf, uint32_t id)
 {
-	m_dbgprot_buffer_add_int (buf, (uint64_t)id);
+	m_dbgprot_buffer_add_int (buf, id);
 }
 
 void
-m_dbgprot_buffer_add_data (MdbgProtBuffer *buf, uint8_t *data, int len)
+m_dbgprot_buffer_add_data (MdbgProtBuffer *buf, uint8_t *data, uint32_t len)
 {
 	m_dbgprot_buffer_make_room (buf, len);
 	memcpy (buf->p, data, len);
@@ -209,7 +201,7 @@ m_dbgprot_buffer_add_data (MdbgProtBuffer *buf, uint8_t *data, int len)
 }
 
 void
-m_dbgprot_buffer_add_utf16 (MdbgProtBuffer *buf, uint8_t *data, int len)
+m_dbgprot_buffer_add_utf16 (MdbgProtBuffer *buf, uint8_t *data, uint32_t len)
 {
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	m_dbgprot_buffer_make_room (buf, len);
@@ -226,12 +218,12 @@ m_dbgprot_buffer_add_utf16 (MdbgProtBuffer *buf, uint8_t *data, int len)
 void
 m_dbgprot_buffer_add_string (MdbgProtBuffer *buf, const char *str)
 {
-	int len;
+	uint32_t len;
 
 	if (str == NULL) {
 		m_dbgprot_buffer_add_int (buf, 0);
 	} else {
-		len = strlen (str);
+		len = (uint32_t) strlen (str);
 		m_dbgprot_buffer_add_int (buf, len);
 		m_dbgprot_buffer_add_data (buf, (uint8_t*)str, len);
 	}
