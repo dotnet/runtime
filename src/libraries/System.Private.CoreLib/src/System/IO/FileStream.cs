@@ -381,8 +381,6 @@ namespace System.IO
             }
         }
 
-        internal virtual bool IsClosed => _strategy.IsClosed;
-
         /// <summary>
         /// Reads a byte from the file stream.  Returns the byte cast to an int
         /// or -1 if reading from the end of the stream.
