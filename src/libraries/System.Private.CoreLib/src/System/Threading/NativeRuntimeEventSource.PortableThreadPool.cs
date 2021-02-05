@@ -86,7 +86,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                NativeEventLogger.ThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+                XplatEventLogger.ThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
             }
         }
 
@@ -98,7 +98,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                NativeEventLogger.ThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+                XplatEventLogger.ThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
             }
         }
 
@@ -111,7 +111,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                NativeEventLogger.ThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+                XplatEventLogger.ThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
             }
         }
 
@@ -124,7 +124,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            NativeEventLogger.ThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
+            XplatEventLogger.ThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
         }
 
         [Event(55, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentAdjustment, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Adjustment, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -138,7 +138,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            NativeEventLogger.ThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
+            XplatEventLogger.ThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
         }
 
         [Event(56, Level = EventLevel.Verbose, Message = Messages.WorkerThreadAdjustmentStats, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Stats, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -159,7 +159,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            NativeEventLogger.ThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID);
+            XplatEventLogger.ThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID);
         }
 
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
@@ -170,7 +170,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             int multiDequeuesInt = Convert.ToInt32(MultiDequeues); // bool maps to "win:Boolean", a 4-byte boolean
-            NativeEventLogger.ThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
+            XplatEventLogger.ThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
         }
 
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
@@ -191,7 +191,7 @@ namespace System.Diagnostics.Tracing
             IntPtr Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            NativeEventLogger.ThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
+            XplatEventLogger.ThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
         }
 
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
@@ -213,7 +213,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            NativeEventLogger.ThreadPoolWorkingThreadCount(Count, ClrInstanceID);
+            XplatEventLogger.ThreadPoolWorkingThreadCount(Count, ClrInstanceID);
         }
     }
 }

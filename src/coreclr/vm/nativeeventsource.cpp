@@ -38,7 +38,7 @@ BOOL QCALLTYPE XplatEventSourceLogger::IsEventSourceLoggingEnabled()
 
 #ifdef FEATURE_PERFTRACING
 
-VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadStart(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
+void QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadStart(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -48,7 +48,7 @@ VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadStart(__in_z uint act
     END_QCALL;
 }
 
-VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadStop(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
+void QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadStop(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -58,7 +58,7 @@ VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadStop(__in_z uint acti
     END_QCALL;
 }
 
-VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadWait(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
+void QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadWait(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -68,7 +68,7 @@ VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadWait(__in_z uint acti
     END_QCALL;
 }
 
-VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentSample(__in_z double throughput, __in_z short clrInstanceID)
+void QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentSample(__in_z double throughput, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -78,7 +78,7 @@ VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentSample(__in
     END_QCALL;
 }
 
-VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentAdjustment(__in_z double averageThroughput, __in_z uint newWorkerThreadCount, __in_z uint reason, __in_z short clrInstanceID)
+void QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentAdjustment(__in_z double averageThroughput, __in_z uint newWorkerThreadCount, __in_z uint reason, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -88,7 +88,7 @@ VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentAdjustment(
     END_QCALL;
 }
 
-VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentStats(__in_z double duration, __in_z double throughput, __in_z double threadWave, __in_z double throughputWave, __in_z double throughputErrorEstimate, __in_z double AverageThroughputErrorEstimate, __in_z double ThroughputRatio, __in_z double confidence, __in_z double newControlSetting, __in_z short newThreadWaveMagnitude, __in_z short ClrInstanceID)
+void QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentStats(__in_z double duration, __in_z double throughput, __in_z double threadWave, __in_z double throughputWave, __in_z double throughputErrorEstimate, __in_z double AverageThroughputErrorEstimate, __in_z double ThroughputRatio, __in_z double confidence, __in_z double newControlSetting, __in_z short newThreadWaveMagnitude, __in_z short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -98,7 +98,7 @@ VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentStats(__in_
     END_QCALL;
 }
 
-VOID QCALLTYPE NativeEventLogger::LogThreadPoolIOEnqueue(__in_z void* nativeOverlapped, __in_z void* overlapped, __in_z bool multiDequeues, __in_z short ClrInstanceID)
+void QCALLTYPE NativeEventLogger::LogThreadPoolIOEnqueue(__in_z void* nativeOverlapped, __in_z void* overlapped, __in_z bool multiDequeues, __in_z short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -108,7 +108,7 @@ VOID QCALLTYPE NativeEventLogger::LogThreadPoolIOEnqueue(__in_z void* nativeOver
     END_QCALL;
 }
 
-VOID QCALLTYPE NativeEventLogger::LogThreadPoolIODequeue(__in_z void* nativeOverlapped, __in_z void* overlapped, __in_z short ClrInstanceID)
+void QCALLTYPE NativeEventLogger::LogThreadPoolIODequeue(__in_z void* nativeOverlapped, __in_z void* overlapped, __in_z short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -118,7 +118,7 @@ VOID QCALLTYPE NativeEventLogger::LogThreadPoolIODequeue(__in_z void* nativeOver
     END_QCALL;
 }
 
-VOID QCALLTYPE NativeEventLogger::LogThreadPoolWorkingThreadCount(__in_z uint count, __in_z short ClrInstanceID)
+void QCALLTYPE NativeEventLogger::LogThreadPoolWorkingThreadCount(__in_z uint count, __in_z short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
