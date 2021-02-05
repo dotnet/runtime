@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
 
             if (string.IsNullOrEmpty(root))
             {
-                throw new InvalidOperationException("Could not determine an appropriate location for storing user secrets. Set the " + userSecretsFallbackDir + " environment variable to a folder where user secrets should be stored.");
+                throw new InvalidOperationException(SR.Format(SR.Error_Missing_UserSecretsLocation, userSecretsFallbackDir));
             }
 
             return !string.IsNullOrEmpty(appData)

@@ -5,11 +5,6 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeMemoryMappedFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeMemoryMappedFileHandle()
-            : base(true)
-        {
-        }
-
         protected override bool ReleaseHandle()
         {
             return Interop.Kernel32.CloseHandle(handle);

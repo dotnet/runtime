@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
-    <BuildAllOOBPackages Condition="'$(BuildAllOOBPackages)' == ''">true</BuildAllOOBPackages>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -15,8 +14,11 @@
 
   <ItemGroup>
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>
-    <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Platforms\src\Microsoft.NETCore.Platforms.csproj" Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' Or '$(BuildAllConfigurations)' == 'true'" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Targets\src\Microsoft.NETCore.Targets.csproj" Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' Or '$(BuildAllConfigurations)' == 'true'" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
+                      Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true')"
+                      Exclude="$(MSBuildThisFileDirectory)*\src\**\*.shproj"/>
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
@@ -57,19 +59,6 @@
     <UpdatePackageIndex
       PackageIndexFile="$(PackageIndexFile)"
       StablePackages="@(_StablePackages)" />
-
-  </Target>
-
-  <!-- Generate a version text file we include in our packages -->
-  <Target Name="GenerateVersionFileForPackages"
-          BeforeTargets="Build;Pack"
-          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
-    <Error Condition="'$(SourceRevisionId)' == ''" Text="SourceRevisionId is not set, which means the SourceLink targets are not included in the build. Those are needed to produce a correct sha for our build outputs." />
-
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(VersionFileForPackages)))" />
-    <WriteLinesToFile File="$(VersionFileForPackages)"
-                      Lines="$(SourceRevisionId)"
-                      Overwrite="true" />
   </Target>
 
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"

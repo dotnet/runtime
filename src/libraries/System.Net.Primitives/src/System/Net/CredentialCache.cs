@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Net
@@ -447,7 +448,7 @@ namespace System.Net
             return equals;
         }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is CredentialHostKey && Equals((CredentialHostKey)obj);
 
         public override string ToString() =>
@@ -523,7 +524,7 @@ namespace System.Net
             StringComparer.OrdinalIgnoreCase.GetHashCode(AuthenticationType) ^
             UriPrefix.GetHashCode();
 
-        public bool Equals(CredentialKey? other)
+        public bool Equals([NotNullWhen(true)] CredentialKey? other)
         {
             if (other == null)
             {
@@ -539,7 +540,7 @@ namespace System.Net
             return equals;
         }
 
-        public override bool Equals(object? obj) => Equals(obj as CredentialKey);
+        public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as CredentialKey);
 
         public override string ToString() =>
             "[" + UriPrefixLength.ToString(NumberFormatInfo.InvariantInfo) + "]:" + UriPrefix + ":" + AuthenticationType;

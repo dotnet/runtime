@@ -251,6 +251,10 @@ struct insGroup
     unsigned short igFlags;   // see IGF_xxx below
     unsigned short igSize;    // # of bytes of code in this group
 
+#if FEATURE_LOOP_ALIGN
+    insGroup* igLoopBackEdge; // "last" back-edge that branches back to an aligned loop head.
+#endif
+
 #define IGF_GC_VARS 0x0001    // new set of live GC ref variables
 #define IGF_BYREF_REGS 0x0002 // new set of live by-ref registers
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -264,6 +268,8 @@ struct insGroup
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
+#define IGF_LOOP_ALIGN 0x0400     // this group contains alignment instruction(s) at the end; the next IG is the
+                                  // head of a loop that needs alignment.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -334,6 +340,11 @@ struct insGroup
         ptr -= sizeof(unsigned);
 
         return *(unsigned*)ptr;
+    }
+
+    bool isLoopAlign()
+    {
+        return (igFlags & IGF_LOOP_ALIGN) != 0;
     }
 
 }; // end of struct insGroup
@@ -561,6 +572,7 @@ protected:
 #if defined(TARGET_XARCH)
         static_assert_no_msg(INS_count <= 1024);
         instruction _idIns : 10;
+#define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
@@ -1361,6 +1373,14 @@ protected:
                                   // hot to cold and cold to hot jumps)
     };
 
+#if FEATURE_LOOP_ALIGN
+    struct instrDescAlign : instrDesc
+    {
+        instrDescAlign* idaNext; // next align in the group/method
+        insGroup*       idaIG;   // containing group
+    };
+#endif
+
 #if !defined(TARGET_ARM64) // This shouldn't be needed for ARM32, either, but I don't want to touch the ARM32 JIT.
     struct instrDescLbl : instrDescJmp
     {
@@ -1738,6 +1758,22 @@ private:
     instrDescJmp* emitJumpLast;       // last of local jumps in method
     void          emitJumpDistBind(); // Bind all the local jumps in method
 
+#if FEATURE_LOOP_ALIGN
+    instrDescAlign* emitCurIGAlignList;          // list of align instructions in current IG
+    unsigned        emitLastInnerLoopStartIgNum; // Start IG of last inner loop
+    unsigned        emitLastInnerLoopEndIgNum;   // End IG of last inner loop
+    unsigned        emitLastAlignedIgNum;        // last IG that has align instruction
+    instrDescAlign* emitAlignList;               // list of local align instructions in method
+    instrDescAlign* emitAlignLast;               // last align instruction in method
+    unsigned getLoopSize(insGroup* igLoopHeader,
+                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
+    void emitLoopAlignment();
+    bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
+    void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
+    void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
+    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));
+#endif
+
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets
 
     bool emitFwdJumps;   // forward jumps present?
@@ -1811,10 +1847,13 @@ private:
 
     unsigned emitNxtIGnum;
 
+#ifdef PSEUDORANDOM_NOP_INSERTION
+
     // random nop insertion to break up nop sleds
     unsigned emitNextNop;
     bool     emitRandomNops;
-    void     emitEnableRandomNops()
+
+    void emitEnableRandomNops()
     {
         emitRandomNops = true;
     }
@@ -1822,6 +1861,8 @@ private:
     {
         emitRandomNops = false;
     }
+
+#endif // PSEUDORANDOM_NOP_INSERTION
 
     insGroup* emitAllocAndLinkIG();
     insGroup* emitAllocIG();
@@ -1903,7 +1944,7 @@ private:
     instrDescJmp* emitAllocInstrJmp()
     {
 #if EMITTER_STATS
-        emitTotalIDescJmpCnt++;
+        emitTotalDescAlignCnt++;
 #endif // EMITTER_STATS
         return (instrDescJmp*)emitAllocAnyInstr(sizeof(instrDescJmp), EA_1BYTE);
     }
@@ -1977,6 +2018,17 @@ private:
 #endif // EMITTER_STATS
         return (instrDescCGCA*)emitAllocAnyInstr(sizeof(instrDescCGCA), attr);
     }
+
+#if FEATURE_LOOP_ALIGN
+    instrDescAlign* emitAllocInstrAlign()
+    {
+#if EMITTER_STATS
+        emitTotalIDescJmpCnt++;
+#endif // EMITTER_STATS
+        return (instrDescAlign*)emitAllocAnyInstr(sizeof(instrDescAlign), EA_1BYTE);
+    }
+    instrDescAlign* emitNewInstrAlign();
+#endif
 
     instrDesc* emitNewInstrSmall(emitAttr attr);
     instrDesc* emitNewInstr(emitAttr attr = EA_4BYTE);
@@ -2299,6 +2351,7 @@ public:
 #define SMALL_CNS_TSZ 256
     static unsigned emitSmallCns[SMALL_CNS_TSZ];
     static unsigned emitLargeCnsCnt;
+    static unsigned emitTotalDescAlignCnt;
 
     static unsigned emitIFcounts[IF_COUNT];
 
@@ -2500,6 +2553,15 @@ inline emitter::instrDescJmp* emitter::emitNewInstrJmp()
 {
     return emitAllocInstrJmp();
 }
+
+#if FEATURE_LOOP_ALIGN
+inline emitter::instrDescAlign* emitter::emitNewInstrAlign()
+{
+    instrDescAlign* newInstr = emitAllocInstrAlign();
+    newInstr->idIns(INS_align);
+    return newInstr;
+}
+#endif
 
 #if !defined(TARGET_ARM64)
 inline emitter::instrDescLbl* emitter::emitNewInstrLbl()

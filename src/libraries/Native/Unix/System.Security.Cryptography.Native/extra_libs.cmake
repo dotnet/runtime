@@ -30,7 +30,7 @@ macro(append_extra_cryptography_libs NativeLibsExtra)
     endif(NOT OPENSSL_FOUND)
     
     
-    if (FEATURE_DISTRO_AGNOSTIC_SSL)
+    if (FEATURE_DISTRO_AGNOSTIC_SSL OR CLR_CMAKE_TARGET_OSX)
         # Link with libdl.so to get the dlopen / dlsym / dlclose
         list(APPEND ${NativeLibsExtra} dl)
     else()

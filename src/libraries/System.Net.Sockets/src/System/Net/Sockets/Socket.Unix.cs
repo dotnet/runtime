@@ -195,7 +195,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void SendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
+        private void SendFileInternal(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
             CheckTransmitFileOptions(flags);
 
@@ -208,7 +208,7 @@ namespace System.Net.Sockets
             {
                 // Send the preBuffer, if any
                 // This will throw on error
-                if (preBuffer != null && preBuffer.Length > 0)
+                if (!preBuffer.IsEmpty)
                 {
                     Send(preBuffer);
                 }
@@ -230,7 +230,7 @@ namespace System.Net.Sockets
 
             // Send the postBuffer, if any
             // This will throw on error
-            if (postBuffer != null && postBuffer.Length > 0)
+            if (!postBuffer.IsEmpty)
             {
                 Send(postBuffer);
             }

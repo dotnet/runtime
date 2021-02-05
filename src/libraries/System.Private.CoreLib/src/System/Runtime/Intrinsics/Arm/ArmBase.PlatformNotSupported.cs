@@ -48,6 +48,16 @@ namespace System.Runtime.Intrinsics.Arm
             public static int LeadingZeroCount(ulong value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            ///   A64: SMULH Xd, Xn, Xm
+            /// </summary>
+            public static long MultiplyHigh(long left, long right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: UMULH Xd, Xn, Xm
+            /// </summary>
+            public static ulong MultiplyHigh(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             ///   A64: RBIT Xd, Xn
             /// </summary>
             public static long ReverseElementBits(long value) { throw new PlatformNotSupportedException(); }

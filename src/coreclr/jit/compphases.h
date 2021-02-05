@@ -28,7 +28,8 @@ CompPhaseNameMacro(PHASE_IMPORTATION,            "Importation",                 
 CompPhaseNameMacro(PHASE_INDXCALL,               "Indirect call transform",        "INDXCALL", false, -1, true)
 CompPhaseNameMacro(PHASE_PATCHPOINTS,            "Expand patchpoints",             "PPOINT",   false, -1, true)
 CompPhaseNameMacro(PHASE_POST_IMPORT,            "Post-import",                    "POST-IMP", false, -1, false)
-CompPhaseNameMacro(PHASE_IBCINSTR,               "IBC instrumentation",            "IBCINSTR", false, -1, false)
+CompPhaseNameMacro(PHASE_IBCINSTR,               "Profile instrumentation",        "IBCINSTR", false, -1, false)
+CompPhaseNameMacro(PHASE_INCPROFILE,             "Profile incorporation",          "INCPROF",  false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INIT,             "Morph - Init",                   "MOR-INIT" ,false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INLINE,           "Morph - Inlining",               "MOR-INL",  false, -1, true)
 CompPhaseNameMacro(PHASE_MORPH_ADD_INTERNAL,     "Morph - Add internal blocks",    "MOR-ADD",  false, -1, true)
@@ -80,6 +81,7 @@ CompPhaseNameMacro(PHASE_OPTIMIZE_VALNUM_CSES,   "Optimize Valnum CSEs",        
 #endif
 
 CompPhaseNameMacro(PHASE_VN_COPY_PROP,           "VN based copy prop",             "CP-PROP",  false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_BRANCHES,      "Redundant branch opts",          "OPT-BR",   false, -1, false)
 #if ASSERTION_PROP
 CompPhaseNameMacro(PHASE_ASSERTION_PROP_MAIN,    "Assertion prop",                 "AST-PROP", false, -1, false)
 #endif

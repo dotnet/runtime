@@ -5,6 +5,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -105,7 +106,7 @@ namespace System.Xml
             }
 
 
-            public override bool Equals(object? other)
+            public override bool Equals([NotNullWhen(true)] object? other)
             {
                 if (other is QName that)
                 {

@@ -75,7 +75,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeX509StoreCtxHandle : SafeHandle
     {
-        private SafeX509StoreCtxHandle() :
+        public SafeX509StoreCtxHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

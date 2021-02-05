@@ -42,7 +42,7 @@ namespace System.Net.WebSockets.Client.Tests
             if (serverResponse != null)
             {
                 // We received a valid WebSocket opening handshake. Send the appropriate response.
-                await connection.Writer.WriteAsync(serverResponse).ConfigureAwait(false);
+                await connection.WriteStringAsync(serverResponse).ConfigureAwait(false);
                 return results;
             }
 

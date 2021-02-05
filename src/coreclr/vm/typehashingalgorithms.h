@@ -162,9 +162,19 @@ inline static UINT32 XXHash32_MixEmptyState()
     return 374761393U; // Prime5
 }
 
+inline static UINT32 XXHash32_MixState(UINT32 v1, UINT32 v2, UINT32 v3, UINT32 v4)
+{
+    return (UINT32)_rotl(v1, 1) + (UINT32)_rotl(v2, 7) + (UINT32)_rotl(v3, 12) + (UINT32)_rotl(v4, 18);
+}
+
 inline static UINT32 XXHash32_QueueRound(UINT32 hash, UINT32 queuedValue)
 {
     return ((UINT32)_rotl((int)(hash + queuedValue * 3266489917U/*Prime3*/), 17)) * 668265263U/*Prime4*/;
+}
+
+inline static UINT32 XXHash32_Round(UINT32 hash, UINT32 input)
+{
+    return ((UINT32)_rotl((int)(hash + input * 2246822519U/*Prime2*/), 13)) * 2654435761U/*Prime1*/;
 }
 
 inline static UINT32 XXHash32_MixFinal(UINT32 hash)
@@ -174,6 +184,24 @@ inline static UINT32 XXHash32_MixFinal(UINT32 hash)
     hash ^= hash >> 13;
     hash *= 3266489917U/*Prime3*/;
     hash ^= hash >> 16;
+    return hash;
+}
+
+inline static UINT32 MixOneValueIntoHash(UINT32 value1)
+{
+    // This matches the behavior of System.HashCode.Combine(value1) as of the time of authoring
+
+    // Provide a way of diffusing bits from something with a limited
+    // input hash space. For example, many enums only have a few
+    // possible hashes, only using the bottom few bits of the code. Some
+    // collections are built on the assumption that hashes are spread
+    // over a larger space, so diffusing the bits may help the
+    // collection work more efficiently.
+
+    DWORD hash = XXHash32_MixEmptyState();
+    hash += 4;
+    hash = XXHash32_QueueRound(hash, value1);
+    hash = XXHash32_MixFinal(hash);
     return hash;
 }
 
@@ -187,3 +215,124 @@ inline static UINT32 CombineTwoValuesIntoHash(UINT32 value1, UINT32 value2)
     hash = XXHash32_MixFinal(hash);
     return hash;
 }
+
+inline static UINT32 MixPointerIntoHash(void* ptr)
+{
+#ifdef HOST_64BIT
+    return CombineTwoValuesIntoHash((UINT32)(UINT_PTR)ptr, (UINT32)(((UINT64)ptr) >> 32));
+#else
+    return MixOneValueIntoHash((UINT32)ptr);
+#endif
+}
+
+
+inline static UINT32 CombineThreeValuesIntoHash(UINT32 value1, UINT32 value2, UINT32 value3)
+{
+    // This matches the behavior of System.HashCode.Combine(value1, value2, value3) as of the time of authoring
+    DWORD hash = XXHash32_MixEmptyState();
+    hash += 12;
+    hash = XXHash32_QueueRound(hash, value1);
+    hash = XXHash32_QueueRound(hash, value2);
+    hash = XXHash32_QueueRound(hash, value3);
+    hash = XXHash32_MixFinal(hash);
+    return hash;
+}
+
+// This is a port of the System.HashCode logic for computing a hashcode using the xxHash algorithm
+// However, as this is intended to provide a stable hash, the seed value is always 0.
+class xxHash
+{
+    const uint32_t seed =   0;
+    const uint32_t Prime1 = 2654435761U;
+    const uint32_t Prime2 = 2246822519U;
+    const uint32_t Prime3 = 3266489917U;
+    const uint32_t Prime4 = 668265263U;
+    const uint32_t Prime5 = 374761393U;
+
+    uint32_t _v1 = seed + Prime1 + Prime2;
+    uint32_t _v2 = seed + Prime2;
+    uint32_t _v3 = seed;
+    uint32_t _v4 = seed - Prime1;
+    uint32_t _queue1 = 0;
+    uint32_t _queue2 = 0;
+    uint32_t _queue3 = 0;
+    uint32_t _length = 0;
+
+public:
+    void Add(uint32_t val)
+    {
+        // The original xxHash works as follows:
+        // 0. Initialize immediately. We can't do this in a struct (no
+        //    default ctor).
+        // 1. Accumulate blocks of length 16 (4 uints) into 4 accumulators.
+        // 2. Accumulate remaining blocks of length 4 (1 uint) into the
+        //    hash.
+        // 3. Accumulate remaining blocks of length 1 into the hash.
+
+        // There is no need for #3 as this type only accepts ints. _queue1,
+        // _queue2 and _queue3 are basically a buffer so that when
+        // ToHashCode is called we can execute #2 correctly.
+
+        // Storing the value of _length locally shaves of quite a few bytes
+        // in the resulting machine code.
+        uint32_t previousLength = _length++;
+        uint32_t position = previousLength % 4;
+
+        // Switch can't be inlined.
+
+        if (position == 0)
+            _queue1 = val;
+        else if (position == 1)
+            _queue2 = val;
+        else if (position == 2)
+            _queue3 = val;
+        else // position == 3
+        {
+            _v1 = XXHash32_Round(_v1, _queue1);
+            _v2 = XXHash32_Round(_v2, _queue2);
+            _v3 = XXHash32_Round(_v3, _queue3);
+            _v4 = XXHash32_Round(_v4, val);
+        }
+    }
+
+    uint32_t ToHashCode()
+    {
+        // Storing the value of _length locally shaves of quite a few bytes
+        // in the resulting machine code.
+        uint32_t length = _length;
+
+        // position refers to the *next* queue position in this method, so
+        // position == 1 means that _queue1 is populated; _queue2 would have
+        // been populated on the next call to Add.
+        uint32_t position = length % 4;
+
+        // If the length is less than 4, _v1 to _v4 don't contain anything
+        // yet. xxHash32 treats this differently.
+
+        uint32_t hash = length < 4 ? XXHash32_MixEmptyState() : XXHash32_MixState(_v1, _v2, _v3, _v4);
+
+        // _length is incremented once per Add(Int32) and is therefore 4
+        // times too small (xxHash length is in bytes, not ints).
+
+        hash += length * 4;
+
+        // Mix what remains in the queue
+
+        // Switch can't be inlined right now, so use as few branches as
+        // possible by manually excluding impossible scenarios (position > 1
+        // is always false if position is not > 0).
+        if (position > 0)
+        {
+            hash = XXHash32_QueueRound(hash, _queue1);
+            if (position > 1)
+            {
+                hash = XXHash32_QueueRound(hash, _queue2);
+                if (position > 2)
+                    hash = XXHash32_QueueRound(hash, _queue3);
+            }
+        }
+
+        hash = XXHash32_MixFinal(hash);
+        return (int)hash;
+    }
+};

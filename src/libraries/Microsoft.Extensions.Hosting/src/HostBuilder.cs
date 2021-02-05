@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Hosting
         {
             if (_hostBuilt)
             {
-                throw new InvalidOperationException("Build can only be called once.");
+                throw new InvalidOperationException(SR.BuildCalled);
             }
             _hostBuilt = true;
 
@@ -243,7 +243,7 @@ namespace Microsoft.Extensions.Hosting
 
             if (_appServices == null)
             {
-                throw new InvalidOperationException($"The IServiceProviderFactory returned a null IServiceProvider.");
+                throw new InvalidOperationException(SR.NullIServiceProvider);
             }
 
             // resolve configuration explicitly once to mark it as resolved within the

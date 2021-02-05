@@ -37,19 +37,32 @@ namespace System.Net.Http
         internal bool DeflateEnabled => (_decompressionMethods & DecompressionMethods.Deflate) != 0;
         internal bool BrotliEnabled => (_decompressionMethods & DecompressionMethods.Brotli) != 0;
 
+        private static bool EncodingExists(HttpHeaderValueCollection<StringWithQualityHeaderValue> acceptEncodingHeader, string encoding)
+        {
+            foreach (StringWithQualityHeaderValue existingEncoding in acceptEncodingHeader)
+            {
+                if (string.Equals(existingEncoding.Value, encoding, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         internal override async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (GZipEnabled && !request.Headers.AcceptEncoding.Contains(s_gzipHeaderValue))
+            if (GZipEnabled && !EncodingExists(request.Headers.AcceptEncoding, Gzip))
             {
                 request.Headers.AcceptEncoding.Add(s_gzipHeaderValue);
             }
 
-            if (DeflateEnabled && !request.Headers.AcceptEncoding.Contains(s_deflateHeaderValue))
+            if (DeflateEnabled && !EncodingExists(request.Headers.AcceptEncoding, Deflate))
             {
                 request.Headers.AcceptEncoding.Add(s_deflateHeaderValue);
             }
 
-            if (BrotliEnabled && !request.Headers.AcceptEncoding.Contains(s_brotliHeaderValue))
+            if (BrotliEnabled && !EncodingExists(request.Headers.AcceptEncoding, Brotli))
             {
                 request.Headers.AcceptEncoding.Add(s_brotliHeaderValue);
             }

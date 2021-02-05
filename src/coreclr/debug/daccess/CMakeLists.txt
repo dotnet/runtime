@@ -52,7 +52,7 @@ if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_
     DEPENDS coreclr
     VERBATIM
     COMMAND_EXPAND_LISTS
-    COMMAND sh ${CLR_DIR}/pal/tools/gen-dactable-rva.sh ${args}
+    COMMAND ${CLR_DIR}/pal/tools/gen-dactable-rva.sh ${args}
     COMMENT Generating ${GENERATED_INCLUDE_DIR}/dactablerva.h
   )
 

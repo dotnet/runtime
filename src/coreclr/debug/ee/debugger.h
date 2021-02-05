@@ -1114,6 +1114,10 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     inline void SetNextPage(DebuggerHeapExecutableMemoryPage* nextPage)
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         chunks[0].bookkeeping.nextPage = nextPage;
     }
 
@@ -1124,6 +1128,10 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     inline void SetPageOccupancy(uint64_t newOccupancy)
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         // Can't unset first bit of occupancy!
         ASSERT((newOccupancy & 0x8000000000000000) != 0);
 
@@ -1137,6 +1145,10 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     DebuggerHeapExecutableMemoryPage()
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         SetPageOccupancy(0x8000000000000000); // only the first bit is set.
         for (uint8_t i = 1; i < sizeof(chunks)/sizeof(chunks[0]); i++)
         {
@@ -2517,7 +2529,6 @@ public:
     void UnloadAssembly(DomainAssembly * pDomainAssembly);
 
     HRESULT FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo, BYTE **argDataArea, DebuggerEval **debuggerEvalKey);
-    HRESULT FuncEvalSetupReAbort(Thread *pThread, Thread::ThreadAbortRequester requester);
     HRESULT FuncEvalAbort(DebuggerEval *debuggerEvalKey);
     HRESULT FuncEvalRudeAbort(DebuggerEval *debuggerEvalKey);
     HRESULT FuncEvalCleanup(DebuggerEval *debuggerEvalKey);
@@ -2919,6 +2930,7 @@ public:
     virtual void SuspendForGarbageCollectionCompleted();
     virtual void ResumeForGarbageCollectionStarted();
 #endif
+    BOOL m_isSuspendedForGarbageCollection;
     BOOL m_isBlockedOnGarbageCollectionEvent;
     BOOL m_willBlockOnGarbageCollectionEvent;
     BOOL m_isGarbageCollectionEventsEnabled;
@@ -3417,16 +3429,11 @@ public:
     bool                               m_aborted;           // Was this eval aborted
     bool                               m_completed;          // Is the eval complete - successfully or by aborting
     bool                               m_evalDuringException;
-    bool                               m_rethrowAbortException;
-    Thread::ThreadAbortRequester       m_requester;         // For aborts, what kind?
     VMPTR_OBJECTHANDLE                 m_vmObjectHandle;
     TypeHandle                         m_ownerTypeHandle;
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
     DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException);
-
-    // This constructor is only used when setting up an eval to re-abort a thread.
-    DebuggerEval(T_CONTEXT * pContext, Thread * pThread, Thread::ThreadAbortRequester requester);
 
     bool Init()
     {
@@ -3481,7 +3488,6 @@ public:
 #ifdef _DEBUG
         // Set flags to strategic values in case we access deleted memory.
         m_completed = false;
-        m_rethrowAbortException = true;
 #endif
     }
 };

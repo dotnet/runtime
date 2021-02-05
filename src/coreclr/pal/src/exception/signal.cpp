@@ -46,16 +46,19 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include <unistd.h>
 #include <sys/mman.h>
 
+
+#endif // !HAVE_MACH_EXCEPTIONS
 #include "pal/context.h"
 
 #ifdef SIGRTMIN
 #define INJECT_ACTIVATION_SIGNAL SIGRTMIN
+#else
+#define INJECT_ACTIVATION_SIGNAL SIGUSR1
 #endif
 
 #if !defined(INJECT_ACTIVATION_SIGNAL) && defined(FEATURE_HIJACK)
 #error FEATURE_HIJACK requires INJECT_ACTIVATION_SIGNAL to be defined
 #endif
-#endif // !HAVE_MACH_EXCEPTIONS
 
 using namespace CorUnix;
 
@@ -66,6 +69,9 @@ typedef void (*SIGFUNC)(int, siginfo_t *, void *);
 /* internal function declarations *********************************************/
 
 static void sigterm_handler(int code, siginfo_t *siginfo, void *context);
+#ifdef INJECT_ACTIVATION_SIGNAL
+static void inject_activation_handler(int code, siginfo_t *siginfo, void *context);
+#endif
 #if !HAVE_MACH_EXCEPTIONS
 static void sigill_handler(int code, siginfo_t *siginfo, void *context);
 static void sigfpe_handler(int code, siginfo_t *siginfo, void *context);
@@ -77,9 +83,6 @@ static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
 
 static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...);
 
-#ifdef INJECT_ACTIVATION_SIGNAL
-static void inject_activation_handler(int code, siginfo_t *siginfo, void *context);
-#endif
 #endif // !HAVE_MACH_EXCEPTIONS
 
 static void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction, int additionalFlags = 0, bool skipIgnored = false);
@@ -94,8 +97,13 @@ bool g_enable_alternate_stack_check = false;
 #endif // !HAVE_MACH_EXCEPTIONS
 
 static bool g_registered_sigterm_handler = false;
+static bool g_registered_activation_handler = false;
 
 struct sigaction g_previous_sigterm;
+#ifdef INJECT_ACTIVATION_SIGNAL
+struct sigaction g_previous_activation;
+#endif
+
 #if !HAVE_MACH_EXCEPTIONS
 struct sigaction g_previous_sigill;
 struct sigaction g_previous_sigtrap;
@@ -104,10 +112,6 @@ struct sigaction g_previous_sigbus;
 struct sigaction g_previous_sigsegv;
 struct sigaction g_previous_sigint;
 struct sigaction g_previous_sigquit;
-
-#ifdef INJECT_ACTIVATION_SIGNAL
-struct sigaction g_previous_activation;
-#endif
 
 // Offset of the local variable containing pointer to windows style context in the common_signal_handler function.
 // This offset is relative to the frame pointer.
@@ -174,9 +178,6 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         handle_signal(SIGINT, sigint_handler, &g_previous_sigint, 0 /* additionalFlags */, true /* skipIgnored */);
         handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit, 0 /* additionalFlags */, true /* skipIgnored */);
 
-#ifdef INJECT_ACTIVATION_SIGNAL
-        handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
-#endif
         if (!pthrCurrent->EnsureSignalAlternateStack())
         {
             return FALSE;
@@ -224,6 +225,11 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         handle_signal(SIGTERM, sigterm_handler, &g_previous_sigterm);
     }
 
+#ifdef INJECT_ACTIVATION_SIGNAL
+    handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
+    g_registered_activation_handler = true;
+#endif
+
     return TRUE;
 }
 
@@ -257,11 +263,15 @@ void SEHCleanupSignals()
         restore_signal(SIGSEGV, &g_previous_sigsegv);
         restore_signal(SIGINT, &g_previous_sigint);
         restore_signal(SIGQUIT, &g_previous_sigquit);
-#ifdef INJECT_ACTIVATION_SIGNAL
-        restore_signal(INJECT_ACTIVATION_SIGNAL, &g_previous_activation);
-#endif
     }
 #endif // !HAVE_MACH_EXCEPTIONS
+
+#ifdef INJECT_ACTIVATION_SIGNAL
+    if (g_registered_activation_handler)
+    {
+        restore_signal(INJECT_ACTIVATION_SIGNAL, &g_previous_activation);
+    }
+#endif
 
     if (g_registered_sigterm_handler)
     {
@@ -272,6 +282,43 @@ void SEHCleanupSignals()
 /* internal function definitions **********************************************/
 
 #if !HAVE_MACH_EXCEPTIONS
+
+/*++
+Function :
+    IsRunningOnAlternateStack
+
+    Detects if the current signal handlers is running on an alternate stack
+
+Parameters :
+    The context of the signal
+
+Return :
+    true if we are running on an alternate stack
+
+--*/
+bool IsRunningOnAlternateStack(void *context)
+{
+    bool isRunningOnAlternateStack;
+    if (g_enable_alternate_stack_check)
+    {
+        // Note: WSL doesn't return the alternate signal ranges in the uc_stack (the whole structure is zeroed no
+        // matter whether the code is running on an alternate stack or not). So the check would always fail on WSL.
+        stack_t *signalStack = &((native_context_t *)context)->uc_stack;
+        // Check if the signalStack local variable address is within the alternate stack range. If it is not,
+        // then either the alternate stack was not installed at all or the current method is not running on it.
+        void* alternateStackEnd = (char *)signalStack->ss_sp + signalStack->ss_size;
+        isRunningOnAlternateStack = ((signalStack->ss_flags & SS_DISABLE) == 0) && (signalStack->ss_sp <= &signalStack) && (&signalStack < alternateStackEnd);
+    }
+    else
+    {
+        // If alternate stack check is disabled, consider always that we are running on an alternate
+        // signal handler stack.
+        isRunningOnAlternateStack = true;
+    }
+
+    return isRunningOnAlternateStack;
+}
+
 /*++
 Function :
     invoke_previous_action
@@ -330,7 +377,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         }
     }
 
-    PROCNotifyProcessShutdown();
+    PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
     PROCCreateCrashDumpIfEnabled();
 }
 
@@ -422,42 +469,6 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
     }
 
     RtlRestoreContext(&returnPoint->context, NULL);
-}
-
-/*++
-Function :
-    IsRunningOnAlternateStack
-
-    Detects if the current signal handlers is running on an alternate stack
-
-Parameters :
-    The context of the signal
-
-Return :
-    true if we are running on an alternate stack
-
---*/
-bool IsRunningOnAlternateStack(void *context)
-{
-    bool isRunningOnAlternateStack;
-    if (g_enable_alternate_stack_check)
-    {
-        // Note: WSL doesn't return the alternate signal ranges in the uc_stack (the whole structure is zeroed no
-        // matter whether the code is running on an alternate stack or not). So the check would always fail on WSL.
-        stack_t *signalStack = &((native_context_t *)context)->uc_stack;
-        // Check if the signalStack local variable address is within the alternate stack range. If it is not,
-        // then either the alternate stack was not installed at all or the current method is not running on it.
-        void* alternateStackEnd = (char *)signalStack->ss_sp + signalStack->ss_size;
-        isRunningOnAlternateStack = ((signalStack->ss_flags & SS_DISABLE) == 0) && (signalStack->ss_sp <= &signalStack) && (&signalStack < alternateStackEnd);
-    }
-    else
-    {
-        // If alternate stack check is disabled, consider always that we are running on an alternate
-        // signal handler stack.
-        isRunningOnAlternateStack = true;
-    }
-
-    return isRunningOnAlternateStack;
 }
 
 /*++
@@ -686,7 +697,6 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
     }
 }
 
-#if !HAVE_MACH_EXCEPTIONS
 #ifdef INJECT_ACTIVATION_SIGNAL
 /*++
 Function :
@@ -703,7 +713,13 @@ Parameters :
 static void inject_activation_handler(int code, siginfo_t *siginfo, void *context)
 {
     // Only accept activations from the current process
-    if (g_activationFunction != NULL && siginfo->si_pid == getpid())
+    if (g_activationFunction != NULL && (siginfo->si_pid == getpid()
+#ifdef HOST_OSX
+    // On OSX si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+    // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
+    || siginfo->si_pid == 0
+#endif
+    ))
     {
         _ASSERTE(g_safeActivationCheckFunction != NULL);
 
@@ -713,7 +729,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
         CONTEXTFromNativeContext(
             ucontext,
             &winContext,
-            CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
+            CONTEXT_CONTROL | CONTEXT_INTEGER);
 
         if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext), /* checkingCurrentThread */ TRUE))
         {
@@ -778,6 +794,8 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     return ERROR_CANCELLED;
 #endif
 }
+
+#if !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function :

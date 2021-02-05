@@ -44,4 +44,9 @@ typedef struct MonoQCallFunc {
     const char     *method_name;
 } MonoQCallFunc;
 
+typedef void * (*PInvokeOverrideFn) (const char *libraryName, const char *entrypointName);
+
+void
+mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn);
+
 #endif

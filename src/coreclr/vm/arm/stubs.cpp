@@ -498,6 +498,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     T_CONTEXT                         ctx;
     T_KNONVOLATILE_CONTEXT_POINTERS   nonVolRegPtrs;
 
+    ctx.ContextFlags = 0; // Read by PAL_VirtualUnwind.
+
     ctx.Pc = baseState->captureIp;
     ctx.Sp = baseState->captureSp;
 

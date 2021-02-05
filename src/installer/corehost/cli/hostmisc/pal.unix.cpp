@@ -27,6 +27,10 @@
 #include <sys/sysctl.h>
 #elif defined(__sun)
 #include <sys/utsname.h>
+#elif defined(TARGET_FREEBSD)
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
 #endif
 
 #if !HAVE_DIRENT_D_TYPE
@@ -218,7 +222,10 @@ bool pal::get_loaded_library(
     pal::proc_t proc = pal::get_symbol(dll_maybe, symbol_name);
     Dl_info info;
     if (dladdr(proc, &info) == 0)
+    {
+        dlclose(dll_maybe);
         return false;
+    }
 
     *dll = dll_maybe;
     path->assign(info.dli_fname);

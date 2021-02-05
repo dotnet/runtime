@@ -1093,11 +1093,7 @@ namespace System.DirectoryServices.Protocols
             bool success = false;
             if (ldapConnection != null && ldapConnection._ldapHandle != null && !ldapConnection._ldapHandle.IsInvalid)
             {
-                try { }
-                finally
-                {
-                    ldapConnection._ldapHandle.DangerousAddRef(ref success);
-                }
+                ldapConnection._ldapHandle.DangerousAddRef(ref success);
             }
 
             return success;
@@ -1107,11 +1103,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (ldapConnection != null && ldapConnection._ldapHandle != null && !ldapConnection._ldapHandle.IsInvalid)
             {
-                try { }
-                finally
-                {
-                    ldapConnection._ldapHandle.DangerousRelease();
-                }
+                ldapConnection._ldapHandle.DangerousRelease();
             }
         }
     }

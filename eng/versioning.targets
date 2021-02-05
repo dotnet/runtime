@@ -68,13 +68,6 @@
 
     <!-- corefx has always added a description set to assembly name so include that here -->
     <Description Condition="'$(Description)' == ''">$(AssemblyName)</Description>
-
-    <!-- SDK sets product to assembly but we want it to be our product name -->
-    <Product>Microsoft%AE .NET</Product>
-
-    <!-- Use the .NET product branding version for informational version description -->
-    <InformationalVersion>$(ProductVersion)</InformationalVersion>
-    <InformationalVersion Condition="'$(VersionSuffix)' != ''">$(InformationalVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
 
   <Target Name="_ComputeBuildToolsAssemblyInfoAttributes"
@@ -165,8 +158,8 @@
 
   </Target>
 
-  <!-- Removes assembly level attributes for Browser. -->
-  <Target Name="RemoveSupportedPlatformAssemblyAttributeForBrowser" AfterTargets="GetAssemblyAttributes" Condition="'$(TargetFrameworkSuffix)' == 'Browser' or '$(IsTestProject)' == 'true'">
+  <!-- Removes assembly level attributes from test projects. -->
+  <Target Name="RemoveSupportedOSPlatformAttributeFromTestProjects" AfterTargets="GetAssemblyAttributes" Condition="'$(IsTestProject)' == 'true'">
     <ItemGroup>
       <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute" />
       <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />

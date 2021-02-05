@@ -5951,7 +5951,12 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         {
             unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
             LclVarDsc* lclVar = &compiler->lvaTable[lclNum];
-            assert(node->TypeGet() != TYP_SIMD12 || compiler->lvaIsFieldOfDependentlyPromotedStruct(lclVar));
+#ifdef DEBUG
+            if (node->TypeIs(TYP_SIMD12))
+            {
+                assert(compiler->lvaIsFieldOfDependentlyPromotedStruct(lclVar) || (lclVar->lvSize() == 12));
+            }
+#endif // DEBUG
         }
         break;
 #endif // TARGET_64BIT

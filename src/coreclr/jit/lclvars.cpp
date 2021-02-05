@@ -235,7 +235,29 @@ void Compiler::lvaInitTypeRef()
     //-------------------------------------------------------------------------
 
     InitVarDscInfo varDscInfo;
-    varDscInfo.Init(lvaTable, hasRetBuffArg);
+#ifdef TARGET_X86
+    // x86 unmanaged calling conventions limit the number of registers supported
+    // for accepting arguments. As a result, we need to modify the number of registers
+    // when we emit a method with an unmanaged calling convention.
+    switch (info.compCallConv)
+    {
+        case CorInfoCallConvExtension::Thiscall:
+            // In thiscall the this parameter goes into a register.
+            varDscInfo.Init(lvaTable, hasRetBuffArg, 1, 0);
+            break;
+        case CorInfoCallConvExtension::C:
+        case CorInfoCallConvExtension::Stdcall:
+            varDscInfo.Init(lvaTable, hasRetBuffArg, 0, 0);
+            break;
+        case CorInfoCallConvExtension::Managed:
+        case CorInfoCallConvExtension::Fastcall:
+        default:
+            varDscInfo.Init(lvaTable, hasRetBuffArg, MAX_REG_ARG, MAX_FLOAT_REG_ARG);
+            break;
+    }
+#else
+    varDscInfo.Init(lvaTable, hasRetBuffArg, MAX_REG_ARG, MAX_FLOAT_REG_ARG);
+#endif
 
     lvaInitArgs(&varDscInfo);
 
@@ -513,14 +535,16 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         info.compRetBuffArg = varDscInfo->varNum;
         varDsc->lvType      = TYP_BYREF;
         varDsc->lvIsParam   = 1;
-        varDsc->lvIsRegArg  = 1;
+        varDsc->lvIsRegArg  = 0;
 
         if (useFixedRetBufReg && hasFixedRetBuffReg())
         {
+            varDsc->lvIsRegArg = 1;
             varDsc->SetArgReg(theFixedRetBuffReg());
         }
-        else
+        else if (varDscInfo->canEnreg(TYP_INT))
         {
+            varDsc->lvIsRegArg     = 1;
             unsigned retBuffArgNum = varDscInfo->allocRegArg(TYP_INT);
             varDsc->SetArgReg(genMapIntRegArgNumToRegNum(retBuffArgNum));
         }
@@ -557,10 +581,10 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBuf
         }
 #endif // FEATURE_SIMD
 
-        assert(isValidIntArgReg(varDsc->GetArgReg()));
+        assert(!varDsc->lvIsRegArg || isValidIntArgReg(varDsc->GetArgReg()));
 
 #ifdef DEBUG
-        if (verbose)
+        if (varDsc->lvIsRegArg && verbose)
         {
             printf("'__retBuf'  passed in register %s\n", getRegName(varDsc->GetArgReg()));
         }
@@ -591,7 +615,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #if defined(TARGET_X86)
     // Only (some of) the implicit args are enregistered for varargs
-    varDscInfo->maxIntRegArgNum = info.compIsVarArgs ? varDscInfo->intRegArgNum : MAX_REG_ARG;
+    if (info.compIsVarArgs)
+    {
+        varDscInfo->maxIntRegArgNum = varDscInfo->intRegArgNum;
+    }
 #elif defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     // On System V type environment the float registers are not indexed together with the int ones.
     varDscInfo->floatRegArgNum = varDscInfo->intRegArgNum;
@@ -620,6 +647,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         ;
     }
 
+    // Process each user arg.
     for (unsigned i = 0; i < numUserArgs;
          i++, varDscInfo->varNum++, varDscInfo->varDsc++, argLst = info.compCompHnd->getArgNext(argLst))
     {
@@ -640,9 +668,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         // For ARM, ARM64, and AMD64 varargs, all arguments go in integer registers
         var_types argType = mangleVarArgsType(varDsc->TypeGet());
 
-#ifdef TARGET_ARM
         var_types origArgType = argType;
-#endif // TARGET_ARM
 
         // ARM softfp calling convention should affect only the floating point arguments.
         // Otherwise there appear too many surplus pre-spills and other memory operations
@@ -687,7 +713,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             // We have an HFA argument, so from here on out treat the type as a float, double, or vector.
             // The orginal struct type is available by using origArgType.
             // We also update the cSlots to be the number of float/double/vector fields in the HFA.
-            argType = hfaType;
+            argType = hfaType; // TODO-Cleanup: remove this asignment and mark `argType` as const.
             varDsc->SetHfaType(hfaType);
             cSlots = varDsc->lvHfaSlots();
         }
@@ -1065,19 +1091,15 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #endif // TARGET_XXX
 
 #if FEATURE_FASTTAILCALL
+            const unsigned argAlignment = eeGetArgAlignment(origArgType, (hfaType == TYP_FLOAT));
 #if defined(OSX_ARM64_ABI)
-            unsigned argAlignment = TARGET_POINTER_SIZE;
-            if (argSize <= TARGET_POINTER_SIZE)
-            {
-                argAlignment = argSize;
-            }
             varDscInfo->stackArgSize = roundUp(varDscInfo->stackArgSize, argAlignment);
-            assert(argSize % argAlignment == 0);
-#else  // !OSX_ARM64_ABI
-            assert((argSize % TARGET_POINTER_SIZE) == 0);
-            assert((varDscInfo->stackArgSize % TARGET_POINTER_SIZE) == 0);
-#endif // !OSX_ARM64_ABI
-            JITDUMP("set user arg V%02u offset to %u\n", varDscInfo->stackArgSize);
+#endif // OSX_ARM64_ABI
+
+            assert((argSize % argAlignment) == 0);
+            assert((varDscInfo->stackArgSize % argAlignment) == 0);
+
+            JITDUMP("set user arg V%02u offset to %u\n", varDscInfo->varNum, varDscInfo->stackArgSize);
             varDsc->SetStackOffset(varDscInfo->stackArgSize);
             varDscInfo->stackArgSize += argSize;
 #endif // FEATURE_FASTTAILCALL
@@ -1109,9 +1131,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             varDsc->lvHasLdAddrOp = 1;
             lvaSetVarAddrExposed(varDscInfo->varNum);
         }
+    }
 
-    } // for each user arg
-    compArgSize = roundUp(compArgSize, TARGET_POINTER_SIZE);
+    compArgSize = GetOutgoingArgByteSize(compArgSize);
 
 #ifdef TARGET_ARM
     if (doubleAlignMask != RBM_NONE)
@@ -2867,6 +2889,13 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
     }
     assert(structHandle != NO_CLASS_HANDLE);
     (void)typGetObjLayout(structHandle);
+    DWORD typeFlags = info.compCompHnd->getClassAttribs(structHandle);
+    if (StructHasNoPromotionFlagSet(typeFlags))
+    {
+        // In AOT ReadyToRun compilation, don't query fields of types
+        // outside of the current version bubble.
+        return;
+    }
     unsigned fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
     impNormStructType(structHandle);
 #ifdef TARGET_ARMARCH
@@ -3319,7 +3348,7 @@ public:
         {
             if (dsc1->lvIsRegArg)
             {
-                weight2 += 2 * BB_UNITY_WEIGHT_UNSIGNED;
+                weight1 += 2 * BB_UNITY_WEIGHT_UNSIGNED;
             }
 
             if (varTypeIsGC(dsc1->TypeGet()))
@@ -3653,6 +3682,46 @@ void LclVarDsc::lvaDisqualifyVar()
     this->lvDefStmt    = nullptr;
 }
 #endif // ASSERTION_PROP
+
+unsigned LclVarDsc::lvSize() const // Size needed for storage representation. Only used for structs or TYP_BLK.
+{
+    // TODO-Review: Sometimes we get called on ARM with HFA struct variables that have been promoted,
+    // where the struct itself is no longer used because all access is via its member fields.
+    // When that happens, the struct is marked as unused and its type has been changed to
+    // TYP_INT (to keep the GC tracking code from looking at it).
+    // See Compiler::raAssignVars() for details. For example:
+    //      N002 (  4,  3) [00EA067C] -------------               return    struct $346
+    //      N001 (  3,  2) [00EA0628] -------------                  lclVar    struct(U) V03 loc2
+    //                                                                        float  V03.f1 (offs=0x00) -> V12 tmp7
+    //                                                                        f8 (last use) (last use) $345
+    // Here, the "struct(U)" shows that the "V03 loc2" variable is unused. Not shown is that V03
+    // is now TYP_INT in the local variable table. It's not really unused, because it's in the tree.
+
+    assert(varTypeIsStruct(lvType) || (lvType == TYP_BLK) || (lvPromoted && lvUnusedStruct));
+
+    if (lvIsParam)
+    {
+        assert(varTypeIsStruct(lvType));
+        const bool     isFloatHfa   = (lvIsHfa() && (GetHfaType() == TYP_FLOAT));
+        const unsigned argAlignment = Compiler::eeGetArgAlignment(lvType, isFloatHfa);
+        return roundUp(lvExactSize, argAlignment);
+    }
+
+#if defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
+    // For 32-bit architectures, we make local variable SIMD12 types 16 bytes instead of just 12. We can't do
+    // this for arguments, which must be passed according the defined ABI. We don't want to do this for
+    // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
+    // (Note that for 64-bits, we are already rounding up to 16.)
+    if (lvType == TYP_SIMD12)
+    {
+        assert(!lvIsParam);
+        assert(lvExactSize == 12);
+        return 16;
+    }
+#endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
+
+    return roundUp(lvExactSize, TARGET_POINTER_SIZE);
+}
 
 /**********************************************************************************
 * Get stack size of the varDsc.
@@ -5310,7 +5379,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         This is all relative to our Virtual '0'
      */
 
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_L2R)
+    if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
         argOffs = compArgSize;
     }
@@ -5322,9 +5391,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     noway_assert(compArgSize >= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES);
 #endif
 
-#ifdef TARGET_X86
-    argOffs -= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
-#endif
+    if (info.compArgOrder == Target::ARG_ORDER_L2R)
+    {
+        argOffs -= codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES;
+    }
 
     // Update the arg initial register locations.
     lvaUpdateArgsWithInitialReg();
@@ -5363,11 +5433,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     if (info.compRetBuffArg != BAD_VAR_NUM)
     {
         noway_assert(lclNum == info.compRetBuffArg);
-        noway_assert(lvaTable[lclNum].lvIsRegArg);
-#ifndef TARGET_X86
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
-#endif // TARGET_X86
         lclNum++;
     }
 
@@ -5459,8 +5526,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         if (!lvaIsPreSpilled(stkLclNum, preSpillMask))
         {
-            argOffs =
-                lvaAssignVirtualFrameOffsetToArg(stkLclNum, eeGetArgSize(argLst, &info.compMethodInfo->args), argOffs);
+            const unsigned argSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
+            argOffs                = lvaAssignVirtualFrameOffsetToArg(stkLclNum, argSize, argOffs);
             argLcls++;
         }
         argLst = info.compCompHnd->getArgNext(argLst);
@@ -5472,11 +5539,9 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         unsigned argumentSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
 
-#ifdef UNIX_AMD64_ABI
-        // On the stack frame the homed arg always takes a full number of slots
-        // for proper stack alignment. Make sure the real struct size is properly rounded up.
-        argumentSize = roundUp(argumentSize, TARGET_POINTER_SIZE);
-#endif // UNIX_AMD64_ABI
+#if !defined(OSX_ARM64_ABI)
+        assert(argumentSize % TARGET_POINTER_SIZE == 0);
+#endif // !defined(OSX_ARM64_ABI)
 
         argOffs =
             lvaAssignVirtualFrameOffsetToArg(lclNum++, argumentSize, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
@@ -5520,7 +5585,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     noway_assert(lclNum < info.compArgsCount);
     noway_assert(argSize);
 
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_L2R)
+    if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
         argOffs -= argSize;
     }
@@ -5588,7 +5653,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
     }
 
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
+    if (info.compArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
     {
         argOffs += argSize;
     }
@@ -5613,7 +5678,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     noway_assert(lclNum < info.compArgsCount);
     noway_assert(argSize);
 
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_L2R)
+    if (info.compArgOrder == Target::ARG_ORDER_L2R)
     {
         argOffs -= argSize;
     }
@@ -5856,19 +5921,14 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
                 break;
         }
 #endif // TARGET_ARM
+        const bool     isFloatHfa   = (varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
+        const unsigned argAlignment = eeGetArgAlignment(varDsc->lvType, isFloatHfa);
 #if defined(OSX_ARM64_ABI)
-        unsigned argAlignment = TARGET_POINTER_SIZE;
-        if (argSize <= TARGET_POINTER_SIZE)
-        {
-            argAlignment = argSize;
-        }
-        argOffs = roundUp(argOffs, argAlignment);
-        assert((argOffs % argAlignment) == 0);
-#else  // !OSX_ARM64_ABI
-        assert((argSize % TARGET_POINTER_SIZE) == 0);
-        assert((argOffs % TARGET_POINTER_SIZE) == 0);
-#endif // !OSX_ARM64_ABI
+        argOffs                     = roundUp(argOffs, argAlignment);
+#endif // OSX_ARM64_ABI
 
+        assert((argSize % argAlignment) == 0);
+        assert((argOffs % argAlignment) == 0);
         varDsc->SetStackOffset(argOffs);
     }
 
@@ -5897,7 +5957,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
     }
 
-    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
+    if (info.compArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
     {
         argOffs += argSize;
     }

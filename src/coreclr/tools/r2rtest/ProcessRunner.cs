@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -113,6 +114,8 @@ public class ProcessRunner : IDisposable
 
     private readonly DataReceivedEventHandler _errorHandler;
 
+    private readonly StringBuilder _outputCapture;
+
     public ProcessRunner(ProcessInfo processInfo, int processIndex, int processCount, ReadyToRunJittedMethods jittedMethods, AutoResetEvent processExitEvent)
     {
         _processInfo = processInfo;
@@ -167,6 +170,8 @@ public class ProcessRunner : IDisposable
         {
             _jittedMethods.AddProcessMapping(_processInfo, _process);
         }
+
+        _outputCapture = new StringBuilder();
 
         _outputHandler = new DataReceivedEventHandler(StandardOutputEventHandler);
         _process.OutputDataReceived += _outputHandler;
@@ -279,6 +284,7 @@ public class ProcessRunner : IDisposable
         if (!string.IsNullOrEmpty(data))
         {
             WriteLog(data);
+            _outputCapture.AppendLine("  " + data);
         }
     }
 
@@ -288,6 +294,7 @@ public class ProcessRunner : IDisposable
         if (!string.IsNullOrEmpty(data))
         {
             WriteLog(data);
+            _outputCapture.AppendLine("!! " + data);
         }
     }
 
@@ -353,6 +360,7 @@ public class ProcessRunner : IDisposable
             WriteLog(failureMessage);
 
             Console.Error.WriteLine(failureMessage + $": {processSpec}");
+            Console.Error.Write(_outputCapture.ToString());
         }
 
         CleanupProcess();

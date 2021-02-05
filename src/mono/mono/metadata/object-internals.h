@@ -288,14 +288,18 @@ TYPED_HANDLE_DECL (MonoMarshalByRefObject);
 /* This is a copy of System.AppDomain */
 struct _MonoAppDomain {
 	MonoMarshalByRefObject mbr;
+#ifndef ENABLE_NETCORE
 	MonoDomain *data;
+#endif
 };
 
 /* Safely access System.AppDomain from native code */
 TYPED_HANDLE_DECL (MonoAppDomain);
 
+#ifndef ENABLE_NETCORE
 /* Safely access System.AppDomainSetup from native code.  (struct is in domain-internals.h) */
 TYPED_HANDLE_DECL (MonoAppDomainSetup);
+#endif
 
 typedef struct _MonoStringBuilder MonoStringBuilder;
 TYPED_HANDLE_DECL (MonoStringBuilder);
@@ -354,7 +358,11 @@ struct _MonoException {
 	MonoString *remote_stack_trace;
 	gint32	    remote_stack_index;
 	/* Dynamic methods referenced by the stack trace */
+#ifdef ENABLE_NETCORE
+	MonoArray *dynamic_methods;
+#else
 	MonoObject *dynamic_methods;
+#endif
 	gint32	    hresult;
 	MonoString *source;
 	MonoObject *serialization_manager;
@@ -590,7 +598,9 @@ struct _MonoInternalThread {
 	gsize debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
 	gpointer *static_data;
 	struct _MonoThreadInfo *thread_info;
+#ifndef ENABLE_NETCORE
 	MonoAppContext *current_appcontext;
+#endif
 	MonoThread *root_domain_thread;
 	MonoObject *_serialized_principal;
 	int _serialized_principal_version;
@@ -837,6 +847,10 @@ typedef struct {
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	void     (*install_state_summarizer) (void);
 	gboolean (*is_interpreter_enabled) (void);
+#ifdef ENABLE_METADATA_UPDATE
+	void     (*metadata_update_init) (MonoError *error);
+	void     (*metadata_update_published) (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);
+#endif
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -1658,15 +1672,7 @@ typedef enum {
 // Keep in sync with System.Runtime.Loader.AssemblyLoadContext
 typedef struct {
 	MonoObject object;
-	MonoObject *unload_lock;
-	MonoEvent *resolving_unmaned_dll;
-	MonoEvent *resolving;
-	MonoEvent *unloading;
-	MonoString *name;
 	MonoAssemblyLoadContext *native_assembly_load_context;
-	gint64 id;
-	gint32 internal_state;
-	MonoBoolean is_collectible;
 } MonoManagedAssemblyLoadContext;
 
 TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);
@@ -1773,6 +1779,9 @@ mono_array_clone_checked (MonoArray *array, MonoError *error);
 
 void
 mono_array_full_copy (MonoArray *src, MonoArray *dest);
+
+void
+mono_array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size);
 
 gboolean
 mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res);

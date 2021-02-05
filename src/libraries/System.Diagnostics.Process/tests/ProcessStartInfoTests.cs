@@ -25,7 +25,8 @@ namespace System.Diagnostics.Tests
     {
         private const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
 
-        private static bool IsNotWindowsNanoServerAndRemoteExecutorIsSupported => PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+        private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported
+            => PlatformDetection.IsWindowsAndElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
         [Fact]
         public void TestEnvironmentProperty()
@@ -450,9 +451,9 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsNotWindowsNanoServerAndRemoteExecutorIsSupported))] // Nano has no "netapi32.dll"
+        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
-        [OuterLoop("Requires admin privileges")] 
+        [OuterLoop("Requires admin privileges")]
         public void TestUserCredentialsPropertiesOnWindows()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
@@ -471,8 +472,11 @@ namespace System.Diagnostics.Tests
             {
                 p = CreateProcessLong();
 
-                // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                SetAccessControl(username, p.StartInfo.FileName, AccessControlType.Allow);
+                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+                {
+                    // ensure the new user can access the .exe (otherwise you get Access is denied exception)
+                    SetAccessControl(username, p.StartInfo.FileName, add: true);
+                }
 
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
@@ -499,10 +503,6 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                SetAccessControl(username, p.StartInfo.FileName, AccessControlType.Deny); // revoke the access
-
-                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
-
                 if (handle != null)
                     handle.Dispose();
 
@@ -512,14 +512,31 @@ namespace System.Diagnostics.Tests
 
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
+
+                if (PlatformDetection.IsNotWindowsServerCore)
+                {
+                    SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+                }
+
+                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 
-        private static void SetAccessControl(string userName, string filePath, AccessControlType accessControlType)
+        private static void SetAccessControl(string userName, string filePath, bool add)
         {
             FileInfo fileInfo = new FileInfo(filePath);
             FileSecurity accessControl = fileInfo.GetAccessControl();
-            accessControl.AddAccessRule(new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, accessControlType));
+            FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, AccessControlType.Allow);
+
+            if (add)
+            {
+                accessControl.AddAccessRule(fileSystemAccessRule);
+            }
+            else
+            {
+                accessControl.RemoveAccessRule(fileSystemAccessRule);
+            }
+
             fileInfo.SetAccessControl(accessControl);
         }
 

@@ -38,12 +38,14 @@ namespace System.Reflection.Emit
             return fieldBuilder;
         }
 
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
         public TypeInfo? CreateTypeInfo()
         {
             return m_typeBuilder.CreateTypeInfo();
         }
 
         // CreateType cause EnumBuilder to be baked.
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
         public Type? CreateType()
         {
             return m_typeBuilder.CreateType();

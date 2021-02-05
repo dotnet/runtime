@@ -10,7 +10,6 @@ using Xunit;
 
 namespace Tests.Integration
 {
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class RecompositionTests
     {
         public class Class_OptIn_AllowRecompositionImports

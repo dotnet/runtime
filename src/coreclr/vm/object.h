@@ -1301,8 +1301,7 @@ private:
     OBJECTREF     m_ExecutionContext;
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
-    OBJECTREF     m_Delegate;
-    OBJECTREF     m_ThreadStartArg;
+    OBJECTREF     m_StartHelper;
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
     // definition of Thread.  The loader will sort it next.
@@ -1345,24 +1344,10 @@ public:
         m_ManagedThreadId = id;
     }
 
-    OBJECTREF GetThreadStartArg() { LIMITED_METHOD_CONTRACT; return m_ThreadStartArg; }
-    void SetThreadStartArg(OBJECTREF newThreadStartArg)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(newThreadStartArg == NULL);
-        // Note: this is an unchecked assignment.  We are cleaning out the ThreadStartArg field when
-        // a thread starts so that ADU does not cause problems
-        SetObjectReference( (OBJECTREF *)&m_ThreadStartArg, newThreadStartArg);
-
-    }
-
     STRINGREF GetName() {
         LIMITED_METHOD_CONTRACT;
         return m_Name;
     }
-    OBJECTREF GetDelegate()                   { LIMITED_METHOD_CONTRACT; return m_Delegate; }
-    void      SetDelegate(OBJECTREF delegate);
 
     OBJECTREF GetSynchronizationContext()
     {
@@ -1370,10 +1355,13 @@ public:
         return m_SynchronizationContext;
     }
 
-    // SetDelegate is our "constructor" for the pathway where the exposed object is
-    // created first.  InitExisting is our "constructor" for the pathway where an
-    // existing physical thread is later exposed.
     void      InitExisting();
+
+    void ResetStartHelper()
+    {
+        LIMITED_METHOD_CONTRACT
+        m_StartHelper = NULL;
+    }
 
     void ResetName()
     {

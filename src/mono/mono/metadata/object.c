@@ -88,9 +88,6 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 static char *
 mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s, MonoError *error);
 
-static void
-array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size);
-
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (pointer, "System.Reflection", "Pointer")
 static GENERATE_GET_CLASS_WITH_CACHE (remoting_services, "System.Runtime.Remoting", "RemotingServices")
@@ -1255,10 +1252,12 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 				mono_custom_attrs_free (ainfo);
 				return SPECIAL_STATIC_THREAD;
 			}
+#ifndef ENABLE_NETCORE
 			else if (strcmp (klass_name, "ContextStaticAttribute") == 0) {
 				mono_custom_attrs_free (ainfo);
 				return SPECIAL_STATIC_CONTEXT;
 			}
+#endif
 		}
 	}
 	mono_custom_attrs_free (ainfo);
@@ -5080,10 +5079,16 @@ mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 	MONO_STATIC_POINTER_INIT (MonoClassField, field)
 
-		field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "FirstChanceException", NULL);
-		g_assert (field);
+		static gboolean inited;
+		if (!inited) {
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "FirstChanceException", NULL);
+			inited = TRUE;
+		}
 
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, field)
+
+	if (!field)
+		return;
 
 	MonoVTable *vt = mono_class_vtable_checked (domain, mono_defaults.appcontext_class, error);
 	return_if_nok (error);
@@ -5141,13 +5146,18 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 #ifndef ENABLE_NETCORE
 		field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "UnhandledException", NULL);
 #else
-		field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
+		static gboolean inited;
+		if (!inited) {
+			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
+			inited = TRUE;
+		}
 #endif
-		g_assert (field);
 
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, field)
 
 #ifndef ENABLE_NETCORE
+	g_assert (field);
+
 	MonoDomain *root_domain;
 	MonoObjectHandle current_appdomain_delegate = MONO_HANDLE_NEW (MonoObject, NULL);
 
@@ -5172,6 +5182,9 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 		mono_threads_end_abort_protected_block ();
 	}
 #else
+	if (!field)
+		goto leave;
+
 	MonoObject *delegate = NULL;
 	MonoObjectHandle delegate_handle;
 	MonoVTable *vt = mono_class_vtable_checked (current_domain, mono_defaults.appcontext_class, error);
@@ -6322,11 +6335,11 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 	g_assert (size == mono_array_length_internal (dest));
 	size *= mono_array_element_size (klass);
 
-	array_full_copy_unchecked_size (src, dest, klass, size);
+	mono_array_full_copy_unchecked_size (src, dest, klass, size);
 }
 
-static void
-array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size)
+void
+mono_array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size)
 {
 	if (mono_gc_is_moving ()) {
 		MonoClass *element_class = m_class_get_element_class (klass);
@@ -6336,8 +6349,7 @@ array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klas
 			else
 				mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
 		} else {
-			mono_array_memcpy_refs_internal
- (dest, 0, src, 0, mono_array_length_internal (src));
+			mono_array_memcpy_refs_internal (dest, 0, src, 0, mono_array_length_internal (src));
 		}
 	} else {
 		mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
@@ -6389,7 +6401,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, Mo
 
 	MonoGCHandle dst_handle;
 	dst_handle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, o), TRUE);
-	array_full_copy_unchecked_size (MONO_HANDLE_RAW (array_handle), MONO_HANDLE_RAW (o), klass, size);
+	mono_array_full_copy_unchecked_size (MONO_HANDLE_RAW (array_handle), MONO_HANDLE_RAW (o), klass, size);
 	mono_gchandle_free_internal (dst_handle);
 
 	MONO_HANDLE_ASSIGN (result, o);
@@ -9454,8 +9466,18 @@ mono_class_value_size (MonoClass *klass, guint32 *align)
 	 */
 	/*g_assert (klass->valuetype);*/
 
-	size = mono_class_instance_size (klass) - MONO_ABI_SIZEOF (MonoObject);
+	/* this call inits klass if its not inited already */
+	size = mono_class_instance_size (klass);
 
+	if (m_class_has_failure (klass)) {
+		if (align)
+			*align = 1;
+		return 0;
+	}
+
+	size = size - MONO_ABI_SIZEOF (MonoObject);
+
+	g_assert (size >= 0);
 	if (align)
 		*align = m_class_get_min_align (klass);
 

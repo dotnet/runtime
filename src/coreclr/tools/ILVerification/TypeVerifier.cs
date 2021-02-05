@@ -94,7 +94,7 @@ namespace Internal.TypeVerifier
                     // Look for missing method implementation
                     foreach (MethodDesc method in implementedInterface.InterfaceType.GetAllMethods())
                     {
-                        if (method.Signature.IsStatic)
+                        if (!method.IsAbstract)
                         {
                             continue;
                         }

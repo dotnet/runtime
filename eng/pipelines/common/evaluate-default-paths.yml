@@ -21,6 +21,7 @@ jobs:
       - src/installer/*
       - src/mono/*
       - src/libraries/*
+      - src/tests/*
       - eng/pipelines/installer/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
@@ -39,6 +40,7 @@ jobs:
       - src/installer/*
       - src/coreclr/*
       - src/libraries/*
+      - src/tests/*
       - eng/pipelines/installer/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
@@ -53,13 +55,14 @@ jobs:
       - src/installer/*
       - src/mono/*
       - src/coreclr/*
+      - src/tests/*
+      - src/native/eventpipe/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
     - subset: runtimetests
       include:
       - src/tests/*
-      - src/coreclr/tests/*
     - subset: installer
       include:
       - docs/manpages/*
@@ -73,6 +76,8 @@ jobs:
       - src/coreclr/*
       - src/mono/*
       - src/libraries/*
+      - src/tests/*
+      - src/native/eventpipe/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*

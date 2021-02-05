@@ -50,7 +50,6 @@ public:
         ThreadWaitSleepJoin = 32,
         ThreadSuspended = 64,
         ThreadAbortRequested = 128,
-        ThreadAborted = 256,
     };
 
     enum
@@ -60,9 +59,7 @@ public:
         ApartmentUnknown = 2
     };
 
-    static void StartInner(ThreadBaseObject* pThisUNSAFE);
-
-    static FCDECL1(void,    Start,             ThreadBaseObject* pThisUNSAFE);
+    static void QCALLTYPE Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName);
     static FCDECL1(INT32,   GetPriority,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetPriority,       ThreadBaseObject* pThisUNSAFE, INT32 iPriority);
     static FCDECL1(void,    Interrupt,         ThreadBaseObject* pThisUNSAFE);
@@ -72,7 +69,7 @@ public:
     static FCDECL1(void,    Sleep,             INT32 iTime);
 #define Sleep(a) Dont_Use_Sleep(a)
     static void QCALLTYPE   UninterruptibleSleep0();
-    static FCDECL3(void,    SetStart,          ThreadBaseObject* pThisUNSAFE, Object* pDelegateUNSAFE, INT32 iRequestedStackSize);
+    static FCDECL1(void,    Initialize,        ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetBackground,     ThreadBaseObject* pThisUNSAFE, CLR_BOOL isBackground);
     static FCDECL1(FC_BOOL_RET, IsBackground,  ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(INT32,   GetThreadState,    ThreadBaseObject* pThisUNSAFE);
@@ -80,7 +77,6 @@ public:
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     static FCDECL1(INT32,   GetApartmentState, ThreadBaseObject* pThis);
     static FCDECL2(INT32,   SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState);
-    static FCDECL1(void,    StartupSetApartmentState, ThreadBaseObject* pThis);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     static
@@ -101,7 +97,6 @@ public:
 #endif //FEATURE_COMINTEROP
     static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,          ThreadBaseObject* thread);
     static FCDECL1(void,    SetIsThreadpoolThread,          ThreadBaseObject* thread);
-    static FCDECL1(Object*, GetThreadDeserializationTracker, StackCrawlMark* stackMark);
 
     static FCDECL0(INT32,   GetCurrentProcessorNumber);
 

@@ -66,6 +66,26 @@
 #include <mach/vm_param.h>
 #include <mach/mach_port.h>
 #include <mach/mach_host.h>
+
+#if defined(HOST_ARM64)
+#include <mach/task.h>
+#include <mach/vm_map.h>
+extern "C"
+{
+#  include <mach/thread_state.h>
+}
+
+#define CHECK_MACH(_msg, machret) do {                                      \
+        if (machret != KERN_SUCCESS)                                        \
+        {                                                                   \
+            char _szError[1024];                                            \
+            snprintf(_szError, _countof(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
+            mach_error(_szError, machret);                                  \
+            abort();                                                        \
+        }                                                                   \
+    } while (false)
+#endif // defined(HOST_ARM64)
+
 #endif // __APPLE__
 
 #ifdef __linux__
@@ -340,6 +360,7 @@ bool GCToOSInterface::Initialize()
     {
         s_flushUsingMemBarrier = TRUE;
     }
+#if !(defined(TARGET_OSX) && defined(HOST_ARM64))
     else
     {
         assert(g_helperPage == 0);
@@ -371,6 +392,7 @@ bool GCToOSInterface::Initialize()
             return false;
         }
     }
+#endif // !(defined(TARGET_OSX) && defined(HOST_ARM64))
 
     InitializeCGroup();
 
@@ -500,7 +522,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0);
         assert(status == 0 && "Failed to flush using membarrier");
     }
-    else
+    else if (g_helperPage != 0)
     {
         int status = pthread_mutex_lock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to lock the flushProcessWriteBuffersMutex lock");
@@ -521,6 +543,33 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
+#if defined(TARGET_OSX) && defined(HOST_ARM64)
+    else
+    {
+        mach_msg_type_number_t cThreads;
+        thread_act_t *pThreads;
+        kern_return_t machret = task_threads(mach_task_self(), &pThreads, &cThreads);
+        CHECK_MACH("task_threads()", machret);
+
+        uintptr_t sp;
+        uintptr_t registerValues[128];
+
+        // Iterate through each of the threads in the list.
+        for (mach_msg_type_number_t i = 0; i < cThreads; i++)
+        {
+            // Request the threads pointer values to force the thread to emit a memory barrier
+            size_t registers = 128;
+            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+            if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
+            {
+                CHECK_MACH("thread_get_register_pointer_values()", machret);
+            }
+        }
+        // Deallocate the thread list now we're done with it.
+        machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
+        CHECK_MACH("vm_deallocate()", machret);
+    }
+#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,

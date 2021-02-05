@@ -35,4 +35,8 @@ G_EXTERN_C void mini_llvmonly_throw_nullref_exception (void);
 
 G_EXTERN_C void mini_llvmonly_throw_aot_failed_exception (const char *name);
 
+G_EXTERN_C void mini_llvmonly_pop_lmf (MonoLMF *lmf);
+
+G_EXTERN_C gpointer mini_llvmonly_get_interp_entry (MonoMethod *method);
+
 #endif

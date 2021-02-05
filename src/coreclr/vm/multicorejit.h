@@ -270,6 +270,10 @@ public:
 
     static void StopProfileAll();
 
+#ifndef TARGET_UNIX
+    void WriteMulticoreJitProfiler();
+#endif // !TARGET_UNIX
+
     // Track module loading event for recording
     void RecordModuleLoad(Module * pModule, FileLoadLevel loadLevel);
 

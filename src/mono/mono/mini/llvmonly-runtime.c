@@ -815,3 +815,25 @@ mini_llvmonly_throw_aot_failed_exception (const char *name)
 	g_free (msg);
 	mono_llvm_throw_exception ((MonoObject*)ex);
 }
+
+/*
+ * mini_llvmonly_pop_lmf:
+ *
+ *   Pop LMF off the LMF stack.
+ */
+void
+mini_llvmonly_pop_lmf (MonoLMF *lmf)
+{
+	if (lmf->previous_lmf)
+		mono_set_lmf ((MonoLMF*)lmf->previous_lmf);
+}
+
+gpointer
+mini_llvmonly_get_interp_entry (MonoMethod *method)
+{
+	ERROR_DECL (error);
+
+	MonoFtnDesc *desc = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (method, FALSE, error);
+	mono_error_assert_ok (error);
+	return desc;
+}
