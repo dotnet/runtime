@@ -552,7 +552,7 @@ namespace System.IO
 
         private void Verify_FileSecurity_CreateFile(FileSecurity expectedSecurity)
         {
-            Verify_FileSecurity_CreateFile(FileMode.Create, FileSystemRights.FullControl, FileShare.ReadWrite, DefaultBufferSize, FileOptions.Asynchronous, expectedSecurity);
+            Verify_FileSecurity_CreateFile(FileMode.Create, FileSystemRights.WriteData, FileShare.Read, DefaultBufferSize, FileOptions.None, expectedSecurity);
         }
 
         private void Verify_FileSecurity_CreateFile(FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity expectedSecurity)
