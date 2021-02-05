@@ -51,14 +51,14 @@ namespace System.Resources
             "the user to only get one error.")]
         private object DeserializeObject(int typeIndex)
         {
-            if (!_permitDeserialization)
-            {
-                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
-            }
-
             if (!AllowCustomResourceTypes)
             {
                 throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
+            }
+
+            if (!_permitDeserialization)
+            {
+                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
             }
 
             if (Volatile.Read(ref _binaryFormatter) is null)
