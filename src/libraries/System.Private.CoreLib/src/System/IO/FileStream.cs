@@ -213,9 +213,6 @@ namespace System.IO
             return _strategy.FlushAsync(cancellationToken);
         }
 
-        internal Task BaseFlushAsync(CancellationToken cancellationToken)
-            => base.FlushAsync(cancellationToken);
-
         public override int Read(byte[] buffer, int offset, int count)
         {
             ValidateReadWriteArgs(buffer, offset, count);
@@ -224,8 +221,6 @@ namespace System.IO
         }
 
         public override int Read(Span<byte> buffer) => _strategy.Read(buffer);
-
-        internal int BaseRead(Span<byte> buffer) => base.Read(buffer);
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -239,9 +234,6 @@ namespace System.IO
 
             return _strategy.ReadAsync(buffer, offset, count, cancellationToken);
         }
-
-        internal Task<int> BaseReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            => base.ReadAsync(buffer, offset, count, cancellationToken);
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
@@ -258,9 +250,6 @@ namespace System.IO
             return _strategy.ReadAsync(buffer, cancellationToken);
         }
 
-        internal ValueTask<int> BaseReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-            => base.ReadAsync(buffer, cancellationToken);
-
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateReadWriteArgs(buffer, offset, count);
@@ -269,8 +258,6 @@ namespace System.IO
         }
 
         public override void Write(ReadOnlySpan<byte> buffer) => _strategy.Write(buffer);
-
-        internal void BaseWrite(ReadOnlySpan<byte> buffer) => base.Write(buffer);
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -284,9 +271,6 @@ namespace System.IO
 
             return _strategy.WriteAsync(buffer, offset, count, cancellationToken);
         }
-
-        internal Task BaseWriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            => base.WriteAsync(buffer, offset, count, cancellationToken);
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
@@ -302,9 +286,6 @@ namespace System.IO
 
             return _strategy.WriteAsync(buffer, cancellationToken);
         }
-
-        internal ValueTask BaseWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-            => base.WriteAsync(buffer, cancellationToken);
 
         /// <summary>
         /// Clears buffers for this stream and causes any buffered data to be written to the file.
@@ -433,13 +414,8 @@ namespace System.IO
 
         public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
 
-        internal ValueTask BaseDisposeAsync() => base.DisposeAsync();
-
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => _strategy.CopyToAsync(destination, bufferSize, cancellationToken);
-
-        internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-            => base.CopyToAsync(destination, bufferSize, cancellationToken);
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
@@ -450,9 +426,6 @@ namespace System.IO
             return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
 
-        internal IAsyncResult BaseBeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => base.BeginRead(buffer, offset, count, callback, state);
-
         public override int EndRead(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
@@ -460,8 +433,6 @@ namespace System.IO
 
             return _strategy.EndRead(asyncResult);
         }
-
-        internal int BaseEndRead(IAsyncResult asyncResult) => base.EndRead(asyncResult);
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
@@ -472,9 +443,6 @@ namespace System.IO
             return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }
 
-        internal IAsyncResult BaseBeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => base.BeginWrite(buffer, offset, count, callback, state);
-
         public override void EndWrite(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
@@ -483,10 +451,42 @@ namespace System.IO
             _strategy.EndWrite(asyncResult);
         }
 
-        internal void BaseEndWrite(IAsyncResult asyncResult) => base.EndWrite(asyncResult);
-
         public override bool CanSeek => _strategy.CanSeek;
 
         public override long Seek(long offset, SeekOrigin origin) => _strategy.Seek(offset, origin);
+
+        internal Task BaseFlushAsync(CancellationToken cancellationToken)
+            => base.FlushAsync(cancellationToken);
+
+        internal int BaseRead(Span<byte> buffer) => base.Read(buffer);
+
+        internal Task<int> BaseReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => base.ReadAsync(buffer, offset, count, cancellationToken);
+
+        internal ValueTask<int> BaseReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => base.ReadAsync(buffer, cancellationToken);
+
+        internal void BaseWrite(ReadOnlySpan<byte> buffer) => base.Write(buffer);
+
+        internal Task BaseWriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => base.WriteAsync(buffer, offset, count, cancellationToken);
+
+        internal ValueTask BaseWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            => base.WriteAsync(buffer, cancellationToken);
+
+        internal ValueTask BaseDisposeAsync() => base.DisposeAsync();
+
+        internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            => base.CopyToAsync(destination, bufferSize, cancellationToken);
+
+        internal IAsyncResult BaseBeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+            => base.BeginRead(buffer, offset, count, callback, state);
+
+        internal int BaseEndRead(IAsyncResult asyncResult) => base.EndRead(asyncResult);
+
+        internal IAsyncResult BaseBeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+            => base.BeginWrite(buffer, offset, count, callback, state);
+
+        internal void BaseEndWrite(IAsyncResult asyncResult) => base.EndWrite(asyncResult);
     }
 }
