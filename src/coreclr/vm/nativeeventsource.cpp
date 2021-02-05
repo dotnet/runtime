@@ -38,7 +38,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadStart(__in_z uin
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadStart(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
+    FireEtwThreadPoolWorkerThreadStart(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
 
     END_QCALL;
 }
@@ -48,7 +48,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadStop(__in_z uint
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadStop(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
+    FireEtwThreadPoolWorkerThreadStop(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
 
     END_QCALL;
 }
@@ -58,17 +58,17 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadWait(__in_z uint
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadWait(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
+    FireEtwThreadPoolWorkerThreadWait(activeWorkerThreadCount, retiredWorkerThreadCount, clrInstanceID);
 
     END_QCALL;
 }
 
-void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustSample(__in_z double throughput, __in_z short clrInstanceID)
+void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentSample(__in_z double throughput, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadAdjustmentSample(throughput, clrInstanceID);
+    FireEtwThreadPoolWorkerThreadAdjustmentSample(throughput, clrInstanceID);
 
     END_QCALL;
 }
@@ -78,7 +78,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentAdjust
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadAdjustmentAdjustment(averageThroughput, newWorkerThreadCount, reason, clrInstanceID);
+    FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(averageThroughput, newWorkerThreadCount, reason, clrInstanceID);
     
     END_QCALL;
 }
@@ -88,7 +88,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkerThreadAdjustmentStats(
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkerThreadAdjustmentStats(duration, throughput, threadWave, throughputWave, throughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, confidence, newControlSetting, newThreadWaveMagnitude, ClrInstanceID);
+    FireEtwThreadPoolWorkerThreadAdjustmentStats(duration, throughput, threadWave, throughputWave, throughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, confidence, newControlSetting, newThreadWaveMagnitude, ClrInstanceID);
 
     END_QCALL;
 }
@@ -98,7 +98,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolIOEnqueue(__in_z void* nativ
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolIOEnqueue(nativeOverlapped, overlapped, multiDequeues, ClrInstanceID);
+    FireEtwThreadPoolIOEnqueue(nativeOverlapped, overlapped, multiDequeues, ClrInstanceID);
 
     END_QCALL;
 }
@@ -108,7 +108,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolIODequeue(__in_z void* nativ
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolIODequeue(nativeOverlapped, overlapped, ClrInstanceID);
+    FireEtwThreadPoolIODequeue(nativeOverlapped, overlapped, ClrInstanceID);
 
     END_QCALL;
 }
@@ -118,7 +118,7 @@ void QCALLTYPE XplatEventSourceLogger::LogThreadPoolWorkingThreadCount(__in_z ui
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    FireEtXplatThreadPoolWorkingThreadCount(count, ClrInstanceID);
+    FireEtwThreadPoolWorkingThreadCount(count, ClrInstanceID);
 
     END_QCALL;
 }

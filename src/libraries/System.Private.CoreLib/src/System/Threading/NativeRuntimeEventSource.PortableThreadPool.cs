@@ -86,7 +86,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                WriteThreadEvent(50, ActiveWorkerThreadCount);
+                //WriteThreadEvent(50, ActiveWorkerThreadCount);
 
 #if FEATURE_EVENTSOURCE_XPLAT
                 XplatEventLogger.ThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
@@ -102,7 +102,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                WriteThreadEvent(51, ActiveWorkerThreadCount);
+                //WriteThreadEvent(51, ActiveWorkerThreadCount);
 #if FEATURE_EVENTSOURCE_XPLAT
                 XplatEventLogger.ThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
 #endif
@@ -118,7 +118,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                WriteThreadEvent(57, ActiveWorkerThreadCount);
+                //WriteThreadEvent(57, ActiveWorkerThreadCount);
 #if FEATURE_EVENTSOURCE_XPLAT
                 XplatEventLogger.ThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
 #endif
@@ -134,7 +134,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-
+/*
             EventData* data = stackalloc EventData[2];
             data[0].DataPointer = (IntPtr)(&Throughput);
             data[0].Size = sizeof(double);
@@ -142,7 +142,10 @@ namespace System.Diagnostics.Tracing
             data[1].DataPointer = (IntPtr)(&ClrInstanceID);
             data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
+
             WriteEventCore(54, 2, data);
+*/
+            XplatEventLogger.ThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
         }
 
         [Event(55, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentAdjustment, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Adjustment, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -156,7 +159,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-
+/*
             EventData* data = stackalloc EventData[4];
             data[0].DataPointer = (IntPtr)(&AverageThroughput);
             data[0].Size = sizeof(double);
@@ -171,7 +174,7 @@ namespace System.Diagnostics.Tracing
             data[3].Size = sizeof(ushort);
             data[3].Reserved = 0;
             WriteEventCore(55, 4, data);
-
+*/
 #if FEATURE_EVENTSOURCE_XPLAT
             XplatEventLogger.ThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
 #endif
@@ -195,7 +198,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-
+/*
             EventData* data = stackalloc EventData[11];
             data[0].DataPointer = (IntPtr)(&Duration);
             data[0].Size = sizeof(double);
@@ -230,7 +233,7 @@ namespace System.Diagnostics.Tracing
             data[10].DataPointer = (IntPtr)(&ClrInstanceID);
             data[10].Size = sizeof(ushort);
             data[10].Reserved = 0;
-            WriteEventCore(56, 11, data);
+            WriteEventCore(56, 11, data);*/
 #if FEATURE_EVENTSOURCE_XPLAT
             XplatEventLogger.ThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID);
 #endif // FEATURE_EVENTSOURCE_XPLAT
@@ -244,7 +247,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             int multiDequeuesInt = Convert.ToInt32(MultiDequeues); // bool maps to "win:Boolean", a 4-byte boolean
-
+/*
             EventData* data = stackalloc EventData[4];
             data[0].DataPointer = (IntPtr)(&NativeOverlapped);
             data[0].Size = IntPtr.Size;
@@ -258,7 +261,7 @@ namespace System.Diagnostics.Tracing
             data[3].DataPointer = (IntPtr)(&ClrInstanceID);
             data[3].Size = sizeof(ushort);
             data[3].Reserved = 0;
-            WriteEventCore(63, 4, data);
+            WriteEventCore(63, 4, data);*/
 #if FEATURE_EVENTSOURCE_XPLAT
             XplatEventLogger.ThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
 #endif // FEATURE_EVENTSOURCE_XPLAT
@@ -281,7 +284,7 @@ namespace System.Diagnostics.Tracing
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
-        {
+        {/*
             EventData* data = stackalloc EventData[3];
             data[0].DataPointer = (IntPtr)(&NativeOverlapped);
             data[0].Size = IntPtr.Size;
@@ -292,7 +295,7 @@ namespace System.Diagnostics.Tracing
             data[2].DataPointer = (IntPtr)(&ClrInstanceID);
             data[2].Size = sizeof(ushort);
             data[2].Reserved = 0;
-            WriteEventCore(64, 3, data);
+            WriteEventCore(64, 3, data);*/
 #if FEATURE_EVENTSOURCE_XPLAT
             XplatEventLogger.ThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
 #endif
@@ -317,7 +320,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-
+/*
             EventData* data = stackalloc EventData[2];
             data[0].DataPointer = (IntPtr)(&Count);
             data[0].Size = sizeof(uint);
@@ -325,7 +328,7 @@ namespace System.Diagnostics.Tracing
             data[1].DataPointer = (IntPtr)(&ClrInstanceID);
             data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
-            WriteEventCore(60, 2, data);
+            WriteEventCore(60, 2, data);*/
 #if FEATURE_EVENTSOURCE_XPLAT
             XplatEventLogger.ThreadPoolWorkingThreadCount(Count, ClrInstanceID);
 #endif // FEATURE_EVENTSOURCE_XPLAT

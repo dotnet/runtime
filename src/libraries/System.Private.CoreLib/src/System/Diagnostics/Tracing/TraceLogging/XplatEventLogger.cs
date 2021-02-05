@@ -29,6 +29,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (!initializedPersistentListener && XplatEventLogger.IsEventSourceLoggingEnabled())
                 {
+                    GC.KeepAlive(NativeRuntimeEventSource.Log);
                     initializedPersistentListener = true;
                     return new XplatEventLogger();
                 }
