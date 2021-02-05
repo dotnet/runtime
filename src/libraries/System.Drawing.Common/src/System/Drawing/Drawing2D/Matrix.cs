@@ -82,24 +82,18 @@ namespace System.Drawing.Drawing2D
             return new Matrix(clonedMatrix);
         }
 
-        public float[] Elements
+        public unsafe float[] Elements
         {
             get
             {
-                IntPtr buf = Marshal.AllocHGlobal(6 * 8); // 6 elements x 8 bytes (float)
+                float[] elements = new float[6];
 
-                try
+                fixed (float* m = elements)
                 {
-                    Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), buf));
+                    Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), m));
+                }
 
-                    float[] m = new float[6];
-                    Marshal.Copy(buf, m, 0, 6);
-                    return m;
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(buf);
-                }
+                return elements;
             }
         }
 
