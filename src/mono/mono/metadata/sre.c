@@ -633,36 +633,9 @@ mono_image_add_memberef_row (MonoDynamicImage *assembly, guint32 parent, const c
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	MonoDynamicTable *table;
-	guint32 *values;
-	guint32 token, pclass;
-
-	switch (parent & MONO_TYPEDEFORREF_MASK) {
-	case MONO_TYPEDEFORREF_TYPEREF:
-		pclass = MONO_MEMBERREF_PARENT_TYPEREF;
-		break;
-	case MONO_TYPEDEFORREF_TYPESPEC:
-		pclass = MONO_MEMBERREF_PARENT_TYPESPEC;
-		break;
-	case MONO_TYPEDEFORREF_TYPEDEF:
-		pclass = MONO_MEMBERREF_PARENT_TYPEDEF;
-		break;
-	default:
-		g_warning ("unknown typeref or def token 0x%08x for %s", parent, name);
-		return 0;
-	}
-	/* extract the index */
-	parent >>= MONO_TYPEDEFORREF_BITS;
+	guint32 token;
 
 	table = &assembly->tables [MONO_TABLE_MEMBERREF];
-
-	if (assembly->save) {
-		alloc_table (table, table->rows + 1);
-		values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
-		values [MONO_MEMBERREF_CLASS] = pclass | (parent << MONO_MEMBERREF_PARENT_BITS);
-		values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, name);
-		values [MONO_MEMBERREF_SIGNATURE] = sig;
-	}
-
 	token = MONO_TOKEN_MEMBER_REF | table->next_idx;
 	table->next_idx ++;
 
@@ -714,7 +687,7 @@ mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, 
 		if ((sig->call_convention != MONO_CALL_DEFAULT) && (sig->call_convention != MONO_CALL_VARARG))
 			sig->call_convention = MONO_CALL_DEFAULT;
 		token = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (method->klass),
-			method->name,  mono_dynimage_encode_method_signature (assembly, sig));
+												method->name,  0);
 		g_free (sig);
 		g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
 	}
@@ -722,16 +695,6 @@ mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, 
 	if (create_typespec) {
 		MonoDynamicTable *table = &assembly->tables [MONO_TABLE_METHODSPEC];
 		g_assert (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF);
-		token = (mono_metadata_token_index (token) << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODREF;
-
-		if (assembly->save) {
-			guint32 *values;
-
-			alloc_table (table, table->rows + 1);
-			values = table->values + table->next_idx * MONO_METHODSPEC_SIZE;
-			values [MONO_METHODSPEC_METHOD] = token;
-			values [MONO_METHODSPEC_SIGNATURE] = mono_dynimage_encode_generic_method_sig (assembly, &mono_method_get_generic_container (method)->context);
-		}
 
 		token = MONO_TOKEN_METHOD_SPEC | table->next_idx;
 		table->next_idx ++;
@@ -748,18 +711,8 @@ mono_image_get_varargs_method_token (MonoDynamicImage *assembly, guint32 origina
 {
 	MonoDynamicTable *table;
 	guint32 token;
-	guint32 *values;
 	
 	table = &assembly->tables [MONO_TABLE_MEMBERREF];
-
-	if (assembly->save) {
-		alloc_table (table, table->rows + 1);
-		values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
-		values [MONO_MEMBERREF_CLASS] = original;
-		values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, name);
-		values [MONO_MEMBERREF_SIGNATURE] = sig;
-	}
-
 	token = MONO_TOKEN_MEMBER_REF | table->next_idx;
 	table->next_idx ++;
 
@@ -809,8 +762,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoClassField *field
 		type = mono_field_get_type_internal (field);
 	}
 	token = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (field->parent),
-											mono_field_get_name (field),
-											mono_dynimage_encode_fieldref_signature (assembly, field->parent->image, type));
+											mono_field_get_name (field), 0);
 	g_hash_table_insert (assembly->handleref, field, GUINT_TO_POINTER(token));
 	return token;
 }
@@ -819,8 +771,7 @@ static guint32
 method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 {
 	MonoDynamicTable *table;
-	guint32 *values;
-	guint32 token, mtoken = 0, sig;
+	guint32 token, mtoken;
 	MonoMethodInflated *imethod;
 	MonoMethod *declaring;
 
@@ -830,31 +781,10 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 	imethod = (MonoMethodInflated *) method;
 	declaring = imethod->declaring;
 
-	sig = mono_dynimage_encode_method_signature (assembly, mono_method_signature_internal (declaring));
-	mtoken = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (method->klass), declaring->name, sig);
+	mtoken = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (method->klass), declaring->name, 0);
 
 	if (!mono_method_signature_internal (declaring)->generic_param_count)
 		return mtoken;
-
-	switch (mono_metadata_token_table (mtoken)) {
-	case MONO_TABLE_MEMBERREF:
-		mtoken = (mono_metadata_token_index (mtoken) << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODREF;
-		break;
-	case MONO_TABLE_METHOD:
-		mtoken = (mono_metadata_token_index (mtoken) << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODDEF;
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-
-	sig = mono_dynimage_encode_generic_method_sig (assembly, mono_method_get_context (method));
-
-	if (assembly->save) {
-		alloc_table (table, table->rows + 1);
-		values = table->values + table->next_idx * MONO_METHODSPEC_SIZE;
-		values [MONO_METHODSPEC_METHOD] = mtoken;
-		values [MONO_METHODSPEC_SIGNATURE] = sig;
-	}
 
 	token = MONO_TOKEN_METHOD_SPEC | table->next_idx;
 	table->next_idx ++;
@@ -878,10 +808,8 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method)
 	if (mono_method_signature_internal (imethod->declaring)->generic_param_count) {
 		token = method_encode_methodspec (assembly, method);
 	} else {
-		guint32 sig = mono_dynimage_encode_method_signature (
-			assembly, mono_method_signature_internal (imethod->declaring));
 		token = mono_image_get_memberref_token (
-			assembly, m_class_get_byval_arg (method->klass), method->name, sig);
+			assembly, m_class_get_byval_arg (method->klass), method->name, 0);
 	}
 
 	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
@@ -891,14 +819,8 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method)
 static guint32
 mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m)
 {
-	MonoMethodInflated *imethod = (MonoMethodInflated *) m;
-	guint32 sig, token;
-
-	sig = mono_dynimage_encode_method_signature (assembly, mono_method_signature_internal (imethod->declaring));
-	token = mono_image_get_memberref_token (
-		assembly, m_class_get_byval_arg (m->klass), m->name, sig);
-
-	return token;
+	return mono_image_get_memberref_token (
+		assembly, m_class_get_byval_arg (m->klass), m->name, 0);
 }
 
 static guint32 
@@ -906,25 +828,18 @@ mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHel
 {
 	guint32 idx;
 	MonoDynamicTable *table;
-	guint32 *values;
 
 	error_init (error);
 
 	table = &assembly->tables [MONO_TABLE_STANDALONESIG];
 	idx = table->next_idx ++;
 	table->rows ++;
-	alloc_table (table, table->rows);
-	values = table->values + idx * MONO_STAND_ALONE_SIGNATURE_SIZE;
-
-	values [MONO_STAND_ALONE_SIGNATURE] =
-		mono_dynimage_encode_reflection_sighelper (assembly, helper, error);
-	return_val_if_nok (error, 0);
-	
 	return idx;
 }
 
 static int
-reflection_cc_to_file (int call_conv) {
+reflection_cc_to_file (int call_conv)
+{
 	switch (call_conv & 0x3) {
 	case 0:
 	case 1: return MONO_CALL_DEFAULT;
@@ -1007,8 +922,7 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	am->name = name;
 	am->sig = sig;
 	am->parent = mtype;
-	am->token = mono_image_get_memberref_token (assembly, am->parent, name,
-		mono_dynimage_encode_method_signature (assembly, sig));
+	am->token = mono_image_get_memberref_token (assembly, am->parent, name, 0);
 	assembly->array_methods = g_list_prepend (assembly->array_methods, am);
 	MONO_HANDLE_SETVAL (m, table_idx, guint32, am->token & 0xffffff);
 	return am->token;
@@ -1033,10 +947,7 @@ guint32
 mono_image_insert_string (MonoReflectionModuleBuilderHandle ref_module, MonoStringHandle str, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
-	guint32 idx;
-	char buf [16];
-	char *b = buf;
-	guint32 token = 0;
+	guint32 idx, token = 0;
 
 	MonoDynamicImage *assembly = MONO_HANDLE_GETVAL (ref_module, dynamic_image);
 	if (!assembly) {
@@ -1047,30 +958,7 @@ mono_image_insert_string (MonoReflectionModuleBuilderHandle ref_module, MonoStri
 	}
 	g_assert (assembly != NULL);
 
-	if (assembly->save) {
-		int32_t length = mono_string_length_internal (MONO_HANDLE_RAW (str));
-		mono_metadata_encode_value (1 | (length * 2), b, &b);
-		idx = mono_image_add_stream_data (&assembly->us, buf, b-buf);
-		/* pinned */
-		MonoGCHandle gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, str), TRUE);
-		const char *p = (const char*)mono_string_chars_internal (MONO_HANDLE_RAW (str));
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-	{
-		char *swapped = g_malloc (2 * length);
-
-		swap_with_size (swapped, p, 2, length);
-		mono_image_add_stream_data (&assembly->us, swapped, length * 2);
-		g_free (swapped);
-	}
-#else
-		mono_image_add_stream_data (&assembly->us, p, length * 2);
-#endif
-		mono_gchandle_free_internal (gchandle);
-		mono_image_add_stream_data (&assembly->us, "", 1);
-	} else {
-		idx = assembly->us.index ++;
-	}
-
+	idx = assembly->us.index ++;
 	token = MONO_TOKEN_STRING | idx;
 	mono_dynamic_image_register_token (assembly, token, MONO_HANDLE_CAST (MonoObject, str), MONO_DYN_IMAGE_TOK_NEW);
 
@@ -1081,8 +969,7 @@ leave:
 static guint32
 create_method_token (MonoDynamicImage *assembly, MonoMethod *method, MonoArrayHandle opt_param_types, MonoError *error)
 {
-	guint32 sig_token, parent;
-
+	guint32 parent;
 
 	int nargs = mono_array_handle_length (opt_param_types);
 	MonoMethodSignature *old = mono_method_signature_internal (method);
@@ -1113,9 +1000,7 @@ create_method_token (MonoDynamicImage *assembly, MonoMethod *method, MonoArrayHa
 	parent <<= MONO_MEMBERREF_PARENT_BITS;
 	parent |= MONO_MEMBERREF_PARENT_TYPEREF;
 
-	sig_token = mono_dynimage_encode_method_signature (assembly, sig);
-	guint32 token;
-	token = mono_image_get_varargs_method_token (assembly, parent, method->name, sig_token);
+	guint32 token = mono_image_get_varargs_method_token (assembly, parent, method->name, 0);
 	g_hash_table_insert (assembly->vararg_aux_hash, GUINT_TO_POINTER (token), sig);
 	return token;
 fail:
@@ -1303,25 +1188,6 @@ leave:
 
 #ifndef DISABLE_REFLECTION_EMIT
 
-static gboolean
-assemblybuilderaccess_can_refonlyload (guint32 access)
-{
-	return (access & 0x4) != 0;
-}
-
-static gboolean
-assemblybuilderaccess_can_run (guint32 access)
-{
-	return (access & MonoAssemblyBuilderAccess_Run) != 0;
-}
-
-static gboolean
-assemblybuilderaccess_can_save (guint32 access)
-{
-	return (access & MonoAssemblyBuilderAccess_Save) != 0;
-}
-
-
 /*
  * mono_reflection_dynimage_basic_init:
  * @assembly: an assembly builder object
@@ -1378,9 +1244,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	/* SRE assemblies are loaded into the individual loading context, ie,
 	 * they only fire AssemblyResolve events, they don't cause probing for
 	 * referenced assemblies to happen. */
-	assembly->assembly.context.kind = assemblybuilderaccess_can_refonlyload (assemblyb->access) ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_INDIVIDUAL;
-	assembly->run = assemblybuilderaccess_can_run (assemblyb->access);
-	assembly->save = assemblybuilderaccess_can_save (assemblyb->access);
+	assembly->assembly.context.kind = MONO_ASMCTX_INDIVIDUAL;
 	assembly->domain = domain;
 
 	char *assembly_name = mono_string_to_utf8_checked_internal (assemblyb->name, error);
@@ -3297,11 +3161,8 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb, Mon
 	goto_if_nok (error, exit_null);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
 
-	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->save) {
-		/* ilgen is no longer needed */
-		mb->ilgen = NULL;
-	}
-
+	/* ilgen is no longer needed */
+	mb->ilgen = NULL;
 	ret = mb->mhandle;
 	goto exit;
 exit_null:
@@ -3339,9 +3200,8 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilderHandl
 	MONO_HANDLE_SETVAL (ref_mb, mhandle, MonoMethod*, method);
 	mono_save_custom_attrs (klass->image, method, mb->cattrs);
 
-	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->save)
-		/* ilgen is no longer needed */
-		mb->ilgen = NULL;
+	/* ilgen is no longer needed */
+	mb->ilgen = NULL;
 	ret = method;
 	goto exit;
 exit_null:

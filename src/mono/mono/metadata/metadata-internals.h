@@ -668,8 +668,6 @@ struct _MonoDynamicAssembly {
 	MonoAssembly assembly;
 	char *strong_name;
 	guint32 strong_name_size;
-	guint8 run;
-	guint8 save;
 	MonoDomain *domain;
 };
 
@@ -708,8 +706,6 @@ struct _MonoDynamicImage {
 	 * Maps final token values to the object they describe.
 	 */
 	MonoGHashTable *remapped_tokens;
-	gboolean run;
-	gboolean save;
 	gboolean initial_image;
 	guint32 pe_kind, machine;
 	char *strong_name;

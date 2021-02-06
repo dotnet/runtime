@@ -124,27 +124,7 @@ guint32
 mono_dynimage_encode_constant (MonoDynamicImage *assembly, MonoObject *val, MonoTypeEnum *ret_type);
 
 guint32
-mono_dynimage_encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, MonoError *error);
-
-guint32
-mono_dynimage_encode_fieldref_signature (MonoDynamicImage *assembly, MonoImage *field_image, MonoType *type);
-
-guint32
-mono_dynimage_encode_method_signature (MonoDynamicImage *assembly, MonoMethodSignature *sig);
-
-guint32
-mono_dynimage_encode_method_builder_signature (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb,
-					       MonoError *error);
-
-guint32
-mono_dynimage_encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericContext *context);
-
-guint32
 mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboolean try_typespec);
-
-guint32
-mono_dynimage_encode_reflection_sighelper (MonoDynamicImage *assembly, MonoReflectionSigHelperHandle helper,
-					   MonoError *error);
 
 guint32
 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec);
