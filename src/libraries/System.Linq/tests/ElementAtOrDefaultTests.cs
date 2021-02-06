@@ -52,7 +52,7 @@ namespace System.Linq.Tests
         {
             Assert.Equal(expected, source.ElementAtOrDefault(index));
 
-            if (index > 0)
+            if (index >= 0)
             {
                 Assert.Equal(expected, source.ElementAtOrDefault(new Index(index)));
             }
@@ -66,7 +66,7 @@ namespace System.Linq.Tests
         {
             Assert.Equal(expected, source.RunOnce().ElementAtOrDefault(index));
 
-            if (index > 0)
+            if (index >= 0)
             {
                 Assert.Equal(expected, source.RunOnce().ElementAtOrDefault(new Index(index)));
             }
@@ -148,7 +148,6 @@ namespace System.Linq.Tests
         public void NonEmptySource_Consistency()
         {
             int?[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            int? @null = null;
 
             Assert.Equal(5, source.ElementAtOrDefault(5));
             Assert.Equal(5, source.ElementAtOrDefault(new Index(5)));
@@ -162,25 +161,24 @@ namespace System.Linq.Tests
             Assert.Equal(9, source.ElementAtOrDefault(new Index(9)));
             Assert.Equal(9, source.ElementAtOrDefault(^1));
 
-            Assert.Equal(@null, source.ElementAtOrDefault(-1));
-            Assert.Equal(@null, source.ElementAtOrDefault(^11));
+            Assert.Null(source.ElementAtOrDefault(-1));
+            Assert.Null(source.ElementAtOrDefault(^11));
 
-            Assert.Equal(@null, source.ElementAtOrDefault(10));
-            Assert.Equal(@null, source.ElementAtOrDefault(new Index(10)));
-            Assert.Equal(@null, source.ElementAtOrDefault(^0));
+            Assert.Null(source.ElementAtOrDefault(10));
+            Assert.Null(source.ElementAtOrDefault(new Index(10)));
+            Assert.Null(source.ElementAtOrDefault(^0));
 
-            Assert.Equal(@null, source.ElementAtOrDefault(int.MinValue));
-            Assert.Equal(@null, source.ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(source.ElementAtOrDefault(int.MinValue));
+            Assert.Null(source.ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Equal(@null, source.ElementAtOrDefault(int.MaxValue));
-            Assert.Equal(@null, source.ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(source.ElementAtOrDefault(int.MaxValue));
+            Assert.Null(source.ElementAtOrDefault(new Index(int.MaxValue)));
         }
 
         [Fact]
         public void NonEmptySource_Consistency_NotList()
         {
             int?[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            int? @null = null;
 
             Assert.Equal(5, ForceNotCollection(source).ElementAtOrDefault(5));
             Assert.Equal(5, ForceNotCollection(source).ElementAtOrDefault(new Index(5)));
@@ -194,25 +192,24 @@ namespace System.Linq.Tests
             Assert.Equal(9, ForceNotCollection(source).ElementAtOrDefault(new Index(9)));
             Assert.Equal(9, ForceNotCollection(source).ElementAtOrDefault(^1));
 
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(-1));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(^11));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(-1));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(^11));
 
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(10));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(new Index(10)));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(^0));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(10));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(new Index(10)));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(^0));
 
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(int.MinValue));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(int.MinValue));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(int.MaxValue));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(int.MaxValue));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(new Index(int.MaxValue)));
         }
 
         [Fact]
         public void NonEmptySource_Consistency_ListPartition()
         {
             int?[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            int? @null = null;
 
             Assert.Equal(5, ListPartition(source).ElementAtOrDefault(5));
             Assert.Equal(5, ListPartition(source).ElementAtOrDefault(new Index(5)));
@@ -226,25 +223,24 @@ namespace System.Linq.Tests
             Assert.Equal(9, ListPartition(source).ElementAtOrDefault(new Index(9)));
             Assert.Equal(9, ListPartition(source).ElementAtOrDefault(^1));
 
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(-1));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(^11));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(-1));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(^11));
 
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(10));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(new Index(10)));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(^0));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(10));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(new Index(10)));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(^0));
 
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(int.MinValue));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(int.MinValue));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(int.MaxValue));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(int.MaxValue));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
         }
 
         [Fact]
         public void NonEmptySource_Consistency_EnumerablePartition()
         {
             int?[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            int? @null = null;
 
             Assert.Equal(5, EnumerablePartition(source).ElementAtOrDefault(5));
             Assert.Equal(5, EnumerablePartition(source).ElementAtOrDefault(new Index(5)));
@@ -258,106 +254,102 @@ namespace System.Linq.Tests
             Assert.Equal(9, EnumerablePartition(source).ElementAtOrDefault(new Index(9)));
             Assert.Equal(9, EnumerablePartition(source).ElementAtOrDefault(^1));
 
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(-1));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(^11));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(-1));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^11));
 
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(10));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(new Index(10)));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(^0));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(10));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(new Index(10)));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^0));
 
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(int.MinValue));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(int.MinValue));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(int.MaxValue));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(int.MaxValue));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
         }
 
         [Fact]
         public void EmptySource_Consistency()
         {
             int?[] source = { };
-            int? @null = null;
 
-            Assert.Equal(@null, source.ElementAtOrDefault(1));
-            Assert.Equal(@null, source.ElementAtOrDefault(-1));
-            Assert.Equal(@null, source.ElementAtOrDefault(new Index(1)));
-            Assert.Equal(@null, source.ElementAtOrDefault(^1));
+            Assert.Null(source.ElementAtOrDefault(1));
+            Assert.Null(source.ElementAtOrDefault(-1));
+            Assert.Null(source.ElementAtOrDefault(new Index(1)));
+            Assert.Null(source.ElementAtOrDefault(^1));
 
-            Assert.Equal(@null, source.ElementAtOrDefault(0));
-            Assert.Equal(@null, source.ElementAtOrDefault(new Index(0)));
-            Assert.Equal(@null, source.ElementAtOrDefault(^0));
+            Assert.Null(source.ElementAtOrDefault(0));
+            Assert.Null(source.ElementAtOrDefault(new Index(0)));
+            Assert.Null(source.ElementAtOrDefault(^0));
 
-            Assert.Equal(@null, source.ElementAtOrDefault(int.MinValue));
-            Assert.Equal(@null, source.ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(source.ElementAtOrDefault(int.MinValue));
+            Assert.Null(source.ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Equal(@null, source.ElementAtOrDefault(int.MaxValue));
-            Assert.Equal(@null, source.ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(source.ElementAtOrDefault(int.MaxValue));
+            Assert.Null(source.ElementAtOrDefault(new Index(int.MaxValue)));
         }
 
         [Fact]
         public void EmptySource_Consistency_NotList()
         {
             int?[] source = { };
-            int? @null = null;
 
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(1));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(-1));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(new Index(1)));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(^1));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(1));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(-1));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(new Index(1)));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(^1));
 
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(0));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(new Index(0)));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(^0));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(0));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(new Index(0)));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(^0));
 
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(int.MinValue));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(int.MinValue));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(int.MaxValue));
-            Assert.Equal(@null, ForceNotCollection(source).ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(int.MaxValue));
+            Assert.Null(ForceNotCollection(source).ElementAtOrDefault(new Index(int.MaxValue)));
         }
 
         [Fact]
         public void EmptySource_Consistency_ListPartition()
         {
             int?[] source = { };
-            int? @null = null;
 
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(1));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(-1));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(new Index(1)));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(^1));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(1));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(-1));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(new Index(1)));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(^1));
 
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(0));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(new Index(0)));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(^0));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(0));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(new Index(0)));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(^0));
 
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(int.MinValue));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(int.MinValue));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(int.MaxValue));
-            Assert.Equal(@null, ListPartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(int.MaxValue));
+            Assert.Null(ListPartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
         }
 
         [Fact]
         public void EmptySource_Consistency_EnumerablePartition()
         {
             int?[] source = { };
-            int? @null = null;
 
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(1));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(-1));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(new Index(1)));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(^1));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(1));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(-1));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(new Index(1)));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^1));
 
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(0));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(new Index(0)));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(^0));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(0));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(new Index(0)));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^0));
 
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(int.MinValue));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(int.MinValue));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(int.MaxValue));
-            Assert.Equal(@null, EnumerablePartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(int.MaxValue));
+            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
         }
     }
 }
