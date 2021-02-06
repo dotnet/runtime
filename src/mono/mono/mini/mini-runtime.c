@@ -3246,20 +3246,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	info = (RuntimeInvokeInfo *)mono_conc_hashtable_lookup (domain_info->runtime_invoke_hash, method);
 
 	if (!info) {
-		if (mono_security_core_clr_enabled ()) {
-			/*
-			 * This might be redundant since mono_class_vtable () already does this,
-			 * but keep it just in case for moonlight.
-			 */
-			mono_class_setup_vtable (method->klass);
-			if (mono_class_has_failure (method->klass)) {
-				mono_error_set_for_class_failure (error, method->klass);
-				if (exc)
-					*exc = (MonoObject*)mono_class_get_exception_for_failure (method->klass);
-				return NULL;
-			}
-		}
-
 		gpointer compiled_method;
 
 		callee = method;

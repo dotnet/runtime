@@ -4066,9 +4066,6 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 			}
 			if (!ref)
 				ex = mono_get_exception_type_load (NULL, NULL);
-			else if (mono_security_core_clr_enabled ())
-				ex = mono_security_core_clr_ensure_dynamic_method_resolved_object (ref, handle_class);
-
 			if (ex) {
 				g_free (rmb.refs);
 				mono_error_set_exception_instance (error, ex);

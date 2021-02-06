@@ -2125,11 +2125,6 @@ ves_icall_RuntimeFieldInfo_GetValueInternal (MonoReflectionFieldHandle field_han
 		return NULL_HANDLE;
 	}
 
-	if (mono_security_core_clr_enabled () &&
-	    !mono_security_core_clr_ensure_reflection_access_field (cf, error)) {
-		return NULL_HANDLE;
-	}
-
 	MonoObject * const obj = MONO_HANDLE_RAW (obj_handle);
 	MonoObject *result;
 
@@ -2155,11 +2150,6 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 	MonoClass *field_klass = MONO_HANDLE_GETVAL (field, klass);
 	if (mono_asmctx_get_kind (&m_class_get_image (field_klass)->assembly->context) == MONO_ASMCTX_REFONLY) {
 		mono_error_set_invalid_operation (error, "It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods.");
-		return;
-	}
-
-	if (mono_security_core_clr_enabled () &&
-	    !mono_security_core_clr_ensure_reflection_access_field (cf, error)) {
 		return;
 	}
 
@@ -3493,11 +3483,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	MonoException *exception = NULL;
 
 	*MONO_HANDLE_REF (exception_out) = NULL;
-
-	if (mono_security_core_clr_enabled () &&
-	    !mono_security_core_clr_ensure_reflection_access_method (m, error)) {
-		goto return_null;
-	}
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		if (!mono_class_vtable_checked (mono_object_domain (method), m->klass, error)) {
@@ -6728,17 +6713,6 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 						 __func__,
 						 "delegate_class->parent == mono_defaults.multicastdelegate_class");
 		return NULL_HANDLE;
-	}
-
-	if (mono_security_core_clr_enabled ()) {
-		ERROR_DECL (security_error);
-		if (!mono_security_core_clr_ensure_delegate_creation (method, security_error)) {
-			if (throwOnBindFailure)
-				mono_error_move (error, security_error);
-			else
-				mono_error_cleanup (security_error);
-			return NULL_HANDLE;
-		}
 	}
 
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
