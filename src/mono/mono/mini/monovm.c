@@ -2,8 +2,6 @@
 #include <mono/utils/mono-compiler.h>
 #include "monovm.h"
 
-#if ENABLE_NETCORE
-
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/environment.h>
@@ -271,25 +269,3 @@ monovm_shutdown (int *latchedExitCode)
 
 	return 0;
 }
-
-#else
-
-int
-monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues)
-{
-	return -1;
-}
-
-int
-monovm_execute_assembly (int argc, const char **argv, const char *managedAssemblyPath, unsigned int *exitCode)
-{
-	return -1;
-}
-
-int
-monovm_shutdown (int *latchedExitCode)
-{
-	return -1;
-}
-
-#endif // ENABLE_NETCORE

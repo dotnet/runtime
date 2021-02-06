@@ -65,7 +65,6 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "tasklets.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
@@ -753,7 +752,6 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
 	int dreg;
 
-#ifdef ENABLE_NETCORE
 	if (type->type == MONO_TYPE_VALUETYPE && !type->byref) {
 		MonoClass *klass = mono_class_from_mono_type_internal (type);
 		if (m_class_is_enumtype (klass) && m_class_get_image (klass) == mono_get_corlib () && !strcmp (m_class_get_name (klass), "StackCrawlMark")) {
@@ -761,7 +759,6 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 				g_error ("Method '%s' which contains a StackCrawlMark local variable must be decorated with [System.Security.DynamicSecurityMethod].", mono_method_get_full_name (cfg->method));
 		}
 	}
-#endif
 
 	type = mini_get_underlying_type (type);
 

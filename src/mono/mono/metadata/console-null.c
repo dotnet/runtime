@@ -14,21 +14,10 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/console-io.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/w32file.h>
 #include <mono/utils/w32api.h>
 #include "icall-decl.h"
-
-void
-mono_console_init (void)
-{
-}
-
-void
-mono_console_handle_async_ops (void)
-{
-}
 
 MonoBoolean
 ves_icall_System_ConsoleDriver_Isatty (HANDLE handle, MonoError* error)

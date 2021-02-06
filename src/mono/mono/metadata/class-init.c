@@ -34,16 +34,13 @@
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
 
-#ifdef ENABLE_NETCORE
 #define FEATURE_COVARIANT_RETURNS
-#endif
 
 gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
-#ifdef ENABLE_NETCORE
+
 /* Set by the EE */
 gint32 mono_simd_register_size;
-#endif
 
 /* Statistics */
 static gint32 classes_size;
@@ -298,12 +295,10 @@ mono_class_setup_fields (MonoClass *klass)
 	if (explicit_size)
 		instance_size += real_size;
 
-#ifdef ENABLE_NETCORE
 	if (mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System.Numerics") && !strcmp (klass->name, "Register")) {
 		if (mono_simd_register_size)
 			instance_size += mono_simd_register_size;
 	}
-#endif
 
 	/*
 	 * This function can recursively call itself.
@@ -643,11 +638,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	/* reserve space to store vector pointer in arrays */
 	if (mono_is_corlib_image (image) && !strcmp (nspace, "System") && !strcmp (name, "Array")) {
 		klass->instance_size += 2 * TARGET_SIZEOF_VOID_P;
-#ifndef ENABLE_NETCORE
-		g_assert (mono_class_get_field_count (klass) == 0);
-#else
 		/* TODO: check that array has 0 non-const fields */
-#endif
 	}
 
 	if (klass->enumtype) {
@@ -865,14 +856,13 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 		if (mono_type_is_primitive (gclass->context.class_inst->type_argv [0]))
 			klass->simd_type = 1;
 	}
-#ifdef ENABLE_NETCORE
+
 	if (mono_is_corlib_image (gklass->image) &&
 		(!strcmp (gklass->name, "Vector`1") || !strcmp (gklass->name, "Vector128`1") || !strcmp (gklass->name, "Vector256`1"))) {
 		MonoType *etype = gclass->context.class_inst->type_argv [0];
 		if (mono_type_is_primitive (etype) && etype->type != MONO_TYPE_CHAR && etype->type != MONO_TYPE_BOOLEAN)
 			klass->simd_type = 1;
 	}
-#endif
 
 	klass->is_array_special_interface = gklass->is_array_special_interface;
 
@@ -2165,7 +2155,6 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		}
 
 		/* check for incorrectly aligned or overlapped by a non-object field */
-#ifdef ENABLE_NETCORE	
 		guint8 *layout_check;	
 		if (has_references) {
 			layout_check = g_new0 (guint8, real_size);
@@ -2192,7 +2181,6 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 			g_free (layout_check);
 		}
-#endif
 
 		instance_size = MAX (real_size, instance_size);
 		if (!((layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) && explicit_size)) {

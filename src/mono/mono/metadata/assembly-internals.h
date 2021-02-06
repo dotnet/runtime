@@ -11,11 +11,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
 
-#ifndef ENABLE_NETCORE
-#define MONO_ASSEMBLY_CORLIB_NAME "mscorlib"
-#else
 #define MONO_ASSEMBLY_CORLIB_NAME "System.Private.CoreLib"
-#endif
 #define MONO_ASSEMBLY_RESOURCE_SUFFIX ".resources"
 #define MONO_ASSEMBLY_CORLIB_RESOURCE_NAME (MONO_ASSEMBLY_CORLIB_NAME MONO_ASSEMBLY_RESOURCE_SUFFIX)
 
@@ -138,11 +134,6 @@ mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointe
 
 gboolean
 mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
-
-#ifndef ENABLE_NETCORE
-MonoAssembly*
-mono_assembly_binding_applies_to_image (MonoAssemblyLoadContext *alc, MonoImage* image, MonoImageOpenStatus *status);
-#endif
 
 MonoAssembly *
 mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gboolean refonly);

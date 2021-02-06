@@ -274,9 +274,7 @@ mono_wasm_setenv (const char *name, const char *value)
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
-#ifdef ENABLE_NETCORE
 static void *sysglobal_native_handle;
-#endif
 
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
@@ -285,10 +283,8 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 	if (handle)
 		return handle;
 
-#ifdef ENABLE_NETCORE
 	if (!strcmp (name, "System.Globalization.Native"))
 		return sysglobal_native_handle;
-#endif
 
 #if WASM_SUPPORTS_DLOPEN
 	return dlopen(name, flags);
@@ -300,10 +296,8 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 static void*
 wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
-#ifdef ENABLE_NETCORE
 	if (handle == sysglobal_native_handle)
 		assert (0);
-#endif
 
 #if WASM_SUPPORTS_DLOPEN
 	if (!wasm_dl_is_pinvoke_tables (handle)) {
