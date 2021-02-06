@@ -1294,24 +1294,31 @@ namespace System.Linq.Tests
             IEnumerator<int> iterator1 = source[1].Take(0..end).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator1.MoveNext()));
             Assert.False(iterator1.MoveNext());
-            int expected1 = end == 0 ? 0 : -1; // When startIndex is not from end and endIndex is not from end and startIndex >= endIndex, Take(Range) returns an empty array.
+            // When startIndex end and endIndex are both not from end and startIndex >= endIndex, Take(Range) returns an empty array.
+            int expected1 = end == 0 ? 0 : -1;
             Assert.Equal(expected1, state[1]);
 
-            IEnumerator<int> iterator2 = source[2].Take(^Math.Max(sourceCount, end)..end).GetEnumerator();
+            int startIndexFromEnd = Math.Max(sourceCount, end);
+            int endIndexFromEnd = Math.Max(0, sourceCount - end);
+
+            IEnumerator<int> iterator2 = source[2].Take(^startIndexFromEnd..end).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator2.MoveNext()));
             Assert.False(iterator2.MoveNext());
-            int expected2 = Math.Max(sourceCount, end) == 0 ? 0 : -1; // When startIndex is ^0, Take(Range) returns an empty iterator.
+            // When startIndex is ^0, Take(Range) returns an empty array.
+            int expected2 = startIndexFromEnd == 0 ? 0 : -1;
             Assert.Equal(expected2, state[2]);
 
-            IEnumerator<int> iterator3 = source[3].Take(0..^Math.Max(0, sourceCount - end)).GetEnumerator();
+            IEnumerator<int> iterator3 = source[3].Take(0..^endIndexFromEnd).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator3.MoveNext()));
             Assert.False(iterator3.MoveNext());
             Assert.Equal(-1, state[3]);
 
-            IEnumerator<int> iterator4 = source[4].Take(^Math.Max(sourceCount, end)..^Math.Max(0, sourceCount - end)).GetEnumerator();
+            IEnumerator<int> iterator4 = source[4].Take(^startIndexFromEnd..^endIndexFromEnd).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator4.MoveNext()));
             Assert.False(iterator4.MoveNext());
-            int expected4 = Math.Max(sourceCount, end) == 0 ? 0 : -1; // When startIndex is ^0, Take(Range) returns an empty iterator.
+            // When startIndex is ^0,
+            // or when startIndex and endIndex are both from end and startIndex <= endIndexFromEnd, Take(Range) returns an empty array.
+            int expected4 = startIndexFromEnd == 0 || startIndexFromEnd <= endIndexFromEnd ? 0 : -1;
             Assert.Equal(expected4, state[4]);
         }
 

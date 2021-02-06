@@ -44,16 +44,18 @@ namespace System.Linq
             Debug.Assert(startIndex >= 0);
             Debug.Assert(endIndex >= 0);
 
-            if (!isStartIndexFromEnd && !isEndIndexFromEnd)
+            if (isStartIndexFromEnd)
+            {
+                if (startIndex == 0 || isEndIndexFromEnd && endIndex >= startIndex)
+                {
+                    return Empty<TSource>();
+                }
+            }
+            else if (!isEndIndexFromEnd)
             {
                 return startIndex >= endIndex
                     ? Empty<TSource>()
-                    : source switch
-                    {
-                        IPartition<TSource> partition => partition.Skip(startIndex).Take(endIndex - startIndex),
-                        IList<TSource> list => new ListPartition<TSource>(list, startIndex, endIndex - 1),
-                        _ => new EnumerablePartition<TSource>(source, startIndex, endIndex - 1)
-                    };
+                    : source.Skip(startIndex).Take(endIndex - startIndex);
             }
 
             return TakeIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
@@ -63,17 +65,14 @@ namespace System.Linq
             IEnumerable<TSource> source, bool isStartIndexFromEnd, int startIndex, bool isEndIndexFromEnd, int endIndex)
         {
             Debug.Assert(source != null);
-            Debug.Assert(startIndex >= 0);
+            Debug.Assert(isStartIndexFromEnd
+                ? startIndex > 0 && (!isEndIndexFromEnd || startIndex > endIndex)
+                : startIndex >= 0 && (isEndIndexFromEnd || startIndex < endIndex));
             Debug.Assert(endIndex >= 0);
 
+            using IEnumerator<TSource> e = source.GetEnumerator();
             if (isStartIndexFromEnd)
             {
-                if (startIndex == 0)
-                {
-                    yield break;
-                }
-
-                using IEnumerator<TSource> e = source.GetEnumerator();
                 if (!e.MoveNext())
                 {
                     yield break;
@@ -124,15 +123,19 @@ namespace System.Linq
             }
             else
             {
-                using IEnumerator<TSource> e = source.GetEnumerator();
                 if (!e.MoveNext())
                 {
                     yield break;
                 }
 
                 int index = 0;
-                while (index < startIndex && e.MoveNext())
+                while (index < startIndex)
                 {
+                    if (!e.MoveNext())
+                    {
+                        yield break;
+                    }
+
                     checked
                     {
                         index++;
@@ -169,11 +172,7 @@ namespace System.Linq
                 }
                 else
                 {
-                    if (startIndex >= endIndex)
-                    {
-                        yield break;
-                    }
-
+                    Debug.Assert(index < endIndex);
                     yield return e.Current;
                     while (checked(++index) < endIndex && e.MoveNext())
                     {

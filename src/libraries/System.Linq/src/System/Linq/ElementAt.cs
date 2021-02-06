@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -73,59 +74,9 @@ namespace System.Linq
                 return source.ElementAt(index.Value);
             }
 
-            int indexFromEnd = index.Value;
-            Debug.Assert(indexFromEnd >= 0);
-            if (indexFromEnd == 0)
+            if (TryGetElementAt(source, index.Value, out TSource? result))
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            if (source is IPartition<TSource> partition)
-            {
-                int count = partition.GetCount(onlyIfCheap: true);
-                if (count == 0)
-                {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-                }
-
-                if (count > 0)
-                {
-                    if (indexFromEnd <= count)
-                    {
-                        TSource? element = partition.TryGetElementAt(count - indexFromEnd, out bool found);
-                        if (found)
-                        {
-                            return element!;
-                        }
-                    }
-
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-                }
-            }
-            else if (source is IList<TSource> list)
-            {
-                return list[index];
-            }
-
-            using IEnumerator<TSource> e = source.GetEnumerator();
-            if (e.MoveNext())
-            {
-                Queue<TSource> queue = new();
-                queue.Enqueue(e.Current);
-                while (e.MoveNext())
-                {
-                    if (queue.Count == indexFromEnd)
-                    {
-                        queue.Dequeue();
-                    }
-
-                    queue.Enqueue(e.Current);
-                }
-
-                if (queue.Count == indexFromEnd)
-                {
-                    return queue.Dequeue();
-                }
+                return result;
             }
 
             ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
@@ -195,11 +146,18 @@ namespace System.Linq
                 return source.ElementAtOrDefault(index.Value);
             }
 
-            int indexFromEnd = index.Value;
+            TryGetElementAt(source, index.Value, out TSource? result);
+            return result;
+        }
+
+        private static bool TryGetElementAt<TSource>(IEnumerable<TSource> source, int indexFromEnd, [NotNullWhen(true)] out TSource? result)
+        {
             Debug.Assert(indexFromEnd >= 0);
+
+            result = default;
             if (indexFromEnd == 0)
             {
-                return default;
+                return false;
             }
 
             if (source is IPartition<TSource> partition)
@@ -207,26 +165,36 @@ namespace System.Linq
                 int count = partition.GetCount(onlyIfCheap: true);
                 if (count == 0)
                 {
-                    return default;
+                    return false;
                 }
 
                 if (count > 0)
                 {
-                    return indexFromEnd <= count
-                        ? partition.TryGetElementAt(count - indexFromEnd, out bool _)
-                        : default;
+                    if (indexFromEnd <= count)
+                    {
+                        result = partition.TryGetElementAt(count - indexFromEnd, out bool found);
+                        return found;
+                    }
+
+                    return false;
                 }
             }
             else if (source is IList<TSource> list)
             {
                 int count = list.Count;
-                return indexFromEnd <= count ? list[count - indexFromEnd] : default;
+                if (indexFromEnd <= count)
+                {
+                    result = list[count - indexFromEnd]!;
+                    return true;
+                }
+
+                return false;
             }
 
             using IEnumerator<TSource> e = source.GetEnumerator();
             if (!e.MoveNext())
             {
-                return default;
+                return false;
             }
 
             Queue<TSource> queue = new();
@@ -241,7 +209,13 @@ namespace System.Linq
                 queue.Enqueue(e.Current);
             }
 
-            return queue.Count == indexFromEnd ? queue.Dequeue() : default;
+            if (queue.Count == indexFromEnd)
+            {
+                result = queue.Dequeue()!;
+                return true;
+            }
+
+            return false;
         }
     }
 }
