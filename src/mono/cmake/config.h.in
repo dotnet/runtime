@@ -416,9 +416,6 @@
 /* Disable generics support */
 #cmakedefine DISABLE_GENERICS 1
 
-/* Disable Shadow Copy for AppDomains */
-#cmakedefine DISABLE_SHADOW_COPY 1
-
 /* Disable agent attach support */
 #cmakedefine DISABLE_ATTACH 1
 
@@ -449,9 +446,6 @@
 
 /* Disable String normalization support. */
 #cmakedefine DISABLE_NORMALIZATION 1
-
-/* Disable desktop assembly loader semantics. */
-#cmakedefine DISABLE_DESKTOP_LOADER 1
 
 /* Disable shared perfcounters. */
 #cmakedefine DISABLE_SHARED_PERFCOUNTERS 1

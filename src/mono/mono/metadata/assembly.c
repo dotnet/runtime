@@ -57,15 +57,6 @@
 #include <mach-o/dyld.h>
 #endif
 
-/* AssemblyVersionMap: an assembly name, the assembly version set on which it is based, the assembly name it is replaced with and whether only versions lower than the current runtime version should be remapped */
-typedef struct  {
-	const char* assembly_name;
-	guint8 version_set_index;
-	const char* new_assembly_name;
-	gboolean only_lower_versions;
-	gboolean framework_facade_assembly;
-} AssemblyVersionMap;
-
 /* the default search path is empty, the first slot is replaced with the computed value */
 static char*
 default_path [] = {
@@ -76,280 +67,6 @@ default_path [] = {
 
 /* Contains the list of directories to be searched for assemblies (MONO_PATH) */
 static char **assemblies_path = NULL;
-
-#ifndef DISABLE_GAC
-/* Contains the list of directories that point to auxiliary GACs */
-static char **extra_gac_paths = NULL;
-#endif
-
-#ifndef DISABLE_DESKTOP_LOADER
-
-#define FACADE_ASSEMBLY(str) {str, 0, NULL, FALSE, TRUE}
-
-static GHashTable* assembly_remapping_table;
-/* The list of system assemblies what will be remapped to the running
- * runtime version.
- * This list is stored in @assembly_remapping_table during initialization.
- * Keep it sorted just to make maintenance easier.
- *
- * The integer number is an index in the MonoRuntimeInfo structure, whose
- * values can be found in domain.c - supported_runtimes. Look there
- * to understand what remapping will be made.
- *
- * .NET version can be found at https://github.com/dotnet/coreclr/blob/master/src/inc/fxretarget.h#L99
- *
- */
-static const AssemblyVersionMap framework_assemblies [] = {
-	{"Accessibility", 0},
-	{"Commons.Xml.Relaxng", 0},
-	{"CustomMarshalers", 0},
-	{"I18N", 0},
-	{"I18N.CJK", 0},
-	{"I18N.MidEast", 0},
-	{"I18N.Other", 0},
-	{"I18N.Rare", 0},
-	{"I18N.West", 0},
-	{"Microsoft.Build.Engine", 2, NULL, TRUE},
-	{"Microsoft.Build.Framework", 2, NULL, TRUE},
-	{"Microsoft.Build.Tasks", 2, "Microsoft.Build.Tasks.v4.0"},
-	{"Microsoft.Build.Tasks.v3.5", 2, "Microsoft.Build.Tasks.v4.0"},
-	{"Microsoft.Build.Utilities", 2, "Microsoft.Build.Utilities.v4.0"},
-	{"Microsoft.Build.Utilities.v3.5", 2, "Microsoft.Build.Utilities.v4.0"},
-	{"Microsoft.CSharp", 0},
-	{"Microsoft.VisualBasic", 1},
-	{"Microsoft.VisualC", 1},
-	FACADE_ASSEMBLY ("Microsoft.Win32.Primitives"),
-	FACADE_ASSEMBLY ("Microsoft.Win32.Registry"),
-	FACADE_ASSEMBLY ("Microsoft.Win32.Registry.AccessControl"),
-	{"Mono.Cairo", 0},
-	{"Mono.CompilerServices.SymbolWriter", 0},
-	{"Mono.Data", 0},
-	{"Mono.Data.SybaseClient", 0},
-	{"Mono.Data.Tds", 0},
-	{"Mono.Data.TdsClient", 0},
-	{"Mono.GetOptions", 0},
-	{"Mono.Http", 0},
-	{"Mono.Posix", 0},
-	{"Mono.Security", 0},
-	{"Mono.Security.Win32", 0},
-	{"Mono.Xml.Ext", 0},
-	{"Novell.Directory.Ldap", 0},
-	{"PEAPI", 0},
-	{"System", 0},
-	FACADE_ASSEMBLY ("System.AppContext"),
-	FACADE_ASSEMBLY ("System.Buffers"),
-	FACADE_ASSEMBLY ("System.Collections"),
-	FACADE_ASSEMBLY ("System.Collections.Concurrent"),
-	FACADE_ASSEMBLY ("System.Collections.NonGeneric"),
-	FACADE_ASSEMBLY ("System.Collections.Specialized"),
-	FACADE_ASSEMBLY ("System.ComponentModel"),
-	FACADE_ASSEMBLY ("System.ComponentModel.Annotations"),
-	{"System.ComponentModel.Composition", 2},
-	{"System.ComponentModel.DataAnnotations", 2},
-	FACADE_ASSEMBLY ("System.ComponentModel.EventBasedAsync"),
-	FACADE_ASSEMBLY ("System.ComponentModel.Primitives"),
-	FACADE_ASSEMBLY ("System.ComponentModel.TypeConverter"),
-	{"System.Configuration", 0},
-	{"System.Configuration.Install", 0},
-	FACADE_ASSEMBLY ("System.Console"),
-	{"System.Core", 2},
-	{"System.Data", 0},
-	FACADE_ASSEMBLY ("System.Data.Common"),
-	{"System.Data.DataSetExtensions", 0},
-	{"System.Data.Entity", 0},
-	{"System.Data.Linq", 2},
-	{"System.Data.OracleClient", 0},
-	{"System.Data.Services", 2},
-	{"System.Data.Services.Client", 2},
-	FACADE_ASSEMBLY ("System.Data.SqlClient"),
-	{"System.Data.SqlXml", 0},
-	{"System.Deployment", 0},
-	{"System.Design", 0},
-	FACADE_ASSEMBLY ("System.Diagnostics.Contracts"),
-	FACADE_ASSEMBLY ("System.Diagnostics.Debug"),
-	FACADE_ASSEMBLY ("System.Diagnostics.FileVersionInfo"),
-	FACADE_ASSEMBLY ("System.Diagnostics.Process"),
-	FACADE_ASSEMBLY ("System.Diagnostics.StackTrace"),
-	FACADE_ASSEMBLY ("System.Diagnostics.TextWriterTraceListener"),
-	FACADE_ASSEMBLY ("System.Diagnostics.Tools"),
-	FACADE_ASSEMBLY ("System.Diagnostics.TraceEvent"),
-	FACADE_ASSEMBLY ("System.Diagnostics.TraceSource"),
-	FACADE_ASSEMBLY ("System.Diagnostics.Tracing"),
-	{"System.DirectoryServices", 0},
-	{"System.DirectoryServices.Protocols", 0},
-	{"System.Drawing", 0},
-	FACADE_ASSEMBLY ("System.Drawing.Common"),
-	{"System.Drawing.Design", 0},
-	FACADE_ASSEMBLY ("System.Drawing.Primitives"),
-	{"System.Dynamic", 0},
-	FACADE_ASSEMBLY ("System.Dynamic.Runtime"),
-	{"System.EnterpriseServices", 0},
-	FACADE_ASSEMBLY ("System.Globalization"),
-	FACADE_ASSEMBLY ("System.Globalization.Calendars"),
-	FACADE_ASSEMBLY ("System.Globalization.Extensions"),
-	{"System.IdentityModel", 3},
-	{"System.IdentityModel.Selectors", 3},
-	FACADE_ASSEMBLY ("System.IO"),
-	{"System.IO.Compression", 2},
-	{"System.IO.Compression.FileSystem", 0},
-	FACADE_ASSEMBLY ("System.IO.Compression.ZipFile"),
-	FACADE_ASSEMBLY ("System.IO.FileSystem"),
-	FACADE_ASSEMBLY ("System.IO.FileSystem.AccessControl"),
-	FACADE_ASSEMBLY ("System.IO.FileSystem.DriveInfo"),
-	FACADE_ASSEMBLY ("System.IO.FileSystem.Primitives"),
-	FACADE_ASSEMBLY ("System.IO.FileSystem.Watcher"),
-	FACADE_ASSEMBLY ("System.IO.IsolatedStorage"),
-	FACADE_ASSEMBLY ("System.IO.MemoryMappedFiles"),
-	FACADE_ASSEMBLY ("System.IO.Packaging"),
-	FACADE_ASSEMBLY ("System.IO.Pipes"),
-	FACADE_ASSEMBLY ("System.IO.UnmanagedMemoryStream"),
-	FACADE_ASSEMBLY ("System.Linq"),
-	FACADE_ASSEMBLY ("System.Linq.Expressions"),
-	FACADE_ASSEMBLY ("System.Linq.Parallel"),
-	FACADE_ASSEMBLY ("System.Linq.Queryable"),
-	{"System.Management", 0},
-	FACADE_ASSEMBLY ("System.Memory"),
-	{"System.Messaging", 0},
-	{"System.Net", 2},
-	FACADE_ASSEMBLY ("System.Net.AuthenticationManager"),
-	FACADE_ASSEMBLY ("System.Net.Cache"),
-	{"System.Net.Http", 4},
-	{"System.Net.Http.Rtc", 0},
-	{"System.Net.Http.WebRequest", 0},
-	FACADE_ASSEMBLY ("System.Net.HttpListener"),
-	FACADE_ASSEMBLY ("System.Net.Mail"),
-	FACADE_ASSEMBLY ("System.Net.NameResolution"),
-	FACADE_ASSEMBLY ("System.Net.NetworkInformation"),
-	FACADE_ASSEMBLY ("System.Net.Ping"),
-	FACADE_ASSEMBLY ("System.Net.Primitives"),
-	FACADE_ASSEMBLY ("System.Net.Requests"),
-	FACADE_ASSEMBLY ("System.Net.Security"),
-	FACADE_ASSEMBLY ("System.Net.ServicePoint"),
-	FACADE_ASSEMBLY ("System.Net.Sockets"),
-	FACADE_ASSEMBLY ("System.Net.Utilities"),
-	FACADE_ASSEMBLY ("System.Net.WebHeaderCollection"),
-	FACADE_ASSEMBLY ("System.Net.WebSockets"),
-	FACADE_ASSEMBLY ("System.Net.WebSockets.Client"),
-	{"System.Numerics", 3},
-	{"System.Numerics.Vectors", 3},
-	FACADE_ASSEMBLY ("System.ObjectModel"),
-	FACADE_ASSEMBLY ("System.Reflection"),
-	{"System.Reflection.Context", 0},
-	FACADE_ASSEMBLY ("System.Reflection.DispatchProxy"),
-	FACADE_ASSEMBLY ("System.Reflection.Emit"),
-	FACADE_ASSEMBLY ("System.Reflection.Emit.ILGeneration"),
-	FACADE_ASSEMBLY ("System.Reflection.Emit.Lightweight"),
-	FACADE_ASSEMBLY ("System.Reflection.Extensions"),
-	FACADE_ASSEMBLY ("System.Reflection.Primitives"),
-	FACADE_ASSEMBLY ("System.Reflection.TypeExtensions"),
-	FACADE_ASSEMBLY ("System.Resources.Reader"),
-	FACADE_ASSEMBLY ("System.Resources.ReaderWriter"),
-	FACADE_ASSEMBLY ("System.Resources.ResourceManager"),
-	FACADE_ASSEMBLY ("System.Resources.Writer"),
-	FACADE_ASSEMBLY ("System.Runtime"),
-	{"System.Runtime.Caching", 0},
-	FACADE_ASSEMBLY ("System.Runtime.CompilerServices.VisualC"),
-	{"System.Runtime.DurableInstancing", 0},
-	FACADE_ASSEMBLY ("System.Runtime.Extensions"),
-	FACADE_ASSEMBLY ("System.Runtime.Handles"),
-	FACADE_ASSEMBLY ("System.Runtime.InteropServices"),
-	FACADE_ASSEMBLY ("System.Runtime.InteropServices.RuntimeInformation"),
-	FACADE_ASSEMBLY ("System.Runtime.InteropServices.WindowsRuntime"),
-	FACADE_ASSEMBLY ("System.Runtime.Loader"),
-	FACADE_ASSEMBLY ("System.Runtime.Numerics"),
-	{"System.Runtime.Remoting", 0},
-	{"System.Runtime.Serialization", 3},
-	FACADE_ASSEMBLY ("System.Runtime.Serialization.Formatters"),
-	{"System.Runtime.Serialization.Formatters.Soap", 0},
-	FACADE_ASSEMBLY ("System.Runtime.Serialization.Json"),
-	FACADE_ASSEMBLY ("System.Runtime.Serialization.Primitives"),
-	FACADE_ASSEMBLY ("System.Runtime.Serialization.Xml"),
-	{"System.Security", 0},
-	FACADE_ASSEMBLY ("System.Security.AccessControl"),
-	FACADE_ASSEMBLY ("System.Security.Claims"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Algorithms"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Cng"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Csp"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.DeriveBytes"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Encoding"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Encryption"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Encryption.Aes"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Encryption.ECDiffieHellman"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Encryption.ECDsa"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Hashing"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Hashing.Algorithms"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.OpenSsl"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Pkcs"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.Primitives"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.ProtectedData"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.RSA"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.RandomNumberGenerator"),
-	FACADE_ASSEMBLY ("System.Security.Cryptography.X509Certificates"),
-	FACADE_ASSEMBLY ("System.Security.Principal"),
-	FACADE_ASSEMBLY ("System.Security.Principal.Windows"),
-	FACADE_ASSEMBLY ("System.Security.SecureString"),
-	{"System.ServiceModel", 3},
-	{"System.ServiceModel.Activation", 0},
-	{"System.ServiceModel.Discovery", 0},
-	FACADE_ASSEMBLY ("System.ServiceModel.Duplex"),
-	FACADE_ASSEMBLY ("System.ServiceModel.Http"),
-	FACADE_ASSEMBLY ("System.ServiceModel.NetTcp"),
-	FACADE_ASSEMBLY ("System.ServiceModel.Primitives"),
-	{"System.ServiceModel.Routing", 0},
-	FACADE_ASSEMBLY ("System.ServiceModel.Security"),
-	{"System.ServiceModel.Web", 2},
-	{"System.ServiceProcess", 0},
-	FACADE_ASSEMBLY ("System.ServiceProcess.ServiceController"),
-	FACADE_ASSEMBLY ("System.Text.Encoding"),
-	FACADE_ASSEMBLY ("System.Text.Encoding.CodePages"),
-	FACADE_ASSEMBLY ("System.Text.Encoding.Extensions"),
-	FACADE_ASSEMBLY ("System.Text.RegularExpressions"),
-	FACADE_ASSEMBLY ("System.Threading"),
-	FACADE_ASSEMBLY ("System.Threading.AccessControl"),
-	FACADE_ASSEMBLY ("System.Threading.Overlapped"),
-	FACADE_ASSEMBLY ("System.Threading.Tasks"),
-	{"System.Threading.Tasks.Dataflow", 0, NULL, TRUE},
-	FACADE_ASSEMBLY ("System.Threading.Tasks.Extensions"),
-	FACADE_ASSEMBLY ("System.Threading.Tasks.Parallel"),
-	FACADE_ASSEMBLY ("System.Threading.Thread"),
-	FACADE_ASSEMBLY ("System.Threading.ThreadPool"),
-	FACADE_ASSEMBLY ("System.Threading.Timer"),
-	{"System.Transactions", 0},
-	FACADE_ASSEMBLY ("System.ValueTuple"),
-	{"System.Web", 0},
-	{"System.Web.Abstractions", 2},
-	{"System.Web.ApplicationServices", 0},
-	{"System.Web.DynamicData", 2},
-	{"System.Web.Extensions", 2},
-	{"System.Web.Extensions.Design", 0},
-	{"System.Web.Mobile", 0},
-	{"System.Web.RegularExpressions", 0},
-	{"System.Web.Routing", 2},
-	{"System.Web.Services", 0},
-	{"System.Windows", 0},
-	{"System.Windows.Forms", 0},
-	{"System.Windows.Forms.DataVisualization", 0},
-	{"System.Workflow.Activities", 0},
-	{"System.Workflow.ComponentModel", 0},
-	{"System.Workflow.Runtime", 0},
-	{"System.Xaml", 0},
-	{"System.Xml", 0},
-	{"System.Xml.Linq", 2},
-	FACADE_ASSEMBLY ("System.Xml.ReaderWriter"),
-	{"System.Xml.Serialization", 0},
-	FACADE_ASSEMBLY ("System.Xml.XDocument"),
-	FACADE_ASSEMBLY ("System.Xml.XPath"),
-	FACADE_ASSEMBLY ("System.Xml.XPath.XmlDocument"),
-	FACADE_ASSEMBLY ("System.Xml.XPath.XDocument"),
-	FACADE_ASSEMBLY ("System.Xml.XmlDocument"),
-	FACADE_ASSEMBLY ("System.Xml.XmlSerializer"),
-	FACADE_ASSEMBLY ("System.Xml.Xsl.Primitives"),
-	{"WindowsBase", 3},
-	{"cscompmgd", 0},
-	{"mscorlib", 0},
-	FACADE_ASSEMBLY ("netstandard"),
-};
-#endif
 
 /* keeps track of loaded assemblies, excluding dynamic ones */
 static GList *loaded_assemblies = NULL;
@@ -377,19 +94,10 @@ static const MonoBundledAssembly **bundles;
 
 static const MonoBundledSatelliteAssembly **satellite_bundles;
 
-static mono_mutex_t assembly_binding_mutex;
-
-/* Loaded assembly binding info */
-static GSList *loaded_assembly_bindings = NULL;
-
 /* Class lazy loading functions */
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (internals_visible, "System.Runtime.CompilerServices", "InternalsVisibleToAttribute")
 static MonoAssembly*
 mono_assembly_invoke_search_hook_internal (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload);
-static MonoAssembly*
-mono_assembly_request_byname_nosearch (MonoAssemblyName *aname, const MonoAssemblyByNameRequest *req, MonoImageOpenStatus *status);
-static MonoAssembly*
-mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname, const char *basedir, MonoAssemblyLoadContext *alc, MonoAssemblyContextKind asmctx, MonoImageOpenStatus *status);
 static MonoAssembly*
 chain_redirections_loadfrom (MonoAssemblyLoadContext *alc, MonoImage *image, MonoImageOpenStatus *out_status);
 static MonoAssembly*
@@ -400,13 +108,6 @@ invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *an
 
 static MonoBoolean
 mono_assembly_is_in_gac (const gchar *filanem);
-
-static MonoAssembly*
-prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refonly);
-
-/* Assembly name matching */
-static gboolean
-framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
 
 static const char *
 mono_asmctx_get_name (const MonoAssemblyContext *asmctx);
@@ -508,66 +209,6 @@ check_path_env (void)
 	g_free (path);
 }
 
-#ifndef DISABLE_GAC
-static void
-check_extra_gac_path_env (void) 
-{
-	char *path;
-	char **splitted, **dest;
-	
-	path = g_getenv ("MONO_GAC_PREFIX");
-	if (!path)
-		return;
-
-	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
-	g_free (path);
-
-	if (extra_gac_paths)
-		g_strfreev (extra_gac_paths);
-	extra_gac_paths = dest = splitted;
-	while (*splitted){
-		if (**splitted)
-			*dest++ = *splitted;
-		splitted++;
-	}
-	*dest = *splitted;
-	
-	if (!g_hasenv ("MONO_DEBUG"))
-		return;
-
-	while (*splitted) {
-		if (**splitted && !g_file_test (*splitted, G_FILE_TEST_IS_DIR))
-			g_warning ("'%s' in MONO_GAC_PREFIX doesn't exist or has wrong permissions.", *splitted);
-
-		splitted++;
-	}
-}
-#endif /* DISABLE_GAC */
-
-static gboolean
-assembly_binding_maps_name (MonoAssemblyBindingInfo *info, MonoAssemblyName *aname)
-{
-	if (!info || !info->name)
-		return FALSE;
-
-	if (strcmp (info->name, aname->name))
-		return FALSE;
-
-	if (info->major != aname->major || info->minor != aname->minor)
-		return FALSE;
-
-	if ((info->culture != NULL && info->culture [0]) != (aname->culture != NULL && aname->culture [0])) 
-		return FALSE;
-	
-	if (info->culture && aname->culture && strcmp (info->culture, aname->culture))
-		return FALSE;
-	
-	if (!mono_public_tokens_are_equal (info->public_key_token, aname->public_key_token))
-		return FALSE;
-
-	return TRUE;
-}
-
 static void
 mono_assembly_binding_info_free (MonoAssemblyBindingInfo *info)
 {
@@ -576,103 +217,6 @@ mono_assembly_binding_info_free (MonoAssemblyBindingInfo *info)
 
 	g_free (info->name);
 	g_free (info->culture);
-}
-
-static void
-get_publisher_policy_info (MonoImage *image, MonoAssemblyName *aname, MonoAssemblyBindingInfo *binding_info)
-{
-	MonoTableInfo *t;
-	guint32 cols [MONO_MANIFEST_SIZE];
-	const gchar *filename;
-	gchar *subpath, *fullpath;
-
-	t = &image->tables [MONO_TABLE_MANIFESTRESOURCE];
-	/* MS Impl. accepts policy assemblies with more than
-	 * one manifest resource, and only takes the first one */
-	if (t->rows < 1) {
-		binding_info->is_valid = FALSE;
-		return;
-	}
-	
-	mono_metadata_decode_row (t, 0, cols, MONO_MANIFEST_SIZE);
-	if ((cols [MONO_MANIFEST_IMPLEMENTATION] & MONO_IMPLEMENTATION_MASK) != MONO_IMPLEMENTATION_FILE) {
-		binding_info->is_valid = FALSE;
-		return;
-	}
-	
-	filename = mono_metadata_string_heap (image, cols [MONO_MANIFEST_NAME]);
-	g_assert (filename != NULL);
-	
-	subpath = g_path_get_dirname (image->name);
-	fullpath = g_build_path (G_DIR_SEPARATOR_S, subpath, filename, (const char*)NULL);
-	mono_config_parse_publisher_policy (fullpath, binding_info);
-	g_free (subpath);
-	g_free (fullpath);
-	
-	/* Define the optional elements/attributes before checking */
-	if (!binding_info->culture)
-		binding_info->culture = g_strdup ("");
-	
-	/* Check that the most important elements/attributes exist */
-	if (!binding_info->name || !binding_info->public_key_token [0] || !binding_info->has_old_version_bottom ||
-			!binding_info->has_new_version || !assembly_binding_maps_name (binding_info, aname)) {
-		mono_assembly_binding_info_free (binding_info);
-		binding_info->is_valid = FALSE;
-		return;
-	}
-
-	binding_info->is_valid = TRUE;
-}
-
-static int
-compare_versions (AssemblyVersionSet *v, MonoAssemblyName *aname)
-{
-	if (v->major > aname->major)
-		return 1;
-	else if (v->major < aname->major)
-		return -1;
-
-	if (v->minor > aname->minor)
-		return 1;
-	else if (v->minor < aname->minor)
-		return -1;
-
-	if (v->build > aname->build)
-		return 1;
-	else if (v->build < aname->build)
-		return -1;
-
-	if (v->revision > aname->revision)
-		return 1;
-	else if (v->revision < aname->revision)
-		return -1;
-
-	return 0;
-}
-
-static gboolean
-check_policy_versions (MonoAssemblyBindingInfo *info, MonoAssemblyName *name)
-{
-	if (!info->is_valid)
-		return FALSE;
-	
-	/* If has_old_version_top doesn't exist, we don't have an interval */
-	if (!info->has_old_version_top) {
-		if (compare_versions (&info->old_version_bottom, name) == 0)
-			return TRUE;
-
-		return FALSE;
-	}
-
-	/* Check that the version defined by name is valid for the interval */
-	if (compare_versions (&info->old_version_top, name) < 0)
-		return FALSE;
-
-	/* We should be greater or equal than the small version */
-	if (compare_versions (&info->old_version_bottom, name) > 0)
-		return FALSE;
-
-	return TRUE;
 }
 
 /**
@@ -1101,35 +645,10 @@ mono_assemblies_init (void)
 		mono_set_rootdir ();
 
 	check_path_env ();
-#ifndef DISABLE_GAC
-	check_extra_gac_path_env ();
-#endif
 
 	mono_os_mutex_init_recursive (&assemblies_mutex);
-	mono_os_mutex_init (&assembly_binding_mutex);
 
-#ifndef DISABLE_DESKTOP_LOADER
-	assembly_remapping_table = g_hash_table_new (g_str_hash, g_str_equal);
-
-	int i;
-	for (i = 0; i < G_N_ELEMENTS (framework_assemblies); ++i)
-		g_hash_table_insert (assembly_remapping_table, (void*)framework_assemblies [i].assembly_name, (void*)&framework_assemblies [i]);
-
-#endif
 	mono_install_assembly_asmctx_from_path_hook (assembly_loadfrom_asmctx_from_path, NULL);
-
-}
-
-static void
-mono_assembly_binding_lock (void)
-{
-	mono_locks_os_acquire (&assembly_binding_mutex, AssemblyBindingLock);
-}
-
-static void
-mono_assembly_binding_unlock (void)
-{
-	mono_locks_os_release (&assembly_binding_mutex, AssemblyBindingLock);
 }
 
 gboolean
@@ -1440,62 +959,6 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 
 		return dest_aname;
 	}
-	
-#ifndef DISABLE_DESKTOP_LOADER
-	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, aname->name);
-	if (vmap) {
-		const AssemblyVersionSet* vset;
-		int index = vmap->version_set_index;
-		g_assert (index < G_N_ELEMENTS (current_runtime->version_sets));
-		vset = &current_runtime->version_sets [index];
-
-		if (vmap->framework_facade_assembly) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s is a framework Facade asseembly",
-				    aname->name);
-			return aname;
-		}
-
-		if (aname->major == vset->major && aname->minor == vset->minor &&
-			aname->build == vset->build && aname->revision == vset->revision) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Found assembly remapping for %s and was for the same version %d.%d.%d.%d",
-				aname->name,
-				aname->major, aname->minor, aname->build, aname->revision);
-			return aname;
-		}
-
-		if (vmap->only_lower_versions && compare_versions ((AssemblyVersionSet*)vset, aname) < 0) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
-				"Found lower-versions-only assembly remaping to load %s %d.%d.%d.%d but mapping has %d.%d.%d.%d",
-						aname->name,
-						aname->major, aname->minor, aname->build, aname->revision,
-						vset->major, vset->minor, vset->build, vset->revision
-						);
-			return aname;
-		}
-
-		if ((aname->major | aname->minor | aname->build | aname->revision) != 0)
-			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
-				"The request to load the assembly %s v%d.%d.%d.%d was remapped to v%d.%d.%d.%d",
-						aname->name,
-						aname->major, aname->minor, aname->build, aname->revision,
-						vset->major, vset->minor, vset->build, vset->revision
-						);
-
-		memcpy (dest_aname, aname, sizeof(MonoAssemblyName));
-		dest_aname->major = vset->major;
-		dest_aname->minor = vset->minor;
-		dest_aname->build = vset->build;
-		dest_aname->revision = vset->revision;
-		if (vmap->new_assembly_name != NULL) {
-			dest_aname->name = vmap->new_assembly_name;
-			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
-						"The assembly name %s was remapped to %s",
-						aname->name,
-						dest_aname->name);
-		}
-		return dest_aname;
-	}
-#endif
 
 	return aname;
 }
@@ -2178,29 +1641,6 @@ invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *an
 	return NULL;
 }
 
-static MonoAssembly *
-invoke_assembly_refonly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gchar **apath)
-{
-	AssemblyPreLoadHook *hook;
-	MonoAssembly *assembly;
-
-	for (hook = assembly_refonly_preload_hook; hook; hook = hook->next) {
-		if (hook->version == 1)
-			assembly = hook->func.v1 (aname, apath, hook->user_data);
-		else {
-			ERROR_DECL (error);
-			g_assert (hook->version == 2);
-			assembly = hook->func.v2 (alc, aname, apath, TRUE, hook->user_data, error);
-			/* TODO: propagate error out to callers */
-			mono_error_assert_ok (error);
-		}
-		if (assembly != NULL)
-			return assembly;
-	}
-
-	return NULL;
-}
-
 /**
  * mono_install_assembly_preload_hook:
  */
@@ -2525,7 +1965,8 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 
 static gboolean
 assembly_loadfrom_asmctx_from_path (const char *filename, MonoAssembly *requesting_assembly,
-				    gpointer user_data, MonoAssemblyContextKind *out_asmctx) {
+				    gpointer user_data, MonoAssemblyContextKind *out_asmctx)
+{
 	if (requesting_assembly && mono_asmctx_get_kind (&requesting_assembly->context) == MONO_ASMCTX_LOADFROM) {
 		if (mono_path_filename_in_basedir (filename, requesting_assembly->basedir)) {
 			*out_asmctx = MONO_ASMCTX_LOADFROM;
@@ -3404,23 +2845,6 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 }
 
 static gboolean
-parse_assembly_directory_name (const char *name, const char *dirname, MonoAssemblyName *aname)
-{
-	gchar **parts;
-	gboolean res;
-	
-	parts = g_strsplit (dirname, "_", 3);
-	if (!parts || !parts[0] || !parts[1] || !parts[2]) {
-		g_strfreev (parts);
-		return FALSE;
-	}
-	
-	res = build_assembly_name (name, parts[0], parts[1], parts[2], NULL, 0, 0, aname, FALSE);
-	g_strfreev (parts);
-	return res;
-}
-
-static gboolean
 split_key_value (const gchar *pair, gchar **key, guint32 *keylen, gchar **value)
 {
 	char *eqsign = (char*)strchr (pair, '=');
@@ -3738,79 +3162,6 @@ mono_assembly_name_culture_is_neutral (const MonoAssemblyName *aname)
 	return (!aname->culture || aname->culture [0] == 0);
 }
 
-static MonoAssembly*
-probe_for_partial_name (const char *basepath, const char *fullname, MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, MonoImageOpenStatus *status)
-{
-	gchar *fullpath = NULL;
-	GDir *dirhandle;
-	const char* direntry;
-	MonoAssemblyName gac_aname;
-	gint major=-1, minor=0, build=0, revision=0;
-	gboolean exact_version;
-	
-	dirhandle = g_dir_open (basepath, 0, NULL);
-	if (!dirhandle)
-		return NULL;
-		
-	exact_version = (aname->major | aname->minor | aname->build | aname->revision) != 0;
-
-	while ((direntry = g_dir_read_name (dirhandle))) {
-		gboolean match = TRUE;
-		
-		if(!parse_assembly_directory_name (aname->name, direntry, &gac_aname))
-			continue;
-		
-		if (aname->culture != NULL && strcmp (aname->culture, gac_aname.culture) != 0)
-			match = FALSE;
-			
-		if (match && strlen ((char*)aname->public_key_token) > 0 && 
-				!mono_public_tokens_are_equal (aname->public_key_token, gac_aname.public_key_token))
-			match = FALSE;
-		
-		if (match) {
-			if (exact_version) {
-				match = (aname->major == gac_aname.major && aname->minor == gac_aname.minor &&
-						 aname->build == gac_aname.build && aname->revision == gac_aname.revision); 
-			}
-			else if (gac_aname.major < major)
-				match = FALSE;
-			else if (gac_aname.major == major) {
-				if (gac_aname.minor < minor)
-					match = FALSE;
-				else if (gac_aname.minor == minor) {
-					if (gac_aname.build < build)
-						match = FALSE;
-					else if (gac_aname.build == build && gac_aname.revision <= revision)
-						match = FALSE; 
-				}
-			}
-		}
-		
-		if (match) {
-			major = gac_aname.major;
-			minor = gac_aname.minor;
-			build = gac_aname.build;
-			revision = gac_aname.revision;
-			g_free (fullpath);
-			fullpath = g_build_path (G_DIR_SEPARATOR_S, basepath, direntry, fullname, (const char*)NULL);
-		}
-
-		mono_assembly_name_free_internal (&gac_aname);
-	}
-	
-	g_dir_close (dirhandle);
-	
-	if (fullpath == NULL)
-		return NULL;
-	else {
-		MonoAssemblyOpenRequest req;
-		mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
-		MonoAssembly *res = mono_assembly_request_open (fullpath, &req, status);
-		g_free (fullpath);
-		return res;
-	}
-}
-
 /**
  * mono_assembly_load_with_partial_name:
  * \param name an assembly name that is then parsed by `api:mono_assembly_name_parse`.
@@ -3879,37 +3230,6 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 		return res;
 	}
 
-#ifndef DISABLE_GAC
-	gchar *fullname, *gacpath;
-	gchar **paths;
-	fullname = g_strdup_printf ("%s.dll", aname->name);
-
-	if (extra_gac_paths) {
-		paths = extra_gac_paths;
-		while (!res && *paths) {
-			gacpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "lib", "mono", "gac", aname->name, (const char*)NULL);
-			res = probe_for_partial_name (gacpath, fullname, alc, aname, status);
-			g_free (gacpath);
-			paths++;
-		}
-	}
-
-	if (res) {
-		res->in_gac = TRUE;
-		g_free (fullname);
-		mono_assembly_name_free_internal (aname);
-		return res;
-	}
-
-	gacpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), "mono", "gac", aname->name, (const char*)NULL);
-	res = probe_for_partial_name (gacpath, fullname, alc, aname, status);
-	g_free (gacpath);
-
-	g_free (fullname);
-	if (res)
-		res->in_gac = TRUE;
-#endif
-
 	mono_assembly_name_free_internal (aname);
 
 	if (!res) {
@@ -3927,385 +3247,8 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 static MonoBoolean
 mono_assembly_is_in_gac (const gchar *filename)
 {
-#ifndef DISABLE_GAC
-	const gchar *rootdir;
-	gchar *gp;
-	gchar **paths;
-
-	if (filename == NULL)
-		return FALSE;
-
-	for (paths = extra_gac_paths; paths && *paths; paths++) {
-		if (strstr (*paths, filename) != *paths)
-			continue;
-
-		gp = (gchar *) (filename + strlen (*paths));
-		if (*gp != G_DIR_SEPARATOR)
-			continue;
-		gp++;
-		if (strncmp (gp, "lib", 3))
-			continue;
-		gp += 3;
-		if (*gp != G_DIR_SEPARATOR)
-			continue;
-		gp++;
-		if (strncmp (gp, "mono", 4))
-			continue;
-		gp += 4;
-		if (*gp != G_DIR_SEPARATOR)
-			continue;
-		gp++;
-		if (strncmp (gp, "gac", 3))
-			continue;
-		gp += 3;
-		if (*gp != G_DIR_SEPARATOR)
-			continue;
-
-		return TRUE;
-	}
-
-	rootdir = mono_assembly_getrootdir ();
-	if (strstr (filename, rootdir) != filename)
-		return FALSE;
-
-	gp = (gchar *) (filename + strlen (rootdir));
-	if (*gp != G_DIR_SEPARATOR)
-		return FALSE;
-	gp++;
-	if (strncmp (gp, "mono", 4))
-		return FALSE;
-	gp += 4;
-	if (*gp != G_DIR_SEPARATOR)
-		return FALSE;
-	gp++;
-	if (strncmp (gp, "gac", 3))
-		return FALSE;
-	gp += 3;
-	if (*gp != G_DIR_SEPARATOR)
-		return FALSE;
-	return TRUE;
-#else
 	return FALSE;
-#endif /* DISABLE_GAC */
 }
-
-static MonoImage*
-mono_assembly_load_publisher_policy (MonoAssemblyName *aname)
-{
-	MonoImage *image = NULL;
-#ifndef DISABLE_GAC
-	gchar *filename, *pname, *name, *culture, *version, *fullpath, *subpath;
-	gchar **paths;
-	gint32 len;
-
-	if (strstr (aname->name, ".dll")) {
-		len = strlen (aname->name) - 4;
-		name = (gchar *)g_malloc (len + 1);
-		memcpy (name, aname->name, len);
-		name[len] = 0;
-	} else
-		name = g_strdup (aname->name);
-	
-	if (aname->culture)
-		culture = g_utf8_strdown (aname->culture, -1);
-	else
-		culture = g_strdup ("");
-	
-	pname = g_strdup_printf ("policy.%d.%d.%s", aname->major, aname->minor, name);
-	version = g_strdup_printf ("0.0.0.0_%s_%s", culture, aname->public_key_token);
-	g_free (name);
-	g_free (culture);
-	
-	filename = g_strconcat (pname, ".dll", (const char*)NULL);
-	subpath = g_build_path (G_DIR_SEPARATOR_S, pname, version, filename, (const char*)NULL);
-	g_free (pname);
-	g_free (version);
-	g_free (filename);
-
-	image = NULL;
-	if (extra_gac_paths) {
-		paths = extra_gac_paths;
-		while (!image && *paths) {
-			fullpath = g_build_path (G_DIR_SEPARATOR_S, *paths,
-					"lib", "mono", "gac", subpath, (const char*)NULL);
-			image = mono_image_open (fullpath, NULL);
-			g_free (fullpath);
-			paths++;
-		}
-	}
-
-	if (image) {
-		g_free (subpath);
-		return image;
-	}
-
-	fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), 
-			"mono", "gac", subpath, NULL);
-	image = mono_image_open (fullpath, NULL);
-	g_free (subpath);
-	g_free (fullpath);
-#endif
-	
-	return image;
-}
-
-static MonoAssemblyName*
-mono_assembly_bind_version (MonoAssemblyBindingInfo *info, MonoAssemblyName *aname, MonoAssemblyName *dest_name)
-{
-	memcpy (dest_name, aname, sizeof (MonoAssemblyName));
-	dest_name->major = info->new_version.major;
-	dest_name->minor = info->new_version.minor;
-	dest_name->build = info->new_version.build;
-	dest_name->revision = info->new_version.revision;
-	
-	return dest_name;
-}
-
-/* LOCKING: assembly_binding lock must be held */
-static MonoAssemblyBindingInfo*
-search_binding_loaded (MonoAssemblyName *aname)
-{
-	GSList *tmp;
-
-	for (tmp = loaded_assembly_bindings; tmp; tmp = tmp->next) {
-		MonoAssemblyBindingInfo *info = (MonoAssemblyBindingInfo *)tmp->data;
-		if (assembly_binding_maps_name (info, aname))
-			return info;
-	}
-
-	return NULL;
-}
-
-static gboolean
-info_compare_versions (AssemblyVersionSet *left, AssemblyVersionSet *right)
-{
-	if (left->major != right->major || left->minor != right->minor ||
-	    left->build != right->build || left->revision != right->revision)
-		return FALSE;
-
-	return TRUE;
-}
-
-static gboolean
-info_versions_equal (MonoAssemblyBindingInfo *left, MonoAssemblyBindingInfo *right)
-{
-	if (left->has_old_version_bottom != right->has_old_version_bottom)
-		return FALSE;
-
-	if (left->has_old_version_top != right->has_old_version_top)
-		return FALSE;
-
-	if (left->has_new_version != right->has_new_version)
-		return FALSE;
-
-	if (left->has_old_version_bottom && !info_compare_versions (&left->old_version_bottom, &right->old_version_bottom))
-		return FALSE;
-
-	if (left->has_old_version_top && !info_compare_versions (&left->old_version_top, &right->old_version_top))
-		return FALSE;
-
-	if (left->has_new_version && !info_compare_versions (&left->new_version, &right->new_version))
-		return FALSE;
-
-	return TRUE;
-}
-
-/* LOCKING: assumes all the necessary locks are held */
-static void
-assembly_binding_info_parsed (MonoAssemblyBindingInfo *info, void *user_data)
-{
-	MonoAssemblyBindingInfo *info_copy;
-	GSList *tmp;
-	MonoAssemblyBindingInfo *info_tmp;
-	MonoDomain *domain = (MonoDomain*)user_data;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain); // linked with mono_domain_parse_assembly_bindings
-
-	if (!domain)
-		return;
-
-	if (info->has_new_version && mono_assembly_is_problematic_version (info->name, info->new_version.major, info->new_version.minor, info->new_version.build, info->new_version.revision)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Discarding assembly binding to problematic version %s v%d.%d.%d.%d",
-			info->name, info->new_version.major, info->new_version.minor, info->new_version.build, info->new_version.revision);
-		return;
-	}
-
-	for (tmp = domain->assembly_bindings; tmp; tmp = tmp->next) {
-		info_tmp = (MonoAssemblyBindingInfo *)tmp->data;
-		if (strcmp (info->name, info_tmp->name) == 0 && info_versions_equal (info, info_tmp))
-			return;
-	}
-
-	info_copy = (MonoAssemblyBindingInfo *)mono_mem_manager_alloc0_nolock (memory_manager, sizeof (MonoAssemblyBindingInfo));
-	memcpy (info_copy, info, sizeof (MonoAssemblyBindingInfo));
-	if (info->name)
-		info_copy->name = mono_mempool_strdup (memory_manager->mp, info->name);
-	if (info->culture)
-		info_copy->culture = mono_mempool_strdup (memory_manager->mp, info->culture);
-
-	domain->assembly_bindings = g_slist_append_mempool (memory_manager->mp, domain->assembly_bindings, info_copy);
-}
-
-static int
-get_version_number (int major, int minor)
-{
-	return major * 256 + minor;
-}
-
-static gboolean
-info_major_minor_in_range (MonoAssemblyBindingInfo *info, MonoAssemblyName *aname)
-{
-	int aname_version_number = get_version_number (aname->major, aname->minor);
-	if (!info->has_old_version_bottom)
-		return FALSE;
-
-	if (get_version_number (info->old_version_bottom.major, info->old_version_bottom.minor) > aname_version_number)
-		return FALSE;
-
-	if (info->has_old_version_top && get_version_number (info->old_version_top.major, info->old_version_top.minor) < aname_version_number)
-		return FALSE;
-
-	/* This is not the nicest way to do it, but it's a by-product of the way parsing is done */
-	info->major = aname->major;
-	info->minor = aname->minor;
-
-	return TRUE;
-}
-
-/* LOCKING: Assumes that we are already locked - both loader and domain locks */
-static MonoAssemblyBindingInfo*
-get_per_domain_assembly_binding_info (MonoDomain *domain, MonoAssemblyName *aname)
-{
-	MonoAssemblyBindingInfo *info;
-	GSList *list;
-
-	if (!domain->assembly_bindings)
-		return NULL;
-
-	info = NULL;
-	for (list = domain->assembly_bindings; list; list = list->next) {
-		info = (MonoAssemblyBindingInfo *)list->data;
-		if (info && !strcmp (aname->name, info->name) && info_major_minor_in_range (info, aname))
-			break;
-		info = NULL;
-	}
-
-	if (info) {
-		if (info->name && info->public_key_token [0] && info->has_old_version_bottom &&
-		    info->has_new_version && assembly_binding_maps_name (info, aname))
-			info->is_valid = TRUE;
-		else
-			info->is_valid = FALSE;
-	}
-
-	return info;
-}
-
-void
-mono_domain_parse_assembly_bindings (MonoDomain *domain, int amajor, int aminor, gchar *domain_config_file_name)
-{
-	if (domain->assembly_bindings_parsed)
-		return;
-
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain); // linked with assembly_binding_info_parsed
-
-	mono_domain_lock (domain);
-	mono_mem_manager_lock (memory_manager);
-	if (!domain->assembly_bindings_parsed) {
-
-		gchar *domain_config_file_path = mono_portability_find_file (domain_config_file_name, TRUE);
-
-		if (!domain_config_file_path)
-			domain_config_file_path = domain_config_file_name;
-
-		mono_config_parse_assembly_bindings (domain_config_file_path, amajor, aminor, domain, assembly_binding_info_parsed);
-		domain->assembly_bindings_parsed = TRUE;
-		if (domain_config_file_name != domain_config_file_path)
-			g_free (domain_config_file_path);
-	}
-
-	mono_mem_manager_unlock (memory_manager);
-	mono_domain_unlock (domain);
-}
-
-#ifndef DISABLE_GAC
-/**
- * mono_assembly_load_from_gac
- *
- * \param aname The assembly name object
- */
-static MonoAssembly*
-mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImageOpenStatus *status, MonoBoolean refonly)
-{
-	MonoAssembly *result = NULL;
-	gchar *name, *version, *culture, *fullpath, *subpath;
-	gint32 len;
-	gchar **paths;
-	char *pubtok;
-
-	if (aname->public_key_token [0] == 0) {
-		return NULL;
-	}
-
-	if (strstr (aname->name, ".dll")) {
-		len = strlen (filename) - 4;
-		name = (gchar *)g_malloc (len + 1);
-		memcpy (name, aname->name, len);
-		name[len] = 0;
-	} else {
-		name = g_strdup (aname->name);
-	}
-
-	if (aname->culture) {
-		culture = g_utf8_strdown (aname->culture, -1);
-	} else {
-		culture = g_strdup ("");
-	}
-
-	pubtok = g_ascii_strdown ((char*)aname->public_key_token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
-	version = g_strdup_printf ("%d.%d.%d.%d_%s_%s", aname->major,
-			aname->minor, aname->build, aname->revision,
-			culture, pubtok);
-	g_free (pubtok);
-	
-	subpath = g_build_path (G_DIR_SEPARATOR_S, name, version, filename, (const char*)NULL);
-	g_free (name);
-	g_free (version);
-	g_free (culture);
-
-	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req,
-	                               refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT,
-	                               mono_domain_default_alc (mono_domain_get ()));
-
-	if (extra_gac_paths) {
-		paths = extra_gac_paths;
-		while (!result && *paths) {
-			fullpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "lib", "mono", "gac", subpath, (const char*)NULL);
-			result = mono_assembly_request_open (fullpath, &req, status);
-			g_free (fullpath);
-			paths++;
-		}
-	}
-
-	if (result) {
-		result->in_gac = TRUE;
-		g_free (subpath);
-		return result;
-	}
-
-	fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (),
-			"mono", "gac", subpath, (const char*)NULL);
-	result = mono_assembly_request_open (fullpath, &req, status);
-	g_free (fullpath);
-
-	if (result)
-		result->in_gac = TRUE;
-	
-	g_free (subpath);
-
-	return result;
-}
-#endif /* DISABLE_GAC */
 
 MonoAssembly*
 mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status)
@@ -4337,20 +3280,6 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	g_assert (corlib);
 		
 	return corlib;
-}
-
-static MonoAssembly*
-prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refonly)
-{
-	ERROR_DECL (refasm_error);
-	if (candidate && !refonly) {
-		/* .NET Framework seems to not check for ReferenceAssemblyAttribute on dynamic assemblies */
-		if (!image_is_dynamic (candidate->image) &&
-		    mono_assembly_has_reference_assembly_attribute (candidate, refasm_error))
-			candidate = NULL;
-	}
-	mono_error_cleanup (refasm_error);
-	return candidate;
 }
 
 gboolean
@@ -4385,130 +3314,6 @@ mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName 
 		    result ? "match, returning TRUE" : "don't match, returning FALSE");
 	return result;
 
-}
-
-gboolean
-framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
-{
-#ifndef DISABLE_DESKTOP_LOADER
-	g_assert (wanted_name != NULL);
-	g_assert (candidate_name != NULL);
-	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, wanted_name->name);
-	if (vmap) {
-		if (!vmap->framework_facade_assembly) {
-			/* If the wanted name is a framework assembly, it's enough for the name/version/culture to match.  If the assembly was remapped, the public key token is likely unrelated. */
-			gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_PUBKEY);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring the public key token)", result ? "match, returning TRUE" : "don't match, returning FALSE");
-			return result;
-		} else {
-			/* For facades, the name and public key token should
-			 * match, but the version doesn't matter as long as the
-			 * candidate is not older. */
-			gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_VERSION);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring version)", result ? "match" : "don't match, returning FALSE");
-			if (result) {
-				// compare major of candidate and wanted
-				int c = assembly_names_compare_versions (candidate_name, wanted_name, 1);
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Predicate: candidate major version is %s wanted major version, returning %s\n", c == 0 ? "the same as" : (c < 0 ? "lower than" : "greater than"),
-					    (c >= 0) ? "TRUE" : "FALSE");
-				return (c >= 0);  // don't accept a candidate that's older than wanted.
-			} else {
-				return FALSE;
-			}
-		}
-	}
-#endif
-	return FALSE;
-}
-
-/* Like mono_assembly_request_byname_nosearch, but don't ask the preload look (ie,
- * the appdomain) to run.  Just looks in the gac, the specified base dir or the
- * default_path.  Does NOT look in the appdomain application base or in the
- * MONO_PATH.
- */
-MonoAssembly*
-mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname,
-					  const char *basedir,
-					  MonoAssemblyLoadContext *alc,
-					  MonoAssemblyContextKind asmctx,
-					  MonoImageOpenStatus *status)
-{
-	MonoAssembly *result;
-	MonoAssemblyName maped_aname;
-	char *fullpath, *filename;
-	int ext_index;
-	const char *ext;
-	int len;
-
-	/* If we remap e.g. 4.1.3.0 to 4.0.0.0, look in the 4.0.0.0
-	 * GAC directory, not 4.1.3.0 */
-	aname = mono_assembly_remap_version (aname, &maped_aname);
-
-	/* Currently we retrieve the loaded corlib for reflection 
-	 * only requests, like a common reflection only assembly 
-	 */
-	gboolean name_is_corlib = strcmp (aname->name, MONO_ASSEMBLY_CORLIB_NAME) == 0;
-	/* Assembly.Load (new AssemblyName ("mscorlib.dll")) (respectively,
-	 * "System.Private.CoreLib.dll" for netcore) is treated the same as
-	 * "mscorlib" (resp "System.Private.CoreLib"). */
-	name_is_corlib = name_is_corlib || strcmp (aname->name, MONO_ASSEMBLY_CORLIB_NAME ".dll") == 0;
-	if (name_is_corlib) {
-		return mono_assembly_load_corlib (mono_get_runtime_info (), status);
-	}
-
-	MonoAssemblyCandidatePredicate predicate = NULL;
-	void* predicate_ud = NULL;
-	if (mono_loader_get_strict_assembly_name_check ()) {
-		predicate = &mono_assembly_candidate_predicate_sn_same_name;
-		predicate_ud = aname;
-	}
-
-	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, asmctx, alc);
-	req.request.predicate = predicate;
-	req.request.predicate_ud = predicate_ud;
-
-	len = strlen (aname->name);
-	for (ext_index = 0; ext_index < 2; ext_index ++) {
-		ext = ext_index == 0 ? ".dll" : ".exe";
-		if (len > 4 && (!strcmp (aname->name + len - 4, ".dll") || !strcmp (aname->name + len - 4, ".exe"))) {
-			filename = g_strdup (aname->name);
-			/* Don't try appending .dll/.exe if it already has one of those extensions */
-			ext_index++;
-		} else {
-			filename = g_strconcat (aname->name, ext, (const char*)NULL);
-		}
-
-#ifndef DISABLE_GAC
-		const gboolean refonly = asmctx == MONO_ASMCTX_REFONLY;
-
-		result = mono_assembly_load_from_gac (aname, filename, status, refonly);
-		if (result) {
-			g_free (filename);
-			return result;
-		}
-#endif
-
-		if (basedir) {
-			fullpath = g_build_filename (basedir, filename, (const char*)NULL);
-			result = mono_assembly_request_open (fullpath, &req, status);
-			g_free (fullpath);
-			if (result) {
-				result->in_gac = FALSE;
-				g_free (filename);
-				return result;
-			}
-		}
-
-		result = load_in_path (filename, (const char**) default_path, &req, status);
-		if (result)
-			result->in_gac = FALSE;
-		g_free (filename);
-		if (result)
-			return result;
-	}
-
-	return result;
 }
 
 MonoAssembly*
@@ -4749,7 +3554,6 @@ mono_assembly_load_module_checked (MonoAssembly *assembly, uint32_t idx, MonoErr
 	return mono_image_load_file_for_image_checked (assembly->image, idx, error);
 }
 
-
 /**
  * mono_assembly_foreach:
  * \param func function to invoke for each assembly loaded
@@ -4791,44 +3595,11 @@ mono_assemblies_cleanup (void)
 	GSList *l;
 
 	mono_os_mutex_destroy (&assemblies_mutex);
-	mono_os_mutex_destroy (&assembly_binding_mutex);
-
-	for (l = loaded_assembly_bindings; l; l = l->next) {
-		MonoAssemblyBindingInfo *info = (MonoAssemblyBindingInfo *)l->data;
-
-		mono_assembly_binding_info_free (info);
-		g_free (info);
-	}
-	g_slist_free (loaded_assembly_bindings);
 
 	free_assembly_asmctx_from_path_hooks ();
 	free_assembly_load_hooks ();
 	free_assembly_search_hooks ();
 	free_assembly_preload_hooks ();
-}
-
-/*LOCKING takes the assembly_binding lock*/
-void
-mono_assembly_cleanup_domain_bindings (guint32 domain_id)
-{
-	GSList **iter;
-
-	mono_assembly_binding_lock ();
-	iter = &loaded_assembly_bindings;
-	while (*iter) {
-		GSList *l = *iter;
-		MonoAssemblyBindingInfo *info = (MonoAssemblyBindingInfo *)l->data;
-
-		if (info->domain_id == domain_id) {
-			*iter = l->next;
-			mono_assembly_binding_info_free (info);
-			g_free (info);
-			g_slist_free_1 (l);
-		} else {
-			iter = &l->next;
-		}
-	}
-	mono_assembly_binding_unlock ();
 }
 
 /*
