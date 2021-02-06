@@ -381,7 +381,6 @@ namespace System.Drawing
             finally
             {
                 RestoreClipRgn(dc, hSaveRgn);
-                Interop.Gdi32.DeleteObject(hSaveRgn);
             }
         }
 
