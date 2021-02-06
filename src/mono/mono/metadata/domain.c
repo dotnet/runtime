@@ -1699,8 +1699,6 @@ mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly)
 		gboolean ass_ref_only = mono_asmctx_get_kind (&ass->context) == MONO_ASMCTX_REFONLY;
 		if (refonly != ass_ref_only)
 			continue;
-		if (ass->corlib_internal)
-			continue;
 		g_ptr_array_add (assemblies, ass);
 	}
 	mono_domain_assemblies_unlock (domain);

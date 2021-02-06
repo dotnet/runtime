@@ -3564,11 +3564,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 		exception = mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api.");
 		goto return_null;
 	}
-
-	if (image_is_dynamic (image) && !((MonoDynamicImage*)image)->run) {
-		exception = mono_get_exception_not_supported ("Cannot invoke a method in a dynamic assembly without run access.");
-		goto return_null;
-	}
 	
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
 		int i;
