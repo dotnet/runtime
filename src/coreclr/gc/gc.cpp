@@ -22139,7 +22139,7 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
                 if (heap_segment_overflow_p (seg))
                 {
                     assert (!concurrent_p);
-                    current_min_add = min (heap_segment_mem (seg), min_add);
+                    current_min_add = max (heap_segment_mem (seg), min_add);
                     current_max_add = min (heap_segment_allocated (seg), max_add);
                 }
 #endif //USE_REGIONS
