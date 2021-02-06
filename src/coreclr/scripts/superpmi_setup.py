@@ -42,6 +42,7 @@ from os import linesep, listdir, path, walk
 from os.path import isfile, join, getsize
 from coreclr_arguments import *
 from superpmi import ChangeDir
+
 # Start of parser object creation.
 
 parser = argparse.ArgumentParser(description="description")
@@ -115,6 +116,7 @@ native_binaries_to_ignore = [
 ]
 
 MAX_FILES_COUNT = 1500
+
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -330,7 +332,8 @@ def copy_files(src_path, dst_path, file_names):
         shutil.copy2(f, dst_path_of_file)
 
 
-def partition_files(src_directory, dst_directory, max_size, exclude_directories=[], exclude_files=native_binaries_to_ignore):
+def partition_files(src_directory, dst_directory, max_size, exclude_directories=[],
+                    exclude_files=native_binaries_to_ignore):
     """ Copy bucketized files based on size to destination folder.
 
     Args:
@@ -352,6 +355,7 @@ def partition_files(src_directory, dst_directory, max_size, exclude_directories=
         copy_files(src_directory, curr_dst_path, file_names)
         index += 1
 
+
 def setup_microbenchmark(workitem_directory, arch):
     """ Perform setup of microbenchmarks
 
@@ -364,26 +368,37 @@ def setup_microbenchmark(workitem_directory, arch):
         ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
 
     with ChangeDir(performance_directory):
-
+        print("Inside directory: " + performance_directory)
         dotnet_directory = os.path.join(performance_directory, "tools", "dotnet")
+        dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
         dotnet_exe = os.path.join(dotnet_directory, "dotnet")
-        artifacts_directory =  os.path.join(performance_directory, "artifacts")
+        artifacts_directory = os.path.join(performance_directory, "artifacts")
         artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
+
+        if not isfile(dotnet_install_script):
+            print("Missing " + dotnet_install_script)
+            return
 
         build_env_vars = os.environ.copy()
         build_env_vars["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1"
         build_env_vars["DOTNET_MULTILEVEL_LOOKUP"] = "0"
         build_env_vars["UseSharedCompilation"] = "false"
 
-        run_command([get_python_name(), "scripts/dotnet.py", "install", "--architecture", arch, "--install-dir", dotnet_directory])
-        run_command([dotnet_exe, "restore", "src/benchmarks/micro/MicroBenchmarks.csproj", "--packages", artifacts_packages_directory], _env=build_env_vars)
-        run_command([dotnet_exe, "build", "src/benchmarks/micro/MicroBenchmarks.csproj", "--configuration", "Release", "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory, "-o", artifacts_directory], _env=build_env_vars)
+        run_command(
+            get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir", dotnet_directory])
+        run_command([dotnet_exe, "restore", "src/benchmarks/micro/MicroBenchmarks.csproj", "--packages",
+                     artifacts_packages_directory], _env=build_env_vars)
+        run_command([dotnet_exe, "build", "src/benchmarks/micro/MicroBenchmarks.csproj", "--configuration", "Release",
+                     "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
+                     "-o", artifacts_directory], _env=build_env_vars)
+
 
 def get_python_name():
     if is_windows:
-        return "py -3"
+        return ["py", "-3"]
     else:
-        return "python3"
+        return ["python3"]
+
 
 def set_pipeline_variable(name, value):
     """ This method sets pipeline variable.
@@ -393,8 +408,8 @@ def set_pipeline_variable(name, value):
         value (string): Value of the variable.
     """
     define_variable_format = "##vso[task.setvariable variable={0}]{1}"
-    print("{0} -> {1}".format(name, value)) # logging
-    print(define_variable_format.format(name, value)) # set variable
+    print("{0} -> {1}".format(name, value))  # logging
+    print(define_variable_format.format(name, value))  # set variable
 
 
 def main(main_args):
@@ -484,7 +499,7 @@ def main(main_args):
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
     set_pipeline_variable("WorkItemDirectory", workitem_directory)
     set_pipeline_variable("InputArtifacts", input_artifacts)
-    set_pipeline_variable("Python", get_python_name())
+    set_pipeline_variable("Python", ' '.join(get_python_name()))
     set_pipeline_variable("Architecture", arch)
     set_pipeline_variable("Creator", creator)
     set_pipeline_variable("Queue", helix_queue)
