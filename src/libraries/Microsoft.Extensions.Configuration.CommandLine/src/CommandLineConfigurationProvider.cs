@@ -126,9 +126,9 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                 keyStartIndex = 2;
             }
 
-            int separator = previousArg.IndexOf('=');
+            int separatorIndex = previousArg.IndexOf('=');
 
-            if (separator < 0)
+            if (separatorIndex < 0)
             {
                 // If there is neither equal sign nor prefix in previous argument, it is an invalid format
                 if (keyStartIndex == 0)
@@ -174,7 +174,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
             }
             else
             {
-                string keySegment = previousArg.Substring(0, separator);
+                string keySegment = previousArg.Substring(0, separatorIndex);
 
                 // If the switch is a key in given switch mappings, interpret it
                 if (_switchMappings != null
@@ -197,10 +197,10 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                 {
                     key = previousArg.Substring(
                         keyStartIndex,
-                        separator - keyStartIndex);
+                        separatorIndex - keyStartIndex);
                 }
 
-                value = previousArg.Substring(separator + 1);
+                value = previousArg.Substring(separatorIndex + 1);
             }
 
             pair = (key, value);
