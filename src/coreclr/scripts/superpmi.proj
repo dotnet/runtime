@@ -47,6 +47,8 @@
     <WorkItemTimeout>5:00</WorkItemTimeout>
   </PropertyGroup>
 
+  <!-- We're currently not using .dotnet on the Helix agents -->
+  <!--
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
     <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\.dotnet%3B%PATH%" Condition=" '$(CollectionType)' == 'crossgen2' "/>
   </ItemGroup>
@@ -58,6 +60,7 @@
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
   </PropertyGroup>
+  -->
 
   <ItemGroup>
     <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">

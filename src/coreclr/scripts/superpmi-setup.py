@@ -416,12 +416,16 @@ def main(main_args):
     workitem_directory = path.join(source_directory, "workitem")
     pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
 
-    # Copy ".dotnet" to correlation_payload_directory for crossgen2 job; it is needed to invoke crossgen2.dll
-    if coreclr_args.collection_type == "crossgen2":
-        dotnet_src_directory = path.join(source_directory, ".dotnet")
-        dotnet_dst_directory = path.join(correlation_payload_directory, ".dotnet")
-        print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
-        copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
+    # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
+    # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
+    # The following will copy .dotnet to the correlation payload in case we change our mind, and need or want to use it for some scenarios.
+
+    # # Copy ".dotnet" to correlation_payload_directory for crossgen2 job; it is needed to invoke crossgen2.dll
+    # if coreclr_args.collection_type == "crossgen2":
+    #     dotnet_src_directory = path.join(source_directory, ".dotnet")
+    #     dotnet_dst_directory = path.join(correlation_payload_directory, ".dotnet")
+    #     print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
+    #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
 
     # payload
     input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)

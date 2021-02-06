@@ -707,6 +707,14 @@ class SuperPMICollect:
         if coreclr_args.crossgen:
             self.crossgen_tool = os.path.join(self.core_root, self.crossgen_tool_name)
 
+        if coreclr_args.crossgen2:
+            self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
+            if coreclr_args.dotnet_tool_path is None:
+                self.crossgen2_driver_tool = self.corerun
+            else:
+                self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
+            logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
+
         if coreclr_args.pmi or coreclr_args.crossgen or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
             self.exclude = coreclr_args.exclude
@@ -1062,6 +1070,7 @@ class SuperPMICollect:
                     # where "dotnet" is one of:
                     # 1. <runtime_root>\dotnet.cmd/sh
                     # 2. "dotnet" on PATH
+                    # 3. corerun in Core_Root
 
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
@@ -1079,7 +1088,7 @@ class SuperPMICollect:
                     # Log what is in the response file
                     write_file_to_log(rsp_filepath)
 
-                    command = [self.coreclr_args.dotnet_tool_path, self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
+                    command = [self.crossgen2_driver_tool, self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
 
@@ -1920,7 +1929,7 @@ def determine_jit_name(coreclr_args):
         raise RuntimeError("Unknown OS.")
 
 
-def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_location=True, search_path=True):
+def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_location=True, search_path=True, throw_on_not_found=True):
     """ Find a tool or any specified file (e.g., clrjit.dll) and return the full path to that tool if found.
 
     Args:
@@ -1958,7 +1967,10 @@ def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_loc
                 logging.debug("Using %s from PATH: %s", tool_name, tool_path)
                 return tool_path
 
-    raise RuntimeError("Tool " + tool_name + " not found. Have you built the runtime repo and created a Core_Root, or put it on your PATH?")
+    if throw_on_not_found:
+        raise RuntimeError("Tool " + tool_name + " not found. Have you built the runtime repo and created a Core_Root, or put it on your PATH?")
+
+    return None
 
 
 def determine_superpmi_tool_name(coreclr_args):
@@ -3082,15 +3094,13 @@ def setup_args(args):
             dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_script_name))
             if not os.path.exists(dotnet_tool_path):
                 dotnet_tool_name = determine_dotnet_tool_name(coreclr_args)
-                dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True)  # Only search path
-                if dotnet_tool_path is None:
-                    print("`--crossgen2` is specified, but couldn't find a `dotnet` to run it")
-                    sys.exit(1)
+                dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True, throw_on_not_found=False)  # Only search path
 
             coreclr_args.crossgen2_tool_path = crossgen2_tool_path
             coreclr_args.dotnet_tool_path = dotnet_tool_path
             logging.debug("Using crossgen2 tool %s", coreclr_args.crossgen2_tool_path)
-            logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
+            if coreclr_args.dotnet_tool_path is not None:
+                logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
 
         if coreclr_args.temp_dir is not None:
             coreclr_args.temp_dir = os.path.abspath(coreclr_args.temp_dir)
