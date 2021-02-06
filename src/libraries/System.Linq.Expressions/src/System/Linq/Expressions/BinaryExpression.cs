@@ -407,7 +407,7 @@ namespace System.Linq.Expressions
                     Condition(
                         GetHasValueProperty(left),
                         Condition(
-                            Call(opTrueFalse, Call(left, "GetValueOrDefault", null)),
+                            Call(opTrueFalse, CallGetValueOrDefault(left)),
                             left,
                             Block(
                                 new TrueReadOnlyCollection<ParameterExpression>(right),
@@ -418,8 +418,8 @@ namespace System.Linq.Expressions
                                         Convert(
                                             Call(
                                                 Method,
-                                                Call(left, "GetValueOrDefault", null),
-                                                Call(right, "GetValueOrDefault", null)
+                                                CallGetValueOrDefault(left),
+                                                CallGetValueOrDefault(right)
                                             ),
                                             Type
                                         ),
@@ -432,6 +432,14 @@ namespace System.Linq.Expressions
                     )
                 )
             );
+        }
+
+        [DynamicDependency("GetValueOrDefault", typeof(Nullable<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The method will be preserved by the DynamicDependency.")]
+        private static MethodCallExpression CallGetValueOrDefault(ParameterExpression nullable)
+        {
+            return Call(nullable, "GetValueOrDefault", null);
         }
 
         [DynamicDependency("HasValue", typeof(Nullable<>))]

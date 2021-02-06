@@ -356,6 +356,7 @@ namespace System.Linq.Expressions
         /// <param name="expression">The containing object of the member.  This can be null for static members.</param>
         /// <param name="propertyOrFieldName">The member to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static MemberExpression PropertyOrField(Expression expression, string propertyOrFieldName)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
