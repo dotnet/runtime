@@ -130,6 +130,12 @@ MonoException *
 mono_get_exception_synchronization_lock (const char *msg);
 
 MONO_API MonoException *
+mono_get_exception_cannot_unload_appdomain (const char *msg);
+
+MONO_API MonoException *
+mono_get_exception_appdomain_unloaded (void);
+
+MONO_API MonoException *
 mono_get_exception_bad_image_format (const char *msg);
 
 MONO_API MONO_RT_EXTERNAL_ONLY

@@ -1330,6 +1330,15 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 	return ass;
 }
 
+/**
+ * mono_domain_is_unloading:
+ */
+gboolean
+mono_domain_is_unloading (MonoDomain *domain)
+{
+	return FALSE;
+}
+
 /* Remember properties so they can be be installed in AppContext during runtime init */
 void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values)
