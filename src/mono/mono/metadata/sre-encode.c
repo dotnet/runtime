@@ -252,75 +252,6 @@ encode_reflection_type (MonoDynamicImage *assembly, MonoReflectionTypeHandle typ
 	encode_type (assembly, t, buf);
 }
 
-static void
-encode_reflection_type_raw (MonoDynamicImage *assembly, MonoReflectionType* type_raw, SigBuffer *buf, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER (); /* FIXME callers of encode_reflection_type_raw should use handles */
-	error_init (error);
-	MONO_HANDLE_DCL (MonoReflectionType, type);
-	encode_reflection_type (assembly, type, buf, error);
-	HANDLE_FUNCTION_RETURN ();
-}
-
-
-static void
-encode_custom_modifiers (MonoDynamicImage *assembly, MonoArrayHandle modreq, MonoArrayHandle modopt, SigBuffer *buf, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	int i;
-
-	error_init (error);
-
-	/* Have to follow .NET Framework behavior here.  For an IL type spec like:
-	 * int32 modreq(A) modreq(B) modopt(C) modopt(D)
-	 *
-	 * we emit:
-	 * cmod_opt [encoding of D] cmod_opt [encoding of C] cmod_req [encoding of B] cmod_req [encoding of A] I4.
-	 *
-	 * Even though the reflection API specifies required and optional
-	 * modifiers in separate arrays, the .NET Framework creates a typespec
-	 * as above: required mods first, then optional.  (And so we emit the
-	 * optional ones first, then required).
-	 */
-
-	if (!MONO_HANDLE_IS_NULL (modopt)) {
-		int count = mono_array_handle_length (modopt);
-		g_assert (count > 0);
-		for (i = count - 1; i >= 0 ; --i) {
-			MonoType *mod = mono_type_array_get_and_resolve (modopt, i, error);
-			goto_if_nok (error, leave);
-			sigbuffer_add_byte (buf, MONO_TYPE_CMOD_OPT);
-			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, mod));
-		}
-	}
-	if (!MONO_HANDLE_IS_NULL (modreq)) {
-		int count = mono_array_handle_length (modreq);
-		g_assert (count > 0);
-		for (i = count - 1; i >= 0 ; --i) {
-			MonoType *mod = mono_type_array_get_and_resolve (modreq, i, error);
-			goto_if_nok (error, leave);
-			sigbuffer_add_byte (buf, MONO_TYPE_CMOD_REQD);
-			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, mod));
-		}
-	}
-
-leave:
-	HANDLE_FUNCTION_RETURN ();
-}
-
-static void
-encode_custom_modifiers_raw (MonoDynamicImage *assembly, MonoArray *modreq_raw, MonoArray *modopt_raw, SigBuffer *buf, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER (); /* FIXME callers of encode_custom_modifiers_raw should use handles */
-	error_init (error);
-	MONO_HANDLE_DCL (MonoArray, modreq);
-	MONO_HANDLE_DCL (MonoArray, modopt);
-	encode_custom_modifiers (assembly, modreq, modopt, buf, error);
-	HANDLE_FUNCTION_RETURN ();
-}
-
 /*
  * Copy len * nelem bytes from val to dest, swapping bytes to LE if necessary.
  * dest may be misaligned.
@@ -631,14 +562,6 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelperHandle sig, Mon
 fail:
 	sigbuffer_free (&buf);
 	return MONO_HANDLE_CAST (MonoArray, NULL_HANDLE);
-}
-
-static char*
-type_get_fully_qualified_name (MonoType *type)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }
 
 #ifndef DISABLE_REFLECTION_EMIT

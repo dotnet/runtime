@@ -628,7 +628,7 @@ mono_reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, M
 
 #ifndef DISABLE_REFLECTION_EMIT
 static guint32
-mono_image_add_memberef_row (MonoDynamicImage *assembly, guint32 parent, const char *name, guint32 sig)
+mono_image_add_memberef_row (MonoDynamicImage *assembly)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -649,12 +649,12 @@ mono_image_add_memberef_row (MonoDynamicImage *assembly, guint32 parent, const c
  * The sig param is an index to an already built signature.
  */
 static guint32
-mono_image_get_memberref_token (MonoDynamicImage *assembly, MonoType *type, const char *name, guint32 sig)
+mono_image_get_memberref_token (MonoDynamicImage *assembly, MonoType *type)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	guint32 parent = mono_image_typedef_or_ref (assembly, type);
-	return mono_image_add_memberef_row (assembly, parent, name, sig);
+	mono_image_typedef_or_ref (assembly, type);
+	return mono_image_add_memberef_row (assembly);
 }
 
 
@@ -686,8 +686,7 @@ mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, 
 		sig = mono_metadata_signature_dup (mono_method_signature_internal (method));
 		if ((sig->call_convention != MONO_CALL_DEFAULT) && (sig->call_convention != MONO_CALL_VARARG))
 			sig->call_convention = MONO_CALL_DEFAULT;
-		token = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (method->klass),
-												method->name,  0);
+		token = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (method->klass));
 		g_free (sig);
 		g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
 	}
@@ -761,8 +760,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoClassField *field
 	} else {
 		type = mono_field_get_type_internal (field);
 	}
-	token = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (field->parent),
-											mono_field_get_name (field), 0);
+	token = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (field->parent));
 	g_hash_table_insert (assembly->handleref, field, GUINT_TO_POINTER(token));
 	return token;
 }
@@ -781,7 +779,7 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 	imethod = (MonoMethodInflated *) method;
 	declaring = imethod->declaring;
 
-	mtoken = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (method->klass), declaring->name, 0);
+	mtoken = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (method->klass));
 
 	if (!mono_method_signature_internal (declaring)->generic_param_count)
 		return mtoken;
@@ -808,8 +806,7 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method)
 	if (mono_method_signature_internal (imethod->declaring)->generic_param_count) {
 		token = method_encode_methodspec (assembly, method);
 	} else {
-		token = mono_image_get_memberref_token (
-			assembly, m_class_get_byval_arg (method->klass), method->name, 0);
+		token = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (method->klass));
 	}
 
 	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
@@ -819,8 +816,7 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method)
 static guint32
 mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m)
 {
-	return mono_image_get_memberref_token (
-		assembly, m_class_get_byval_arg (m->klass), m->name, 0);
+	return mono_image_get_memberref_token (assembly, m_class_get_byval_arg (m->klass));
 }
 
 static guint32 
@@ -922,7 +918,7 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	am->name = name;
 	am->sig = sig;
 	am->parent = mtype;
-	am->token = mono_image_get_memberref_token (assembly, am->parent, name, 0);
+	am->token = mono_image_get_memberref_token (assembly, am->parent);
 	assembly->array_methods = g_list_prepend (assembly->array_methods, am);
 	MONO_HANDLE_SETVAL (m, table_idx, guint32, am->token & 0xffffff);
 	return am->token;
