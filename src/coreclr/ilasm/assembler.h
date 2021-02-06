@@ -803,8 +803,6 @@ public:
     // moved to Class
     //MethodList  m_MethodList;
 
-    BOOL    m_fCPlusPlus;
-    BOOL    m_fWindowsCE;
     BOOL    m_fDLL;
     BOOL    m_fOBJ;
     BOOL    m_fEntryPointPresent;

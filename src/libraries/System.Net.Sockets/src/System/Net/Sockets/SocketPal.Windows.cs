@@ -452,13 +452,18 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, byte[] buffer, int offset, int size, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
         {
+            return ReceiveMessageFrom(socket, handle, new Span<byte>(buffer, offset, size), ref socketFlags, socketAddress, out receiveAddress, out ipPacketInformation, out bytesTransferred);
+        }
+
+        public static unsafe SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, Span<byte> buffer, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
+        {
             bool ipv4, ipv6;
             Socket.GetIPProtocolInformation(socket.AddressFamily, socketAddress, out ipv4, out ipv6);
 
             bytesTransferred = 0;
             receiveAddress = socketAddress;
             ipPacketInformation = default(IPPacketInformation);
-            fixed (byte* ptrBuffer = buffer)
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
             fixed (byte* ptrSocketAddress = socketAddress.Buffer)
             {
                 Interop.Winsock.WSAMsg wsaMsg;
@@ -467,8 +472,8 @@ namespace System.Net.Sockets
                 wsaMsg.flags = socketFlags;
 
                 WSABuffer wsaBuffer;
-                wsaBuffer.Length = size;
-                wsaBuffer.Pointer = (IntPtr)(ptrBuffer + offset);
+                wsaBuffer.Length = buffer.Length;
+                wsaBuffer.Pointer = (IntPtr)bufferPtr;
                 wsaMsg.buffers = (IntPtr)(&wsaBuffer);
                 wsaMsg.count = 1;
 

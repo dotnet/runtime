@@ -147,14 +147,6 @@ guint32
 mono_dynimage_encode_reflection_sighelper (MonoDynamicImage *assembly, MonoReflectionSigHelperHandle helper,
 					   MonoError *error);
 
-/* sre-encode, without DISABLE_REFLECTION_EMIT_SAVE (o.w. g_assert_not_reached ()) */
-
-guint32
-mono_dynimage_save_encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo, MonoError *error);
-
-guint32
-mono_dynimage_save_encode_property_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBuilder *fb, MonoError *error);
-
 guint32
 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec);
 

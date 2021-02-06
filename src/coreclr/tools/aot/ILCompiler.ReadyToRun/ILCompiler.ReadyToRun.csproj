@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
@@ -31,6 +31,8 @@
     <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormat.cs" Link="Common\NativeFormat.cs" />
     <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormatWriter.cs" Link="Common\NativeFormatWriter.cs" />
     <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormatWriter.Primitives.cs" Link="Common\NativeFormatWriter.Primitives.cs" />
+    <Compile Include="..\..\Common\Pgo\PgoFormat.cs" Link="Common\Pgo\PgoFormat.cs" />
+    <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="Common\Pgo\TypeSystemEntityOrUnknown.cs" />
     <Compile Include="..\..\Common\System\FormattingHelpers.cs" Link="Common\FormattingHelpers.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILProvider.cs" Link="IL\ILProvider.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ComparerIntrinsics.cs" Link="IL\Stubs\ComparerIntrinsics.cs" />
@@ -141,6 +143,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionsTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InliningInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InstanceEntryPointTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InstrumentationDataTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\OwnerCompositeExecutableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadMethodImport.cs" />
@@ -201,6 +204,7 @@
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
     <Compile Include="ObjectWriter\OutputInfoBuilder.cs" />
+    <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />
     <Compile Include="ObjectWriter\SymbolFileBuilder.cs" />
     <Compile Include="Win32Resources\ResourceData.cs" />
     <Compile Include="Win32Resources\ResourceData.Reader.cs" />

@@ -21,27 +21,6 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/handle-decl.h>
 
-/* Mono appdomain support is deeply itegrated in the runtime, as a result, even
- * though .NET Standard does not include System.AppDomain in
- * System.Private.CoreLib, we still depend on having an appdomain class.
- * So we move it to Mono.MonoDomain
- *
- */
-#ifndef ENABLE_NETCORE
-#define MONO_APPDOMAIN_CLASS_NAME_SPACE "System"
-#define MONO_APPDOMAIN_CLASS_NAME "AppDomain"
-#define MONO_APPDOMAIN_SETUP_CLASS_NAME_SPACE "System"
-#define MONO_APPDOMAIN_SETUP_CLASS_NAME "AppDomainSetup"
-#else
-/* We don't care anymore about the managed appdomain representation
- * so we just use a sentinel System.Object in the parts of the code that still care
- */
-/*
-#define MONO_APPDOMAIN_CLASS_NAME_SPACE "System"
-#define MONO_APPDOMAIN_CLASS_NAME "Object"
-*/
-#endif
-
 G_BEGIN_DECLS
 
 /*
@@ -51,35 +30,6 @@ G_BEGIN_DECLS
  * performance.
  */ 
 extern gboolean mono_dont_free_domains;
-
-#ifndef ENABLE_NETCORE
-/* This is a copy of System.AppDomainSetup */
-typedef struct {
-	MonoObject object;
-	MonoString *application_base;
-	MonoString *application_name;
-	MonoString *cache_path;
-	MonoString *configuration_file;
-	MonoString *dynamic_base;
-	MonoString *license_file;
-	MonoString *private_bin_path;
-	MonoString *private_bin_path_probe;
-	MonoString *shadow_copy_directories;
-	MonoString *shadow_copy_files;
-	MonoBoolean publisher_policy;
-	MonoBoolean path_changed;
-	int loader_optimization;
-	MonoBoolean disallow_binding_redirects;
-	MonoBoolean disallow_code_downloads;
-	MonoObject *activation_arguments; /* it is System.Object in 1.x, ActivationArguments in 2.0 */
-	MonoObject *domain_initializer;
-	MonoObject *application_trust; /* it is System.Object in 1.x, ApplicationTrust in 2.0 */
-	MonoArray *domain_initializer_args;
-	MonoBoolean disallow_appbase_probe;
-	MonoArray *configuration_bytes;
-	MonoArray *serialized_non_primitives;
-} MonoAppDomainSetup;
-#endif
 
 typedef struct _MonoJitInfoTable MonoJitInfoTable;
 typedef struct _MonoJitInfoTableChunk MonoJitInfoTableChunk;
@@ -349,12 +299,7 @@ struct _MonoDomain {
 	 * keep all the managed objects close to each other for the precise GC
 	 * For the Boehm GC we additionally keep close also other GC-tracked pointers.
 	 */
-#ifndef ENABLE_NETCORE
-#define MONO_DOMAIN_FIRST_OBJECT setup
-	MonoAppDomainSetup *setup;
-#else
 #define MONO_DOMAIN_FIRST_OBJECT domain
-#endif
 	MonoAppDomain      *domain;
 	MonoAppContext     *default_context;
 	MonoException      *out_of_memory_ex;
@@ -465,16 +410,9 @@ struct _MonoDomain {
 
 	guint32 execution_context_field_offset;
 
-#ifdef ENABLE_NETCORE
 	GSList *alcs;
 	MonoAssemblyLoadContext *default_alc;
 	MonoCoopMutex alcs_lock; /* Used when accessing 'alcs' */
-#endif
-
-#ifndef ENABLE_NETCORE
-	// Holds domain code memory
-	MonoMemoryManager *memory_manager;
-#endif
 };
 
 typedef struct  {
@@ -595,11 +533,6 @@ mono_domain_unset (void);
 void
 mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception);
 
-#ifndef ENABLE_NETCORE
-gboolean
-mono_domain_set_config_checked (MonoDomain *domain, const char *base_dir, const char *config_file_name, MonoError *error);
-#endif
-
 MonoTryBlockHoleTableJitInfo*
 mono_jit_info_get_try_block_hole_table_info (MonoJitInfo *ji);
 
@@ -655,15 +588,16 @@ mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, Mono
 MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload, gpointer user_data, MonoError *error);
 
-#ifndef ENABLE_NETCORE
-void mono_domain_set_options_from_config (MonoDomain *domain);
-#endif
-
 int mono_framework_version (void);
 
 void mono_assembly_cleanup_domain_bindings (guint32 domain_id);
 
 MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines);
+
+typedef void (*MonoJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
+
+void
+mono_jit_info_table_foreach_internal (MonoDomain *domain, MonoJitInfoFunc func, gpointer user_data);
 
 void mono_enable_debug_domain_unload (gboolean enable);
 
@@ -691,7 +625,6 @@ mono_domain_set_fast (MonoDomain *domain, gboolean force);
 MonoAssemblyLoadContext *
 mono_domain_default_alc (MonoDomain *domain);
 
-#ifdef ENABLE_NETCORE
 static inline void
 mono_domain_alcs_lock (MonoDomain *domain)
 {
@@ -703,7 +636,6 @@ mono_domain_alcs_unlock (MonoDomain *domain)
 {
 	mono_coop_mutex_unlock (&domain->alcs_lock);
 }
-#endif
 
 static inline
 MonoAssemblyLoadContext *
@@ -719,11 +651,7 @@ mono_domain_ambient_alc (MonoDomain *domain)
 static inline MonoMemoryManager *
 mono_domain_memory_manager (MonoDomain *domain)
 {
-#ifdef ENABLE_NETCORE
 	return (MonoMemoryManager *)mono_domain_default_alc (domain)->memory_manager;
-#else
-	return domain->memory_manager;
-#endif
 }
 
 static inline MonoMemoryManager *

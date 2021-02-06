@@ -169,11 +169,7 @@ struct _MonoAssemblyName {
 	uint32_t hash_alg;
 	uint32_t hash_len;
 	uint32_t flags;
-#ifdef ENABLE_NETCORE
 	int32_t major, minor, build, revision, arch;
-#else
-	uint16_t major, minor, build, revision, arch;
-#endif
 	//Add members for correct work with mono_stringify_assembly_name
 	MonoBoolean without_version;
 	MonoBoolean without_culture;
@@ -466,12 +462,10 @@ struct _MonoImage {
 	 */
 	MonoAssembly *assembly;
 
-#ifdef ENABLE_NETCORE
 	/*
 	 * The AssemblyLoadContext that this image was loaded into.
 	 */
 	MonoAssemblyLoadContext *alc;
-#endif
 
 	/*
 	 * Indexed by method tokens and typedef tokens.
@@ -573,11 +567,6 @@ struct _MonoImage {
 	/* Anon generic parameters past N, if needed */
 	MonoConcurrentHashTable *var_gparam_cache;
 	MonoConcurrentHashTable *mvar_gparam_cache;
-
-#ifndef ENABLE_NETCORE
-	/* Maps malloc-ed char* pinvoke scope -> MonoDl* */
-	GHashTable *pinvoke_scopes;
-#endif
 
 	/* The loader used to load this image */
 	MonoImageLoader *loader;
@@ -910,20 +899,37 @@ void
 mono_image_append_class_to_reflection_info_set (MonoClass *klass);
 
 #ifndef ENABLE_METADATA_UPDATE
+static inline gboolean
+mono_metadata_has_updates (void)
+{
+	return FALSE;
+}
+
 static inline void
 mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
 }
 #else /* ENABLE_METADATA_UPDATE */
+extern int mono_metadata_update_has_updates_private;
+
+/* returns TRUE if there's at least one update */
+static inline gboolean
+mono_metadata_has_updates (void)
+{
+	return mono_metadata_update_has_updates_private != 0;
+}
+
 void
 mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
 
 static inline void
 mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
-	if (G_LIKELY (*idx < (*t)->rows))
-		return;
-	mono_image_effective_table_slow (t, idx);
+	if (G_UNLIKELY (mono_metadata_has_updates ())) {
+		if (G_UNLIKELY (*idx >= (*t)->rows)) {
+			mono_image_effective_table_slow (t, idx);
+		}
+	}
 }
 
 int
@@ -1303,11 +1309,7 @@ static inline
 MonoAssemblyLoadContext *
 mono_image_get_alc (MonoImage *image)
 {
-#ifndef ENABLE_NETCORE
-	return NULL;
-#else
 	return image->alc;
-#endif
 }
 
 static inline

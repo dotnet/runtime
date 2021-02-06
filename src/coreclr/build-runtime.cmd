@@ -273,6 +273,11 @@ if %__SkipCrossArchNative% EQU 0 (
 
 REM Set the remaining variables based upon the determined build configuration
 
+REM PGO optimization is only applied to release builds (see pgosupport.cmake). Disable PGO by default if not building release.
+if NOT "%__BuildType%"=="Release" (
+    set __PgoOptimize=0
+)
+
 if %__PgoOptimize%==0 (
     set __RestoreOptData=0
 )

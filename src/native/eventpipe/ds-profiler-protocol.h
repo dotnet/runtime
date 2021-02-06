@@ -33,7 +33,7 @@ struct _DiagnosticsAttachProfilerCommandPayload_Internal {
 	//   ulong - status
 
 	uint32_t attach_timeout;
-	uint8_t profiler_guid [EP_ACTIVITY_ID_SIZE];
+	uint8_t profiler_guid [EP_GUID_SIZE];
 	const ep_char16_t *profiler_path;
 	uint32_t client_data_len;
 	uint8_t *client_data;

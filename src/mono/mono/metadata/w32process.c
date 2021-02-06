@@ -312,20 +312,6 @@ mono_w32process_get_fileversion (MonoObjectHandle filever, MonoStringHandle str,
 }
 #endif
 
-#ifndef ENABLE_NETCORE
-void
-ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObjectHandle this_obj,
-		const gunichar2 *filename, int filename_length, MonoError *error)
-{
-	MonoStringHandle str = MONO_HANDLE_CAST (MonoString, mono_new_null ());
-
-	mono_w32process_get_fileversion (this_obj, str, filename, error);
-	return_if_nok (error);
-
-	process_set_field_utf16 (this_obj, str, "filename", filename, filename_length, error);
-}
-#endif
-
 static GPtrArray*
 get_domain_assemblies (MonoDomain *domain)
 {
@@ -450,105 +436,6 @@ exit:
 
 	HANDLE_FUNCTION_RETURN ();
 }
-
-#ifndef ENABLE_NETCORE
-/* Returns an array of System.Diagnostics.ProcessModule */
-MonoArrayHandle
-ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObjectHandle this_obj, HANDLE process, MonoError *error)
-{
-	MonoArrayHandle temp_arr = NULL_HANDLE_ARRAY;
-	MonoArrayHandle arr = NULL_HANDLE_ARRAY;
-	HMODULE mods [1024];
-	gunichar2 *filename = NULL;
-	gunichar2 *modname = NULL;
-	guint32 filename_len = 0;
-	guint32 modname_len = 0;
-	guint32 needed = 0;
-	guint32 count = 0;
-	guint32 module_count = 0;
-	guint32 assembly_count = 0;
-	guint32 i = 0;
-	guint32 num_added = 0;
-	GPtrArray *assemblies = NULL;
-	MonoClass *process_module_class;
-
-	process_module_class = get_process_module_class (m_class_get_image (mono_handle_class (this_obj)));
-
-	// Coop handles are created here, once, in order to cut down on
-	// handle creation and ease use of loops that would
-	// otherwise create handles.
-	MonoObjectHandle module = mono_new_null ();
-	MonoObjectHandle filever = mono_new_null ();
-	MonoStringHandle str = MONO_HANDLE_CAST (MonoString, mono_new_null ());
-
-	if (mono_w32process_get_pid (process) == mono_process_current_pid ()) {
-		assemblies = get_domain_assemblies (mono_domain_get ());
-		assembly_count = assemblies->len;
-	}
-
-	if (mono_w32process_try_get_modules (process, (gpointer *)mods, sizeof (mods), &needed))
-		module_count += needed / sizeof (HMODULE);
-
-	count = module_count + assembly_count;
-	temp_arr = mono_array_new_handle (mono_domain_get (), process_module_class, count, error);
-	return_val_if_nok (error, NULL_HANDLE_ARRAY);
-
-	for (i = 0; i < module_count; i++) {
-		if (mono_w32process_module_get_name (process, mods [i], &modname, &modname_len) && mono_w32process_module_get_filename (process, mods [i], &filename, &filename_len)) {
-			process_add_module (module, filever, str, process, mods [i], filename, modname, process_module_class, error);
-			if (is_ok (error))
-				MONO_HANDLE_ARRAY_SETREF (temp_arr, num_added++, module);
-		}
-		g_free (modname);
-		g_free (filename);
-		if (!is_ok (error))
-			return NULL_HANDLE_ARRAY;
-	}
-
-	if (assemblies) {
-		for (i = 0; i < assembly_count; i++) {
-			MonoAssembly *ass = (MonoAssembly *)g_ptr_array_index (assemblies, i);
-			process_get_module (module, filever, str, ass, process_module_class, error);
-			return_val_if_nok (error, NULL_HANDLE_ARRAY);
-			MONO_HANDLE_ARRAY_SETREF (temp_arr, num_added++, module);
-		}
-		g_ptr_array_free (assemblies, TRUE);
-	}
-
-	if (count == num_added)
-		return temp_arr;
-
-	/* shorter version of the array */
-	arr = mono_array_new_handle (mono_domain_get (), process_module_class, num_added, error);
-	return_val_if_nok (error, NULL_HANDLE_ARRAY);
-
-	for (i = 0; i < num_added; i++) {
-		MONO_HANDLE_ARRAY_GETREF (module, temp_arr, i);
-		MONO_HANDLE_ARRAY_SETREF (arr, i, module);
-	}
-
-	return arr;
-}
-
-MonoStringHandle
-ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process, MonoError *error)
-{
-	gunichar2 *name = NULL;
-	HMODULE mod = 0;
-	guint32 needed = 0;
-	guint32 len = 0;
-
-	if (!mono_w32process_try_get_modules (process, (gpointer *)&mod, sizeof (mod), &needed))
-		return NULL_HANDLE_STRING;
-
-	if (!mono_w32process_module_get_name (process, mod, &name, &len))
-		return NULL_HANDLE_STRING;
-
-	MonoStringHandle res = mono_string_new_utf16_handle (mono_domain_get (), name, len, error);
-	g_free (name);
-	return res;
-}
-#endif /* ENABLE_NETCORE */
 
 gint64
 ves_icall_System_Diagnostics_Process_GetProcessData (int pid, gint32 data_type, MonoProcessError *error)

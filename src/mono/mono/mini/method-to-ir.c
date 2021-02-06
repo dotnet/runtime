@@ -97,11 +97,7 @@
  * while the jit only sees one method, so we have to inline things ourselves.
  */
 /* Used by LLVM AOT */
-#ifdef ENABLE_NETCORE
 #define LLVM_AOT_INLINE_LENGTH_LIMIT 30
-#else
-#define LLVM_AOT_INLINE_LENGTH_LIMIT INLINE_LENGTH_LIMIT
-#endif
 
 /* Used to LLVM JIT */
 #define LLVM_JIT_INLINE_LENGTH_LIMIT 100
@@ -3495,7 +3491,6 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 			return TRUE;
 	}
 
-#if defined(ENABLE_NETCORE)
 	/*
 	 * In corelib code, methods which need to do a stack walk declare a StackCrawlMark local and pass it as an
 	 * arguments until it reaches an icall. Its hard to detect which methods do that especially with
@@ -3509,7 +3504,7 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 			(!strcmp (cname, "Activator")))
 			return TRUE;
 	}
-#endif
+
 	return FALSE;
 }
 
@@ -5952,6 +5947,51 @@ emit_setret (MonoCompile *cfg, MonoInst *val)
 	}
 }
 
+/*
+ * Emit a call to enter the interpreter for methods with filter clauses.
+ */
+static void
+emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
+{
+	MonoInst *ins;
+	gboolean has_filter = FALSE;
+
+	for (int i = 0; i < header->num_clauses; ++i) {
+		MonoExceptionClause *clause = &header->clauses [i];
+		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
+			has_filter = TRUE;
+	}
+	if (!has_filter)
+		return;
+
+	MonoInst **iargs;
+	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
+
+	iargs = g_newa (MonoInst*, sig->param_count + 1);
+	iargs [0] = emit_get_rgctx_method (cfg, -1, cfg->method, MONO_RGCTX_INFO_METHOD);
+	MonoInst *ftndesc;
+
+	cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
+	/* Tell the llvm backend to skip emitting the rest of the method code */
+	cfg->interp_entry_only = TRUE;
+
+	g_assert (cfg->cbb == cfg->bb_init);
+	/* Obtain the interp entry function */
+	ftndesc = mono_emit_jit_icall_id (cfg, MONO_JIT_ICALL_mini_llvmonly_get_interp_entry, iargs);
+
+	/* Call it */
+	for (int i = 0; i < sig->param_count + sig->hasthis; ++i)
+		EMIT_NEW_ARGLOAD (cfg, iargs [i], i);
+	ins = mini_emit_llvmonly_calli (cfg, sig, iargs, ftndesc);
+	/* Do a normal return */
+	if (cfg->ret)
+		emit_setret (cfg, ins);
+	MONO_INST_NEW (cfg, ins, OP_BR);
+	ins->inst_target_bb = cfg->bb_exit;
+	MONO_ADD_INS (cfg->cbb, ins);
+	link_bblock (cfg, cfg->cbb, cfg->bb_exit);
+}
+
 typedef union _MonoOpcodeParameter {
 	gint32 i32;
 	gint64 i64;
@@ -6562,6 +6602,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MONO_ADD_INS (cfg->cbb, arg_ins);
 		MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
 	}
+
+	if (cfg->llvm_only && cfg->interp)
+		emit_llvmonly_interp_entry (cfg, header);
 
 	skip_dead_blocks = !dont_verify;
 	if (skip_dead_blocks) {
@@ -7448,19 +7491,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if ((m_class_get_parent (cmethod->klass) == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke"))
 				delegate_invoke = TRUE;
 
-#ifndef ENABLE_NETCORE
-			if ((cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_sharable_method (cfg, cmethod, fsig, sp))) {
-				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-					mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
-					emit_widen = FALSE;
-				}
-
-				if (inst_tailcall) // FIXME
-					mono_tailcall_print ("missed tailcall intrins_sharable %s -> %s\n", method->name, cmethod->name);
-				goto call_end;
-			}
-#endif
-
 			/*
 			 * Implement a workaround for the inherent races involved in locking:
 			 * Monitor.Enter ()
@@ -7698,11 +7728,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
-#ifdef ENABLE_NETCORE
 			if (save_last_error) {
 				mono_emit_jit_icall (cfg, mono_marshal_clear_last_error, NULL);
 			}
-#endif
 
 			/* Tail prefix / tailcall optimization */
 
@@ -9210,7 +9238,6 @@ calli_end:
 				}
 			}
 
-#ifdef ENABLE_NETCORE
 			// Optimize
 			// 
 			//    box
@@ -9332,7 +9359,6 @@ calli_end:
 					}
 				}
 			}
-#endif
 
 			gboolean is_true;
 

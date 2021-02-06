@@ -65,7 +65,6 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "tasklets.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
@@ -753,7 +752,6 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
 	int dreg;
 
-#ifdef ENABLE_NETCORE
 	if (type->type == MONO_TYPE_VALUETYPE && !type->byref) {
 		MonoClass *klass = mono_class_from_mono_type_internal (type);
 		if (m_class_is_enumtype (klass) && m_class_get_image (klass) == mono_get_corlib () && !strcmp (m_class_get_name (klass), "StackCrawlMark")) {
@@ -761,7 +759,6 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 				g_error ("Method '%s' which contains a StackCrawlMark local variable must be decorated with [System.Security.DynamicSecurityMethod].", mono_method_get_full_name (cfg->method));
 		}
 	}
-#endif
 
 	type = mini_get_underlying_type (type);
 
@@ -2716,6 +2713,15 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				}
 				ei->data.handler_end = cfg->native_code + end_offset;
 			}
+
+			/* Keep try_start/end non-authenticated, they are never branched to */
+			//ei->try_start = MINI_ADDR_TO_FTNPTR (ei->try_start);
+			//ei->try_end = MINI_ADDR_TO_FTNPTR (ei->try_end);
+			ei->handler_start = MINI_ADDR_TO_FTNPTR (ei->handler_start);
+			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+				ei->data.filter = MINI_ADDR_TO_FTNPTR (ei->data.filter);
+			else if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
+				ei->data.handler_end = MINI_ADDR_TO_FTNPTR (ei->data.handler_end);
 		}
 	}
 
@@ -4209,7 +4215,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		if (!mono_runtime_class_init_full (vtable, error))
 			return NULL;
 	}
-	return code;
+	return MINI_ADDR_TO_FTNPTR (code);
 }
 
 /*

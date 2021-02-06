@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -1430,6 +1431,28 @@ namespace System.Numerics
         internal static void ThrowInsufficientNumberOfElementsException(int requiredElementCount)
         {
             throw new IndexOutOfRangeException(SR.Format(SR.Arg_InsufficientNumberOfElements, requiredElementCount, "values"));
+        }
+
+        /// <summary>
+        /// Reinterprets a <see cref="Vector{T}"/> as a <see cref="Vector{T}"/> of new type.
+        /// </summary>
+        /// <typeparam name="TFrom">The type of the input vector.</typeparam>
+        /// <typeparam name="TTo">The type to reinterpret the vector as.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector"/> reinterpreted as a new <see cref="Vector{T}"/>.</returns>
+        /// <exception cref="NotSupportedException">
+        /// The type of <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> is not supported.
+        /// </exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<TTo> As<TFrom, TTo>(this Vector<TFrom> vector)
+            where TFrom : struct
+            where TTo : struct
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<TFrom>();
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<TTo>();
+
+            return Unsafe.As<Vector<TFrom>, Vector<TTo>>(ref vector);
         }
     }
 }

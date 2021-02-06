@@ -2,8 +2,6 @@
 # Configure options
 #
 
-option (ENABLE_NETCORE "Enables the support for .NET Core Features in the MonoVM")
-
 option (DISABLE_PORTABILITY "Disables the IO portability layer")
 option (DISABLE_AOT "Disable AOT Compiler")
 option (DISABLE_PROFILER "Disable default profiler support")
@@ -11,7 +9,6 @@ option (DISABLE_DECIMAL "Disable System.Decimal support")
 option (DISABLE_PINVOKE "Disable P/Invoke support")
 option (DISABLE_DEBUG "Disable runtime debugging support")
 option (DISABLE_REFLECTION_EMIT "Disable reflection emit support")
-option (DISABLE_REFLECTION_EMIT_SAVE "Disable assembly saving support in reflection emit")
 option (DISABLE_LARGE_CODE "Disable support for huge assemblies")
 option (DISABLE_LOGGING "Disable support debug logging")
 option (DISABLE_COM "Disable COM support")

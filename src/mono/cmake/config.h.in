@@ -72,7 +72,7 @@
 #cmakedefine PACKAGE_URL 1
 
 /* Version of the corlib-runtime interface */
-#define MONO_CORLIB_VERSION @MONO_CORLIB_VERSION@
+#cmakedefine MONO_CORLIB_VERSION "@MONO_CORLIB_VERSION@"
 
 /* Disables the IO portability layer */
 #cmakedefine DISABLE_PORTABILITY 1
@@ -338,9 +338,6 @@
 /* The size of `long long', as computed by sizeof. */
 #define SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
 
-/* Enables the support for .NET Core Features in the MonoVM */
-#cmakedefine ENABLE_NETCORE 1
-
 /* Xen-specific behaviour */
 #cmakedefine MONO_XEN_OPT 1
 
@@ -403,9 +400,6 @@
 
 /* Disable reflection emit support */
 #cmakedefine DISABLE_REFLECTION_EMIT 1
-
-/* Disable assembly saving support in reflection emit */
-#cmakedefine DISABLE_REFLECTION_EMIT_SAVE 1
 
 /* Disable support for huge assemblies */
 #cmakedefine DISABLE_LARGE_CODE 1

@@ -22,6 +22,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             _ordinalRva = new Dictionary<int, int>();
 
             DirectoryEntry exportTable = peReader.PEHeaders.PEHeader.ExportTableDirectory;
+            if ((exportTable.Size == 0) || (exportTable.RelativeVirtualAddress == 0))
+                return;
+
             PEMemoryBlock peImage = peReader.GetEntireImage();
             BlobReader exportTableHeader = peImage.GetReader(peReader.GetOffset(exportTable.RelativeVirtualAddress), exportTable.Size);
             if (exportTableHeader.Length == 0)

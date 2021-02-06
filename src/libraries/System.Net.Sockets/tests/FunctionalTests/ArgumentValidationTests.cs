@@ -1334,7 +1334,7 @@ namespace System.Net.Sockets.Tests
         {
             EndPoint endpoint = new IPEndPoint(IPAddress.IPv6Loopback, 1);
             AssertExtensions.Throws<ArgumentException>("remoteEP", () => GetSocket(AddressFamily.InterNetwork).BeginReceiveFrom(s_buffer, 0, 0, SocketFlags.None, ref endpoint, TheAsyncCallback, null));
-            AssertExtensions.Throws<ArgumentException>("remoteEP", () => { GetSocket(AddressFamily.InterNetwork).ReceiveFromAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, endpoint); });
+            AssertExtensions.Throws<ArgumentException>("remoteEndPoint", () => { GetSocket(AddressFamily.InterNetwork).ReceiveFromAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, endpoint); });
         }
 
         [Fact]
@@ -1402,7 +1402,7 @@ namespace System.Net.Sockets.Tests
             EndPoint remote = new IPEndPoint(IPAddress.IPv6Loopback, 1);
 
             AssertExtensions.Throws<ArgumentException>("remoteEP", () => GetSocket(AddressFamily.InterNetwork).BeginReceiveMessageFrom(s_buffer, 0, 0, SocketFlags.None, ref remote, TheAsyncCallback, null));
-            AssertExtensions.Throws<ArgumentException>("remoteEP", () => { GetSocket(AddressFamily.InterNetwork).ReceiveMessageFromAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, remote); });
+            AssertExtensions.Throws<ArgumentException>("remoteEndPoint", () => { GetSocket(AddressFamily.InterNetwork).ReceiveMessageFromAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, remote); });
         }
 
         [Fact]

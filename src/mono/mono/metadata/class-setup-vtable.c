@@ -23,9 +23,7 @@
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
 
-#ifdef ENABLE_NETCORE
 #define FEATURE_COVARIANT_RETURNS
-#endif
 
 static void mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup);
 

@@ -173,6 +173,7 @@ typedef struct {
 	gboolean *unreachable;
 	gboolean llvm_only;
 	gboolean has_got_access;
+	gboolean is_linkonce;
 	gboolean emit_dummy_arg;
 	gboolean has_safepoints;
 	int this_arg_pindex, rgctx_arg_pindex;
@@ -2208,7 +2209,7 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 			 * Have to use an invoke instead of a call, branching to the
 			 * handler bblock of the clause containing this bblock.
 			 */
-			intptr_t key = CLAUSE_END(clause);
+			intptr_t key = CLAUSE_END (clause);
 
 			LLVMBasicBlockRef lpad_bb = (LLVMBasicBlockRef)g_hash_table_lookup (ctx->exc_meta, (gconstpointer)key);
 
@@ -3729,11 +3730,9 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeInReg:
 		case LLVMArgVtypeByVal:
 		case LLVMArgAsIArgs:
-#ifdef ENABLE_NETCORE
 			// FIXME: Enabling this fails on windows
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeByRef:
-#endif
 		{
 			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
 				/* Treat these as normal values */
@@ -4917,7 +4916,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	LLVMBuilderRef builder, starting_builder;
 	gboolean has_terminator;
 	LLVMValueRef v;
-	LLVMValueRef lhs, rhs;
+	LLVMValueRef lhs, rhs, arg3;
 	int nins = 0;
 
 	cbb = get_end_bb (ctx, bb);
@@ -4928,6 +4927,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 	if (!ctx_ok (ctx))
 		return;
+
+	if (cfg->interp_entry_only && bb != cfg->bb_init && bb != cfg->bb_entry && bb != cfg->bb_exit) {
+		/* The interp entry code is in bb_entry, skip the rest as we might not be able to compile it */
+		LLVMBuildUnreachable (builder);
+		return;
+	}
 
 	if (bb->flags & BB_EXCEPTION_HANDLER) {
 		if (!ctx->llvm_only && !bblocks [bb->block_num].invoke_target) {
@@ -5096,7 +5101,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			lhs = NULL;
 		}
 
-		if (spec [MONO_INST_SRC2] != ' ' && spec [MONO_INST_SRC2] != ' ') {
+		if (spec [MONO_INST_SRC2] != ' ' && spec [MONO_INST_SRC2] != 'v') {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg2);
 			if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
 				rhs = emit_volatile_load (ctx, ins->sreg2);
@@ -5109,6 +5114,21 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}
 		} else {
 			rhs = NULL;
+		}
+
+		if (spec [MONO_INST_SRC3] != ' ' && spec [MONO_INST_SRC3] != 'v') {
+			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg3);
+			if (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) {
+				arg3 = emit_volatile_load (ctx, ins->sreg3);
+			} else {
+				if (!values [ins->sreg3]) {
+					set_failure (ctx, "sreg3");
+					return;
+				}
+				arg3 = values [ins->sreg3];
+			}
+		} else {
+			arg3 = NULL;
 		}
 
 		//mono_print_ins (ins);
@@ -6964,11 +6984,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef mask [32], v;
 			int i;
 
-#ifdef ENABLE_NETCORE
 			t = simd_class_to_llvm_type (ctx, ins->klass);
-#else
-			t = simd_op_to_llvm_type (ins->opcode);
-#endif
 			for (i = 0; i < 32; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 
@@ -8772,7 +8788,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 #endif
 
-#ifdef ENABLE_NETCORE
 		case OP_XCAST: {
 			LLVMTypeRef t = simd_class_to_llvm_type (ctx, ins->klass);
 
@@ -9014,11 +9029,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_PDEP32 ? INTRINS_PDEP_I32 : INTRINS_PDEP_I64, args, "");
 			break;
 		}
-#endif /* ENABLE_NETCORE */
 #endif /* defined(TARGET_X86) || defined(TARGET_AMD64) */
 
 // Shared between ARM64 and X86
-#if defined(ENABLE_NETCORE) && (defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64))
+#if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64)
 		case OP_LZCNT32:
 		case OP_LZCNT64: {
 			LLVMValueRef args [2];
@@ -9029,7 +9043,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 #endif
 
-#if defined(ENABLE_NETCORE) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
 		case OP_XOP_I4_I4:
 		case OP_XOP_I8_I8: {
 			IntrinsicId id = (IntrinsicId)0;
@@ -9041,6 +9055,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
 			break;
 		}
+		case OP_XOP_X_X_X:
 		case OP_XOP_I4_I4_I4:
 		case OP_XOP_I4_I4_I8: {
 			IntrinsicId id = (IntrinsicId)0;
@@ -9054,6 +9069,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_ARM64_CRC32CH: id = INTRINS_AARCH64_CRC32CH; zext_last = TRUE; break;
 			case SIMD_OP_ARM64_CRC32CW: id = INTRINS_AARCH64_CRC32CW; zext_last = TRUE; break;
 			case SIMD_OP_ARM64_CRC32CX: id = INTRINS_AARCH64_CRC32CX; break;
+			case SIMD_OP_ARM64_SHA1SU1: id = INTRINS_AARCH64_SHA1SU1; break;
+			case SIMD_OP_ARM64_SHA256SU0: id = INTRINS_AARCH64_SHA256SU0; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef arg1 = rhs;
@@ -9061,6 +9078,35 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				arg1 = LLVMBuildZExt (ctx->builder, arg1, LLVMInt32Type (), "");
 			LLVMValueRef args [] = { lhs, arg1 };
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_XOP_X_X_X_X: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_ARM64_SHA1SU0: id = INTRINS_AARCH64_SHA1SU0; break;
+			case SIMD_OP_ARM64_SHA256H: id = INTRINS_AARCH64_SHA256H; break;
+			case SIMD_OP_ARM64_SHA256H2: id = INTRINS_AARCH64_SHA256H2; break;
+			case SIMD_OP_ARM64_SHA256SU1: id = INTRINS_AARCH64_SHA256SU1; break;
+			default: g_assert_not_reached (); break;
+			}
+			LLVMValueRef args [] = { lhs, rhs, arg3 };
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_XOP_X_X: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_LLVM_FABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_FLOAT; break;
+			case SIMD_OP_LLVM_DABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_DOUBLE; break;
+			case SIMD_OP_LLVM_I8ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT8; break;
+			case SIMD_OP_LLVM_I16ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT16; break;
+			case SIMD_OP_LLVM_I32ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT32; break;
+			case SIMD_OP_LLVM_I64ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT64; break;
+			default: g_assert_not_reached (); break;
+			}
+
+			LLVMValueRef arg0 = lhs;
+			values [ins->dreg] = call_intrins (ctx, id, &arg0, "");
 			break;
 		}
 		case OP_LSCNT32:
@@ -9084,6 +9130,22 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [0] = add;
 			args [1] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_LSCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64), args, 2, "");
+			break;
+		}
+		case OP_ARM64_SMULH:
+		case OP_ARM64_UMULH: {
+			LLVMValueRef op1, op2;
+			if (ins->opcode == OP_ARM64_SMULH) {
+				op1 = LLVMBuildSExt (builder, lhs, LLVMInt128Type (), "");
+				op2 = LLVMBuildSExt (builder, rhs, LLVMInt128Type (), "");
+			} else {
+				op1 = LLVMBuildZExt (builder, lhs, LLVMInt128Type (), "");
+				op2 = LLVMBuildZExt (builder, rhs, LLVMInt128Type (), "");
+			}
+			LLVMValueRef mul = LLVMBuildMul (builder, op1, op2, "");
+			LLVMValueRef hi64 = LLVMBuildLShr (builder, mul,
+				LLVMConstInt (LLVMInt128Type (), 64, FALSE), "");
+			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type (), "");
 			break;
 		}
 #endif
@@ -9397,6 +9459,25 @@ free_ctx (EmitContext *ctx)
 	g_free (ctx);
 }
 
+static gboolean
+is_linkonce_method (MonoMethod *method)
+{
+#ifdef TARGET_WASM
+	/*
+	 * Under wasm, linkonce works, so use it instead of the dedup pass for wrappers at least.
+	 * FIXME: Use for everything, i.e. can_dedup ().
+	 * FIXME: Fails System.Core tests
+	 * -> amodule->sorted_methods contains duplicates, screwing up jit tables.
+	 */
+	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
+			return TRUE;
+	}
+#endif
+	return FALSE;
+}
+
 /*
  * mono_llvm_emit_method:
  *
@@ -9407,6 +9488,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 {
 	EmitContext *ctx;
 	char *method_name;
+	gboolean is_linkonce = FALSE;
 	int i;
 
 	if (cfg->skip)
@@ -9448,7 +9530,15 @@ mono_llvm_emit_method (MonoCompile *cfg)
  	if (cfg->compile_aot) {
 		ctx->module = &aot_module;
 
-		if (mono_aot_is_externally_callable (cfg->method))
+		/*
+		 * Allow the linker to discard duplicate copies of wrappers, generic instances etc. by using the 'linkonce'
+		 * linkage for them. This requires the following:
+		 * - the method needs to have a unique mangled name
+		 * - llvmonly mode, since the code in aot-runtime.c would initialize got slots in the wrong aot image etc.
+		 */
+		if (ctx->module->llvm_only && ctx->module->static_link && is_linkonce_method (cfg->method))
+			is_linkonce = TRUE;
+		if (is_linkonce || mono_aot_is_externally_callable (cfg->method))
 			method_name = mono_aot_get_mangled_method_name (cfg->method);
 		else
 			method_name = mono_aot_get_method_name (cfg);
@@ -9459,6 +9549,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		method_name = mono_method_full_name (cfg->method, TRUE);
 	}
 	ctx->method_name = method_name;
+	ctx->is_linkonce = is_linkonce;
 
 	if (cfg->compile_aot) {
 		ctx->lmodule = ctx->module->lmodule;
@@ -9691,6 +9782,10 @@ emit_method_inner (EmitContext *ctx)
 				LLVMSetVisibility (method, LLVMHiddenVisibility);
 			}
 		}
+		if (ctx->is_linkonce) {
+			LLVMSetLinkage (method, LLVMLinkOnceAnyLinkage);
+			LLVMSetVisibility (method, LLVMDefaultVisibility);
+		}
 	} else {
 		LLVMSetLinkage (method, LLVMExternalLinkage);
 	}
@@ -9710,9 +9805,8 @@ emit_method_inner (EmitContext *ctx)
 		clause = &header->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE) {
 			if (cfg->llvm_only) {
-				// FIXME: Treat unhandled opcodes like __arglist the same way
-				// It would require deleting the already emitted code
-				llvmonly_fail = TRUE;
+				if (!cfg->interp_entry_only)
+					llvmonly_fail = TRUE;
 			} else {
 				set_failure (ctx, "non-finally/catch/fault clause.");
 				return;
@@ -9922,7 +10016,7 @@ emit_method_inner (EmitContext *ctx)
 		int clause_index;
 		char name [128];
 
-		if (!(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
+		if (ctx->cfg->interp_entry_only || !(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
 			continue;
 
 		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);
@@ -9941,7 +10035,7 @@ emit_method_inner (EmitContext *ctx)
 	// Make landing pads first
 	ctx->exc_meta = g_hash_table_new_full (NULL, NULL, NULL, NULL);
 
-	if (ctx->llvm_only) {
+	if (ctx->llvm_only && !ctx->cfg->interp_entry_only) {
 		size_t group_index = 0;
 		while (group_index < cfg->header->num_clauses) {
 			int count = 0;
@@ -10501,6 +10595,24 @@ add_intrinsic (LLVMModuleRef module, int id)
 	case INTRINS_BITREVERSE_I64:	
 		intrins = add_intrins1 (module, id, LLVMInt64Type ());	
 		break;	
+	case INTRINS_AARCH64_ADV_SIMD_ABS_FLOAT:
+		intrins = add_intrins1 (module, id, sse_r4_t);
+		break;
+	case INTRINS_AARCH64_ADV_SIMD_ABS_DOUBLE:
+		intrins = add_intrins1 (module, id, sse_r8_t);
+		break;
+	case INTRINS_AARCH64_ADV_SIMD_ABS_INT8:
+		intrins = add_intrins1 (module, id, sse_i1_t);
+		break;
+	case INTRINS_AARCH64_ADV_SIMD_ABS_INT16:
+		intrins = add_intrins1 (module, id, sse_i2_t);
+		break;
+	case INTRINS_AARCH64_ADV_SIMD_ABS_INT32:
+		intrins = add_intrins1 (module, id, sse_i4_t);
+		break;
+	case INTRINS_AARCH64_ADV_SIMD_ABS_INT64:
+		intrins = add_intrins1 (module, id, sse_i8_t);
+		break;
 #endif
 	default:
 		g_assert_not_reached ();
@@ -11887,6 +11999,8 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #endif
 #if defined(TARGET_ARM64)
 		{ "crc",	MONO_CPU_ARM64_CRC },
+		{ "crypto",	MONO_CPU_ARM64_CRYPTO },
+		{ "neon",	MONO_CPU_ARM64_ADVSIMD }
 #endif
 	};
 	if (!cpu_features)
