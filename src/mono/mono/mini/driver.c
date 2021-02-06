@@ -1427,13 +1427,8 @@ static void main_thread_handler (gpointer user_data)
 		for (i = 0; i < main_args->argc; ++i) {
 			assembly = mono_domain_assembly_open_internal (main_args->domain, mono_domain_default_alc (main_args->domain), main_args->argv [i]);
 			if (!assembly) {
-				if (mono_is_problematic_file (main_args->argv [i])) {
-					fprintf (stderr, "Info: AOT of problematic assembly %s skipped. This is expected.\n", main_args->argv [i]);
-					continue;
-				} else {
-					fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
-					exit (1);
-				}
+				fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
+				exit (1);
 			}
 			/* Check that the assembly loaded matches the filename */
 			{

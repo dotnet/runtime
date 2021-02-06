@@ -109,7 +109,7 @@ mono_images_unlock(void)
 }
 
 static MonoImage *
-mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context, gboolean *problematic);
+mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context);
 
 /* Maps string keys to MonoImageStorage values.
  *
@@ -1160,12 +1160,6 @@ install_pe_loader (void)
 	mono_install_image_loader (&pe_loader);
 }
 
-gboolean
-mono_assembly_is_problematic_version (const char *name, guint16 major, guint16 minor, guint16 build, guint16 revision)
-{
-	return FALSE;
-}
-
 /*
 Equivalent C# code:
 	static void Main  () {
@@ -1187,12 +1181,6 @@ hash_guid (const char *str)
 	}
 
 	return h;
-}
-
-gboolean
-mono_is_problematic_image (MonoImage *image)
-{
-	return FALSE;
 }
 
 #ifdef ENABLE_METADATA_UPDATE
@@ -1264,17 +1252,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
-
-	if (!image->ref_only && mono_is_problematic_image (image)) {
-		if (image->load_from_context) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading problematic image %s", image->name);
-		} else {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Denying load of problematic image %s", image->name);
-			if (status)
-				*status = MONO_IMAGE_IMAGE_INVALID;
-			goto invalid_image;
-		}
-	}
 
 	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_table_data (image, error))
 		goto invalid_image;
@@ -1667,7 +1644,7 @@ mono_image_get_name_with_culture_if_needed (MonoImage *image)
 }
 
 static MonoImage *
-register_image (MonoLoadedImages *li, MonoImage *image, gboolean *problematic)
+register_image (MonoLoadedImages *li, MonoImage *image)
 {
 	MonoImage *image2;
 	char *name = image->name;
@@ -1696,11 +1673,6 @@ register_image (MonoLoadedImages *li, MonoImage *image, gboolean *problematic)
 		g_hash_table_insert (loaded_images_by_name, (char *) image->assembly_name, image);
 	mono_images_unlock ();
 
-	if (mono_is_problematic_image (image)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Registering %s, problematic image '%s'", image->ref_only ? "REFONLY" : "default", name);
-		if (problematic)
-			*problematic = TRUE;
-	}
 	g_free (name_with_culture);
 	return image;
 }
@@ -1745,7 +1717,7 @@ mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, gu
 	if (image == NULL)
 		return NULL;
 
-	return register_image (mono_alc_get_loaded_images (alc), image, NULL);
+	return register_image (mono_alc_get_loaded_images (alc), image);
 }
 
 MonoImage *
@@ -1851,7 +1823,7 @@ mono_image_open_from_module_handle (MonoAssemblyLoadContext *alc, HMODULE module
 	if (image == NULL)
 		return NULL;
 
-	return register_image (mono_alc_get_loaded_images (alc), image, NULL);
+	return register_image (mono_alc_get_loaded_images (alc), image);
 }
 #endif
 
@@ -1871,7 +1843,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
  * via this API, and then try to load it with another culture we will return the first one.
  */
 static MonoImage *
-mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context, gboolean *problematic)
+mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context)
 {
 	MonoImage *image;
 	GHashTable *loaded_images = mono_loaded_images_get_hash (li, refonly);
@@ -1894,22 +1866,6 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 		mono_images_lock ();
 		image = (MonoImage*)g_hash_table_lookup (loaded_images, absfname);
 		if (image) { // Image already loaded
-			if (!load_from_context && mono_is_problematic_image (image)) {
-				// If we previously loaded a problematic image, don't
-				// return it if we're not in LoadFrom context.
-				//
-				// Note: this has an interaction with
-				//  mono_problematic_image_reprobe - at that point we
-				//  have a problematic image opened, but we don't want
-				//  to see it again when we go searching for an image
-				//  to load.
-				mono_images_unlock ();
-
-				if (problematic)
-					*problematic = TRUE;
-
-				return NULL;
-			}
 			g_assert (m_image_is_module_handle (image));
 			if (m_image_has_entry_point (image) && image->ref_count == 0) {
 				/* Increment reference count on images loaded outside of the runtime. */
@@ -1981,21 +1937,6 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	g_free (absfname);
 
 	if (image) { // Image already loaded
-		if (!refonly && !load_from_context && mono_is_problematic_image (image)) {
-			// If we previously loaded a problematic image, don't
-			// return it if we're not in LoadFrom context.
-			//
-			// Note: this has an interaction with
-			//  mono_problematic_image_reprobe - at that point we
-			//  have a problematic image opened, but we don't want
-			//  to see it again when we go searching for an image
-			//  to load.
-			mono_images_unlock ();
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Not returning problematic image '%s' refcount=%d", image->name, image->ref_count);
-			if (problematic)
-				*problematic = TRUE;
-			return NULL;
-		}
 		mono_image_addref (image);
 		mono_images_unlock ();
 		return image;
@@ -2007,32 +1948,15 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	if (image == NULL)
 		return NULL;
 
-	return register_image (li, image, problematic);
+	return register_image (li, image);
 }
 
 MonoImage *
 mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context)
 {
 	MonoLoadedImages *li = mono_alc_get_loaded_images (alc);
-	return mono_image_open_a_lot_parameterized (li, alc, fname, status, refonly, load_from_context, NULL);
+	return mono_image_open_a_lot_parameterized (li, alc, fname, status, refonly, load_from_context);
 }
-
-gboolean
-mono_is_problematic_file (const char *fname)
-{
-	MonoImageOpenStatus status;
-	gboolean problematic = FALSE;
-
-	MonoDomain *domain = mono_domain_get ();
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
-	MonoLoadedImages *li = mono_alc_get_loaded_images (alc);
-	MonoImage *opened = mono_image_open_a_lot_parameterized (li, alc, fname, &status, FALSE, FALSE, &problematic);
-	if (opened)
-		mono_image_close (opened);
-
-	return problematic;
-}
-
 
 /**
  * mono_image_open:

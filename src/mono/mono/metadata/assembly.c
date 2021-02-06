@@ -98,10 +98,6 @@ static const MonoBundledSatelliteAssembly **satellite_bundles;
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (internals_visible, "System.Runtime.CompilerServices", "InternalsVisibleToAttribute")
 static MonoAssembly*
 mono_assembly_invoke_search_hook_internal (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload);
-static MonoAssembly*
-chain_redirections_loadfrom (MonoAssemblyLoadContext *alc, MonoImage *image, MonoImageOpenStatus *out_status);
-static MonoAssembly*
-mono_problematic_image_reprobe (MonoAssemblyLoadContext *alc, MonoImage *image, MonoImageOpenStatus *status);
 
 static MonoAssembly *
 invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gchar **apath);
@@ -2092,22 +2088,6 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 		return NULL;
 	}
 
-	if (load_req.asmctx == MONO_ASMCTX_LOADFROM || load_req.asmctx == MONO_ASMCTX_INDIVIDUAL) {
-		MonoAssembly *redirected_asm = NULL;
-		MonoImageOpenStatus new_status = MONO_IMAGE_OK;
-		if ((redirected_asm = chain_redirections_loadfrom (load_req.alc, image, &new_status))) {
-			mono_image_close (image);
-			image = redirected_asm->image;
-			mono_image_addref (image); /* so that mono_image_close, below, has something to do */
-			/* fall thru to if (image->assembly) below */
-		} else if (new_status != MONO_IMAGE_OK) {
-			*status = new_status;
-			mono_image_close (image);
-			g_free (fname);
-			return NULL;
-		}
-	}
-
 	if (image->assembly) {
 		/* We want to return the MonoAssembly that's already loaded,
 		 * but if we're using the strict assembly loader, we also need
@@ -2289,93 +2269,6 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 	return iter_data.has_attr;
 }
 
-/**
- * chain_redirections_loadfrom:
- * \param alc AssemblyLoadContext to load into
- * \param image a MonoImage that we wanted to load using LoadFrom context
- * \param status set if there was an error opening the redirected image
- *
- * Check if we need to open a different image instead of the given one for some reason.
- * Returns NULL and sets status to \c MONO_IMAGE_OK if the given image was good.
- *
- * Otherwise returns the assembly that we opened instead or sets status if
- * there was a problem opening the redirected image.
- *
- */
-MonoAssembly*
-chain_redirections_loadfrom (MonoAssemblyLoadContext *alc, MonoImage *image, MonoImageOpenStatus *out_status)
-{
-	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	MonoAssembly *redirected = NULL;
-
-	redirected = mono_problematic_image_reprobe (alc, image, &status);
-	if (redirected || status != MONO_IMAGE_OK) {
-		*out_status = status;
-		return redirected;
-	}
-
-	*out_status = MONO_IMAGE_OK;
-	return NULL;
-}
-
-/**
- * mono_problematic_image_reprobe:
- * \param alc AssemblyLoadContex to load into
- * \param image A MonoImage
- * \param status set on error
- *
- * If the given image is problematic for mono (see image.c), then try to load
- * by assembly name in the default context (which should succeed with Mono's
- * own implementations of those assemblies).
- *
- * Returns NULL and sets status to MONO_IMAGE_OK if no redirect is needed.
- *
- * Otherwise returns the assembly we were redirected to, or NULL and sets a
- * non-ok status on failure.
- *
- * IMPORTANT NOTE: Don't call this if \c image was found by probing the search
- * path, you will end up in a loop and a stack overflow.
- */
-MonoAssembly*
-mono_problematic_image_reprobe (MonoAssemblyLoadContext *alc, MonoImage *image, MonoImageOpenStatus *status)
-{
-	g_assert (status != NULL);
-
-	if (G_LIKELY (!mono_is_problematic_image (image))) {
-		*status = MONO_IMAGE_OK;
-		return NULL;
-	}
-	MonoAssemblyName probed_aname;
-	if (!mono_assembly_fill_assembly_name_full (image, &probed_aname, TRUE)) {
-		*status = MONO_IMAGE_IMAGE_INVALID;
-		return NULL;
-	}
-	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY)) {
-		char *probed_fullname = mono_stringify_assembly_name (&probed_aname);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Requested to load from problematic image %s, probing instead for assembly with name %s", image->name, probed_fullname);
-		g_free (probed_fullname);
-	}
-	const char *new_basedir = NULL;
-	MonoAssemblyContextKind new_asmctx = MONO_ASMCTX_DEFAULT;
-	MonoAssembly *new_requesting = NULL;
-	MonoImageOpenStatus new_status = MONO_IMAGE_OK;
-	MonoAssemblyByNameRequest new_req;
-	mono_assembly_request_prepare_byname (&new_req, new_asmctx, alc);
-	new_req.requesting_assembly = new_requesting;
-	new_req.basedir = new_basedir;
-	// Note: this interacts with mono_image_open_a_lot (). If the path from
-	// which we tried to load the problematic image is among the probing
-	// paths, the MonoImage will be in the hash of loaded images and we
-	// would just get it back again here, except for the code there that
-	// mitigates the situation.  Instead
-	MonoAssembly *result_ass = mono_assembly_request_byname (&probed_aname, &new_req, &new_status);
-
-	if (! (result_ass && new_status == MONO_IMAGE_OK)) {
-		*status = new_status;
-	}
-	mono_assembly_name_free_internal (&probed_aname);
-	return result_ass;
-}
 /**
  * mono_assembly_open:
  * \param filename Opens the assembly pointed out by this name
@@ -3592,8 +3485,6 @@ mono_assembly_foreach (GFunc func, gpointer user_data)
 void
 mono_assemblies_cleanup (void)
 {
-	GSList *l;
-
 	mono_os_mutex_destroy (&assemblies_mutex);
 
 	free_assembly_asmctx_from_path_hooks ();
