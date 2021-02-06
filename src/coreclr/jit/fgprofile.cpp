@@ -922,6 +922,9 @@ public:
             case Kind::Edge:
                 NewEdgeProbe(source, target);
                 break;
+            default:
+                assert(!"unexpected kind");
+                break;
         }
     }
 };
@@ -2000,7 +2003,7 @@ public:
     void Solve();
     void Propagate();
 
-    void Badcode()
+    void Badcode() override
     {
         m_badcode = true;
     }
@@ -2020,7 +2023,7 @@ public:
         m_failedToConverge = true;
     }
 
-    void VisitBlock(BasicBlock*)
+    void VisitBlock(BasicBlock*) override
     {
     }
 
