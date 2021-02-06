@@ -367,7 +367,7 @@ namespace System.Net.Security.Tests
             // Make sure we can build chain before proceeding to ssl handshale
             using (var chain = new X509Chain())
             {
-                int count = 10;
+                int count = 25;
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.DisableCertificateDownloads = false;
@@ -380,7 +380,7 @@ namespace System.Net.Security.Tests
                 }
 
                 // Verify we can construct full chain
-                Assert.Equal(clientChain.Count + 1, chain.ChainElements.Count);
+                Assert.Equal(clientChain.Count + 1, chain.ChainElements.Count, "chain cannot be built");
             }
 
             var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost",  };
@@ -400,7 +400,7 @@ namespace System.Net.Security.Tests
                     _output.WriteLine("received {0}", c.Subject);
                 }
 
-                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1);
+                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1, "client did not sent expected chain");
                 return true;
             };
 
