@@ -385,7 +385,7 @@ def setup_microbenchmark(workitem_directory, arch):
         build_env_vars["UseSharedCompilation"] = "false"
 
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir", dotnet_directory])
+            get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir", dotnet_directory, "--verbose"])
         run_command([dotnet_exe, "restore", "src/benchmarks/micro/MicroBenchmarks.csproj", "--packages",
                      artifacts_packages_directory], _env=build_env_vars)
         run_command([dotnet_exe, "build", "src/benchmarks/micro/MicroBenchmarks.csproj", "--configuration", "Release",
@@ -394,6 +394,11 @@ def setup_microbenchmark(workitem_directory, arch):
 
 
 def get_python_name():
+    """Gets the python name
+
+    Returns:
+        string: Returns the appropriate python name depending on the OS.
+    """
     if is_windows:
         return ["py", "-3"]
     else:

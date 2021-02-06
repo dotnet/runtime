@@ -15,10 +15,10 @@ import argparse
 import re
 import sys
 
+from os import path
 from coreclr_arguments import *
 from superpmi import ChangeDir
 from superpmi_setup import run_command
-from os import path
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"
@@ -121,7 +121,7 @@ def execute(coreclr_args, output_mch_name):
             python_path, path.join(superpmi_directory, "superpmi.py"), "collect",
 
             # dotnet command to execute Microbenchmarks.dll
-            dotnet_exe, "\"artifacts/Microbenchmarks.dll --filter *IniArray* --corerun " + path.join(core_root, corerun_exe_name) +
+            dotnet_exe, "\"artifacts/Microbenchmarks.dll --filter * --corerun " + path.join(core_root, corerun_exe_name) +
             " --partition_count " + partition_count + " --partition_index " + partition_index +
             " --envvar COMPlus_JitName:" + shim_name + " --iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart\"",
 
@@ -138,7 +138,7 @@ def execute(coreclr_args, output_mch_name):
 
             # Disable ReadyToRun so we always JIT R2R methods and collect them
             "--use_zapdisable",
-            "-output_mch_path", output_mch_name, "-log_file", log_file])
+            "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug"])
 
 
 def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):
