@@ -2095,6 +2095,7 @@ def determine_jit_ee_version(coreclr_args):
                 match_obj = re.search(r'^constexpr GUID JITEEVersionIdentifier *= *{ */\* *([^ ]*) *\*/', line)
                 if match_obj is not None:
                     jiteeversionguid_h_jit_ee_version = match_obj.group(1)
+                    jiteeversionguid_h_jit_ee_version = jiteeversionguid_h_jit_ee_version.lower()
                     logging.info("Using JIT/EE Version from jiteeversionguid.h: %s", jiteeversionguid_h_jit_ee_version)
                     return jiteeversionguid_h_jit_ee_version
             logging.warning("Warning: couldn't find JITEEVersionIdentifier in %s; is the file corrupt?", jiteeversionguid_h_path)
@@ -2106,6 +2107,7 @@ def determine_jit_ee_version(coreclr_args):
     return_code = proc.returncode
     if return_code == 0:
         mcs_jit_ee_version = stdout_jit_ee_version.decode('utf-8').strip()
+        mcs_jit_ee_version = mcs_jit_ee_version.lower()
         logging.info("Using JIT/EE Version from mcs: %s", mcs_jit_ee_version)
         return mcs_jit_ee_version
 
