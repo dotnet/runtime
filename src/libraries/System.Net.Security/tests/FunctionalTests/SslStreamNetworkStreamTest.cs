@@ -380,7 +380,7 @@ namespace System.Net.Security.Tests
                 }
 
                 // Verify we can construct full chain
-                Assert.Equal(clientChain.Count + 1, chain.ChainElements.Count, "chain cannot be built");
+                Assert.True(chain.ChainElements.Count > clientChain.Count, "chain cannot be built");
             }
 
             var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost",  };
