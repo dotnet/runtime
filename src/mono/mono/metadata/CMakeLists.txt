@@ -168,7 +168,6 @@ set(metadata_common_sources
     security.h
     security-core-clr.c
     security-core-clr.h
-    security-manager.c
     security-manager.h
     string-icalls.c
     string-icalls.h

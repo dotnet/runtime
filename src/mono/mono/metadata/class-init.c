@@ -2950,9 +2950,6 @@ mono_class_init_internal (MonoClass *klass)
 
 	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, TRUE);
 
-	if (mono_security_core_clr_enabled ())
-		mono_security_core_clr_check_inheritance (klass);
-
 	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass))
 		mono_class_set_type_load_failure (klass, "Invalid generic instantiation");
 
@@ -2995,18 +2992,6 @@ mono_class_init_checked (MonoClass *klass, MonoError *error)
 static void
 init_com_from_comimport (MonoClass *klass)
 {
-	/* we don't always allow COM initialization under the CoreCLR (e.g. Moonlight does not require it) */
-	if (mono_security_core_clr_enabled ()) {
-		/* but some other CoreCLR user could requires it for their platform (i.e. trusted) code */
-		if (!mono_security_core_clr_determine_platform_image (klass->image)) {
-			/* but it can not be made available for application (i.e. user code) since all COM calls
-			 * are considered native calls. In this case we fail with a TypeLoadException (just like
-			 * Silverlight 2 does */
-			mono_class_set_type_load_failure (klass, "");
-			return;
-		}
-	}
-
 	/* FIXME : we should add an extra checks to ensure COM can be initialized properly before continuing */
 }
 #endif /*DISABLE_COM*/
