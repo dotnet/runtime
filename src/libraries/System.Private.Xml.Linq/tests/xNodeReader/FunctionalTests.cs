@@ -576,8 +576,6 @@ namespace CoreXml.Test.XLinq
                 // Test Case
                 public override void AddChildren()
                 {
-                    this.AddChild(new TestVariation(Variation1) { Attribute = new VariationAttribute("Move to Attribute using []") });
-                    this.AddChild(new TestVariation(Variation2) { Attribute = new VariationAttribute("GetAttribute") });
                     this.AddChild(new TestVariation(Variation3) { Attribute = new VariationAttribute("IsStartElement") });
                     this.AddChild(new TestVariation(Variation4) { Attribute = new VariationAttribute("LookupNamespace") });
                     this.AddChild(new TestVariation(Variation5) { Attribute = new VariationAttribute("MoveToAttribute") });

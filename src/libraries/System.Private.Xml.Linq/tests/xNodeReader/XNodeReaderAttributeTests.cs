@@ -70,13 +70,28 @@ namespace System.Xml.Linq.xNodeReader.Tests
         }
 
         [Fact]
-        public void GetAttributeThrowsOnNonInteractiveMode()
+        public void GetAttributeIntThrowsInNonInteractiveMode()
         {
             foreach (XNode n in GetXNodeTypes())
             {
                 using XmlReader r = n.CreateReader();
 
                 Assert.Throws<InvalidOperationException>(() => r.GetAttribute(0));
+                Assert.Throws<InvalidOperationException>(() => r.GetAttribute(100000));
+            }
+        }
+
+        [Fact]
+        public void GetAttributeStringReturnsNullInNonInteractiveMode()
+        {
+            foreach (XNode n in GetXNodeTypes())
+            {
+                using XmlReader r = n.CreateReader();
+
+                Assert.Null(r.GetAttribute(null));
+                Assert.Null(r.GetAttribute(null, null));
+                Assert.Null(r.GetAttribute(""));
+                Assert.Null(r.GetAttribute("", ""));
             }
         }
 
