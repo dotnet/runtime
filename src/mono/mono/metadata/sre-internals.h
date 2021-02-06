@@ -45,7 +45,6 @@ typedef struct {
 	MonoArray *return_modopt;
 	MonoArray *param_modreq;
 	MonoArray *param_modopt;
-	MonoArray *permissions;
 	MonoMethod *mhandle;
 	guint32 nrefs;
 	gpointer *refs;

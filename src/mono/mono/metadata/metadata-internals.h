@@ -224,7 +224,6 @@ struct _MonoAssembly {
 	guint8 friend_assembly_names_inited;
 	guint8 in_gac;
 	guint8 dynamic;
-	guint8 corlib_internal;
 	MonoAssemblyContext context;
 	guint8 wrap_non_exception_throws;
 	guint8 wrap_non_exception_throws_inited;

@@ -5981,9 +5981,6 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 	MonoAssembly *access_klass_assembly = m_class_get_image (access_klass)->assembly;
 	MonoAssembly *member_klass_assembly = m_class_get_image (member_klass)->assembly;
 
-	if (access_klass_assembly && m_class_get_image (access_klass)->assembly->corlib_internal)
-		return TRUE;
-
 	if (m_class_get_element_class (access_klass) && !m_class_is_enumtype (access_klass)) {
 		access_klass = m_class_get_element_class (access_klass);
 		access_klass_assembly = m_class_get_image (access_klass)->assembly;
@@ -6046,8 +6043,6 @@ can_access_member (MonoClass *access_klass, MonoClass *member_klass, MonoClass* 
 {
 	MonoClass *member_generic_def;
 	MonoAssembly *access_klass_assembly = m_class_get_image (access_klass)->assembly;
-	if (access_klass_assembly && access_klass_assembly->corlib_internal)
-		return TRUE;
 
 	MonoGenericClass *access_gklass = mono_class_try_get_generic_class (access_klass);
 	if (((access_gklass && access_gklass->container_class) ||

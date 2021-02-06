@@ -903,8 +903,6 @@ TYPED_HANDLE_DECL (MonoReflectionMethodBody);
 struct _MonoReflectionAssembly {
 	MonoObject object;
 	MonoAssembly *assembly;
-	/* CAS related */
-	MonoObject *evidence;	/* Evidence */
 };
 
 typedef struct {
@@ -1050,7 +1048,6 @@ typedef struct {
 	MonoBoolean init_locals;
 	MonoArray *param_modreq;
 	MonoArray *param_modopt;
-	MonoArray *permissions;
 } MonoReflectionCtorBuilder;
 
 /* Safely access System.Reflection.Emit.ConstructorBuilder from native code */
@@ -1084,7 +1081,6 @@ typedef struct {
 	MonoArray *return_modopt;
 	MonoArray *param_modreq;
 	MonoArray *param_modopt;
-	MonoArray *permissions;
 } MonoReflectionMethodBuilder;
 
 /* Safely access System.Reflection.Emit.MethodBuilder from native code */
@@ -1105,54 +1101,15 @@ typedef struct {
 TYPED_HANDLE_DECL (MonoReflectionArrayMethod);
 
 typedef struct {
-	MonoArray *data;
-	MonoString *name;
-	MonoString *filename;
-	guint32 attrs;
-	guint32 offset;
-	MonoObject *stream;
-} MonoReflectionResource;
-
-typedef struct {
-	guint32 res_type;
-	guint32 res_id;
-	guint32 lang_id;
-	MonoArray *res_data;
-} MonoReflectionWin32Resource;
-
-typedef struct {
-	guint32 action;
-	MonoString *pset;
-} MonoReflectionPermissionSet;
-
-typedef struct {
 	MonoReflectionAssembly assembly;
 	MonoDynamicAssembly *dynamic_assembly;
-	MonoReflectionMethod *entry_point;
 	MonoArray *modules;
 	MonoString *name;
-	MonoString *dir;
 	MonoArray *cattrs;
-	MonoArray *resources;
-	MonoArray *public_key;
 	MonoString *version;
 	MonoString *culture;
-	guint32 algid;
-	guint32 flags;
-	guint32 pekind;
-	MonoBoolean delay_sign;
-	guint32 access;
 	MonoArray *loaded_modules;
-	MonoArray *win32_resources;
-	/* CAS related */
-	MonoArray *permissions_minimum;
-	MonoArray *permissions_optional;
-	MonoArray *permissions_refused;
-	gint32 pe_kind;
-	gint32 machine;
-	MonoBoolean corlib_internal;
-	MonoArray *type_forwarders;
-	MonoArray *pktoken; /* as hexadecimal byte[] */
+	guint32 access;
 } MonoReflectionAssemblyBuilder;
 
 /* Safely access System.Reflection.Emit.AssemblyBuilder from native code */
@@ -1217,11 +1174,8 @@ typedef struct {
 	gint32     num_types;
 	MonoArray *types;
 	MonoArray *cattrs;
-	MonoArray *guid;
 	guint32    table_idx;
 	MonoReflectionAssemblyBuilder *assemblyb;
-	MonoArray *global_methods;
-	MonoArray *global_fields;
 	gboolean is_main;
 	MonoArray *resources;
 	GHashTable *unparented_classes;
@@ -1260,7 +1214,6 @@ struct _MonoReflectionTypeBuilder {
 	gint32 packing_size;
 	MonoGenericContainer *generic_container;
 	MonoArray *generic_params;
-	MonoArray *permissions;
 	MonoReflectionType *created;
 	gint32 state;
 };

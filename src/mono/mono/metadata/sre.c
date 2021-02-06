@@ -511,8 +511,6 @@ mono_reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
 	MONO_HANDLE_PIN (rmb->param_modreq);
 	rmb->param_modopt = mb->param_modopt;
 	MONO_HANDLE_PIN (rmb->param_modopt);
-	rmb->permissions = mb->permissions;
-	MONO_HANDLE_PIN (rmb->permissions);
 	rmb->mhandle = mb->mhandle;
 	rmb->nrefs = 0;
 	rmb->refs = NULL;
@@ -571,8 +569,6 @@ mono_reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, M
 	MONO_HANDLE_PIN (rmb->param_modreq);
 	rmb->param_modopt = mb->param_modopt;
 	MONO_HANDLE_PIN (rmb->param_modopt);
-	rmb->permissions = mb->permissions;
-	MONO_HANDLE_PIN (rmb->permissions);
 	rmb->mhandle = mb->mhandle;
 	rmb->nrefs = 0;
 	rmb->refs = NULL;
@@ -612,7 +608,6 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 	rmb->return_modopt = NULL;
 	rmb->param_modreq = NULL;
 	rmb->param_modopt = NULL;
-	rmb->permissions = NULL;
 	rmb->mhandle = mb->mhandle;
 	rmb->nrefs = 0;
 	rmb->refs = NULL;
@@ -1351,9 +1346,8 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	
 	assembly->assembly.ref_count = 1;
 	assembly->assembly.dynamic = TRUE;
-	assembly->assembly.corlib_internal = assemblyb->corlib_internal;
 	assemblyb->assembly.assembly = (MonoAssembly*)assembly;
-	assembly->assembly.basedir = mono_string_to_utf8_checked_internal (assemblyb->dir, error);
+	assembly->assembly.basedir = NULL;
 	return_if_nok (error);
 	if (assemblyb->culture) {
 		assembly->assembly.aname.culture = mono_string_to_utf8_checked_internal (assemblyb->culture, error);
@@ -1395,13 +1389,6 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	image->initial_image = TRUE;
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
-	if (assemblyb->pktoken && assemblyb->pktoken->max_length) {
-		/* -1 to correct for the trailing NULL byte */
-		if (assemblyb->pktoken->max_length != MONO_PUBLIC_KEY_TOKEN_LENGTH - 1) {
-			g_error ("Public key token length invalid for assembly %s: %i", assembly->assembly.aname.name, assemblyb->pktoken->max_length);
-		}
-		memcpy (&assembly->assembly.aname.public_key_token, mono_array_addr_internal (assemblyb->pktoken, guint8, 0), assemblyb->pktoken->max_length);		
-	}
 
 	mono_domain_assemblies_lock (domain);
 	domain->domain_assemblies = g_slist_append (domain->domain_assemblies, assembly);

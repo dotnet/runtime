@@ -1023,14 +1023,13 @@ gboolean
 mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 {
 	MonoMethod *method_definition = method;
-	gboolean dont_verify = m_class_get_image (method->klass)->assembly->corlib_internal;
 
 	while (method_definition->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
 		method_definition = imethod->declaring;
 	}
 
-	return !dont_verify && mini_method_verify (cfg, method_definition, fail_compile);
+	return mini_method_verify (cfg, method_definition, fail_compile);
 }
 
 static void
