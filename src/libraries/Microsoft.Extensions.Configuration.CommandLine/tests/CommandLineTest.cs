@@ -115,6 +115,33 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
         }
 
         [Fact]
+        public void CanEvalatePairsWithLinuxPathValues()
+        {
+            var args = new string[]
+            {
+                "-Key1",
+                "/Key2", "/path/to/value2/in/linux",
+                "--Key3",
+                "--Key4=Value4",
+                "/Key5",
+                "/Key6=Value6",
+                "/Key7", "Value7",
+            };
+            var cmdLineConfig = new CommandLineConfigurationProvider(args);
+
+            cmdLineConfig.Load();
+
+            Assert.Equal("true", cmdLineConfig.Get("Key1"));
+            Assert.Equal("/path/to/value2/in/linux", cmdLineConfig.Get("Key2"));
+            Assert.Equal("true", cmdLineConfig.Get("Key3"));
+            Assert.Equal("Value4", cmdLineConfig.Get("Key4"));
+            Assert.Equal("true", cmdLineConfig.Get("Key5"));
+            Assert.Equal("Value6", cmdLineConfig.Get("Key6"));
+            Assert.Equal("Value7", cmdLineConfig.Get("Key7"));
+            Assert.Equal(7, cmdLineConfig.GetChildKeys(new string[0], null).Count());
+        }
+
+        [Fact]
         public void LoadKeyValuePairsFromCommandLineArgumentsWithoutSwitchMappings()
         {
             var args = new string[]

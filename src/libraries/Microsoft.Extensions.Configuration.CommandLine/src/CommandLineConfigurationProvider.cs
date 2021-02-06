@@ -3,6 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+#if !NET461
+using System.Runtime.InteropServices;
+#endif
 
 namespace Microsoft.Extensions.Configuration.CommandLine
 {
@@ -12,6 +15,12 @@ namespace Microsoft.Extensions.Configuration.CommandLine
     public class CommandLineConfigurationProvider : ConfigurationProvider
     {
         private readonly Dictionary<string, string> _switchMappings;
+        private static bool s_isWindows =
+#if NET461
+            true;
+#else
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#endif
 
         /// <summary>
         /// Initializes a new instance.
@@ -31,7 +40,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         /// <summary>
         /// The command line arguments.
         /// </summary>
-        protected IEnumerable<string> Args { get; private set; }
+        protected IEnumerable<string> Args { get; }
 
         /// <summary>
         /// Loads the configuration data from the command line args.
@@ -42,16 +51,14 @@ namespace Microsoft.Extensions.Configuration.CommandLine
 
             using (IEnumerator<string> enumerator = Args.GetEnumerator())
             {
-                bool isNext = enumerator.MoveNext();
-
                 // Store 1st argument here and start while loop with the 2nd,
                 // or 'Current', argument. This is so we can look at the
                 // 'Current' argument in relation to the 1st while evaluating
                 // the 1st.
-                string previousArg = enumerator.Current;
+                string previousArg = enumerator.MoveNext() ? enumerator.Current : null;
 
                 // If no first arg, return empty dictionary
-                if (!isNext || previousArg == null)
+                if (previousArg == null)
                 {
                     Data = data;
                     return;
@@ -68,7 +75,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                         // so we always have the last argument win.
                         data[loopPair.key] = loopPair.value;
                     }
-                    previousArg = enumerator.Current;
+                    previousArg = currentArg;
                 }
 
                 // Process the last previousArg after exiting loop
@@ -108,9 +115,12 @@ namespace Microsoft.Extensions.Configuration.CommandLine
             {
                 keyStartIndex = 1;
             }
-            else if (previousArg.StartsWith("/"))
+            else if (previousArg.StartsWith("/")
+                     && s_isWindows
+                     && previousArg.IndexOf("/", StringComparison.Ordinal)
+                     == previousArg.LastIndexOf("/", StringComparison.Ordinal)) // i.e. only one instance of '/'
             {
-                // "/SomeSwitch" is equivalent to "--SomeSwitch" when interpreting switch mappings
+                // On Windows, "/SomeSwitch" is equivalent to "--SomeSwitch" when interpreting switch mappings
                 // So we do a conversion to simplify later processing
                 previousArg = $"--{previousArg.Substring(1)}";
                 keyStartIndex = 2;
@@ -120,7 +130,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
 
             if (separator < 0)
             {
-                // If there is neither equal sign nor prefix in current argument, it is an invalid format
+                // If there is neither equal sign nor prefix in previous argument, it is an invalid format
                 if (keyStartIndex == 0)
                 {
                     // Ignore invalid formats
@@ -150,6 +160,9 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                     || currentArg.StartsWith("--")
                     || currentArg.StartsWith("-")
                     || currentArg.StartsWith("/")
+                        && s_isWindows
+                        && currentArg.IndexOf("/", StringComparison.Ordinal)
+                            == currentArg.LastIndexOf("/", StringComparison.Ordinal)
                     || currentArg.Contains("="))
                 {
                     value = "true";
