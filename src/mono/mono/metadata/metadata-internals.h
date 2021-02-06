@@ -190,15 +190,15 @@ typedef enum MonoAssemblyContextKind {
 	/* Default assembly context: Load(String) and assembly references */
 	MONO_ASMCTX_DEFAULT = 0,
 	/* LoadFrom context: LoadFrom() and references */
-	MONO_ASMCTX_LOADFROM = 2,
+	MONO_ASMCTX_LOADFROM = 1,
 	/* Individual assembly context (.NET Framework docs call this "not in
 	 * any context"): LoadFile(String) and Load(byte[]) are here.
 	 */
-	MONO_ASMCTX_INDIVIDUAL = 3,
+	MONO_ASMCTX_INDIVIDUAL = 2,
 	/* Used internally by the runtime, not visible to managed code */
-	MONO_ASMCTX_INTERNAL = 4,
+	MONO_ASMCTX_INTERNAL = 3,
 
-	MONO_ASMCTX_LAST = 4
+	MONO_ASMCTX_LAST = 3
 } MonoAssemblyContextKind;
 
 typedef struct _MonoAssemblyContext {
