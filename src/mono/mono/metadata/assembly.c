@@ -1952,7 +1952,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyOpenRequest req;
 	mono_assembly_request_prepare_open (&req,
-	                               refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT,
+	                               MONO_ASMCTX_DEFAULT,
 	                               mono_domain_default_alc (mono_domain_get ()));
 	res = mono_assembly_request_open (filename, &req, status);
 	MONO_EXIT_GC_UNSAFE;
@@ -2038,7 +2038,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 			return NULL;
 		}
 
-		if (load_req.asmctx != MONO_ASMCTX_REFONLY) {
+                {
 			MonoAssemblyContextKind out_asmctx;
 			/* If the path belongs to the appdomain base dir or the
 			 * base dir of the requesting assembly, load the
@@ -2048,10 +2048,8 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 				load_req.asmctx = out_asmctx;
 		}
 	} else {
-		if (load_req.asmctx != MONO_ASMCTX_REFONLY) {
-			/* GAC assemblies always in default context or refonly context. */
-			load_req.asmctx = MONO_ASMCTX_DEFAULT;
-		}
+                /* GAC assemblies always in default context or refonly context. */
+                load_req.asmctx = MONO_ASMCTX_DEFAULT;
 	}
 	if (new_fname && new_fname != fname) {
 		g_free (fname);
@@ -2062,13 +2060,13 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 	
 	image = NULL;
 
-	const gboolean refonly = load_req.asmctx == MONO_ASMCTX_REFONLY;
+	const gboolean refonly = FALSE;
 	/* for LoadFrom(string), LoadFile(string) and Load(byte[]), allow them
 	 * to load problematic images.  Not sure if ReflectionOnlyLoad(string)
 	 * and ReflectionOnlyLoadFrom(string) should also be allowed - let's
 	 * say, yes.
 	 */
-	const gboolean load_from_context = load_req.asmctx == MONO_ASMCTX_LOADFROM || load_req.asmctx == MONO_ASMCTX_INDIVIDUAL || load_req.asmctx == MONO_ASMCTX_REFONLY;
+	const gboolean load_from_context = load_req.asmctx == MONO_ASMCTX_LOADFROM || load_req.asmctx == MONO_ASMCTX_INDIVIDUAL;
 
 	// If VM built with mkbundle
 	loaded_from_bundle = FALSE;
@@ -2332,7 +2330,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	MonoImageOpenStatus def_status;
 	if (!status)
 		status = &def_status;
-	mono_assembly_request_prepare_load (&req, refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
 	res = mono_assembly_request_load_from (image, fname, &req, status);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
@@ -2412,7 +2410,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	 */
 	if (ass->aname.name && asmctx != MONO_ASMCTX_INDIVIDUAL) {
 		/* FIXME: I think individual context should probably also look for an existing MonoAssembly here, we just need to pass the asmctx to the search hook so that it does a filename match (I guess?) */
-		ass2 = mono_assembly_invoke_search_hook_internal (req->alc, NULL, &ass->aname, asmctx == MONO_ASMCTX_REFONLY, FALSE);
+		ass2 = mono_assembly_invoke_search_hook_internal (req->alc, NULL, &ass->aname, FALSE, FALSE);
 		if (ass2) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Image %s[%p] reusing existing assembly %s[%p]", ass->aname.name, ass, ass2->aname.name, ass2);
 			g_free (ass);
@@ -2430,7 +2428,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	 * this image and we won't be able to look for a different
 	 * candidate. */
 
-	if (asmctx != MONO_ASMCTX_REFONLY) {
+	{
 		ERROR_DECL (refasm_error);
 		if (mono_assembly_has_reference_assembly_attribute (ass, refasm_error)) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Image for assembly '%s' (%s) has ReferenceAssemblyAttribute, skipping", ass->aname.name, image->name);
@@ -3260,7 +3258,7 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyByNameRequest req;
 	mono_assembly_request_prepare_byname (&req,
-	                               refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT,
+	                               MONO_ASMCTX_DEFAULT,
 	                               mono_domain_default_alc (mono_domain_get ()));
 	req.requesting_assembly = NULL;
 	req.basedir = basedir;

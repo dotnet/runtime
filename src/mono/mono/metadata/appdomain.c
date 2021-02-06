@@ -1105,7 +1105,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 		predicate_ud = aname;
 	}
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, alc);
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
 	req.request.predicate = predicate;
 	req.request.predicate_ud = predicate_ud;
 
@@ -1254,7 +1254,7 @@ mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAs
 		if (status == MONO_IMAGE_IMAGE_INVALID)
 			mono_error_set_bad_image_by_name (error, filename, "Invalid Image: %s", filename);
 		else
-			mono_error_set_simple_file_not_found (error, filename, asmctx == MONO_ASMCTX_REFONLY);
+			mono_error_set_simple_file_not_found (error, filename, FALSE);
 	}
 
 leave:
@@ -1315,7 +1315,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 		mono_debug_open_image_from_memory (image, raw_symbol_data, raw_symbol_len);
 
 	MonoAssemblyLoadRequest req;
-	mono_assembly_request_prepare_load (&req, refonly? MONO_ASMCTX_REFONLY : MONO_ASMCTX_INDIVIDUAL, alc);
+	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_INDIVIDUAL, alc);
 	ass = mono_assembly_request_load_from (image, "", &req, &status);
 
 	if (!ass) {
