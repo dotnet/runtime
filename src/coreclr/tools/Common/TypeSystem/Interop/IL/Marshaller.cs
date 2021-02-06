@@ -1743,6 +1743,12 @@ namespace Internal.TypeSystem.Interop
                     PropagateFromByRefArg(marshallingCodeStream, _managedHome);
 
                 var vAddRefed = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Boolean));
+                marshallingCodeStream.EmitLdc(0);
+                marshallingCodeStream.EmitStLoc(vAddRefed);
+
+                ILCodeLabel lHandleIsNull = emitter.NewCodeLabel();
+                LoadManagedValue(marshallingCodeStream);
+                marshallingCodeStream.Emit(ILOpcode.brfalse, lHandleIsNull);
                 LoadManagedValue(marshallingCodeStream);
                 marshallingCodeStream.EmitLdLoca(vAddRefed);
                 marshallingCodeStream.Emit(ILOpcode.call, emitter.NewToken(
@@ -1755,6 +1761,7 @@ namespace Internal.TypeSystem.Interop
                     safeHandleType.GetKnownMethod("DangerousGetHandle",
                         new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.IntPtr), TypeDesc.EmptyTypes))));
                 StoreNativeValue(marshallingCodeStream);
+                marshallingCodeStream.EmitLabel(lHandleIsNull);
 
                 ILCodeLabel lNotAddrefed = emitter.NewCodeLabel();
                 cleanupCodeStream.EmitLdLoc(vAddRefed);
