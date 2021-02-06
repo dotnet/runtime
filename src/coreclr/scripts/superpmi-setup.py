@@ -57,7 +57,6 @@ parser.add_argument("-max_size", help="Max size of each partition in MB")
 is_windows = platform.system() == "Windows"
 
 native_binaries_to_ignore = [
-    "System.IO.Compression.Native.dll",
     "clretwrc.dll",
     "clrgc.dll",
     "clrjit.dll",
@@ -94,7 +93,12 @@ native_binaries_to_ignore = [
     "dbgshim.dll",
     "ilasm.exe",
     "ildasm.exe",
+    "jitinterface_arm.dll",
+    "jitinterface_arm64.dll",
     "jitinterface_x64.dll",
+    "jitinterface_x86.dll",
+    "KernelTraceControl.dll",
+    "KernelTraceControl.Win61.dll",
     "mcs.exe",
     "Microsoft.DiaSymReader.Native.amd64.dll",
     "Microsoft.DiaSymReader.Native.x86.dll",
@@ -106,6 +110,8 @@ native_binaries_to_ignore = [
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
+    "System.IO.Compression.Native.dll",
+    "ucrtbase.dll",
 ]
 
 MAX_FILES_COUNT = 1500
@@ -388,7 +394,6 @@ def main(main_args):
         # Need to accept files without any extension, which is how executable filesnames look.
         acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json"])
 
-    print("is_windows {}".format(is_windows))
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
     copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
