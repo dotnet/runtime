@@ -4003,7 +4003,7 @@ mini_parse_debug_option (const char *option)
 	else if (!strcmp (option, "use-fallback-tls"))
 		mini_debug_options.use_fallback_tls = TRUE;
 	else if (!strcmp (option, "debug-domain-unload"))
-		mono_enable_debug_domain_unload (TRUE);
+		g_error ("MONO_DEBUG option debug-domain-unload is deprecated.");
 	else if (!strcmp (option, "partial-sharing"))
 		mono_set_partial_sharing_supported (TRUE);
 	else if (!strcmp (option, "align-small-structs"))

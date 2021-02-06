@@ -1997,8 +1997,6 @@ MonoJitInfo*
 mini_jit_info_table_find_ext (MonoDomain *domain, gpointer addr, gboolean allow_trampolines, MonoDomain **out_domain)
 {
 	MonoJitInfo *ji;
-	MonoInternalThread *t = mono_thread_internal_current ();
-	gpointer *refs;
 
 	if (out_domain)
 		*out_domain = NULL;
@@ -2022,21 +2020,6 @@ mini_jit_info_table_find_ext (MonoDomain *domain, gpointer addr, gboolean allow_
 			if (out_domain)
 				*out_domain = mono_get_root_domain ();
 			return ji;
-		}
-	}
-
-	if (!t)
-		return NULL;
-
-	refs = (gpointer *)((t->appdomain_refs) ? *(gpointer *) t->appdomain_refs : NULL);
-	for (; refs && *refs; refs++) {
-		if (*refs != domain && *refs != mono_get_root_domain ()) {
-			ji = mono_jit_info_table_find_internal ((MonoDomain*) *refs, addr, TRUE, allow_trampolines);
-			if (ji) {
-				if (out_domain)
-					*out_domain = (MonoDomain*) *refs;
-				return ji;
-			}
 		}
 	}
 

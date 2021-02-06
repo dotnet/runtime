@@ -867,27 +867,6 @@ mono_get_exception_synchronization_lock (const char *msg)
 }
 
 /**
- * mono_get_exception_cannot_unload_appdomain:
- * \param inner the inner exception.
- * \returns a new instance of the \c System.CannotUnloadAppDomainException
- */
-MonoException *
-mono_get_exception_cannot_unload_appdomain (const char *msg)
-{
-	return mono_exception_from_name_msg (mono_get_corlib (), "System", "CannotUnloadAppDomainException", msg);
-}
-
-/**
- * mono_get_exception_appdomain_unloaded
- * \returns a new instance of the \c System.AppDomainUnloadedException
- */
-MonoException *
-mono_get_exception_appdomain_unloaded (void)
-{
-	return mono_exception_from_name (mono_get_corlib (), "System", "AppDomainUnloadedException");
-}
-
-/**
  * mono_get_exception_bad_image_format:
  * \param msg an informative message for the user.
  * \returns a new instance of the \c System.BadImageFormatException

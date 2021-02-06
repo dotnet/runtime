@@ -234,8 +234,6 @@ mono_thread_execute_interruption_void (void);
 static gboolean
 mono_thread_execute_interruption (MonoExceptionHandle *pexc);
 
-static void ref_stack_destroy (gpointer rs);
-
 #if SIZEOF_VOID_P == 4
 /* Spin lock for unaligned InterlockedXXX 64 bit functions on 32bit platforms. */
 mono_mutex_t mono_interlocked_mutex;
@@ -812,17 +810,13 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 
 	domain = mono_object_domain (thread);
 
-	mono_thread_push_appdomain_ref (domain);
-	if (!mono_domain_set_fast (domain, force_domain)) {
-		mono_thread_pop_appdomain_ref ();
+	if (!mono_domain_set_fast (domain, force_domain))
 		goto fail;
-	}
 
 	mono_threads_lock ();
 
 	if (shutting_down && !force_attach) {
 		mono_threads_unlock ();
-		mono_thread_pop_appdomain_ref ();
 		goto fail;
 	}
 
@@ -980,12 +974,8 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	mono_domain_unset ();
 	mono_memory_barrier ();
 
-	mono_thread_pop_appdomain_ref ();
-
 	mono_free_static_data (thread->static_data);
 	thread->static_data = NULL;
-	ref_stack_destroy (thread->appdomain_refs);
-	thread->appdomain_refs = NULL;
 
 	g_assert (thread->suspended);
 	mono_os_event_destroy (thread->suspended);
@@ -2489,12 +2479,12 @@ mono_thread_current_check_pending_interrupt (void)
 	return throw_;
 }
 
-static gboolean
-request_thread_abort (MonoInternalThread *thread, MonoObjectHandle *state, gboolean appdomain_unload)
 // state is a pointer to a handle in order to be optional,
 // and be passed unspecified from functions not using handles.
 // When raw pointers is gone, it need not be a pointer,
 // though this would still work efficiently.
+static gboolean
+request_thread_abort (MonoInternalThread *thread, MonoObjectHandle *state)
 {
 	LOCK_THREAD (thread);
 
@@ -2515,10 +2505,6 @@ request_thread_abort (MonoInternalThread *thread, MonoObjectHandle *state, gbool
 	}
 
 	thread->state |= ThreadState_AbortRequested;
-	if (appdomain_unload)
-		thread->flags |= MONO_THREAD_FLAG_APPDOMAIN_ABORT;
-	else
-		thread->flags &= ~MONO_THREAD_FLAG_APPDOMAIN_ABORT;
 
 	mono_gchandle_free_internal (thread->abort_state_handle);
 	thread->abort_state_handle = 0;
@@ -2549,11 +2535,11 @@ request_thread_abort (MonoInternalThread *thread, MonoObjectHandle *state, gbool
  * \returns true if the request was successful
  */
 gboolean
-mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload)
+mono_thread_internal_abort (MonoInternalThread *thread)
 {
 	g_assert (thread != mono_thread_internal_current ());
 
-	if (!request_thread_abort (thread, NULL, appdomain_unload))
+	if (!request_thread_abort (thread, NULL))
 		return FALSE;
 	return async_abort_internal (thread, TRUE);
 }
@@ -2694,7 +2680,7 @@ mono_thread_stop (MonoThread *thread)
 {
 	MonoInternalThread *internal = thread->internal_thread;
 
-	if (!request_thread_abort (internal, NULL, FALSE))
+	if (!request_thread_abort (internal, NULL))
 		return;
 
 	if (internal == mono_thread_internal_current ()) {
@@ -3631,204 +3617,6 @@ mono_threads_request_thread_dump (void)
 	/*The new thread dump code runs out of the finalizer thread. */
 	thread_dump_requested = TRUE;
 	mono_gc_finalize_notify ();
-}
-
-struct ref_stack {
-	gpointer *refs;
-	gint allocated; /* +1 so that refs [allocated] == NULL */
-	gint bottom;
-};
-
-typedef struct ref_stack RefStack;
-
-static RefStack *
-ref_stack_new (gint initial_size)
-{
-	RefStack *rs;
-
-	initial_size = MAX (initial_size, 16) + 1;
-	rs = g_new0 (RefStack, 1);
-	rs->refs = g_new0 (gpointer, initial_size);
-	rs->allocated = initial_size;
-	return rs;
-}
-
-static void
-ref_stack_destroy (gpointer ptr)
-{
-	RefStack *rs = (RefStack *)ptr;
-
-	if (rs != NULL) {
-		g_free (rs->refs);
-		g_free (rs);
-	}
-}
-
-static void
-ref_stack_push (RefStack *rs, gpointer ptr)
-{
-	g_assert (rs != NULL);
-
-	if (rs->bottom >= rs->allocated) {
-		rs->refs = (void **)g_realloc (rs->refs, rs->allocated * 2 * sizeof (gpointer) + 1);
-		rs->allocated <<= 1;
-		rs->refs [rs->allocated] = NULL;
-	}
-	rs->refs [rs->bottom++] = ptr;
-}
-
-static void
-ref_stack_pop (RefStack *rs)
-{
-	if (rs == NULL || rs->bottom == 0)
-		return;
-
-	rs->bottom--;
-	rs->refs [rs->bottom] = NULL;
-}
-
-static gboolean
-ref_stack_find (RefStack *rs, gpointer ptr)
-{
-	gpointer *refs;
-
-	if (rs == NULL)
-		return FALSE;
-
-	for (refs = rs->refs; refs && *refs; refs++) {
-		if (*refs == ptr)
-			return TRUE;
-	}
-	return FALSE;
-}
-
-/*
- * mono_thread_push_appdomain_ref:
- *
- *   Register that the current thread may have references to objects in domain 
- * @domain on its stack. Each call to this function should be paired with a 
- * call to pop_appdomain_ref.
- */
-void 
-mono_thread_push_appdomain_ref (MonoDomain *domain)
-{
-	MonoInternalThread *thread = mono_thread_internal_current ();
-
-	if (thread) {
-		/* printf ("PUSH REF: %" G_GSIZE_FORMAT " -> %s.\n", (gsize)thread->tid, domain->friendly_name); */
-		SPIN_LOCK (thread->lock_thread_id);
-		if (thread->appdomain_refs == NULL)
-			thread->appdomain_refs = ref_stack_new (16);
-		ref_stack_push ((RefStack *)thread->appdomain_refs, domain);
-		SPIN_UNLOCK (thread->lock_thread_id);
-	}
-}
-
-void
-mono_thread_pop_appdomain_ref (void)
-{
-	MonoInternalThread *thread = mono_thread_internal_current ();
-
-	if (thread) {
-		/* printf ("POP REF: %" G_GSIZE_FORMAT " -> %s.\n", (gsize)thread->tid, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name); */
-		SPIN_LOCK (thread->lock_thread_id);
-		ref_stack_pop ((RefStack *)thread->appdomain_refs);
-		SPIN_UNLOCK (thread->lock_thread_id);
-	}
-}
-
-gboolean
-mono_thread_internal_has_appdomain_ref (MonoInternalThread *thread, MonoDomain *domain)
-{
-	gboolean res;
-	SPIN_LOCK (thread->lock_thread_id);
-	res = ref_stack_find ((RefStack *)thread->appdomain_refs, domain);
-	SPIN_UNLOCK (thread->lock_thread_id);
-	return res;
-}
-
-gboolean
-mono_thread_has_appdomain_ref (MonoThread *thread, MonoDomain *domain)
-{
-	return mono_thread_internal_has_appdomain_ref (thread->internal_thread, domain);
-}
-
-typedef struct abort_appdomain_data {
-	struct wait_data wait;
-	MonoDomain *domain;
-} abort_appdomain_data;
-
-static void
-collect_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoInternalThread *thread = (MonoInternalThread*)value;
-	abort_appdomain_data *data = (abort_appdomain_data*)user_data;
-	MonoDomain *domain = data->domain;
-
-	if (mono_thread_internal_has_appdomain_ref (thread, domain)) {
-		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread->tid, domain->friendly_name); */
-
-		if(data->wait.num<MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS) {
-			data->wait.handles [data->wait.num] = mono_threads_open_thread_handle (thread->handle);
-			data->wait.threads [data->wait.num] = thread;
-			data->wait.num++;
-		} else {
-			/* Just ignore the rest, we can't do anything with
-			 * them yet
-			 */
-		}
-	}
-}
-
-/*
- * mono_threads_abort_appdomain_threads:
- *
- *   Abort threads which has references to the given appdomain.
- */
-gboolean
-mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
-{
-	abort_appdomain_data user_data;
-	gint64 start_time;
-	int orig_timeout = timeout;
-	int i;
-
-	THREAD_DEBUG (g_message ("%s: starting abort", __func__));
-
-	start_time = mono_msec_ticks ();
-	do {
-		mono_threads_lock ();
-
-		user_data.domain = domain;
-		user_data.wait.num = 0;
-		/* This shouldn't take any locks */
-		mono_g_hash_table_foreach (threads, collect_appdomain_thread, &user_data);
-		mono_threads_unlock ();
-
-		if (user_data.wait.num > 0) {
-			/* Abort the threads outside the threads lock */
-			for (i = 0; i < user_data.wait.num; ++i)
-				mono_thread_internal_abort (user_data.wait.threads [i], TRUE);
-
-			/*
-			 * We should wait for the threads either to abort, or to leave the
-			 * domain. We can't do the latter, so we wait with a timeout.
-			 */
-			wait_for_tids (&user_data.wait, 100, FALSE);
-		}
-
-		/* Update remaining time */
-		timeout -= mono_msec_ticks () - start_time;
-		start_time = mono_msec_ticks ();
-
-		if (orig_timeout != -1 && timeout < 0)
-			return FALSE;
-	}
-	while (user_data.wait.num > 0);
-
-	THREAD_DEBUG (g_message ("%s: abort done", __func__));
-
-	return TRUE;
 }
 
 /* This is a JIT icall.  This icall is called from a finally block when

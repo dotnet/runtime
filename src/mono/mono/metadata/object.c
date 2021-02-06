@@ -502,12 +502,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		if (mono_domain_get () != domain) {
 			/* Transfer into the target domain */
 			last_domain = mono_domain_get ();
-			if (!mono_domain_set_fast (domain, FALSE)) {
-				vtable->initialized = 1;
-				mono_type_initialization_unlock ();
-				mono_error_set_exception_instance (error, mono_get_exception_appdomain_unloaded ());
-				goto return_false;
-			}
+			mono_domain_set_fast (domain, FALSE);
 		}
 		lock = (TypeInitializationLock *)g_malloc0 (sizeof (TypeInitializationLock));
 		mono_coop_mutex_init_recursive (&lock->mutex);

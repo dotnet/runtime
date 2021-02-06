@@ -34,7 +34,6 @@ namespace System.Threading
         private IntPtr debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
         private UIntPtr static_data; /* GC-tracked */
         private IntPtr runtime_thread_info;
-        private IntPtr appdomain_refs;
         private int interruption_requested;
         private IntPtr longlived;
         internal bool threadpool_thread;

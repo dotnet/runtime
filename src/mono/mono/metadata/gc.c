@@ -362,13 +362,6 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 	domain = obj->vtable->domain;
 
 #if HAVE_BOEHM_GC
-	if (mono_domain_is_unloading (domain) && (callback != NULL))
-		/*
-		 * Can't register finalizers in a dying appdomain, since they
-		 * could be invoked after the appdomain has been unloaded.
-		 */
-		return;
-
 	mono_domain_finalizers_lock (domain);
 
 	if (callback)
@@ -380,13 +373,7 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 
 	mono_gc_register_for_finalization (obj, callback);
 #elif defined(HAVE_SGEN_GC)
-	/*
-	 * If we register finalizers for domains that are unloading we might
-	 * end up running them while or after the domain is being cleared, so
-	 * the objects will not be valid anymore.
-	 */
-	if (!mono_domain_is_unloading (domain))
-		mono_gc_register_for_finalization (obj, callback);
+	mono_gc_register_for_finalization (obj, callback);
 #endif
 }
 
@@ -1025,7 +1012,7 @@ mono_gc_cleanup (void)
 					mono_gc_suspend_finalizers ();
 
 					/* Try to abort the thread, in the hope that it is running managed code */
-					mono_thread_internal_abort (gc_thread, FALSE);
+					mono_thread_internal_abort (gc_thread);
 
 					/* Wait for it to stop */
 					ret = guarded_wait (gc_thread->handle, 100, FALSE);

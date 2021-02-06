@@ -7134,7 +7134,7 @@ leave:
 MonoBoolean
 ves_icall_System_Environment_get_HasShutdownStarted (void)
 {
-	return mono_runtime_is_shutting_down () || mono_domain_is_unloading (mono_domain_get ());
+	return mono_runtime_is_shutting_down ();
 }
 
 gint32
