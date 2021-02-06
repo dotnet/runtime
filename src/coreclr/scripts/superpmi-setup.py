@@ -264,17 +264,17 @@ def run_command(command_to_run, _cwd=None):
             print(stderr.decode("utf-8"))
 
 
-def copy_directory(src_path, dst_path):
+def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda path: True):
     """Copies directory in 'src_path' to 'dst_path' maintaining the directory
     structure. https://docs.python.org/3.5/library/shutil.html#shutil.copytree can't
     be used in this case because it expects the destination directory should not
     exist, however we do call copy_directory() to copy files to same destination directory.
 
-    It only copied *.dll, *.exe and *.py files.
-
     Args:
         src_path (string): Path of source directory that need to be copied.
         dst_path (string): Path where directory should be copied.
+        verbose_output (bool): True to print every copy or skipped file.
+        match_func (str -> bool) : Criteria function determining if a file is copied.
     """
     if not os.path.exists(dst_path):
         os.makedirs(dst_path)
@@ -282,16 +282,15 @@ def copy_directory(src_path, dst_path):
         src_item = os.path.join(src_path, item)
         dst_item = os.path.join(dst_path, item)
         if os.path.isdir(src_item):
-            copy_directory(src_item, dst_item)
+            copy_directory(src_item, dst_item, verbose_output, match_func)
         else:
-            should_copy_file = dst_item.endswith('.dll') or dst_item.endswith('.py')
-            if is_windows:
-                should_copy_file = should_copy_file or dst_item.endswith('.exe')
+            if match_func(src_item):
+                if verbose_output:
+                    print("> copy {0} => {1}".format(src_item, dst_item))
+                shutil.copy2(src_item, dst_item)
             else:
-                should_copy_file = should_copy_file or dst_item.endswith('.so') or item.find(".") == -1
-            if not should_copy_file:
-                continue
-            shutil.copy2(src_item, dst_item)
+                if verbose_output:
+                    print("> skipping {0}".format(src_item))
 
 
 def copy_files(src_path, dst_path, file_names):
@@ -381,9 +380,17 @@ def main(main_args):
 
     # create superpmi directory
     print('Copying {} -> {}'.format(superpmi_src_directory, superpmi_dst_directory))
-    copy_directory(superpmi_src_directory, superpmi_dst_directory)
+    copy_directory(superpmi_src_directory, superpmi_dst_directory, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
+
+    if is_windows:
+        acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
+    else:
+        # Need to accept files without any extension, which is how executable filesnames look.
+        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json"])
+
+    print("is_windows {}".format(is_windows))
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
-    copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory)
+    copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
     # Clone and build jitutils
     try:
@@ -409,7 +416,7 @@ def main(main_args):
         dotnet_src_directory = path.join(source_directory, ".dotnet")
         dotnet_dst_directory = path.join(correlation_payload_directory, ".dotnet")
         print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
-        copy_directory(dotnet_src_directory, dotnet_dst_directory)
+        copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
 
     # payload
     input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
