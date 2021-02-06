@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Internal;
 using System.IO;
@@ -380,6 +381,7 @@ namespace System.Drawing
             finally
             {
                 RestoreClipRgn(dc, hSaveRgn);
+                Interop.Gdi32.DeleteObject(hSaveRgn);
             }
         }
 
@@ -416,8 +418,11 @@ namespace System.Drawing
         internal void Draw(Graphics graphics, Rectangle targetRect)
         {
             Rectangle copy = targetRect;
-            copy.X += (int)graphics.Transform.OffsetX;
-            copy.Y += (int)graphics.Transform.OffsetY;
+
+            using Matrix transform = graphics.Transform;
+            PointF offset = transform.Offset;
+            copy.X += (int)offset.X;
+            copy.Y += (int)offset.Y;
 
             using (WindowsGraphics wg = WindowsGraphics.FromGraphics(graphics, ApplyGraphicsProperties.Clipping))
             {
@@ -433,8 +438,10 @@ namespace System.Drawing
         internal void DrawUnstretched(Graphics graphics, Rectangle targetRect)
         {
             Rectangle copy = targetRect;
-            copy.X += (int)graphics.Transform.OffsetX;
-            copy.Y += (int)graphics.Transform.OffsetY;
+            using Matrix transform = graphics.Transform;
+            PointF offset = transform.Offset;
+            copy.X += (int)offset.X;
+            copy.Y += (int)offset.Y;
 
             using (WindowsGraphics wg = WindowsGraphics.FromGraphics(graphics, ApplyGraphicsProperties.Clipping))
             {
