@@ -1542,7 +1542,7 @@ namespace System
 
                 if (IsUncOrDosPath)
                 {
-                    return remoteUrl.GetHashCode(StringComparison.OrdinalIgnoreCase);
+                    return StringComparer.OrdinalIgnoreCase.GetHashCode(remoteUrl);
                 }
                 else
                 {
