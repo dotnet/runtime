@@ -1742,9 +1742,15 @@ namespace Internal.TypeSystem.Interop
                 if (IsManagedByRef)
                     PropagateFromByRefArg(marshallingCodeStream, _managedHome);
 
+                // Boolean by-ref for DangerousAddRef().
                 var vAddRefed = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Boolean));
                 marshallingCodeStream.EmitLdc(0);
                 marshallingCodeStream.EmitStLoc(vAddRefed);
+
+                // Initialize native value to null.
+                marshallingCodeStream.EmitLdc(0);
+                marshallingCodeStream.Emit(ILOpcode.conv_i);
+                StoreNativeValue(marshallingCodeStream);
 
                 ILCodeLabel lHandleIsNull = emitter.NewCodeLabel();
                 LoadManagedValue(marshallingCodeStream);
