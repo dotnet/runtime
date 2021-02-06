@@ -2530,34 +2530,6 @@ mono_main (int argc, char* argv[])
 		return 1;
 	}
 
-/*
- * XXX: verify if other OSes need it; many platforms seem to have it so that
- * mono_w32process_get_path -> mono_w32process_get_name, and the name is not
- * necessarily a path instead of just the program name
- */
-#if defined (_AIX)
-	/*
-	 * mono_w32process_get_path on these can only return a name, not a path;
-	 * which may not be good for us if the mono command name isn't on $PATH,
-	 * like in CI scenarios. chances are argv based is fine if we inherited
-	 * the environment variables.
-	 */
-	mono_w32process_set_cli_launcher (argv [0]);
-#elif !defined(HOST_WIN32) && defined(HAVE_UNISTD_H)
-	/*
-	 * If we are not embedded, use the mono runtime executable to run managed exe's.
-	 */
-	{
-		char *runtime_path;
-
-		runtime_path = mono_w32process_get_path (getpid ());
-		if (runtime_path) {
-			mono_w32process_set_cli_launcher (runtime_path);
-			g_free (runtime_path);
-		}
-	}
-#endif
-
 	if (g_hasenv ("MONO_XDEBUG"))
 		enable_debugging = TRUE;
 

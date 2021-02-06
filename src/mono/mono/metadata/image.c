@@ -47,7 +47,6 @@
 #include <mono/metadata/image-internals.h>
 #include <mono/metadata/loaded-images-internals.h>
 #include <mono/metadata/metadata-update.h>
-#include <mono/metadata/w32process-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mono-private-unstable.h>
 #include <sys/types.h>

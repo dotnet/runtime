@@ -45,7 +45,6 @@
 #include <mono/metadata/w32mutex.h>
 #include <mono/metadata/w32semaphore.h>
 #include <mono/metadata/w32event.h>
-#include <mono/metadata/w32process.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
@@ -516,7 +515,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_w32mutex_init ();
 	mono_w32semaphore_init ();
 	mono_w32event_init ();
-	mono_w32process_init ();
 	mono_w32file_init ();
 
 #ifndef DISABLE_PERFCOUNTERS
@@ -861,7 +859,6 @@ mono_cleanup (void)
 
 	mono_coop_mutex_destroy (&appdomains_mutex);
 
-	mono_w32process_cleanup ();
 	mono_w32file_cleanup ();
 }
 

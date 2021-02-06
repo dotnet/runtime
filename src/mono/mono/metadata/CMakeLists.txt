@@ -38,7 +38,6 @@ set(metadata_win32_sources
     w32mutex-win32.c
     w32semaphore-win32.c
     w32event-win32.c
-    w32process-win32.c
     w32socket-win32.c
     w32error-win32.c)
 
@@ -46,8 +45,6 @@ set(metadata_unix_sources
     w32mutex-unix.c
     w32semaphore-unix.c
     w32event-unix.c
-    w32process-unix.c
-    w32process-unix-internals.h
     w32process-unix-osx.c
     w32process-unix-bsd.c
     w32process-unix-haiku.c
@@ -157,9 +154,7 @@ set(metadata_common_sources
     property-bag.c
     w32socket.h
     w32socket-internals.h
-    w32process.c
     w32process.h
-    w32process-internals.h
     profiler.c
     profiler-private.h
     remoting.h
