@@ -557,13 +557,7 @@ typedef struct MonoThreadName {
 void
 mono_gstring_append_thread_name (GString*, MonoInternalThread*);
 
-
-/*
- * NETCORE: There is only one thread object,
- * thread->internal_thread points to itself.
- */
 struct _MonoInternalThread {
-	// FIXME: Mechanize keeping this in sync with managed.
 	MonoObject  obj;
 	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
 	MonoThreadHandle *handle;
@@ -576,9 +570,6 @@ struct _MonoInternalThread {
 	gsize debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
 	gpointer *static_data;
 	struct _MonoThreadInfo *thread_info;
-	MonoThread *root_domain_thread;
-	MonoObject *_serialized_principal;
-	int _serialized_principal_version;
 	gpointer appdomain_refs;
 	/* This is modified using atomic ops, so keep it a gint32 */
 	gint32 __interruption_requested;
@@ -590,21 +581,19 @@ struct _MonoInternalThread {
 	MonoBoolean thread_interrupt_requested;
 	int stack_size;
 	guint8	apartment_state;
-	gint32 critical_region_level;
 	gint32 managed_id;
 	guint32 small_id;
 	MonoThreadManageCallback manage_callback;
 	gsize    flags;
 	gpointer thread_pinning_ref;
-	gsize __abort_protected_block_count;
 	gint32 priority;
 	GPtrArray *owned_mutexes;
 	MonoOSEvent *suspended;
 	gint32 self_suspended; // TRUE | FALSE
 	gsize thread_state;
 
+	/* Points to self, set when starting up/attaching */
 	struct _MonoInternalThread *internal_thread;
-	MonoObject *start_obj;
 	MonoException *pending_exception;
 
 	/* This is used only to check that we are in sync between the representation
