@@ -361,9 +361,6 @@ struct _MonoImage {
 	/* Whenever this is a dynamically emitted module */
 	guint8 dynamic : 1;
 
-	/* Whenever this is a reflection only image */
-	guint8 ref_only : 1;
-
 	/* Whenever this image contains uncompressed metadata */
 	guint8 uncompressed_metadata : 1;
 

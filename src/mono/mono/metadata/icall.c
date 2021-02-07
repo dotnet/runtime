@@ -5465,7 +5465,7 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
 
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
-	image = mono_image_open_a_lot (alc, filename, &status, FALSE, FALSE);
+	image = mono_image_open_a_lot (alc, filename, &status, FALSE);
 
 	if (!image){
 		if (status == MONO_IMAGE_IMAGE_INVALID)
