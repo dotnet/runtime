@@ -24,7 +24,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ChunkSourceLazily()
         {
-            using var chunks = new FastInfiniteEnumerator<int>().Chunk(5).GetEnumerator();
+            using IEnumerator<int[]> chunks = new FastInfiniteEnumerator<int>().Chunk(5).GetEnumerator();
             chunks.MoveNext();
             Assert.Equal(new[] {0, 0, 0, 0, 0}, chunks.Current);
             Assert.True(chunks.MoveNext());
@@ -47,7 +47,7 @@ namespace System.Linq.Tests
         [InlineData(new[] {9999, 0, 888, -1, 66, -777, 1, 2, -12345}, typeof(TestEnumerable<int>))]
         public void ChunkSourceRepeatCalls(int[] array, Type type)
         {
-            var source = ConvertToType(array, type);
+            IEnumerable<int> source = ConvertToType(array, type);
 
             Assert.Equal(source.Chunk(3), source.Chunk(3));
         }
@@ -58,9 +58,9 @@ namespace System.Linq.Tests
         [InlineData(new[] {9999, 0, 888, -1, 66, -777, 1, 2, -12345}, typeof(TestEnumerable<int>))]
         public void ChunkSourceEvenly(int[] array, Type type)
         {
-            var source = ConvertToType(array, type);
+            IEnumerable<int> source = ConvertToType(array, type);
 
-            using var chunks = source.Chunk(3).GetEnumerator();
+            using IEnumerator<int[]> chunks = source.Chunk(3).GetEnumerator();
             chunks.MoveNext();
             Assert.Equal(new[] {9999, 0, 888}, chunks.Current);
             chunks.MoveNext();
@@ -76,9 +76,9 @@ namespace System.Linq.Tests
         [InlineData(new[] {9999, 0, 888, -1, 66, -777, 1, 2}, typeof(TestEnumerable<int>))]
         public void ChunkSourceUnevenly(int[] array, Type type)
         {
-            var source = ConvertToType(array, type);
+            IEnumerable<int> source = ConvertToType(array, type);
 
-            using var chunks = source.Chunk(3).GetEnumerator();
+            using IEnumerator<int[]> chunks = source.Chunk(3).GetEnumerator();
             chunks.MoveNext();
             Assert.Equal(new[] {9999, 0, 888}, chunks.Current);
             chunks.MoveNext();
@@ -94,9 +94,9 @@ namespace System.Linq.Tests
         [InlineData(new[] {9999, 0}, typeof(TestEnumerable<int>))]
         public void ChunkSourceSmallerThanMaxSize(int[] array, Type type)
         {
-            var source = ConvertToType(array, type);
+            IEnumerable<int> source = ConvertToType(array, type);
 
-            using var chunks = source.Chunk(3).GetEnumerator();
+            using IEnumerator<int[]> chunks = source.Chunk(3).GetEnumerator();
             chunks.MoveNext();
             Assert.Equal(new[] {9999, 0}, chunks.Current);
             Assert.False(chunks.MoveNext());
@@ -108,9 +108,9 @@ namespace System.Linq.Tests
         [InlineData(new int[] {}, typeof(TestEnumerable<int>))]
         public void EmptySourceYieldsNoChunks(int[] array, Type type)
         {
-            var source = ConvertToType(array, type);
+            IEnumerable<int> source = ConvertToType(array, type);
 
-            using var chunks = source.Chunk(3).GetEnumerator();
+            using IEnumerator<int[]> chunks = source.Chunk(3).GetEnumerator();
             Assert.False(chunks.MoveNext());
         }
     }

@@ -13,10 +13,10 @@ namespace System.Linq
             if (totalCount == 0)
                 yield break;
 
-            var index = 0;
+            int index = 0;
             TSource[]? chunk = null;
-            var chunkIndex = 0;
-            foreach (var element in source)
+            int chunkIndex = 0;
+            foreach (TSource element in source)
             {
                 chunk ??= new TSource[Math.Clamp(totalCount - index, 0, maxSize)];
                 chunk[chunkIndex] = element;
