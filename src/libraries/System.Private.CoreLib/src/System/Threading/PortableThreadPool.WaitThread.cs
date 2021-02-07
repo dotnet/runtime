@@ -186,10 +186,12 @@ namespace System.Threading
 
                 // Thread pool threads must start in the default execution context without transferring the context, so
                 // using UnsafeStart() instead of Start()
-                Thread waitThread = new Thread(WaitThreadStart, SmallStackSizeBytes);
-                waitThread.IsThreadPoolThread = true;
-                waitThread.IsBackground = true;
-                waitThread.Name = ".NET ThreadPool Wait";
+                Thread waitThread = new Thread(WaitThreadStart, SmallStackSizeBytes)
+                {
+                    IsThreadPoolThread = true,
+                    IsBackground = true,
+                    Name = ".NET ThreadPool Wait"
+                };
                 waitThread.UnsafeStart();
             }
 

@@ -177,10 +177,11 @@ namespace System.Net.NetworkInformation
                         IntPtr.Zero);
                 }
             }
-            s_runLoopThread = new Thread(RunLoopThreadStart);
-            s_runLoopThread.IsBackground = true;
-            s_runLoopThread.Name = ".NET Network Address Change";
-            s_runLoopThread.Start();
+            s_runLoopThread = new Thread(RunLoopThreadStart)
+            {
+                 IsBackground = true,
+                 Name = ".NET Network Address Change"
+            }.Start();
             s_runLoopStartedEvent.WaitOne(); // Wait for the new thread to finish initialization.
         }
 
