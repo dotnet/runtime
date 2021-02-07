@@ -30,7 +30,6 @@ set(ilgen_sources ${ilgen_base_sources})
 endif()
 
 set(metadata_win32_sources
-    console-win32.c
     w32file-win32.c
     icall-windows.c
     marshal-windows.c
