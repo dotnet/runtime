@@ -343,11 +343,6 @@ namespace System.Threading
             {
                 lock (this)
                 {
-                    if (_name != null)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
-                    }
-
                     _name = value;
                     ThreadNameChanged(value);
                     if (value != null)
@@ -365,7 +360,6 @@ namespace System.Threading
 
             lock (this)
             {
-                // Bypass the exception from setting the property
                 _name = ThreadPool.WorkerThreadName;
                 ThreadNameChanged(ThreadPool.WorkerThreadName);
                 _name = null;
