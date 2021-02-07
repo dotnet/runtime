@@ -691,12 +691,12 @@ leave:
 }
 
 static MonoArrayHandle
-get_assembly_array_from_domain (MonoDomain *domain, MonoBoolean refonly, MonoError *error)
+get_assembly_array_from_domain (MonoDomain *domain, MonoError *error)
 {
 	int i;
 	GPtrArray *assemblies;
 
-	assemblies = mono_domain_get_assemblies (domain, refonly);
+	assemblies = mono_domain_get_assemblies (domain);
 
 	MonoArrayHandle res = mono_array_new_handle (domain, mono_class_get_assembly_class (), assemblies->len, error);
 	goto_if_nok (error, leave);
@@ -714,7 +714,7 @@ MonoArrayHandle
 ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies (MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get ();
-	return get_assembly_array_from_domain (domain, FALSE, error);
+	return get_assembly_array_from_domain (domain, error);
 }
 
 MonoAssembly*

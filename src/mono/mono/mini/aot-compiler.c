@@ -12853,7 +12853,7 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 		return;
 
 	/* Images */
-	GPtrArray *assemblies = mono_domain_get_assemblies (mono_get_root_domain (), FALSE);
+	GPtrArray *assemblies = mono_domain_get_assemblies (mono_get_root_domain ());
 	g_hash_table_iter_init (&iter, data->images);
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		ImageProfileData *idata = (ImageProfileData*)value;
