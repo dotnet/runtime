@@ -151,7 +151,7 @@ namespace System.Diagnostics.Tracing
                     {
                         s_pollingThreadSleepEvent = new AutoResetEvent(false);
                         s_counterGroupEnabledList = new List<CounterGroup>();
-                        s_pollingThread = new Thread(PollForValues) { IsBackground = true, Name = ".NET Counter Polling"  };
+                        s_pollingThread = new Thread(PollForValues) { IsBackground = true, Name = ".NET Counter Poller"  };
 #if ES_BUILD_STANDALONE
                         s_pollingThread.Start();
 #else
