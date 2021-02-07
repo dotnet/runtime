@@ -46,7 +46,7 @@ namespace System.Linq
 
             if (isStartIndexFromEnd)
             {
-                if (startIndex == 0 || isEndIndexFromEnd && endIndex >= startIndex)
+                if (startIndex == 0 || (isEndIndexFromEnd && endIndex >= startIndex))
                 {
                     return Empty<TSource>();
                 }
@@ -123,13 +123,8 @@ namespace System.Linq
             }
             else
             {
-                if (!e.MoveNext())
-                {
-                    yield break;
-                }
-
                 int index = 0;
-                while (index < startIndex)
+                while (index <= startIndex)
                 {
                     if (!e.MoveNext())
                     {
@@ -140,11 +135,6 @@ namespace System.Linq
                     {
                         index++;
                     }
-                }
-
-                if (index != startIndex)
-                {
-                    yield break;
                 }
 
                 if (isEndIndexFromEnd)

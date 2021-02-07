@@ -74,13 +74,12 @@ namespace System.Linq
                 return source.ElementAt(index.Value);
             }
 
-            if (TryGetElementAt(source, index.Value, out TSource? result))
+            if (!TryGetElementAt(source, index.Value, out TSource? result))
             {
-                return result;
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            return default;
+            return result!;
         }
 
         public static TSource? ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, int index)
@@ -150,7 +149,7 @@ namespace System.Linq
             return result;
         }
 
-        private static bool TryGetElementAt<TSource>(IEnumerable<TSource> source, int indexFromEnd, [NotNullWhen(true)] out TSource? result)
+        private static bool TryGetElementAt<TSource>(IEnumerable<TSource> source, int indexFromEnd, [MaybeNullWhen(false)] out TSource? result)
         {
             Debug.Assert(indexFromEnd >= 0);
 
@@ -184,7 +183,7 @@ namespace System.Linq
                 int count = list.Count;
                 if (indexFromEnd <= count)
                 {
-                    result = list[count - indexFromEnd]!;
+                    result = list[count - indexFromEnd];
                     return true;
                 }
 
@@ -211,7 +210,7 @@ namespace System.Linq
 
             if (queue.Count == indexFromEnd)
             {
-                result = queue.Dequeue()!;
+                result = queue.Dequeue();
                 return true;
             }
 
