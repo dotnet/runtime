@@ -1617,13 +1617,8 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
         return WALK_CONTINUE;
     }
 
-#ifdef DEBUG
-    if (pComp->verbose)
-    {
-        printf("STRESS_64RSLT_MUL before:\n");
-        pComp->gtDispTree(tree);
-    }
-#endif // DEBUG
+    JITDUMP("STRESS_64RSLT_MUL before:\n");
+    DISPTREE(tree);
 
     // To ensure optNarrowTree() doesn't fold back to the original tree.
     tree->AsOp()->gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->AsOp()->gtOp1, false, TYP_LONG);
@@ -1633,13 +1628,8 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
     tree->gtType        = TYP_LONG;
     *pTree              = pComp->gtNewCastNode(TYP_INT, tree, false, TYP_INT);
 
-#ifdef DEBUG
-    if (pComp->verbose)
-    {
-        printf("STRESS_64RSLT_MUL after:\n");
-        pComp->gtDispTree(*pTree);
-    }
-#endif // DEBUG
+    JITDUMP("STRESS_64RSLT_MUL after:\n");
+    DISPTREE(*pTree);
 
     return WALK_SKIP_SUBTREES;
 }
