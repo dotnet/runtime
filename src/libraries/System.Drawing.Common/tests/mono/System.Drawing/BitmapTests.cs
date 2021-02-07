@@ -423,7 +423,7 @@ namespace MonoTests.System.Drawing
                     }
                 }
 
-                hash = MD5.Create().ComputeHash(pixels);
+                hash = MD5.HashData(pixels);
                 return ByteArrayToString(hash);
             }
         }
@@ -482,7 +482,7 @@ namespace MonoTests.System.Drawing
                 if (pixel_data == null)
                     return "--ERROR--";
 
-                byte[] hash = MD5.Create().ComputeHash(pixel_data);
+                byte[] hash = MD5.HashData(pixel_data);
                 return ByteArrayToString(hash);
             }
         }
@@ -574,7 +574,7 @@ namespace MonoTests.System.Drawing
                     pixels[index++] = clr.B;
                 }
             }
-            return MD5.Create().ComputeHash(pixels);
+            return MD5.HashData(pixels);
         }
 
         private byte[] HashLock(Bitmap bmp, int width, int height, PixelFormat fmt, ImageLockMode mode)
@@ -620,7 +620,7 @@ namespace MonoTests.System.Drawing
             {
                 bmp.UnlockBits(bd);
             }
-            return MD5.Create().ComputeHash(pixels);
+            return MD5.HashData(pixels);
         }
 
         //  Tests the LockBitmap functions. Makes a hash of the block of pixels that it returns

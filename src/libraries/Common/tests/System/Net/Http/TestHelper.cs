@@ -78,10 +78,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static byte[] ComputeMD5Hash(byte[] data)
         {
-            using (MD5 md5 = MD5.Create())
-            {
-                return md5.ComputeHash(data);
-            }
+            return MD5.HashData(data);
         }
 
         public static Task WhenAllCompletedOrAnyFailed(params Task[] tasks)

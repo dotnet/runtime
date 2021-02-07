@@ -337,12 +337,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             Assert.Equal(DateTimeKind.Utc, signingTime.SigningTime.Kind);
 
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                Assert.Equal(
-                    sha1.ComputeHash(cms.ContentInfo.Content).ByteArrayToHex(),
-                    messageDigest.MessageDigest.ByteArrayToHex());
-            }
+            Assert.Equal(
+                SHA1.HashData(cms.ContentInfo.Content).ByteArrayToHex(),
+                messageDigest.MessageDigest.ByteArrayToHex());
 
             CryptographicAttributeObjectCollection unsignedAttrs = signer.UnsignedAttributes;
             Assert.Single(unsignedAttrs);
@@ -458,12 +455,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 signer.GetSignature().ByteArrayToHex());
 #endif
 
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                Assert.Equal(
-                    sha1.ComputeHash(cms.ContentInfo.Content).ByteArrayToHex(),
-                    messageDigest.MessageDigest.ByteArrayToHex());
-            }
+            Assert.Equal(
+                SHA1.HashData(cms.ContentInfo.Content).ByteArrayToHex(),
+                messageDigest.MessageDigest.ByteArrayToHex());
 
             // Since it's not NoSignature CheckHash will throw.
             Assert.Throws<CryptographicException>(() => signer.CheckHash());

@@ -308,11 +308,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [Fact]
         public static void SignHash_DefaultAlgorithm_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(TestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
 
             using (var rsa = new RSACryptoServiceProvider())
             {
@@ -324,11 +320,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [Fact]
         public static void VerifyHash_DefaultAlgorithm_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(TestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
 
             using (var rsa = new RSACryptoServiceProvider())
             {
@@ -386,11 +378,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [Fact]
         public static void SignData_VerifyHash_CaseInsensitive_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(TestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
 
             using (var rsa = new RSACryptoServiceProvider())
             {
