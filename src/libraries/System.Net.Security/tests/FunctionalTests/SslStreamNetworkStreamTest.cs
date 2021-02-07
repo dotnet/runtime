@@ -350,6 +350,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             List<SslStream> streams = new List<SslStream>();
