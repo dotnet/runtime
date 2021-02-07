@@ -944,13 +944,6 @@ mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assemb
 	return FALSE;
 }
 
-char *
-mono_make_shadow_copy (const char *filename, MonoError *error)
-{
-	error_init (error);
-	return (char *) filename;
-}
-
 /**
  * mono_domain_from_appdomain:
  */

@@ -476,9 +476,6 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji);
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx);
 
-char *
-mono_make_shadow_copy (const char *filename, MonoError *error);
-
 // TODO: remove these on netcore, we should always be explicit about allocating from ALCs
 //#ifndef ENABLE_NETCORE
 gpointer

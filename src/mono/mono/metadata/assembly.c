@@ -102,9 +102,6 @@ mono_assembly_invoke_search_hook_internal (MonoAssemblyLoadContext *alc, MonoAss
 static MonoAssembly *
 invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gchar **apath);
 
-static MonoBoolean
-mono_assembly_is_in_gac (const gchar *filanem);
-
 static const char *
 mono_asmctx_get_name (const MonoAssemblyContext *asmctx);
 
@@ -1918,9 +1915,6 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
  * assembly has been registered as an embedded assembly).   If this is not the case, then
  * the assembly is loaded from disk using `api:mono_image_open_full`.
  *
- * If the pointed assembly does not live in the Global Assembly Cache, a shadow copy of
- * the assembly is made.
- *
  * If \p refonly is set to true, then the assembly is loaded purely for inspection with
  * the \c System.Reflection API.
  *
@@ -2012,37 +2006,14 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
 			"Assembly Loader probing location: '%s'.", fname);
 
-	new_fname = NULL;
-	if (!mono_assembly_is_in_gac (fname)) {
-		ERROR_DECL (error);
-		new_fname = mono_make_shadow_copy (fname, error);
-		if (!is_ok (error)) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
-				    "Assembly Loader shadow copy error: %s.", mono_error_get_message (error));
-			mono_error_cleanup (error);
-			*status = MONO_IMAGE_IMAGE_INVALID;
-			g_free (fname);
-			return NULL;
-		}
-
-		{
-			MonoAssemblyContextKind out_asmctx;
-			/* If the path belongs to the appdomain base dir or the
-			 * base dir of the requesting assembly, load the
-			 * assembly in the corresponding asmctx.
-			 */
-			if (assembly_invoke_asmctx_from_path_hook (fname, open_req->requesting_assembly, &out_asmctx))
-				load_req.asmctx = out_asmctx;
-		}
-	} else {
-		/* GAC assemblies always in default context or refonly context. */
-		load_req.asmctx = MONO_ASMCTX_DEFAULT;
-	}
-	if (new_fname && new_fname != fname) {
-		g_free (fname);
-		fname = new_fname;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
-			    "Assembly Loader shadow-copied assembly to: '%s'.", fname);
+	{
+		MonoAssemblyContextKind out_asmctx;
+		/* If the path belongs to the appdomain base dir or the
+		 * base dir of the requesting assembly, load the
+		 * assembly in the corresponding asmctx.
+		 */
+		if (assembly_invoke_asmctx_from_path_hook (fname, open_req->requesting_assembly, &out_asmctx))
+			load_req.asmctx = out_asmctx;
 	}
 	
 	image = NULL;
@@ -2267,9 +2238,6 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
  * deployments that have been done with the \c mkbundle tool or for scenarios where the
  * assembly has been registered as an embedded assembly).   If this is not the case, then
  * the assembly is loaded from disk using `api:mono_image_open_full`.
- *
- * If the pointed assembly does not live in the Global Assembly Cache, a shadow copy of
- * the assembly is made.
  *
  * \returns a pointer to the \c MonoAssembly if \p filename contains a valid
  * assembly or NULL on error.  Details about the error are stored in the
@@ -3124,12 +3092,6 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 	}
 
 	return res;
-}
-
-static MonoBoolean
-mono_assembly_is_in_gac (const gchar *filename)
-{
-	return FALSE;
 }
 
 MonoAssembly*
