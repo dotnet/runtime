@@ -661,7 +661,7 @@ namespace System.Buffers
     internal static class ReadOnlySequence
     {
         /// <summary>
-        /// Flag that allow to encode the <see cref="ReadOnlySequence{T}.SequenceType"/>.
+        /// Flag that allows encoding the <see cref="ReadOnlySequence{T}.SequenceType"/>.
         /// </summary>
         /// <seealso cref="ReadOnlySequence{T}.GetSequenceType"/>
         public const int FlagBitMask = 1 << 31;
