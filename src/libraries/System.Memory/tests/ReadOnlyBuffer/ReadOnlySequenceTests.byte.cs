@@ -180,6 +180,13 @@ namespace System.Memory.Tests
             });
         }
 
+        [Fact]
+        public void End_EqualToGetPositionSize()
+        {
+            ReadOnlySequence<byte> buffer = Factory.CreateOfSize(5);
+            Assert.Equal(buffer.End, buffer.GetPosition(5));
+        }
+
         public static TheoryData<Func<ReadOnlySequence<byte>, ReadOnlySequence<byte>>> ValidSliceCases => new TheoryData<Func<ReadOnlySequence<byte>, ReadOnlySequence<byte>>>
         {
             b => b.Slice(5),
