@@ -132,9 +132,6 @@ add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
 static void
 mono_context_set_default_context (MonoDomain *domain);
 
-static char *
-get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error);
-
 static MonoLoadFunc load_function = NULL;
 
 /* Lazy class loading functions */
@@ -946,12 +943,6 @@ mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assemb
 			return TRUE;
 		}
 	}
-	return FALSE;
-}
-
-gboolean
-mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
-{
 	return FALSE;
 }
 

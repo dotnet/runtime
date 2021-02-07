@@ -309,7 +309,6 @@ struct _MonoDomain {
 	guint32            state;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
-	gint32             shadow_serial;
 	/*
 	 * For framework Mono, this is every assembly loaded in this
 	 * domain. For netcore, this is every assembly loaded in every ALC in
@@ -486,9 +485,6 @@ mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingCo
 
 char *
 mono_make_shadow_copy (const char *filename, MonoError *error);
-
-gboolean
-mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name);
 
 // TODO: remove these on netcore, we should always be explicit about allocating from ALCs
 //#ifndef ENABLE_NETCORE

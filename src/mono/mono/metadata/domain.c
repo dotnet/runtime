@@ -375,7 +375,6 @@ domain_id_alloc (MonoDomain *domain)
 
 static gsize domain_gc_bitmap [sizeof(MonoDomain)/4/32 + 1];
 static MonoGCDescriptor domain_gc_desc = MONO_GC_DESCRIPTOR_NULL;
-static guint32 domain_shadow_serial = 0L;
 
 /**
  * mono_domain_create:
@@ -402,10 +401,8 @@ MonoDomain *
 mono_domain_create (void)
 {
 	MonoDomain *domain;
-	guint32 shadow_serial;
   
 	mono_appdomains_lock ();
-	shadow_serial = domain_shadow_serial++;
   
 	if (!domain_gc_desc) {
 		unsigned int i, bit = 0;
@@ -422,7 +419,6 @@ mono_domain_create (void)
 	else
 		domain = (MonoDomain *)mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc, MONO_ROOT_SOURCE_DOMAIN, NULL, "Domain Structure");
 
-	domain->shadow_serial = shadow_serial;
 	domain->domain = NULL;
 	domain->friendly_name = NULL;
 	domain->search_path = NULL;
