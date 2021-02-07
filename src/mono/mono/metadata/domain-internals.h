@@ -373,10 +373,6 @@ struct _MonoDomain {
 	/* Contains the compiled method used by async resylt creation to capture thread context*/
 	gpointer            capture_context_method;
 
-	/* Assembly bindings, the per-domain part */
-	GSList *assembly_bindings;
-	gboolean assembly_bindings_parsed;
-
 	/* Used by socket-io.c */
 	/* These are domain specific, since the assembly can be unloaded */
 	MonoImage *socket_assembly;
@@ -553,9 +549,6 @@ mono_runtime_set_no_exec (gboolean val);
 gboolean
 mono_runtime_get_no_exec (void);
 
-void
-mono_domain_parse_assembly_bindings (MonoDomain *domain, int amajor, int aminor, gchar *domain_config_file_name);
-
 gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname);
 
@@ -575,8 +568,6 @@ MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload, gpointer user_data, MonoError *error);
 
 int mono_framework_version (void);
-
-void mono_assembly_cleanup_domain_bindings (guint32 domain_id);
 
 MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines);
 
