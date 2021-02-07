@@ -1603,7 +1603,6 @@ struct AssemblyPreLoadHook {
 };
 
 static AssemblyPreLoadHook *assembly_preload_hook = NULL;
-static AssemblyPreLoadHook *assembly_refonly_preload_hook = NULL;
 
 static MonoAssembly *
 invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gchar **apath)
@@ -1618,7 +1617,7 @@ invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *an
 			ERROR_DECL (error);
 			g_assert (hook->version == 2 || hook->version == 3);
 			if (hook->version == 2)
-				assembly = hook->func.v2 (alc, aname, apath, FALSE, hook->user_data, error);
+				assembly = hook->func.v2 (alc, aname, apath, hook->user_data, error);
 			else { // v3
 				MonoGCHandle strong_gchandle = mono_gchandle_from_handle (mono_gchandle_get_target_handle (alc->gchandle), TRUE);
 				assembly = hook->func.v3 (strong_gchandle, aname, apath, hook->user_data, error);
@@ -1658,26 +1657,17 @@ mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func, gpointer user_
 void
 mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func, gpointer user_data)
 {
-	AssemblyPreLoadHook *hook;
-	
-	g_return_if_fail (func != NULL);
-
-	hook = g_new0 (AssemblyPreLoadHook, 1);
-	hook->version = 1;
-	hook->func.v1 = func;
-	hook->user_data = user_data;
-	hook->next = assembly_refonly_preload_hook;
-	assembly_refonly_preload_hook = hook;
+	/* Ignore refonly hooks, they never fire */
 }
 
 void
-mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean refonly, gboolean append)
+mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean append)
 {
 	AssemblyPreLoadHook *hook;
 
 	g_return_if_fail (func != NULL);
 
-	AssemblyPreLoadHook **hooks = refonly ? &assembly_refonly_preload_hook : &assembly_preload_hook;
+	AssemblyPreLoadHook **hooks = &assembly_preload_hook;
 
 	hook = g_new0 (AssemblyPreLoadHook, 1);
 	hook->version = 2;
@@ -1724,11 +1714,6 @@ free_assembly_preload_hooks (void)
 	AssemblyPreLoadHook *hook, *next;
 
 	for (hook = assembly_preload_hook; hook; hook = next) {
-		next = hook->next;
-		g_free (hook);
-	}
-
-	for (hook = assembly_refonly_preload_hook; hook; hook = next) {
 		next = hook->next;
 		g_free (hook);
 	}
@@ -3323,8 +3308,6 @@ mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *a
 {
 	MonoAssembly *res;
 	MonoAssemblyName mapped_aname;
-
-	g_assert (!refonly);
 
 	aname = mono_assembly_remap_version (aname, &mapped_aname);
 

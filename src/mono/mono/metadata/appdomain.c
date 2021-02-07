@@ -104,7 +104,6 @@ static MonoAssembly *
 mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 			      MonoAssemblyName *aname,
 			      gchar **assemblies_path,
-			      gboolean refonly,
 			      gpointer user_data,
 			      MonoError *error);
 
@@ -287,7 +286,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_gc_init_icalls ();
 
 	// We have to append here because otherwise this will run before the netcore hook (which is installed first), see https://github.com/dotnet/runtime/issues/34273
-	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE), FALSE, TRUE);
+	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE), TRUE);
 	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE), FALSE, FALSE);
 	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE), TRUE, FALSE);
 	mono_install_assembly_load_hook_v2 (mono_domain_fire_assembly_load, NULL, FALSE);
@@ -1078,7 +1077,6 @@ static MonoAssembly *
 mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 			      MonoAssemblyName *aname,
 			      gchar **assemblies_path,
-			      gboolean refonly,
 			      gpointer user_data,
 			      MonoError *error)
 {
@@ -1087,7 +1085,6 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 
 	g_assert (alc);
 	g_assert (domain == mono_domain_get ());
-	g_assert (!refonly);
 
 	MonoAssemblyCandidatePredicate predicate = NULL;
 	void* predicate_ud = NULL;
