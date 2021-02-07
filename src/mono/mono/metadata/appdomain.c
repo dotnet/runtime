@@ -150,12 +150,6 @@ mono_class_get_appdomain_class (void)
 static MonoDomain *
 mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain);
 
-static void
-mono_error_set_appdomain_unloaded (MonoError *error)
-{
-	mono_error_set_generic_error (error, "System", "AppDomainUnloadedException", "");
-}
-
 void
 mono_install_runtime_load (MonoLoadFunc func)
 {
@@ -206,7 +200,6 @@ create_domain_objects (MonoDomain *domain)
 	MonoClassField *string_empty_fld;
 
 	if (domain != old_domain) {
-		mono_thread_push_appdomain_ref (domain);
 		mono_domain_set_internal_with_options (domain, FALSE);
 	}
 
@@ -250,10 +243,8 @@ create_domain_objects (MonoDomain *domain)
 	domain->ephemeron_tombstone = MONO_HANDLE_RAW (mono_object_new_handle (domain, mono_defaults.object_class, error));
 	mono_error_assert_ok (error);
 
-	if (domain != old_domain) {
-		mono_thread_pop_appdomain_ref ();
+	if (domain != old_domain)
 		mono_domain_set_internal_with_options (old_domain, FALSE);
-	}
 
 	/* 
 	 * This class is used during exception handling, so initialize it here, to prevent
@@ -685,8 +676,6 @@ gboolean
 mono_domain_set_fast (MonoDomain *domain, gboolean force)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-	if (!force && domain->state == MONO_APPDOMAIN_UNLOADED)
-		return FALSE;
 
 	mono_domain_set_internal_with_options (domain, TRUE);
 	return TRUE;
@@ -1347,10 +1336,7 @@ mono_alc_load_raw_bytes (MonoAssemblyLoadContext *alc, guint8 *assembly_data, gu
 gboolean
 mono_domain_is_unloading (MonoDomain *domain)
 {
-	if (domain->state == MONO_APPDOMAIN_UNLOADING || domain->state == MONO_APPDOMAIN_UNLOADED)
-		return TRUE;
-	else
-		return FALSE;
+	return FALSE;
 }
 
 /* Remember properties so they can be be installed in AppContext during runtime init */

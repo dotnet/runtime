@@ -265,20 +265,6 @@ typedef struct {
 	LockFreeMempoolChunk *current, *chunks;
 } LockFreeMempool;
 
-/*
- * We have two unloading states because the domain
- * must remain fully functional while AppDomain::DomainUnload is
- * processed.
- * After that unloading began and all domain facilities are teared down
- * such as execution of new threadpool jobs.  
- */
-typedef enum {
-	MONO_APPDOMAIN_CREATED,
-	MONO_APPDOMAIN_UNLOADING_START,
-	MONO_APPDOMAIN_UNLOADING,
-	MONO_APPDOMAIN_UNLOADED
-} MonoAppDomainState;
-
 typedef struct _MonoThunkFreeList {
 	guint32 size;
 	int length;		/* only valid for the wait list */

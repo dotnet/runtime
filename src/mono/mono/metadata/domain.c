@@ -55,8 +55,6 @@
 #include "external-only.h"
 #include "mono/utils/mono-tls-inline.h"
 
-//#define DEBUG_DOMAIN_UNLOAD 1
-
 #define GET_APPDOMAIN    mono_tls_get_domain
 #define SET_APPDOMAIN(x) do { \
 	MonoThreadInfo *info; \
@@ -73,7 +71,6 @@ static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
 static MonoDomain **appdomains_list = NULL;
 static MonoImage *exe_image;
-static gboolean debug_domain_unload;
 
 gboolean mono_dont_free_domains;
 
@@ -495,10 +492,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	GSList *runtimes = NULL;
-
-#ifdef DEBUG_DOMAIN_UNLOAD
-	debug_domain_unload = TRUE;
-#endif
 
 	if (domain)
 		g_assert_not_reached ();
@@ -1659,12 +1652,6 @@ int
 mono_framework_version (void)
 {
 	return current_runtime->framework_version [0] - '0';
-}
-
-void
-mono_enable_debug_domain_unload (gboolean enable)
-{
-	debug_domain_unload = enable;
 }
 
 MonoAotCacheConfig *
