@@ -645,7 +645,12 @@ namespace System.Security.Cryptography.Rsa.Tests
                 0xAE, 0xBD, 0xA5, 0x57, 0x2C, 0xEC, 0x3D, 0x0D,
             };
 
-            byte[] dataHash = SHA1.HashData(TestData.HelloBytes);
+            byte[] dataHash;
+
+            using (HashAlgorithm hash = SHA1.Create())
+            {
+                dataHash = hash.ComputeHash(TestData.HelloBytes);
+            }
 
             ExpectHashSignature(expectedHashSignature, dataHash, "SHA1", TestData.RSA2048Params);
         }
@@ -673,7 +678,12 @@ namespace System.Security.Cryptography.Rsa.Tests
                 0x70, 0x95, 0x25, 0x49, 0x8A, 0x1A, 0xD7, 0xFC,
             };
 
-            byte[] dataHash = SHA256.HashData(TestData.HelloBytes);
+            byte[] dataHash;
+
+            using (HashAlgorithm hash = SHA256.Create())
+            {
+                dataHash = hash.ComputeHash(TestData.HelloBytes);
+            }
 
             ExpectHashSignature(expectedHashSignature, dataHash, "SHA256", TestData.RSA1024Params);
         }
@@ -717,7 +727,12 @@ namespace System.Security.Cryptography.Rsa.Tests
                 0x6B, 0x9B, 0x97, 0x2D, 0x8C, 0xB2, 0x1C, 0x16,
             };
 
-            byte[] dataHash = SHA256.HashData(TestData.HelloBytes);
+            byte[] dataHash;
+
+            using (HashAlgorithm hash = SHA256.Create())
+            {
+                dataHash = hash.ComputeHash(TestData.HelloBytes);
+            }
 
             ExpectHashSignature(expectedHashSignature, dataHash, "SHA256", TestData.RSA2048Params);
         }
@@ -761,7 +776,12 @@ namespace System.Security.Cryptography.Rsa.Tests
                 0xAE, 0xBD, 0xA5, 0x57, 0x2C, 0xEC, 0x3D, 0x0D,
             };
 
-            byte[] dataHash = SHA1.HashData(TestData.HelloBytes);
+            byte[] dataHash;
+
+            using (HashAlgorithm hash = SHA1.Create())
+            {
+                dataHash = hash.ComputeHash(TestData.HelloBytes);
+            }
 
             VerifyHashSignature(hashSignature, dataHash, "SHA1", TestData.RSA2048Params);
         }
@@ -789,7 +809,12 @@ namespace System.Security.Cryptography.Rsa.Tests
                 0x70, 0x95, 0x25, 0x49, 0x8A, 0x1A, 0xD7, 0xFC,
             };
 
-            byte[] dataHash = SHA256.HashData(TestData.HelloBytes);
+            byte[] dataHash;
+
+            using (HashAlgorithm hash = SHA256.Create())
+            {
+                dataHash = hash.ComputeHash(TestData.HelloBytes);
+            }
 
             VerifyHashSignature(hashSignature, dataHash, "SHA256", TestData.RSA1024Params);
         }
@@ -833,7 +858,12 @@ namespace System.Security.Cryptography.Rsa.Tests
                 0x6B, 0x9B, 0x97, 0x2D, 0x8C, 0xB2, 0x1C, 0x16,
             };
 
-            byte[] dataHash = SHA256.HashData(TestData.HelloBytes);
+            byte[] dataHash;
+
+            using (HashAlgorithm hash = SHA256.Create())
+            {
+                dataHash = hash.ComputeHash(TestData.HelloBytes);
+            }
 
             VerifyHashSignature(hashSignature, dataHash, "SHA256", TestData.RSA2048Params);
         }

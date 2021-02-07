@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Cng.Tests
         public static void SignVerifyHashRoundTrip()
         {
             byte[] message = "781021abcd982139a8bc91387870ac01".HexToByteArray();
-            byte[] hash = SHA1.HashData(message);
+            byte[] hash = SHA1.Create().ComputeHash(message);
             TestSignVerifyHashRoundTrip(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pss, 0x100);
         }
 

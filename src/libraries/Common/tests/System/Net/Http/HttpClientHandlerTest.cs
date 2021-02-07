@@ -569,7 +569,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Connection.Add("close");
                     request.Headers.Add("Cookie", "$Version=1; Skin=new");
                     request.Content.Headers.ContentLength = contentArray.Length;
-                    request.Content.Headers.ContentMD5 = MD5.HashData(contentArray);
+                    request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
                     request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     request.Headers.Date = DateTimeOffset.Parse("Tue, 15 Nov 1994 08:12:31 GMT");
                     request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
