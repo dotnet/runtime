@@ -136,7 +136,7 @@ gboolean
 mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
 
 MonoAssembly *
-mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gboolean refonly);
+mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
 MONO_PROFILER_API MonoAssemblyName*
 mono_assembly_get_name_internal (MonoAssembly *assembly);

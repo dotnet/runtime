@@ -1068,7 +1068,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	 * 10. Return NULL.
 	 */
 
-	reference = mono_assembly_loaded_internal (alc, aname, FALSE);
+	reference = mono_assembly_loaded_internal (alc, aname);
 	if (reference) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly already loaded in the active ALC: '%s'.", aname->name);
 		goto leave;
@@ -1083,7 +1083,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	}
 
 	if (!is_default && !is_satellite) {
-		reference = mono_assembly_loaded_internal (mono_domain_default_alc (mono_alc_domain (alc)), aname, FALSE);
+		reference = mono_assembly_loaded_internal (mono_domain_default_alc (mono_alc_domain (alc)), aname);
 		if (reference) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly already loaded in the default ALC: '%s'.", aname->name);
 			goto leave;
@@ -3099,7 +3099,7 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 	if ((aname->major | aname->minor | aname->build | aname->revision) == 0)
 		aname = mono_assembly_remap_version (aname, &mapped_aname);
 	
-	res = mono_assembly_loaded_internal (alc, aname, FALSE);
+	res = mono_assembly_loaded_internal (alc, aname);
 	if (res) {
 		mono_assembly_name_free_internal (aname);
 		return res;
@@ -3300,11 +3300,11 @@ mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 	if (refonly)
 		return NULL;
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
-	return mono_assembly_loaded_internal (alc, aname, refonly);
+	return mono_assembly_loaded_internal (alc, aname);
 }
 
 MonoAssembly *
-mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gboolean refonly)
+mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname)
 {
 	MonoAssembly *res;
 	MonoAssemblyName mapped_aname;
@@ -3330,7 +3330,7 @@ mono_assembly_loaded (MonoAssemblyName *aname)
 {
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
-	res = mono_assembly_loaded_internal (mono_domain_default_alc (mono_domain_get ()), aname, FALSE);
+	res = mono_assembly_loaded_internal (mono_domain_default_alc (mono_domain_get ()), aname);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
