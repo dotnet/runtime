@@ -111,7 +111,6 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 static MonoAssembly *
 mono_domain_assembly_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting,
 			     MonoAssemblyName *aname,
-			     gboolean refonly,
 			     gboolean postload,
 			     gpointer user_data,
 			     MonoError *error);
@@ -289,8 +288,8 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	// We have to append here because otherwise this will run before the netcore hook (which is installed first), see https://github.com/dotnet/runtime/issues/34273
 	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE), FALSE, TRUE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE), FALSE, FALSE, FALSE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE), FALSE, TRUE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE), FALSE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE), TRUE, FALSE);
 	mono_install_assembly_load_hook_v2 (mono_domain_fire_assembly_load, NULL, FALSE);
 
 	mono_thread_init (start_cb, attach_cb);
@@ -718,20 +717,20 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies 
 }
 
 MonoAssembly*
-mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname_raw, MonoAssembly *requesting, gboolean refonly, MonoError *error)
+mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname_raw, MonoAssembly *requesting, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
 	MonoAssembly *result = NULL;
 	MonoStringHandle fname = mono_string_new_handle (mono_alc_domain (alc), fname_raw, error);
 	goto_if_nok (error, leave);
-	result = mono_try_assembly_resolve_handle (alc, fname, requesting, refonly, error);
+	result = mono_try_assembly_resolve_handle (alc, fname, requesting, error);
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 MonoAssembly*
-mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *requesting, gboolean refonly, MonoError *error)
+mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *requesting, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	MonoAssembly *ret = NULL;
@@ -784,7 +783,7 @@ leave:
 MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting,
 				      MonoAssemblyName *aname,
-				      gboolean refonly, gboolean postload,
+				      gboolean postload,
 				      gpointer user_data,
 				      MonoError *error_out)
 {
@@ -796,7 +795,7 @@ mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly
 
 	/* FIXME: We invoke managed code here, so there is a potential for deadlocks */
 
-	assembly = mono_try_assembly_resolve (alc, aname_str, requesting, refonly, error);
+	assembly = mono_try_assembly_resolve (alc, aname_str, requesting, error);
 	g_free (aname_str);
 	mono_error_cleanup (error);
 
@@ -1127,7 +1126,6 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 static MonoAssembly *
 mono_domain_assembly_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting,
 			     MonoAssemblyName *aname,
-			     gboolean refonly,
 			     gboolean postload,
 			     gpointer user_data,
 			     MonoError *error)

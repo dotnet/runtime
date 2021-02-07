@@ -1466,7 +1466,6 @@ struct AssemblySearchHook {
 		MonoAssemblySearchFunc v1;
 		MonoAssemblySearchFuncV2 v2;
 	} func;
-	gboolean refonly;
 	gboolean postload;
 	int version;
 	gpointer user_data;
@@ -1480,14 +1479,14 @@ mono_assembly_invoke_search_hook_internal (MonoAssemblyLoadContext *alc, MonoAss
 	AssemblySearchHook *hook;
 
 	for (hook = assembly_search_hook; hook; hook = hook->next) {
-		if ((hook->refonly == FALSE) && (hook->postload == postload)) {
+		if (hook->postload == postload) {
 			MonoAssembly *ass;
 			if (hook->version == 1) {
 				ass = hook->func.v1 (aname, hook->user_data);
 			} else {
 				ERROR_DECL (hook_error);
 				g_assert (hook->version == 2);
-				ass = hook->func.v2 (alc, requesting, aname, FALSE, postload, hook->user_data, hook_error);
+				ass = hook->func.v2 (alc, requesting, aname, postload, hook->user_data, hook_error);
 				mono_error_assert_ok (hook_error); /* FIXME: proper error handling */
 			}
 			if (ass)
@@ -1508,7 +1507,7 @@ mono_assembly_invoke_search_hook (MonoAssemblyName *aname)
 }
 
 static void
-mono_install_assembly_search_hook_internal_v1 (MonoAssemblySearchFunc func, gpointer user_data, gboolean refonly, gboolean postload)
+mono_install_assembly_search_hook_internal_v1 (MonoAssemblySearchFunc func, gpointer user_data, gboolean postload)
 {
 	AssemblySearchHook *hook;
 	
@@ -1518,14 +1517,13 @@ mono_install_assembly_search_hook_internal_v1 (MonoAssemblySearchFunc func, gpoi
 	hook->version = 1;
 	hook->func.v1 = func;
 	hook->user_data = user_data;
-	hook->refonly = refonly;
 	hook->postload = postload;
 	hook->next = assembly_search_hook;
 	assembly_search_hook = hook;
 }
 
 void
-mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean refonly, gboolean postload, gboolean append)
+mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean postload, gboolean append)
 {
 	if (func == NULL)
 		return;
@@ -1534,7 +1532,6 @@ mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer us
 	hook->version = 2;
 	hook->func.v2 = func;
 	hook->user_data = user_data;
-	hook->refonly = refonly;
 	hook->postload = postload;
 
 	if (append && assembly_search_hook != NULL) { // If we don't have any installed hooks, append vs prepend is irrelevant
@@ -1554,7 +1551,7 @@ mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer us
 void
 mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
-	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE, FALSE);
+	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE);
 }	
 
 static void
@@ -1574,7 +1571,7 @@ free_assembly_search_hooks (void)
 void
 mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
-	mono_install_assembly_search_hook_internal_v1 (func, user_data, TRUE, FALSE);
+	/* Ignore refonly hooks, they will never flre */
 }
 
 /**
@@ -1583,13 +1580,13 @@ mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, gpointer
 void
 mono_install_assembly_postload_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
-	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE, TRUE);
+	mono_install_assembly_search_hook_internal_v1 (func, user_data, TRUE);
 }	
 
 void
 mono_install_assembly_postload_refonly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
-	mono_install_assembly_search_hook_internal_v1 (func, user_data, TRUE, TRUE);
+	/* Ignore refonly hooks, they will never flre */
 }
 
 
@@ -3133,7 +3130,7 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 	mono_assembly_name_free_internal (aname);
 
 	if (!res) {
-		res = mono_try_assembly_resolve (alc, name, NULL, FALSE, error);
+		res = mono_try_assembly_resolve (alc, name, NULL, error);
 		if (!is_ok (error)) {
 			mono_error_cleanup (error);
 			if (*status == MONO_IMAGE_OK)
