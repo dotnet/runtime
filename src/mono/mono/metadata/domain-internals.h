@@ -309,7 +309,6 @@ struct _MonoDomain {
 	guint32            state;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
-	gint32             shadow_serial;
 	/*
 	 * For framework Mono, this is every assembly loaded in this
 	 * domain. For netcore, this is every assembly loaded in every ALC in
@@ -372,13 +371,6 @@ struct _MonoDomain {
 
 	/* Contains the compiled method used by async resylt creation to capture thread context*/
 	gpointer            capture_context_method;
-
-	/* Used by socket-io.c */
-	/* These are domain specific, since the assembly can be unloaded */
-	MonoImage *socket_assembly;
-	MonoClass *sockaddr_class;
-	MonoClassField *sockaddr_data_field;
-	MonoClassField *sockaddr_data_length_field;
 
 	/* Cache function pointers for architectures  */
 	/* that require wrappers */
@@ -487,9 +479,6 @@ mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingCo
 char *
 mono_make_shadow_copy (const char *filename, MonoError *error);
 
-gboolean
-mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name);
-
 // TODO: remove these on netcore, we should always be explicit about allocating from ALCs
 //#ifndef ENABLE_NETCORE
 gpointer
@@ -538,7 +527,7 @@ void
 mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash);
 
 MonoAssembly *
-mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status);
+mono_assembly_load_corlib (MonoImageOpenStatus *status);
 
 const MonoRuntimeInfo*
 mono_get_runtime_info (void);
@@ -566,8 +555,6 @@ mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, Mono
 
 MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload, gpointer user_data, MonoError *error);
-
-int mono_framework_version (void);
 
 MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines);
 

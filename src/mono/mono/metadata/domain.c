@@ -374,7 +374,6 @@ domain_id_alloc (MonoDomain *domain)
 
 static gsize domain_gc_bitmap [sizeof(MonoDomain)/4/32 + 1];
 static MonoGCDescriptor domain_gc_desc = MONO_GC_DESCRIPTOR_NULL;
-static guint32 domain_shadow_serial = 0L;
 
 /**
  * mono_domain_create:
@@ -401,10 +400,8 @@ MonoDomain *
 mono_domain_create (void)
 {
 	MonoDomain *domain;
-	guint32 shadow_serial;
   
 	mono_appdomains_lock ();
-	shadow_serial = domain_shadow_serial++;
   
 	if (!domain_gc_desc) {
 		unsigned int i, bit = 0;
@@ -421,7 +418,6 @@ mono_domain_create (void)
 	else
 		domain = (MonoDomain *)mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc, MONO_ROOT_SOURCE_DOMAIN, NULL, "Domain Structure");
 
-	domain->shadow_serial = shadow_serial;
 	domain->domain = NULL;
 	domain->friendly_name = NULL;
 	domain->search_path = NULL;
@@ -581,7 +577,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	while (tmp != NULL) {
 		current_runtime = (MonoRuntimeInfo*)tmp->data;
 		g_assert (current_runtime);
-		ass = mono_assembly_load_corlib (current_runtime, &status);
+		ass = mono_assembly_load_corlib (&status);
 		if (status != MONO_IMAGE_OK && status != MONO_IMAGE_ERROR_ERRNO)
 			break;
 		tmp = tmp->next;
@@ -1636,17 +1632,6 @@ const MonoRuntimeInfo*
 mono_get_runtime_info (void)
 {
 	return current_runtime;
-}
-
-/**
- * mono_framework_version:
- *
- * Return the major version of the framework curently executing.
- */
-int
-mono_framework_version (void)
-{
-	return current_runtime->framework_version [0] - '0';
 }
 
 MonoAotCacheConfig *

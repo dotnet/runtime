@@ -4754,50 +4754,18 @@ fail:
 	return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
 }
 
-static gboolean
-replace_shadow_path (MonoDomain *domain, gchar *dirname, gchar **filename)
-{
-	gchar *content;
-	gchar *shadow_ini_file;
-	gsize len;
-
-	/* Check for shadow-copied assembly */
-	if (mono_is_shadow_copy_enabled (domain, dirname)) {
-		shadow_ini_file = g_build_filename (dirname, "__AssemblyInfo__.ini", (const char*)NULL);
-		content = NULL;
-		if (!g_file_get_contents (shadow_ini_file, &content, &len, NULL) ||
-			!g_file_test (content, G_FILE_TEST_IS_REGULAR)) {
-			g_free (content);
-			content = NULL;
-		}
-		g_free (shadow_ini_file);
-		if (content != NULL) {
-			g_free (*filename);
-			*filename = content;
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
 MonoStringHandle
 ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoBoolean escaped, MonoError *error)
 {
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
 	MonoAssembly *mass = MONO_HANDLE_GETVAL (assembly, assembly);
 	gchar *absolute;
-	gchar *dirname;
 	
 	if (g_path_is_absolute (mass->image->name)) {
 		absolute = g_strdup (mass->image->name);
-		dirname = g_path_get_dirname (absolute);
 	} else {
 		absolute = g_build_filename (mass->basedir, mass->image->name, (const char*)NULL);
-		dirname = g_strdup (mass->basedir);
 	}
-
-	replace_shadow_path (domain, dirname, &absolute);
-	g_free (dirname);
 
 	mono_icall_make_platform_path (absolute);
 
@@ -5503,17 +5471,12 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 	char *codebase = NULL;
 	gboolean res;
 	MonoImage *image;
-	char *dirname;
 
 	error_init (error);
 
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (fname);
 	filename = mono_string_handle_to_utf8 (fname, error);
 	return_if_nok (error);
-
-	dirname = g_path_get_dirname (filename);
-	replace_shadow_path (mono_domain_get (), dirname, &filename);
-	g_free (dirname);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
 
