@@ -2116,7 +2116,6 @@ MonoObjectHandle
 ves_icall_RuntimeFieldInfo_GetValueInternal (MonoReflectionFieldHandle field_handle, MonoObjectHandle obj_handle, MonoError *error)
 {	
 	MonoReflectionField * const field = MONO_HANDLE_RAW (field_handle);
-	MonoClass *fklass = field->klass;
 	MonoClassField *cf = field->field;
 
 	MonoObject * const obj = MONO_HANDLE_RAW (obj_handle);
@@ -2124,6 +2123,7 @@ ves_icall_RuntimeFieldInfo_GetValueInternal (MonoReflectionFieldHandle field_han
 
 #ifndef DISABLE_REMOTING
 	if (G_UNLIKELY (obj != NULL && mono_class_is_transparent_proxy (mono_object_class (obj)))) {
+		MonoClass *fklass = field->klass;
 		/* We get here if someone used a
 		 * System.Reflection.FieldInfo:GetValue on a
 		 * ContextBoundObject's or cross-domain MarshalByRefObject's
@@ -2141,10 +2141,10 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 {
 	MonoClassField *cf = MONO_HANDLE_GETVAL (field, field);
 
-	MonoClass *field_klass = MONO_HANDLE_GETVAL (field, klass);
 
 #ifndef DISABLE_REMOTING
 	if (G_UNLIKELY (!MONO_HANDLE_IS_NULL (obj) && mono_class_is_transparent_proxy (mono_handle_class (obj)))) {
+		MonoClass *field_klass = MONO_HANDLE_GETVAL (field, klass);
 		/* We get here if someone used a
 		 * System.Reflection.FieldInfo:SetValue on a
 		 * ContextBoundObject's or cross-domain MarshalByRefObject's
