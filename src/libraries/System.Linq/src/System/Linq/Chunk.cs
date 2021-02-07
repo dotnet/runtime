@@ -54,25 +54,25 @@ namespace System.Linq
 
         private static IEnumerable<TSource[]> ChunkIterator<TSource>(IEnumerable<TSource> source, int maxSize)
         {
-            int index = 0;
-            TSource[]? chunk = null;
-            foreach (TSource element in source)
-            {
-                chunk ??= new TSource[maxSize];
-                chunk[index] = element;
-                index++;
+            using IEnumerator<TSource> e = source.GetEnumerator();
 
-                if (index % maxSize == 0)
+            while (e.MoveNext())
+            {
+                TSource[] chunk = new TSource[maxSize];
+                chunk[0] = e.Current;
+
+                for (int i = 1; i < maxSize; i++)
                 {
-                    yield return chunk;
-                    chunk = null;
-                    index = 0;
-                }
-            }
+                    if (!e.MoveNext())
+                    {
+                        Array.Resize(ref chunk, i);
+                        yield return chunk;
+                        yield break;
+                    }
 
-            if (index != 0)
-            {
-                Array.Resize(ref chunk, index);
+                    chunk[i] = e.Current;
+                }
+
                 yield return chunk;
             }
         }
