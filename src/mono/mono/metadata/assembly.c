@@ -3075,7 +3075,6 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 
 	res = invoke_assembly_preload_hook (alc, aname, assemblies_path);
 	if (res) {
-		res->in_gac = FALSE;
 		mono_assembly_name_free_internal (aname);
 		return res;
 	}

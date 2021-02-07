@@ -6126,7 +6126,7 @@ gboolean
 mono_verifier_is_enabled_for_class (MonoClass *klass)
 {
 	MonoImage *image = m_class_get_image (klass);
-	return verify_all || (verifier_mode > MONO_VERIFIER_PE_ONLY && !(image->assembly && image->assembly->in_gac) && image != mono_defaults.corlib);
+	return verify_all || (verifier_mode > MONO_VERIFIER_PE_ONLY && image != mono_defaults.corlib);
 }
 
 gboolean
@@ -6163,11 +6163,10 @@ gboolean
 mono_verifier_is_class_full_trust (MonoClass *klass)
 {
 	MonoImage *image = m_class_get_image (klass);
-	gboolean trusted_location = (image->assembly && image->assembly->in_gac);
 
 	if (verify_all && verifier_mode == MONO_VERIFIER_MODE_OFF)
-		return trusted_location || image == mono_defaults.corlib;
-	return verifier_mode < MONO_VERIFIER_MODE_VERIFIABLE || trusted_location || image == mono_defaults.corlib;
+		return image == mono_defaults.corlib;
+	return verifier_mode < MONO_VERIFIER_MODE_VERIFIABLE || image == mono_defaults.corlib;
 }
 
 GSList*

@@ -946,7 +946,7 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 	MonoAssembly *assembly = m_class_get_image (method->klass)->assembly;
 	if (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
 		return FALSE;
-	if (assembly->in_gac || assembly->image == mono_defaults.corlib)
+	if (assembly->image == mono_defaults.corlib)
 		return FALSE;
 	return mono_assembly_has_skip_verification (assembly);
 }

@@ -220,7 +220,6 @@ struct _MonoAssembly {
 	MonoImage *image;
 	GSList *friend_assembly_names; /* Computed by mono_assembly_load_friends () */
 	guint8 friend_assembly_names_inited;
-	guint8 in_gac;
 	guint8 dynamic;
 	MonoAssemblyContext context;
 	guint8 wrap_non_exception_throws;
