@@ -2115,20 +2115,14 @@ MonoObjectHandle
 ves_icall_RuntimeFieldInfo_GetValueInternal (MonoReflectionFieldHandle field_handle, MonoObjectHandle obj_handle, MonoError *error)
 {	
 	MonoReflectionField * const field = MONO_HANDLE_RAW (field_handle);
-	MonoClass *fklass = field->klass;
 	MonoClassField *cf = field->field;
-
-	if (mono_asmctx_get_kind (&m_class_get_image (fklass)->assembly->context) == MONO_ASMCTX_REFONLY) {
-		mono_error_set_invalid_operation (error,
-			"It is illegal to get the value on a field on a type loaded using the ReflectionOnly methods.");
-		return NULL_HANDLE;
-	}
 
 	MonoObject * const obj = MONO_HANDLE_RAW (obj_handle);
 	MonoObject *result;
 
 #ifndef DISABLE_REMOTING
 	if (G_UNLIKELY (obj != NULL && mono_class_is_transparent_proxy (mono_object_class (obj)))) {
+		MonoClass *fklass = field->klass;
 		/* We get here if someone used a
 		 * System.Reflection.FieldInfo:GetValue on a
 		 * ContextBoundObject's or cross-domain MarshalByRefObject's
@@ -2146,14 +2140,10 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 {
 	MonoClassField *cf = MONO_HANDLE_GETVAL (field, field);
 
-	MonoClass *field_klass = MONO_HANDLE_GETVAL (field, klass);
-	if (mono_asmctx_get_kind (&m_class_get_image (field_klass)->assembly->context) == MONO_ASMCTX_REFONLY) {
-		mono_error_set_invalid_operation (error, "It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods.");
-		return;
-	}
 
 #ifndef DISABLE_REMOTING
 	if (G_UNLIKELY (!MONO_HANDLE_IS_NULL (obj) && mono_class_is_transparent_proxy (mono_handle_class (obj)))) {
+		MonoClass *field_klass = MONO_HANDLE_GETVAL (field, klass);
 		/* We get here if someone used a
 		 * System.Reflection.FieldInfo:SetValue on a
 		 * ContextBoundObject's or cross-domain MarshalByRefObject's
@@ -3544,10 +3534,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	}
 
 	image = m_class_get_image (m->klass);
-	if (mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY) {
-		exception = mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api.");
-		goto return_null;
-	}
 	
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
 		int i;
@@ -5224,8 +5210,6 @@ add_file_to_modules_array (MonoDomain *domain, MonoArrayHandle dest, int dest_id
 		if (!m) {
 			const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
 			gboolean refonly = FALSE;
-			if (image->assembly)
-				refonly = mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY;
 			mono_error_set_simple_file_not_found (error, filename, refonly);
 			goto leave;
 		}

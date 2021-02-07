@@ -189,18 +189,16 @@ struct MonoTypeNameParse {
 typedef enum MonoAssemblyContextKind {
 	/* Default assembly context: Load(String) and assembly references */
 	MONO_ASMCTX_DEFAULT = 0,
-	/* Reflection-only only context: ReflectionOnlyLoad and ReeflectionOnlyLoadFrom */
-	MONO_ASMCTX_REFONLY = 1,
 	/* LoadFrom context: LoadFrom() and references */
-	MONO_ASMCTX_LOADFROM = 2,
+	MONO_ASMCTX_LOADFROM = 1,
 	/* Individual assembly context (.NET Framework docs call this "not in
 	 * any context"): LoadFile(String) and Load(byte[]) are here.
 	 */
-	MONO_ASMCTX_INDIVIDUAL = 3,
+	MONO_ASMCTX_INDIVIDUAL = 2,
 	/* Used internally by the runtime, not visible to managed code */
-	MONO_ASMCTX_INTERNAL = 4,
+	MONO_ASMCTX_INTERNAL = 3,
 
-	MONO_ASMCTX_LAST = 4
+	MONO_ASMCTX_LAST = 3
 } MonoAssemblyContextKind;
 
 typedef struct _MonoAssemblyContext {
@@ -1176,7 +1174,7 @@ MonoImage *mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname,
 
 MonoImage *mono_image_open_metadata_only (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
 
-MonoImage *mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name, const char *filename);
+MonoImage *mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean metadata_only, const char *name, const char *filename);
 
 MonoException *mono_get_exception_field_access_msg (const char *msg);
 
