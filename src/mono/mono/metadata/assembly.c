@@ -1948,11 +1948,11 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 MonoAssembly *
 mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboolean refonly)
 {
-        if (refonly) {
-                if (status)
-                        *status = MONO_IMAGE_IMAGE_INVALID;
-                return NULL;
-        }
+	if (refonly) {
+		if (status)
+			*status = MONO_IMAGE_IMAGE_INVALID;
+		return NULL;
+	}
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyOpenRequest req;
@@ -2043,7 +2043,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 			return NULL;
 		}
 
-                {
+		{
 			MonoAssemblyContextKind out_asmctx;
 			/* If the path belongs to the appdomain base dir or the
 			 * base dir of the requesting assembly, load the
@@ -2053,8 +2053,8 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 				load_req.asmctx = out_asmctx;
 		}
 	} else {
-                /* GAC assemblies always in default context or refonly context. */
-                load_req.asmctx = MONO_ASMCTX_DEFAULT;
+		/* GAC assemblies always in default context or refonly context. */
+		load_req.asmctx = MONO_ASMCTX_DEFAULT;
 	}
 	if (new_fname && new_fname != fname) {
 		g_free (fname);
@@ -2328,11 +2328,11 @@ MonoAssembly *
 mono_assembly_load_from_full (MonoImage *image, const char*fname, 
 			      MonoImageOpenStatus *status, gboolean refonly)
 {
-        if (refonly) {
-                if (status)
-                        *status = MONO_IMAGE_IMAGE_INVALID;
-                return NULL;
-        }
+	if (refonly) {
+		if (status)
+			*status = MONO_IMAGE_IMAGE_INVALID;
+		return NULL;
+	}
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyLoadRequest req;
@@ -3263,17 +3263,17 @@ mono_assembly_load_full_alc (MonoGCHandle alc_gchandle, MonoAssemblyName *aname,
 MonoAssembly*
 mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status, gboolean refonly)
 {
-        if (refonly) {
-                if (status)
-                        *status = MONO_IMAGE_IMAGE_INVALID;
-                return NULL;
-        }
+	if (refonly) {
+		if (status)
+			*status = MONO_IMAGE_IMAGE_INVALID;
+		return NULL;
+	}
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyByNameRequest req;
 	mono_assembly_request_prepare_byname (&req,
-	                               MONO_ASMCTX_DEFAULT,
-	                               mono_domain_default_alc (mono_domain_get ()));
+				       MONO_ASMCTX_DEFAULT,
+				       mono_domain_default_alc (mono_domain_get ()));
 	req.requesting_assembly = NULL;
 	req.basedir = basedir;
 	res = mono_assembly_request_byname (aname, &req, status);
@@ -3327,7 +3327,7 @@ mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *a
 	MonoAssembly *res;
 	MonoAssemblyName mapped_aname;
 
-        g_assert (!refonly);
+	g_assert (!refonly);
 
 	aname = mono_assembly_remap_version (aname, &mapped_aname);
 

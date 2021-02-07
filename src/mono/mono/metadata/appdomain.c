@@ -1097,7 +1097,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 
 	g_assert (alc);
 	g_assert (domain == mono_domain_get ());
-        g_assert (!refonly);
+	g_assert (!refonly);
 
 	MonoAssemblyCandidatePredicate predicate = NULL;
 	void* predicate_ud = NULL;
