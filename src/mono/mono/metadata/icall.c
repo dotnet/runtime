@@ -4761,17 +4761,12 @@ ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssembl
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
 	MonoAssembly *mass = MONO_HANDLE_GETVAL (assembly, assembly);
 	gchar *absolute;
-	gchar *dirname;
 	
 	if (g_path_is_absolute (mass->image->name)) {
 		absolute = g_strdup (mass->image->name);
-		dirname = g_path_get_dirname (absolute);
 	} else {
 		absolute = g_build_filename (mass->basedir, mass->image->name, (const char*)NULL);
-		dirname = g_strdup (mass->basedir);
 	}
-
-	g_free (dirname);
 
 	mono_icall_make_platform_path (absolute);
 
@@ -5477,16 +5472,12 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 	char *codebase = NULL;
 	gboolean res;
 	MonoImage *image;
-	char *dirname;
 
 	error_init (error);
 
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (fname);
 	filename = mono_string_handle_to_utf8 (fname, error);
 	return_if_nok (error);
-
-	dirname = g_path_get_dirname (filename);
-	g_free (dirname);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
 
