@@ -30,7 +30,6 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
 #include <mono/metadata/attach.h>
-#include <mono/metadata/w32process.h>
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-counters.h>
@@ -840,8 +839,6 @@ mono_runtime_do_background_work (void)
 	mono_threads_join_threads ();
 
 	reference_queue_proccess_all ();
-
-	mono_w32process_signal_finished ();
 
 	hazard_free_queue_pump ();
 }
