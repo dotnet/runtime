@@ -29,7 +29,7 @@ namespace System.Text
 
                 for (int i = 0; i < codePagesCount; i++)
                 {
-                    s_codePagesEncodingDataStream.Read(pCodePageIndex);
+                    ReadCodePageIndex(s_codePagesEncodingDataStream, pCodePageIndex);
 
                     string codePageName;
                     switch (codePageIndex.CodePage)
