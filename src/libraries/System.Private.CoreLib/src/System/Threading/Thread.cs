@@ -343,10 +343,10 @@ namespace System.Threading
             {
                 lock (this)
                 {
-                    _name = value;
-                    ThreadNameChanged(value);
-                    if (value != null)
+                    if (_name != value)
                     {
+                        _name = value;
+                        ThreadNameChanged(value);
                         _mayNeedResetForThreadPool = true;
                     }
                 }
@@ -362,7 +362,6 @@ namespace System.Threading
             {
                 _name = ThreadPool.WorkerThreadName;
                 ThreadNameChanged(ThreadPool.WorkerThreadName);
-                _name = null;
             }
         }
 
@@ -389,7 +388,7 @@ namespace System.Threading
 
             _mayNeedResetForThreadPool = false;
 
-            if (_name != null)
+            if (_name != ThreadPool.WorkerThreadName)
             {
                 SetThreadPoolWorkerThreadName();
             }
