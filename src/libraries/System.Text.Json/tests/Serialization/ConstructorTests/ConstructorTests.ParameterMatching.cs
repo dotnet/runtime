@@ -837,11 +837,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task ArgumentDeserialization_Honors_JsonInclude()
         {
-            Point_MembersHave_JsonInclude point = new Point_MembersHave_JsonInclude(1, 2);
+            Point_MembersHave_JsonInclude point = new Point_MembersHave_JsonInclude(1, 2,3);
 
             string json = JsonSerializer.Serialize(point);
             Assert.Contains(@"""X"":1", json);
             Assert.Contains(@"""Y"":2", json);
+            //We should add another test for non-public members
+            //when https://github.com/dotnet/runtime/issues/31511 is implemented
+            Assert.Contains(@"""Z"":3", json);
 
             point = await Serializer.DeserializeWrapper<Point_MembersHave_JsonInclude>(json);
             point.Verify();
