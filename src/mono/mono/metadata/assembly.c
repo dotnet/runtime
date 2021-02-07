@@ -1961,7 +1961,6 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 	MonoAssembly *ass;
 	MonoImageOpenStatus def_status;
 	gchar *fname;
-	gchar *new_fname;
 	gboolean loaded_from_bundle;
 
 	MonoAssemblyLoadRequest load_req;
