@@ -527,7 +527,7 @@ void
 mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash);
 
 MonoAssembly *
-mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status);
+mono_assembly_load_corlib (MonoImageOpenStatus *status);
 
 const MonoRuntimeInfo*
 mono_get_runtime_info (void);
@@ -555,8 +555,6 @@ mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, Mono
 
 MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload, gpointer user_data, MonoError *error);
-
-int mono_framework_version (void);
 
 MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines);
 

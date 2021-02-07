@@ -3144,7 +3144,7 @@ mono_assembly_is_in_gac (const gchar *filename)
 }
 
 MonoAssembly*
-mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status)
+mono_assembly_load_corlib (MonoImageOpenStatus *status)
 {
 	MonoAssemblyName *aname;
 	MonoAssemblyOpenRequest req;

@@ -579,7 +579,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	while (tmp != NULL) {
 		current_runtime = (MonoRuntimeInfo*)tmp->data;
 		g_assert (current_runtime);
-		ass = mono_assembly_load_corlib (current_runtime, &status);
+		ass = mono_assembly_load_corlib (&status);
 		if (status != MONO_IMAGE_OK && status != MONO_IMAGE_ERROR_ERRNO)
 			break;
 		tmp = tmp->next;
@@ -1635,17 +1635,6 @@ const MonoRuntimeInfo*
 mono_get_runtime_info (void)
 {
 	return current_runtime;
-}
-
-/**
- * mono_framework_version:
- *
- * Return the major version of the framework curently executing.
- */
-int
-mono_framework_version (void)
-{
-	return current_runtime->framework_version [0] - '0';
 }
 
 MonoAotCacheConfig *
