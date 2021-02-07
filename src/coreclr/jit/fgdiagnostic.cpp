@@ -3012,5 +3012,56 @@ void Compiler::fgDebugCheckNodesUniqueness()
     }
 }
 
+//------------------------------------------------------------------------------
+// fgDebugCheckLoopTable: checks that the loop table is valid.
+//    - If the method has no loops, no basic block has a loop number
+//    - If the method has loops, loop count is not zero and the loop table is not null
+//    - All basic blocks with loop numbers set have a corresponding loop in the table
+//    - All parents of the loop with the block contain that block
+//
+void Compiler::fgDebugCheckLoopTable()
+{
+    if (fgHasLoops)
+    {
+        assert(optLoopTable != nullptr);
+        assert(optLoopCount >= 1);
+    }
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (!fgHasLoops)
+        {
+            assert(block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP);
+            continue;
+        }
+
+        // Walk the loop table and find the first loop that contains our block.
+        // It should be the innermost one.
+        int loopNumber = BasicBlock::NOT_IN_LOOP;
+        for (int i = optLoopCount - 1; i >= 0; i--)
+        {
+            // Does this loop contain our block?
+            if (optLoopTable[i].lpContains(block))
+            {
+                loopNumber = i;
+                break;
+            }
+        }
+
+        // There must be at least one loop that contains this block
+        assert(loopNumber != BasicBlock::NOT_IN_LOOP);
+        // It must be the one pointed to by bbNatLoopNum.
+        assert(block->bbNatLoopNum == loopNumber);
+
+        // All loops that contain the innermost loop with this block must also contain this block.
+        while (loopNumber != BasicBlock::NOT_IN_LOOP)
+        {
+            assert(optLoopTable[loopNumber].lpContains(block));
+
+            loopNumber = optLoopTable[loopNumber].lpParent;
+        }
+    }
+}
+
 /*****************************************************************************/
 #endif // DEBUG
