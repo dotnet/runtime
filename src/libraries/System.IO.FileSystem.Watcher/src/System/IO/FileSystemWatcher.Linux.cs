@@ -517,9 +517,6 @@ namespace System.IO
             /// </summary>
             private void ProcessEvents()
             {
-                // It's OK to set the name since we specified TaskCreationOptions.LongRunning
-                Thread.CurrentThread.Name = ".NET File Watcher";
-
                 // When cancellation is requested, clear out all watches.  This should force any active or future reads
                 // on the inotify handle to return 0 bytes read immediately, allowing us to wake up from the blocking call
                 // and exit the processing loop and clean up.
