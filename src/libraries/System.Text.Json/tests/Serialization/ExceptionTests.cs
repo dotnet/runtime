@@ -525,8 +525,7 @@ namespace System.Text.Json.Serialization.Tests
 
             void RunTest<T>(string json)
             {
-                Type type = typeof(T);
-                string fullName = type.FullName;
+                string fullName = typeof(T).FullName;
 
                 NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<T>(json));
                 string exAsStr = ex.ToString();
@@ -541,7 +540,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains("$.Prop", exAsStr);
 
                 // NSE is not thrown because the serializer handles null.
-                if (!type.IsValueType)
+                if (!typeof(T).IsValueType)
                 {
                     Assert.Null(JsonSerializer.Deserialize<T>("null"));
 
