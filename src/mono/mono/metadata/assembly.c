@@ -1168,7 +1168,7 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 	char *name = g_strdup (filename);
 	for (int i = 0; !image && satellite_bundles [i]; ++i) {
 		if (strcmp (satellite_bundles [i]->name, name) == 0 && strcmp (satellite_bundles [i]->culture, culture) == 0) {
-			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, FALSE, FALSE, name, NULL);
+			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, FALSE, name, NULL);
 			break;
 		}
 	}
@@ -1880,7 +1880,7 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	for (int i = 0; !image && bundles [i]; ++i) {
 		if (strcmp (bundles [i]->name, name) == 0) {
 			// Since bundled images don't exist on disk, don't give them a legit filename
-			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, FALSE, FALSE, name, NULL);
+			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, FALSE, name, NULL);
 			break;
 		}
 	}
