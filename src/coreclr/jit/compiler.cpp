@@ -9541,3 +9541,8 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
+
+BOOL Compiler::IsInvariant(GenTree* tree) {
+    GenTree* lclVarTree = nullptr;
+    return tree->OperIsConst() || impIsAddressInLocal(tree, &lclVarTree);
+}

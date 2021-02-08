@@ -10376,6 +10376,8 @@ public:
 
     bool killGCRefs(GenTree* tree);
 
+public:
+    static BOOL IsInvariant(GenTree* tree);
 }; // end of class Compiler
 
 //---------------------------------------------------------------------------------------------------------------------

@@ -16,6 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "allocacheck.h" // for alloca
+#include "compiler.h"
 
 // Convert the given node into a call to the specified helper passing
 // the given argument list.
@@ -1340,9 +1341,7 @@ void fgArgInfo::ArgsComplete()
                 fgArgTabEntry* prevArgTabEntry = argTable[prevInx];
                 assert(prevArgTabEntry->argNum < curArgTabEntry->argNum);
 
-                // TODO-CQ: We should also allow LCL_VAR_ADDR and LCL_FLD_ADDR here, they're
-                // side effect free leaf nodes that like constant can be evaluated at any point.
-                if (prevArgTabEntry->GetNode()->gtOper != GT_CNS_INT)
+                if (!IsInvariant(prevArgTabEntry))
                 {
                     prevArgTabEntry->needTmp = true;
                     needsTemps               = true;

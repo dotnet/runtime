@@ -2845,7 +2845,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
             if (firstNode->gtFlags & strictEffects & GTF_PERSISTENT_SIDE_EFFECTS)
             {
                 // We have to be conservative - can swap iff op2 is constant.
-                if (!secondNode->OperIsConst())
+                if (IsInvariant(secondNode)
                 {
                     canSwap = false;
                 }
