@@ -36,7 +36,7 @@ public class ApkBuilder
             throw new ArgumentException($"AppDir='{AppDir}' is empty or doesn't exist");
         }
 
-        if (!File.Exists(Path.Combine(AppDir, mainLibraryFileName)))
+        if (!string.IsNullOrEmpty(mainLibraryFileName) && !File.Exists(Path.Combine(AppDir, mainLibraryFileName)))
         {
             throw new ArgumentException($"MainLibraryFileName='{mainLibraryFileName}' was not found in AppDir='{AppDir}'");
         }
