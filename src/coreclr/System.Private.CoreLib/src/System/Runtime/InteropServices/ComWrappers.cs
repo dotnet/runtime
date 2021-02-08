@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// ABI for function dispatch of a COM interface.
         /// </summary>
-        public struct ComInterfaceDispatch
+        public partial struct ComInterfaceDispatch
         {
             /// <summary>
             /// Given a <see cref="System.IntPtr"/> from a generated Vtable, convert to the target type.
