@@ -41,7 +41,7 @@ public:
         height(height)
     {}
 
-    virtual SizeF INSTANCE_CALLCONV GetSize()
+    virtual SizeF INSTANCE_CALLCONV GetSize(int)
     {
         return {width, height};
     }
@@ -74,7 +74,7 @@ extern "C" DLL_EXPORT C* STDMETHODCALLTYPE CreateInstanceOfC(float width, float 
 
 extern "C" DLL_EXPORT SizeF STDMETHODCALLTYPE GetSizeFromManaged(C* c)
 {
-    return c->GetSize();
+    return c->GetSize(9876);
 }
 
 extern "C" DLL_EXPORT Width STDMETHODCALLTYPE GetWidthFromManaged(C* c)

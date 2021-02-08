@@ -14,7 +14,7 @@ unsafe class StdCallMemberFunctionNative
     {
         public struct VtableLayout
         {
-            public delegate* unmanaged[Stdcall, MemberFunction]<C*, SizeF> getSize;
+            public delegate* unmanaged[Stdcall, MemberFunction]<C*, int, SizeF> getSize;
             public delegate* unmanaged[Stdcall, MemberFunction]<C*, Width> getWidth;
             public delegate* unmanaged[Stdcall, MemberFunction]<C*, IntWrapper> getHeightAsInt;
             public delegate* unmanaged[Stdcall, MemberFunction]<C*, E> getE;
@@ -93,7 +93,7 @@ unsafe class StdCallMemberFunctionTest
 
     private static void Test8ByteHFA(StdCallMemberFunctionNative.C* instance)
     {
-        StdCallMemberFunctionNative.SizeF result = instance->vtable->getSize(instance);
+        StdCallMemberFunctionNative.SizeF result = instance->vtable->getSize(instance, 1234);
 
         Assert.AreEqual(instance->width, result.width);
         Assert.AreEqual(instance->height, result.height);
@@ -198,7 +198,7 @@ unsafe class StdCallMemberFunctionTest
     }
 
     [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvStdcall), typeof(CallConvMemberFunction)})]
-    private static StdCallMemberFunctionNative.SizeF GetSize(StdCallMemberFunctionNative.C* c)
+    private static StdCallMemberFunctionNative.SizeF GetSize(StdCallMemberFunctionNative.C* c, int unused)
     {
         return new StdCallMemberFunctionNative.SizeF
         {

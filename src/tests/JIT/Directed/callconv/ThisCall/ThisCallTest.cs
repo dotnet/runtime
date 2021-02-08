@@ -49,7 +49,7 @@ unsafe class ThisCallNative
     }
 
     [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
-    public delegate SizeF GetSizeFn(C* c);
+    public delegate SizeF GetSizeFn(C* c, int unused);
     [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
     public delegate Width GetWidthFn(C* c);
     [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
@@ -113,7 +113,7 @@ unsafe class ThisCallTest
     {
         ThisCallNative.GetSizeFn callback = Marshal.GetDelegateForFunctionPointer<ThisCallNative.GetSizeFn>(instance->vtable->getSize);
 
-        ThisCallNative.SizeF result = callback(instance);
+        ThisCallNative.SizeF result = callback(instance, 1234);
 
         Assert.AreEqual(instance->width, result.width);
         Assert.AreEqual(instance->height, result.height);
@@ -269,7 +269,7 @@ unsafe class ThisCallTest
             {
                 managedVtable = (ThisCallNative.C.VtableLayout*)Marshal.AllocHGlobal(sizeof(ThisCallNative.C.VtableLayout));
                 managedVtable->getSize = Marshal.GetFunctionPointerForDelegate(
-                    (ThisCallNative.GetSizeFn)((ThisCallNative.C* c) => new ThisCallNative.SizeF { width = c->width, height = c->height} ));
+                    (ThisCallNative.GetSizeFn)((ThisCallNative.C* c, int unused) => new ThisCallNative.SizeF { width = c->width, height = c->height} ));
                 managedVtable->getWidth = Marshal.GetFunctionPointerForDelegate(
                     (ThisCallNative.GetWidthFn)((ThisCallNative.C* c) => new ThisCallNative.Width { width = c->width} ));
                 managedVtable->getHeightAsInt = Marshal.GetFunctionPointerForDelegate(
@@ -292,7 +292,7 @@ unsafe class ThisCallTest
             if (unmanagedCallersOnlyVtable == null)
             {
                 unmanagedCallersOnlyVtable = (ThisCallNative.C.VtableLayout*)Marshal.AllocHGlobal(sizeof(ThisCallNative.C.VtableLayout));
-                unmanagedCallersOnlyVtable->getSize = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.SizeF>)&GetSize;
+                unmanagedCallersOnlyVtable->getSize = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, int, ThisCallNative.SizeF>)&GetSize;
                 unmanagedCallersOnlyVtable->getWidth = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.Width>)&GetWidth;
                 unmanagedCallersOnlyVtable->getHeightAsInt = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.IntWrapper>)&GetHeightAsInt;
                 unmanagedCallersOnlyVtable->getE = (IntPtr)(delegate* unmanaged[Thiscall]<ThisCallNative.C*, ThisCallNative.E>)&GetE;
@@ -303,7 +303,7 @@ unsafe class ThisCallTest
     }
 
     [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
-    private static ThisCallNative.SizeF GetSize(ThisCallNative.C* c)
+    private static ThisCallNative.SizeF GetSize(ThisCallNative.C* c, int unused)
     {
         return new ThisCallNative.SizeF
         {
