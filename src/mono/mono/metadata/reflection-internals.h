@@ -22,11 +22,6 @@ TYPED_HANDLE_DECL (MonoReflectionTypeBuilder)
 MonoReflectionAssemblyHandle
 mono_domain_try_type_resolve_name (MonoDomain *domain, MonoAssembly *assembly, MonoStringHandle name, MonoError *error);
 
-#ifndef ENABLE_NETCORE
-MonoReflectionAssemblyHandle
-mono_domain_try_type_resolve_typebuilder (MonoDomain *domain, MonoReflectionTypeBuilderHandle typebuilder, MonoError *error);
-#endif
-
 MonoReflectionTypeBuilderHandle
 mono_class_get_ref_info (MonoClass *klass);
 

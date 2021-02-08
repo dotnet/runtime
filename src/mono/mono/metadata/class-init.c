@@ -34,16 +34,13 @@
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
 
-#ifdef ENABLE_NETCORE
 #define FEATURE_COVARIANT_RETURNS
-#endif
 
 gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
-#ifdef ENABLE_NETCORE
+
 /* Set by the EE */
 gint32 mono_simd_register_size;
-#endif
 
 /* Statistics */
 static gint32 classes_size;
@@ -59,6 +56,13 @@ static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd);
 static int generic_array_methods (MonoClass *klass);
 static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache);
 static gboolean class_has_isbyreflike_attribute (MonoClass *klass);
+
+static
+GENERATE_TRY_GET_CLASS_WITH_CACHE(icollection, "System.Collections.Generic", "ICollection`1");
+static
+GENERATE_TRY_GET_CLASS_WITH_CACHE(ienumerable, "System.Collections.Generic", "IEnumerable`1");
+static
+GENERATE_TRY_GET_CLASS_WITH_CACHE(ireadonlycollection, "System.Collections.Generic", "IReadOnlyCollection`1");
 
 /* This TLS variable points to a GSList of classes which have setup_fields () executing */
 static MonoNativeTlsKey setup_fields_tls_id;
@@ -291,12 +295,10 @@ mono_class_setup_fields (MonoClass *klass)
 	if (explicit_size)
 		instance_size += real_size;
 
-#ifdef ENABLE_NETCORE
 	if (mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System.Numerics") && !strcmp (klass->name, "Register")) {
 		if (mono_simd_register_size)
 			instance_size += mono_simd_register_size;
 	}
-#endif
 
 	/*
 	 * This function can recursively call itself.
@@ -636,11 +638,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	/* reserve space to store vector pointer in arrays */
 	if (mono_is_corlib_image (image) && !strcmp (nspace, "System") && !strcmp (name, "Array")) {
 		klass->instance_size += 2 * TARGET_SIZEOF_VOID_P;
-#ifndef ENABLE_NETCORE
-		g_assert (mono_class_get_field_count (klass) == 0);
-#else
 		/* TODO: check that array has 0 non-const fields */
-#endif
 	}
 
 	if (klass->enumtype) {
@@ -858,14 +856,13 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 		if (mono_type_is_primitive (gclass->context.class_inst->type_argv [0]))
 			klass->simd_type = 1;
 	}
-#ifdef ENABLE_NETCORE
+
 	if (mono_is_corlib_image (gklass->image) &&
 		(!strcmp (gklass->name, "Vector`1") || !strcmp (gklass->name, "Vector128`1") || !strcmp (gklass->name, "Vector256`1"))) {
 		MonoType *etype = gclass->context.class_inst->type_argv [0];
 		if (mono_type_is_primitive (etype) && etype->type != MONO_TYPE_CHAR && etype->type != MONO_TYPE_BOOLEAN)
 			klass->simd_type = 1;
 	}
-#endif
 
 	klass->is_array_special_interface = gklass->is_array_special_interface;
 
@@ -2158,7 +2155,6 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		}
 
 		/* check for incorrectly aligned or overlapped by a non-object field */
-#ifdef ENABLE_NETCORE	
 		guint8 *layout_check;	
 		if (has_references) {
 			layout_check = g_new0 (guint8, real_size);
@@ -2185,7 +2181,6 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 			g_free (layout_check);
 		}
-#endif
 
 		instance_size = MAX (real_size, instance_size);
 		if (!((layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) && explicit_size)) {
@@ -2276,6 +2271,9 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if (mono_field_is_deleted (field))
 			continue;
 
+		/* Type may not be initialized yet. Don't initialize it. If
+		   it's a reference type we can get the size without
+		   recursing */
 		if (mono_type_has_exceptions (field->type)) {
 			mono_class_set_type_load_failure (klass, "Field '%s' has an invalid type.", field->name);
 			break;
@@ -2284,6 +2282,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		has_static_fields = TRUE;
 
 		size = mono_type_size (field->type, &align);
+		/* Check again in case initializing the field's type caused a failure */
+		if (mono_type_has_exceptions (field->type)) {
+			mono_class_set_type_load_failure (klass, "Field '%s' has an invalid type.", field->name);
+			break;
+		}
+
 		field_offsets [i] = class_size;
 		/*align is always non-zero here*/
 		field_offsets [i] += align - 1;
@@ -2483,6 +2487,16 @@ setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **met
 	}
 }
 
+static gboolean
+check_method_exists (MonoClass *iface, const char *method_name)
+{
+	g_assert (iface != NULL);
+	ERROR_DECL (method_lookup_error);
+	gboolean found = NULL != mono_class_get_method_from_name_checked (iface, method_name, -1, 0, method_lookup_error);
+	mono_error_cleanup (method_lookup_error);
+	return found;
+}
+
 static int
 generic_array_methods (MonoClass *klass)
 {
@@ -2510,25 +2524,36 @@ generic_array_methods (MonoClass *klass)
 		const char *ireadonlylist_prefix = "InternalArray__IReadOnlyList_";
 		const char *ireadonlycollection_prefix = "InternalArray__IReadOnlyCollection_";
 
-		generic_array_method_info [i].array_method = m;
+		MonoClass *iface = NULL;
+
 		if (!strncmp (m->name, "InternalArray__ICollection_", 27)) {
 			iname = "System.Collections.Generic.ICollection`1.";
 			mname = m->name + 27;
+			iface = mono_class_try_get_icollection_class ();
 		} else if (!strncmp (m->name, "InternalArray__IEnumerable_", 27)) {
 			iname = "System.Collections.Generic.IEnumerable`1.";
 			mname = m->name + 27;
+			iface = mono_class_try_get_ienumerable_class ();
 		} else if (!strncmp (m->name, ireadonlylist_prefix, strlen (ireadonlylist_prefix))) {
 			iname = "System.Collections.Generic.IReadOnlyList`1.";
 			mname = m->name + strlen (ireadonlylist_prefix);
+			iface = mono_defaults.generic_ireadonlylist_class;
 		} else if (!strncmp (m->name, ireadonlycollection_prefix, strlen (ireadonlycollection_prefix))) {
 			iname = "System.Collections.Generic.IReadOnlyCollection`1.";
 			mname = m->name + strlen (ireadonlycollection_prefix);
+			iface = mono_class_try_get_ireadonlycollection_class ();
 		} else if (!strncmp (m->name, "InternalArray__", 15)) {
 			iname = "System.Collections.Generic.IList`1.";
 			mname = m->name + 15;
+			iface = mono_defaults.generic_ilist_class;
 		} else {
 			g_assert_not_reached ();
 		}
+
+		if (!iface || !check_method_exists (iface, mname))
+			continue;
+		
+		generic_array_method_info [i].array_method = m;
 
 		name = (gchar *)mono_image_alloc (mono_defaults.corlib, strlen (iname) + strlen (mname) + 1);
 		strcpy (name, iname);
@@ -2538,7 +2563,10 @@ generic_array_methods (MonoClass *klass)
 	}
 	/*g_print ("array generic methods: %d\n", count_generic);*/
 
-	generic_array_method_num = count_generic;
+	/* only count the methods we actually added, not the ones that we
+	 * skipped if they implement an interface method that was trimmed.
+	 */
+	generic_array_method_num = i;
 	g_list_free (list);
 	return generic_array_method_num;
 }
@@ -2922,9 +2950,6 @@ mono_class_init_internal (MonoClass *klass)
 
 	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, TRUE);
 
-	if (mono_security_core_clr_enabled ())
-		mono_security_core_clr_check_inheritance (klass);
-
 	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass))
 		mono_class_set_type_load_failure (klass, "Invalid generic instantiation");
 
@@ -2967,18 +2992,6 @@ mono_class_init_checked (MonoClass *klass, MonoError *error)
 static void
 init_com_from_comimport (MonoClass *klass)
 {
-	/* we don't always allow COM initialization under the CoreCLR (e.g. Moonlight does not require it) */
-	if (mono_security_core_clr_enabled ()) {
-		/* but some other CoreCLR user could requires it for their platform (i.e. trusted) code */
-		if (!mono_security_core_clr_determine_platform_image (klass->image)) {
-			/* but it can not be made available for application (i.e. user code) since all COM calls
-			 * are considered native calls. In this case we fail with a TypeLoadException (just like
-			 * Silverlight 2 does */
-			mono_class_set_type_load_failure (klass, "");
-			return;
-		}
-	}
-
 	/* FIXME : we should add an extra checks to ensure COM can be initialized properly before continuing */
 }
 #endif /*DISABLE_COM*/
@@ -3704,7 +3717,7 @@ void
 mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 {
 	int i, interface_count;
-	MonoClass **interfaces;
+	MonoClass *iface, **interfaces;
 
 	error_init (error);
 
@@ -3713,23 +3726,47 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 
 	if (klass->rank == 1 && m_class_get_byval_arg (klass)->type != MONO_TYPE_ARRAY) {
 		MonoType *args [1];
+		MonoClass *array_ifaces [16];
 
-		/* IList and IReadOnlyList -> 2x if enum*/
-		interface_count = klass->element_class->enumtype ? 4 : 2;
-		interfaces = (MonoClass **)mono_image_alloc0 (klass->image, sizeof (MonoClass*) * interface_count);
+		/*
+		 * Arrays implement IList and IReadOnlyList or their base interfaces if they are not linked out.
+		 * For arrays of enums, they implement the interfaces for the base type as well.
+		 */
+		interface_count = 0;
+		if (mono_defaults.generic_ilist_class) {
+			array_ifaces [interface_count ++] = mono_defaults.generic_ilist_class;
+		} else {
+			iface = mono_class_try_get_icollection_class ();
+			if (iface)
+				array_ifaces [interface_count ++] = iface;
+		}
+		if (mono_defaults.generic_ireadonlylist_class) {
+			array_ifaces [interface_count ++] = mono_defaults.generic_ireadonlylist_class;
+		} else {
+			iface = mono_class_try_get_ireadonlycollection_class ();
+			if (iface)
+				array_ifaces [interface_count ++] = iface;
+		}
+		if (!mono_defaults.generic_ilist_class && !mono_defaults.generic_ireadonlylist_class) {
+			iface = mono_class_try_get_ienumerable_class ();
+			if (iface)
+				array_ifaces [interface_count ++] = iface;
+		}
+		int mult = klass->element_class->enumtype ? 2 : 1;
 
+		interfaces = (MonoClass **)mono_image_alloc0 (klass->image, sizeof (MonoClass*) * interface_count * mult);
+
+		int itf_idx = 0;
 		args [0] = m_class_get_byval_arg (m_class_get_element_class (klass));
-		interfaces [0] = mono_class_bind_generic_parameters (
-			mono_defaults.generic_ilist_class, 1, args, FALSE);
-		interfaces [1] = mono_class_bind_generic_parameters (
-			   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
+		for (int i = 0; i < interface_count; ++i)
+			interfaces [itf_idx++] = mono_class_bind_generic_parameters (array_ifaces [i], 1, args, FALSE);
 		if (klass->element_class->enumtype) {
 			args [0] = mono_class_enum_basetype_internal (klass->element_class);
-			interfaces [2] = mono_class_bind_generic_parameters (
-				mono_defaults.generic_ilist_class, 1, args, FALSE);
-			interfaces [3] = mono_class_bind_generic_parameters (
-				   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
+			for (int i = 0; i < interface_count; ++i)
+				interfaces [itf_idx++] = mono_class_bind_generic_parameters (array_ifaces [i], 1, args, FALSE);
 		}
+		interface_count *= mult;
+		g_assert (itf_idx == interface_count);
 	} else if (mono_class_is_ginst (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
@@ -3992,16 +4029,17 @@ mono_class_setup_runtime_info (MonoClass *klass, MonoDomain *domain, MonoVTable 
 MonoClass *
 mono_class_create_array_fill_type (void)
 {
-	static MonoClass klass;
+	static MonoClassArray aklass;
 
-	klass.element_class = mono_defaults.int64_class;
-	klass.rank = 1;
-	klass.instance_size = MONO_SIZEOF_MONO_ARRAY;
-	klass.sizes.element_size = 8;
-	klass.size_inited = 1;
-	klass.name = "array_filler_type";
+	aklass.klass.class_kind = MONO_CLASS_GC_FILLER;
+	aklass.klass.element_class = mono_defaults.int64_class;
+	aklass.klass.rank = 1;
+	aklass.klass.instance_size = MONO_SIZEOF_MONO_ARRAY;
+	aklass.klass.sizes.element_size = 8;
+	aklass.klass.size_inited = 1;
+	aklass.klass.name = "array_filler_type";
 
-	return &klass;
+	return &aklass.klass;
 }
 
 /**

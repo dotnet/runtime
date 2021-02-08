@@ -119,9 +119,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 throw new Exception($"Unable to find built host and sharedfx, please ensure the build has been run: {repoDirectoriesProvider.BuiltDotnet}");
             }
 
-            if ( ! Directory.Exists(repoDirectoriesProvider.CorehostPackages))
+            if ( ! Directory.Exists(repoDirectoriesProvider.HostArtifacts))
             {
-                throw new Exception($"Unable to find host packages directory, please ensure the build has been run: {repoDirectoriesProvider.CorehostPackages}");
+                throw new Exception($"Unable to find host artifacts directory, please ensure the build has been run: {repoDirectoriesProvider.HostArtifacts}");
             }
         }
 

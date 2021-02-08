@@ -2,6 +2,7 @@
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestResultsName>testResults.xml</TestResultsName>
+    <UseXunitExcludesTxtFile Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</UseXunitExcludesTxtFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
@@ -18,7 +19,7 @@
     <RunScriptCommand Condition="'$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(UseXunitExcludesTxtFile)' != 'true'">
     <!-- Add local and global options to the argument stack. -->
     <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
     <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
@@ -29,6 +30,10 @@
 
     <!-- User passed in options. -->
     <RunScriptCommand Condition="'$(XUnitOptions)' != ''">$(RunScriptCommand) $(XUnitOptions)</RunScriptCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseXunitExcludesTxtFile)' == 'true'">
+    <XunitExcludesTxtFileContent>$(_withoutCategories.Replace(';', '%0dcategory='))</XunitExcludesTxtFileContent>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,7 +48,7 @@
 
   <!-- Overwrite the runner config file with the app local one. -->
   <Target Name="OverwriteDesktopTestRunnerConfigs"
-          Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and 
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and
                      '$(GenerateAppConfigurationFile)' == 'true' and
                      '@(AppConfigWithTargetPath)' != ''"
           AfterTargets="CopyFilesToOutputDirectory">
@@ -57,7 +62,7 @@
   </Target>
 
   <!-- ResolveAssemblyReferences is the target that populates ReferenceCopyLocalPaths which is what is copied to output directory. -->
-  <Target Name="CopyRunnerToOutputDirectory" BeforeTargets="ResolveAssemblyReferences">
+  <Target Name="CopyRunnerToOutputDirectory" BeforeTargets="ResolveAssemblyReferences" Condition="'$(TargetsMobile)' != 'true'">
     <ItemGroup>
       <!-- Copy test runner to output directory -->
       <None Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\*"

@@ -18,7 +18,11 @@ gpointer
 mini_llvmonly_load_method (MonoMethod *method, gboolean caller_gsharedvt, gboolean need_unbox, gpointer *out_arg, MonoError *error)
 {
 	gpointer addr = mono_compile_method_checked (method, error);
-	return_val_if_nok (error, NULL);
+
+	if (!is_ok (error)) {
+		mono_error_cleanup (error);
+		error_init_reuse (error);
+	}
 
 	if (addr) {
 		return mini_llvmonly_add_method_wrappers (method, (gpointer)addr, caller_gsharedvt, need_unbox, out_arg);
@@ -810,4 +814,26 @@ mini_llvmonly_throw_aot_failed_exception (const char *name)
 	MonoException *ex = mono_get_exception_execution_engine (msg);
 	g_free (msg);
 	mono_llvm_throw_exception ((MonoObject*)ex);
+}
+
+/*
+ * mini_llvmonly_pop_lmf:
+ *
+ *   Pop LMF off the LMF stack.
+ */
+void
+mini_llvmonly_pop_lmf (MonoLMF *lmf)
+{
+	if (lmf->previous_lmf)
+		mono_set_lmf ((MonoLMF*)lmf->previous_lmf);
+}
+
+gpointer
+mini_llvmonly_get_interp_entry (MonoMethod *method)
+{
+	ERROR_DECL (error);
+
+	MonoFtnDesc *desc = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (method, FALSE, error);
+	mono_error_assert_ok (error);
+	return desc;
 }

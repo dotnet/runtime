@@ -150,7 +150,6 @@ GENERATE_GET_CLASS_WITH_CACHE (com_object, "System", "__ComObject")
 GENERATE_GET_CLASS_WITH_CACHE (variant,    "System", "Variant")
 
 static GENERATE_GET_CLASS_WITH_CACHE (interface_type_attribute, "System.Runtime.InteropServices", "InterfaceTypeAttribute")
-static GENERATE_GET_CLASS_WITH_CACHE (guid_attribute, "System.Runtime.InteropServices", "GuidAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (com_visible_attribute, "System.Runtime.InteropServices", "ComVisibleAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (com_default_interface_attribute, "System.Runtime.InteropServices", "ComDefaultInterfaceAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (class_interface_attribute, "System.Runtime.InteropServices", "ClassInterfaceAttribute")
@@ -487,30 +486,13 @@ cominterop_get_com_slot_for_method (MonoMethod* method, MonoError* error)
 	return slot + cominterop_get_com_slot_begin (ic);
 }
 
-static void
-cominterop_mono_string_to_guid (MonoString* string, guint8 *guid);
-
 static gboolean
 cominterop_class_guid (MonoClass* klass, guint8* guid)
 {
 	ERROR_DECL (error);
-	MonoCustomAttrInfo *cinfo;
-
-	cinfo = mono_custom_attrs_from_class_checked (klass, error);
-	mono_error_assert_ok (error);
-	if (cinfo) {
-		MonoReflectionGuidAttribute *attr = (MonoReflectionGuidAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_guid_attribute_class (), error);
-		mono_error_assert_ok (error); /*FIXME proper error handling*/
-
-		if (!attr)
-			return FALSE;
-		if (!cinfo->cached)
-			mono_custom_attrs_free (cinfo);
-
-		cominterop_mono_string_to_guid (attr->guid, guid);
-		return TRUE;
-	}
-	return FALSE;
+	mono_metadata_get_class_guid (klass, guid, error);
+	mono_error_assert_ok (error); /*FIXME proper error handling*/
+	return TRUE;
 }
 
 static gboolean
@@ -552,8 +534,8 @@ cominterop_com_visible (MonoClass* klass)
 
 }
 
-static gboolean
-cominterop_method_com_visible (MonoMethod *method)
+gboolean
+mono_cominterop_method_com_visible (MonoMethod *method)
 {
 	ERROR_DECL (error);
 	MonoCustomAttrInfo *cinfo;
@@ -1041,7 +1023,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 		}
 	}
 
-	mono_marshal_emit_native_wrapper (m_class_get_image (method->klass), mb_native, sig_native, piinfo, mspecs, piinfo->addr, FALSE, TRUE, FALSE, FALSE);
+	mono_marshal_emit_native_wrapper (m_class_get_image (method->klass), mb_native, sig_native, piinfo, mspecs, piinfo->addr, EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS);
 
 	res = mono_mb_create_method (mb_native, sig_native, sig_native->param_count + 16);	
 
@@ -2157,7 +2139,7 @@ cominterop_class_method_is_visible (MonoMethod *method)
 	if (flags & METHOD_ATTRIBUTE_RT_SPECIAL_NAME)
 		return FALSE;
 
-	if (!cominterop_method_com_visible (method))
+	if (!mono_cominterop_method_com_visible (method))
 		return FALSE;
 
 	/* if the method is an override, ignore it and use the original definition */
@@ -2713,22 +2695,6 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 	return res;
 }
 
-/**
- * cominterop_mono_string_to_guid:
- *
- * Converts the standard string representation of a GUID 
- * to a 16 byte Microsoft GUID.
- */
-static void
-cominterop_mono_string_to_guid (MonoString* string, guint8 *guid) {
-	gunichar2 * chars = mono_string_chars_internal (string);
-	int i = 0;
-	static const guint8 indexes[16] = {7, 5, 3, 1, 12, 10, 17, 15, 20, 22, 25, 27, 29, 31, 33, 35};
-
-	for (i = 0; i < sizeof(indexes); i++)
-		guid [i] = g_unichar_xdigit_value (chars [indexes [i]]) + (g_unichar_xdigit_value (chars [indexes [i] - 1]) << 4);
-}
-
 static gboolean
 cominterop_class_guid_equal (const guint8* guid, MonoClass* klass)
 {
@@ -3194,17 +3160,10 @@ default_ptr_to_bstr (const gunichar2* ptr, int slen)
 	// The allocation pre-string is pointer-sized, and then only 4 bytes are used for the length regardless. Additionally,
 	// the total length is also aligned to a 16-byte boundary. This preserves the old behavior on legacy and fixes it for
 	// netcore moving forward.
-#ifdef ENABLE_NETCORE
 	mono_bstr const s = (mono_bstr)mono_bstr_alloc ((slen + 1) * sizeof (gunichar2));
 	if (s == NULL)
 		return NULL;
-#else
-	/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
-	guint32 * const ret = (guint32 *)g_malloc ((slen + 1) * sizeof (gunichar2) + sizeof (guint32));
-	if (ret == NULL)
-		return NULL;
-	mono_bstr const s = (mono_bstr)(ret + 1);
-#endif
+
 	mono_bstr_set_length (s, slen);
 	if (ptr)
 		memcpy (s, ptr, slen * sizeof (gunichar2));
@@ -3320,11 +3279,7 @@ mono_free_bstr (/*mono_bstr_const*/gpointer bstr)
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
 #endif
-#ifdef ENABLE_NETCORE
 		g_free (((char *)bstr) - SIZEOF_VOID_P);
-#else // In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform
-		g_free (((char *)bstr) - 4);
-#endif
 #ifndef DISABLE_COM
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		sys_free_string_ms ((mono_bstr_const)bstr);
@@ -4238,18 +4193,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUn
 
 #endif /* HOST_WIN32 */
 #endif /* DISABLE_COM */
-
-#ifndef ENABLE_NETCORE
-MonoStringHandle
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (mono_bstr_const ptr, MonoError *error)
-{
-	if (ptr == NULL) {
-		mono_error_set_argument_null (error, "ptr", NULL);
-		return NULL_HANDLE_STRING;
-	}
-	return mono_string_from_bstr_checked (ptr, error);
-}
-#endif
 
 mono_bstr
 ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2* ptr, int len)

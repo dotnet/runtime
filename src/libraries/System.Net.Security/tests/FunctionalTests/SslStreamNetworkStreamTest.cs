@@ -24,7 +24,7 @@ namespace System.Net.Security.Tests
         static SslStreamNetworkStreamTest()
         {
             TestHelper.CleanupCertificates(nameof(SslStreamNetworkStreamTest));
-            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest));
+            (_serverCert, _serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
         }
 
         [ConditionalFact]
@@ -213,15 +213,31 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
-        public async Task SslStream_UntrustedCaWithCustomCallback_OK()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
+        public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialChain)
         {
+            var rnd = new Random();
+            int split = rnd.Next(0, _serverChain.Count - 1);
+
             var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
             clientOptions.RemoteCertificateValidationCallback =
                 (sender, certificate, chain, sslPolicyErrors) =>
                 {
-                    chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
+                    // add our custom root CA
+                    chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count - 1]);
                     chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    // Add only one CA to verify that peer did send intermediate CA cert.
+                    // In case of partial chain, we need to make missing certs available.
+                    if (usePartialChain)
+                    {
+                        for (int i = split; i < _serverChain.Count - 1; i++)
+                        {
+                            chain.ChainPolicy.ExtraStore.Add(_serverChain[i]);
+                        }
+                    }
 
                     bool result = chain.Build((X509Certificate2)certificate);
                     Assert.True(result);
@@ -230,7 +246,22 @@ namespace System.Net.Security.Tests
                 };
 
             var serverOptions = new SslServerAuthenticationOptions();
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_serverCert, _serverChain);
+            X509Certificate2Collection serverChain;
+            if (usePartialChain)
+            {
+                // give first few certificates without root CA
+                serverChain = new X509Certificate2Collection();
+                for (int i = 0; i < split; i++)
+                {
+                    serverChain.Add(_serverChain[i]);
+                }
+            }
+            else
+            {
+                serverChain = _serverChain;
+            }
+
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_serverCert, serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -249,6 +280,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
@@ -258,6 +290,7 @@ namespace System.Net.Security.Tests
                 clientOptions.RemoteCertificateValidationCallback =
                     (sender, certificate, chain, sslPolicyErrors) =>
                     {
+                        // Add only root CA to verify that peer did send intermediate CA cert.
                         chain.ChainPolicy.CustomTrustStore.Add(_serverChain[_serverChain.Count -1]);
                         chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                         // This should work and we should be able to trust the chain.
@@ -270,7 +303,8 @@ namespace System.Net.Security.Tests
             }
             else
             {
-                errorMessage = "UntrustedRoot";
+                // On Windows we hand whole chain to OS so they can always see the root CA.
+                errorMessage = PlatformDetection.IsWindows ? "UntrustedRoot" : "PartialChain";
             }
 
             var serverOptions = new SslServerAuthenticationOptions();

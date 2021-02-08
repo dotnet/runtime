@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Versioning;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
@@ -2854,6 +2855,7 @@ namespace System.Threading.Tasks
                 try
                 {
                     AddCompletionAction(mres, addBeforeOthers: true);
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44622
                     if (infiniteWait)
                     {
                         returnValue = mres.Wait(Timeout.Infinite, cancellationToken);
@@ -2866,6 +2868,7 @@ namespace System.Threading.Tasks
                             returnValue = mres.Wait((int)(millisecondsTimeout - elapsedTimeTicks), cancellationToken);
                         }
                     }
+#pragma warning restore CA1416
                 }
                 finally
                 {
@@ -4447,6 +4450,7 @@ namespace System.Threading.Tasks
         /// At least one of the <see cref="Task"/> instances was canceled -or- an exception was thrown during
         /// the execution of at least one of the <see cref="Task"/> instances.
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(params Task[] tasks)
         {
@@ -4489,6 +4493,7 @@ namespace System.Threading.Tasks
         /// infinite time-out -or- timeout is greater than
         /// <see cref="int.MaxValue"/>.
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, TimeSpan timeout)
         {
@@ -4527,6 +4532,7 @@ namespace System.Threading.Tasks
         /// <paramref name="millisecondsTimeout"/> is a negative number other than -1, which represents an
         /// infinite time-out.
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout)
         {
@@ -4555,6 +4561,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.OperationCanceledException">
         /// The <paramref name="cancellationToken"/> was canceled.
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(Task[] tasks, CancellationToken cancellationToken)
         {
@@ -4595,12 +4602,14 @@ namespace System.Threading.Tasks
         /// <exception cref="System.OperationCanceledException">
         /// The <paramref name="cancellationToken"/> was canceled.
         /// </exception>
+        [UnsupportedOSPlatform("browser")]
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken) =>
             WaitAllCore(tasks, millisecondsTimeout, cancellationToken);
 
         // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
         // to be able to see the method on the stack and inspect arguments).
+        [UnsupportedOSPlatform("browser")]
         private static bool WaitAllCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             if (tasks == null)
@@ -4739,6 +4748,7 @@ namespace System.Threading.Tasks
         /// <param name="millisecondsTimeout">The timeout.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>true if all of the tasks completed; otherwise, false.</returns>
+        [UnsupportedOSPlatform("browser")]
         private static bool WaitAllBlockingCore(List<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");
@@ -5440,7 +5450,7 @@ namespace System.Threading.Tasks
                     _timer = new TimerQueueTimer(state => ((DelayPromise)state!).CompleteTimedOut(), this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
                     if (IsCompleted)
                     {
-                        // Handle rare race condition where completion occurs prior to our having created and stored the timer, in which case
+                        // Handle rare race condition where the timer fires prior to our having stored it into the field, in which case
                         // the timer won't have been cleaned up appropriately.  This call to close might race with the Cleanup call to Close,
                         // but Close is thread-safe and will be a nop if it's already been closed.
                         _timer.Close();
@@ -5484,7 +5494,14 @@ namespace System.Threading.Tasks
                         // because that's strangely already handled inside of TrySetCanceled.
                     }
                 }, this);
-
+                if (IsCompleted)
+                {
+                    // Handle rare race condition where the base timer fires prior to our having stored the cancellation registration into
+                    // the field, in which case the call to Cleanup won't dispose of the registration.  In such a case, Cleanup will have
+                    // already been called to dispose of the base timer, so we can just call Dispose on the registration directly.  This
+                    // Dispose call might also race with the base calling Cleanup, but CTR.Dispose is thread-safe.
+                    _registration.Dispose();
+                }
             }
 
             protected override void Cleanup()

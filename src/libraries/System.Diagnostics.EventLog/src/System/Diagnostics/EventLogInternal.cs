@@ -53,7 +53,6 @@ namespace System.Diagnostics
         private readonly EventLog parent;
 
         private const string EventLogKey = "SYSTEM\\CurrentControlSet\\Services\\EventLog";
-        internal const string DllName = "EventLogMessages.dll";
         private const string eventLogMutexName = "netfxeventlog.1.0";
         private const int SecondsPerDay = 60 * 60 * 24;
 
@@ -1014,11 +1013,6 @@ namespace System.Diagnostics
         private int GetPreviousEntryPos(int pos)
         {
             return pos - IntFrom(cache, pos - 4);
-        }
-
-        internal static string GetDllPath(string machineName)
-        {
-            return Path.Combine(NetFrameworkUtils.GetLatestBuildDllDirectory(machineName), DllName);
         }
 
         private static int IntFrom(byte[] buf, int offset)

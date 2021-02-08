@@ -16,7 +16,7 @@ namespace System.Threading.Channels
         protected static readonly Action<object?> s_availableSentinel = AvailableSentinel; // named method to help with debugging
         private static void AvailableSentinel(object? s) => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(AvailableSentinel)} invoked with {s}");
 
-        /// <summary>Sentinel object used in a field to indicate the operation has completed.</summary>
+        /// <summary>Sentinel object used in a field to indicate the operation has completed</summary>
         protected static readonly Action<object?> s_completedSentinel = CompletedSentinel; // named method to help with debugging
         private static void CompletedSentinel(object? s) => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(CompletedSentinel)} invoked with {s}");
 

@@ -344,9 +344,6 @@ mono_domain_set_internal (MonoDomain *domain)
 gboolean
 mono_domain_set (MonoDomain *domain, gboolean force)
 {
-	if (!force && domain->state == MONO_APPDOMAIN_UNLOADED)
-		return FALSE;
-
 	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_domain_set_internal_with_options (domain, TRUE));
 	return TRUE;
 }

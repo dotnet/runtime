@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "opensslshim.h"
+#include "pal_atomic.h"
 
 // Define pointers to all the used OpenSSL functions
 #define REQUIRED_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
@@ -28,7 +29,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 // x.x.x, considering the max number of decimal digits for each component
 #define MaxVersionStringLength 32
 
-static void* libssl = NULL;
+ static void* volatile libssl = NULL;
 
 #ifdef __APPLE__
 #define DYLIBNAME_PREFIX "libssl."
@@ -41,8 +42,13 @@ static void* libssl = NULL;
 
 static void DlOpen(const char* libraryName)
 {
-    assert(libssl == NULL);
-    libssl = dlopen(libraryName, RTLD_LAZY);
+    void* libsslNew = dlopen(libraryName, RTLD_LAZY);
+
+    // check is someone else has opened and published libssl already
+    if (!pal_atomic_cas_ptr(&libssl, libsslNew, NULL))
+    {
+        dlclose(libsslNew);
+    }
 }
 
 static bool OpenLibrary()
@@ -116,8 +122,7 @@ static bool OpenLibrary()
     return libssl != NULL;
 }
 
-__attribute__((constructor))
-static void InitializeOpenSSLShim()
+void InitializeOpenSSLShim(void)
 {
     if (!OpenLibrary())
     {

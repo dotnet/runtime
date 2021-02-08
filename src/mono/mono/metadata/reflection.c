@@ -66,15 +66,9 @@ static GENERATE_GET_CLASS_WITH_CACHE (mono_event, "System.Reflection", "RuntimeE
 static GENERATE_GET_CLASS_WITH_CACHE (mono_property, "System.Reflection", "RuntimePropertyInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (mono_parameter_info, "System.Reflection", "RuntimeParameterInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (missing, "System.Reflection", "Missing");
-#ifdef ENABLE_NETCORE
 static GENERATE_GET_CLASS_WITH_CACHE (method_body, "System.Reflection", "RuntimeMethodBody");
 static GENERATE_GET_CLASS_WITH_CACHE (local_variable_info, "System.Reflection", "RuntimeLocalVariableInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, "System.Reflection", "RuntimeExceptionHandlingClause");
-#else
-static GENERATE_GET_CLASS_WITH_CACHE (method_body, "System.Reflection", "MethodBody");
-static GENERATE_GET_CLASS_WITH_CACHE (local_variable_info, "System.Reflection", "LocalVariableInfo");
-static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, "System.Reflection", "ExceptionHandlingClause");
-#endif
 static GENERATE_GET_CLASS_WITH_CACHE (type_builder, "System.Reflection.Emit", "TypeBuilder");
 static GENERATE_GET_CLASS_WITH_CACHE (dbnull, "System", "DBNull");
 
@@ -465,13 +459,8 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	g_assert (!type->has_cmods);
 
 	/* void is very common */
-#ifdef ENABLE_NETCORE
 	if (!type->byref && type->type == MONO_TYPE_VOID && domain->typeof_void)
 		return (MonoReflectionType*)domain->typeof_void;
-#else
-	if (type->type == MONO_TYPE_VOID && domain->typeof_void)
-		return (MonoReflectionType*)domain->typeof_void;
-#endif
 
 	/*
 	 * If the vtable of the given class was already created, we can use
@@ -963,7 +952,8 @@ add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjec
 
 	MonoObjectHandle def_value;
 
-	if (!(sig_param->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT)) {
+	if (!(sig_param->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) ||
+	    (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)) {
 		if (sig_param->attrs & PARAM_ATTRIBUTE_OPTIONAL)
 			def_value = get_reflection_missing (domain, missing);
 		else
@@ -1056,10 +1046,12 @@ param_objects_construct (MonoDomain *domain, MonoClass *refclass, MonoMethodSign
 
 	gboolean any_default_value;
 	any_default_value = FALSE;
-	for (i = 0; i < sig->param_count; ++i) {
-		if ((sig->params [i]->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) != 0) {
-			any_default_value = TRUE;
-			break;
+	if (method->wrapper_type == MONO_WRAPPER_NONE || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD ) {
+		for (i = 0; i < sig->param_count; ++i) {
+			if ((sig->params [i]->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) != 0) {
+				any_default_value = TRUE;
+				break;
+			}
 		}
 	}
 	if (any_default_value) {
@@ -1474,6 +1466,9 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	gboolean quoted = FALSE;
 
 	memset (assembly, 0, sizeof (MonoAssemblyName));
+	assembly->without_version = TRUE;
+	assembly->without_culture = TRUE;
+	assembly->without_public_key_token = TRUE;
 	assembly->culture = "";
 	memset (assembly->public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 
@@ -1482,6 +1477,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 		p++;
 	}
 	assembly->name = p;
+	s = p;
 	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@' || g_ascii_isspace (*p)))
 		p++;
 	if (quoted) {
@@ -1490,8 +1486,13 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 		*p = 0;
 		p++;
 	}
-	if (*p != ',')
+	g_strchomp (s);
+	assembly->name = s;
+	if (*p != ',') {
+		g_strchomp (s);
+		assembly->name = s;
 		return 1;
+	}
 	*p = 0;
 	/* Remove trailing whitespace */
 	s = p - 1;
@@ -1501,8 +1502,14 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	while (g_ascii_isspace (*p))
 		p++;
 	while (*p) {
-		if ((*p == 'V' || *p == 'v') && g_ascii_strncasecmp (p, "Version=", 8) == 0) {
-			p += 8;
+		if ((*p == 'V' || *p == 'v') && g_ascii_strncasecmp (p, "Version", 7) == 0) {
+			assembly->without_version = FALSE;
+			p += 7;
+			while (*p && *p != '=')
+				p++;
+			p++;
+			while (*p && g_ascii_isspace (*p))
+				p++;
 			assembly->major = strtoul (p, &s, 10);
 			if (s == p || *s != '.')
 				return 1;
@@ -1519,19 +1526,33 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 			if (s == p)
 				return 1;
 			p = s;
-		} else if ((*p == 'C' || *p == 'c') && g_ascii_strncasecmp (p, "Culture=", 8) == 0) {
-			p += 8;
-			if (g_ascii_strncasecmp (p, "neutral", 7) == 0) {
+		} else if ((*p == 'C' || *p == 'c') && g_ascii_strncasecmp (p, "Culture", 7) == 0) {
+			assembly->without_culture = FALSE;
+			p += 7;
+			while (*p && *p != '=')
+				p++;
+			p++;
+			while (*p && g_ascii_isspace (*p))
+				p++;
+			if ((g_ascii_strncasecmp (p, "neutral", 7) == 0) && (p [7] == ' ' || p [7] == ',')) {
 				assembly->culture = "";
 				p += 7;
 			} else {
 				assembly->culture = p;
 				while (*p && *p != ',') {
+					if (*p == ' ')
+						*p = 0;
 					p++;
 				}
 			}
-		} else if ((*p == 'P' || *p == 'p') && g_ascii_strncasecmp (p, "PublicKeyToken=", 15) == 0) {
-			p += 15;
+		} else if ((*p == 'P' || *p == 'p') && g_ascii_strncasecmp (p, "PublicKeyToken", 14) == 0) {
+			assembly->without_public_key_token = FALSE;
+			p += 14;
+			while (*p && *p != '=')
+				p++;
+			p++;
+			while (*p && g_ascii_isspace (*p))
+				p++;
 			if (strncmp (p, "null", 4) == 0) {
 				p += 4;
 			} else {
@@ -1898,11 +1919,7 @@ mono_reflection_parse_type_checked (char *name, MonoTypeNameParse *info, MonoErr
 	if (ok) {
 		mono_identifier_unescape_info (info);
 	} else {
-#if ENABLE_NETCORE
 		mono_error_set_argument_format (error, "typeName@0", "failed parse: %s", name);
-#else
-		mono_error_set_argument_format (error, "typeName", "failed parse: %s", name);
-#endif
 	}
 	return (ok != 0);
 }
@@ -1917,7 +1934,7 @@ _mono_reflection_get_type_from_info (MonoAssemblyLoadContext *alc, MonoTypeNameP
 	error_init (error);
 
 	if (info->assembly.name) {
-		MonoAssembly *assembly = mono_assembly_loaded_internal (alc, &info->assembly, FALSE);
+		MonoAssembly *assembly = mono_assembly_loaded_internal (alc, &info->assembly);
 		if (!assembly && image && image->assembly && mono_assembly_check_name_match (&info->assembly, &image->assembly->aname))
 			/* 
 			 * This could happen in the AOT compiler case when the search hook is not
@@ -2623,11 +2640,7 @@ reflection_bind_generic_method_parameters (MonoMethod *method, MonoArrayHandle t
 	mono_error_assert_ok (error);
 
 	if (!mono_verifier_is_method_valid_generic_instantiation (inflated)) {
-#if ENABLE_NETCORE
 		mono_error_set_argument (error, NULL, "Invalid generic arguments");
-#else
-		mono_error_set_argument (error, "typeArguments", "Invalid generic arguments");
-#endif
 		return NULL;
 	}
 
@@ -3102,11 +3115,7 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	error_init (error);
 
 	if (method == NULL) {
-#ifdef ENABLE_NETCORE
 		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableToInternal", 1, 0, error);
-#else
-		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableTo", 1, 0, error);
-#endif		
 		mono_error_assert_ok (error);
 		g_assert (method);
 	}

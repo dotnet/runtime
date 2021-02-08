@@ -18,14 +18,8 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
-  
-pr: none
 
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 # build coreclr and libraries
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -51,7 +45,7 @@ jobs:
     jobParameters:
       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       nameSuffix: wasm
-      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      isOfficialBuild: false
       extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
       extraStepsParameters:
         rootFolder: '$(Build.SourcesDirectory)/artifacts/'

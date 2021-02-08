@@ -3,7 +3,6 @@
 
 using System.Reflection;
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
@@ -118,7 +117,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the attributes collection.
         /// </summary>
-        protected virtual Attribute[] Attributes => _attributes;
+        protected internal virtual Attribute[] Attributes => _attributes;
 
         /// <summary>
         /// Gets the number of attributes.
@@ -285,7 +284,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    ConstructorInfo ci = reflect.UnderlyingSystemType.GetConstructor(Array.Empty<Type>());
+                    ConstructorInfo ci = reflect.UnderlyingSystemType.GetConstructor(Type.EmptyTypes);
                     if (ci != null)
                     {
                         attr = (Attribute)ci.Invoke(Array.Empty<object>());

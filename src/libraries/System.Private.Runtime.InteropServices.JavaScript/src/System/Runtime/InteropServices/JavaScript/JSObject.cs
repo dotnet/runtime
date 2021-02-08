@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using Console = System.Diagnostics.Debug;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -29,7 +30,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object result = Interop.Runtime.BindCoreObject(JSHandle, Int32Handle, out int exception);
             if (exception != 0)
-                throw new JSException($"JSObject Error binding: {result}");
+                throw new JSException(SR.Format(SR.JSObjectErrorBinding, result));
 
         }
 
@@ -164,7 +165,7 @@ namespace System.Runtime.InteropServices.JavaScript
             FreeGCHandle();
         }
 
-        public override bool Equals(object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
 
         public override int GetHashCode() => JSHandle;
 

@@ -42,6 +42,55 @@ namespace
 
         return bundle::runner_t::app()->probe(file_path, offset, size);
     }
+
+#if defined(NATIVE_LIBS_EMBEDDED)
+    extern "C" const void* CompressionResolveDllImport(const char* name);
+    extern "C" const void* SecurityResolveDllImport(const char* name);
+    extern "C" const void* SystemResolveDllImport(const char* name);
+    extern "C" const void* CryptoResolveDllImport(const char* name);
+    extern "C" const void* CryptoAppleResolveDllImport(const char* name);
+
+    // pinvoke_override:
+    // Check if given function belongs to one of statically linked libraries and return a pointer if found.
+    const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
+    {
+#if defined(_WIN32)
+        if (strcmp(libraryName, "System.IO.Compression.Native") == 0)
+        {
+            return CompressionResolveDllImport(entrypointName);
+        }
+#else
+        if (strcmp(libraryName, "libSystem.IO.Compression.Native") == 0)
+        {
+            return CompressionResolveDllImport(entrypointName);
+        }
+
+        if (strcmp(libraryName, "libSystem.Net.Security.Native") == 0)
+        {
+            return SecurityResolveDllImport(entrypointName);
+        }
+
+        if (strcmp(libraryName, "libSystem.Native") == 0)
+        {
+            return SystemResolveDllImport(entrypointName);
+        }
+
+        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.OpenSsl") == 0)
+        {
+            return CryptoResolveDllImport(entrypointName);
+        }
+#endif
+
+#if defined(TARGET_OSX)
+        if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.Apple") == 0)
+        {
+            return CryptoAppleResolveDllImport(entrypointName);
+        }
+#endif
+
+        return nullptr;
+    }
+#endif
 }
 
 int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
@@ -240,6 +289,22 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
             return StatusCode::LibHostDuplicateProperty;
         }
     }
+
+#if defined(NATIVE_LIBS_EMBEDDED)
+    // PInvoke Override
+    if (bundle::info_t::is_single_file_bundle())
+    {
+        // Encode the pinvoke_override function pointer as a string, and pass it to the runtime.
+        pal::stringstream_t ptr_stream;
+        ptr_stream << "0x" << std::hex << (size_t)(&pinvoke_override);
+
+        if (!coreclr_properties.add(common_property::PInvokeOverride, ptr_stream.str().c_str()))
+        {
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            return StatusCode::LibHostDuplicateProperty;
+        }
+    }
+#endif
 
 #if defined(HOSTPOLICY_EMBEDDED)
     if (!coreclr_properties.add(common_property::HostPolicyEmbedded, _X("true")))

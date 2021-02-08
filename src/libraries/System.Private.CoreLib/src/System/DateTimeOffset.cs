@@ -54,13 +54,15 @@ namespace System
 
         // Constructors
 
-        // Constructs a DateTimeOffset from a tick count and offset
-        public DateTimeOffset(long ticks, TimeSpan offset)
+        private DateTimeOffset(short validOffsetMinutes, DateTime validDateTime)
         {
-            _offsetMinutes = ValidateOffset(offset);
-            // Let the DateTime constructor do the range checks
-            DateTime dateTime = new DateTime(ticks);
-            _dateTime = ValidateDate(dateTime, offset);
+            _dateTime = validDateTime;
+            _offsetMinutes = validOffsetMinutes;
+        }
+
+        // Constructs a DateTimeOffset from a tick count and offset
+        public DateTimeOffset(long ticks, TimeSpan offset) : this(ValidateOffset(offset), ValidateDate(new DateTime(ticks), offset))
+        {
         }
 
         // Constructs a DateTimeOffset from a DateTime. For Local and Unspecified kinds,
@@ -120,7 +122,7 @@ namespace System
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second), offset);
 
             if (originalSecond == 60 &&
-               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, 60, DateTimeKind.Utc))
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc))
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
@@ -142,7 +144,7 @@ namespace System
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond), offset);
 
             if (originalSecond == 60 &&
-               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, 60, DateTimeKind.Utc))
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc))
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
@@ -164,7 +166,7 @@ namespace System
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond, calendar), offset);
 
             if (originalSecond == 60 &&
-               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, 60, DateTimeKind.Utc))
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, DateTimeKind.Utc))
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
@@ -174,7 +176,18 @@ namespace System
         // resolution of the returned value depends on the system timer.
         public static DateTimeOffset Now => ToLocalTime(DateTime.UtcNow, true);
 
-        public static DateTimeOffset UtcNow => new DateTimeOffset(DateTime.UtcNow);
+        public static DateTimeOffset UtcNow
+        {
+            get
+            {
+                DateTime utcNow = DateTime.UtcNow;
+                var result = new DateTimeOffset(0, utcNow);
+
+                Debug.Assert(new DateTimeOffset(utcNow) == result); // ensure lack of verification does not break anything
+
+                return result;
+            }
+        }
 
         public DateTime DateTime => ClockDateTime;
 
@@ -374,7 +387,7 @@ namespace System
         // is equal to the value of this DateTimeOffset. Returns false
         // otherwise.
         //
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is DateTimeOffset && UtcDateTime.Equals(((DateTimeOffset)obj).UtcDateTime);
 
         public bool Equals(DateTimeOffset other) =>

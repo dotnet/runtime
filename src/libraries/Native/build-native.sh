@@ -157,4 +157,4 @@ setup_dirs
 check_prereqs
 
 # Build the corefx native components.
-build_native "$__TargetOS" "$__BuildArch" "$__nativeroot" "$__nativeroot" "$__IntermediatesDir" "$__CMakeArgs" "native libraries component"
+build_native "$__TargetOS" "$__BuildArch" "$__nativeroot" "$__IntermediatesDir" "$__CMakeArgs" "native libraries component"

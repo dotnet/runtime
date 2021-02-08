@@ -1,11 +1,15 @@
-<Project>
-  <Import Project="Directory.Build.props" />
-  <Import Project="Directory.Build.targets" />
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <!-- NoTargets SDK needs a TFM set. So we used the latest .NETCoreApp supported one. -->
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
 
-  <Target Name="Build">
+  <Target Name="BuildRuntime"
+          AfterTargets="Build">
     <ItemGroup>
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
-      <_CoreClrBuildArg Include="$(CMakeArgs)" />
+      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="$(CMakeArgs)" />
+      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="-cmakeargs &quot;$(CMakeArgs)&quot;" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
       <_CoreClrBuildArg Include="$(Compiler)" />
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
@@ -17,6 +21,7 @@
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and
                                    ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and
                                    '$(Configuration)' == 'Release' and
+                                   '$(ClrRuntimeSubset)' == 'true' and
                                    '$(NoPgoOptimize)' != 'true'"
                                    Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
@@ -35,10 +40,7 @@
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')"
+          IgnoreStandardErrorWarningFormat="true" />
   </Target>
-
-  <Target Name="Restore" />
-  <Target Name="Test" />
-  <Target Name="Pack" />
 </Project>

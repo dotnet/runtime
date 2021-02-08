@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_BUFFER_GETTER_SETTER
@@ -110,7 +109,7 @@ ep_buffer_write_event (
 		(EventPipeEventInstance *)buffer->current,
 		ep_event,
 		proc_number,
-		(thread == NULL) ? ep_rt_current_thread_get_id () : ep_rt_thread_get_id (thread),
+		ep_rt_thread_id_t_to_uint64_t((thread == NULL) ? ep_rt_current_thread_get_id () : ep_rt_thread_get_id (thread)),
 		data_dest,
 		ep_event_payload_get_size (payload),
 		(thread == NULL) ? NULL : activity_id,

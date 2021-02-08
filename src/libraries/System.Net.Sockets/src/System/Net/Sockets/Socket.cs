@@ -417,22 +417,15 @@ namespace System.Net.Sockets
             }
         }
 
+        // On .NET Framework, this property functions as a socket-level switch between IOCP-based and Win32 event based async IO.
+        // On that platform, setting UseOnlyOverlappedIO = true prevents assigning a completion port to the socket,
+        // allowing calls to DuplicateAndClose() even after performing asynchronous IO.
+        // .NET (Core) Windows sockets are entirely IOCP-based, and the concept of "overlapped IO"
+        // does not exist on other platforms, therefore UseOnlyOverlappedIO is a dummy, compat-only property.
         public bool UseOnlyOverlappedIO
         {
-            get
-            {
-                return false;
-            }
-            set
-            {
-                //
-                // This implementation does not support non-IOCP-based async I/O on Windows, and this concept is
-                // not even meaningful on other platforms.  This option is really only functionally meaningful
-                // if the user calls DuplicateAndClose.  Since we also don't support DuplicateAndClose,
-                // we can safely ignore the caller's choice here, rather than breaking compat further with something
-                // like PlatformNotSupportedException.
-                //
-            }
+            get { return false; }
+            set { }
         }
 
         // Gets the connection state of the Socket. This property will return the latest
@@ -1269,10 +1262,57 @@ namespace System.Net.Sockets
 
         public void SendFile(string? fileName)
         {
-            SendFile(fileName, null, null, TransmitFileOptions.UseDefaultWorkerThread);
+            SendFile(fileName, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread);
         }
 
+        /// <summary>
+        /// Sends the file <paramref name="fileName"/> and buffers of data to a connected <see cref="Socket"/> object
+        /// using the specified <see cref="TransmitFileOptions"/> value.
+        /// </summary>
+        /// <param name="fileName">
+        /// A <see cref="string"/> that contains the path and name of the file to be sent. This parameter can be <see langword="null"/>.
+        /// </param>
+        /// <param name="preBuffer">
+        /// A <see cref="byte"/> array that contains data to be sent before the file is sent. This parameter can be <see langword="null"/>.
+        /// </param>
+        /// <param name="postBuffer">
+        /// A <see cref="byte"/> array that contains data to be sent after the file is sent. This parameter can be <see langword="null"/>.
+        /// </param>
+        /// <param name="flags">
+        /// One or more of <see cref="TransmitFileOptions"/> values.
+        /// </param>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> object has been closed.</exception>
+        /// <exception cref="NotSupportedException">The <see cref="Socket"/> object is not connected to a remote host.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="Socket"/> object is not in blocking mode and cannot accept this synchronous call.</exception>
+        /// <exception cref="FileNotFoundException">The file <paramref name="fileName"/> was not found.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         public void SendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
+        {
+            SendFile(fileName, preBuffer.AsSpan(), postBuffer.AsSpan(), flags);
+        }
+
+        /// <summary>
+        /// Sends the file <paramref name="fileName"/> and buffers of data to a connected <see cref="Socket"/> object
+        /// using the specified <see cref="TransmitFileOptions"/> value.
+        /// </summary>
+        /// <param name="fileName">
+        /// A <see cref="string"/> that contains the path and name of the file to be sent. This parameter can be <see langword="null"/>.
+        /// </param>
+        /// <param name="preBuffer">
+        /// A <see cref="ReadOnlySpan{T}"/> that contains data to be sent before the file is sent. This buffer can be empty.
+        /// </param>
+        /// <param name="postBuffer">
+        /// A <see cref="ReadOnlySpan{T}"/> that contains data to be sent after the file is sent. This buffer can be empty.
+        /// </param>
+        /// <param name="flags">
+        /// One or more of <see cref="TransmitFileOptions"/> values.
+        /// </param>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> object has been closed.</exception>
+        /// <exception cref="NotSupportedException">The <see cref="Socket"/> object is not connected to a remote host.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="Socket"/> object is not in blocking mode and cannot accept this synchronous call.</exception>
+        /// <exception cref="FileNotFoundException">The file <paramref name="fileName"/> was not found.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        public void SendFile(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
             ThrowIfDisposed();
 
@@ -1286,7 +1326,6 @@ namespace System.Net.Sockets
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"::SendFile() SRC:{LocalEndPoint} DST:{RemoteEndPoint} fileName:{fileName}");
 
             SendFileInternal(fileName, preBuffer, postBuffer, flags);
-
         }
 
         // Sends data to a specific end point, starting at the indicated location in the buffer.
@@ -1531,6 +1570,100 @@ namespace System.Net.Sockets
             Internals.SocketAddress receiveAddress;
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveMessageFrom(this, _handle, buffer, offset, size, ref socketFlags, socketAddress, out receiveAddress, out ipPacketInformation, out bytesTransferred);
+
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
+            // Throw an appropriate SocketException if the native call fails.
+            if (errorCode != SocketError.Success && errorCode != SocketError.MessageSize)
+            {
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (errorCode == SocketError.Success && SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
+            }
+
+            if (!socketAddressOriginal.Equals(receiveAddress))
+            {
+                try
+                {
+                    remoteEP = endPointSnapshot.Create(receiveAddress);
+                }
+                catch
+                {
+                }
+                if (_rightEndPoint == null)
+                {
+                    // Save a copy of the EndPoint so we can use it for Create().
+                    _rightEndPoint = endPointSnapshot;
+                }
+            }
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, errorCode);
+            return bytesTransferred;
+        }
+
+        /// <summary>
+        /// Receives the specified number of bytes of data into the specified location of the data buffer,
+        /// using the specified <paramref name="socketFlags"/>, and stores the endpoint and packet information.
+        /// </summary>
+        /// <param name="buffer">
+        /// An <see cref="Span{T}"/> of type <see cref="byte"/> that is the storage location for received data.
+        /// </param>
+        /// <param name="socketFlags">
+        /// A bitwise combination of the <see cref="SocketFlags"/> values.
+        /// </param>
+        /// <param name="remoteEP">
+        /// An <see cref="EndPoint"/>, passed by reference, that represents the remote server.
+        /// </param>
+        /// <param name="ipPacketInformation">
+        /// An <see cref="IPPacketInformation"/> holding address and interface information.
+        /// </param>
+        /// <returns>
+        /// The number of bytes received.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> object has been closed.</exception>
+        /// <exception cref="ArgumentNullException">The <see cref="EndPoint"/> remoteEP is null.</exception>
+        /// <exception cref="ArgumentException">The <see cref="AddressFamily"/> of the <see cref="EndPoint"/> used in
+        /// <see cref="Socket.ReceiveMessageFrom(Span{byte}, ref SocketFlags, ref EndPoint, out IPPacketInformation)"/>
+        /// needs to match the <see cref="AddressFamily"/> of the <see cref="EndPoint"/> used in SendTo.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// <para>The <see cref="Socket"/> object is not in blocking mode and cannot accept this synchronous call.</para>
+        /// <para>You must call the Bind method before performing this operation.</para></exception>
+        public int ReceiveMessageFrom(Span<byte> buffer, ref SocketFlags socketFlags, ref EndPoint remoteEP, out IPPacketInformation ipPacketInformation)
+        {
+            ThrowIfDisposed();
+
+            if (remoteEP == null)
+            {
+                throw new ArgumentNullException(nameof(remoteEP));
+            }
+            if (!CanTryAddressFamily(remoteEP.AddressFamily))
+            {
+                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEP.AddressFamily, _addressFamily), nameof(remoteEP));
+            }
+            if (_rightEndPoint == null)
+            {
+                throw new InvalidOperationException(SR.net_sockets_mustbind);
+            }
+
+            SocketPal.CheckDualModeReceiveSupport(this);
+            ValidateBlockingMode();
+
+            // We don't do a CAS demand here because the contents of remoteEP aren't used by
+            // WSARecvMsg; all that matters is that we generate a unique-to-this-call SocketAddress
+            // with the right address family.
+            EndPoint endPointSnapshot = remoteEP;
+            Internals.SocketAddress socketAddress = Serialize(ref endPointSnapshot);
+
+            // Save a copy of the original EndPoint.
+            Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
+
+            SetReceivingPacketInformation();
+
+            Internals.SocketAddress receiveAddress;
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.ReceiveMessageFrom(this, _handle, buffer, ref socketFlags, socketAddress, out receiveAddress, out ipPacketInformation, out bytesTransferred);
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // Throw an appropriate SocketException if the native call fails.
@@ -3227,7 +3360,9 @@ namespace System.Net.Sockets
             return socketError == SocketError.IOPending;
         }
 
-        public bool ReceiveFromAsync(SocketAsyncEventArgs e)
+        public bool ReceiveFromAsync(SocketAsyncEventArgs e) => ReceiveFromAsync(e, default);
+
+        private bool ReceiveFromAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -3261,7 +3396,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationReceiveFrom(_handle);
+                socketError = e.DoOperationReceiveFrom(_handle, cancellationToken);
             }
             catch
             {
@@ -3274,7 +3409,9 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public bool ReceiveMessageFromAsync(SocketAsyncEventArgs e)
+        public bool ReceiveMessageFromAsync(SocketAsyncEventArgs e) => ReceiveMessageFromAsync(e, default);
+
+        private bool ReceiveMessageFromAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -3310,7 +3447,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationReceiveMessageFrom(this, _handle);
+                socketError = e.DoOperationReceiveMessageFrom(this, _handle, cancellationToken);
             }
             catch
             {
@@ -3384,7 +3521,9 @@ namespace System.Net.Sockets
             return socketError == SocketError.IOPending;
         }
 
-        public bool SendToAsync(SocketAsyncEventArgs e)
+        public bool SendToAsync(SocketAsyncEventArgs e) => SendToAsync(e, default);
+
+        private bool SendToAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -3413,7 +3552,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationSendTo(_handle);
+                socketError = e.DoOperationSendTo(_handle, cancellationToken);
             }
             catch
             {

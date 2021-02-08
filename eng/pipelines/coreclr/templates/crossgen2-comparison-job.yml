@@ -8,6 +8,7 @@ parameters:
   runtimeVariant: ''
   crossBuild: false
   crossrootfsDir: ''
+  dependOnEvaluatePaths: false
   stagedBuild: false
   variables: {}
   pool: ''
@@ -40,6 +41,7 @@ jobs:
     pool: ${{ parameters.pool }}
     targetos: ${{ parameters.targetos }}
     targetarch: ${{ parameters.targetarch }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     # Compute job name from template parameters
     name: ${{ format('test_crossgen2_comparison_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.targetarch, parameters.targetos) }}

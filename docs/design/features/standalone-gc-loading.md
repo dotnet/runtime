@@ -47,7 +47,7 @@ Worth noting is that the JIT (both RyuJIT and the legacy JIT(s) before it) can b
 and have realized these same benefits. The existence of an interface and an implementation loadable
 from shared libraries has enabled RyuJIT in particular to be used as the code generator for both the
 CoreRT compiler and crossgen, while still being flexible enough to be tested using tools that implement
-very non-standard execution engines such as [SuperPMI](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/ToolBox/superpmi/readme.txt).
+very non-standard execution engines such as [SuperPMI](https://github.com/dotnet/runtime/blob/master/src/coreclr/ToolBox/superpmi/readme.txt).
 
 The below loading protocol is inspired directly by the JIT loader and many aspects of the GC loader are identical
 to what the JIT does when loading dynamic shared libraries.

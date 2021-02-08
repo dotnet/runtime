@@ -346,8 +346,8 @@ namespace System.Runtime.Serialization.Json
                     {
                         enumeratorType = collectionContract.GetEnumeratorMethod.ReturnType;
                     }
-                    MethodInfo? moveNextMethod = enumeratorType.GetMethod(Globals.MoveNextMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
-                    MethodInfo? getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
+                    MethodInfo? moveNextMethod = enumeratorType.GetMethod(Globals.MoveNextMethodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes);
+                    MethodInfo? getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Type.EmptyTypes);
                     if (moveNextMethod == null || getCurrentMethod == null)
                     {
                         if (enumeratorType.IsInterface)

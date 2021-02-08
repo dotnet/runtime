@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
@@ -216,7 +217,7 @@ namespace System.Xml.Serialization
                 MethodInfo Nullable_get_Value = nullableType.GetMethod(
                     "get_Value",
                     CodeGenerator.InstanceBindingFlags,
-                    Array.Empty<Type>()
+                    Type.EmptyTypes
                     )!;
                 ILG.Call(Nullable_get_Value);
                 if (targetType != null)
@@ -245,7 +246,7 @@ namespace System.Xml.Serialization
             return b is null;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return Source == null;

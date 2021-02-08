@@ -2417,7 +2417,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 					sig = mono_method_signature_internal (jinfo_get_method (callee_ji));
 					gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, -1, FALSE);
-					MonoFtnDesc *out_wrapper_arg = mini_llvmonly_create_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
+					MonoFtnDesc *out_wrapper_arg = mini_llvmonly_create_ftndesc (domain, jinfo_get_ftnptr (callee_ji), mini_method_get_rgctx (method));
 
 					/* Returns an ftndesc */
 					addr = mini_llvmonly_create_ftndesc (domain, out_wrapper, out_wrapper_arg);
@@ -2465,11 +2465,11 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 					 * might not exist at all in IL, so the AOT compiler cannot generate the wrappers
 					 * for it.
 					 */
-					addr = mini_llvmonly_create_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
+					addr = mini_llvmonly_create_ftndesc (domain, jinfo_get_ftnptr (callee_ji), mini_method_get_rgctx (method));
 				} else if (mini_is_gsharedvt_variable_signature (gsig)) {
-					gpointer in_wrapper = mini_get_gsharedvt_wrapper (TRUE, callee_ji->code_start, sig, gsig, -1, FALSE);
+					gpointer in_wrapper = mini_get_gsharedvt_wrapper (TRUE, jinfo_get_ftnptr (callee_ji), sig, gsig, -1, FALSE);
 
-					gpointer in_wrapper_arg = mini_llvmonly_create_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
+					gpointer in_wrapper_arg = mini_llvmonly_create_ftndesc (domain, jinfo_get_ftnptr (callee_ji), mini_method_get_rgctx (method));
 
 					addr = mini_llvmonly_create_ftndesc (domain, in_wrapper, in_wrapper_arg);
 				} else {
@@ -2480,7 +2480,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				sig = mono_method_signature_internal (method);
 				gsig = mono_method_signature_internal (jinfo_get_method (callee_ji)); 
 
-				addr = mini_get_gsharedvt_wrapper (TRUE, callee_ji->code_start, sig, gsig, -1, FALSE);
+				addr = mini_get_gsharedvt_wrapper (TRUE, jinfo_get_ftnptr (callee_ji), sig, gsig, -1, FALSE);
 
 				sig = mono_method_signature_internal (method);
 				gsig = call_sig;

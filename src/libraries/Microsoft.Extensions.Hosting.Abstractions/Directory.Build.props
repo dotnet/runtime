@@ -1,0 +1,7 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <PackageDescription>Hosting and startup abstractions for applications.</PackageDescription>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
+  </PropertyGroup>
+</Project>

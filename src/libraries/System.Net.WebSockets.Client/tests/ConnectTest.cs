@@ -33,6 +33,12 @@ namespace System.Net.WebSockets.Client.Tests
                 }
                 Assert.Equal(WebSocketState.Closed, cws.State);
                 Assert.Equal(exceptionMessage, ex.Message);
+
+                // Other operations throw after failed connect
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.ReceiveAsync(new byte[1], default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.SendAsync(new byte[1], WebSocketMessageType.Binary, true, default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, default));
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => cws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, default));
             }
         }
 
@@ -52,6 +58,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // CustomHeaders not supported on browser
         public async Task ConnectAsync_AddCustomHeaders_Success(Uri server)
         {
             using (var cws = new ClientWebSocket())
@@ -113,6 +120,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Cookies not supported on browser
         public async Task ConnectAsync_CookieHeaders_Success(Uri server)
         {
             using (var cws = new ClientWebSocket())
@@ -162,6 +170,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45583", TestPlatforms.Browser)]
         public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException(Uri server)
         {
             const string AcceptedProtocol = "CustomProtocol";
@@ -229,6 +238,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         public async Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(Uri server)
         {
             using (var cws = new ClientWebSocket())
@@ -248,7 +258,6 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44720", TestPlatforms.Browser)]
         public async Task ConnectAsync_CancellationRequestedBeforeConnect_ThrowsOperationCanceledException()
         {
             using (var clientSocket = new ClientWebSocket())
@@ -256,6 +265,18 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource();
                 cts.Cancel();
                 Task t = clientSocket.ConnectAsync(new Uri("ws://" + Guid.NewGuid().ToString("N")), cts.Token);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+            }
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        public async Task ConnectAsync_CancellationRequestedInflightConnect_ThrowsOperationCanceledException()
+        {
+            using (var clientSocket = new ClientWebSocket())
+            {
+                var cts = new CancellationTokenSource();
+                Task t = clientSocket.ConnectAsync(new Uri("ws://" + Guid.NewGuid().ToString("N")), cts.Token);
+                cts.Cancel();
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }
         }

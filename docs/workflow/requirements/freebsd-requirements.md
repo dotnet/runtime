@@ -49,9 +49,6 @@ Building dotnet/runtime depends on several tools to be installed.
 Install the following packages:
 
 - cmake
-- autoconf
-- automake
-- libtool
 - icu
 - libunwind
 - lttng-ust
@@ -62,7 +59,7 @@ Install the following packages:
 The lines to install all the packages above using package manager.
 
 ```sh
-sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 cmake autoconf automake openssl ninja
+sudo pkg install --yes libunwind icu libinotify lttng-ust krb5 cmake openssl ninja
 ```
 
 Additionally, working dotnet cli with SDK is needed. On other platforms this would be downloaded automatically during build but it is not currently available for FreeBSD.

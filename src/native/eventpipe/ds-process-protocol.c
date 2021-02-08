@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ds-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
 #if !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES)
 
 #define DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER
@@ -175,7 +174,7 @@ ds_process_info_payload_init (
 	payload->process_id = process_id;
 
 	if (runtime_cookie)
-		memcpy (&payload->runtime_cookie, runtime_cookie, EP_ACTIVITY_ID_SIZE);
+		memcpy (&payload->runtime_cookie, runtime_cookie, EP_GUID_SIZE);
 
 	return payload;
 }

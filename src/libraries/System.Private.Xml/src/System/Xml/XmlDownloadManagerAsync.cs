@@ -29,6 +29,7 @@ namespace System.Xml
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
+#pragma warning disable CA1416 // Validate platform compatibility, 'credentials' and 'proxy' will not be set for browser, so safe to suppress
                 if (credentials != null)
                 {
                     handler.Credentials = credentials;
@@ -37,6 +38,7 @@ namespace System.Xml
                 {
                     handler.Proxy = proxy;
                 }
+#pragma warning restore CA1416
 
                 using (Stream respStream = await client.GetStreamAsync(uri).ConfigureAwait(false))
                 {

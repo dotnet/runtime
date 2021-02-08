@@ -110,7 +110,7 @@ Run tests:
 
 To run all tests including disabled tests
 ```sh
-./src/coreclr/src/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
+./src/coreclr/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
 # on macOS, replace $(uname) with OSX
 ```
 To only run enabled tests for the platform the tests were built for:
@@ -122,4 +122,4 @@ artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifact
 Test results will go into: `/tmp/PalTestOutput/default/pal_tests.xml`
 
 To disable tests in the CI edit
-`src/coreclr/src/pal/tests/palsuite/issues.targets`
+`src/coreclr/pal/tests/palsuite/issues.targets`

@@ -322,8 +322,7 @@ namespace System.IO.Pipes
             DebugAssertHandleValid(handle);
             Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to ReadFileNative.");
 
-            // You can't use the fixed statement on an array of length 0. Note that async callers
-            // check to avoid calling this first, so they can call user's callback
+            // Note that async callers check to avoid calling this first, so they can call user's callback.
             if (buffer.Length == 0)
             {
                 errorCode = 0;
@@ -360,8 +359,7 @@ namespace System.IO.Pipes
             DebugAssertHandleValid(handle);
             Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to WriteFileNative.");
 
-            // You can't use the fixed statement on an array of length 0. Note that async callers
-            // check to avoid calling this first, so they can call user's callback
+            // Note that async callers check to avoid calling this first, so they can call user's callback.
             if (buffer.Length == 0)
             {
                 errorCode = 0;

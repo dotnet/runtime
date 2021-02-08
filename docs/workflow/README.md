@@ -24,7 +24,7 @@ For Linux and macOS
 ```
 
 For Windows:
-```bat
+```cmd
 build.cmd
 ```
 

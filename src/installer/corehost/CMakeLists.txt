@@ -6,6 +6,7 @@ endif()
 
 project(corehost)
 
+include(../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 if(MSVC)

@@ -1,18 +1,19 @@
 cmake_minimum_required(VERSION 3.6.2)
 include(CheckCCompilerFlag)
 
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
-     # CMake 3.14.5 contains bug fixes for iOS 
-     cmake_minimum_required(VERSION 3.14.5) 
- endif() 
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+     # CMake 3.14.5 contains bug fixes for iOS
+     cmake_minimum_required(VERSION 3.14.5)
+ endif()
 cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
+include(../../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
-if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) 
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
 endif()
@@ -53,15 +54,27 @@ if (PRERELEASE)
     add_compile_options(-Werror)
 endif()
 
+if(STATIC_LIBS_ONLY)
+    # Suppress exporting of the PAL APIs
+    add_definitions(-DPALEXPORT=EXTERN_C)
+
+    set(STATIC_LIB_DESTINATION lib)
+    set(GEN_SHARED_LIB 0)
+else()
+    set(STATIC_LIB_DESTINATION .)
+    set(GEN_SHARED_LIB 1)
+endif()
+
 if(CLR_CMAKE_TARGET_BROWSER)
     # The emscripten build has additional warnings so -Werror breaks
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wno-unused-function)
     add_compile_options(-Wno-alloca)
     add_compile_options(-Wno-implicit-int-float-conversion)
-else()
-  set(GEN_SHARED_LIB 1)
-endif(CLR_CMAKE_TARGET_BROWSER)
+
+    set(GEN_SHARED_LIB 0)
+    set(STATIC_LIB_DESTINATION .)
+endif()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_definitions(-DTARGET_64BIT=1)

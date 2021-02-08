@@ -217,7 +217,7 @@ namespace System.Text.Json
             }
 
             // Priority 2: Attempt to get custom converter added at runtime.
-            // Currently there is not a way at runtime to overide the [JsonConverter] when applied to a property.
+            // Currently there is not a way at runtime to override the [JsonConverter] when applied to a property.
             foreach (JsonConverter item in Converters)
             {
                 if (item.CanConvert(typeToConvert))

@@ -153,7 +153,7 @@ namespace System.Xml.Linq
         /// For two <see cref="XNamespace"/> objects to be equal they must have the same
         /// namespace name.
         /// </remarks>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return (object)this == obj;
         }

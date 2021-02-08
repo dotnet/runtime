@@ -183,6 +183,12 @@ m_class_is_auto_layout (MonoClass *klass)
 }
 
 static inline gboolean
+m_class_is_sealed (MonoClass *klass)
+{
+	return mono_class_get_flags (klass) & TYPE_ATTRIBUTE_SEALED;
+}
+
+static inline gboolean
 m_class_is_ginst (MonoClass *klass)
 {
 	return mono_class_is_ginst (klass);

@@ -28,6 +28,11 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
 
         protected override Type UnsupportedConcurrentExceptionType => null;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45080")]
+        [Theory]
+        [MemberData(nameof(ReadWrite_Success_Large_MemberData))]
+        public override Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) => base.ReadWrite_Success_Large(mode, writeSize, startWithFlush);
+
         [Fact]
         public static void Ctor()
         {

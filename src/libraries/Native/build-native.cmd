@@ -97,7 +97,7 @@ goto :SetupDirs
 echo Commencing build of native components
 echo.
 
-if /i "%__BuildArch%" == "wasm" set __sourceDir=%~dp0..\Unix
+if /i "%__BuildArch%" == "wasm" set __sourceDir=%~dp0\Unix
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 
@@ -158,7 +158,7 @@ set __generatorArgs=
 if [%__Ninja%] == [1] (
     set __generatorArgs=
 ) else if [%__BuildArch%] == [wasm] (
-    set __generatorArgs=-j
+    set __generatorArgs=
 ) else (
     set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
 )

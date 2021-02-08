@@ -33,8 +33,9 @@ set(HEADERS
 
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
-add_definitions(-DEXPORT_SHARED_API=1)
+remove_definitions(-DEXPORT_SHARED_API)
 add_definitions(-DHOSTPOLICY_EMBEDDED)
+add_definitions(-DNATIVE_LIBS_EMBEDDED)
 
 
 include(../../fxr/files.cmake)
@@ -49,8 +50,32 @@ if(CLR_CMAKE_TARGET_WIN32)
         ../apphost.windows.h)
 endif()
 
+if(CLR_CMAKE_TARGET_WIN32)
+    add_linker_flag("/DEF:${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost.def")
+
+else()
+    if(CLR_CMAKE_TARGET_OSX)
+        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_OSXexports.src)
+    else()
+        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
+    endif()
+
+    set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/singlefilehost.exports)
+    generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
+
+    set_exports_linker_option(${EXPORTS_FILE})
+endif()
+
 include(../../exe.cmake)
 include(configure.cmake)
+
+if(CLR_CMAKE_HOST_UNIX)
+    add_custom_target(singlefilehost_exports DEPENDS ${EXPORTS_FILE})
+    add_dependencies(singlefilehost singlefilehost_exports)
+
+    set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
+    set_property(TARGET singlefilehost APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
+endif()
 
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
@@ -101,11 +126,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_linker_flag("/INCREMENTAL:NO")
 endif()
 
-# Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
-    target_link_libraries(singlefilehost Advapi32.lib shell32.lib)
-endif()
-
 # Path like: artifacts/bin/coreclr/windows.x64.Release/lib  or
 #            /root/runtime/artifacts/transport/coreclr/lib
 set(CORECLR_STATIC_LIB_LOCATION "${CORECLR_ARTIFACTS}/lib")
@@ -113,9 +133,10 @@ set(CORECLR_STATIC_LIB_LOCATION "${CORECLR_ARTIFACTS}/lib")
 message ("Looking for coreclr_static lib at location: '${CORECLR_STATIC_LIB_LOCATION}'.")
 
 if(CLR_CMAKE_TARGET_WIN32)
-    set(CORECLR_LIBRARIES
+    set(NATIVE_LIBS
         ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
-        ${CORECLR_STATIC_LIB_LOCATION}/System.Globalization.Native.lib
+        ${CORECLR_STATIC_LIB_LOCATION}/System.Globalization.Native-Static.lib
+        ${CORECLR_STATIC_LIB_LOCATION}/System.IO.Compression.Native-Static.lib
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -127,14 +148,62 @@ if(CLR_CMAKE_TARGET_WIN32)
         bcrypt.lib
         RuntimeObject.lib
     )
+
+    set(RUNTIMEINFO_LIB ${CORECLR_STATIC_LIB_LOCATION}/runtimeinfo.lib)
+
 else()
-    set(CORECLR_LIBRARIES
+    set(NATIVE_LIBS
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclr_static.a
         ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Globalization.Native.a
+        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.IO.Compression.Native.a
+        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Net.Security.Native.a
+        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Native.a
+        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
         ${CORECLR_STATIC_LIB_LOCATION}/libpalrt.a
         ${CORECLR_STATIC_LIB_LOCATION}/libcoreclrpal.a
         ${CORECLR_STATIC_LIB_LOCATION}/libeventprovider.a
         ${CORECLR_STATIC_LIB_LOCATION}/libnativeresourcestring.a
+    )
+
+    # additional requirements for System.IO.Compression.Native
+    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.IO.Compression.Native/extra_libs.cmake)
+    append_extra_compression_libs(NATIVE_LIBS)
+
+    # Additional requirements for System.Net.Security.Native
+    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Net.Security.Native/extra_libs.cmake)
+    append_extra_security_libs(NATIVE_LIBS)
+
+    # Additional requirements for System.Native
+    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Native/extra_libs.cmake)
+    append_extra_system_libs(NATIVE_LIBS)
+
+    # Additional requirements for System.Security.Cryptography.Native.OpenSsl
+    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)
+    append_extra_cryptography_libs(NATIVE_LIBS)
+
+    set(RUNTIMEINFO_LIB ${CORECLR_STATIC_LIB_LOCATION}/libruntimeinfo.a)
+
+endif()
+
+if(CLR_CMAKE_TARGET_OSX)
+    LIST(APPEND NATIVE_LIBS
+        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Security.Cryptography.Native.Apple.a
+    )
+
+    # Additional requirements for System.Security.Cryptography.Native.Apple
+    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native.Apple/extra_libs.cmake)
+    append_extra_cryptography_apple_libs(NATIVE_LIBS)
+endif()
+
+#
+# Additional requirements for coreclr
+#
+
+# Specify non-default Windows libs to be used for Arm/Arm64 builds
+if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
+    LIST(APPEND NATIVE_LIBS
+      Advapi32.lib
+      shell32.lib
     )
 endif()
 
@@ -144,7 +213,7 @@ if(CLR_CMAKE_TARGET_OSX)
    find_library(SECURITY Security)
    find_library(SYSTEM System)
 
-   LIST(APPEND CORECLR_LIBRARIES
+   LIST(APPEND NATIVE_LIBS
      ${COREFOUNDATION}
      ${CORESERVICES}
      ${SECURITY}
@@ -153,11 +222,11 @@ if(CLR_CMAKE_TARGET_OSX)
 elseif(CLR_CMAKE_TARGET_NETBSD)
      find_library(KVM kvm)
 
-     LIST(APPEND CORECLR_LIBRARIES
+     LIST(APPEND NATIVE_LIBS
        ${KVM}
      )
 elseif (CLR_CMAKE_TARGET_SUNOS)
-     LIST(APPEND CORECLR_LIBRARIES
+     LIST(APPEND NATIVE_LIBS
          socket
      )
 endif(CLR_CMAKE_TARGET_OSX)
@@ -170,107 +239,30 @@ endif()
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     find_unwind_libs(UNWIND_LIBS)
 
-    LIST(APPEND CORECLR_LIBRARIES
+    LIST(APPEND NATIVE_LIBS
       ${UNWIND_LIBS}
     )
 endif()
 
-# Path like: artifacts/bin/native/net5.0-Linux-Release-arm/
-set(NATIVE_LIBS_LOCATION "${NATIVE_LIBS_ARTIFACTS}")
-message ("Looking for native libs at location: '${NATIVE_LIBS_LOCATION}'.")
+if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
+    # These options are used to force every object to be included even if it's unused.
+    set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
-if(NOT CLR_CMAKE_TARGET_LINUX)
-    set(NATIVE_LIBS
-        # Native libs linked into singlefilehost is supported only on Linux for now.
-        # if/when BSD and OSX are supported too, consider the commented code sections below.
-    )
-else()
-    set(NATIVE_LIBS
-      ${NATIVE_LIBS_LOCATION}/libSystem.IO.Compression.Native.a
-      ${NATIVE_LIBS_LOCATION}/libSystem.Native.a
-      ${NATIVE_LIBS_LOCATION}/libSystem.Net.Security.Native.a
-      ${NATIVE_LIBS_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
-    )
-
-    find_package(ZLIB REQUIRED)
-
-    # Additional requirements for System.System.IO.Compression.Native
-    #
-    # if (CLR_CMAKE_TARGET_SUNOS)
-    #     set(ZLIB_LIBRARIES z m)
-    # elseif (CLR_CMAKE_TARGET_UNIX)
-    #     find_package(ZLIB REQUIRED)
-    # endif ()
-
-    # Additional requirements for System.Net.Security.Native
-    if (HAVE_GSSFW_HEADERS)
-       find_library(LIBGSS NAMES GSS)
-       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
-         message(FATAL_ERROR "Cannot find GSS.Framework and System.Net.Security.Native cannot build without it. Try installing GSS.Framework (or the appropriate package for your platform)")
-       endif()
-    elseif(HAVE_HEIMDAL_HEADERS)
-       find_library(LIBGSS NAMES gssapi)
-       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
-         message(FATAL_ERROR "Cannot find libgssapi and System.Net.Security.Native cannot build without it. Try installing heimdal (or the appropriate package for your platform)")
-       endif()
-    else()
-       find_library(LIBGSS NAMES gssapi_krb5)
-       if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
-         message(FATAL_ERROR "Cannot find libgssapi_krb5 and System.Net.Security.Native cannot build without it. Try installing libkrb5-dev (or the appropriate package for your platform)")
-       endif()
-    endif()
-
-    # Additional requirements for System.Native
-    if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
-        set(NATIVE_LIBS_EXTRA
-          rt
-        )
-    # elseif (CLR_CMAKE_TARGET_FREEBSD)
-    #     set(NATIVE_LIBS_EXTRA
-    #       pthread
-    #     )
-    #     find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
-    #     if(NOT (INOTIFY_LIBRARY STREQUAL INOTIFY_LIBRARY-NOTFOUND))
-    #       LIST(APPEND NATIVE_LIBS_EXTRA
-    #         ${INOTIFY_LIBRARY}
-    #       )
-    #     endif ()
-    # elseif (CLR_CMAKE_TARGET_SUNOS)
-    #     set(NATIVE_LIBS_EXTRA
-    #         socket
-    #     )
-    endif ()
-
-    # Additional requirements for System.Security.Cryptography.Native.OpenSsl
-    if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
-        find_package(OpenSSL)
-    endif()
-
-    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
-        # These options are used to force every object to be included even if it's unused.
-        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
-    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
-endif(NOT CLR_CMAKE_TARGET_LINUX)
+if(CLR_CMAKE_TARGET_OSX)
+    # These options are used to force every object to be included even if it's unused.
+    set(START_WHOLE_ARCHIVE -force_load)
+    set(END_WHOLE_ARCHIVE )
+endif(CLR_CMAKE_TARGET_OSX)
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
-target_link_libraries(singlefilehost
-    ${CORECLR_LIBRARIES}
+target_link_libraries(
+    singlefilehost
+    ${NATIVE_LIBS}
 
     ${START_WHOLE_ARCHIVE}
-    ${NATIVE_LIBS}
+    ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
-
-    ${ZLIB_LIBRARIES}
-    ${LIBGSS}
-    ${NATIVE_LIBS_EXTRA}
-
 )
-
-if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
-    target_link_libraries(singlefilehost
-        ${OPENSSL_CRYPTO_LIBRARY}
-        ${OPENSSL_SSL_LIBRARY}
-    )
-endif()

@@ -126,7 +126,7 @@ namespace System.Threading.Tasks
     /// The <see cref="System.Threading.Tasks.Parallel"/> class provides library-based data parallel replacements
     /// for common operations such as for loops, for each loops, and execution of a set of statements.
     /// </remarks>
-    public static class Parallel
+    public static partial class Parallel
     {
         // static counter for generating unique Fork/Join Context IDs to be used in ETW events
         internal static int s_forkJoinContextID;
@@ -346,7 +346,9 @@ namespace System.Threading.Tasks
                     // threw an exception.  We let such exceptions go completely unhandled.
                     try
                     {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44605
                         Task.WaitAll(tasks);
+#pragma warning restore CA1416
                     }
                     catch (AggregateException aggExp)
                     {

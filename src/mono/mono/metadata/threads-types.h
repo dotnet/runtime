@@ -162,9 +162,6 @@ ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*res);
 
 ICALL_EXPORT
-gpointer ves_icall_System_Threading_Interlocked_Exchange_IntPtr(gpointer *location, gpointer value);
-
-ICALL_EXPORT
 gfloat ves_icall_System_Threading_Interlocked_Exchange_Single(gfloat *location, gfloat value);
 
 ICALL_EXPORT
@@ -181,9 +178,6 @@ gint64 ves_icall_System_Threading_Interlocked_CompareExchange_Long(gint64 *locat
 
 ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*comparand, MonoObject *volatile*res);
-
-ICALL_EXPORT
-gpointer ves_icall_System_Threading_Interlocked_CompareExchange_IntPtr(gpointer *location, gpointer value, gpointer comparand);
 
 ICALL_EXPORT
 gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location, gfloat value, gfloat comparand);
@@ -295,10 +289,8 @@ MonoInternalThreadHandle
 mono_thread_internal_current_handle (void);
 
 gboolean
-mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload);
+mono_thread_internal_abort (MonoInternalThread *thread);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
-
-gboolean mono_thread_internal_has_appdomain_ref (MonoInternalThread *thread, MonoDomain *domain);
 
 void mono_thread_internal_reset_abort (MonoInternalThread *thread);
 
@@ -358,15 +350,6 @@ mono_thread_set_name (MonoInternalThread *thread,
 	mono_thread_set_name ((thread), name, G_N_ELEMENTS (name) - 1,  \
 		MONO_THREAD_NAME_WINDOWS_CONSTANT (name),               \
 		(flags) | MonoSetThreadNameFlag_Constant, NULL)
-
-#ifndef ENABLE_NETCORE
-void mono_thread_suspend_all_other_threads (void);
-#endif
-gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
-
-void mono_thread_push_appdomain_ref (MonoDomain *domain);
-void mono_thread_pop_appdomain_ref (void);
-gboolean mono_thread_has_appdomain_ref (MonoThread *thread, MonoDomain *domain);
 
 gboolean mono_thread_interruption_requested (void);
 

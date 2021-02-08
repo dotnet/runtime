@@ -21,7 +21,8 @@ namespace System.Threading
     //   provider, and update PerfView with a trace event parser for the new provider so that it knows about the events and may
     //   use them to identify thread pool threads.
     [EventSource(Name = "Microsoft-Windows-DotNETRuntime", Guid = "e13c0d23-ccbc-4e12-931b-d9cc2eee27e4")]
-    internal sealed class PortableThreadPoolEventSource : EventSource
+    [EventSourceAutoGenerate]
+    internal sealed partial class PortableThreadPoolEventSource : EventSource
     {
         // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
         // multiple instances of the runtime within the same process, but then it seems unlikely that both instances' thread
@@ -76,12 +77,9 @@ namespace System.Threading
             ThreadTimedOut
         }
 
-        private PortableThreadPoolEventSource()
-            : base(
-                  new Guid(0xe13c0d23, 0xccbc, 0x4e12, 0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4),
-                  "Microsoft-Windows-DotNETRuntime")
-        {
-        }
+        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
+        // as you can't make a constructor partial.
+        private PortableThreadPoolEventSource(int _) { }
 
         [NonEvent]
         private unsafe void WriteThreadEvent(int eventId, uint numExistingThreads)
@@ -108,7 +106,10 @@ namespace System.Threading
             uint RetiredWorkerThreadCount = 0,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            WriteThreadEvent(50, ActiveWorkerThreadCount);
+            if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                WriteThreadEvent(50, ActiveWorkerThreadCount);
+            }
         }
 
         [Event(51, Level = EventLevel.Informational, Message = Messages.WorkerThread, Task = Tasks.ThreadPoolWorkerThread, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -117,16 +118,23 @@ namespace System.Threading
             uint RetiredWorkerThreadCount = 0,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            WriteThreadEvent(51, ActiveWorkerThreadCount);
+            if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                WriteThreadEvent(51, ActiveWorkerThreadCount);
+            }
         }
 
         [Event(57, Level = EventLevel.Informational, Message = Messages.WorkerThread, Task = Tasks.ThreadPoolWorkerThread, Opcode = Opcodes.Wait, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public void ThreadPoolWorkerThreadWait(
             uint ActiveWorkerThreadCount,
             uint RetiredWorkerThreadCount = 0,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            WriteThreadEvent(57, ActiveWorkerThreadCount);
+            if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                WriteThreadEvent(57, ActiveWorkerThreadCount);
+            }
         }
 
         [Event(54, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentSample, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -134,6 +142,11 @@ namespace System.Threading
             double Throughput,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
+            if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                return;
+            }
+
             EventData* data = stackalloc EventData[2];
             data[0].DataPointer = (IntPtr)(&Throughput);
             data[0].Size = sizeof(double);
@@ -151,6 +164,11 @@ namespace System.Threading
             ThreadAdjustmentReasonMap Reason,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
+            if (!IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
+            {
+                return;
+            }
+
             EventData* data = stackalloc EventData[4];
             data[0].DataPointer = (IntPtr)(&AverageThroughput);
             data[0].Size = sizeof(double);
@@ -181,6 +199,11 @@ namespace System.Threading
             ushort NewThreadWaveMagnitude,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
+            if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
+            {
+                return;
+            }
+
             EventData* data = stackalloc EventData[11];
             data[0].DataPointer = (IntPtr)(&Duration);
             data[0].Size = sizeof(double);
@@ -247,8 +270,13 @@ namespace System.Threading
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void ThreadPoolIOEnqueue(RegisteredWaitHandle registeredWaitHandle) =>
-            ThreadPoolIOEnqueue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, registeredWaitHandle.Repeating);
+        public void ThreadPoolIOEnqueue(RegisteredWaitHandle registeredWaitHandle)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIOEnqueue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero, registeredWaitHandle.Repeating);
+            }
+        }
 
         [Event(64, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IODequeue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private unsafe void ThreadPoolIODequeue(
@@ -273,12 +301,22 @@ namespace System.Threading
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void ThreadPoolIODequeue(RegisteredWaitHandle registeredWaitHandle) =>
-            ThreadPoolIODequeue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero);
+        public void ThreadPoolIODequeue(RegisteredWaitHandle registeredWaitHandle)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIODequeue((IntPtr)registeredWaitHandle.GetHashCode(), IntPtr.Zero);
+            }
+        }
 
         [Event(60, Level = EventLevel.Verbose, Message = Messages.WorkingThreadCount, Task = Tasks.ThreadPoolWorkingThreadCount, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkingThreadCount(uint Count, ushort ClrInstanceID = DefaultClrInstanceId)
         {
+            if (!IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
+            {
+                return;
+            }
+
             EventData* data = stackalloc EventData[2];
             data[0].DataPointer = (IntPtr)(&Count);
             data[0].Size = sizeof(uint);

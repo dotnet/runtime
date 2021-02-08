@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
@@ -34,7 +33,7 @@ namespace System.Reflection
         /// <returns>An object instance that implements <typeparamref name="T"/>.</returns>
         /// <exception cref="System.ArgumentException"><typeparamref name="T"/> is a class,
         /// or <typeparamref name="TProxy"/> is sealed or does not have a parameterless constructor</exception>
-        public static T Create<T, TProxy>()
+        public static T Create<T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TProxy>()
             where TProxy : DispatchProxy
         {
             return (T)DispatchProxyGenerator.CreateProxyInstance(typeof(TProxy), typeof(T));

@@ -1407,7 +1407,15 @@ namespace System.Tests
                 yield return new object[] { (decimal)2468, "N", defaultFormat, "2,468.00" };
 
                 yield return new object[] { (decimal)2467, "[#-##-#]", defaultFormat, "[2-46-7]" };
+
             }
+
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+            yield return new object[] { 32.5m, "C100", invariantFormat, "¤32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5m, "P100", invariantFormat, "3,250.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { 32.5m, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { 32.5m, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5m, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
 
             // Changing the negative pattern doesn't do anything without also passing in a format string
             var customFormat1 = new NumberFormatInfo();
@@ -1485,6 +1493,9 @@ namespace System.Tests
             decimal f = 123;
             Assert.Throws<FormatException>(() => f.ToString("Y"));
             Assert.Throws<FormatException>(() => f.ToString("Y", null));
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => f.ToString("E" + intMaxPlus1String));
         }
 
         public static IEnumerable<object[]> Truncate_TestData()

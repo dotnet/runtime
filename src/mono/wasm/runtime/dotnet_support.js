@@ -86,7 +86,7 @@ var DotNetSupportLib = {
 			return 0;
 		}
 	}
-	
+
 
 };
 

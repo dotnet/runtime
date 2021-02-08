@@ -4,15 +4,16 @@
           AfterTargets="Build"
           DependsOnTargets="SetCommonILLinkArgs">
 
-    <Message Text="Trimming shared framework assemblies with ILLinker..." Importance="high" />
+    <Message Text="Trimming $(PackageRID) runtime pack assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
       <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
     </PropertyGroup>
 
     <PropertyGroup>
-      <!-- default action for core assemblies -->
+      <!-- Link all assemblies -->
       <ILLinkArgs>$(ILLinkArgs) -c link</ILLinkArgs>
+      <ILLinkArgs>$(ILLinkArgs) -u link</ILLinkArgs>
       <!-- update debug symbols -->
       <ILLinkArgs>$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- suppress warnings with the following codes:
@@ -30,8 +31,20 @@
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
     </PropertyGroup>
 
-     <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
-    <MSBuild Projects="$(CoreLibProject)"
+    <!-- Retrieve CoreLib's path as it isn't binplaced alongside the libraries - https://github.com/dotnet/runtime/issues/43095. -->
+    <ItemGroup>
+      <CoreLibProjectWithRuntimeConfig Include="$(CoreLibProject)">
+        <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
+        <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>
+        <!-- If conflicting, manually set the Configuration property of the CoreLib project so that it aligns with the specified runtime configuration in the libraries' build. -->
+        <Properties Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
+                               '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</Properties>
+        <Properties Condition="'$(RuntimeFlavor)' == 'Mono' and
+                               '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</Properties>
+      </CoreLibProjectWithRuntimeConfig>
+    </ItemGroup>
+
+    <MSBuild Projects="@(CoreLibProjectWithRuntimeConfig)"
              Targets="GetTargetPath">
       <Output TaskParameter="TargetOutputs" PropertyName="SystemPrivateCoreLibPath" />
     </MSBuild>
@@ -45,24 +58,17 @@
       <_DependencyDirectories Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir.TrimEnd('\'))" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <ILLinkArgs>$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
-    </PropertyGroup>
-
     <ItemGroup>
-      <_AssembliesToLink Include="System.Private.CoreLib" />
-
       <_LibrariesToLink Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
-      <_AssembliesToLink Include="@(_LibrariesToLink->'%(FileName)')" />
+      <_LibrariesToLink Include="$(SystemPrivateCoreLibPath)" />
+
+      <RootAssemblies Include="@(_LibrariesToLink)">
+        <RootMode>visible</RootMode>
+      </RootAssemblies>
     </ItemGroup>
 
     <PropertyGroup>
-      <ILLinkArgs>$(ILLinkArgs) -r @(_AssembliesToLink->'%(Identity)', ' -r ')</ILLinkArgs>
-    </PropertyGroup>
-
-    <PropertyGroup>
       <ProjectILLinkSuppressionsFile>src\ILLink\ILLink.Suppressions</ProjectILLinkSuppressionsFile>
-      <CoreLibSharedILLinkSuppressionsFilesPrefix>$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared</CoreLibSharedILLinkSuppressionsFilesPrefix>
     </PropertyGroup>
 
     <ItemGroup>
@@ -70,9 +76,8 @@
       <_SuppressionsXmls Include="$(ILLinkTrimAssemblySuppressionsXmlsDir)*.xml" />
 
       <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
-      <_SuppressionsXmls Include="$(CoreLibSharedILLinkSuppressionsFilesPrefix).xml" />
-      <_SuppressionsXmls Condition="'$(TargetOS)' != 'windows'" Include="$(CoreLibSharedILLinkSuppressionsFilesPrefix).NonWindows.xml" />
-      <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).xml" />
+      <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared.xml" />
+      <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
 
       <!-- netstandard2.1-only System.ComponentModel.Annotations XML file is not bin-placed during -allConfigurations builds
            due to the linker not being run on the assembly (eng\illink.targets). Manually include it. -->
@@ -92,8 +97,8 @@
       <_DotNetHostFileName>$([System.IO.Path]::GetFileName('$(DotNetTool)'))</_DotNetHostFileName>
     </PropertyGroup>
 
-    <ILLink AssemblyPaths="$(_AssemblyPaths)"
-        RootAssemblyNames=""
+    <ILLink AssemblyPaths=""
+        RootAssemblyNames="@(RootAssemblies)"
         OutputDirectory="$(LibrariesTrimmedArtifactsPath)"
         ExtraArgs="$(ILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"

@@ -24,6 +24,8 @@ parameters:
   preBuildSteps: []
   container: ''
   condition: true
+  dependOnEvaluatePaths: false
+  shouldContinueOnError: false
   variables: {}
   pool: ''
   runTests: false
@@ -49,6 +51,7 @@ jobs:
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
+      dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
       pool: ${{ parameters.pool }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
       testScope: ${{ parameters.testScope }}
@@ -142,6 +145,7 @@ jobs:
               buildConfig: ${{ parameters.buildConfig }}
               helixQueues: ${{ parameters.helixQueues }}
               testScope: ${{ parameters.testScope }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
               creator: dotnet-bot
               testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
               extraHelixArguments: $(_extraHelixArguments)

@@ -18,7 +18,7 @@ namespace System.Diagnostics.Tests
         }
 
         // We run the test only if the stress mode is enabled and the process is elvated.
-        private static bool IsRunnableEnvironnement => Helpers.IsElevatedAndCanWriteToPerfCounters && TestEnvironment.IsStressModeEnabled && RemoteExecutor.IsSupported;
+        private static bool IsRunnableEnvironnement => Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters && TestEnvironment.IsStressModeEnabled && RemoteExecutor.IsSupported;
 
         /// <summary>
         /// This test was taken from System.Diagnostics.PerformanceData documentation https://msdn.microsoft.com/en-us/library/system.diagnostics.performancedata(v=vs.110).aspx

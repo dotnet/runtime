@@ -96,6 +96,10 @@ namespace System.Threading
         [System.ObsoleteAttribute("Thread.Suspend has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Suspend() { }
         public bool TrySetApartmentState(System.Threading.ApartmentState state) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public void UnsafeStart() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public void UnsafeStart(object? parameter) { }
         public static byte VolatileRead(ref byte address) { throw null; }
         public static double VolatileRead(ref double address) { throw null; }
         public static short VolatileRead(ref short address) { throw null; }

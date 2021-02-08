@@ -835,6 +835,56 @@ namespace System.Threading.ThreadPools.Tests
             done.CheckedWait();
         }
 
+        [ThreadStatic]
+        private static int t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect;
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void ThreadPoolThreadCreationDoesNotTransferExecutionContext()
+        {
+            // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
+            // would cause the thread pool to create threads
+            RemoteExecutor.Invoke(() =>
+            {
+                var done = new AutoResetEvent(false);
+
+                // Create an AsyncLocal with value change notifications, this changes the EC on this thread to non-default
+                var asyncLocal = new AsyncLocal<int>(e =>
+                {
+                    // There is nothing in this test that should cause a thread's EC to change due to EC flow
+                    Assert.False(e.ThreadContextChanged);
+
+                    // Record a side-effect from AsyncLocal value changes caused by flow. This is mainly because AsyncLocal
+                    // value change notifications can have side-effects like impersonation, we want to ensure that not only the
+                    // AsyncLocal's value is correct, but also that the side-effect matches the value, confirming that any value
+                    // changes cause matching notifications.
+                    t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect = e.CurrentValue;
+                });
+                asyncLocal.Value = 1;
+
+                ThreadPool.UnsafeQueueUserWorkItem(_ =>
+                {
+                    // The EC should not have flowed. If the EC had flowed, the assertion in the value change notification would
+                    // fail. Just for additional verification, check the side-effect as well.
+                    Assert.Equal(0, t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect);
+
+                    done.Set();
+                }, null);
+                done.CheckedWait();
+
+                ThreadPool.UnsafeRegisterWaitForSingleObject(done, (_, timedOut) =>
+                {
+                    Assert.True(timedOut);
+
+                    // The EC should not have flowed. If the EC had flowed, the assertion in the value change notification would
+                    // fail. Just for additional verification, check the side-effect as well.
+                    Assert.Equal(0, t_ThreadPoolThreadCreationDoesNotTransferExecutionContext_asyncLocalSideEffect);
+
+                    done.Set();
+                }, null, 0, true);
+                done.CheckedWait();
+            }).Dispose();
+        }
+
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
     }

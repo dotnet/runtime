@@ -298,7 +298,7 @@ namespace System.ComponentModel
                         if (_propInfo == null)
                         {
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
-                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, binder: null, PropertyType, Type.EmptyTypes, Array.Empty<ParameterModifier>());
                         }
                         if (_propInfo != null)
                         {
@@ -351,7 +351,7 @@ namespace System.ComponentModel
 
                     if (_receiverType == null)
                     {
-                        args = Array.Empty<Type>();
+                        args = Type.EmptyTypes;
                     }
                     else
                     {
@@ -382,7 +382,7 @@ namespace System.ComponentModel
                         for (Type t = ComponentType.BaseType; t != null && t != typeof(object); t = t.BaseType)
                         {
                             BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-                            PropertyInfo p = t.GetProperty(name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), null);
+                            PropertyInfo p = t.GetProperty(name, bindingFlags, binder: null, PropertyType, Type.EmptyTypes, null);
                             if (p != null)
                             {
                                 _setMethod = p.GetSetMethod(nonPublic: false);
@@ -403,7 +403,7 @@ namespace System.ComponentModel
                         if (_propInfo == null)
                         {
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
-                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, binder: null, PropertyType, Type.EmptyTypes, Array.Empty<ParameterModifier>());
                         }
                         if (_propInfo != null)
                         {
@@ -435,7 +435,7 @@ namespace System.ComponentModel
 
                     if (_receiverType == null)
                     {
-                        args = Array.Empty<Type>();
+                        args = Type.EmptyTypes;
                     }
                     else
                     {
@@ -767,7 +767,7 @@ namespace System.ComponentModel
                     }
                     else
                     {
-                        memberInfo = currentReflectType.GetProperty(Name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                        memberInfo = currentReflectType.GetProperty(Name, bindingFlags, binder: null, PropertyType, Type.EmptyTypes, Array.Empty<ParameterModifier>());
                     }
 
                     // Get custom attributes for the member info.

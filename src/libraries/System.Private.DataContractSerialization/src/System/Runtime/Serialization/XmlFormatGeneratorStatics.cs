@@ -45,7 +45,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_writeEndElementMethod == null)
                 {
-                    s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, Array.Empty<Type>());
+                    s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, Type.EmptyTypes);
                     Debug.Assert(s_writeEndElementMethod != null);
                 }
                 return s_writeEndElementMethod;
@@ -147,7 +147,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_isStartElementMethod0 == null)
                 {
-                    s_isStartElementMethod0 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, Array.Empty<Type>());
+                    s_isStartElementMethod0 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, Type.EmptyTypes);
                     Debug.Assert(s_isStartElementMethod0 != null);
                 }
                 return s_isStartElementMethod0;
@@ -199,7 +199,7 @@ namespace System.Runtime.Serialization
         private static ConstructorInfo? s_extensionDataObjectCtor;
         internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
                                                                    (s_extensionDataObjectCtor =
-                                                                       typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Array.Empty<Type>())!);
+                                                                       typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!);
 
         private static ConstructorInfo? s_hashtableCtor;
         internal static ConstructorInfo HashtableCtor
@@ -208,7 +208,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_hashtableCtor == null)
                 {
-                    s_hashtableCtor = Globals.TypeOfHashtable.GetConstructor(Globals.ScanAllMembers, Array.Empty<Type>());
+                    s_hashtableCtor = Globals.TypeOfHashtable.GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes);
                     Debug.Assert(s_hashtableCtor != null);
                 }
                 return s_hashtableCtor;
@@ -264,7 +264,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_resetCollectionMemberInfoMethod == null)
                 {
-                    s_resetCollectionMemberInfoMethod = typeof(XmlObjectSerializerReadContext).GetMethod("ResetCollectionMemberInfo", Globals.ScanAllMembers, Array.Empty<Type>());
+                    s_resetCollectionMemberInfoMethod = typeof(XmlObjectSerializerReadContext).GetMethod("ResetCollectionMemberInfo", Globals.ScanAllMembers, Type.EmptyTypes);
                     Debug.Assert(s_resetCollectionMemberInfoMethod != null);
                 }
                 return s_resetCollectionMemberInfoMethod;

@@ -10,7 +10,7 @@ namespace System.Diagnostics.Tests
 {
     public static class CounterSampleTests
     {
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterSample_Constructor_EmptyCounterSample()
         {
             CounterSample counterSample = new CounterSample();
@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(0, counterSample.TimeStamp100nSec);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterSample_Constructor_CounterSample()
         {
             long timeStamp = DateTime.Now.ToFileTime();
@@ -39,8 +39,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(timeStamp, counterSample.TimeStamp100nSec);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34409", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [Fact]
         public static void CounterSample_Calculate_CalculateCounterSample()
         {
             CounterSample counterSample = new CounterSample(5, 0, 0, 0, 0, 0, PerformanceCounterType.NumberOfItems32);
@@ -48,8 +47,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(5, CounterSample.Calculate(counterSample));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34409", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [Fact]
         public static void CounterSample_Calculate_CalculateCounterSampleCounterSample()
         {
             CounterSample counterSample1 = new CounterSample(5, 0, 0, 1, 0, 0, PerformanceCounterType.CounterDelta32);
@@ -58,7 +56,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(10, CounterSample.Calculate(counterSample1, counterSample2));
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterSample_Equal()
         {
             CounterSample counterSample1 = new CounterSample(5, 0, 0, 1, 0, 0, PerformanceCounterType.CounterDelta32);
@@ -67,7 +65,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(counterSample1, counterSample2);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterSample_opInequality()
         {
             CounterSample counterSample1 = new CounterSample(5, 0, 0, 1, 0, 0, PerformanceCounterType.CounterDelta32);
@@ -76,7 +74,7 @@ namespace System.Diagnostics.Tests
             Assert.True(counterSample1 != counterSample2);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterSample_opEquality()
         {
             CounterSample counterSample1 = new CounterSample(5, 0, 0, 1, 0, 0, PerformanceCounterType.CounterDelta32);
@@ -85,7 +83,7 @@ namespace System.Diagnostics.Tests
             Assert.True(counterSample1 == counterSample2);
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
+        [Fact]
         public static void CounterSample_GetHashCode()
         {
             CounterSample counterSample1 = new CounterSample(5, 0, 0, 1, 0, 0, PerformanceCounterType.CounterDelta32);

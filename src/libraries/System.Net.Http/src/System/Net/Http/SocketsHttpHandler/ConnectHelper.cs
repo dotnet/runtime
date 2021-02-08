@@ -32,52 +32,6 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<Stream> ConnectAsync(Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>> callback, DnsEndPoint endPoint, HttpRequestMessage requestMessage, CancellationToken cancellationToken)
-        {
-            Stream stream;
-            try
-            {
-                stream = await callback(new SocketsHttpConnectionContext(endPoint, requestMessage), cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
-            {
-                throw CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
-            }
-
-            if (stream == null)
-            {
-                throw new HttpRequestException(SR.net_http_null_from_connect_callback);
-            }
-
-            return stream;
-        }
-
-        public static Stream Connect(string host, int port, CancellationToken cancellationToken)
-        {
-            // For synchronous connections, we can just create a socket and make the connection.
-            cancellationToken.ThrowIfCancellationRequested();
-            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            try
-            {
-                socket.NoDelay = true;
-                using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
-                {
-                    socket.Connect(new DnsEndPoint(host, port));
-                }
-
-                return new NetworkStream(socket, ownsSocket: true);
-            }
-            catch (Exception e)
-            {
-                socket.Dispose();
-                throw CreateWrappedException(e, host, port, cancellationToken);
-            }
-        }
-
         public static ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)
         {
             // If there's a cert validation callback, and if it came from HttpClientHandler,
@@ -161,7 +115,7 @@ namespace System.Net.Http
             }
         }
 
-        private static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
+        internal static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
         {
             return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
                 CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :

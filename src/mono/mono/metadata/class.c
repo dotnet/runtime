@@ -197,7 +197,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		break;
 	}
 
-	if (idx > image->tables [MONO_TABLE_ASSEMBLYREF].rows) {
+	if (mono_metadata_table_bounds_check (image, MONO_TABLE_ASSEMBLYREF, idx)) {
 		mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", idx);
 		return NULL;
 	}
@@ -209,14 +209,12 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 	/* If the assembly did not load, register this as a type load exception */
 	if (image->references [idx - 1] == REFERENCE_MISSING){
 		MonoAssemblyName aname;
+		memset (&aname, 0, sizeof (MonoAssemblyName));
 		char *human_name;
 		
 		mono_assembly_get_assemblyref (image, idx - 1, &aname);
 		human_name = mono_stringify_assembly_name (&aname);
-		gboolean refonly = FALSE;
-		if (image->assembly)
-			refonly = mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY;
-		mono_error_set_simple_file_not_found (error, human_name, refonly);
+		mono_error_set_simple_file_not_found (error, human_name);
 		g_free (human_name);
 		return NULL;
 	}
@@ -2759,6 +2757,7 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 	case MONO_TOKEN_TYPE_REF: {
 		ERROR_DECL (error);
 		MonoAssemblyName aname;
+		memset (&aname, 0, sizeof (MonoAssemblyName));
 		guint32 cols [MONO_TYPEREF_SIZE];
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 		guint32 idx = mono_metadata_token_index (type_token);
@@ -5894,13 +5893,6 @@ can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 	if (!accessed || !accessing)
 		return FALSE;
 
-	/* extra safety under CoreCLR - the runtime does not verify the strongname signatures
-	 * anywhere so untrusted friends are not safe to access platform's code internals */
-	if (mono_security_core_clr_enabled ()) {
-		if (!mono_security_core_clr_can_access_internals (accessing->image, accessed->image))
-			return FALSE;
-	}
-
 	mono_assembly_load_friends (accessed);
 	for (tmp = accessed->friend_assembly_names; tmp; tmp = tmp->next) {
 		MonoAssemblyName *friend_ = (MonoAssemblyName *)tmp->data;
@@ -5979,9 +5971,6 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 	MonoAssembly *access_klass_assembly = m_class_get_image (access_klass)->assembly;
 	MonoAssembly *member_klass_assembly = m_class_get_image (member_klass)->assembly;
 
-	if (access_klass_assembly && m_class_get_image (access_klass)->assembly->corlib_internal)
-		return TRUE;
-
 	if (m_class_get_element_class (access_klass) && !m_class_is_enumtype (access_klass)) {
 		access_klass = m_class_get_element_class (access_klass);
 		access_klass_assembly = m_class_get_image (access_klass)->assembly;
@@ -6044,8 +6033,6 @@ can_access_member (MonoClass *access_klass, MonoClass *member_klass, MonoClass* 
 {
 	MonoClass *member_generic_def;
 	MonoAssembly *access_klass_assembly = m_class_get_image (access_klass)->assembly;
-	if (access_klass_assembly && access_klass_assembly->corlib_internal)
-		return TRUE;
 
 	MonoGenericClass *access_gklass = mono_class_try_get_generic_class (access_klass);
 	if (((access_gklass && access_gklass->container_class) ||
@@ -6284,10 +6271,8 @@ gboolean mono_type_is_valid_enum_basetype (MonoType * type) {
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-#if ENABLE_NETCORE
 	case MONO_TYPE_R8:
 	case MONO_TYPE_R4:
-#endif
 		return TRUE;
 	default:
 		return FALSE;

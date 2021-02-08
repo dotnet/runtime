@@ -15,9 +15,10 @@ namespace System.Net.Http
 {
     internal sealed class Http3Connection : HttpConnectionBase, IDisposable
     {
-        // TODO: once HTTP/3 is standardized, create APIs for these.
-        public static readonly Version HttpVersion30 = new Version(3, 0);
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol = new SslApplicationProtocol("h3-29");
+        // TODO: once HTTP/3 is standardized, create APIs for this.
+        public static readonly SslApplicationProtocol Http3ApplicationProtocol29 = new SslApplicationProtocol("h3-29");
+        public static readonly SslApplicationProtocol Http3ApplicationProtocol30 = new SslApplicationProtocol("h3-30");
+        public static readonly SslApplicationProtocol Http3ApplicationProtocol31 = new SslApplicationProtocol("h3-31");
 
         private readonly HttpConnectionPool _pool;
         private readonly HttpAuthority? _origin;
@@ -158,6 +159,8 @@ namespace System.Net.Http
 
         public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            Debug.Assert(async);
+
             // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
 
             TaskCompletionSourceWithCancellation<bool>? waitForAvailableStreamTcs = null;
@@ -646,11 +649,14 @@ namespace System.Net.Http
                         case Http3FrameType.Settings:
                             // If an endpoint receives a second SETTINGS frame on the control stream, the endpoint MUST respond with a connection error of type H3_FRAME_UNEXPECTED.
                             throw new Http3ConnectionException(Http3ErrorCode.UnexpectedFrame);
-                        case Http3FrameType.Headers:
+                        case Http3FrameType.Headers: // Servers should not send these frames to a control stream.
                         case Http3FrameType.Data:
                         case Http3FrameType.MaxPushId:
                         case Http3FrameType.DuplicatePush:
-                            // Servers should not send these frames to a control stream.
+                        case Http3FrameType.ReservedHttp2Priority: // These frames are explicitly reserved and must never be sent.
+                        case Http3FrameType.ReservedHttp2Ping:
+                        case Http3FrameType.ReservedHttp2WindowUpdate:
+                        case Http3FrameType.ReservedHttp2Continuation:
                             throw new Http3ConnectionException(Http3ErrorCode.UnexpectedFrame);
                         case Http3FrameType.PushPromise:
                         case Http3FrameType.CancelPush:
@@ -740,10 +746,18 @@ namespace System.Net.Http
 
                     buffer.Discard(bytesRead);
 
-                    // Only support this single setting. Skip others.
-                    if (settingId == (long)Http3SettingType.MaxHeaderListSize)
+                    switch ((Http3SettingType)settingId)
                     {
-                        _maximumHeadersLength = (int)Math.Min(settingValue, int.MaxValue);
+                        case Http3SettingType.MaxHeaderListSize:
+                            _maximumHeadersLength = (int)Math.Min(settingValue, int.MaxValue);
+                            break;
+                        case Http3SettingType.ReservedHttp2EnablePush:
+                        case Http3SettingType.ReservedHttp2MaxConcurrentStreams:
+                        case Http3SettingType.ReservedHttp2InitialWindowSize:
+                        case Http3SettingType.ReservedHttp2MaxFrameSize:
+                            // Per https://tools.ietf.org/html/draft-ietf-quic-http-31#section-7.2.4.1
+                            // these settings IDs are reserved and must never be sent.
+                            throw new Http3ConnectionException(Http3ErrorCode.SettingsError);
                     }
                 }
             }

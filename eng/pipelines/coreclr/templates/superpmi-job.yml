@@ -16,6 +16,7 @@ parameters:
   runKind: ''
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-job.yml'
   additionalSetupParameters: ''
+  collectionType: ''
   collectionName: ''
 
 ### SuperPMI job
@@ -28,7 +29,7 @@ jobs:
   parameters:
     # Compute job name from template parameters
     jobName: ${{ format('superpmibuild_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
-    displayName: ${{ format('SuperPMI {7} {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.collectionName) }}
+    displayName: ${{ format('SuperPMI {7} {8} {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.collectionName, parameters.collectionType) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -41,6 +42,7 @@ jobs:
     projectFile: ${{ parameters.projectFile }}
     runKind: ${{ parameters.runKind }}
     testGroup: ${{ parameters.testGroup }}
+    collectionType: ${{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
     # Test job depends on the corresponding build job

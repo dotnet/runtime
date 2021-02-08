@@ -27,11 +27,6 @@ trigger:
 jobs:
 
 #
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
-
-#
 # Debug builds
 #
 - template: /eng/pipelines/common/platform-matrix.yml

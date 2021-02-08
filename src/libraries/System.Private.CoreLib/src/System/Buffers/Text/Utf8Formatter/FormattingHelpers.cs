@@ -149,32 +149,6 @@ namespace System.Buffers.Text
 
         #endregion UTF-8 Helper methods
 
-        #region Math Helper methods
-
-        /// <summary>
-        /// We don't have access to Math.DivRem, so this is a copy of the implementation.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong DivMod(ulong numerator, ulong denominator, out ulong modulo)
-        {
-            ulong div = numerator / denominator;
-            modulo = numerator - (div * denominator);
-            return div;
-        }
-
-        /// <summary>
-        /// We don't have access to Math.DivRem, so this is a copy of the implementation.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint DivMod(uint numerator, uint denominator, out uint modulo)
-        {
-            uint div = numerator / denominator;
-            modulo = numerator - (div * denominator);
-            return div;
-        }
-
-        #endregion Math Helper methods
-
         //
         // Enable use of ThrowHelper from TryFormat() routines without introducing dozens of non-code-coveraged "bytesWritten = 0; return false" boilerplate.
         //

@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object result = Interop.Runtime.BindCoreObject(jsHandle, Int32Handle, out int exception);
             if (exception != 0)
-                throw new JSException($"CoreObject Error binding: {result}");
+                throw new JSException(SR.Format(SR.CoreObjectErrorBinding, result));
         }
 
         internal CoreObject(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)

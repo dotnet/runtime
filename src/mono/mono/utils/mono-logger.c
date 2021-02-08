@@ -552,7 +552,7 @@ conv_ascii_char (gchar s)
 
 /* No memfree because only called during crash */
 void
-mono_dump_mem (gpointer d, int len)
+mono_dump_mem (gconstpointer d, int len)
 {
 	guint8 *data = (guint8 *) d;
 

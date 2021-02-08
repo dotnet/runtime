@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Transactions
 {
     public struct TransactionOptions
@@ -22,7 +24,7 @@ namespace System.Transactions
 
         public override int GetHashCode() => base.GetHashCode();  // Don't have anything better to do.
 
-        public override bool Equals(object? obj) => obj is TransactionOptions transactionOptions && Equals(transactionOptions);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is TransactionOptions transactionOptions && Equals(transactionOptions);
 
         private bool Equals(TransactionOptions other) =>
             _timeout == other._timeout &&

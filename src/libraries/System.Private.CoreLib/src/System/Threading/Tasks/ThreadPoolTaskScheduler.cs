@@ -45,15 +45,14 @@ namespace System.Threading.Tasks
             if (Thread.IsThreadStartSupported && (options & TaskCreationOptions.LongRunning) != 0)
             {
                 // Run LongRunning tasks on their own dedicated thread.
-                Thread thread = new Thread(s_longRunningThreadWork);
-                thread.IsBackground = true; // Keep this thread from blocking process shutdown
-                thread.Start(task);
+#pragma warning disable CA1416 // TODO: https://github.com/dotnet/runtime/issues/44922
+                new Thread(s_longRunningThreadWork) { IsBackground = true }.UnsafeStart(task);
+#pragma warning restore CA1416
             }
             else
             {
                 // Normal handling for non-LongRunning tasks.
-                bool preferLocal = ((options & TaskCreationOptions.PreferFairness) == 0);
-                ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal);
+                ThreadPool.UnsafeQueueUserWorkItemInternal(task, (options & TaskCreationOptions.PreferFairness) == 0);
             }
         }
 

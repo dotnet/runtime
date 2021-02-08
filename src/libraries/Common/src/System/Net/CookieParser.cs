@@ -648,7 +648,7 @@ namespace System.Net
                                         expiresSet = true;
 
                                         if (DateTime.TryParse(CheckQuoted(_tokenizer.Value),
-                                            CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out DateTime expires))
+                                            CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AdjustToUniversal, out DateTime expires))
                                         {
                                             cookie!.Expires = expires;
                                         }

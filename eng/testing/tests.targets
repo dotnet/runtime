@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RunScriptInputName Condition="'$(TargetOS)' == 'windows'">RunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' != 'windows'">RunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'iOS'">AppleRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser'">WasmRunnerTemplate.sh</RunScriptInputName>
 
@@ -96,8 +96,8 @@
       <RunTestsCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                   $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture)</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(_withoutCategories.Replace(';', ' -notrait category='))</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture) $(TargetOS) $(TestProjectName) $(ExpectedExitCode)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario)</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->

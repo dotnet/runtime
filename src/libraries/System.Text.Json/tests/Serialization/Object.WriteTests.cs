@@ -80,8 +80,8 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void WriteObjectWorks_ReferenceTypeMissingPublicParameterlessConstructor()
         {
-            PublicParameterizedConstructorTestClass paramterless = PublicParameterizedConstructorTestClass.Instance;
-            Assert.Equal("{\"Name\":\"42\"}", JsonSerializer.Serialize(paramterless));
+            PublicParameterizedConstructorTestClass parameterless = PublicParameterizedConstructorTestClass.Instance;
+            Assert.Equal("{\"Name\":\"42\"}", JsonSerializer.Serialize(parameterless));
 
             ClassWithInternalParameterlessCtor internalObj = ClassWithInternalParameterlessCtor.Instance;
             Assert.Equal("{\"Name\":\"InstancePropertyInternal\"}", JsonSerializer.Serialize(internalObj));
@@ -103,7 +103,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void WritePolymorhicSimple()
+        public static void WritePolymorphicSimple()
         {
             string json = JsonSerializer.Serialize(new { Prop = (object)new[] { 0 } });
             Assert.Equal(@"{""Prop"":[0]}", json);
