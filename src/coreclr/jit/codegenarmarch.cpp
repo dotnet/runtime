@@ -27,7 +27,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 // Arguments:
 //    spDelta                 - the value to add to SP. Must be negative or zero.
-//    regTmp                  - an available temporary register.
+//    regTmp                  - an available temporary register that is used if 'spDelta' cannot be encoded by
+//                              'sub sp, sp, #spDelta' instruction.
+//                              Can be REG_NA if the caller knows for certain that 'spDelta' fits into the immediate
+//                              value range.
 //
 // Return Value:
 //    None.
