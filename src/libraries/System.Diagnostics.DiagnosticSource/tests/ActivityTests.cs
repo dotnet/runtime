@@ -120,6 +120,55 @@ namespace System.Diagnostics.Tests
             Assert.Equal("4", a.GetBaggageItem("1"));
         }
 
+        [Fact]
+        public void TestSetBaggage()
+        {
+            Activity a = new Activity("SetBaggage");
+            Assert.Equal(0, a.Baggage.Count());
+
+            a.SetBaggage("1", "1");
+            a.SetBaggage("2", "2");
+            a.SetBaggage("3", "3");
+            a.SetBaggage("4", "4");
+            a.SetBaggage("5", "5");
+
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("1", a.GetBaggageItem("1"));
+            Assert.Equal("2", a.GetBaggageItem("2"));
+            Assert.Equal("3", a.GetBaggageItem("3"));
+            Assert.Equal("4", a.GetBaggageItem("4"));
+            Assert.Equal("5", a.GetBaggageItem("5"));
+
+            // Check not added item
+            Assert.Null(a.GetBaggageItem("6"));
+
+            // Adding none existing key with null value is no-op
+            a.SetBaggage("6", null);
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Null(a.GetBaggageItem("6"));
+
+            // Check updated item
+            a.SetBaggage("5", "5.1");
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("5.1", a.GetBaggageItem("5"));
+
+            // Add() always add new entry even we have matching key in the list.
+            // Baggage always return last entered value
+            a.AddBaggage("5", "5.2");
+            Assert.Equal(6, a.Baggage.Count());
+            Assert.Equal("5.2", a.GetBaggageItem("5"));
+
+            // Now Remove first duplicated item
+            a.SetBaggage("5", null);
+            Assert.Equal(5, a.Baggage.Count());
+            Assert.Equal("5.1", a.GetBaggageItem("5"));
+
+            // Now Remove second item
+            a.SetBaggage("5", null);
+            Assert.Equal(4, a.Baggage.Count());
+            Assert.Null(a.GetBaggageItem("5"));
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestBaggageWithChainedActivities()
         {
@@ -1557,6 +1606,57 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void TestGetTagItem()
+        {
+            Activity a = new Activity("GetTagItem");
+
+            // Test empty tags list
+            Assert.Equal(0, a.TagObjects.Count());
+            Assert.Null(a.GetTagItem("tag1"));
+
+            // Test adding first tag
+            a.AddTag("tag1", "value1");
+            Assert.Equal(1, a.TagObjects.Count());
+            Assert.Equal("value1", a.GetTagItem("tag1"));
+            Assert.Null(a.GetTagItem("tag2"));
+
+            // Test adding one more key
+            a.AddTag("tag2", "value2");
+            Assert.Equal(2, a.TagObjects.Count());
+            Assert.Equal("value1", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            // Test adding duplicate key
+            a.AddTag("tag1", "value1-d");
+            Assert.Equal(3, a.TagObjects.Count());
+            Assert.Equal("value1", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            // Test setting the key (overwrite the value)
+            a.SetTag("tag1", "value1-O");
+            Assert.Equal(3, a.TagObjects.Count());
+            Assert.Equal("value1-O", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            // Test removing the key
+            a.SetTag("tag1", null);
+            Assert.Equal(2, a.TagObjects.Count());
+            Assert.Equal("value1-d", a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            a.SetTag("tag1", null);
+            Assert.Equal(1, a.TagObjects.Count());
+            Assert.Null(a.GetTagItem("tag1"));
+            Assert.Equal("value2", a.GetTagItem("tag2"));
+
+            a.SetTag("tag2", null);
+            Assert.Equal(0, a.TagObjects.Count());
+            Assert.Null(a.GetTagItem("tag1"));
+            Assert.Null(a.GetTagItem("tag2"));
+        }
+
+
         [Theory]
         [InlineData("key1", null, true,  1)]
         [InlineData("key2", null, false, 0)]
@@ -1592,6 +1692,46 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(method);
             Assert.False(method.ReturnType.IsInterface);
             Assert.True(method.ReturnType.IsValueType);
+        }
+
+        [Fact]
+        public void TestStatus()
+        {
+            Activity a = new Activity("Status");
+            Assert.Equal(ActivityStatusCode.Unset, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok, null); // explicit description null parameter
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok, "Ignored Description"); // explicit non null description
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error, "Error Code"); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Equal("Error Code", a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok, "Description will reset to null");
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error, "Another Error Code Description");
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Equal("Another Error Code Description", a.StatusDescription);
+
+            a.SetStatus((ActivityStatusCode) 100, "Another Error Code Description");
+            Assert.Equal((ActivityStatusCode) 100, a.Status);
+            Assert.Null(a.StatusDescription);
         }
 
         [Fact]

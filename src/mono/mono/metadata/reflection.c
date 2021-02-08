@@ -66,15 +66,9 @@ static GENERATE_GET_CLASS_WITH_CACHE (mono_event, "System.Reflection", "RuntimeE
 static GENERATE_GET_CLASS_WITH_CACHE (mono_property, "System.Reflection", "RuntimePropertyInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (mono_parameter_info, "System.Reflection", "RuntimeParameterInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (missing, "System.Reflection", "Missing");
-#ifdef ENABLE_NETCORE
 static GENERATE_GET_CLASS_WITH_CACHE (method_body, "System.Reflection", "RuntimeMethodBody");
 static GENERATE_GET_CLASS_WITH_CACHE (local_variable_info, "System.Reflection", "RuntimeLocalVariableInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, "System.Reflection", "RuntimeExceptionHandlingClause");
-#else
-static GENERATE_GET_CLASS_WITH_CACHE (method_body, "System.Reflection", "MethodBody");
-static GENERATE_GET_CLASS_WITH_CACHE (local_variable_info, "System.Reflection", "LocalVariableInfo");
-static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, "System.Reflection", "ExceptionHandlingClause");
-#endif
 static GENERATE_GET_CLASS_WITH_CACHE (type_builder, "System.Reflection.Emit", "TypeBuilder");
 static GENERATE_GET_CLASS_WITH_CACHE (dbnull, "System", "DBNull");
 
@@ -465,13 +459,8 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	g_assert (!type->has_cmods);
 
 	/* void is very common */
-#ifdef ENABLE_NETCORE
 	if (!type->byref && type->type == MONO_TYPE_VOID && domain->typeof_void)
 		return (MonoReflectionType*)domain->typeof_void;
-#else
-	if (type->type == MONO_TYPE_VOID && domain->typeof_void)
-		return (MonoReflectionType*)domain->typeof_void;
-#endif
 
 	/*
 	 * If the vtable of the given class was already created, we can use
@@ -1930,11 +1919,7 @@ mono_reflection_parse_type_checked (char *name, MonoTypeNameParse *info, MonoErr
 	if (ok) {
 		mono_identifier_unescape_info (info);
 	} else {
-#if ENABLE_NETCORE
 		mono_error_set_argument_format (error, "typeName@0", "failed parse: %s", name);
-#else
-		mono_error_set_argument_format (error, "typeName", "failed parse: %s", name);
-#endif
 	}
 	return (ok != 0);
 }
@@ -1949,7 +1934,7 @@ _mono_reflection_get_type_from_info (MonoAssemblyLoadContext *alc, MonoTypeNameP
 	error_init (error);
 
 	if (info->assembly.name) {
-		MonoAssembly *assembly = mono_assembly_loaded_internal (alc, &info->assembly, FALSE);
+		MonoAssembly *assembly = mono_assembly_loaded_internal (alc, &info->assembly);
 		if (!assembly && image && image->assembly && mono_assembly_check_name_match (&info->assembly, &image->assembly->aname))
 			/* 
 			 * This could happen in the AOT compiler case when the search hook is not
@@ -2655,11 +2640,7 @@ reflection_bind_generic_method_parameters (MonoMethod *method, MonoArrayHandle t
 	mono_error_assert_ok (error);
 
 	if (!mono_verifier_is_method_valid_generic_instantiation (inflated)) {
-#if ENABLE_NETCORE
 		mono_error_set_argument (error, NULL, "Invalid generic arguments");
-#else
-		mono_error_set_argument (error, "typeArguments", "Invalid generic arguments");
-#endif
 		return NULL;
 	}
 
@@ -3134,11 +3115,7 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	error_init (error);
 
 	if (method == NULL) {
-#ifdef ENABLE_NETCORE
 		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableToInternal", 1, 0, error);
-#else
-		method = mono_class_get_method_from_name_checked (mono_class_get_type_builder_class (), "IsAssignableTo", 1, 0, error);
-#endif		
 		mono_error_assert_ok (error);
 		g_assert (method);
 	}

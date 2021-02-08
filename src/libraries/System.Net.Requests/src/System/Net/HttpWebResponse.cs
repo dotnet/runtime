@@ -384,30 +384,6 @@ namespace System.Net
             }
         }
 
-        private string GetHeaderValueAsString(IEnumerable<string> values)
-        {
-            // There is always at least one value even if it is an empty string.
-            var enumerator = values.GetEnumerator();
-            bool success = enumerator.MoveNext();
-            Debug.Assert(success, "There should be at least one value");
-
-            string headerValue = enumerator.Current;
-
-            if (enumerator.MoveNext())
-            {
-                // Multi-valued header
-                var buffer = new StringBuilder(headerValue);
-
-                do
-                {
-                    buffer.Append(", ");
-                    buffer.Append(enumerator.Current);
-                } while (enumerator.MoveNext());
-
-                return buffer.ToString();
-            }
-
-            return headerValue;
-        }
+        private string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);
     }
 }

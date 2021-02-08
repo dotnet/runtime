@@ -801,7 +801,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest2()
         {
@@ -817,7 +817,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest3()
         {
@@ -842,7 +842,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest5()
         {
@@ -871,7 +871,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest7()
         {
@@ -898,7 +898,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest9()
         {
@@ -912,7 +912,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest10()
         {
@@ -928,7 +928,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest11()
         {
@@ -968,7 +968,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest14()
         {
@@ -1008,7 +1008,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest17()
         {
@@ -1072,7 +1072,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest22()
         {
@@ -1099,7 +1099,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest24()
         {
@@ -1126,7 +1126,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest26()
         {
@@ -1164,7 +1164,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest28()
         {
@@ -1185,7 +1185,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest29()
         {
@@ -1206,7 +1206,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest30()
         {
@@ -1310,7 +1310,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest38()
         {
@@ -1323,7 +1323,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskContinueWithAllAnyTest39()
         {

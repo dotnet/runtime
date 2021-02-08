@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include "pal_icushim_internal.h"
 
@@ -58,7 +59,7 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
         if (dlsym(libicuuc, symbolName) == NULL)
         {
             if (minorVer == -1)
-                return FALSE;
+                return false;
 
             // Now try the _majorVer_minorVer added
             sprintf(symbolVersion, "_%d_%d%s", majorVer, minorVer, suffix);
@@ -66,20 +67,20 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
             if (dlsym(libicuuc, symbolName) == NULL)
             {
                 if (subVer == -1)
-                    return FALSE;
+                    return false;
 
                 // Finally, try the _majorVer_minorVer_subVer added
                 sprintf(symbolVersion, "_%d_%d_%d%s", majorVer, minorVer, subVer, suffix);
                 sprintf(symbolName, "u_strlen%s", symbolVersion);
                 if (dlsym(libicuuc, symbolName) == NULL)
                 {
-                    return FALSE;
+                    return false;
                 }
             }
         }
     }
 
-    return TRUE;
+    return true;
 }
 
 #endif // TARGET_UNIX
@@ -98,12 +99,12 @@ static int FindICULibs()
     libicuuc = LoadLibraryExW(L"icu.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (libicuuc == NULL)
     {
-        return FALSE;
+        return false;
     }
 
     // Windows has a single dll for icu.
     libicui18n = libicuuc;
-    return TRUE;
+    return true;
 }
 
 static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbolName, char* symbolVersion, char* suffix)
@@ -119,7 +120,7 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
         if (GetProcAddress(lib, symbolName) == NULL)
         {
             if (minorVer == -1)
-                return FALSE;
+                return false;
 
             // Now try the _majorVer_minorVer added
             sprintf_s(symbolVersion, MaxICUVersionStringWithSuffixLength, "_%d_%d%s", majorVer, minorVer, suffix);
@@ -127,19 +128,19 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
             if (GetProcAddress(lib, symbolName) == NULL)
             {
                 if (subVer == -1)
-                    return FALSE;
+                    return false;
                 // Finally, try the _majorVer_minorVer_subVer added
                 sprintf_s(symbolVersion, MaxICUVersionStringWithSuffixLength, "_%d_%d_%d%s", majorVer, minorVer, subVer, suffix);
                 sprintf_s(symbolName, SYMBOL_NAME_SIZE, "u_strlen%s", symbolVersion);
                 if (GetProcAddress(lib, symbolName) == NULL)
                 {
-                    return FALSE;
+                    return false;
                 }
             }
         }
     }
 
-    return TRUE;
+    return true;
 }
 
 #elif defined(TARGET_OSX)
@@ -155,13 +156,13 @@ static int FindICULibs()
 
     if (libicuuc == NULL)
     {
-        return FALSE;
+        return false;
     }
 
     // in OSX all ICU APIs exist in the same library libicucore.A.dylib
     libicui18n = libicuuc;
 
-    return TRUE;
+    return true;
 }
 
 #elif defined(TARGET_ANDROID)
@@ -176,14 +177,14 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
 
     if (libicui18n == NULL)
     {
-        return FALSE;
+        return false;
     }
 
     libicuuc = dlopen("libicuuc.so", RTLD_LAZY);
 
     if (libicuuc == NULL)
     {
-        return FALSE;
+        return false;
     }
 
     char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
@@ -191,12 +192,12 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
     {
         if (FindSymbolVersion(i, -1, -1, symbolName, symbolVersion, symbolSuffix))
         {
-            return TRUE;
+            return true;
         }
     }
 
     fprintf(stderr, "Cannot determine ICU version.");
-    return FALSE;
+    return false;
 }
 
 #else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID
@@ -290,12 +291,12 @@ static int FindLibUsingOverride(const char* versionPrefix, char* symbolName, cha
         {
             if (OpenICULibraries(first, second, third, versionPrefix, symbolName, symbolVersion))
             {
-                return TRUE;
+                return true;
             }
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 // Search for library files with names including the major version.
@@ -309,11 +310,11 @@ static int FindLibWithMajorVersion(const char* versionPrefix, char* symbolName, 
     {
         if (OpenICULibraries(i, -1, -1, versionPrefix, symbolName, symbolVersion))
         {
-            return TRUE;
+            return true;
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 // Select the highest supported version of ICU present on the local machine
@@ -326,12 +327,12 @@ static int FindLibWithMajorMinorVersion(const char* versionPrefix, char* symbolN
         {
             if (OpenICULibraries(i, j, -1, versionPrefix, symbolName, symbolVersion))
             {
-                return TRUE;
+                return true;
             }
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 // Select the highest supported version of ICU present on the local machine
@@ -346,13 +347,13 @@ static int FindLibWithMajorMinorSubVersion(const char* versionPrefix, char* symb
             {
                 if (OpenICULibraries(i, j, k, versionPrefix, symbolName, symbolVersion))
                 {
-                    return TRUE;
+                    return true;
                 }
             }
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 
@@ -392,27 +393,27 @@ int32_t GlobalizationNative_LoadICU()
 
     if (!FindICULibs())
     {
-        return FALSE;
+        return false;
     }
 
 #elif defined(TARGET_ANDROID)
     if (!FindICULibs(symbolName, symbolVersion))
     {
-        return FALSE;
+        return false;
     }
 #else
     if (!FindICULibs(VERSION_PREFIX_NONE, symbolName, symbolVersion))
     {
         if (!FindICULibs(VERSION_PREFIX_SUSE, symbolName, symbolVersion))
         {
-            return FALSE;
+            return false;
         }
     }
 #endif // TARGET_WINDOWS || TARGET_OSX
 
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
-    return TRUE;
+    return true;
 }
 
 void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* version, const char* suffix)

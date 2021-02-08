@@ -8,3 +8,5 @@ bool GetVersionResilientTypeHashCode(IMDInternalImport *pMDImport, mdExportedTyp
 int GetVersionResilientMethodHashCode(MethodDesc *pMD);
 
 int GetVersionResilientModuleHashCode(Module* pModule);
+
+bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned* ilSize);

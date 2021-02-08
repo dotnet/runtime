@@ -55,14 +55,22 @@ namespace BasicEventSourceTests
 
                     tracesession.Flush();
 
-                    // Sleep after requesting flush to ensure that the manifest payload generated
-                    // is fully written to the etl file.
-                    Thread.Sleep(TimeSpan.FromSeconds(5));
-
                     tracesession.DisableProvider("SimpleEventSource");
                     tracesession.Dispose();
 
-                    Assert.True(VerifyManifestAndRemoveFile(etlFileName));
+                    var manifestExists = false;
+                    var max_retries = 50;
+
+                    for (int i = 0; i < max_retries; i++)
+                    {
+                        if (VerifyManifestAndRemoveFile(etlFileName))
+                        {
+                            manifestExists = true;
+                            break;
+                        }
+                        Thread.Sleep(1000);
+                    }
+                    Assert.True(manifestExists);
                 }
             }).Dispose();
         }
@@ -83,8 +91,9 @@ namespace BasicEventSourceTests
                 }))
                 {
                     var initialFileName = @"initialFile.etl";
-                    var rolloverFile = @"rolloverFile.etl";
+                    var rolloverFileName = @"rolloverFile.etl";
                     var tracesession = new TraceEventSession("testname", initialFileName);
+                    var max_retries = 50;
 
                     tracesession.EnableProvider("SimpleEventSource");
 
@@ -92,11 +101,7 @@ namespace BasicEventSourceTests
 
                     tracesession.Flush();
 
-                    // Sleep after requesting flush to ensure that the manifest payload generated
-                    // is fully written to the etl file.
-                    Thread.Sleep(TimeSpan.FromSeconds(5));
-
-                    tracesession.SetFileName(rolloverFile);
+                    tracesession.SetFileName(rolloverFileName);
 
                     Thread.Sleep(TimeSpan.FromSeconds(5));
 
@@ -105,8 +110,29 @@ namespace BasicEventSourceTests
                     tracesession.DisableProvider("SimpleEventSource");
                     tracesession.Dispose();
 
-                    Assert.True(VerifyManifestAndRemoveFile(initialFileName));
-                    Assert.True(VerifyManifestAndRemoveFile(rolloverFile));
+                    bool initialFileHasManifest = false;
+                    bool rollOverFileHasManifest = false;
+
+                    for (int i = 0; i < max_retries; i++)
+                    {
+                        if (VerifyManifestAndRemoveFile(initialFileName))
+                        {
+                            initialFileHasManifest = true;
+                            break;
+                        }
+                        Thread.Sleep(1000);
+                    }
+                    for (int i = 0; i < max_retries; i++)
+                    {
+                        if (VerifyManifestAndRemoveFile(rolloverFileName))
+                        {
+                            rollOverFileHasManifest = true;
+                            break;
+                        }
+                        Thread.Sleep(1000);
+                    }
+                    Assert.True(initialFileHasManifest);
+                    Assert.True(rollOverFileHasManifest);
                 }
             }).Dispose();
         }

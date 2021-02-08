@@ -1114,6 +1114,10 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     inline void SetNextPage(DebuggerHeapExecutableMemoryPage* nextPage)
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         chunks[0].bookkeeping.nextPage = nextPage;
     }
 
@@ -1124,6 +1128,10 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     inline void SetPageOccupancy(uint64_t newOccupancy)
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         // Can't unset first bit of occupancy!
         ASSERT((newOccupancy & 0x8000000000000000) != 0);
 
@@ -1137,6 +1145,10 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     DebuggerHeapExecutableMemoryPage()
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         SetPageOccupancy(0x8000000000000000); // only the first bit is set.
         for (uint8_t i = 1; i < sizeof(chunks)/sizeof(chunks[0]); i++)
         {
@@ -2918,6 +2930,7 @@ public:
     virtual void SuspendForGarbageCollectionCompleted();
     virtual void ResumeForGarbageCollectionStarted();
 #endif
+    BOOL m_isSuspendedForGarbageCollection;
     BOOL m_isBlockedOnGarbageCollectionEvent;
     BOOL m_willBlockOnGarbageCollectionEvent;
     BOOL m_isGarbageCollectionEventsEnabled;

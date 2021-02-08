@@ -20,7 +20,7 @@ namespace System.Net.Http.Functional.Tests
         /// </summary>
         protected override HttpClient CreateHttpClient()
         {
-            HttpClientHandler handler = CreateHttpClientHandler(HttpVersion30);
+            HttpClientHandler handler = CreateHttpClientHandler(HttpVersion.Version30);
 
             return CreateHttpClient(handler);
         }
@@ -39,7 +39,7 @@ namespace System.Net.Http.Functional.Tests
                 };
 
             // The second request is expected to come in on this HTTP/3 server.
-            using var secondServer = new Http3LoopbackServer();
+            using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
 
             using HttpClient client = CreateHttpClient();
 
@@ -68,7 +68,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
-            using Http3LoopbackServer secondServer = new Http3LoopbackServer();
+            using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient();
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
@@ -93,7 +93,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task AltSvc_ResponseFrame_UpgradeFrom20_Success()
         {
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
-            using Http3LoopbackServer secondServer = new Http3LoopbackServer();
+            using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
             using HttpClient client = CreateHttpClient();
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);

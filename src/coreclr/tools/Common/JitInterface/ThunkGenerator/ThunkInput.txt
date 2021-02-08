@@ -57,6 +57,7 @@ const char *,byte*
 mdMethodDef,mdToken,unsigned int
 mdToken,,unsigned int
 BYTE*,byte*,unsigned char*
+BYTE**,byte**,unsigned char**
 GSCookie*,IntPtr*,void*
 GSCookie**,IntPtr**,void**
 
@@ -108,6 +109,8 @@ unsigned int*,ref uint
 CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_*,void**
 
 ICorJitInfo::BlockCounts**,ref BlockCounts*,void**
+PgoInstrumentationSchema**,ref PgoInstrumentationSchema*,void**
+PgoInstrumentationSchema*,PgoInstrumentationSchema*,void*
 
 ; Enums
 CorInfoClassId,,int
@@ -321,8 +324,8 @@ FUNCTIONS
     bool logMsg(unsigned level, const char* fmt, va_list args)
     int doAssert(const char* szFile, int iLine, const char* szExpr)
     void reportFatalError(CorJitResult result)
-    HRESULT allocMethodBlockCounts(UINT32 count, ICorJitInfo::BlockCounts** pBlockCounts)
-    HRESULT getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd, UINT32* pCount, ICorJitInfo::BlockCounts** pBlockCounts, UINT32* pNumRuns)
+    HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE**pInstrumentationData)
+    HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData)
     CORINFO_CLASS_HANDLE getLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE baseHnd, UINT32 ilOffset, UINT32* pLikelihood, UINT32* pNumberOfClasses)
     void recordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
     void recordRelocation(void* location, void* target, WORD fRelocType, WORD slotNum, INT32 addlDelta)

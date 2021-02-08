@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -169,6 +170,7 @@ namespace System.IO
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual IntPtr Handle => _strategy.SafeFileHandle.DangerousGetHandle(); // TODO: is it OK that this method has some logic?
 
+        [UnsupportedOSPlatform("macos")]
         public virtual void Lock(long position, long length)
         {
             if (position < 0 || length < 0)
@@ -184,6 +186,7 @@ namespace System.IO
             _strategy.Lock(position, length);
         }
 
+        [UnsupportedOSPlatform("macos")]
         public virtual void Unlock(long position, long length)
         {
             if (position < 0 || length < 0)

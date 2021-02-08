@@ -547,12 +547,10 @@ buffer_manager_move_next_event_any_thread (
 	// at the same time.
 
 	// Step 1 - while holding m_lock get the oldest buffer from each thread
-	ep_rt_buffer_array_t buffer_array;
-	ep_rt_buffer_list_array_t buffer_list_array;
-
-	// TODO: Init on stack instead of alloc?
-	ep_rt_buffer_array_alloc (&buffer_array);
-	ep_rt_buffer_list_array_alloc (&buffer_list_array);
+	EP_RT_DECLARE_LOCAL_BUFFER_ARRAY (buffer_array);
+	EP_RT_DECLARE_LOCAL_BUFFER_LIST_ARRAY (buffer_list_array);
+	ep_rt_buffer_array_init (&buffer_array);
+	ep_rt_buffer_list_array_init (&buffer_list_array);
 
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 		EventPipeBufferList *buffer_list;
@@ -609,8 +607,8 @@ buffer_manager_move_next_event_any_thread (
 
 ep_on_exit:
 	ep_buffer_manager_requires_lock_not_held (buffer_manager);
-	ep_rt_buffer_list_array_free (&buffer_list_array);
-	ep_rt_buffer_array_free (&buffer_array);
+	ep_rt_buffer_list_array_fini (&buffer_list_array);
+	ep_rt_buffer_array_fini (&buffer_array);
 	return;
 
 ep_on_error:
@@ -1004,8 +1002,9 @@ ep_buffer_manager_suspend_write_event (
 	// All calls to this method must be synchronized by our caller
 	ep_requires_lock_held ();
 
-	ep_rt_thread_array_t thread_array;
-	ep_rt_thread_array_alloc (&thread_array);
+	EP_RT_DECLARE_LOCAL_THREAD_ARRAY (thread_array);
+	ep_rt_thread_array_init (&thread_array);
+
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1);
 		EP_ASSERT (ep_buffer_manager_ensure_consistency (buffer_manager));
 		// Find all threads that have used this buffer manager.
@@ -1033,7 +1032,7 @@ ep_buffer_manager_suspend_write_event (
 
 ep_on_exit:
 	ep_requires_lock_held ();
-	ep_rt_thread_array_free (&thread_array);
+	ep_rt_thread_array_fini (&thread_array);
 	return;
 
 ep_on_error:
@@ -1264,8 +1263,8 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer_manager != NULL);
 
-	ep_rt_thread_session_state_array_t thread_session_states_to_remove;
-	ep_rt_thread_session_state_array_alloc (&thread_session_states_to_remove);
+	EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY(thread_session_states_to_remove);
+	ep_rt_thread_session_state_array_init (&thread_session_states_to_remove);
 
 	// Take the buffer manager manipulation lock
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
@@ -1323,7 +1322,7 @@ ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager)
 	}
 
 ep_on_exit:
-	ep_rt_thread_session_state_array_free (&thread_session_states_to_remove);
+	ep_rt_thread_session_state_array_fini (&thread_session_states_to_remove);
 	return;
 
 ep_on_error:

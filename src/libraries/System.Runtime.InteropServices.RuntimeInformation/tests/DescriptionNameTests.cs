@@ -73,7 +73,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                 sb.AppendFormat($"###\tArchitecture: {RuntimeInformation.ProcessArchitecture.ToString()}").AppendLine();
                 foreach (string prop in new string[]
                 {
-                        #pragma warning disable 0618 // some of these Int32-returning properties are marked obsolete
                         nameof(p.BasePriority),
                         nameof(p.HandleCount),
                         nameof(p.Id),
@@ -83,21 +82,14 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                         nameof(p.MainWindowTitle),
                         nameof(p.MaxWorkingSet),
                         nameof(p.MinWorkingSet),
-                        nameof(p.NonpagedSystemMemorySize),
                         nameof(p.NonpagedSystemMemorySize64),
-                        nameof(p.PagedMemorySize),
                         nameof(p.PagedMemorySize64),
-                        nameof(p.PagedSystemMemorySize),
                         nameof(p.PagedSystemMemorySize64),
-                        nameof(p.PeakPagedMemorySize),
                         nameof(p.PeakPagedMemorySize64),
-                        nameof(p.PeakVirtualMemorySize),
                         nameof(p.PeakVirtualMemorySize64),
-                        nameof(p.PeakWorkingSet),
                         nameof(p.PeakWorkingSet64),
                         nameof(p.PriorityBoostEnabled),
                         nameof(p.PriorityClass),
-                        nameof(p.PrivateMemorySize),
                         nameof(p.PrivateMemorySize64),
                         nameof(p.PrivilegedProcessorTime),
                         nameof(p.ProcessName),
@@ -107,11 +99,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                         nameof(p.StartTime),
                         nameof(p.TotalProcessorTime),
                         nameof(p.UserProcessorTime),
-                        nameof(p.VirtualMemorySize),
                         nameof(p.VirtualMemorySize64),
-                        nameof(p.WorkingSet),
                         nameof(p.WorkingSet64),
-                        #pragma warning restore 0618
                 })
                 {
                     sb.Append($"###\t{prop}: ");
@@ -131,7 +120,18 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             if (osd.Contains("Linux"))
             {
                 // Dump several procfs files and /etc/os-release
-                foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits", "/etc/os-release", "/etc/sysctl.conf", "/proc/meminfo" })
+                foreach (string path in new string[] {
+                    "/proc/self/mountinfo",
+                    "/proc/self/cgroup",
+                    "/proc/self/limits",
+                    "/etc/os-release",
+                    "/etc/sysctl.conf",
+                    "/proc/meminfo",
+                    "/proc/sys/vm/oom_kill_allocating_task",
+                    "/proc/sys/kernel/core_pattern",
+                    "/proc/sys/kernel/core_uses_pid",
+                    "/proc/sys/kernel/coredump_filter"
+                })
                 {
                     Console.WriteLine($"### CONTENTS OF \"{path}\":");
                     try

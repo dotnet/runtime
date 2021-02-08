@@ -1287,6 +1287,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     CONTEXT                         ctx;
     KNONVOLATILE_CONTEXT_POINTERS   nonVolRegPtrs;
 
+    ctx.ContextFlags = 0; // Read by PAL_VirtualUnwind.
+
     ctx.Eip = baseState->captureEip;
     ctx.Esp = baseState->captureEsp;
     ctx.Ebp = baseState->captureEbp;

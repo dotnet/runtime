@@ -280,7 +280,7 @@ namespace System.Xml.Schema
             _contentType = value;
         }
 
-        public static bool IsDerivedFrom(XmlSchemaType? derivedType, XmlSchemaType? baseType, XmlSchemaDerivationMethod except)
+        public static bool IsDerivedFrom([NotNullWhen(true)] XmlSchemaType? derivedType, [NotNullWhen(true)] XmlSchemaType? baseType, XmlSchemaDerivationMethod except)
         {
             if (derivedType == null || baseType == null)
             {

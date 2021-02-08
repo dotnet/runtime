@@ -103,7 +103,7 @@ namespace System.Runtime.InteropServices
         private object _dummy;
         private int _dummyPrimitive;
         public ArrayWithOffset(object? array, int offset) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.ArrayWithOffset obj) { throw null; }
         public object? GetArray() { throw null; }
         public override int GetHashCode() { throw null; }
@@ -162,7 +162,7 @@ namespace System.Runtime.InteropServices
         public CLong(int value) { }
         public CLong(nint value) { }
         public nint Value { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(CLong other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
@@ -297,7 +297,7 @@ namespace System.Runtime.InteropServices
         public CULong(uint value) { }
         public CULong(nuint value) { }
         public nuint Value { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(CULong other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
@@ -601,6 +601,7 @@ namespace System.Runtime.InteropServices
         public static string GetTypeInfoName(System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object GetUniqueObjectForIUnknown(System.IntPtr unknown) { throw null; }
+        public static void InitHandle(SafeHandle safeHandle, IntPtr handle) { }
         public static bool IsComObject(object o) { throw null; }
         public static bool IsTypeVisibleFromCom(System.Type t) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -761,7 +762,7 @@ namespace System.Runtime.InteropServices
         public NFloat(float value) { }
         public NFloat(double value) { }
         public double Value { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(NFloat other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
@@ -1056,6 +1057,8 @@ namespace System.Runtime.InteropServices
         None = 0,
         TrackerObject = 1,
         UniqueInstance = 2,
+        Aggregation = 4,
+        Unwrap = 8,
     }
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     [System.CLSCompliantAttribute(false)]
@@ -1076,6 +1079,7 @@ namespace System.Runtime.InteropServices
         public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
         protected abstract object? CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
         public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
+        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper, System.IntPtr inner) { throw null; }
         protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
         public static void RegisterForMarshalling(ComWrappers instance) { }

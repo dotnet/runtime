@@ -291,13 +291,13 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static unsafe SocketError SendFile(SafeSocketHandle handle, SafeFileHandle? fileHandle, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
+        public static unsafe SocketError SendFile(SafeSocketHandle handle, SafeFileHandle? fileHandle, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
             fixed (byte* prePinnedBuffer = preBuffer)
             fixed (byte* postPinnedBuffer = postBuffer)
             {
-                bool success = TransmitFileHelper(handle, fileHandle, null, preBuffer, postBuffer, flags);
-                return (success ? SocketError.Success : GetLastSocketError());
+                bool success = TransmitFileHelper(handle, fileHandle, null, (IntPtr)prePinnedBuffer, preBuffer.Length, (IntPtr)postPinnedBuffer, postBuffer.Length, flags);
+                return success ? SocketError.Success : GetLastSocketError();
             }
         }
 
@@ -452,13 +452,18 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, byte[] buffer, int offset, int size, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
         {
+            return ReceiveMessageFrom(socket, handle, new Span<byte>(buffer, offset, size), ref socketFlags, socketAddress, out receiveAddress, out ipPacketInformation, out bytesTransferred);
+        }
+
+        public static unsafe SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, Span<byte> buffer, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
+        {
             bool ipv4, ipv6;
             Socket.GetIPProtocolInformation(socket.AddressFamily, socketAddress, out ipv4, out ipv6);
 
             bytesTransferred = 0;
             receiveAddress = socketAddress;
             ipPacketInformation = default(IPPacketInformation);
-            fixed (byte* ptrBuffer = buffer)
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
             fixed (byte* ptrSocketAddress = socketAddress.Buffer)
             {
                 Interop.Winsock.WSAMsg wsaMsg;
@@ -467,8 +472,8 @@ namespace System.Net.Sockets
                 wsaMsg.flags = socketFlags;
 
                 WSABuffer wsaBuffer;
-                wsaBuffer.Length = size;
-                wsaBuffer.Pointer = (IntPtr)(ptrBuffer + offset);
+                wsaBuffer.Length = buffer.Length;
+                wsaBuffer.Pointer = (IntPtr)bufferPtr;
                 wsaMsg.buffers = (IntPtr)(&wsaBuffer);
                 wsaMsg.count = 1;
 
@@ -1024,25 +1029,27 @@ namespace System.Net.Sockets
             SafeHandle socket,
             SafeHandle? fileHandle,
             NativeOverlapped* overlapped,
-            byte[]? preBuffer,
-            byte[]? postBuffer,
+            IntPtr pinnedPreBuffer,
+            int preBufferLength,
+            IntPtr pinnedPostBuffer,
+            int postBufferLength,
             TransmitFileOptions flags)
         {
             bool needTransmitFileBuffers = false;
-            Interop.Mswsock.TransmitFileBuffers transmitFileBuffers = default(Interop.Mswsock.TransmitFileBuffers);
+            Interop.Mswsock.TransmitFileBuffers transmitFileBuffers = default;
 
-            if (preBuffer != null && preBuffer.Length > 0)
+            if (preBufferLength > 0)
             {
                 needTransmitFileBuffers = true;
-                transmitFileBuffers.Head = Marshal.UnsafeAddrOfPinnedArrayElement(preBuffer, 0);
-                transmitFileBuffers.HeadLength = preBuffer.Length;
+                transmitFileBuffers.Head = pinnedPreBuffer;
+                transmitFileBuffers.HeadLength = preBufferLength;
             }
 
-            if (postBuffer != null && postBuffer.Length > 0)
+            if (postBufferLength > 0)
             {
                 needTransmitFileBuffers = true;
-                transmitFileBuffers.Tail = Marshal.UnsafeAddrOfPinnedArrayElement(postBuffer, 0);
-                transmitFileBuffers.TailLength = postBuffer.Length;
+                transmitFileBuffers.Tail = pinnedPostBuffer;
+                transmitFileBuffers.TailLength = postBufferLength;
             }
 
             bool releaseRef = false;
@@ -1077,8 +1084,10 @@ namespace System.Net.Sockets
                     handle,
                     fileStream?.SafeFileHandle,
                     asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
-                    preBuffer,
-                    postBuffer,
+                    preBuffer is not null ? Marshal.UnsafeAddrOfPinnedArrayElement(preBuffer, 0) : IntPtr.Zero,
+                    preBuffer?.Length ?? 0,
+                    postBuffer is not null ? Marshal.UnsafeAddrOfPinnedArrayElement(postBuffer, 0) : IntPtr.Zero,
+                    postBuffer?.Length ?? 0,
                     flags);
 
                 return asyncResult.ProcessOverlappedResult(success, 0);

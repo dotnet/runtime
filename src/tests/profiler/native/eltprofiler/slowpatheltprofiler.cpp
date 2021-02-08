@@ -307,8 +307,6 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::LeaveCallback(FunctionIDOrClientI
 
 HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::TailcallCallback(FunctionIDOrClientID functionIdOrClientID, COR_PRF_ELT_INFO eltInfo)
 {
-    SHUTDOWNGUARD();
-
     COR_PRF_FRAME_INFO frameInfo;
     HRESULT hr = pCorProfilerInfo->GetFunctionTailcall3Info(functionIdOrClientID.functionID, eltInfo, &frameInfo);
     if (FAILED(hr))

@@ -1052,6 +1052,23 @@ namespace System.Collections.Concurrent
             throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
 
         /// <summary>
+        /// Gets the <see cref="IEqualityComparer{TKey}" />
+        /// that is used to determine equality of keys for the dictionary.
+        /// </summary>
+        /// <value>
+        /// The <see cref="IEqualityComparer{TKey}" /> generic interface implementation
+        /// that is used to determine equality of keys for the current
+        /// <see cref="ConcurrentDictionary{TKey, TValue}" /> and to provide hash values for the keys.
+        /// </value>
+        /// <remarks>
+        /// <see cref="ConcurrentDictionary{TKey, TValue}" /> requires an equality implementation to determine
+        /// whether keys are equal. You can specify an implementation of the <see cref="IEqualityComparer{TKey}" />
+        /// generic interface by using a constructor that accepts a comparer parameter;
+        /// if you do not specify one, the default generic equality comparer <see cref="EqualityComparer{TKey}.Default" /> is used.
+        /// </remarks>
+        public IEqualityComparer<TKey> Comparer => _comparer ?? _defaultComparer;
+
+        /// <summary>
         /// Gets the number of key/value pairs contained in the <see
         /// cref="ConcurrentDictionary{TKey,TValue}"/>.
         /// </summary>

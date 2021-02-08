@@ -41,114 +41,45 @@ set (EVENTPIPE_HEADERS "")
 set (CORECLR_EVENTPIPE_SHIM_SOURCES "")
 set (CORECLR_EVENTPIPE_SHIM_HEADERS "")
 
-if(FEATURE_PERFTRACING_C_LIB)
+set (SHARED_EVENTPIPE_SOURCE_PATH "${SHARED_EVENTPIPE_DIR}")
+set (CORECLR_EVENTPIPE_SHIM_SOURCE_PATH "${CORECLR_EVENTPIPE_SHIM_DIR}")
 
-  set (SHARED_EVENTPIPE_SOURCE_PATH "${SHARED_EVENTPIPE_DIR}")
-  set (CORECLR_EVENTPIPE_SHIM_SOURCE_PATH "${CORECLR_EVENTPIPE_SHIM_DIR}")
+include (${SHARED_EVENTPIPE_SOURCE_PATH}/CMakeLists.txt)
 
-  include (${SHARED_EVENTPIPE_SOURCE_PATH}/CMakeLists.txt)
+list(APPEND EVENTPIPE_SOURCES
+  ${SHARED_EVENTPIPE_SOURCES}
+  ${SHARED_DIAGNOSTIC_SERVER_SOURCES}
+)
 
-  list(APPEND EVENTPIPE_SOURCES
-    ${SHARED_EVENTPIPE_SOURCES}
-    ${SHARED_DIAGNOSTIC_SERVER_SOURCES}
-  )
+list(APPEND EVENTPIPE_HEADERS
+  ${SHARED_EVENTPIPE_HEADERS}
+  ${SHARED_DIAGNOSTIC_SERVER_HEADERS}
+)
 
-  list(APPEND EVENTPIPE_HEADERS
-    ${SHARED_EVENTPIPE_HEADERS}
-    ${SHARED_DIAGNOSTIC_SERVER_HEADERS}
-  )
+addprefix(EVENTPIPE_SOURCES ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_SOURCES}")
+addprefix(EVENTPIPE_HEADERS ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_HEADERS}")
 
-  addprefix(EVENTPIPE_SOURCES ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_SOURCES}")
-  addprefix(EVENTPIPE_HEADERS ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_HEADERS}")
+set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES LANGUAGE CXX)
 
-  set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES LANGUAGE CXX)
+if(CLR_CMAKE_HOST_UNIX)
+  set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
+endif(CLR_CMAKE_HOST_UNIX)
 
-  if(CLR_CMAKE_HOST_UNIX)
-    set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
-  endif(CLR_CMAKE_HOST_UNIX)
+list(APPEND CORECLR_EVENTPIPE_SHIM_SOURCES
+  ep-rt-coreclr.cpp
+)
 
-  list(APPEND CORECLR_EVENTPIPE_SHIM_SOURCES
-    ep-rt-coreclr.cpp
-  )
+list(APPEND CORECLR_EVENTPIPE_SHIM_HEADERS
+  ds-rt-coreclr.h
+  ds-rt-types-coreclr.h
+  ep-rt-coreclr.h
+  ep-rt-config-coreclr.h
+  ep-rt-types-coreclr.h
+)
 
-  list(APPEND CORECLR_EVENTPIPE_SHIM_HEADERS
-    ds-rt-coreclr.h
-    ds-rt-types-coreclr.h
-    ep-rt-coreclr.h
-    ep-rt-config-coreclr.h
-    ep-rt-types-coreclr.h
-  )
+addprefix(CORECLR_EVENTPIPE_SHIM_SOURCES ${CORECLR_EVENTPIPE_SHIM_SOURCE_PATH} "${CORECLR_EVENTPIPE_SHIM_SOURCES}")
+addprefix(CORECLR_EVENTPIPE_SHIM_HEADERS ${CORECLR_EVENTPIPE_SHIM_SOURCE_PATH} "${CORECLR_EVENTPIPE_SHIM_HEADERS}")
 
-  addprefix(CORECLR_EVENTPIPE_SHIM_SOURCES ${CORECLR_EVENTPIPE_SHIM_SOURCE_PATH} "${CORECLR_EVENTPIPE_SHIM_SOURCES}")
-  addprefix(CORECLR_EVENTPIPE_SHIM_HEADERS ${CORECLR_EVENTPIPE_SHIM_SOURCE_PATH} "${CORECLR_EVENTPIPE_SHIM_HEADERS}")
-else(FEATURE_PERFTRACING_C_LIB)
-  list(APPEND EVENTPIPE_SOURCES
-    eventpipe.cpp
-    eventpipeblock.cpp
-    eventpipebuffer.cpp
-    eventpipebuffermanager.cpp
-    eventpipecommontypes.cpp
-    eventpipeconfiguration.cpp
-    eventpipeevent.cpp
-    eventpipeeventinstance.cpp
-    eventpipeeventpayload.cpp
-    eventpipeeventsource.cpp
-    eventpipefile.cpp
-    eventpipejsonfile.cpp
-    eventpipemetadatagenerator.cpp
-    eventpipeprovider.cpp
-    eventpipethread.cpp
-    eventpipesession.cpp
-    eventpipesessionprovider.cpp
-    fastserializer.cpp
-    sampleprofiler.cpp
-  )
-
-  list(APPEND EVENTPIPE_HEADERS
-    eventpipe.h
-    eventpipeblock.h
-    eventpipebuffer.h
-    eventpipebuffermanager.h
-    eventpipecommontypes.h
-    eventpipeconfiguration.h
-    eventpipeevent.h
-    eventpipeeventinstance.h
-    eventpipeeventpayload.h
-    eventpipeeventsource.h
-    eventpipefile.h
-    eventpipejsonfile.h
-    eventpipemetadatagenerator.h
-    eventpipeprovider.h
-    eventpipesession.h
-    eventpipesessionprovider.h
-    eventpipethread.h
-    fastserializer.h
-    sampleprofiler.h
-    stackcontents.h
-  )
-
-  list(APPEND EVENTPIPE_SOURCES
-    diagnosticserver.cpp
-    dumpdiagnosticprotocolhelper.cpp
-    eventpipeprotocolhelper.cpp
-    ipcstreamfactory.cpp
-    processdiagnosticsprotocolhelper.cpp
-    profilerdiagnosticprotocolhelper.cpp
-  )
-
-  list(APPEND EVENTPIPE_HEADERS
-    diagnosticserver.h
-    diagnosticsprotocol.h
-    dumpdiagnosticprotocolhelper.h
-    eventpipeprotocolhelper.h
-    ipcstreamfactory.h
-    processdiagnosticsprotocolhelper.h
-    profilerdiagnosticprotocolhelper.h
-  )
-
-  addprefix(EVENTPIPE_SOURCES ${VM_DIR} "${EVENTPIPE_SOURCES}")
-  addprefix(EVENTPIPE_HEADERS ${VM_DIR} "${EVENTPIPE_HEADERS}")
-endif(FEATURE_PERFTRACING_C_LIB)
 
 list(APPEND EVENTPIPE_SOURCES
   ${CORECLR_EVENTPIPE_SHIM_SOURCES}

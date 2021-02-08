@@ -30,7 +30,7 @@ namespace System.Net.Security
 
 #if DEBUG
             // Try to detect if a property gets added that we're not copying correctly.
-            foreach (PropertyInfo pi in options.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            foreach (PropertyInfo pi in typeof(SslClientAuthenticationOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 object? origValue = pi.GetValue(options);
                 object? cloneValue = pi.GetValue(clone);
