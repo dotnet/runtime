@@ -22,7 +22,7 @@
 #include <string.h>
 #include <glib.h>
 
-#ifdef TARGET_ANDROID && !defined(WIN32)
+#if defined(TARGET_ANDROID) && !defined(WIN32)
 #include <dlfcn.h>
 #endif
 
@@ -182,7 +182,7 @@ MonoDl*
 mono_dl_open_self (char **error_msg)
 {
 
-#ifdef TARGET_ANDROID && !defined(WIN32)
+#if defined(TARGET_ANDROID) && !defined(WIN32)
 	MonoDl *module;
 	if (error_msg)
 		*error_msg = NULL;
