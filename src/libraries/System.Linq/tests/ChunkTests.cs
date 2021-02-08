@@ -115,5 +115,45 @@ namespace System.Linq.Tests
             using IEnumerator<int[]> chunks = source.Chunk(3).GetEnumerator();
             Assert.False(chunks.MoveNext());
         }
+
+        [Fact]
+        public void RemovingFromSourceBeforeIterating()
+        {
+            var list = new List<int>
+            {
+                9999, 0, 888, -1, 66, -777, 1, 2, -12345
+            };
+            using IEnumerator<int[]> chunks = list.Chunk(3).GetEnumerator();
+            list.Remove(66);
+
+            chunks.MoveNext();
+            Assert.Equal(new[] {9999, 0, 888}, chunks.Current);
+            chunks.MoveNext();
+            Assert.Equal(new[] {-1, -777, 1}, chunks.Current);
+            chunks.MoveNext();
+            Assert.Equal(new[] {2, -12345}, chunks.Current);
+            Assert.False(chunks.MoveNext());
+        }
+
+        [Fact]
+        public void AddingToSourceBeforeIterating()
+        {
+            var list = new List<int>
+            {
+                9999, 0, 888, -1, 66, -777, 1, 2, -12345
+            };
+            using IEnumerator<int[]> chunks = list.Chunk(3).GetEnumerator();
+            list.Add(10);
+
+            chunks.MoveNext();
+            Assert.Equal(new[] {9999, 0, 888}, chunks.Current);
+            chunks.MoveNext();
+            Assert.Equal(new[] {-1, 66, -777}, chunks.Current);
+            chunks.MoveNext();
+            Assert.Equal(new[] {1, 2, -12345}, chunks.Current);
+            chunks.MoveNext();
+            Assert.Equal(new[] {10}, chunks.Current);
+            Assert.False(chunks.MoveNext());
+        }
     }
 }
