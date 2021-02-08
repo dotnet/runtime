@@ -73,13 +73,14 @@ echo "librariesArgs = [$librariesArgs]"
 echo "installerArgs = [$installerArgs]"
 echo "additionalAgs = [$additionalArgs]"
 
-echo "Running command: $scriptroot/build.sh $commonArgs -subset clr.tools+clr.runtime+clr.corelib+clr.nativecorelib+clr.packages $coreclrArgs $additionalArgs"
+set -x
+
 $scriptroot/build.sh $commonArgs -subset clr.tools+clr.runtime+clr.corelib+clr.nativecorelib+clr.packages $coreclrArgs $additionalArgs
 find $scriptroot/artifacts/ -type f -name Build.binlog -exec rename "Build.binlog" "coreclrBuild.binlog" * {} \;
+
 ilasmPath=$(dirname $(find $scriptroot/artifacts/bin -name ilasm))
-echo "Running command: $scriptroot/build.sh $commonArgs -subset libs $librariesArgs /p:ILAsmToolPath=$ilasmPath $additionalArgs"
 $scriptroot/build.sh $commonArgs -subset libs $librariesArgs /p:ILAsmToolPath=$ilasmPath $additionalArgs
 find $scriptroot/artifacts/ -type f -name Build.binlog -exec rename "Build.binlog" "librariesBuild.binlog" * {} \;
-echo "Running command: $scriptroot/build.sh $commonArgs -subset corehost+installer.managed+installer.depprojs+installer.pkgprojs+bundles $installerArgs /p:ILAsmToolPath=$ilasmPath $additionalArgs"
-$scriptroot/build.sh $commonArgs -subset corehost+installer.managed+installer.depprojs+installer.pkgprojs+installers+bundles $installerArgs /p:ILAsmToolPath=$ilasmPath $additionalArgs
+
+$scriptroot/build.sh $commonArgs -subset Host.Native+Host.Tools+Packs.Product+Packs.Installers $installerArgs /p:ILAsmToolPath=$ilasmPath $additionalArgs
 find $scriptroot/artifacts/ -type f -name Build.binlog -exec rename "Build.binlog" "installerBuild.binlog" * {} \;
