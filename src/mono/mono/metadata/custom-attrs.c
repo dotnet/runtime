@@ -1435,16 +1435,9 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 		}
 		MONO_HANDLE_ASSIGN_RAW (minfo_h, minfo);
 
-#if ENABLE_NETCORE
 		namedarg = create_cattr_named_arg (minfo, obj, error);
 		MONO_HANDLE_ASSIGN_RAW (namedarg_h, namedarg);
-#else
-		MonoObject* typedarg = create_cattr_typed_arg (arginfo [i].type, obj, error);
-		MONO_HANDLE_ASSIGN_RAW (typedarg_h, typedarg);
-		goto_if_nok (error, leave);
-		namedarg = create_cattr_named_arg (minfo, typedarg, error);
-		MONO_HANDLE_ASSIGN_RAW (namedarg_h, namedarg);
-#endif
+
 		goto_if_nok (error, leave);
 
 		mono_array_setref_internal (named_args, i, namedarg);
@@ -2219,15 +2212,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, mb, cattrs);
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs);
 	} else if (strcmp ("ConstructorBuilder", klass_name) == 0) {
-#ifdef ENABLE_NETCORE
 		mono_error_set_not_supported (error, "");
 		goto leave;
-#else
-		MonoReflectionCtorBuilderHandle cb = MONO_HANDLE_CAST (MonoReflectionCtorBuilder, obj);
-		MonoMethod *mhandle = MONO_HANDLE_GETVAL (cb, mhandle);
-		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, cb, cattrs);
-		cinfo = mono_custom_attrs_from_builders_handle (NULL, m_class_get_image (mhandle->klass), cattrs);
-#endif
 	} else if (strcmp ("MethodBuilder", klass_name) == 0) {
 		MonoReflectionMethodBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionMethodBuilder, obj);
 		MonoMethod *mhandle = MONO_HANDLE_GETVAL (mb, mhandle);

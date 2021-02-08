@@ -202,9 +202,7 @@ static gboolean
 parse_debug_options (const char* p)
 {
 	MonoDebugOptions *opt = mini_get_debug_options ();
-#ifdef ENABLE_NETCORE
 	opt->enabled = TRUE;
-#endif
 
 	do {
 		if (!*p) {
@@ -221,11 +219,9 @@ parse_debug_options (const char* p)
 		} else if (!strncmp (p, "gdb", 3)) {
 			opt->gdb = TRUE;
 			p += 3;
-#ifdef ENABLE_NETCORE
 		} else if (!strncmp (p, "ignore", 6)) {
 			opt->enabled = FALSE;
 			p += 6;
-#endif
 		} else {
 			fprintf (stderr, "Invalid debug option `%s', use --help-debug for details\n", p);
 			return FALSE;
@@ -1431,13 +1427,8 @@ static void main_thread_handler (gpointer user_data)
 		for (i = 0; i < main_args->argc; ++i) {
 			assembly = mono_domain_assembly_open_internal (main_args->domain, mono_domain_default_alc (main_args->domain), main_args->argv [i]);
 			if (!assembly) {
-				if (mono_is_problematic_file (main_args->argv [i])) {
-					fprintf (stderr, "Info: AOT of problematic assembly %s skipped. This is expected.\n", main_args->argv [i]);
-					continue;
-				} else {
-					fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
-					exit (1);
-				}
+				fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
+				exit (1);
 			}
 			/* Check that the assembly loaded matches the filename */
 			{
@@ -1620,12 +1611,8 @@ mini_usage (void)
 		"\n"
 		"Development:\n"
 		"    --aot[=<options>]      Compiles the assembly to native code\n"
-#ifdef ENABLE_NETCORE
 		"    --debug=ignore         Disable debugging support (on by default)\n"
 		"    --debug=[<options>]    Disable debugging support or enable debugging extras, use --help-debug for details\n"
-#else
-		"    --debug[=<options>]    Enable debugging support, use --help-debug for details\n"
-#endif
  		"    --debugger-agent=options Enable the debugger agent\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
@@ -1692,17 +1679,11 @@ mini_debug_usage (void)
 {
 	fprintf (stdout,
 		 "Debugging options:\n"
-#ifdef ENABLE_NETCORE
 		 "   --debug[=OPTIONS]     Disable debugging support or enable debugging extras, optional OPTIONS is a comma\n"
-#else
-		 "   --debug[=OPTIONS]     Enable debugging support, optional OPTIONS is a comma\n"
-#endif
 		 "                         separated list of options\n"
 		 "\n"
 		 "OPTIONS is composed of:\n"
-#ifdef ENABLE_NETCORE
 		 "    ignore               Disable debugging support (on by default).\n"
-#endif
 		 "    casts                Enable more detailed InvalidCastException messages.\n"
 		 "    mdb-optimizations    Disable some JIT optimizations which are normally\n"
 		 "                         disabled when running inside the debugger.\n"
@@ -2010,14 +1991,7 @@ switch_arch (char* argv[], const char* target_arch)
 static void
 apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_domain_configuration_file)
 {
-#ifndef ENABLE_NETCORE
-	g_assert (domain->setup == NULL || domain->setup->configuration_file == NULL);
-	g_assert (!domain->assembly_bindings_parsed);
-
-	mono_domain_parse_assembly_bindings (domain, 0, 0, root_domain_configuration_file);
-#else
 	g_assert_not_reached ();
-#endif
 }
 
 static void
@@ -2164,9 +2138,7 @@ mono_main (int argc, char* argv[])
 
 	opt = mono_parse_default_optimizations (NULL);
 
-#ifdef ENABLE_NETCORE
 	enable_debugging = TRUE;
-#endif
 
 	mono_options_parse_options ((const char**)argv + 1, argc - 1, &argc, error);
 	argc ++;
@@ -2415,13 +2387,11 @@ mono_main (int argc, char* argv[])
 			enable_debugging = TRUE;
 			if (!parse_debug_options (argv [i] + 8))
 				return 1;
-#ifdef ENABLE_NETCORE
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
 			if (!opt->enabled) {
 				enable_debugging = FALSE;
 			}
-#endif
 		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
@@ -2429,40 +2399,18 @@ mono_main (int argc, char* argv[])
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
-#ifndef DISABLE_SECURITY
-			mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
-#else
-			fprintf (stderr, "error: --security: not compiled with security manager support");
+			fprintf (stderr, "error: --security is obsolete.");
 			return 1;
-#endif
 		} else if (strncmp (argv [i], "--security=", 11) == 0) {
-			/* Note: validil, and verifiable need to be
-			   accepted even if DISABLE_SECURITY is defined. */
-
 			if (strcmp (argv [i] + 11, "core-clr") == 0) {
-#ifndef DISABLE_SECURITY
-				mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
-				mono_security_set_mode (MONO_SECURITY_MODE_CORE_CLR);
-#else
-				fprintf (stderr, "error: --security: not compiled with CoreCLR support");
+				fprintf (stderr, "error: --security=core-clr is obsolete.");
 				return 1;
-#endif
 			} else if (strcmp (argv [i] + 11, "core-clr-test") == 0) {
-#ifndef DISABLE_SECURITY
-				/* fixme should we enable verifiable code here?*/
-				mono_security_set_mode (MONO_SECURITY_MODE_CORE_CLR);
-				mono_security_core_clr_test = TRUE;
-#else
-				fprintf (stderr, "error: --security: not compiled with CoreCLR support");
+				fprintf (stderr, "error: --security=core-clr-test is obsolete.");
 				return 1;
-#endif
 			} else if (strcmp (argv [i] + 11, "cas") == 0) {
-#ifndef DISABLE_SECURITY
-				fprintf (stderr, "warning: --security=cas not supported.");
-#else
-				fprintf (stderr, "error: --security: not compiled with CAS support");
+				fprintf (stderr, "error: --security=cas is obsolete.");
 				return 1;
-#endif
 			} else if (strcmp (argv [i] + 11, "validil") == 0) {
 				mono_verifier_set_mode (MONO_VERIFIER_MODE_VALID);
 			} else if (strcmp (argv [i] + 11, "verifiable") == 0) {
@@ -2576,34 +2524,6 @@ mono_main (int argc, char* argv[])
 		mini_usage ();
 		return 1;
 	}
-
-/*
- * XXX: verify if other OSes need it; many platforms seem to have it so that
- * mono_w32process_get_path -> mono_w32process_get_name, and the name is not
- * necessarily a path instead of just the program name
- */
-#if defined (_AIX)
-	/*
-	 * mono_w32process_get_path on these can only return a name, not a path;
-	 * which may not be good for us if the mono command name isn't on $PATH,
-	 * like in CI scenarios. chances are argv based is fine if we inherited
-	 * the environment variables.
-	 */
-	mono_w32process_set_cli_launcher (argv [0]);
-#elif !defined(HOST_WIN32) && defined(HAVE_UNISTD_H)
-	/*
-	 * If we are not embedded, use the mono runtime executable to run managed exe's.
-	 */
-	{
-		char *runtime_path;
-
-		runtime_path = mono_w32process_get_path (getpid ());
-		if (runtime_path) {
-			mono_w32process_set_cli_launcher (runtime_path);
-			g_free (runtime_path);
-		}
-	}
-#endif
 
 	if (g_hasenv ("MONO_XDEBUG"))
 		enable_debugging = TRUE;

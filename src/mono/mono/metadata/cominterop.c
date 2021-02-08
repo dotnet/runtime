@@ -3160,17 +3160,10 @@ default_ptr_to_bstr (const gunichar2* ptr, int slen)
 	// The allocation pre-string is pointer-sized, and then only 4 bytes are used for the length regardless. Additionally,
 	// the total length is also aligned to a 16-byte boundary. This preserves the old behavior on legacy and fixes it for
 	// netcore moving forward.
-#ifdef ENABLE_NETCORE
 	mono_bstr const s = (mono_bstr)mono_bstr_alloc ((slen + 1) * sizeof (gunichar2));
 	if (s == NULL)
 		return NULL;
-#else
-	/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
-	guint32 * const ret = (guint32 *)g_malloc ((slen + 1) * sizeof (gunichar2) + sizeof (guint32));
-	if (ret == NULL)
-		return NULL;
-	mono_bstr const s = (mono_bstr)(ret + 1);
-#endif
+
 	mono_bstr_set_length (s, slen);
 	if (ptr)
 		memcpy (s, ptr, slen * sizeof (gunichar2));
@@ -3286,11 +3279,7 @@ mono_free_bstr (/*mono_bstr_const*/gpointer bstr)
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
 #endif
-#ifdef ENABLE_NETCORE
 		g_free (((char *)bstr) - SIZEOF_VOID_P);
-#else // In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform
-		g_free (((char *)bstr) - 4);
-#endif
 #ifndef DISABLE_COM
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		sys_free_string_ms ((mono_bstr_const)bstr);
@@ -4204,18 +4193,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUn
 
 #endif /* HOST_WIN32 */
 #endif /* DISABLE_COM */
-
-#ifndef ENABLE_NETCORE
-MonoStringHandle
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (mono_bstr_const ptr, MonoError *error)
-{
-	if (ptr == NULL) {
-		mono_error_set_argument_null (error, "ptr", NULL);
-		return NULL_HANDLE_STRING;
-	}
-	return mono_string_from_bstr_checked (ptr, error);
-}
-#endif
 
 mono_bstr
 ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2* ptr, int len)

@@ -323,7 +323,6 @@ mono_llvm_set_func_nonnull_arg (LLVMValueRef func, int argNo)
 gboolean
 mono_llvm_can_be_gep (LLVMValueRef base, LLVMValueRef* gep_base, LLVMValueRef* gep_offset)
 {
-#ifdef ENABLE_NETCORE
 	// Look for a pattern like this:
 	//   %1 = ptrtoint i8* %gep_base to i64
 	//   %2 = add i64 %1, %gep_offset
@@ -338,7 +337,6 @@ mono_llvm_can_be_gep (LLVMValueRef base, LLVMValueRef* gep_base, LLVMValueRef* g
 			}
 		}
 	}
-#endif
 	return FALSE;
 }
 

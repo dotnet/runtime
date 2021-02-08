@@ -51,7 +51,7 @@ void
 mono_error_set_file_not_found (MonoError *oerror, const char *file_name, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
 
 void
-mono_error_set_simple_file_not_found (MonoError *oerror, const char *assembly_name, gboolean refection_only);
+mono_error_set_simple_file_not_found (MonoError *oerror, const char *assembly_name);
 
 MonoExceptionHandle
 mono_corlib_exception_new_with_args (const char *name_space, const char *name, const char *arg_0, const char *arg_1, MonoError *error);

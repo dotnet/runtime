@@ -71,7 +71,6 @@ namespace System.Reflection.Emit
         private PackingSize packing_size;
         private IntPtr generic_container;
         private GenericTypeParameterBuilder[]? generic_params;
-        private object? permissions;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;

@@ -38,6 +38,9 @@ function(process_enable_minimal)
   string(REPLACE "," ";" tmp1 "${ENABLE_MINIMAL}")
   foreach(arg ${tmp1})
     string(TOUPPER "${arg}" var1)
+	if("${DISABLE_${var1}}" STREQUAL "")
+	  message(FATAL_ERROR "Unknown DISABLE_ option DISABLE_${var1}.")
+	endif()
     set(DISABLE_${var1} 1 PARENT_SCOPE)
   endforeach(arg)
 endfunction()
@@ -69,18 +72,11 @@ endif()
 #
 set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
 
-set(ENABLE_NETCORE 1)
-
 set(DISABLE_REMOTING 1)
-set(DISABLE_REFLECTION_EMIT_SAVE 1)
 set(DISABLE_APPDOMAINS 1)
-set(DISABLE_SHADOW_COPY 1)
 set(DISABLE_CLEANUP 1)
-set(DISABLE_ASSEMBLY_REMAPPING 1)
-set(DISABLE_SECURITY 1)
 set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
-set(DISABLE_GAC 1)
 set(DISABLE_PERFCOUNTERS 1)
 set(DISABLE_ATTACH 1)
 set(DISABLE_CONFIG 1)
@@ -88,9 +84,6 @@ set(DISABLE_CFGDIR_CONFIG 1)
 set(DISABLE_VERIFIER 1)
 
 # Dependencies between options
-if(DISABLE_ASSEMBLY_REMAPPING)
-  set(DISABLE_DESKTOP_LOADER 1)
-endif()
 if(ENABLE_INTERP_LIB)
   set(DISABLE_INTERPRETER 1)
 endif()
@@ -655,6 +648,21 @@ endif()
 ######################################
 # EXTRACT VERSION
 ######################################
+if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+endif()
+if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h"
+"#define RuntimeFileMajorVersion 42\n"
+"#define RuntimeFileMinorVersion 42\n"
+"#define RuntimeFileBuildVersion 42\n"
+"#define RuntimeFileRevisionVersion 42424\n"
+"#define RuntimeProductMajorVersion 6\n"
+"#define RuntimeProductMinorVersion 0\n"
+"#define RuntimeProductPatchVersion 0\n"
+)
+endif()
+
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/_version.h" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
   string(REGEX REPLACE ".*VER_PRODUCTVERSION_STR *(.*)" "\\1" product_version_string ${product_version_string_line})

@@ -34,10 +34,6 @@ namespace System.Threading
         private IntPtr debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
         private UIntPtr static_data; /* GC-tracked */
         private IntPtr runtime_thread_info;
-        private object? root_domain_thread;
-        internal byte[]? _serialized_principal;
-        internal int _serialized_principal_version;
-        private IntPtr appdomain_refs;
         private int interruption_requested;
         private IntPtr longlived;
         internal bool threadpool_thread;
@@ -45,13 +41,11 @@ namespace System.Threading
         /* These are used from managed code */
         internal int stack_size;
         internal byte apartment_state;
-        internal volatile int critical_region_level;
         internal int managed_id;
         private int small_id;
         private IntPtr manage_callback;
         private IntPtr flags;
         private IntPtr thread_pinning_ref;
-        private IntPtr abort_protected_block_count;
         private int priority;
         private IntPtr owned_mutex;
         private IntPtr suspended_event;
@@ -60,7 +54,6 @@ namespace System.Threading
 
         private Thread self = null!;
         private object? pending_exception;
-        private object? start_obj;
 
         /* This is used only to check that we are in sync between the representation
          * of MonoInternalThread in native and InternalThread in managed

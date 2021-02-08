@@ -57,12 +57,11 @@ namespace System.Reflection.Emit
         private bool init_locals = true;
         private Type[][]? paramModReq;
         private Type[][]? paramModOpt;
-        private object? permissions;
 #endregion
 
         internal bool finished;
 
-        [DynamicDependency(nameof(permissions))] // Automatically keeps all previous fields too due to StructLayout
+        [DynamicDependency(nameof(paramModOpt))] // Automatically keeps all previous fields too due to StructLayout
         internal ConstructorBuilder(TypeBuilder tb, MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             attrs = attributes | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;

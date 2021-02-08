@@ -72,7 +72,6 @@
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-time.h>
 #include <mono/metadata/w32handle.h>
-#include <mono/metadata/threadpool.h>
 
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep.h>
@@ -81,13 +80,9 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "tasklets.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#ifndef ENABLE_NETCORE
-#include "version.h"
-#endif
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "llvmonly-runtime.h"
@@ -373,16 +368,6 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 	if (caller->domain_neutral && !callee->domain_neutral)
 		return FALSE;
 
-#ifndef ENABLE_NETCORE
-	MonoMethod *cmethod;
-
-	cmethod = jinfo_get_method (caller);
-	if ((cmethod->klass == mono_defaults.appdomain_class) &&
-		(strstr (cmethod->name, "InvokeInDomain"))) {
-		 /* The InvokeInDomain methods change the current appdomain */
-		return FALSE;
-	}
-#endif
 	return TRUE;
 }
 
@@ -3261,20 +3246,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	info = (RuntimeInvokeInfo *)mono_conc_hashtable_lookup (domain_info->runtime_invoke_hash, method);
 
 	if (!info) {
-		if (mono_security_core_clr_enabled ()) {
-			/*
-			 * This might be redundant since mono_class_vtable () already does this,
-			 * but keep it just in case for moonlight.
-			 */
-			mono_class_setup_vtable (method->klass);
-			if (mono_class_has_failure (method->klass)) {
-				mono_error_set_for_class_failure (error, method->klass);
-				if (exc)
-					*exc = (MonoObject*)mono_class_get_exception_for_failure (method->klass);
-				return NULL;
-			}
-		}
-
 		gpointer compiled_method;
 
 		callee = method;
@@ -4018,7 +3989,7 @@ mini_parse_debug_option (const char *option)
 	else if (!strcmp (option, "use-fallback-tls"))
 		mini_debug_options.use_fallback_tls = TRUE;
 	else if (!strcmp (option, "debug-domain-unload"))
-		mono_enable_debug_domain_unload (TRUE);
+		g_error ("MONO_DEBUG option debug-domain-unload is deprecated.");
 	else if (!strcmp (option, "partial-sharing"))
 		mono_set_partial_sharing_supported (TRUE);
 	else if (!strcmp (option, "align-small-structs"))
@@ -4618,10 +4589,6 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_simd_intrinsics_init ();
 #endif
 
-#ifndef ENABLE_NETCORE
-	mono_tasklets_init ();
-#endif
-
 	register_trampolines (domain);
 
 	if (mono_compile_aot)
@@ -5065,10 +5032,6 @@ mini_cleanup (MonoDomain *domain)
 
 #ifndef MONO_CROSS_COMPILE
 	mono_runtime_cleanup (domain);
-#endif
-
-#ifndef ENABLE_NETCORE
-	mono_threadpool_cleanup ();
 #endif
 
 	MONO_PROFILER_RAISE (runtime_shutdown_end, ());
