@@ -73,14 +73,36 @@ echo "librariesArgs = [$librariesArgs]"
 echo "installerArgs = [$installerArgs]"
 echo "additionalAgs = [$additionalArgs]"
 
-set -x
+# Runs a subset build and interprets exit code.
+# $1: Arbitrary name for the subset. Names the log files.
+# $@: Remaining args are passed along.
+#
+# In Arcade 6, in CI mode, the build will always exit 0. This is intentional: https://github.com/dotnet/arcade/pull/6635
+# To work around this (because we always build in CI mode for consistency), scan logs for the
+# CI-style error reporting line so source-build can return the correct exit code.
+subBuild() {
+  name=$1
+  shift
 
-$scriptroot/build.sh $commonArgs -subset clr.tools+clr.runtime+clr.corelib+clr.nativecorelib+clr.packages $coreclrArgs $additionalArgs
-find $scriptroot/artifacts/ -type f -name sourcebuild.binlog -exec rename "sourcebuild.binlog" "coreclrBuild.binlog" * {} \;
+  mkdir "$scriptroot/artifacts" || :
+  logFile="$scriptroot/artifacts/$name.log"
+
+  # Exit NZEC if build command has NZEC *or* if the log file contains an error log command.
+  (
+    set -x
+    "$scriptroot/build.sh" $commonArgs "$@" $additionalArgs | tee "$logFile"
+  ) && (
+    # Grep exits 0 if there is a match. Negate, so we exit 0 if there is no match.
+    ! grep -F '##vso[task.complete result=Failed' "$logFile"
+  )
+
+  # Copy each subset binlog to its own file, rather than overwriting.
+  find $scriptroot/artifacts/ -type f -name sourcebuild.binlog -exec rename "sourcebuild.binlog" "${name}Build.binlog" * {} \;
+}
+
+subBuild coreclr -subset clr.tools+clr.runtime+clr.corelib+clr.nativecorelib+clr.packages $coreclrArgs
 
 ilasmPath=$(dirname $(find $scriptroot/artifacts/bin -name ilasm))
-$scriptroot/build.sh $commonArgs -subset libs $librariesArgs /p:ILAsmToolPath=$ilasmPath $additionalArgs
-find $scriptroot/artifacts/ -type f -name sourcebuild.binlog -exec rename "sourcebuild.binlog" "librariesBuild.binlog" * {} \;
+subBuild libraries -subset libs $librariesArgs /p:ILAsmToolPath=$ilasmPath
 
-$scriptroot/build.sh $commonArgs -subset Host.Native+Host.Tools+Packs.Product+Packs.Installers $installerArgs /p:ILAsmToolPath=$ilasmPath $additionalArgs
-find $scriptroot/artifacts/ -type f -name sourcebuild.binlog -exec rename "sourcebuild.binlog" "installerBuild.binlog" * {} \;
+subBuild installer -subset Host.Native+Host.Tools+Packs.Product+Packs.Installers $installerArgs /p:ILAsmToolPath=$ilasmPath
