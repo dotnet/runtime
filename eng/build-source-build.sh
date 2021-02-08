@@ -76,11 +76,11 @@ echo "additionalAgs = [$additionalArgs]"
 set -x
 
 $scriptroot/build.sh $commonArgs -subset clr.tools+clr.runtime+clr.corelib+clr.nativecorelib+clr.packages $coreclrArgs $additionalArgs
-find $scriptroot/artifacts/ -type f -name Build.binlog -exec rename "Build.binlog" "coreclrBuild.binlog" * {} \;
+find $scriptroot/artifacts/ -type f -name sourcebuild.binlog -exec rename "sourcebuild.binlog" "coreclrBuild.binlog" * {} \;
 
 ilasmPath=$(dirname $(find $scriptroot/artifacts/bin -name ilasm))
 $scriptroot/build.sh $commonArgs -subset libs $librariesArgs /p:ILAsmToolPath=$ilasmPath $additionalArgs
-find $scriptroot/artifacts/ -type f -name Build.binlog -exec rename "Build.binlog" "librariesBuild.binlog" * {} \;
+find $scriptroot/artifacts/ -type f -name sourcebuild.binlog -exec rename "sourcebuild.binlog" "librariesBuild.binlog" * {} \;
 
 $scriptroot/build.sh $commonArgs -subset Host.Native+Host.Tools+Packs.Product+Packs.Installers $installerArgs /p:ILAsmToolPath=$ilasmPath $additionalArgs
-find $scriptroot/artifacts/ -type f -name Build.binlog -exec rename "Build.binlog" "installerBuild.binlog" * {} \;
+find $scriptroot/artifacts/ -type f -name sourcebuild.binlog -exec rename "sourcebuild.binlog" "installerBuild.binlog" * {} \;

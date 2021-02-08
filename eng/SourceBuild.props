@@ -30,10 +30,6 @@
     <InnerBuildArgs>$(InnerBuildArgs) --verbosity $(LogVerbosity)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
-    <!-- Work around issue where local clone may cause failure using non-origin remote fallback: https://github.com/dotnet/sourcelink/issues/629 -->
-    <InnerBuildArgs>$(InnerBuildArgs) /p:EnableSourceControlManagerQueries=false</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:EnableSourceLink=false</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:DeterministicSourcePaths=false</InnerBuildArgs>
 
     <!-- CoreCLR args -->
     <InnerBuildArgs>$(InnerBuildArgs) --coreclr-args</InnerBuildArgs>
@@ -71,6 +67,13 @@
 
     <InnerBuildArgs>$(InnerBuildArgs) --additional-args</InnerBuildArgs>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Work around issue where local clone may cause failure using non-origin remote fallback: https://github.com/dotnet/sourcelink/issues/629 -->
+    <InnerBuildEnv Include="EnableSourceControlManagerQueries=false" />
+    <InnerBuildEnv Include="EnableSourceLink=false" />
+    <InnerBuildEnv Include="DeterministicSourcePaths=false" />
+  </ItemGroup>
 
   <Target Name="ApplySourceBuildPatchFiles"
           Condition="
