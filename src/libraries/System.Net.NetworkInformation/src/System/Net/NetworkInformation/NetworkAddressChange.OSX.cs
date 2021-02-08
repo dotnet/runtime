@@ -181,7 +181,8 @@ namespace System.Net.NetworkInformation
             {
                  IsBackground = true,
                  Name = ".NET Network Address Change"
-            }.Start();
+            };
+            s_runLoopThread.Start();
             s_runLoopStartedEvent.WaitOne(); // Wait for the new thread to finish initialization.
         }
 
