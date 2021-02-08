@@ -168,7 +168,7 @@ namespace System.Diagnostics
                     Thread executionThread = new Thread(threadStart)
                     {
                         IsBackground = true,
-                        Name = ".NET STA Execution"
+                        Name = ".NET Process STA"
                     };
                     executionThread.SetApartmentState(ApartmentState.STA);
                     executionThread.Start();

@@ -49,7 +49,7 @@ namespace System.Threading.Tasks
                 new Thread(s_longRunningThreadWork)
                 {
                     IsBackground = true,
-                    Name = ".NET ThreadPool Long Running Worker"
+                    Name = ".NET Long Running Task"
                 }.UnsafeStart(task);
 #pragma warning restore CA1416
             }
