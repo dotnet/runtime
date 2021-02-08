@@ -33,15 +33,15 @@ namespace System.Text
         {
         }
 
-        internal static unsafe ushort ReadUInt16(byte *pByte)
+        internal static unsafe ushort ReadUInt16(byte* pByte)
         {
             if (BitConverter.IsLittleEndian)
             {
-              return *(ushort *)pByte;
+              return *(ushort*)pByte;
             }
             else
             {
-              return BinaryPrimitives.ReverseEndianness(*(ushort *)pByte);
+              return BinaryPrimitives.ReverseEndianness(*(ushort*)pByte);
             }
         }
 
@@ -106,7 +106,7 @@ namespace System.Text
                 {
                     for (int b = 0; b < 256; b++)
                     {
-                        char c = (char)ReadUInt16(pBuffer + 2*b);
+                        char c = (char)ReadUInt16(pBuffer + 2 * b);
                         // Don't want to force 0's to map Unicode wrong.  0 byte == 0 unicode already taken care of
                         if (c != 0 || b == 0)
                         {
