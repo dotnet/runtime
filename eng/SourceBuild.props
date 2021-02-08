@@ -8,6 +8,9 @@
   <PropertyGroup>
     <BaseInnerSourceBuildCommand>$(CurrentRepoSourceBuildSourceDir)eng\build-source-build.sh</BaseInnerSourceBuildCommand>
 
+    <SourceBuildPortable>true</SourceBuildPortable>
+    <SourceBuildPortable Condition="'$(SourceBuildNonPortable)' == 'true'">false</SourceBuildPortable>
+
     <!-- If TargetRid not specified, detect RID based on portability. -->
     <TargetRid Condition="'$(TargetRid)' == '' and '$(SourceBuildNonPortable)' == 'true'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
     <TargetRid Condition="'$(TargetRid)' == ''">$(__DistroRid)</TargetRid>
@@ -48,14 +51,14 @@
     <InnerBuildArgs>$(InnerBuildArgs) /p:ConfigurationGroup=Release</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:PackageRid=$(TargetRid)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(TargetRidWithoutPlatform)</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=$(SourceBuildPortable)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:BuildAllPackages=true</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:BuildAllOOBPackages=true</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
 
     <!-- Installer args -->
     <InnerBuildArgs>$(InnerBuildArgs) --installer-args</InnerBuildArgs>
-    <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=$(SourceBuildPortable)</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) -cmakeargs</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</InnerBuildArgs>
