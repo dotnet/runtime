@@ -2,13 +2,75 @@
 
   <PropertyGroup>
     <GitHubRepositoryName>runtime</GitHubRepositoryName>
+  </PropertyGroup>
 
+  <!-- Set up the dotnet/runtime source-build command. -->
+  <PropertyGroup>
     <BaseInnerSourceBuildCommand>$(CurrentRepoSourceBuildSourceDir)eng\build-source-build.sh</BaseInnerSourceBuildCommand>
 
+    <TargetRid Condition="'$(TargetRid)' == '' and '$(SourceBuildNonPortable)' == 'true'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
+    <TargetRid Condition="'$(TargetRid)' == ''">$(__DistroRid)</TargetRid>
+
+    <_targetRidPlatformIndex>$(TargetRid.LastIndexOfAny("-"))</_targetRidPlatformIndex>
+    <TargetRidWithoutPlatform>$(TargetRid.Substring(0, $(_targetRidPlatformIndex)))</TargetRidWithoutPlatform>
+    <TargetRidPlatform>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetRidPlatform>
+
+    <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
+
+    <!-- Common args -->
+    <InnerBuildArgs>$(InnerBuildArgs) --arch $(TargetRidPlatform)</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --configuration Release</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeConfiguration=Release</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:MicrosoftNetFrameworkReferenceAssembliesVersion=1.0.0</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --binaryLog</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --ci</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --runtimeConfiguration Release</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --verbosity $(LogVerbosity)</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
     <!-- Work around issue where local clone may cause failure using non-origin remote fallback: https://github.com/dotnet/sourcelink/issues/629 -->
     <InnerBuildArgs>$(InnerBuildArgs) /p:EnableSourceControlManagerQueries=false</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:EnableSourceLink=false</InnerBuildArgs>
     <InnerBuildArgs>$(InnerBuildArgs) /p:DeterministicSourcePaths=false</InnerBuildArgs>
+
+    <!-- CoreCLR args -->
+    <InnerBuildArgs>$(InnerBuildArgs) --coreclr-args</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) -cmakeargs</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:ContinuousIntegrationBuild=true</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:PackageRid=$(TargetRid)</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:NoPgoOptimize=true</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(TargetRidWithoutPlatform)</InnerBuildArgs>
+
+    <!-- Libraries args -->
+    <InnerBuildArgs>$(InnerBuildArgs) --libraries-args</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --restore --build --pack</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:SkipTests=true</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:ConfigurationGroup=Release</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:PackageRid=$(TargetRid)</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(TargetRidWithoutPlatform)</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:BuildAllPackages=true</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:BuildAllOOBPackages=true</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:BuiltSdkPackageOverride=""</InnerBuildArgs>
+
+    <!-- Installer args -->
+    <InnerBuildArgs>$(InnerBuildArgs) --installer-args</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) -cmakeargs</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=TRUE</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:BuildAllPackages=true</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:RestoreAllBuildRids=false</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:OutputRid=$(TargetRid)</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:DotNetOutputBlobFeedDir=/work/artifacts/obj/x64/Release/blob-feed/</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:BuiltSdkPackageOverride=""</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
+
+    <InnerBuildArgs>$(InnerBuildArgs) --additional-args</InnerBuildArgs>
   </PropertyGroup>
 
   <Target Name="ApplySourceBuildPatchFiles"
