@@ -184,6 +184,12 @@ mono_get_machine_config (void)
 	return bundled_machine_config;
 }
 
+const char *
+mono_config_string_for_assembly_file (const char *filename)
+{
+       return NULL;
+}
+
 static mono_bool mono_server_mode = FALSE;
 
 /**
