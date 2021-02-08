@@ -421,15 +421,20 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
     }
 }
 
-/*****************************************************************************
- * fgReplaceSwitchJumpTarget:
- *
- * We have a BBJ_SWITCH at 'blockSwitch' and we want to replace all entries
- * in the jumpTab[] such that so that jumps that previously went to
- * 'oldTarget' now go to 'newTarget'.
- * We also must update the predecessor lists for 'oldTarget' and 'newPred'.
- */
-
+//------------------------------------------------------------------------
+// fgReplaceSwitchJumpTarget: update BBJ_SWITCH block  so that all control
+//   that previously flowed to oldTarget now flows to newTarget.
+//
+// Arguments:
+//   blockSwitch - block ending in a switch
+//   newTarget   - new branch target
+//   oldTarget   - old branch target
+//
+// Notes:
+//   Updates the jump table and the cached unique target set (if any).
+//   Can be called before or after pred lists are built.
+//   If pred lists are built, updates pred lists.
+//
 void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* newTarget, BasicBlock* oldTarget)
 {
     noway_assert(blockSwitch != nullptr);
