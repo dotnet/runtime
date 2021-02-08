@@ -15,7 +15,7 @@ namespace System.Net.Http
                 return new HttpClientHandler();
             }
 
-            Type? handler = Type.GetType("Xamarin.Android.Net.AndroidClientHandler, Mono.Android");
+            Type? handler = Type.GetType("Foundation.NSUrlSessionHandler, Xamarin.iOS");
             return (HttpMessageHandler)Activator.CreateInstance(handler!)!;
         }
     }
