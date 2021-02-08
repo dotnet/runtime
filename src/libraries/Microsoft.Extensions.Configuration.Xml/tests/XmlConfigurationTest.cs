@@ -220,6 +220,29 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
+        public void NameAttributeCanBeUsedToSimulateArrays()
+        {
+            var xml =
+              @"<settings>
+                  <DefaultConnection Name='0'>
+                      <ConnectionString>TestConnectionString1</ConnectionString>
+                      <Provider>SqlClient1</Provider>
+                  </DefaultConnection>
+                  <DefaultConnection Name='1'>
+                      <ConnectionString>TestConnectionString2</ConnectionString>
+                      <Provider>SqlClient2</Provider>
+                  </DefaultConnection>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("TestConnectionString1", xmlConfigSrc.Get("DefaultConnection:0:ConnectionString"));
+            Assert.Equal("SqlClient1", xmlConfigSrc.Get("DefaultConnection:0:Provider"));
+            Assert.Equal("TestConnectionString2", xmlConfigSrc.Get("DefaultConnection:1:ConnectionString"));
+            Assert.Equal("SqlClient2", xmlConfigSrc.Get("DefaultConnection:1:Provider"));
+        }
+
+        [Fact]
         public void RepeatedElementsContributeToPrefix()
         {
             var xml =
