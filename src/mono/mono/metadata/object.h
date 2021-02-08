@@ -22,11 +22,7 @@ typedef struct _MonoReflectionEvent MONO_RT_MANAGED_ATTR MonoReflectionEvent;
 typedef struct _MonoReflectionType MONO_RT_MANAGED_ATTR MonoReflectionType;
 typedef struct _MonoDelegate MONO_RT_MANAGED_ATTR MonoDelegate;
 typedef struct _MonoThreadsSync MonoThreadsSync;
-#ifdef ENABLE_NETCORE
 typedef struct _MonoInternalThread MONO_RT_MANAGED_ATTR MonoThread;
-#else
-typedef struct _MonoThread MONO_RT_MANAGED_ATTR MonoThread;
-#endif
 typedef struct _MonoDynamicAssembly MonoDynamicAssembly;
 typedef struct _MonoDynamicImage MonoDynamicImage;
 typedef struct _MonoReflectionMethodBody MONO_RT_MANAGED_ATTR MonoReflectionMethodBody;

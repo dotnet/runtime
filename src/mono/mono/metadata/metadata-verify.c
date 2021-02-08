@@ -1106,10 +1106,7 @@ string_cmp (VerifyContext *ctx, const char *str, guint offset)
 static gboolean
 mono_verifier_is_corlib (MonoImage *image)
 {
-	gboolean trusted_location = !mono_security_core_clr_enabled () ?
-			TRUE : mono_security_core_clr_is_platform_image (image);
-
-	return trusted_location && image->module_name && !strcmp ("mscorlib.dll", image->module_name);
+	return image->module_name && !strcmp ("mscorlib.dll", image->module_name);
 }
 
 static gboolean

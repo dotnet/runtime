@@ -379,7 +379,9 @@ namespace System.Drawing
             }
             finally
             {
-                RestoreClipRgn(dc, hSaveRgn);
+                Interop.Gdi32.SelectClipRgn(dc, hSaveRgn);
+                // We need to delete the region handle after restoring the region as GDI+ uses a copy of the handle.
+                Interop.Gdi32.DeleteObject(hSaveRgn);
             }
         }
 
@@ -394,13 +396,13 @@ namespace System.Drawing
                 hSaveRgn = hTempRgn;
                 hTempRgn = IntPtr.Zero;
             }
+            else
+            {
+                // if we fail to get the clip region delete the handle.
+                Interop.Gdi32.DeleteObject(hTempRgn);
+            }
 
             return hSaveRgn;
-        }
-
-        private static void RestoreClipRgn(IntPtr hDC, IntPtr hRgn)
-        {
-            Interop.Gdi32.SelectClipRgn(new HandleRef(null, hDC), new HandleRef(null, hRgn));
         }
 
         internal void Draw(Graphics graphics, int x, int y)

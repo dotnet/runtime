@@ -63,7 +63,6 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/runtime.h>
@@ -1907,7 +1906,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	res = (Id *)g_ptr_array_index (ids [type], GPOINTER_TO_INT (id - 1));
 	dbg_unlock ();
 
-	if (res->domain == NULL || res->domain->state == MONO_APPDOMAIN_UNLOADED) {
+	if (res->domain == NULL) {
 		PRINT_DEBUG_MSG (1, "ERR_UNLOADED, id=%d, type=%d.\n", id, type);
 		*err = ERR_UNLOADED;
 		return NULL;
@@ -2439,11 +2438,6 @@ suspend_vm (void)
 		 */
 		tp_suspend = TRUE;
 	mono_loader_unlock ();
-
-#ifndef ENABLE_NETCORE
-	if (tp_suspend)
-		mono_threadpool_suspend ();
-#endif
 }
 
 /*
@@ -2482,11 +2476,6 @@ resume_vm (void)
 	if (suspend_count == 0)
 		tp_resume = TRUE;
 	mono_loader_unlock ();
-
-#ifndef ENABLE_NETCORE
-	if (tp_resume)
-		mono_threadpool_resume ();
-#endif
 }
 
 /*
@@ -3884,9 +3873,6 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 	MonoDomain* old_domain;
 	AgentDomainInfo *info = NULL;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
 	info = get_agent_domain_info (domain);
 	g_assert (info);
 
@@ -3906,9 +3892,6 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 {
 	GSList *tmp;
 	MonoDomain* old_domain;
-
-	if (mono_domain_is_unloading (domain))
-		return;
 
 	old_domain = mono_domain_get ();
 
@@ -6321,9 +6304,6 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
@@ -6362,9 +6342,6 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 
 	GetTypesForSourceFileArgs *ud = (GetTypesForSourceFileArgs*)user_data;
 	MonoDomain *domain = (MonoDomain*)key;
-
-	if (mono_domain_is_unloading (domain))
-		return;
 
 	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
 
@@ -6671,11 +6648,6 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 			mono_environment_exitcode_set (exit_code);
 
-			/* Suspend all managed threads since the runtime is going away */
-#ifndef ENABLE_NETCORE
-			PRINT_DEBUG_MSG (1, "Suspending all threads...\n");
-			mono_thread_suspend_all_other_threads ();
-#endif
 			PRINT_DEBUG_MSG (1, "Shutting down the runtime...\n");
 			mono_runtime_quit_internal ();
 			transport_close2 ();
@@ -6785,7 +6757,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 		tls->abort_requested = TRUE;
 
-		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread), FALSE);
+		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread));
 		mono_loader_unlock ();
 		break;
 	}

@@ -243,12 +243,9 @@ namespace System.Net.WebSockets
         private static KeyValuePair<string, string> CreateSecKeyAndSecWebSocketAccept()
         {
             string secKey = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-            using (SHA1 sha = SHA1.Create())
-            {
-                return new KeyValuePair<string, string>(
-                    secKey,
-                    Convert.ToBase64String(sha.ComputeHash(Encoding.ASCII.GetBytes(secKey + WSServerGuid))));
-            }
+            return new KeyValuePair<string, string>(
+                secKey,
+                Convert.ToBase64String(SHA1.HashData(Encoding.ASCII.GetBytes(secKey + WSServerGuid))));
         }
 
         private static void ValidateHeader(HttpHeaders headers, string name, string expectedValue)

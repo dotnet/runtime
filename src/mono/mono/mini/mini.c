@@ -65,7 +65,6 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "tasklets.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
@@ -753,7 +752,6 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
 	int dreg;
 
-#ifdef ENABLE_NETCORE
 	if (type->type == MONO_TYPE_VALUETYPE && !type->byref) {
 		MonoClass *klass = mono_class_from_mono_type_internal (type);
 		if (m_class_is_enumtype (klass) && m_class_get_image (klass) == mono_get_corlib () && !strcmp (m_class_get_name (klass), "StackCrawlMark")) {
@@ -761,7 +759,6 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 				g_error ("Method '%s' which contains a StackCrawlMark local variable must be decorated with [System.Security.DynamicSecurityMethod].", mono_method_get_full_name (cfg->method));
 		}
 	}
-#endif
 
 	type = mini_get_underlying_type (type);
 
@@ -949,7 +946,7 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 	MonoAssembly *assembly = m_class_get_image (method->klass)->assembly;
 	if (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
 		return FALSE;
-	if (assembly->in_gac || assembly->image == mono_defaults.corlib)
+	if (assembly->image == mono_defaults.corlib)
 		return FALSE;
 	return mono_assembly_has_skip_verification (assembly);
 }
@@ -1026,14 +1023,13 @@ gboolean
 mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 {
 	MonoMethod *method_definition = method;
-	gboolean dont_verify = m_class_get_image (method->klass)->assembly->corlib_internal;
 
 	while (method_definition->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
 		method_definition = imethod->declaring;
 	}
 
-	return !dont_verify && mini_method_verify (cfg, method_definition, fail_compile);
+	return mini_method_verify (cfg, method_definition, fail_compile);
 }
 
 static void

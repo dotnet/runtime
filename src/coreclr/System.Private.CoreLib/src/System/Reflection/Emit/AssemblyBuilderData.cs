@@ -16,13 +16,9 @@ namespace System.Reflection.Emit
 
         public readonly List<ModuleBuilder> _moduleBuilderList;
         public readonly AssemblyBuilderAccess _access;
-        public MethodInfo? _entryPointMethod;
 
-        private readonly InternalAssemblyBuilder _assembly;
-
-        internal AssemblyBuilderData(InternalAssemblyBuilder assembly, AssemblyBuilderAccess access)
+        internal AssemblyBuilderData(AssemblyBuilderAccess access)
         {
-            _assembly = assembly;
             _access = access;
             _moduleBuilderList = new List<ModuleBuilder>();
         }
