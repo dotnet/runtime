@@ -52,14 +52,14 @@ typedef gboolean (*MonoAssemblyAsmCtxFromPathFunc) (const char *absfname, MonoAs
 
 void mono_install_assembly_asmctx_from_path_hook (MonoAssemblyAsmCtxFromPathFunc func, gpointer user_data);
 
-typedef MonoAssembly * (*MonoAssemblyPreLoadFuncV2) (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gboolean refonly, gpointer user_data, MonoError *error);
+typedef MonoAssembly * (*MonoAssemblyPreLoadFuncV2) (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gpointer user_data, MonoError *error);
 
-void mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean refonly, gboolean append);
+void mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean append);
 
-typedef MonoAssembly * (*MonoAssemblySearchFuncV2) (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload, gpointer user_data, MonoError *error);
+typedef MonoAssembly * (*MonoAssemblySearchFuncV2) (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean postload, gpointer user_data, MonoError *error);
 
 void
-mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean refonly, gboolean postload, gboolean append);
+mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean postload, gboolean append);
 
 typedef void (*MonoAssemblyLoadFuncV2) (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error);
 
@@ -136,7 +136,7 @@ gboolean
 mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
 
 MonoAssembly *
-mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gboolean refonly);
+mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
 MONO_PROFILER_API MonoAssemblyName*
 mono_assembly_get_name_internal (MonoAssembly *assembly);

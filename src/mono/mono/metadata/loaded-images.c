@@ -22,7 +22,7 @@ mono_loaded_images_cleanup (MonoLoadedImages *li, gboolean shutdown)
 
 		// If an assembly image is still loaded at shutdown, this could indicate managed code is still running.
 		// Reflection-only images being still loaded doesn't indicate anything as harmful, so we don't check for it.
-		g_hash_table_iter_init (&iter, mono_loaded_images_get_hash (li, FALSE));
+		g_hash_table_iter_init (&iter, mono_loaded_images_get_hash (li));
 		while (g_hash_table_iter_next (&iter, NULL, (void**)&image))
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly image '%s' [%p] still loaded at shutdown.", image->name, image);
 	}
@@ -41,20 +41,20 @@ mono_loaded_images_free (MonoLoadedImages *li)
 }
 
 GHashTable *
-mono_loaded_images_get_hash (MonoLoadedImages *li, gboolean refonly)
+mono_loaded_images_get_hash (MonoLoadedImages *li)
 {
 	g_assert (li != NULL);
 	GHashTable **loaded_images_hashes = &li->loaded_images_hashes[0];
-	int idx = refonly ? MONO_LOADED_IMAGES_HASH_PATH_REFONLY : MONO_LOADED_IMAGES_HASH_PATH;
+	int idx = MONO_LOADED_IMAGES_HASH_PATH;
 	return loaded_images_hashes [idx];
 }
 
 GHashTable *
-mono_loaded_images_get_by_name_hash (MonoLoadedImages *li, gboolean refonly)
+mono_loaded_images_get_by_name_hash (MonoLoadedImages *li)
 {
 	g_assert (li != NULL);
 	GHashTable **loaded_images_hashes = &li->loaded_images_hashes[0];
-	int idx = refonly ? MONO_LOADED_IMAGES_HASH_NAME_REFONLY : MONO_LOADED_IMAGES_HASH_NAME;
+	int idx = MONO_LOADED_IMAGES_HASH_NAME;
 	return loaded_images_hashes [idx];
 }
 
@@ -100,8 +100,8 @@ mono_loaded_images_remove_image (MonoImage *image)
 	GHashTable *loaded_images, *loaded_images_by_name;
 	MonoImage *image2;
 
-	loaded_images         = mono_loaded_images_get_hash (li, image->ref_only);
-	loaded_images_by_name = mono_loaded_images_get_by_name_hash (li, image->ref_only);
+	loaded_images         = mono_loaded_images_get_hash (li);
+	loaded_images_by_name = mono_loaded_images_get_by_name_hash (li);
 
 	name = image->name;
 

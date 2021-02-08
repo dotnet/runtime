@@ -1653,7 +1653,7 @@ mono_domain_unlock (MonoDomain *domain)
 }
 
 GPtrArray*
-mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly)
+mono_domain_get_assemblies (MonoDomain *domain)
 {
 	GSList *tmp;
 	GPtrArray *assemblies;
@@ -1663,8 +1663,6 @@ mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly)
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = (MonoAssembly *)tmp->data;
-		if (refonly != FALSE)
-			continue;
 		g_ptr_array_add (assemblies, ass);
 	}
 	mono_domain_assemblies_unlock (domain);
