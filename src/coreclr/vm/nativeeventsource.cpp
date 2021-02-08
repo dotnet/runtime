@@ -38,6 +38,12 @@ BOOL QCALLTYPE XplatEventSourceLogger::IsEventSourceLoggingEnabled()
 
 #ifdef FEATURE_PERFTRACING
 
+// These are native QCalls that call into corresponding FireEtw* events for events that want to be emitted from the managed
+// side using NativeRuntimeEventSource.
+// You need to add them to src/libraries/System.Private.CoreLib/src/System/Diagnostics/Tracing/XplatEventLogger.cs and
+// change genRuntimeEventSources.py script to not emit the body that throws NotImplementedException for the event that 
+// want to be fired from managed code.
+// See https://github.com/dotnet/runtime/pull/47829 for an example of how to do this.
 void QCALLTYPE NativeEventLogger::LogThreadPoolWorkerThreadStart(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
 {
     QCALL_CONTRACT;

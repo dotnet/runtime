@@ -10,6 +10,10 @@ namespace System.Diagnostics.Tracing
 {
     // This is part of the NativeRuntimeEventsource, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
     // It contains the handwritten implementation of the ThreadPool events.
+    // The events here do not call into the typical WriteEvent* APIs unlike most EventSources.
+    // Instead, they call directly into QCalls provided by the runtime (refer to XplatEventLogger.cs) which call
+    // FireEtw* methods auto-generated from ClrEtwAll.man. This ensures that corresponding event sinks are being used
+    // for the native platform. Refer to src/coreclr/vm/nativeruntimesource.cpp.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve
@@ -57,25 +61,6 @@ namespace System.Diagnostics.Tracing
             Stabilizing,
             Starvation,
             ThreadTimedOut
-        }
-
-        [NonEvent]
-        private unsafe void WriteThreadEvent(int eventId, uint numExistingThreads)
-        {
-            uint retiredWorkerThreadCount = 0;
-            ushort clrInstanceId = DefaultClrInstanceId;
-
-            EventData* data = stackalloc EventData[3];
-            data[0].DataPointer = (IntPtr)(&numExistingThreads);
-            data[0].Size = sizeof(uint);
-            data[0].Reserved = 0;
-            data[1].DataPointer = (IntPtr)(&retiredWorkerThreadCount);
-            data[1].Size = sizeof(uint);
-            data[1].Reserved = 0;
-            data[2].DataPointer = (IntPtr)(&clrInstanceId);
-            data[2].Size = sizeof(ushort);
-            data[2].Reserved = 0;
-            WriteEventCore(eventId, 3, data);
         }
 
         [Event(50, Level = EventLevel.Informational, Message = Messages.WorkerThread, Task = Tasks.ThreadPoolWorkerThread, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.ThreadingKeyword)]
