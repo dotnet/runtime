@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using Microsoft.DotNet.RemoteExecutor;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -109,6 +111,32 @@ namespace System.Globalization.Tests
             Assert.Equal(name, CultureInfo.GetCultureInfo(name).Name);
             Assert.Equal(name, CultureInfo.GetCultureInfo(name, predefinedOnly: false).Name);
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name, predefinedOnly: true));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported), nameof(PlatformSupportsFakeCulture))]
+        [InlineData("1", "xx-XY")]
+        [InlineData("1", "zx-ZY")]
+        [InlineData("0", "xx-XY")]
+        [InlineData("0", "zx-ZY")]
+        public void PredefinedCulturesOnlyEnvVarTest(string predefinedCulturesOnlyEnvVar, string cultureName)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Clear();
+
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnlyEnvVar);
+
+            RemoteExecutor.Invoke((culture, predefined) =>
+            {
+                if (predefined == "1")
+                {
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo(culture));
+                }
+                else
+                {
+                    CultureInfo ci = new CultureInfo(culture);
+                    Assert.Equal(culture, ci.Name);
+                }
+            }, cultureName, predefinedCulturesOnlyEnvVar, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }

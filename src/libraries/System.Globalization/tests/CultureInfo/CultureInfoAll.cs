@@ -816,31 +816,5 @@ namespace System.Globalization.Tests
             e = AssertExtensions.Throws<CultureNotFoundException>("culture", () => new CultureInfo(0x1000));
             Assert.Equal(0x1000, e.InvalidCultureId);
         }
-
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("1", "xx-XY")]
-        [InlineData("1", "zx-ZY")]
-        [InlineData("0", "xx-XY")]
-        [InlineData("0", "zx-ZY")]
-        public void PredefinedCulturesOnlyEnvVarTest(string predefinedCulturesOnlyEnvVar, string cultureName)
-        {
-            var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
-
-            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCulturesOnlyEnvVar);
-
-            RemoteExecutor.Invoke((culture, predefined) =>
-            {
-                if (predefined == "1")
-                {
-                    AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo(culture));
-                }
-                else
-                {
-                    CultureInfo ci = new CultureInfo(culture);
-                    Assert.Equal(culture, ci.Name);
-                }
-            }, cultureName, predefinedCulturesOnlyEnvVar, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
-        }
     }
 }
