@@ -8,7 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.csproj" />
 
-    <PackageFile Include="build\$(MSBuildProjectName).props" TargetPath="build" />
+    <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
