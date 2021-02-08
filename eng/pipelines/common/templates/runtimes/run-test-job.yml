@@ -477,6 +477,7 @@ jobs:
           - jitpgo
           - jitpgo_inline
           - jitpgo_classes
+          - jitpgo_edgeinstrumentation
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip
