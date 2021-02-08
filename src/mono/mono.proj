@@ -398,7 +398,7 @@
     </PropertyGroup>
 
     <!-- Windows specific options -->
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
       <_MonoAOTCPPFLAGS Include="-DHOST_WIN32" />
       <_MonoAOTCPPFLAGS Include="-D__WIN32__" />
       <_MonoAOTCPPFLAGS Include="-DWIN32" />
