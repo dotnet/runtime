@@ -100,9 +100,9 @@ namespace System.Text
             internal short unused1;             // Add an unused WORD so that CodePages is aligned with DWORD boundary.
         }
         private const int CODEPAGE_DATA_FILE_HEADER_SIZE = 44;
-        internal static unsafe void ReadCodePageDataFileHeader(Stream stream, Span<byte> codePageDataFileHeader)
+        internal static unsafe void ReadCodePageDataFileHeader(Stream stream, byte[] codePageDataFileHeader)
         {
-            stream.Read(codePageDataFileHeader);
+            stream.Read(codePageDataFileHeader, 0, codePageDataFileHeader.Length);
             if (!BitConverter.IsLittleEndian)
             {
                 fixed (byte* pBytes = &codePageDataFileHeader[0])
@@ -135,9 +135,9 @@ namespace System.Text
             [FieldOffset(0x24)]
             internal int Offset;            // DWORD
         }
-        internal static unsafe void ReadCodePageIndex(Stream stream, Span<byte> codePageIndex)
+        internal static unsafe void ReadCodePageIndex(Stream stream, byte[] codePageIndex)
         {
-            stream.Read(codePageIndex);
+            stream.Read(codePageIndex, 0, codePageIndex.Length);
             if (!BitConverter.IsLittleEndian)
             {
                 fixed (byte* pBytes = &codePageIndex[0])
@@ -178,9 +178,9 @@ namespace System.Text
             internal ushort ByteReplace;    // WORD     // default replacement bytes
         }
         private const int CODEPAGE_HEADER_SIZE = 48;
-        internal static unsafe void ReadCodePageHeader(Stream stream, Span<byte> codePageHeader)
+        internal static unsafe void ReadCodePageHeader(Stream stream, byte[] codePageHeader)
         {
-            stream.Read(codePageHeader);
+            stream.Read(codePageHeader, 0, codePageHeader!.Length);
             if (!BitConverter.IsLittleEndian)
             {
                 fixed (byte* pBytes = &codePageHeader[0])
