@@ -5350,8 +5350,7 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
     _ASSERTE(pWalk <= pSig + cSig);
 
     *callConvOut = CorInfoCallConvExtension::Managed;
-    bool found = false;
-    bool useMemberFunctionVariant = false;
+    CallingConventionModifiers modifiers = CALL_CONV_MOD_NONE;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD)))
     {
         BOOL fIsOptional = (*pWalk == ELEMENT_TYPE_CMOD_OPT);
@@ -5379,74 +5378,105 @@ MetaSig::TryGetUnmanagedCallingConventionFromModOpt(
         if (::strcmp(typeNamespace, CMOD_CALLCONV_NAMESPACE) != 0)
             continue;
 
-        if (::strcmp(typeName, CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION) == 0)
+        if (!TryApplyModOptToCallingConvention(
+            typeName,
+            ::strlen(typeName),
+            CallConvModOptNameType::TypeName,
+            callConvOut,
+            &modifiers))
         {
-            *suppressGCTransitionOut = true;
-            continue;
-        }
-
-        if (::strcmp(typeName, CMOD_CALLCONV_NAME_MEMBERFUNCTION) == 0)
-        {
-            useMemberFunctionVariant = true;
-            continue;
-        }
-
-        const struct {
-            LPCSTR name;
-            CorInfoCallConvExtension value;
-        } knownCallConvs[] = {
-            { CMOD_CALLCONV_NAME_CDECL,     CorInfoCallConvExtension::C },
-            { CMOD_CALLCONV_NAME_STDCALL,   CorInfoCallConvExtension::Stdcall },
-            { CMOD_CALLCONV_NAME_THISCALL,  CorInfoCallConvExtension::Thiscall },
-            { CMOD_CALLCONV_NAME_FASTCALL,  CorInfoCallConvExtension::Fastcall } };
-
-        for (const auto &callConv : knownCallConvs)
-        {
-            // Look for a recognized calling convention in metadata.
-            if (::strcmp(typeName, callConv.name) == 0)
-            {
-                // Error if there are multiple recognized calling conventions
-                if (found)
-                {
-                    *errorResID = IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED;
-                    return COR_E_INVALIDPROGRAM;
-                }
-
-                *callConvOut = callConv.value;
-                found = true;
-            }
+            // Error if there are multiple recognized base calling conventions
+            *errorResID = IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED;
+            return COR_E_INVALIDPROGRAM;
         }
     }
 
-    if (useMemberFunctionVariant)
+    *suppressGCTransitionOut = ((modifiers & CALL_CONV_MOD_SUPPRESSGCTRANSITION) != 0);
+
+    if (modifiers & CALL_CONV_MOD_MEMBERFUNCTION)
     {
         if (*callConvOut == CorInfoCallConvExtension::Managed)
         {
             // In this case, the only specified calling convention is CallConvMemberFunction.
             // Set *callConvOut to the default unmanaged calling convention.
             *callConvOut = MetaSig::GetDefaultUnmanagedCallingConvention();
-            found = true;
         }
 
-        switch (*callConvOut)
-        {
-        case CorInfoCallConvExtension::C:
-            *callConvOut = CorInfoCallConvExtension::CMemberFunction;
-            break;
-        case CorInfoCallConvExtension::Stdcall:
-            *callConvOut = CorInfoCallConvExtension::StdcallMemberFunction;
-            break;
-        case CorInfoCallConvExtension::Fastcall:
-            *callConvOut = CorInfoCallConvExtension::FastcallMemberFunction;
-            break;
-        default:
-            break;
-        }
+        *callConvOut = MetaSig::GetMemberFunctionUnmanagedCallingConventionVariant(*callConvOut);
     }
 
-    return found ? S_OK : S_FALSE;
+    return *callConvOut != CorInfoCallConvExtension::Managed ? S_OK : S_FALSE;
 }
 
+// According to ECMA-335, type name strings are UTF-8. Since we are
+// looking for type names that are equivalent in ASCII and UTF-8,
+// using a const char constant is acceptable. Type name strings are
+// in Fully Qualified form, so we include the ',' delimiter.
+#define MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(callConvTypeName) CMOD_CALLCONV_NAMESPACE "." callConvTypeName ","
+
+namespace
+{
+    // Templated function to compute if a char string begins with a constant string.
+    template<size_t S2LEN>
+    bool BeginsWith(size_t s1Len, const char* s1, const char (&s2)[S2LEN])
+    {
+        WRAPPER_NO_CONTRACT;
+
+        size_t s2Len = S2LEN - 1; // Remove null
+
+        if (s1Len < s2Len)
+            return false;
+
+        return (0 == strncmp(s1, s2, s2Len));
+    }
+}
+
+bool MetaSig::TryApplyModOptToCallingConvention(
+            LPCSTR callConvModOptName,
+            size_t callConvModOptNameLength,
+            CallConvModOptNameType nameType,
+            CorInfoCallConvExtension* pBaseCallConv,
+            CallingConventionModifiers* pCallConvModifiers)
+{
+#define BASE_CALL_CONV(callConvModOptMetadataName, CallConvExtensionMember)       \
+    if (COMPARE_CALLCONV_NAME(callConvModOptName, callConvModOptMetadataName))    \
+    {                                                                             \
+        if (*pBaseCallConv != CorInfoCallConvExtension::Managed) return false; \
+        *pBaseCallConv = CorInfoCallConvExtension::CallConvExtensionMember;    \
+        return true;                                                              \
+    }
+                                                                      \
+#define CALL_CONV_MODIFIER(callConvModOptMetadataName, CallConvModifiersMember)                            \
+    if (COMPARE_CALLCONV_NAME(callConvModOptName, callConvModOptMetadataName))                             \
+    {                                                                                                      \
+        *pCallConvModifiers = (CallingConventionModifiers)(*pCallConvModifiers | CallConvModifiersMember); \
+        return true;                                                                                       \
+    }
+
+#define PARSE_CALL_CONVS \
+        BASE_CALL_CONV(CMOD_CALLCONV_NAME_CDECL, C) \
+        BASE_CALL_CONV(CMOD_CALLCONV_NAME_STDCALL, Stdcall) \
+        BASE_CALL_CONV(CMOD_CALLCONV_NAME_THISCALL, Thiscall) \
+        BASE_CALL_CONV(CMOD_CALLCONV_NAME_THISCALL, Fastcall) \
+        CALL_CONV_MODIFIER(CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION, CALL_CONV_MOD_SUPPRESSGCTRANSITION) \
+        CALL_CONV_MODIFIER(CMOD_CALLCONV_NAME_MEMBERFUNCTION, CALL_CONV_MOD_MEMBERFUNCTION)                                                                                                    \
+
+    if (nameType == CallConvModOptNameType::TypeName)
+    {
+#define COMPARE_CALLCONV_NAME(userProvidedName, metadataName) ::strcmp(userProvidedName, metadataName) == 0
+        PARSE_CALL_CONVS;
+#undef COMPARE_CALLCONV_NAME
+    }
+    else
+    {
+        _ASSERTE(nameType == CallConvModOptNameType::FullyQualifiedName);
+
+#define COMPARE_CALLCONV_NAME(userProvidedName, metadataName) BeginsWith(callConvModOptNameLength, userProvidedName, MAKE_FULLY_QUALIFIED_CALLCONV_TYPE_NAME_PREFIX(metadataName))
+        PARSE_CALL_CONVS;
+#undef COMPARE_CALLCONV_NAME
+    }
+    return true;
+}
 //---------------------------------------------------------------------------------------
 //
 // Substitution from a token (TypeDef and TypeRef have empty instantiation, TypeSpec gets it from MetaData).
