@@ -194,9 +194,6 @@ class OffsetsTool:
 			print ("ABI '" + args.abi + "' is not supported.", file=sys.stderr)
 			sys.exit (1)
 
-		if args.netcore:
-			self.target_args += ["-DENABLE_NETCORE"]
-
 		self.args = args
 
 	#

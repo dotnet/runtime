@@ -178,39 +178,18 @@ namespace System.Reflection.Emit
         //
 #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
-        private object? _evidence;
 
         private UIntPtr dynamic_assembly; /* GC-tracked */
-        private MethodInfo? entry_point;
         private ModuleBuilder[] modules;
         private string? name;
-        private string? dir;
         private CustomAttributeBuilder[]? cattrs;
-        private object? resources;
-        private byte[]? public_key;
         private string? version;
         private string? culture;
-        private uint algid;
-        private uint flags;
-        private PEFileKinds pekind = PEFileKinds.Dll;
-        private bool delay_sign;
-        private uint access;
         private Module[]? loaded_modules;
-        private object? win32_resources;
-        private object? permissions_minimum;
-        private object? permissions_optional;
-        private object? permissions_refused;
-        private int peKind;
-        private int machine;
-        private bool corlib_internal;
-        private Type[]? type_forwarders;
-        private byte[]? pktoken;
+        private uint access;
 #endregion
 
         private AssemblyName aname;
-        private string? assemblyName;
-        private bool created;
-        private string? versioninfo_culture;
         private ModuleBuilder manifest_module;
         private bool manifest_module_used;
 
@@ -221,8 +200,8 @@ namespace System.Reflection.Emit
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
 
-        [DynamicDependency(nameof(pktoken))] // Automatically keeps all previous fields too due to StructLayout
-        private AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
+        [DynamicDependency(nameof(access))] // Automatically keeps all previous fields too due to StructLayout
+        private AssemblyBuilder(AssemblyName n, AssemblyBuilderAccess access)
         {
             aname = (AssemblyName)n.Clone();
 
@@ -233,16 +212,10 @@ namespace System.Reflection.Emit
 
             name = n.Name;
             this.access = (uint)access;
-            flags = (uint)n.Flags;
-
-            dir = directory;
 
             /* Set defaults from n */
             if (n.CultureInfo != null)
-            {
                 culture = n.CultureInfo.Name;
-                versioninfo_culture = n.CultureInfo.Name;
-            }
             Version? v = n.Version;
             if (v != null)
             {
@@ -265,7 +238,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                return entry_point;
+                return null;
             }
         }
 
@@ -287,7 +260,7 @@ namespace System.Reflection.Emit
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            return new AssemblyBuilder(name, null, access, false);
+            return new AssemblyBuilder(name, access);
         }
 
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
@@ -366,6 +339,7 @@ namespace System.Reflection.Emit
         {
             throw not_supported();
         }
+
         public override Stream? GetManifestResourceStream(Type type, string name)
         {
             throw not_supported();
@@ -376,14 +350,6 @@ namespace System.Reflection.Emit
             get
             {
                 return access == (uint)AssemblyBuilderAccess.RunAndCollect;
-            }
-        }
-
-        internal string? AssemblyDir
-        {
-            get
-            {
-                return dir;
             }
         }
 

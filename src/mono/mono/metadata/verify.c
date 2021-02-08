@@ -6163,9 +6163,7 @@ gboolean
 mono_verifier_is_class_full_trust (MonoClass *klass)
 {
 	MonoImage *image = m_class_get_image (klass);
-	/* under CoreCLR code is trusted if it is part of the "platform" otherwise all code inside the GAC is trusted */
-	gboolean trusted_location = !mono_security_core_clr_enabled () ?
-		(image->assembly && image->assembly->in_gac) : mono_security_core_clr_is_platform_image (image);
+	gboolean trusted_location = (image->assembly && image->assembly->in_gac);
 
 	if (verify_all && verifier_mode == MONO_VERIFIER_MODE_OFF)
 		return trusted_location || image == mono_defaults.corlib;

@@ -35,7 +35,6 @@ set(utils_common_sources
     mono-codeman.c
     mono-counters.c
     mono-compiler.h
-    mono-complex.h
     mono-dl.c
     mono-dl-windows.c
     mono-dl-darwin.c

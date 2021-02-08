@@ -24,7 +24,7 @@
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect --$(CollectionType) -pmi_location $(SuperPMIDirectory)\pmi.dll </WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)\superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)\pmi.dll </WorkItemCommand>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>$HELIX_PYTHONPATH</Python>
@@ -34,7 +34,7 @@
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect --$(CollectionType) -pmi_location $(SuperPMIDirectory)/pmi.dll </WorkItemCommand>
+    <WorkItemCommand>$(SuperPMIDirectory)/superpmi.py collect -log_level DEBUG --$(CollectionType) -pmi_location $(SuperPMIDirectory)/pmi.dll </WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WorkItemCommand)' != ''">
@@ -46,6 +46,21 @@
     <EnableXUnitReporter>false</EnableXUnitReporter>
     <WorkItemTimeout>5:00</WorkItemTimeout>
   </PropertyGroup>
+
+  <!-- We're currently not using .dotnet on the Helix agents -->
+  <!--
+  <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\.dotnet%3B%PATH%" Condition=" '$(CollectionType)' == 'crossgen2' "/>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(AGENT_OS)' != 'Windows_NT' ">
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/.dotnet:$PATH" Condition=" '$(CollectionType)' == 'crossgen2' "/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+  </PropertyGroup>
+  -->
 
   <ItemGroup>
     <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">

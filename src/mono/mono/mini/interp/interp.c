@@ -47,7 +47,6 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
@@ -1570,11 +1569,9 @@ ves_pinvoke_method (
 	}
 #endif
 
-#ifdef ENABLE_NETCORE
 	if (save_last_error) {
 		mono_marshal_clear_last_error ();
 	}
-#endif
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
@@ -1699,34 +1696,6 @@ interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpoint
 
 	mono_delegate_ctor (this_obj, target, entry, imethod->method, error);
 }
-
-/*
- * From the spec:
- * runtime specifies that the implementation of the method is automatically
- * provided by the runtime and is primarily used for the methods of delegates.
- */
-#ifndef ENABLE_NETCORE
-static MONO_NEVER_INLINE MonoException*
-ves_imethod (InterpFrame *frame, MonoMethod *method, MonoMethodSignature *sig, stackval *sp)
-{
-	const char *name = method->name;
-	mono_class_init_internal (method->klass);
-
-	if (method->klass == mono_defaults.array_class) {
-		if (!strcmp (name, "UnsafeMov")) {
-			/* TODO: layout checks */
-			stackval_from_data (sig->ret, sp, (char*) sp, FALSE);
-			return NULL;
-		}
-		if (!strcmp (name, "UnsafeLoad"))
-			return ves_array_get (frame, sp, sp, sig, FALSE);
-	}
-	
-	g_error ("Don't know how to exec runtime method %s.%s::%s", 
-			m_class_get_name_space (method->klass), m_class_get_name (method->klass),
-			method->name);
-}
-#endif
 
 #if DEBUG_INTERP
 static void
@@ -2033,10 +2002,8 @@ interp_entry (InterpEntryData *data)
 static void
 do_icall (MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
-#ifdef ENABLE_NETCORE
 	if (save_last_error)
 		mono_marshal_clear_last_error ();
-#endif
 
 	switch (op) {
 	case MINT_ICALL_V_V: {
@@ -2903,7 +2870,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 			return addr;
 		}
 
-#ifdef ENABLE_NETCORE
 		/*
 		 * The runtime expects a function pointer unique to method and
 		 * the native caller expects a function pointer with the
@@ -2911,7 +2877,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		 */
 		mono_error_set_platform_not_supported (error, "No native to managed transitions on this platform.");
 		return NULL;
-#endif
 	}
 #endif
 	return (gpointer)interp_no_native_to_managed;
@@ -3749,18 +3714,8 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLRUN) {
-#ifndef ENABLE_NETCORE
-			MonoMethod *target_method = (MonoMethod*) frame->imethod->data_items [ip [2]];
-			MonoMethodSignature *sig = (MonoMethodSignature*) frame->imethod->data_items [ip [3]];
-
-			MonoException *ex = ves_imethod (frame, target_method, sig, (stackval*)(locals + ip [1]));
-			if (ex)
-				THROW_EX (ex, ip);
-
-			ip += 4;
-#else
 			g_assert_not_reached ();
-#endif
+
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_RET)
