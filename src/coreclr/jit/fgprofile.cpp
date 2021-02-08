@@ -2205,7 +2205,10 @@ void EfficientEdgeCountReconstructor::Solve()
         // TODO: no point walking all the blocks here, we should find a way to just walk
         // the subset with unknown counts or edges.
         //
-        for (BasicBlock* block = m_comp->fgFirstBB; (block != nullptr); block = block->bbNext)
+        // The ideal solver order is likely reverse postorder over the depth-first spanning tree.
+        // We approximate it here by running from last node to first.
+        //
+        for (BasicBlock* block = m_comp->fgLastBB; (block != nullptr); block = block->bbPrev)
         {
             BlockInfo* const info = BlockToInfo(block);
 
@@ -2292,13 +2295,14 @@ void EfficientEdgeCountReconstructor::Solve()
 
                 assert(resolvedEdge != nullptr);
 
+                weight = info->m_weight - weight;
+
                 JITDUMP(FMT_BB " -> " FMT_BB
                                ": target block weight and all other incoming edge weights known, so weight is %0f\n",
                         resolvedEdge->m_sourceBlock->bbNum, resolvedEdge->m_targetBlock->bbNum, weight);
 
                 // If we arrive at a negative count for this edge, set it to zero.
                 //
-                weight = info->m_weight - weight;
                 if (weight < 0)
                 {
                     JITDUMP(" .... weight was negative, setting to zero\n");
@@ -2337,13 +2341,14 @@ void EfficientEdgeCountReconstructor::Solve()
 
                 assert(resolvedEdge != nullptr);
 
+                weight = info->m_weight - weight;
+
                 JITDUMP(FMT_BB " -> " FMT_BB
                                ": source block weight and all other outgoing edge weights known, so weight is %0f\n",
                         resolvedEdge->m_sourceBlock->bbNum, resolvedEdge->m_targetBlock->bbNum, weight);
 
                 // If we arrive at a negative count for this edge, set it to zero.
                 //
-                weight = info->m_weight - weight;
                 if (weight < 0)
                 {
                     JITDUMP(" .... weight was negative, setting to zero\n");
@@ -2385,9 +2390,10 @@ void EfficientEdgeCountReconstructor::Solve()
 //
 void EfficientEdgeCountReconstructor::Propagate()
 {
-    // We don't expect mismatches.
+    // We don't expect mismatches or convergence failures.
     //
     assert(!m_mismatch);
+    assert(!m_failedToConverge);
 
     // If any issues arose during reconstruction, don't set weights.
     //
@@ -2395,6 +2401,11 @@ void EfficientEdgeCountReconstructor::Propagate()
     {
         JITDUMP("... discarding profile data because of %s\n",
                 m_badcode ? "badcode" : m_mismatch ? "mismatch" : "failed to converge");
+
+        // Make sure nothing else in the jit looks at the profile data.
+        //
+        m_comp->fgPgoSchema = nullptr;
+
         return;
     }
 
