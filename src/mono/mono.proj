@@ -137,7 +137,7 @@
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_LIBDIR=lib"/>
       <_MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
       <_MonoCMakeArgs Condition="'$(CMakeArgs)' != ''" Include="$(CMakeArgs)"/>
-      <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)" />
+      <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir.TrimEnd('\/'))" />
       <_MonoCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
     </ItemGroup>
 
@@ -472,7 +472,7 @@
       <MonoAOTCMakeArgs Include="-DDISABLE_SHARED_LIBS=1" />
       <MonoAOTCMakeArgs Include="-DDISABLE_LIBS=1" />
       <MonoAOTCMakeArgs Condition="'$(MonoAotOffsetsFile)' != ''" Include="-DAOT_OFFSETS_FILE=&quot;$(MonoAotOffsetsFile)&quot;" />
-      <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir)" />
+      <MonoAOTCMakeArgs Condition="'$(MonoAOTEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoAOTLLVMDir.TrimEnd('\/'))" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCFLAGSOption)" />
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
       <!-- Devloop features -->
