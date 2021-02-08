@@ -27,6 +27,7 @@
     </type>
 
     <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithEverything">
+      <method name=".ctor"/>
       <method name="Method"/>
       <event name="Event"/>
       <field name="Field"/>
@@ -34,6 +35,7 @@
     </type>
 
     <type fullname="Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases/TypeWithEverything">
+      <method name=".ctor"/>
       <method name="Method"/>
       <event name="Event"/>
       <field name="Field"/>

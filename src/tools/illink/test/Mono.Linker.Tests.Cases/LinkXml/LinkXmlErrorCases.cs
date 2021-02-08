@@ -61,6 +61,8 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 		class TypeWithEverything
 		{
 			[Kept]
+			public TypeWithEverything () { }
+			[Kept]
 			public void Method () { }
 			[Kept]
 			[KeptBackingField]

@@ -25,12 +25,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[KeptBackingField]
 		private int Property {
 			[Kept]
+			[ExpectBodyModified]
 			get;
 
 			[Kept]
+			[ExpectBodyModified]
 			set;
 		}
 
@@ -62,9 +63,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[KeptBackingField]
 			private int Property2 {
 				[Kept]
+				[ExpectBodyModified]
 				get;
 			}
 
@@ -94,9 +95,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[KeptBackingField]
 			public int Property2 {
 				[Kept]
+				[ExpectBodyModified]
 				get;
 			}
 

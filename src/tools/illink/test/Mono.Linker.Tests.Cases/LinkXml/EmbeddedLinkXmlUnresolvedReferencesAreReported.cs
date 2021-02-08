@@ -21,11 +21,15 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 	{
 		public static void Main ()
 		{
+			new TestType ();
 		}
 
 		[Kept]
 		class TestType
 		{
+			[Kept]
+			public TestType () { }
+
 			[Kept]
 			public int FieldWithSignature;
 

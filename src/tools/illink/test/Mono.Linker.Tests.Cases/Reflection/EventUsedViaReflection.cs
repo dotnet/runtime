@@ -190,9 +190,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			internal event EventHandler<EventArgs> InternalEvent;
 			static event EventHandler<EventArgs> Static;
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			private event EventHandler<EventArgs> PrivateEvent;
 			public event EventHandler<EventArgs> PublicEvent;
 		}
@@ -200,9 +200,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class UnknownBindingFlags
 		{
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			internal event EventHandler<EventArgs> InternalEvent;
 			[Kept]
 			[KeptBackingField]
@@ -210,28 +210,28 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptEventRemoveMethod]
 			static event EventHandler<EventArgs> Static;
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			private event EventHandler<EventArgs> PrivateEvent;
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			public event EventHandler<EventArgs> PublicEvent;
 		}
 
 		class IfClass
 		{
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			public event EventHandler<EventArgs> IfEvent;
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			public event EventHandler<EventArgs> ElseEvent;
 		}
 
@@ -243,9 +243,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptEventRemoveMethod]
 			public static event EventHandler<EventArgs> ElseEvent;
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			public event EventHandler<EventArgs> IfEvent;
 		}
 
@@ -254,9 +254,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			protected static event EventHandler<EventArgs> ProtectedEventOnBase;
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			public event EventHandler<EventArgs> PublicEventOnBase;
 		}
 		[KeptBaseType (typeof (BaseClass))]
@@ -267,15 +267,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class IgnoreCaseBindingFlagsClass
 		{
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			public event EventHandler<EventArgs> PublicEvent;
 
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			private event EventHandler<EventArgs> MarkedDueToIgnoreCaseEvent;
 		}
 
@@ -289,15 +289,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class PutRefDispPropertyBindingFlagsClass
 		{
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			public event EventHandler<EventArgs> PublicEvent;
 
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			private event EventHandler<EventArgs> MarkedDueToPutRefDispPropertyEvent;
 		}
 	}
