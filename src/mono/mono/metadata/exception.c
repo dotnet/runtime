@@ -95,22 +95,13 @@ mono_exception_new_by_name_domain (MonoDomain *domain, MonoImage *image,
 {
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoDomain * const caller_domain = mono_domain_get ();
-
 	MonoClass * const klass = mono_class_load_from_name (image, name_space, name);
 
 	MonoObjectHandle o = mono_object_new_handle (domain, klass, error);
 	goto_if_nok (error, return_null);
 
-	if (domain != caller_domain)
-		mono_domain_set_internal_with_options (domain, TRUE);
-
 	mono_runtime_object_init_handle (o, error);
 	mono_error_assert_ok (error);
-
-	// Restore domain in success and error path.
-	if (domain != caller_domain)
-		mono_domain_set_internal_with_options (caller_domain, TRUE);
 
 	goto_if_ok (error, exit);
 return_null:

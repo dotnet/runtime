@@ -725,6 +725,5 @@ gboolean sgen_has_managed_allocator (void);
 void sgen_disable_native_stack_scan (void);
 
 void sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type);
-void sgen_null_links_for_domain (MonoDomain *domain);
 
 #endif

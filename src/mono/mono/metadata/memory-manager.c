@@ -4,9 +4,9 @@
 #include <mono/metadata/mono-hash-internals.h>
 
 static void
-memory_manager_init (MonoMemoryManager *memory_manager, MonoDomain *domain, gboolean collectible)
+memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
 {
-	memory_manager->domain = domain;
+	MonoDomain *domain = mono_domain_get ();
 	memory_manager->freeing = FALSE;
 
 	mono_coop_mutex_init_recursive (&memory_manager->lock);
@@ -23,10 +23,10 @@ memory_manager_init (MonoMemoryManager *memory_manager, MonoDomain *domain, gboo
 }
 
 MonoSingletonMemoryManager *
-mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible)
+mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible)
 {
 	MonoSingletonMemoryManager *mem_manager = g_new0 (MonoSingletonMemoryManager, 1);
-	memory_manager_init ((MonoMemoryManager *)mem_manager, domain, collectible);
+	memory_manager_init ((MonoMemoryManager *)mem_manager, collectible);
 
 	mem_manager->memory_manager.is_generic = FALSE;
 	mem_manager->alc = alc;
@@ -117,14 +117,14 @@ void
 mono_mem_manager_lock (MonoMemoryManager *memory_manager)
 {
 	//mono_coop_mutex_lock (&memory_manager->lock);
-	mono_domain_lock (memory_manager->domain);
+	mono_domain_lock (mono_domain_get ());
 }
 
 void
 mono_mem_manager_unlock (MonoMemoryManager *memory_manager)
 {
 	//mono_coop_mutex_unlock (&memory_manager->lock);
-	mono_domain_unlock (memory_manager->domain);
+	mono_domain_unlock (mono_domain_get ());
 }
 
 void *

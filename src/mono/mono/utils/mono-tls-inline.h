@@ -46,12 +46,6 @@ MonoJitTlsData *mono_tls_get_jit_tls (void)
 }
 
 static inline
-MonoDomain *mono_tls_get_domain (void)
-{
-	return (MonoDomain*)MONO_TLS_GET_VALUE (mono_tls_domain, mono_tls_key_domain);
-}
-
-static inline
 SgenThreadInfo *mono_tls_get_sgen_thread_info (void)
 {
 	return (SgenThreadInfo*)MONO_TLS_GET_VALUE (mono_tls_sgen_thread_info, mono_tls_key_sgen_thread_info);
@@ -76,12 +70,6 @@ static inline
 void mono_tls_set_jit_tls (MonoJitTlsData *value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_jit_tls, mono_tls_key_jit_tls, value);
-}
-
-static inline
-void mono_tls_set_domain (MonoDomain *value)
-{
-	MONO_TLS_SET_VALUE (mono_tls_domain, mono_tls_key_domain, value);
 }
 
 static inline

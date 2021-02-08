@@ -227,12 +227,8 @@ typedef enum {
  * like the vtables for a domain, the GC descriptor, etc.
  */
 typedef struct {
-	guint16 max_domain;
-	/* domain_vtables is indexed by the domain id and the size is max_domain + 1 */
-	MonoVTable *domain_vtables [MONO_ZERO_LEN_ARRAY];
+	MonoVTable *domain_vtable;
 } MonoClassRuntimeInfo;
-
-#define MONO_SIZEOF_CLASS_RUNTIME_INFO (sizeof (MonoClassRuntimeInfo) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
 typedef struct {
 	MonoPropertyBagItem head;

@@ -30,19 +30,18 @@
 /* TLS entries used by the runtime */
 // This ordering is mimiced in MONO_JIT_ICALLS (alphabetical).
 typedef enum {
-	TLS_KEY_DOMAIN		 = 0, // mono_domain_get ()
-	TLS_KEY_JIT_TLS		 = 1,
-	TLS_KEY_LMF_ADDR	 = 2,
-	TLS_KEY_SGEN_THREAD_INFO = 3,
-	TLS_KEY_THREAD		 = 4, // mono_thread_internal_current ()
-	TLS_KEY_NUM		 = 5
+	TLS_KEY_JIT_TLS		 = 0,
+	TLS_KEY_LMF_ADDR	 = 1,
+	TLS_KEY_SGEN_THREAD_INFO = 2,
+	TLS_KEY_THREAD		 = 3, // mono_thread_internal_current ()
+	TLS_KEY_NUM		 = 4
 } MonoTlsKey;
 
 #if __cplusplus
-g_static_assert (TLS_KEY_DOMAIN == 0);
+g_static_assert (TLS_KEY_JIT_TLS == 0);
 #endif
 // There are only JIT icalls to get TLS, not set TLS.
-#define mono_get_tls_key_to_jit_icall_id(a)	((MonoJitICallId)((a) + MONO_JIT_ICALL_mono_tls_get_domain_extern))
+#define mono_get_tls_key_to_jit_icall_id(a)	((MonoJitICallId)((a) + MONO_JIT_ICALL_mono_tls_get_jit_tls_extern))
 
 #ifdef HOST_WIN32
 
@@ -129,7 +128,6 @@ void mono_tls_free_keys (void);
 
 G_EXTERN_C MonoInternalThread *mono_tls_get_thread_extern (void);
 G_EXTERN_C MonoJitTlsData     *mono_tls_get_jit_tls_extern (void);
-G_EXTERN_C MonoDomain *mono_tls_get_domain_extern (void);
 G_EXTERN_C SgenThreadInfo *mono_tls_get_sgen_thread_info_extern (void);
 G_EXTERN_C MonoLMF       **mono_tls_get_lmf_addr_extern (void);
 
@@ -211,7 +209,6 @@ G_EXTERN_C MonoLMF       **mono_tls_get_lmf_addr_extern (void);
 //
 extern MONO_KEYWORD_THREAD MonoInternalThread *mono_tls_thread MONO_TLS_FAST;
 extern MONO_KEYWORD_THREAD MonoJitTlsData     *mono_tls_jit_tls MONO_TLS_FAST;
-extern MONO_KEYWORD_THREAD MonoDomain         *mono_tls_domain MONO_TLS_FAST;
 extern MONO_KEYWORD_THREAD SgenThreadInfo     *mono_tls_sgen_thread_info MONO_TLS_FAST;
 extern MONO_KEYWORD_THREAD MonoLMF           **mono_tls_lmf_addr MONO_TLS_FAST;
 
@@ -219,7 +216,6 @@ extern MONO_KEYWORD_THREAD MonoLMF           **mono_tls_lmf_addr MONO_TLS_FAST;
 
 extern MonoInternalThread *mono_tls_thread;
 extern MonoJitTlsData     *mono_tls_jit_tls;
-extern MonoDomain         *mono_tls_domain;
 extern SgenThreadInfo     *mono_tls_sgen_thread_info;
 extern MonoLMF           **mono_tls_lmf_addr;
 
@@ -227,7 +223,6 @@ extern MonoLMF           **mono_tls_lmf_addr;
 
 extern MonoNativeTlsKey mono_tls_key_thread;
 extern MonoNativeTlsKey mono_tls_key_jit_tls;
-extern MonoNativeTlsKey mono_tls_key_domain;
 extern MonoNativeTlsKey mono_tls_key_sgen_thread_info;
 extern MonoNativeTlsKey mono_tls_key_lmf_addr;
 

@@ -327,7 +327,7 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, gboolean check_i
 void
 mono_domain_set_internal (MonoDomain *domain)
 {
-	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_domain_set_internal_with_options (domain, TRUE));
+	g_assert_not_reached ();
 }
 
 /**
@@ -343,8 +343,7 @@ mono_domain_set_internal (MonoDomain *domain)
 gboolean
 mono_domain_set (MonoDomain *domain, gboolean force)
 {
-	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_domain_set_internal_with_options (domain, TRUE));
-	return TRUE;
+	g_assert_not_reached ();
 }
 
 /**

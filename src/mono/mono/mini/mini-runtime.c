@@ -845,7 +845,6 @@ mono_pop_lmf (MonoLMF *lmf)
 MonoDomain*
 mono_jit_thread_attach (MonoDomain *domain)
 {
-	MonoDomain *orig;
 	gboolean attached;
 
 	if (!domain) {
@@ -872,11 +871,7 @@ mono_jit_thread_attach (MonoDomain *domain)
 		mono_threads_enter_gc_safe_region_unbalanced_internal (&stackdata);
 	}
 
-	orig = mono_domain_get ();
-	if (orig != domain)
-		mono_domain_set_fast (domain, TRUE);
-
-	return orig != domain ? orig : NULL;
+	return NULL;
 }
 
 /*
@@ -888,9 +883,6 @@ void
 mono_jit_set_domain (MonoDomain *domain)
 {
 	g_assert (!mono_threads_is_blocking_transition_enabled ());
-
-	if (domain)
-		mono_domain_set_fast (domain, TRUE);
 }
 
 /**
@@ -3907,8 +3899,6 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.suspend_on_exception = TRUE;
 	else if (!strcmp (option, "suspend-on-unhandled"))
 		mini_debug_options.suspend_on_unhandled = TRUE;
-	else if (!strcmp (option, "dont-free-domains"))
-		mono_dont_free_domains = TRUE;
 	else if (!strcmp (option, "dyn-runtime-invoke"))
 		mini_debug_options.dyn_runtime_invoke = TRUE;
 	else if (!strcmp (option, "gdb"))
@@ -3939,8 +3929,6 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.check_pinvoke_callconv = TRUE;
 	else if (!strcmp (option, "use-fallback-tls"))
 		mini_debug_options.use_fallback_tls = TRUE;
-	else if (!strcmp (option, "debug-domain-unload"))
-		g_error ("MONO_DEBUG option debug-domain-unload is deprecated.");
 	else if (!strcmp (option, "partial-sharing"))
 		mono_set_partial_sharing_supported (TRUE);
 	else if (!strcmp (option, "align-small-structs"))
@@ -4400,7 +4388,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	if (mini_debug_options.lldb || g_hasenv ("MONO_LLDB")) {
 		mono_lldb_init ("");
-		mono_dont_free_domains = TRUE;
 	}
 
 #ifdef XDEBUG_ENABLED
@@ -4408,12 +4395,9 @@ mini_init (const char *filename, const char *runtime_version)
 	if (mono_xdebug) {
 		mono_xdebug_init (mono_xdebug);
 		g_free (mono_xdebug);
-		/* So methods for multiple domains don't have the same address */
-		mono_dont_free_domains = TRUE;
 		mono_using_xdebug = TRUE;
 	} else if (mini_debug_options.gdb) {
 		mono_xdebug_init ((char*)"gdb");
-		mono_dont_free_domains = TRUE;
 		mono_using_xdebug = TRUE;
 	}
 #endif
@@ -4449,7 +4433,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 #ifdef JIT_TRAMPOLINES_WORK
 	mono_install_create_domain_hook (mini_create_jit_domain_info);
-	mono_install_free_domain_hook (mini_free_jit_domain_info);
 #endif
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
@@ -4851,7 +4834,6 @@ register_icalls (void)
 	/* Register tls icalls */
 	register_icall_no_wrapper (mono_tls_get_thread_extern, mono_icall_sig_ptr);
 	register_icall_no_wrapper (mono_tls_get_jit_tls_extern, mono_icall_sig_ptr);
-	register_icall_no_wrapper (mono_tls_get_domain_extern, mono_icall_sig_ptr);
 	register_icall_no_wrapper (mono_tls_get_sgen_thread_info_extern, mono_icall_sig_ptr);
 	register_icall_no_wrapper (mono_tls_get_lmf_addr_extern, mono_icall_sig_ptr);
 

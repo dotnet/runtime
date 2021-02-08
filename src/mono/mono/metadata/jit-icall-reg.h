@@ -47,7 +47,6 @@ MONO_JIT_ICALL (generic_trampoline_delegate)	\
 MONO_JIT_ICALL (generic_trampoline_vcall)	\
 	\
 /* These must be ordered like MonoTlsKey (alphabetical). */ \
-MONO_JIT_ICALL (mono_tls_get_domain_extern) \
 MONO_JIT_ICALL (mono_tls_get_jit_tls_extern) \
 MONO_JIT_ICALL (mono_tls_get_lmf_addr_extern) \
 MONO_JIT_ICALL (mono_tls_get_sgen_thread_info_extern) \
@@ -247,7 +246,6 @@ MONO_JIT_ICALL (mono_marshal_safearray_free_indices) \
 MONO_JIT_ICALL (mono_marshal_safearray_get_value) \
 MONO_JIT_ICALL (mono_marshal_safearray_next) \
 MONO_JIT_ICALL (mono_marshal_safearray_set_value) \
-MONO_JIT_ICALL (mono_marshal_set_domain_by_id) \
 MONO_JIT_ICALL (mono_marshal_set_last_error) \
 MONO_JIT_ICALL (mono_marshal_set_last_error_windows) \
 MONO_JIT_ICALL (mono_marshal_string_to_utf16) \

@@ -188,14 +188,9 @@ create_domain_objects (MonoDomain *domain)
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
 
-	MonoDomain *old_domain = mono_domain_get ();
 	MonoStringHandle arg;
 	MonoVTable *string_vt;
 	MonoClassField *string_empty_fld;
-
-	if (domain != old_domain) {
-		mono_domain_set_internal_with_options (domain, FALSE);
-	}
 
 	/*
 	 * Initialize String.Empty. This enables the removal of
@@ -236,9 +231,6 @@ create_domain_objects (MonoDomain *domain)
 	/*The ephemeron tombstone i*/
 	domain->ephemeron_tombstone = MONO_HANDLE_RAW (mono_object_new_handle (domain, mono_defaults.object_class, error));
 	mono_error_assert_ok (error);
-
-	if (domain != old_domain)
-		mono_domain_set_internal_with_options (old_domain, FALSE);
 
 	/* 
 	 * This class is used during exception handling, so initialize it here, to prevent
@@ -431,34 +423,7 @@ exit:
 void
 mono_context_init (MonoDomain *domain)
 {
-	ERROR_DECL (error);
-	mono_context_init_checked (domain, error);
-	mono_error_cleanup (error);
-}
-
-void
-mono_context_init_checked (MonoDomain *domain, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-
-	MonoClass *klass;
-	MonoAppContextHandle context;
-
-	error_init (error);
-	if (mono_runtime_get_no_exec ())
-		goto exit;
-
-	klass = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
-	context = MONO_HANDLE_CAST (MonoAppContext, mono_object_new_pinned_handle (domain, klass, error));
-	goto_if_nok (error, exit);
-
-	MONO_HANDLE_SETVAL (context, domain_id, gint32, domain->domain_id);
-	MONO_HANDLE_SETVAL (context, context_id, gint32, 0);
-	mono_threads_register_app_context (context, error);
-	mono_error_assert_ok (error);
-	domain->default_context = MONO_HANDLE_RAW (context);
-exit:
-	HANDLE_FUNCTION_RETURN ();
+	g_assert_not_reached ();
 }
 
 /**
@@ -660,15 +625,6 @@ mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 	res = mono_mempool_contains_addr (memory_manager->mp, vtable_slot);
 	mono_mem_manager_unlock (memory_manager);
 	return res;
-}
-
-gboolean
-mono_domain_set_fast (MonoDomain *domain, gboolean force)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	mono_domain_set_internal_with_options (domain, TRUE);
-	return TRUE;
 }
 
 static gboolean

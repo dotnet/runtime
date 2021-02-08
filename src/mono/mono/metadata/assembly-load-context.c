@@ -21,7 +21,7 @@ mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collec
 	alc->domain = domain;
 	alc->loaded_images = li;
 	alc->loaded_assemblies = NULL;
-	alc->memory_manager = mono_mem_manager_create_singleton (alc, domain, collectible);
+	alc->memory_manager = mono_mem_manager_create_singleton (alc, collectible);
 	alc->generic_memory_managers = g_ptr_array_new ();
 	mono_coop_mutex_init (&alc->memory_managers_lock);
 	alc->unloading = FALSE;

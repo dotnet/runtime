@@ -11506,7 +11506,7 @@ mono_ldptr:
 
 		cfg->cbb = init_localsbb;
 
-		get_domain = mono_create_tls_get (cfg, TLS_KEY_DOMAIN);
+		get_domain = NULL;//mono_create_tls_get (cfg, TLS_KEY_DOMAIN); // replace this or rip out more
 		NEW_TEMPSTORE (cfg, store, cfg->domainvar->inst_c0, get_domain);
 		MONO_ADD_INS (cfg->cbb, store);
 		cfg->domainvar_inited = TRUE;

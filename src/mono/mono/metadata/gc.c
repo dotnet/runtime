@@ -177,7 +177,6 @@ mono_gc_run_finalize (void *obj, void *data)
 	MonoObject *o2;
 #endif
 	MonoMethod* finalizer = NULL;
-	MonoDomain *caller_domain = mono_domain_get ();
 	MonoDomain *domain;
 
 	// This function is called from the innards of the GC, so our best alternative for now is to do polling here
@@ -256,9 +255,6 @@ mono_gc_run_finalize (void *obj, void *data)
 	/* speedup later... and use a timeout */
 	/* g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name); */
 
-	/* Use _internal here, since this thread can enter a doomed appdomain */
-	mono_domain_set_internal_with_options (mono_object_domain (o), TRUE);
-
 	/* delegates that have a native function pointer allocated are
 	 * registered for finalization, but they don't have a Finalize
 	 * method, because in most cases it's not needed and it's just a waste.
@@ -267,7 +263,6 @@ mono_gc_run_finalize (void *obj, void *data)
 		MonoDelegate* del = (MonoDelegate*)o;
 		if (del->delegate_trampoline)
 			mono_delegate_free_ftnptr ((MonoDelegate*)o);
-		mono_domain_set_internal_with_options (caller_domain, TRUE);
 		return;
 	}
 
@@ -280,7 +275,6 @@ mono_gc_run_finalize (void *obj, void *data)
 	 * of finalizer on object with CCW.
 	 */
 	if (mono_marshal_free_ccw (o) && !finalizer) {
-		mono_domain_set_internal_with_options (caller_domain, TRUE);
 		return;
 	}
 
@@ -338,8 +332,6 @@ unhandled_error:
 		exc = (MonoObject*)mono_error_convert_to_exception (error);
 	if (exc)
 		mono_thread_internal_unhandled_exception (exc);
-
-	mono_domain_set_internal_with_options (caller_domain, TRUE);
 }
 
 /*
