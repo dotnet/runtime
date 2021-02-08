@@ -14,6 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PInvokeTableGenerator.cs" />
+    <Compile Include="IcallTableGenerator.cs" />
     <Compile Include="WasmAppBuilder.cs" />
     <Compile Include="WasmLoadAssembliesAndReferences.cs" />
   </ItemGroup>

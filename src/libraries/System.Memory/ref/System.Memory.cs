@@ -146,7 +146,7 @@ namespace System
         private readonly int _dummyPrimitive;
         public SequencePosition(object? @object, int integer) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.SequencePosition other) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
@@ -301,7 +301,7 @@ namespace System.Buffers
         public byte Precision { get { throw null; } }
         public char Symbol { get { throw null; } }
         public bool Equals(System.Buffers.StandardFormat other) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Buffers.StandardFormat left, System.Buffers.StandardFormat right) { throw null; }
         public static implicit operator System.Buffers.StandardFormat (char symbol) { throw null; }
@@ -497,6 +497,10 @@ namespace System.Runtime.InteropServices
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Memory<T> CreateFromPinnedArray<T>(T[]? array, int start, int length) { throw null; }
         public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length) { throw null; }
+        [System.CLSCompliant(false)]
+        public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) { throw null; }
+        [System.CLSCompliant(false)]
+        public static unsafe ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) { throw null; }
         public static System.Span<T> CreateSpan<T>(ref T reference, int length) { throw null; }
         public static ref T GetArrayDataReference<T>(T[] array) { throw null; }
         public static ref T GetReference<T>(System.ReadOnlySpan<T> span) { throw null; }

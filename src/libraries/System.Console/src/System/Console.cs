@@ -187,7 +187,7 @@ namespace System
                     {
                         if (s_out == null)
                         {
-                            Volatile.Write(ref s_out, CreateOutputWriter(OpenStandardOutput()));
+                            Volatile.Write(ref s_out, CreateOutputWriter(ConsolePal.OpenStandardOutput()));
                         }
                         return s_out;
                     }
@@ -207,7 +207,7 @@ namespace System
                     {
                         if (s_error == null)
                         {
-                            Volatile.Write(ref s_error, CreateOutputWriter(OpenStandardError()));
+                            Volatile.Write(ref s_error, CreateOutputWriter(ConsolePal.OpenStandardError()));
                         }
                         return s_error;
                     }
@@ -536,7 +536,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            return OpenStandardInput();
+            return ConsolePal.OpenStandardInput();
         }
 
         public static Stream OpenStandardOutput()
@@ -551,7 +551,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            return OpenStandardOutput();
+            return ConsolePal.OpenStandardOutput();
         }
 
         public static Stream OpenStandardError()
@@ -566,7 +566,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-            return OpenStandardError();
+            return ConsolePal.OpenStandardError();
         }
 
         [UnsupportedOSPlatform("browser")]

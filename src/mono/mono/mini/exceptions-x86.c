@@ -32,7 +32,6 @@
 #include "mini.h"
 #include "mini-x86.h"
 #include "mini-runtime.h"
-#include "tasklets.h"
 #include "aot-runtime.h"
 #include "mono/utils/mono-tls-inline.h"
 
@@ -1174,58 +1173,6 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	UCONTEXT_REG_ESP (ctx) = (unsigned long)(sp - 1);
 #endif
 }
-
-#if MONO_SUPPORT_TASKLETS && !defined(ENABLE_NETCORE)
-MonoContinuationRestore
-mono_tasklets_arch_restore (void)
-{
-	static guint8* saved = NULL;
-	guint8 *code, *start;
-
-	if (saved)
-		return (MonoContinuationRestore)saved;
-
-	const int size = 48;
-
-	code = start = mono_global_codeman_reserve (size);
-	/* the signature is: restore (MonoContinuation *cont, int state, MonoLMF **lmf_addr) */
-	/* put cont in edx */
-	x86_mov_reg_membase (code, X86_EDX, X86_ESP, 4, 4);
-	/* state in eax, so it's setup as the return value */
-	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 8, 4);
-	/* lmf_addr in ebx */
-	x86_mov_reg_membase(code, X86_EBX, X86_ESP, 0x0C, 4);
-
-	/* setup the copy of the stack */
-	x86_mov_reg_membase (code, X86_ECX, X86_EDX, MONO_STRUCT_OFFSET (MonoContinuation, stack_used_size), 4);
-	x86_shift_reg_imm (code, X86_SHR, X86_ECX, 2);
-	x86_cld (code);
-	x86_mov_reg_membase (code, X86_ESI, X86_EDX, MONO_STRUCT_OFFSET (MonoContinuation, saved_stack), 4);
-	x86_mov_reg_membase (code, X86_EDI, X86_EDX, MONO_STRUCT_OFFSET (MonoContinuation, return_sp), 4);
-	x86_prefix (code, X86_REP_PREFIX);
-	x86_movsl (code);
-
-	/* now restore the registers from the LMF */
-	x86_mov_reg_membase (code, X86_ECX, X86_EDX, MONO_STRUCT_OFFSET (MonoContinuation, lmf), 4);
-	x86_mov_reg_membase (code, X86_EBP, X86_ECX, MONO_STRUCT_OFFSET (MonoLMF, ebp), 4);
-	x86_mov_reg_membase (code, X86_ESP, X86_ECX, MONO_STRUCT_OFFSET (MonoLMF, esp), 4);
-
-	/* restore the lmf chain */
-	/*x86_mov_reg_membase (code, X86_ECX, X86_ESP, 12, 4);
-	x86_mov_membase_reg (code, X86_ECX, 0, X86_EDX, 4);*/
-
-	x86_jump_membase (code, X86_EDX, MONO_STRUCT_OFFSET (MonoContinuation, return_ip));
-
-	g_assertf ((code - start) <= size, "%d %d", (int)(code - start), size);
-
-	mono_arch_flush_icache (start, code - start);
-	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
-	g_assert ((code - start) <= 48);
-
-	saved = start;
-	return (MonoContinuationRestore)saved;
-}
-#endif
 
 /*
  * mono_arch_setup_resume_sighandler_ctx:

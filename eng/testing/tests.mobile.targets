@@ -96,6 +96,7 @@
     <PropertyGroup>
       <Optimized>true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
+      <_MobileIntermediateOutputPath Condition="'$(RunAOTCompilation)' == 'true'">$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
     </PropertyGroup>
     <ItemGroup>
       <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(PublishDir)*.dll" Exclude="$(PublishDir)System.Runtime.WindowsRuntime.dll">
@@ -105,10 +106,13 @@
       <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(PublishDir)*.dll" />
     </ItemGroup>
 
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)" 
+             Condition="'$(RunAOTCompilation)' == 'true'"/>
     <RemoveDir Directories="$(BundleDir)" />
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)\mono-aot-cross"
+        OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="Full"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
@@ -191,8 +195,7 @@
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
-      <WasmBuildDir>$(PublishDir)</WasmBuildDir>
-      <WasmMainAssemblyPath Condition="'$(WasmMainAssemblyPath)' == ''">$(PublishDir)WasmTestRunner.dll</WasmMainAssemblyPath>
+      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>

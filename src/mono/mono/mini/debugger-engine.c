@@ -373,9 +373,6 @@ collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 	CollectDomainData *ud = (CollectDomainData*)user_data;
 	MonoMethod *m;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
 	mono_domain_lock (domain);
 	g_hash_table_iter_init (&iter, domain_jit_info (domain)->seq_points);
 	while (g_hash_table_iter_next (&iter, (void**)&m, (void**)&seq_points)) {
@@ -1167,7 +1164,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	g_ptr_array_free (bp_reqs, TRUE);
 	g_ptr_array_free (ss_reqs, TRUE);
 
-	rt_callbacks.process_breakpoint_events (bp_events, method, ctx, 0);
+	rt_callbacks.process_breakpoint_events (bp_events, method, ctx, sp.il_offset);
 }
 
 /*

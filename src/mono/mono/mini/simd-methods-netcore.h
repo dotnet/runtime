@@ -183,7 +183,7 @@ METHOD(MoveAndDuplicate)
 METHOD(MoveHighAndDuplicate)
 METHOD(MoveLowAndDuplicate)
 // Ssse3
-METHOD(Abs)
+METHOD(Abs) // Also used by ARM64
 METHOD(AlignRight)
 METHOD(HorizontalAddSaturate)
 METHOD(HorizontalSubtractSaturate)
@@ -236,3 +236,12 @@ METHOD(ComputeCrc32C)
 // X86Base
 METHOD(BitScanForward)
 METHOD(BitScanReverse)
+// Crypto
+METHOD(FixedRotate)
+METHOD(HashUpdateChoose)
+METHOD(HashUpdateMajority)
+METHOD(HashUpdateParity)
+METHOD(HashUpdate1)
+METHOD(HashUpdate2)
+METHOD(ScheduleUpdate0)
+METHOD(ScheduleUpdate1)

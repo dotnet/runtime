@@ -165,7 +165,7 @@ namespace System.Drawing
         public static System.Drawing.Color Yellow { get { throw null; } }
         public static System.Drawing.Color YellowGreen { get { throw null; } }
         public bool Equals(System.Drawing.Color other) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Drawing.Color FromArgb(int argb) { throw null; }
         public static System.Drawing.Color FromArgb(int alpha, System.Drawing.Color baseColor) { throw null; }
         public static System.Drawing.Color FromArgb(int red, int green, int blue) { throw null; }
@@ -384,7 +384,7 @@ namespace System.Drawing
         public static System.Drawing.Point Add(System.Drawing.Point pt, System.Drawing.Size sz) { throw null; }
         public static System.Drawing.Point Ceiling(System.Drawing.PointF value) { throw null; }
         public readonly bool Equals(System.Drawing.Point other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public void Offset(System.Drawing.Point p) { }
         public void Offset(int dx, int dy) { }
@@ -411,7 +411,7 @@ namespace System.Drawing
         public static System.Drawing.PointF Add(System.Drawing.PointF pt, System.Drawing.Size sz) { throw null; }
         public static System.Drawing.PointF Add(System.Drawing.PointF pt, System.Drawing.SizeF sz) { throw null; }
         public readonly bool Equals(System.Drawing.PointF other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Drawing.PointF operator +(System.Drawing.PointF pt, System.Drawing.Size sz) { throw null; }
         public static System.Drawing.PointF operator +(System.Drawing.PointF pt, System.Drawing.SizeF sz) { throw null; }
@@ -453,7 +453,7 @@ namespace System.Drawing
         public readonly bool Contains(System.Drawing.Rectangle rect) { throw null; }
         public readonly bool Contains(int x, int y) { throw null; }
         public readonly bool Equals(System.Drawing.Rectangle other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Drawing.Rectangle FromLTRB(int left, int top, int right, int bottom) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Drawing.Rectangle Inflate(System.Drawing.Rectangle rect, int x, int y) { throw null; }
@@ -530,7 +530,7 @@ namespace System.Drawing
         public static System.Drawing.Size Add(System.Drawing.Size sz1, System.Drawing.Size sz2) { throw null; }
         public static System.Drawing.Size Ceiling(System.Drawing.SizeF value) { throw null; }
         public readonly bool Equals(System.Drawing.Size other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Drawing.Size operator +(System.Drawing.Size sz1, System.Drawing.Size sz2) { throw null; }
         public static System.Drawing.Size operator /(System.Drawing.Size left, int right) { throw null; }
@@ -563,7 +563,7 @@ namespace System.Drawing
         public float Width { readonly get { throw null; } set { } }
         public static System.Drawing.SizeF Add(System.Drawing.SizeF sz1, System.Drawing.SizeF sz2) { throw null; }
         public readonly bool Equals(System.Drawing.SizeF other) { throw null; }
-        public override readonly bool Equals(object? obj) { throw null; }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static System.Drawing.SizeF operator +(System.Drawing.SizeF sz1, System.Drawing.SizeF sz2) { throw null; }
         public static System.Drawing.SizeF operator /(System.Drawing.SizeF left, float right) { throw null; }

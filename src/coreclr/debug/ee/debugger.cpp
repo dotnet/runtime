@@ -1381,6 +1381,10 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
 {
     WRAPPER_NO_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     // Allocate the breakpoint instruction info in executable memory.
     m_bpInfoSegment = new (interopsafeEXEC, nothrow) DebuggerEvalBreakpointInfoSegment(this);
 
@@ -5945,7 +5949,7 @@ void Debugger::SuspendForGarbageCollectionCompleted()
     }
     CONTRACTL_END;
 
-    this->m_isSuspendedForGarbageCollection = FALSE;
+    this->m_isSuspendedForGarbageCollection = TRUE;
 
     if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabledLatch)
     {
@@ -5984,7 +5988,8 @@ void Debugger::ResumeForGarbageCollectionStarted()
     }
     CONTRACTL_END;
 
-    this->m_isSuspendedForGarbageCollection = TRUE;
+    this->m_isSuspendedForGarbageCollection = FALSE;
+
     if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabledLatch)
     {
         return;

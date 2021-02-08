@@ -28,6 +28,12 @@ public:
     static std::string DumpAgnostic_CORINFO_LOOKUP(const Agnostic_CORINFO_LOOKUP& lookup);
 
     template <typename key, typename value>
+    static std::string DumpPSig(
+        DWORD                       pSig_Index,
+        DWORD                       cbSig,
+        LightWeightMap<key, value>* buffers);
+
+    template <typename key, typename value>
     static std::string DumpAgnostic_CORINFO_SIG_INFO(
         const Agnostic_CORINFO_SIG_INFO& sigInfo,
         LightWeightMap<key, value>* buffers,
@@ -61,6 +67,83 @@ private:
 };
 
 template <typename key, typename value>
+inline std::string SpmiDumpHelper::DumpPSig(
+    DWORD                       pSig_Index,
+    DWORD                       cbSig,
+    LightWeightMap<key, value>* buffers)
+{
+    char buffer[MAX_BUFFER_SIZE];
+    char* pbuf = buffer;
+    int sizeOfBuffer = sizeof(buffer);
+    int cch;
+
+    cch = sprintf_s(pbuf, sizeOfBuffer, "cbSig-%u, si-%08X",
+        cbSig, pSig_Index);
+    pbuf += cch;
+    sizeOfBuffer -= cch;
+
+    // Add the signature bytes to the output.
+    // Normally, pSig_Index will be -1 if there is no signature. However, in some error cases
+    // it will be 0 if there are other reasons why it will never be consulted (like a "return value"
+    // from an API of `false`). So check that cbSig > 0 before calling GetBuffer(), just to be sure
+    // there is some data to find.
+
+    if (cbSig == 0)
+    {
+        cch = sprintf_s(pbuf, sizeOfBuffer, " (SIG SIZE ZERO)");
+        pbuf += cch;
+        sizeOfBuffer -= cch;
+    }
+    else
+    {
+        PCCOR_SIGNATURE pSig = buffers->GetBuffer(pSig_Index);
+        if (pSig == nullptr)
+        {
+            cch = sprintf_s(pbuf, sizeOfBuffer, " (NO SIG FOUND)");
+            pbuf += cch;
+            sizeOfBuffer -= cch;
+        }
+        else
+        {
+            cch = sprintf_s(pbuf, sizeOfBuffer, " sig-{");
+            pbuf += cch;
+            sizeOfBuffer -= cch;
+
+            const unsigned int maxSigDisplayBytes = 25; // Don't display more than this.
+            const unsigned int sigDisplayBytes = min(maxSigDisplayBytes, cbSig);
+
+            // TODO: display character representation of the types?
+
+            for (DWORD i = 0; i < sigDisplayBytes; i++)
+            {
+                if (i > 0)
+                {
+                    cch = sprintf_s(pbuf, sizeOfBuffer, " ");
+                    pbuf += cch;
+                    sizeOfBuffer -= cch;
+                }
+                cch = sprintf_s(pbuf, sizeOfBuffer, "%02X", pSig[i]);
+                pbuf += cch;
+                sizeOfBuffer -= cch;
+            }
+
+            if (sigDisplayBytes < cbSig)
+            {
+                cch = sprintf_s(pbuf, sizeOfBuffer, "...");
+                pbuf += cch;
+                sizeOfBuffer -= cch;
+            }
+
+            cch = sprintf_s(pbuf, sizeOfBuffer, "}");
+            pbuf += cch;
+            sizeOfBuffer -= cch;
+        }
+    }
+
+    return std::string(buffer);
+}
+
+template <typename key, typename value>
 inline std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(
     const Agnostic_CORINFO_SIG_INFO& sigInfo,
     LightWeightMap<key, value>* buffers,
@@ -79,63 +162,10 @@ inline std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(
     FormatAgnostic_CORINFO_SIG_INST_Element(pbuf, sizeOfBuffer, " ", "cc", "ci", sigInfo.sigInst_classInstCount, sigInfo.sigInst_classInst_Index, handleMap);
     FormatAgnostic_CORINFO_SIG_INST_Element(pbuf, sizeOfBuffer, " ", "mc", "mi", sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, handleMap);
 
-    cch = sprintf_s(pbuf, sizeOfBuffer, " args-%016llX si-%08X, cbSig-%08X",
-        sigInfo.args, sigInfo.pSig_Index, sigInfo.cbSig);
+    cch = sprintf_s(pbuf, sizeOfBuffer, " args-%016llX sig-%s msig-%016llX scp-%016llX tok-%08X}",
+        sigInfo.args, DumpPSig(sigInfo.pSig_Index, sigInfo.cbSig, buffers).c_str(), sigInfo.methodSignature, sigInfo.scope, sigInfo.token);
     pbuf += cch;
     sizeOfBuffer -= cch;
-
-    // Add the signature bytes to the output.
-    // Normally, pSig_Index will be -1 if there is no signature. However, in some error cases
-    // it will be 0 if there are other reasons why it will never be consulted (like a "return value"
-    // from an API of `false`). So check that cbSig > 0 before calling GetBuffer(), just to be sure
-    // there is some data to find.
-
-    if (sigInfo.cbSig == 0)
-    {
-        cch = sprintf_s(pbuf, sizeOfBuffer, " (SIG SIZE ZERO)");
-        pbuf += cch;
-        sizeOfBuffer -= cch;
-    }
-    else
-    {
-        PCCOR_SIGNATURE pSig = buffers->GetBuffer(sigInfo.pSig_Index);
-        if (pSig == nullptr)
-        {
-            cch = sprintf_s(pbuf, sizeOfBuffer, " (NO SIG FOUND)");
-            pbuf += cch;
-            sizeOfBuffer -= cch;
-        }
-        else
-        {
-            cch = sprintf_s(pbuf, sizeOfBuffer, " sig-{");
-            pbuf += cch;
-            sizeOfBuffer -= cch;
-
-            const unsigned int maxSigDisplayBytes = 25; // Don't display more than this.
-            const unsigned int sigDisplayBytes = min(maxSigDisplayBytes, sigInfo.cbSig);
-
-            for (DWORD i = 0; i < sigDisplayBytes; i++)
-            {
-                cch = sprintf_s(pbuf, sizeOfBuffer, "%02X", pSig[i]);
-                pbuf += cch;
-                sizeOfBuffer -= cch;
-            }
-
-            if (sigDisplayBytes < sigInfo.cbSig)
-            {
-                cch = sprintf_s(pbuf, sizeOfBuffer, "...");
-                pbuf += cch;
-                sizeOfBuffer -= cch;
-            }
-
-            cch = sprintf_s(pbuf, sizeOfBuffer, "}");
-            pbuf += cch;
-            sizeOfBuffer -= cch;
-        }
-    }
-
-    cch = sprintf_s(pbuf, sizeOfBuffer, " scp-%016llX tok-%08X}",
-        sigInfo.scope, sigInfo.token);
 
     return std::string(buffer);
 }

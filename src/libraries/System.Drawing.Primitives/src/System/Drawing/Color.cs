@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Drawing
@@ -568,7 +569,7 @@ namespace System.Drawing
 
         public static bool operator !=(Color left, Color right) => !(left == right);
 
-        public override bool Equals(object? obj) => obj is Color other && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is Color other && Equals(other);
 
         public bool Equals(Color other) => this == other;
 

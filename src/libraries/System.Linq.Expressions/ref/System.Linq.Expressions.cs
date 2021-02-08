@@ -32,7 +32,7 @@ namespace System.Dynamic
         public CallInfo(int argCount, params string[] argNames) { }
         public int ArgumentCount { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyCollection<string> ArgumentNames { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public abstract partial class ConvertBinder : System.Dynamic.DynamicMetaObjectBinder

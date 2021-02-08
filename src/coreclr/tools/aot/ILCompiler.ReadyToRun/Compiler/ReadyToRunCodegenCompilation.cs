@@ -225,19 +225,23 @@ namespace ILCompiler
 
         private readonly string _compositeRootPath;
         
-        private bool _resilient;
+        private readonly bool _resilient;
 
-        private int _parallelism;
+        private readonly int _parallelism;
 
-        private bool _generateMapFile;
-        private bool _generateMapCsvFile;
-        private bool _generatePdbFile;
-        private string _pdbPath;
-        private bool _generatePerfMapFile;
-        private string _perfMapPath;
+        private readonly bool _generateMapFile;
+        private readonly bool _generateMapCsvFile;
+        private readonly bool _generatePdbFile;
+        private readonly string _pdbPath;
+        private readonly bool _generatePerfMapFile;
+        private readonly string _perfMapPath;
+        private readonly bool _generateProfileFile;
+        private readonly Func<MethodDesc, string> _printReproInstructions;
 
-        private ProfileDataManager _profileData;
-        private ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
+        private readonly ProfileDataManager _profileData;
+        private readonly ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
+
+        public ProfileDataManager ProfileData => _profileData;
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
@@ -262,9 +266,11 @@ namespace ILCompiler
             bool generateMapFile,
             bool generateMapCsvFile,
             bool generatePdbFile,
+            Func<MethodDesc, string> printReproInstructions,
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
+            bool generateProfileFile,
             int parallelism,
             ProfileDataManager profileData,
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
@@ -289,11 +295,15 @@ namespace ILCompiler
             _pdbPath = pdbPath;
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
+            _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
+            if (nodeFactory.InstrumentationDataTable != null)
+                nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
+            _printReproInstructions = printReproInstructions;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
@@ -330,6 +340,8 @@ namespace ILCompiler
                     pdbPath: _pdbPath,
                     generatePerfMapFile: _generatePerfMapFile,
                     perfMapPath: _perfMapPath,
+                    generateProfileFile: _generateProfileFile,
+                    callChainProfile: _profileData.CallChainProfile,
                     _customPESectionAlignment);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
@@ -375,6 +387,7 @@ namespace ILCompiler
             NodeFactory componentFactory = new NodeFactory(
                 _nodeFactory.TypeSystemContext,
                 _nodeFactory.CompilationModuleGroup,
+                null,
                 _nodeFactory.NameMangler,
                 copiedCorHeader,
                 debugDirectory,
@@ -406,6 +419,8 @@ namespace ILCompiler
                 pdbPath: _pdbPath,
                 generatePerfMapFile: false,
                 perfMapPath: _perfMapPath,
+                generateProfileFile: _generateProfileFile,
+                _profileData.CallChainProfile,
                 customPESectionAlignment: 0);
         }
 
@@ -522,6 +537,11 @@ namespace ILCompiler
                     {
                         string methodName = method.ToString();
                         Logger.Writer.WriteLine("Compiling " + methodName);
+                    }
+
+                    if (_printReproInstructions != null)
+                    {
+                        Logger.Writer.WriteLine($"Single method repro args:{_printReproInstructions(method)}");
                     }
 
                     try

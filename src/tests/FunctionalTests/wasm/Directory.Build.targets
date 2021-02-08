@@ -3,14 +3,10 @@
 
   <PropertyGroup>
     <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+    <WasmAppDir>$(OutputPath)\$(Configuration)\AppBundle\</WasmAppDir>
   </PropertyGroup>
 
   <Target Name="PrepareForWasmBuild">
-    <PropertyGroup>
-      <WasmAppDir>$(OutputPath)\$(Configuration)\AppBundle\</WasmAppDir>
-      <WasmBuildDir>$(PublishDir)</WasmBuildDir>
-      <WasmMainAssemblyPath>$(WasmBuildDir)$(AssemblyName).dll</WasmMainAssemblyPath>
-    </PropertyGroup>
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
     </ItemGroup>
