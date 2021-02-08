@@ -387,12 +387,19 @@ namespace System.Globalization.Tests
         [MemberData(nameof(Ctor_String_TestData))]
         public void Ctor_String(string name, string[] expectedNames)
         {
-            CultureInfo culture = new CultureInfo(name);
-            string cultureName = culture.Name;
-            Assert.Contains(cultureName, expectedNames, StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                CultureInfo culture = new CultureInfo(name);
+                string cultureName = culture.Name;
+                Assert.Contains(cultureName, expectedNames, StringComparer.OrdinalIgnoreCase);
 
-            culture = new CultureInfo(cultureName);
-            Assert.Equal(cultureName, culture.ToString(), ignoreCase: true);
+                culture = new CultureInfo(cultureName);
+                Assert.Equal(cultureName, culture.ToString(), ignoreCase: true);
+            }
+            catch (CultureNotFoundException) when (PlatformDetection.IsPredefinedCulturesOnly)
+            {
+                Assert.Throws<CultureNotFoundException>(() => new CultureInfo(name));
+            }
         }
 
         [Fact]

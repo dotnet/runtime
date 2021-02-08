@@ -229,8 +229,7 @@ namespace System.Globalization
 
             if (!Interop.Globalization.IsPredefinedLocale(name))
             {
-                throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name),
-                    message: "View https://docs.microsoft.com/en-us/aspnet/core/blazor/globalization-localization?view=aspnetcore-5.0#blazor-webassembly to load a new culture");
+                throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
             }
         }
 

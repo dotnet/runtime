@@ -93,7 +93,7 @@ namespace System.Globalization
 
             if (CultureData.GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) == 1)
             {
-                throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
+                throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
             }
         }
 
