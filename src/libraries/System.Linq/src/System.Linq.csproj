@@ -5,7 +5,6 @@
   </PropertyGroup>
   <ItemGroup> <!-- Optimize for speed -->
     <Compile Include="System\Linq\AppendPrepend.SpeedOpt.cs" />
-    <Compile Include="System\Linq\Chunk.SpeedOpt.cs" />
     <Compile Include="System\Linq\Concat.SpeedOpt.cs" />
     <Compile Include="System\Linq\DefaultIfEmpty.SpeedOpt.cs" />
     <Compile Include="System\Linq\Distinct.SpeedOpt.cs" />
