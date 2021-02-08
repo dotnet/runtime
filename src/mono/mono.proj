@@ -458,8 +458,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCFLAGS, ' ')"</_MonoAOTCFLAGSOption>
-      <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCXXFLAGS, ' ')"</_MonoAOTCXXFLAGSOption>
+      <_MonoAOTCFLAGSOption>-DCMAKE_C_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCFLAGS, ' ')&quot;</_MonoAOTCFLAGSOption>
+      <_MonoAOTCXXFLAGSOption>-DCMAKE_CXX_FLAGS=&quot;@(_MonoAOTCPPFLAGS, ' ') @(_MonoAOTCXXFLAGS, ' ')&quot;</_MonoAOTCXXFLAGSOption>
     </PropertyGroup>
     <ItemGroup>
       <MonoAOTCMakeArgs Include="-DAOT_TARGET_TRIPLE=$(MonoAotAbi)"/>
