@@ -156,37 +156,9 @@ def generateEvent(eventNode, providerNode, outputFile, stringTable):
     writeOutput(outputFile, "{\n")
 
     increaseTabLevel()
-    # Wrap the call to WriteEvent with IsEnabled check
-    if keywords:
-        writeOutput(outputFile, "if (IsEnabled(EventLevel." + evtLevel + ", " + evtKeywords + "))\n")
-    
-    writeOutput(outputFile, "{\n")
-    
-    # Write the call to WriteEvent.
-    increaseTabLevel()
-    writeOutput(outputFile, "WriteEvent(" + eventNode.getAttribute("value"))
-
-    # Add method parameters.
-    if argumentCount > 0:
-        # A ',' is needed after the event id.
-        outputFile.write(", ")
-
-        # Write the parameter names to the method call.
-        argumentsProcessed = 0
-        argumentNodes = templateNode.getElementsByTagName("data")
-        for argumentIndex in range(argumentCount):
-            argumentNode = argumentNodes[argumentIndex]
-            argumentName = argumentNode.getAttribute("name")
-            outputFile.write(argumentName)
-            if argumentIndex < (argumentCount - 1):
-                outputFile.write(", ")
-
-    outputFile.write(");\n")
+    writeOutput(outputFile, "// To have this event be emitted from managed side, refer to NativeRuntimeEventSource.cs\n")
+    writeOutput(outputFile, "throw new NotImplementedException();\n")
     decreaseTabLevel()
-
-    writeOutput(outputFile, "}\n")
-    decreaseTabLevel()
-
     writeOutput(outputFile, "}\n\n")
 
 

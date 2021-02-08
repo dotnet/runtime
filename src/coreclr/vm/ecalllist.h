@@ -1023,20 +1023,6 @@ FCFuncStart(gEventPipeInternalFuncs)
     QCFuncElement("GetNextEvent", EventPipeInternal::GetNextEvent)
     QCFuncElement("GetWaitHandle", EventPipeInternal::GetWaitHandle)
 FCFuncEnd()
-
-/*
-FCFuncStart(gNativeEventLogger)
-    QCFuncElement("LogThreadPoolWorkerThreadStart", NativeEventLogger::LogThreadPoolWorkerThreadStart)
-    QCFuncElement("LogThreadPoolWorkerThreadStop", NativeEventLogger::LogThreadPoolWorkerThreadStop)
-    QCFuncElement("LogThreadPoolWorkerThreadWait", NativeEventLogger::LogThreadPoolWorkerThreadWait)
-    QCFuncElement("LogThreadPoolWorkerThreadAdjustmentSample", NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentSample)
-    QCFuncElement("LogThreadPoolWorkerThreadAdjustmentAdjustment", NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentAdjustment)
-    QCFuncElement("LogThreadPoolWorkerThreadAdjustmentStats", NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentStats)
-    QCFuncElement("LogThreadPoolIOEnqueue", NativeEventLogger::LogThreadPoolIOEnqueue)
-    QCFuncElement("LogThreadPoolIODequeue", NativeEventLogger::LogThreadPoolIODequeue)
-    QCFuncElement("LogThreadPoolWorkingThreadCount", NativeEventLogger::LogThreadPoolWorkingThreadCount)
-FCFuncEnd()
-*/
 #endif // FEATURE_PERFTRACING
 
 FCFuncStart(gWeakReferenceFuncs)
