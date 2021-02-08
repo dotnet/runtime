@@ -587,9 +587,14 @@ namespace System.Security.Cryptography
         public byte[] CryptDeriveKey(string algname, string alghashname, int keySize, byte[] rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override byte[] GetBytes(int cb) { throw null; }
+        public static byte[] Pbkdf2DeriveBytes(byte[] password, byte[] salt, int iterations, int length, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+        public static byte[] Pbkdf2DeriveBytes(System.ReadOnlySpan<byte> password, System.ReadOnlySpan<byte> salt, int iterations, int length, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+        public static void Pbkdf2DeriveBytes(System.ReadOnlySpan<byte> password, System.ReadOnlySpan<byte> salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Span<byte> destination) { }
+        public static byte[] Pbkdf2DeriveBytes(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> salt, int iterations, int length, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+        public static void Pbkdf2DeriveBytes(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Span<byte> destination) { }
+        public static byte[] Pbkdf2DeriveBytes(string password, byte[] salt, int iterations, int length, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public override void Reset() { }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class Rijndael : System.Security.Cryptography.SymmetricAlgorithm
     {

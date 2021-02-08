@@ -90,6 +90,15 @@
   <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
     <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
   </data>
+  <data name="Argument_Rfc2898_SaltTooShort" xml:space="preserve">
+    <value>The specified salt is too short. The minimum salt size is {0} bytes.</value>
+  </data>
+  <data name="Argument_Rfc2898_MinIterations" xml:space="preserve">
+    <value>The specified number of iterations is too small. The minimum is {0}.</value>
+  </data>
+  <data name="Argument_Rfc2898_MinLength" xml:space="preserve">
+    <value>The specified number of bytes to extract is too small. The minimum is {0}.</value>
+  </data>
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>

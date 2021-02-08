@@ -51,9 +51,42 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpSha512")]
         internal static extern IntPtr EvpSha512();
 
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMaxMdSize")]
         private static extern int GetMaxMdSize();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs5Pbkdf2Hmac")]
+        private static unsafe extern int Pkcs5Pbkdf2Hmac(
+            byte* pPassword,
+            int passwordLength,
+            byte* pSalt,
+            int saltLength,
+            int iterations,
+            IntPtr digestEvp,
+            byte* pDestination,
+            int destinationLength);
+
+        internal static unsafe int Pkcs5Pbkdf2Hmac(
+            ReadOnlySpan<byte> password,
+            ReadOnlySpan<byte> salt,
+            int iterations,
+            IntPtr digestEvp,
+            Span<byte> destination)
+        {
+            fixed (byte* pPassword = password)
+            fixed (byte* pSalt = salt)
+            fixed (byte* pDestination = destination)
+            {
+                return Pkcs5Pbkdf2Hmac(
+                    pPassword,
+                    password.Length,
+                    pSalt,
+                    salt.Length,
+                    iterations,
+                    digestEvp,
+                    pDestination,
+                    destination.Length);
+            }
+        }
 
         internal static readonly int EVP_MAX_MD_SIZE = GetMaxMdSize();
     }

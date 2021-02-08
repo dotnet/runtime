@@ -151,3 +151,22 @@ int32_t CryptoNative_GetMaxMdSize()
 {
     return EVP_MAX_MD_SIZE;
 }
+
+int32_t CryptoNative_Pkcs5Pbkdf2Hmac(const char* password,
+                                     int32_t passwordLength,
+                                     const unsigned char* salt,
+                                     int32_t saltLength,
+                                     int32_t iterations,
+                                     const EVP_MD* digest,
+                                     unsigned char* destination,
+                                     int32_t destinationLength)
+{
+    if (password == NULL || passwordLength < 0 || salt == NULL || saltLength < 0 ||
+        iterations <= 0 || digest == NULL || destination == NULL || destinationLength < 0)
+    {
+        return -1;
+    }
+
+    return PKCS5_PBKDF2_HMAC(
+        password, passwordLength, salt, saltLength, iterations, digest, destinationLength, destination);
+}

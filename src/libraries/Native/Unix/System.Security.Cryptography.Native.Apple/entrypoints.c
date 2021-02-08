@@ -103,6 +103,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_X509ChainGetStatusAtIndex)
     DllImportEntry(AppleCryptoNative_GetOSStatusForChainStatus)
     DllImportEntry(AppleCryptoNative_X509ChainSetTrustAnchorCertificates)
+    DllImportEntry(AppleCryptoNative_KeyDerivationPBKDF)
 };
 
 EXTERN_C const void* CryptoAppleResolveDllImport(const char* name);
