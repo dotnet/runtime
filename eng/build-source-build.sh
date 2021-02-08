@@ -100,7 +100,7 @@ subBuild() {
   find $scriptroot/artifacts/ -type f -name sourcebuild.binlog -exec rename "sourcebuild.binlog" "${name}Build.binlog" * {} \;
 }
 
-subBuild coreclr -subset clr.tools+clr.runtime+clr.corelib+clr.nativecorelib+clr.packages $coreclrArgs
+subBuild coreclr -subset clr.tools+clr.runtime+clr.corelib+clr.nativecorelib+clr.packages+Clr.Jit+Clr.AllJits $coreclrArgs
 
 ilasmPath=$(dirname $(find $scriptroot/artifacts/bin -name ilasm))
 subBuild libraries -subset libs $librariesArgs /p:ILAsmToolPath=$ilasmPath
