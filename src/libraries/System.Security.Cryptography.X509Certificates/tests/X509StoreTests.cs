@@ -7,14 +7,26 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates.Tests.Common;
+using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Abstractions;
+
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public class X509StoreTests : FileCleanupTestBase
     {
+        readonly ITestOutputHelper _output;
+
+        public X509StoreTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         public static void OpenMyStore()
         {
@@ -533,6 +545,79 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(0, store.Certificates.Count);
             }
         }
+
+
+        private static void CleanupCertificates(string testName)
+        {
+            string caName = $"O={testName}";
+            try
+            {
+                using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+                {
+                    store.Open(OpenFlags.ReadWrite);
+                    foreach (X509Certificate2 cert in store.Certificates)
+                    {
+                        if (cert.Subject.Contains(caName))
+                        {
+                            store.Remove(cert);
+                        }
+                    }
+                }
+            }
+            catch { };
+        }
+
+        [Fact]
+        public void CertificatesUsableAfterAdd()
+        {
+            CleanupCertificates(MethodBase.GetCurrentMethod().Name);
+            CertificateAuthority.BuildPrivatePki(
+                PkiOptions.AllRevocation,
+                out RevocationResponder responder,
+                out CertificateAuthority root,
+                out CertificateAuthority intermediate,
+                out X509Certificate2 endEntity,
+                testName: MethodBase.GetCurrentMethod().Name,
+                pkiOptionsInSubject: false);
+
+            responder.Dispose();
+            using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+            {
+                // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
+                store.Open(OpenFlags.ReadWrite);
+                store.Add(intermediate.CloneIssuerCert());
+                store.Add(root.CloneIssuerCert());
+                store.Close();
+            }
+
+            using (root)
+            using (intermediate)
+            using (endEntity)
+            using (ChainHolder holder = new ChainHolder())
+            using (X509Certificate2 rootCert = root.CloneIssuerCert())
+            using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
+            {
+                X509Chain chain = new X509Chain();
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.DisableCertificateDownloads = true;
+
+                bool result = chain.Build(endEntity);
+                int count = result ? chain.ChainElements.Count : -1;
+
+                if (!result || count != 3)
+                {
+                    Thread.Sleep(5000);
+                    bool result2 = chain.Build(endEntity);
+                    _output.WriteLine("Test result after sleep is {0} and {1}", result2, chain.ChainElements?.Count);
+                }
+                CleanupCertificates(MethodBase.GetCurrentMethod().Name);
+
+                Assert.True(result, "chain was not built");
+                Assert.Equal(3, count);
+            }
+        }
+
 #if Unix
         [ConditionalFact(nameof(NotRunningAsRootAndRemoteExecutorSupported))] // root can read '2.pem'
         [PlatformSpecific(TestPlatforms.Linux)] // Windows/OSX doesn't use SSL_CERT_{DIR,FILE}.
