@@ -5,7 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
 
