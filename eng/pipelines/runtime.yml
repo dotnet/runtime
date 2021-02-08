@@ -53,11 +53,6 @@ variables:
 jobs:
 
 #
-# Source Index Build
-#
-- template: ./source-index.yml
-
-#
 # Evaluate paths
 #
 - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
