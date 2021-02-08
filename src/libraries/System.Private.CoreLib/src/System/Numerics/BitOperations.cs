@@ -53,7 +53,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsPow2(int value) => value >= 0 && (value & (value - 1)) == 0;
+        public static bool IsPow2(int value) => (value & (value - 1)) == 0 && value >= 0;
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
@@ -61,14 +61,14 @@ namespace System.Numerics
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static bool IsPow2(uint value) => value != 0 && (value & (value - 1)) == 0;
+        public static bool IsPow2(uint value) => (value & (value - 1)) == 0 && value != 0 ;
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsPow2(long value) => value >= 0 && (value & (value - 1)) == 0;
+        public static bool IsPow2(long value) => (value & (value - 1)) == 0 && value >= 0;
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
@@ -76,7 +76,7 @@ namespace System.Numerics
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static bool IsPow2(ulong value) => value != 0 && (value & (value - 1)) == 0;
+        public static bool IsPow2(ulong value) => (value & (value - 1)) == 0 && value != 0;
 
         /// <summary>
         /// Count the number of leading zero bits in a mask.
