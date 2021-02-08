@@ -266,6 +266,29 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
+        public void RepeatedElementDetectionIsCaseInsensitive()
+        {
+            var xml =
+              @"<settings>
+                  <DefaultConnection>
+                      <ConnectionString>TestConnectionString1</ConnectionString>
+                      <Provider>SqlClient1</Provider>
+                  </DefaultConnection>
+                  <defaultconnection>
+                      <ConnectionString>TestConnectionString2</ConnectionString>
+                      <Provider>SqlClient2</Provider>
+                  </defaultconnection>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("TestConnectionString1", xmlConfigSrc.Get("DefaultConnection:0:ConnectionString"));
+            Assert.Equal("SqlClient1", xmlConfigSrc.Get("DefaultConnection:0:Provider"));
+            Assert.Equal("TestConnectionString2", xmlConfigSrc.Get("DefaultConnection:1:ConnectionString"));
+            Assert.Equal("SqlClient2", xmlConfigSrc.Get("DefaultConnection:1:Provider"));
+        }
+
+        [Fact]
         public void RepeatedElementsUnderNameContributeToPrefix()
         {
             var xml =
@@ -417,6 +440,24 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
             Assert.Equal("Inventory", xmlConfigSrc.Get("Data:Inventory:Name"));
             Assert.Equal("AnotherTestConnectionString", xmlConfigSrc.Get("Data:Inventory:ConnectionString"));
             Assert.Equal("MySql", xmlConfigSrc.Get("Data:Inventory:Provider"));
+        }
+
+        [Fact]
+        public void KeysAreCaseInsensitive()
+        {
+            var xml =
+                @"<settings>
+                    <Data Name='DefaultConnection'
+                          ConnectionString='TestConnectionString'
+                          Provider='SqlClient' />
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+
+            xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml));
+
+            Assert.Equal("DefaultConnection", xmlConfigSrc.Get("data:defaultconnection:name"));
+            Assert.Equal("TestConnectionString", xmlConfigSrc.Get("data:defaultconnection:connectionstring"));
+            Assert.Equal("SqlClient", xmlConfigSrc.Get("data:defaultconnection:provider"));
         }
 
         [Fact]
@@ -616,6 +657,30 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
                 </settings>";
             var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
             var expectedMsg = SR.Format(SR.Error_KeyIsDuplicated, "Data:DefaultConnection:ConnectionString",
+                SR.Format(SR.Msg_LineInfo, 8, 52));
+
+            var exception = Assert.Throws<FormatException>(() => xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml)));
+
+            Assert.Equal(expectedMsg, exception.Message);
+        }
+
+        [Fact]
+        public void ThrowExceptionWhenKeyIsDuplicatedWithDifferentCasing()
+        {
+            var xml =
+                @"<settings>
+                    <Data>
+                        <DefaultConnection>
+                            <ConnectionString>TestConnectionString</ConnectionString>
+                            <Provider>SqlClient</Provider>
+                        </DefaultConnection>
+                    </Data>
+                    <data name='defaultconnection' connectionstring='NewConnectionString'>
+                        <provider>NewProvider</provider>
+                    </data>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+            var expectedMsg = SR.Format(SR.Error_KeyIsDuplicated, "data:defaultconnection:connectionstring",
                 SR.Format(SR.Msg_LineInfo, 8, 52));
 
             var exception = Assert.Throws<FormatException>(() => xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml)));
