@@ -200,7 +200,7 @@
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <_MonoLDFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
-      <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="arch -arch arm64" />
+      <_MonoBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
     <!-- Mac Catalyst specific options -->
     <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
@@ -247,7 +247,7 @@
       <_MonoCMakeVersionMin Condition="'$(TargetsiOS)' == 'true'">$(iOSVersionMin)</_MonoCMakeVersionMin>
       <_MonoCMakeVersionMin Condition="'$(TargetstvOS)' == 'true'">$(tvOSVersionMin)</_MonoCMakeVersionMin>
     </PropertyGroup>
-    <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true' and '$(Platform)' == 'arm64'">
+    <ItemGroup Condition="('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true') and '$(Platform)' == 'arm64'">
       <_MonoCMakeArgs Include="-DCMAKE_OSX_ARCHITECTURES=arm64"/>
     </ItemGroup>
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
