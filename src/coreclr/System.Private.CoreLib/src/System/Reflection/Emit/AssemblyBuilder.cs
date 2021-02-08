@@ -526,11 +526,8 @@ namespace System.Reflection.Emit
 
             lock (SyncRoot)
             {
-                SetCustomAttributeNoLock(customBuilder);
+                customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyBuilderData.AssemblyDefToken);
             }
         }
-
-        private void SetCustomAttributeNoLock(CustomAttributeBuilder customBuilder) =>
-            customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyBuilderData.AssemblyDefToken);
     }
 }
