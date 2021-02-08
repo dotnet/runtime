@@ -11440,21 +11440,15 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
     if (IsSSEOrAVXInstruction(ins))
     {
-        if (ins == INS_movd)
+        assert((ins != INS_movd) || (isFloatReg(reg1) != isFloatReg(reg2)));
+
+        if ((ins != INS_movd) || isFloatReg(reg1))
         {
-            assert(isFloatReg(reg1) != isFloatReg(reg2));
-            if (isFloatReg(reg1))
-            {
-                code = insCodeRM(ins);
-            }
-            else
-            {
-                code = insCodeMR(ins);
-            }
+            code = insCodeRM(ins);
         }
         else
         {
-            code = insCodeRM(ins);
+            code = insCodeMR(ins);
         }
         code = AddVexPrefixIfNeeded(ins, code, size);
         code = insEncodeRMreg(ins, code);

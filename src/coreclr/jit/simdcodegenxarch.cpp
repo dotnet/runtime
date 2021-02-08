@@ -1966,7 +1966,6 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
         assert(genIsValidIntReg(tmpReg));
 
         // Move the value from xmm reg to an int reg
-        // Another error, op2Reg is our xmm source but it was passed second.
         inst_RV_RV(ins_Copy(op2Reg, TYP_INT), tmpReg, op2Reg, baseType);
 
         assert((index >= 0) && (index <= 15));
