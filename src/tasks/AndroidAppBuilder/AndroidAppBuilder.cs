@@ -26,7 +26,6 @@ public class AndroidAppBuilderTask : Task
     /// <summary>
     /// List of paths to assemblies to be included in the app. For AOT builds the 'ObjectFile' metadata key needs to point to the object file.
     /// </summary>
-    [Required]
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
@@ -91,7 +90,8 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.KeyStorePath = KeyStorePath;
         apkBuilder.ForceInterpreter = ForceInterpreter;
         apkBuilder.ForceAOT = ForceAOT;
-        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(Assemblies, abi, MainLibraryFileName, MonoRuntimeHeaders);
+        apkBuilder.Assemblies = Assemblies;
+        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(abi, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;
     }

@@ -24,9 +24,9 @@ public class ApkBuilder
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
+    public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     public (string apk, string packageId) BuildApk(
-        ITaskItem[] assemblies,
         string abi,
         string mainLibraryFileName,
         string monoRuntimeHeaders)
@@ -103,7 +103,7 @@ public class ApkBuilder
         }
 
         var assemblerFiles = new List<string>();
-        foreach (ITaskItem file in assemblies)
+        foreach (ITaskItem file in Assemblies)
         {
             // use AOT files if available
             var obj = file.GetMetadata("AssemblerFile");
