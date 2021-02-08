@@ -19,6 +19,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	{
 		public static void Main ()
 		{
+			new MethodThisDataFlowTypeTest ();
+
 			PropagateToThis ();
 			PropagateToThisWithGetters ();
 			PropagateToThisWithSetters ();

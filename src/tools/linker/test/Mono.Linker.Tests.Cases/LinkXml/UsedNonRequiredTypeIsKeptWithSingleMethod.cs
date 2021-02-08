@@ -5,6 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
 	[SetupLinkerDescriptorFile ("UsedNonRequiredTypeIsKeptWithSingleMethod.xml")]
+	[SetupLinkerArgument ("--disable-opt", "unreachablebodies")]
 	class UsedNonRequiredTypeIsKeptWithSingleMethod
 	{
 		public static void Main ()

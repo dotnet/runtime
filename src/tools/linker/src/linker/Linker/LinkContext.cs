@@ -241,13 +241,13 @@ namespace Mono.Linker
 			WarnAsError = new Dictionary<int, bool> ();
 			WarnVersion = WarnVersion.Latest;
 
-			// See https://github.com/mono/linker/issues/612
 			const CodeOptimizations defaultOptimizations =
 				CodeOptimizations.BeforeFieldInit |
 				CodeOptimizations.OverrideRemoval |
 				CodeOptimizations.UnusedInterfaces |
 				CodeOptimizations.UnusedTypeChecks |
-				CodeOptimizations.IPConstantPropagation;
+				CodeOptimizations.IPConstantPropagation |
+				CodeOptimizations.UnreachableBodies;
 
 			Optimizations = new CodeOptimizationsSettings (defaultOptimizations);
 		}

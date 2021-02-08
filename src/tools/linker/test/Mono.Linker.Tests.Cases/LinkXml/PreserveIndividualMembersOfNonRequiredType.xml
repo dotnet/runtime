@@ -5,6 +5,7 @@
       <method name="Method1" />
       <property name="Property1" />
       <event name="Event1" />
+      <method name=".ctor" />
     </type>
   </assembly>
 </linker>

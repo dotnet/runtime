@@ -81,9 +81,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class ClassWithKeptMembers
 		{
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			public event EventHandler<EventArgs> PublicEvent;
 
 			[Kept]
@@ -95,8 +95,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[KeptBackingField]
-			public long PublicProperty { [Kept] get; [Kept] set; }
+			public long PublicProperty { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
 		}
 
 		[Kept]
@@ -157,9 +156,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class Base
 		{
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			public event EventHandler<EventArgs> Event;
 
 			[Kept]
@@ -171,8 +170,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[KeptBackingField]
-			public long Property { [Kept] get; [Kept] set; }
+			public long Property { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
 		}
 
 		[Kept]

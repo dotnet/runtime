@@ -7,6 +7,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 {
 
 	[SetupCSharpCompilerToUse ("csc")]
+	[SetupLinkerArgument ("--disable-opt", "unreachablebodies")]
 	public class MethodUsedViaReflection
 	{
 		public static void Main ()

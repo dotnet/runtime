@@ -177,8 +177,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		class TypeWithPublicProperty
 		{
 			[Kept]
-			[KeptBackingField]
-			public int Property { [Kept] get; [Kept] set; }
+			public int Property { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
 
 			int NonPublicProperty { get; set; }
 
@@ -188,8 +187,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		class TypeWithNonPublicProperty
 		{
 			[Kept]
-			[KeptBackingField]
-			int NonPublicProperty { [Kept] get; [Kept] set; }
+			int NonPublicProperty { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
 
 			public int PublicProperty { get; set; }
 
@@ -199,9 +197,9 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		class TypeWithPublicEvent
 		{
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			public event EventHandler PublicEvent;
 
 			event EventHandler NonPublicEvent;
@@ -212,9 +210,9 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		class TypeWithNonPublicEvent
 		{
 			[Kept]
-			[KeptBackingField]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified, ExpectLocalsModified]
 			event EventHandler NonPublicEvent;
 
 			public event EventHandler PublicEven;

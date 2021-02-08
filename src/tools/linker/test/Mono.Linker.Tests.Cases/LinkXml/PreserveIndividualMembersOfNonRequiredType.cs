@@ -15,6 +15,9 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 		class Required
 		{
 			[Kept]
+			public Required () { }
+
+			[Kept]
 			public int Field1;
 
 			public int Field2;
