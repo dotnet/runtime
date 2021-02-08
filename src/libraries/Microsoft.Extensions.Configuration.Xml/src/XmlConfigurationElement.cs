@@ -39,7 +39,8 @@ namespace Microsoft.Extensions.Configuration.Xml
 
         public XmlConfigurationElement FindSiblingInChildren(XmlConfigurationElement element)
         {
-            if (element is null) throw new ArgumentNullException(nameof(element));
+            if (element is null)
+                throw new ArgumentNullException(nameof(element));
 
             for (int i = 0; i < Children.Count; i++) {
                 var child = Children[i];
