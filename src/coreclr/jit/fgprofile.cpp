@@ -455,21 +455,20 @@ class SpanningTreeVisitor
 public:
     // To save visitors a bit of work, we also note
     // for non-tree edges whether the edge postdominates
-    // the source, dominates the target, or neither
-    // (and hence, this is a critical edge).
+    // the source, dominates the target, or is a critical edge.
     //
-    enum class Kind
+    enum class EdgeKind
     {
         Unknown,
-        Source,
-        Target,
-        Edge
+        PostdominatesSource,
+        DominatesTarget,
+        CriticalEdge
     };
 
     virtual void Badcode()                     = 0;
     virtual void VisitBlock(BasicBlock* block) = 0;
     virtual void VisitTreeEdge(BasicBlock* source, BasicBlock* target) = 0;
-    virtual void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, Kind kind) = 0;
+    virtual void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, EdgeKind kind) = 0;
 };
 
 //------------------------------------------------------------------------
@@ -511,7 +510,10 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     // Scratch vector for visiting successors of blocks with
     // multiple successors.
     //
+    // Bit vector to track progress through those successors.
+    //
     ArrayStack<BasicBlock*> scratch(getAllocator(CMK_Pgo));
+    BlockSet                processed = BlockSetOps::MakeEmpty(comp);
 
     // Push the method entry and all EH handler region entries on the stack.
     // (push method entry last so it's visited first).
@@ -530,7 +532,6 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 
         for (; XTnum < compHndBBtabCount; XTnum++, HBtab++)
         {
-            // Ignore filters ...?
             BasicBlock* hndBegBB = HBtab->ebdHndBeg;
             stack.Push(hndBegBB);
             BlockSetOps::AddElemD(comp, marked, hndBegBB->bbNum);
@@ -554,13 +555,6 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 
         switch (block->bbJumpKind)
         {
-            case BBJ_EHFILTERRET:
-            {
-                // Ignore filters; they are single block and only
-                // reachable via EH.
-            }
-            break;
-
             case BBJ_CALLFINALLY:
             {
                 // Just queue up the continuation block,
@@ -597,12 +591,13 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 //
                 BasicBlock* const target = fgFirstBB;
                 assert(BlockSetOps::IsMember(comp, marked, target->bbNum));
-                visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::Kind::Source);
+                visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::PostdominatesSource);
             }
             break;
 
             case BBJ_EHFINALLYRET:
             case BBJ_EHCATCHRET:
+            case BBJ_EHFILTERRET:
             case BBJ_LEAVE:
             {
                 // See if we're leaving an EH handler region.
@@ -618,17 +613,24 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     BasicBlock* const target = block->bbJumpDest;
 
                     // In some bad IL cases we may not have a target.
+                    // In others we may see something other than LEAVE be most-nested in a try.
                     //
                     if (target == nullptr)
                     {
                         JITDUMP("No jump dest for " FMT_BB ", suspect bad code\n", block->bbNum);
                         visitor->Badcode();
                     }
+                    else if (block->bbJumpKind != BBJ_LEAVE)
+                    {
+                        JITDUMP("EH RET in " FMT_BB " most-nested in try, suspect bad code\n", block->bbNum);
+                        visitor->Badcode();
+                    }
                     else
                     {
                         if (BlockSetOps::IsMember(comp, marked, target->bbNum))
                         {
-                            visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::Kind::Source);
+                            visitor->VisitNonTreeEdge(block, target,
+                                                      SpanningTreeVisitor::EdgeKind::PostdominatesSource);
                         }
                         else
                         {
@@ -645,7 +647,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     EHblkDsc* const   dsc    = ehGetBlockHndDsc(block);
                     BasicBlock* const target = dsc->ebdHndBeg;
                     assert(BlockSetOps::IsMember(comp, marked, target->bbNum));
-                    visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::Kind::Source);
+                    visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::PostdominatesSource);
                 }
             }
             break;
@@ -680,9 +682,10 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         // We can't instrument in the call always pair tail block
                         // so treat this as a critical edge.
                         //
-                        visitor->VisitNonTreeEdge(block, target, block->isBBCallAlwaysPairTail()
-                                                                     ? SpanningTreeVisitor::Kind::Edge
-                                                                     : SpanningTreeVisitor::Kind::Source);
+                        visitor->VisitNonTreeEdge(block, target,
+                                                  block->isBBCallAlwaysPairTail()
+                                                      ? SpanningTreeVisitor::EdgeKind::CriticalEdge
+                                                      : SpanningTreeVisitor::EdgeKind::PostdominatesSource);
                     }
                     else
                     {
@@ -704,7 +707,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // edges from non-rare to rare be non-tree edges.
                     //
                     scratch.Reset();
-                    BlockSet processed = BlockSetOps::MakeEmpty(comp);
+                    BlockSetOps::ClearD(comp, processed);
 
                     for (unsigned i = 0; i < numSucc; i++)
                     {
@@ -732,9 +735,10 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 
                         if (BlockSetOps::IsMember(comp, marked, target->bbNum))
                         {
-                            visitor->VisitNonTreeEdge(block, target, target->bbRefs > 1
-                                                                         ? SpanningTreeVisitor::Kind::Edge
-                                                                         : SpanningTreeVisitor::Kind::Target);
+                            visitor->VisitNonTreeEdge(block, target,
+                                                      target->bbRefs > 1
+                                                          ? SpanningTreeVisitor::EdgeKind::CriticalEdge
+                                                          : SpanningTreeVisitor::EdgeKind::DominatesTarget);
                         }
                         else
                         {
@@ -764,7 +768,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 
                         if (BlockSetOps::IsMember(comp, marked, target->bbNum))
                         {
-                            visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::Kind::Target);
+                            visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::DominatesTarget);
                         }
                         else
                         {
@@ -789,7 +793,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 
                         if (BlockSetOps::IsMember(comp, marked, target->bbNum))
                         {
-                            visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::Kind::Edge);
+                            visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::CriticalEdge);
                         }
                         else
                         {
@@ -820,24 +824,24 @@ class EfficientEdgeCountInstrumentor : public Instrumentor, public SpanningTreeV
 {
 private:
     // A particular edge probe. These are linked
-    // on the source block via bbProbeList.
+    // on the source block via bbSparseProbeList.
     //
     struct Probe
     {
         BasicBlock* target;
         Probe*      next;
         int         schemaIndex;
-        Kind        kind;
+        EdgeKind    kind;
     };
 
     Probe* NewProbe(BasicBlock* source, BasicBlock* target)
     {
-        Probe* p            = new (m_comp, CMK_Pgo) Probe();
-        p->target           = target;
-        p->kind             = Kind::Unknown;
-        p->schemaIndex      = -1;
-        p->next             = (Probe*)source->bbProbeList;
-        source->bbProbeList = p;
+        Probe* p                  = new (m_comp, CMK_Pgo) Probe();
+        p->target                 = target;
+        p->kind                   = EdgeKind::Unknown;
+        p->schemaIndex            = -1;
+        p->next                   = (Probe*)source->bbSparseProbeList;
+        source->bbSparseProbeList = p;
         m_probeCount++;
 
         return p;
@@ -847,7 +851,7 @@ private:
     {
         JITDUMP("[%u] New probe for " FMT_BB " -> " FMT_BB " [source]\n", m_probeCount, source->bbNum, target->bbNum);
         Probe* p = NewProbe(source, target);
-        p->kind  = Kind::Source;
+        p->kind  = EdgeKind::PostdominatesSource;
     }
 
     void NewTargetProbe(BasicBlock* source, BasicBlock* target)
@@ -855,7 +859,7 @@ private:
         JITDUMP("[%u] New probe for " FMT_BB " -> " FMT_BB " [target]\n", m_probeCount, source->bbNum, target->bbNum);
 
         Probe* p = NewProbe(source, target);
-        p->kind  = Kind::Target;
+        p->kind  = EdgeKind::DominatesTarget;
     }
 
     void NewEdgeProbe(BasicBlock* source, BasicBlock* target)
@@ -863,7 +867,7 @@ private:
         JITDUMP("[%u] New probe for " FMT_BB " -> " FMT_BB " [edge]\n", m_probeCount, source->bbNum, target->bbNum);
 
         Probe* p = NewProbe(source, target);
-        p->kind  = Kind::Edge;
+        p->kind  = EdgeKind::CriticalEdge;
 
         m_edgeProbeCount++;
     }
@@ -899,7 +903,7 @@ public:
     void VisitBlock(BasicBlock* block) override
     {
         m_blockCount++;
-        block->bbProbeList = nullptr;
+        block->bbSparseProbeList = nullptr;
         JITDUMP("node " FMT_BB "\n", block->bbNum);
     }
 
@@ -908,18 +912,18 @@ public:
         JITDUMP("tree " FMT_BB " -> " FMT_BB "\n", source->bbNum, target->bbNum);
     }
 
-    void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, SpanningTreeVisitor::Kind kind) override
+    void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, SpanningTreeVisitor::EdgeKind kind) override
     {
         JITDUMP("non-tree " FMT_BB " -> " FMT_BB "\n", source->bbNum, target->bbNum);
         switch (kind)
         {
-            case Kind::Source:
+            case EdgeKind::PostdominatesSource:
                 NewSourceProbe(source, target);
                 break;
-            case Kind::Target:
+            case EdgeKind::DominatesTarget:
                 NewTargetProbe(source, target);
                 break;
-            case Kind::Edge:
+            case EdgeKind::CriticalEdge:
                 NewEdgeProbe(source, target);
                 break;
             default:
@@ -983,11 +987,11 @@ void EfficientEdgeCountInstrumentor::Prepare(bool preImport)
 //
 void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    // Walk the bbProbeList, emitting one schema element per...
+    // Walk the bbSparseProbeList, emitting one schema element per...
     //
-    for (Probe* probe = (Probe*)block->bbProbeList; probe != nullptr; probe = probe->next)
+    for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
     {
-        // Probe is for the edge from block->target.
+        // Probe is for the edge from block to target.
         //
         BasicBlock* const target = probe->target;
 
@@ -1047,11 +1051,11 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
     //
     Compiler* const comp = m_comp->impInlineRoot();
 
-    // Walk the bbProbeList, adding instrumentation.
+    // Walk the bbSparseProbeList, adding instrumentation.
     //
-    for (Probe* probe = (Probe*)block->bbProbeList; probe != nullptr; probe = probe->next)
+    for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
     {
-        // Probe is for the edge from block->target.
+        // Probe is for the edge from block to target.
         //
         BasicBlock* const target = probe->target;
 
@@ -1072,13 +1076,13 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 
         switch (probe->kind)
         {
-            case Kind::Source:
+            case EdgeKind::PostdominatesSource:
                 instrumentedBlock = block;
                 break;
-            case Kind::Target:
+            case EdgeKind::DominatesTarget:
                 instrumentedBlock = probe->target;
                 break;
-            case Kind::Edge:
+            case EdgeKind::CriticalEdge:
             {
 #ifdef DEBUG
                 // Verify the edge still exists.
@@ -1823,7 +1827,7 @@ void Compiler::fgIncorporateBlockCounts()
 //
 //    Solving is done in four steps:
 //    * Prepare
-//      *  walk the blocks settting up per block info, and a map
+//      *  walk the blocks setting up per block info, and a map
 //         for block schema keys to blocks.
 //      * walk the schema to create info for the known edges, and
 //         a map from edge schema keys to edges.
@@ -1834,7 +1838,7 @@ void Compiler::fgIncorporateBlockCounts()
 //        add in an unknown count edge.
 //    * Solve
 //      * repeatedly walk blocks, looking for blocks where all
-//        incoming our outgoing edges are known. This determines
+//        incoming or outgoing edges are known. This determines
 //        the block counts.
 //      * for blocks with known counts, look for cases where just
 //        one incoming or outgoing edge is unknown, and solve for
@@ -1857,11 +1861,11 @@ class EfficientEdgeCountReconstructor : public SpanningTreeVisitor
 private:
     Compiler*     m_comp;
     CompAllocator m_allocator;
-    uint32_t      m_blocks;
-    uint32_t      m_edges;
-    uint32_t      m_unknownBlocks;
-    uint32_t      m_unknownEdges;
-    uint32_t      m_zeroEdges;
+    unsigned      m_blocks;
+    unsigned      m_edges;
+    unsigned      m_unknownBlocks;
+    unsigned      m_unknownEdges;
+    unsigned      m_zeroEdges;
 
     // Map a block into its schema key.
     //
@@ -1961,16 +1965,16 @@ private:
     //
     BlockInfo* BlockToInfo(BasicBlock* block)
     {
-        assert(block->bbInfo != nullptr);
-        return (BlockInfo*)block->bbInfo;
+        assert(block->bbSparseCountInfo != nullptr);
+        return (BlockInfo*)block->bbSparseCountInfo;
     }
 
     // Set up block info for a block.
     //
     void SetBlockInfo(BasicBlock* block, BlockInfo* info)
     {
-        assert(block->bbInfo == nullptr);
-        block->bbInfo = info;
+        assert(block->bbSparseCountInfo == nullptr);
+        block->bbSparseCountInfo = info;
     }
 
     // Flags for noting and handling various error cases.
@@ -2062,7 +2066,7 @@ public:
         JITDUMP(" ... unknown edge " FMT_BB " -> " FMT_BB "\n", source->bbNum, target->bbNum);
     }
 
-    void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, SpanningTreeVisitor::Kind kind) override
+    void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, SpanningTreeVisitor::EdgeKind kind) override
     {
         // We may have this edge in the schema, and so already added this edge to the map.
         //

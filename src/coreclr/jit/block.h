@@ -885,10 +885,10 @@ struct BasicBlock : private LIR::Range
     BlockSet bbReach; // Set of all blocks that can reach this one
 
     union {
-        BasicBlock* bbIDom; // Represent the closest dominator to this block (called the Immediate
-                            // Dominator) used to compute the dominance tree.
-        void* bbProbeList;  // Used early on by fgInstrument
-        void* bbInfo;       // Used early on by fgIncorporate
+        BasicBlock* bbIDom;      // Represent the closest dominator to this block (called the Immediate
+                                 // Dominator) used to compute the dominance tree.
+        void* bbSparseProbeList; // Used early on by fgInstrument
+        void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
     };
 
     unsigned bbPostOrderNum; // the block's post order number in the graph.
