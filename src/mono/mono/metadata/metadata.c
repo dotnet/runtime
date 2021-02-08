@@ -8016,11 +8016,7 @@ mono_loader_set_strict_assembly_name_check (gboolean enabled)
 gboolean
 mono_loader_get_strict_assembly_name_check (void)
 {
-#if !defined(DISABLE_DESKTOP_LOADER) || defined(ENABLE_NETCORE)
 	return check_assembly_names_strictly;
-#else
-	return FALSE;
-#endif
 }
 
 

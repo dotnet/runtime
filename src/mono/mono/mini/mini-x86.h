@@ -64,13 +64,6 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
 #define MONO_ARCH_SUPPORT_TASKLETS 1
 
-#ifndef DISABLE_SIMD
-#ifndef ENABLE_NETCORE
-#define MONO_ARCH_SIMD_INTRINSICS 1
-#define MONO_ARCH_NEED_SIMD_BANK 1
-#endif
-#endif
-
 /* we should lower this size and make sure we don't call heavy stack users in the segv handler */
 #if defined(__APPLE__)
 #define MONO_ARCH_SIGNAL_STACK_SIZE MINSIGSTKSZ

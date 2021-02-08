@@ -3730,11 +3730,9 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeInReg:
 		case LLVMArgVtypeByVal:
 		case LLVMArgAsIArgs:
-#ifdef ENABLE_NETCORE
 			// FIXME: Enabling this fails on windows
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeByRef:
-#endif
 		{
 			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
 				/* Treat these as normal values */
@@ -6986,11 +6984,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef mask [32], v;
 			int i;
 
-#ifdef ENABLE_NETCORE
 			t = simd_class_to_llvm_type (ctx, ins->klass);
-#else
-			t = simd_op_to_llvm_type (ins->opcode);
-#endif
 			for (i = 0; i < 32; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 
@@ -8794,7 +8788,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 #endif
 
-#ifdef ENABLE_NETCORE
 		case OP_XCAST: {
 			LLVMTypeRef t = simd_class_to_llvm_type (ctx, ins->klass);
 
@@ -9036,11 +9029,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_PDEP32 ? INTRINS_PDEP_I32 : INTRINS_PDEP_I64, args, "");
 			break;
 		}
-#endif /* ENABLE_NETCORE */
 #endif /* defined(TARGET_X86) || defined(TARGET_AMD64) */
 
 // Shared between ARM64 and X86
-#if defined(ENABLE_NETCORE) && (defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64))
+#if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64)
 		case OP_LZCNT32:
 		case OP_LZCNT64: {
 			LLVMValueRef args [2];
@@ -9051,7 +9043,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 #endif
 
-#if defined(ENABLE_NETCORE) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
 		case OP_XOP_I4_I4:
 		case OP_XOP_I8_I8: {
 			IntrinsicId id = (IntrinsicId)0;

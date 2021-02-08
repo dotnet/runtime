@@ -1401,8 +1401,6 @@ namespace System.Linq.Expressions
         /// <paramref name="array"/> or <paramref name="indexes"/> is null.</exception>
         /// <exception cref="ArgumentException">
         /// <paramref name="array"/>.Type does not represent an array type.-or-The rank of <paramref name="array"/>.Type does not match the number of elements in <paramref name="indexes"/>.-or-The <see cref="Expression.Type"/> property of one or more elements of <paramref name="indexes"/> does not represent the <see cref="int"/> type.</exception>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "The Array 'Get' method is dynamically constructed and are not included in IL. It is not subject to trimming.")]
         public static MethodCallExpression ArrayIndex(Expression array, IEnumerable<Expression> indexes)
         {
             ExpressionUtils.RequiresCanRead(array, nameof(array), -1);
@@ -1431,7 +1429,7 @@ namespace System.Linq.Expressions
                 }
             }
 
-            MethodInfo mi = array.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance)!;
+            MethodInfo mi = TypeUtils.GetArrayGetMethod(array.Type);
             return Call(array, mi, indexList);
         }
 

@@ -7,5 +7,6 @@ Commonly Used Types:
 Microsoft.Extensions.Primitives.IChangeToken
 Microsoft.Extensions.Primitives.StringValues
 Microsoft.Extensions.Primitives.StringSegment</PackageDescription>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
   </PropertyGroup>
 </Project>

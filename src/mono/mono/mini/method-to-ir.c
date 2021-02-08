@@ -97,11 +97,7 @@
  * while the jit only sees one method, so we have to inline things ourselves.
  */
 /* Used by LLVM AOT */
-#ifdef ENABLE_NETCORE
 #define LLVM_AOT_INLINE_LENGTH_LIMIT 30
-#else
-#define LLVM_AOT_INLINE_LENGTH_LIMIT INLINE_LENGTH_LIMIT
-#endif
 
 /* Used to LLVM JIT */
 #define LLVM_JIT_INLINE_LENGTH_LIMIT 100
@@ -3495,7 +3491,6 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 			return TRUE;
 	}
 
-#if defined(ENABLE_NETCORE)
 	/*
 	 * In corelib code, methods which need to do a stack walk declare a StackCrawlMark local and pass it as an
 	 * arguments until it reaches an icall. Its hard to detect which methods do that especially with
@@ -3509,7 +3504,7 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 			(!strcmp (cname, "Activator")))
 			return TRUE;
 	}
-#endif
+
 	return FALSE;
 }
 
@@ -4982,29 +4977,6 @@ mini_get_signature (MonoMethod *method, guint32 token, MonoGenericContext *conte
 	return fsig;
 }
 
-static MonoMethod*
-throw_exception (void)
-{
-	static MonoMethod *method = NULL;
-
-	if (!method) {
-		MonoSecurityManager *secman = mono_security_manager_get_methods ();
-		method = get_method_nofail (secman->securitymanager, "ThrowException", 1, 0);
-	}
-	g_assert (method);
-	return method;
-}
-
-static void
-emit_throw_exception (MonoCompile *cfg, MonoException *ex)
-{
-	MonoMethod *thrower = throw_exception ();
-	MonoInst *args [1];
-
-	EMIT_NEW_PCONST (cfg, args [0], ex);
-	mono_emit_method_call (cfg, thrower, args, NULL);
-}
-
 /*
  * Return the original method is a wrapper is specified. We can only access 
  * the custom attributes from the original method.
@@ -5021,24 +4993,6 @@ get_original_method (MonoMethod *method)
 
 	/* in other cases we need to find the original method */
 	return mono_marshal_method_from_wrapper (method);
-}
-
-static void
-ensure_method_is_allowed_to_access_field (MonoCompile *cfg, MonoMethod *caller, MonoClassField *field)
-{
-	/* we can't get the coreclr security level on wrappers since they don't have the attributes */
-	MonoException *ex = mono_security_core_clr_is_field_access_allowed (get_original_method (caller), field);
-	if (ex)
-		emit_throw_exception (cfg, ex);
-}
-
-static void
-ensure_method_is_allowed_to_call_method (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee)
-{
-	/* we can't get the coreclr security level on wrappers since they don't have the attributes */
-	MonoException *ex = mono_security_core_clr_is_call_allowed (get_original_method (caller), callee);
-	if (ex)
-		emit_throw_exception (cfg, ex);
 }
 
 static guchar*
@@ -6169,7 +6123,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	image = m_class_get_image (method->klass);
 
 	/* serialization and xdomain stuff may need access to private fields and methods */
-	dont_verify = image->assembly->corlib_internal? TRUE: FALSE;
+	dont_verify = FALSE;
 	dont_verify |= method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE;
 	dont_verify |= method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH;
  	dont_verify |= method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE; /* bug #77896 */
@@ -6542,26 +6496,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (init_locals)
 			ins->flags |= MONO_INST_INIT;
 		*/
-	}
-
-	if (mono_security_core_clr_enabled ()) {
-		/* check if this is native code, e.g. an icall or a p/invoke */
-		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-			MonoMethod *wrapped = mono_marshal_method_from_wrapper (method);
-			if (wrapped) {
-				gboolean pinvk = (wrapped->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL);
-				gboolean icall = (wrapped->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL);
-
-				/* if this ia a native call then it can only be JITted from platform code */
-				if ((icall || pinvk) && method->klass && m_class_get_image (method->klass)) {
-					if (!mono_security_core_clr_is_platform_image (m_class_get_image (method->klass))) {
-						MonoException *ex = icall ? mono_get_exception_security () : 
-							mono_get_exception_method_access ();
-						emit_throw_exception (cfg, ex);
-					}
-				}
-			}
-		}
 	}
 
 	CHECK_CFG_EXCEPTION;
@@ -7353,9 +7287,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					emit_method_access_failure (cfg, method, cil_method);
 			}
 
-			if (mono_security_core_clr_enabled ())
-				ensure_method_is_allowed_to_call_method (cfg, method, cil_method);
-
 			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod))
 				needs_stack_walk = TRUE;
 
@@ -7495,19 +7426,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if ((m_class_get_parent (cmethod->klass) == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke"))
 				delegate_invoke = TRUE;
-
-#ifndef ENABLE_NETCORE
-			if ((cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_sharable_method (cfg, cmethod, fsig, sp))) {
-				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-					mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
-					emit_widen = FALSE;
-				}
-
-				if (inst_tailcall) // FIXME
-					mono_tailcall_print ("missed tailcall intrins_sharable %s -> %s\n", method->name, cmethod->name);
-				goto call_end;
-			}
-#endif
 
 			/*
 			 * Implement a workaround for the inherent races involved in locking:
@@ -7746,11 +7664,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
-#ifdef ENABLE_NETCORE
 			if (save_last_error) {
 				mono_emit_jit_icall (cfg, mono_marshal_clear_last_error, NULL);
 			}
-#endif
 
 			/* Tail prefix / tailcall optimization */
 
@@ -8863,9 +8779,6 @@ calli_end:
 					emit_method_access_failure (cfg, method, cil_method);
 			}
 
-			if (mono_security_core_clr_enabled ())
-				ensure_method_is_allowed_to_call_method (cfg, method, cmethod);
-
 			if (cfg->gshared && cmethod && cmethod->klass != method->klass && mono_class_is_ginst (cmethod->klass) && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
 				emit_class_init (cfg, cmethod->klass);
 				CHECK_TYPELOAD (cmethod->klass);
@@ -9258,7 +9171,6 @@ calli_end:
 				}
 			}
 
-#ifdef ENABLE_NETCORE
 			// Optimize
 			// 
 			//    box
@@ -9380,7 +9292,6 @@ calli_end:
 					}
 				}
 			}
-#endif
 
 			gboolean is_true;
 
@@ -9541,16 +9452,6 @@ calli_end:
 				FIELD_ACCESS_FAILURE (method, field);
 			mono_class_init_internal (klass);
 			mono_class_setup_fields (klass);
-
-			/* if the class is Critical then transparent code cannot access it's fields */
-			if (!is_instance && mono_security_core_clr_enabled ())
-				ensure_method_is_allowed_to_access_field (cfg, method, field);
-
-			/* XXX this is technically required but, so far (SL2), no [SecurityCritical] types (not many exists) have
-			   any visible *instance* field  (in fact there's a single case for a static field in Marshal) XXX
-			if (mono_security_core_clr_enabled ())
-				ensure_method_is_allowed_to_access_field (cfg, method, field);
-			*/
 
 			ftype = mono_field_get_type_internal (field);
 
@@ -11291,9 +11192,6 @@ mono_ldptr:
 			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
 				emit_method_access_failure (cfg, method, cil_method);
 
-			if (mono_security_core_clr_enabled ())
-				ensure_method_is_allowed_to_call_method (cfg, method, cmethod);
-
 			const gboolean has_unmanaged_callers_only =
 				cmethod->wrapper_type == MONO_WRAPPER_NONE &&
 				mono_method_has_unmanaged_callers_only_attribute (cmethod);
@@ -11320,9 +11218,6 @@ mono_ldptr:
 					invoke_context_used = mini_method_check_context_used (cfg, invoke);
 
 					target_ins = sp [-1];
-
-					if (mono_security_core_clr_enabled ())
-						ensure_method_is_allowed_to_call_method (cfg, method, ctor_method);
 
 					if (!(cmethod->flags & METHOD_ATTRIBUTE_STATIC)) {
 						/*BAD IMPL: We must not add a null check for virtual invoke delegates.*/
@@ -11399,9 +11294,6 @@ mono_ldptr:
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
-			if (mono_security_core_clr_enabled ())
-				ensure_method_is_allowed_to_call_method (cfg, method, cmethod);
-
 			/*
 			 * Optimize the common case of ldvirtftn+delegate creation
 			 */
@@ -11420,9 +11312,6 @@ mono_ldptr:
 					invoke_context_used = mini_method_check_context_used (cfg, invoke);
 
 					target_ins = sp [-1];
-
-					if (mono_security_core_clr_enabled ())
-						ensure_method_is_allowed_to_call_method (cfg, method, ctor_method);
 
 					if (invoke_context_used == 0 || !cfg->gsharedvt || cfg->llvm_only) {
 						if (cfg->verbose_level > 3)

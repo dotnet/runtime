@@ -62,7 +62,6 @@ namespace System.Reflection.Emit
         private int num_types;
         private TypeBuilder[]? types;
         private CustomAttributeBuilder[]? cattrs;
-        private byte[] guid;
         private int table_idx;
         internal AssemblyBuilder assemblyb;
         private object[]? global_methods;
@@ -73,6 +72,7 @@ namespace System.Reflection.Emit
         private int[]? table_indexes;
 #endregion
 
+        private byte[] guid;
         private TypeBuilder? global_type;
         private Type? global_type_created;
         // name_cache keys are display names
@@ -113,11 +113,6 @@ namespace System.Reflection.Emit
                 string fullyQualifiedName = fqname;
                 if (fullyQualifiedName == null)
                     return null!; // FIXME: this should not return null
-                if (assemblyb.AssemblyDir != null)
-                {
-                    fullyQualifiedName = Path.Combine(assemblyb.AssemblyDir, fullyQualifiedName);
-                    fullyQualifiedName = Path.GetFullPath(fullyQualifiedName);
-                }
 
                 return fullyQualifiedName;
             }

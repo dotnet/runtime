@@ -12,6 +12,9 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
     [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
     public abstract partial class DependencyInjectionSpecificationTests
     {
+        // for most DI providers, the structs default constructor shouldn't run when creating an instance of ClassWithOptionalArgsCtorWithStructs
+        public virtual bool ExpectStructWithPublicDefaultConstructorInvoked => false;
+
         public delegate object CreateInstanceFunc(IServiceProvider provider, Type type, object[] args);
 
         private static object CreateInstanceDirectly(IServiceProvider provider, Type type, object[] args)
@@ -117,6 +120,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Null(anotherClass.ColorNull);
             Assert.Equal(12, anotherClass.Integer);
             Assert.Null(anotherClass.IntegerNull);
+            Assert.Equal(ExpectStructWithPublicDefaultConstructorInvoked, anotherClass.StructWithConstructor.ConstructorInvoked);
         }
 
         [Theory]
