@@ -615,7 +615,7 @@ namespace System.Linq
         }
 
         [DynamicDependency("Chunk`1", typeof(Enumerable))]
-        public static IQueryable<TSource[]> Chunk<TSource>(this IQueryable<TSource> source, int maxSize)
+        public static IQueryable<TSource[]> Chunk<TSource>(this IQueryable<TSource> source, int size)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -623,7 +623,7 @@ namespace System.Linq
                 Expression.Call(
                     null,
                     CachedReflectionInfo.Chunk_TSource_1(typeof(TSource)),
-                    source.Expression, Expression.Constant(maxSize)
+                    source.Expression, Expression.Constant(size)
                     ));
         }
 

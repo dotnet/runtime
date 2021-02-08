@@ -15,10 +15,10 @@ namespace System.Linq.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
-        public void ThrowsWhenMaxSizeIsNonPositive(int maxSize)
+        public void ThrowsWhenSizeIsNonPositive(int size)
         {
             int[] source = {1};
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("maxSize", () => source.Chunk(maxSize));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("size", () => source.Chunk(size));
         }
 
         [Fact]
