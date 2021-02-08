@@ -28,6 +28,7 @@ namespace System
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
+        public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
         public static bool Isillumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
@@ -132,7 +133,7 @@ namespace System
             (IsOpenSslSupported &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
 
-        public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsiOS || IstvOS;
+        public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
 
         private static Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
         private static Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);
@@ -339,7 +340,7 @@ namespace System
                 // The build number is approximation.
                 return IsWindows10Version2004Build19573OrGreater;
             }
-            else if (IsOSX || IsiOS || IstvOS)
+            else if (IsOSX || IsMacCatalyst || IsiOS || IstvOS)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;

@@ -179,6 +179,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(HOST_OSX 1)
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+    set(HOST_MACCATALYST 1)
+  endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   # See man cmake-toolchains(7) on which variables
   # control cross-compiling to ios
