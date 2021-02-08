@@ -3,7 +3,12 @@
   <PropertyGroup>
     <GitHubRepositoryName>runtime</GitHubRepositoryName>
 
-    <BaseInnerSourceBuildCommand>$(RepositoryEngineeringDir)build-source-build.sh</BaseInnerSourceBuildCommand>
+    <BaseInnerSourceBuildCommand>$(CurrentRepoSourceBuildSourceDir)eng\build-source-build.sh</BaseInnerSourceBuildCommand>
+
+    <!-- Work around issue where local clone may cause failure using non-origin remote fallback: https://github.com/dotnet/sourcelink/issues/629 -->
+    <InnerBuildArgs>$(InnerBuildArgs) /p:EnableSourceControlManagerQueries=false</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:EnableSourceLink=false</InnerBuildArgs>
+    <InnerBuildArgs>$(InnerBuildArgs) /p:DeterministicSourcePaths=false</InnerBuildArgs>
   </PropertyGroup>
 
   <Target Name="ApplySourceBuildPatchFiles"
