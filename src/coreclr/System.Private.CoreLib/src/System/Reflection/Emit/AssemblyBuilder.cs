@@ -506,17 +506,12 @@ namespace System.Reflection.Emit
 
             lock (SyncRoot)
             {
-                SetCustomAttributeNoLock(con, binaryAttribute);
+                TypeBuilder.DefineCustomAttribute(
+                    _manifestModuleBuilder,     // pass in the in-memory assembly module
+                    AssemblyBuilderData.AssemblyDefToken,
+                    _manifestModuleBuilder.GetConstructorToken(con),
+                    binaryAttribute);
             }
-        }
-
-        private void SetCustomAttributeNoLock(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            TypeBuilder.DefineCustomAttribute(
-                _manifestModuleBuilder,     // pass in the in-memory assembly module
-                AssemblyBuilderData.AssemblyDefToken,
-                _manifestModuleBuilder.GetConstructorToken(con),
-                binaryAttribute);
         }
 
         /// <summary>

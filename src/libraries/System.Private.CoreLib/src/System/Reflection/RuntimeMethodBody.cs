@@ -7,10 +7,12 @@ namespace System.Reflection
 {
     internal sealed partial class RuntimeMethodBody : MethodBody
     {
-        private byte[] _IL = null!;
-        private ExceptionHandlingClause[] _exceptionHandlingClauses = null!;
-        private LocalVariableInfo[] _localVariables = null!;
-        internal MethodBase _methodBase = null!;
+        private byte[] _IL;
+        private ExceptionHandlingClause[] _exceptionHandlingClauses;
+        private LocalVariableInfo[] _localVariables;
+#if CORECLR
+        internal MethodBase _methodBase;
+#endif
         private int _localSignatureMetadataToken;
         private int _maxStackSize;
         private bool _initLocals;
