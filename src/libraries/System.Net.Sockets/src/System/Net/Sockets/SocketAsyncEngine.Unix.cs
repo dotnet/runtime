@@ -159,8 +159,8 @@ namespace System.Net.Sockets
 
                 var thread = new Thread(static s => ((SocketAsyncEngine)s!).EventLoop())
                 {
-                    thread.IsBackground = true,
-                    thread.Name = ".NET Sockets"
+                    IsBackground = true,
+                    Name = ".NET Sockets"
                 };
                 thread.UnsafeStart(this);
             }
