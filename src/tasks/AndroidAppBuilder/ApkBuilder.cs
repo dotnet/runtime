@@ -249,7 +249,7 @@ public class ApkBuilder
             File.Copy(NativeMainSource, javaActivityPath, true);
 
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
-            .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
+            .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName));
 
         File.WriteAllText(monoRunnerPath, monoRunner);
 
