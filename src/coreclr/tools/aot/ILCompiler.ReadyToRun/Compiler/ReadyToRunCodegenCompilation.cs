@@ -341,7 +341,7 @@ namespace ILCompiler
                     generatePerfMapFile: _generatePerfMapFile,
                     perfMapPath: _perfMapPath,
                     generateProfileFile: _generateProfileFile,
-                    profileData: _profileData,
+                    callChainProfile: _profileData.CallChainProfile,
                     _customPESectionAlignment);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
@@ -420,7 +420,7 @@ namespace ILCompiler
                 generatePerfMapFile: false,
                 perfMapPath: _perfMapPath,
                 generateProfileFile: _generateProfileFile,
-                profileData: _profileData,
+                _profileData.CallChainProfile,
                 customPESectionAlignment: 0);
         }
 

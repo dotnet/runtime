@@ -58,7 +58,6 @@ namespace ILCompiler
         public string FileLayout;
         public bool VerifyTypeAndFieldLayout;
         public string CallChainProfileFile;
-        public string CallChainOptimizationMethod;
 
         public string SingleMethodTypeName;
         public string SingleMethodName;
@@ -136,7 +135,6 @@ namespace ILCompiler
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);
                 syntax.DefineOption("verify-type-and-field-layout", ref VerifyTypeAndFieldLayout, SR.VerifyTypeAndFieldLayoutOption);
                 syntax.DefineOption("callchain-profile", ref CallChainProfileFile, SR.CallChainProfileFile);
-                syntax.DefineOption("callchain-method", ref CallChainOptimizationMethod, SR.CallChainOptimizationMethod);
 
                 syntax.DefineOption("h|help", ref Help, SR.HelpOption);
 

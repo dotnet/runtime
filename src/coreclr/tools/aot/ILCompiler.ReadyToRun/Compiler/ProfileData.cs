@@ -10,8 +10,6 @@ using Internal.Pgo;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-using ILCompiler.DependencyAnalysis.ReadyToRun;
-
 namespace ILCompiler
 {
     [Flags]
@@ -34,12 +32,6 @@ namespace ILCompiler
         ExcludeHotMethodCode = 13, // 0x02000  // Hot method should be excluded from the ReadyToRun image
         ExcludeColdMethodCode = 14, // 0x04000  // Cold method should be excluded from the ReadyToRun image
         DisableInlining = 15, // 0x08000  // Disable inlining of this method in optimized AOT native code
-    }
-
-    public enum CallChainOptimizationMethod
-    {
-        None = 0, // ignore callchain profile
-        Sort = 1, // place methods by descending sort by call counts
     }
 
     public class MethodProfileData
@@ -109,8 +101,6 @@ namespace ILCompiler
         private readonly bool _partialNGen;
         private readonly ReadyToRunCompilationModuleGroupBase _compilationGroup;
         private readonly CallChainProfile _callChainProfile;
-        private readonly CallChainOptimizationMethod _callChainOptimizationMethod;
-        private readonly Dictionary<MethodDesc, int> _methodOrdering;
 
         public ProfileDataManager(Logger logger,
                                   IEnumerable<ModuleDesc> possibleReferenceModules,
@@ -119,7 +109,6 @@ namespace ILCompiler
                                   ModuleDesc nonLocalGenericsHome,
                                   IReadOnlyList<string> mibcFiles,
                                   CallChainProfile callChainProfile,
-                                  CallChainOptimizationMethod callChainOptimizationMethod,
                                   CompilerTypeSystemContext context,
                                   ReadyToRunCompilationModuleGroupBase compilationGroup,
                                   bool embedPgoDataInR2RImage)
@@ -128,8 +117,6 @@ namespace ILCompiler
             _ibcParser = new IBCProfileParser(logger, possibleReferenceModules);
             _compilationGroup = compilationGroup;
             _callChainProfile = callChainProfile;
-            _callChainOptimizationMethod = callChainOptimizationMethod;
-            _methodOrdering = new Dictionary<MethodDesc, int>();
             HashSet<ModuleDesc> versionBubble = new HashSet<ModuleDesc>(versionBubbleModules);
 
             {
@@ -285,85 +272,6 @@ namespace ILCompiler
         }
 
         public bool EmbedPgoDataInR2RImage { get; }
-
-        private class CallerCalleeCount
-        {
-            public readonly MethodDesc Caller;
-            public readonly MethodDesc Callee;
-            public readonly int Count;
-
-            public CallerCalleeCount(MethodDesc caller, MethodDesc callee, int count)
-            {
-                Caller = caller;
-                Callee = callee;
-                Count = count;
-            }
-        }
-
-        /// <summary>
-        /// Use callchain profile information to generate method ordering. Each method is
-        /// assigned an integral ordering index and comparison of these indices yields
-        /// relative placement of the two methods in the final executable.
-        /// </summary>
-        /// <param name="methodsToPlace">List of methods to place</param>
-        public IEnumerable<MethodWithGCInfo> CalculateMethodOrdering(IEnumerable<MethodWithGCInfo> methodsToPlace)
-        {
-            if (_callChainProfile == null)
-            {
-                return methodsToPlace;
-            }
-
-            switch (_callChainOptimizationMethod)
-            {
-                case CallChainOptimizationMethod.None:
-                    return methodsToPlace;
-
-                case CallChainOptimizationMethod.Sort:
-                    return CalculateSortOrdering(methodsToPlace);
-
-                default:
-                    throw new NotImplementedException(_callChainOptimizationMethod.ToString());
-            }
-        }
-
-        private IEnumerable<MethodWithGCInfo> CalculateSortOrdering(IEnumerable<MethodWithGCInfo> methodsToPlace)
-        {
-            Dictionary<MethodDesc, MethodWithGCInfo> methodMap = new Dictionary<MethodDesc, MethodWithGCInfo>();
-            foreach (MethodWithGCInfo methodWithGCInfo in methodsToPlace)
-            {
-                methodMap.Add(methodWithGCInfo.Method, methodWithGCInfo);
-            }
-
-            List<CallerCalleeCount> callList = new List<CallerCalleeCount>();
-            foreach (KeyValuePair<MethodDesc, Dictionary<MethodDesc, int>> methodProfile in _callChainProfile.ResolvedProfileData.Where(kvp => methodMap.ContainsKey(kvp.Key)))
-            {
-                foreach (KeyValuePair<MethodDesc, int> callee in methodProfile.Value.Where(kvp => methodMap.ContainsKey(kvp.Key)))
-                {
-                    callList.Add(new CallerCalleeCount(methodProfile.Key, callee.Key, callee.Value));
-                }
-            }
-            callList.Sort((a, b) => b.Count.CompareTo(a.Count));
-
-            List<MethodWithGCInfo> outputMethods = new List<MethodWithGCInfo>();
-
-            foreach (CallerCalleeCount call in callList)
-            {
-                if (methodMap.TryGetValue(call.Caller, out MethodWithGCInfo callerWithGCInfo) && callerWithGCInfo != null)
-                {
-                    outputMethods.Add(callerWithGCInfo);
-                    methodMap[call.Caller] = null;
-                }
-                if (methodMap.TryGetValue(call.Callee, out MethodWithGCInfo calleeWithGCInfo) && calleeWithGCInfo != null)
-                {
-                    outputMethods.Add(calleeWithGCInfo);
-                    methodMap[call.Callee] = null;
-                }
-            }
-            outputMethods.AddRange(methodMap.Values.Where(m => m != null));
-
-            return outputMethods;
-        }
-
         public CallChainProfile CallChainProfile => _callChainProfile;
     }
 }
