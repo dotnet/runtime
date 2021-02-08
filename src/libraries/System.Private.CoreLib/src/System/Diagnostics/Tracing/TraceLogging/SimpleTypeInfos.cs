@@ -261,8 +261,6 @@ namespace System.Diagnostics.Tracing
         }
     }
 
-#nullable enable
-
     /// <summary>
     /// TraceLogging: Type handler for Nullable.
     /// </summary>
@@ -296,7 +294,7 @@ namespace System.Diagnostics.Tracing
             bool hasValue = refVal is not null;
             TraceLoggingDataCollector.AddScalar(hasValue);
             PropertyValue val = valueInfo.PropertyValueFactory(hasValue
-                ? value
+                ? refVal
                 : Activator.CreateInstance(valueInfo.DataType));
             this.valueInfo.WriteData(val);
         }
