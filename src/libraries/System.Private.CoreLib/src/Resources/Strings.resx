@@ -2569,9 +2569,6 @@
   <data name="InvalidOperation_UnknownEnumType" xml:space="preserve">
     <value>Unknown enum type.</value>
   </data>
-  <data name="InvalidOperation_WriteOnce" xml:space="preserve">
-    <value>This property has already been set and cannot be modified.</value>
-  </data>
   <data name="InvalidOperation_WrongAsyncResultOrEndCalledMultiple" xml:space="preserve">
     <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or the End method was called multiple times with the same IAsyncResult.</value>
   </data>
