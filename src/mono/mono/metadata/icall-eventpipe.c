@@ -98,13 +98,6 @@ static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
 static uint32_t _ep_rt_mono_max_sampled_thread_count = 32;
 
 /*
- * Unified runtime stop/restart world, currently implemented in sgen-stw.c.
- * Will take and release the LOCK_GC.
- */
-extern void mono_stop_world (MonoThreadInfoFlags flags);
-extern void mono_restart_world (MonoThreadInfoFlags flags);
-
-/*
  * Forward declares of all static functions.
  */
 
@@ -654,7 +647,7 @@ eventpipe_sample_profiler_write_sampling_event_for_threads (
 			if (thread_state->valid) {
 				if (sampled_thread_count < _ep_rt_mono_max_sampled_thread_count) {
 					EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, sampled_thread_count);
-					data->thread_id = mono_thread_info_get_tid (thread_info);
+					data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
 					data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&thread_state->ctx);
 					data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
 					ep_stack_contents_reset (&data->stack_contents);
@@ -675,7 +668,7 @@ eventpipe_sample_profiler_write_sampling_event_for_threads (
 	for (uint32_t i = 0; i < sampled_thread_count; ++i) {
 		EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, i);
 		if (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length(&data->stack_contents) > 0) {
-			mono_thread_info_set_tid (&adapter, data->thread_id);
+			mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
 			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&data->payload_data, sizeof (data->payload_data));
 		}
 	}
