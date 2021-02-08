@@ -691,15 +691,15 @@ namespace System.Threading
                     //
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
-                    if ((OperatingSystem.IsIOS() ||
-                        OperatingSystem.IsTvOS() ||
-                        OperatingSystem.IsWatchOS() ||
-                        OperatingSystem.IsMacOS()) && ThreadPool.EnableDispatchAutoreleasePool)
+#if TARGET_OSX || TARGET_IOS || TARGET_TVOS
+                    if (ThreadPool.EnableDispatchAutoreleasePool)
                     {
                         DispatchItemWithAutoreleasePool(workItem, currentThread);
                     }
+                    else
+#endif
 #pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be a constant in some runtimes.
-                    else if (ThreadPool.EnableWorkerTracking)
+                    if (ThreadPool.EnableWorkerTracking)
                     {
                         DispatchWorkItemWithWorkerTracking(workItem, currentThread);
                     }

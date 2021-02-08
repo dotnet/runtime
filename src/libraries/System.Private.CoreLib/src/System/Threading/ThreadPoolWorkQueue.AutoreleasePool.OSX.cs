@@ -9,10 +9,6 @@ namespace System.Threading
     internal sealed partial class ThreadPoolWorkQueue
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [SupportedOSPlatform("macos")]
-        [SupportedOSPlatform("ios")]
-        [SupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("watchos")]
         private static void DispatchItemWithAutoreleasePool(object workItem, Thread currentThread)
         {
             IntPtr autoreleasePool = Interop.Sys.CreateAutoreleasePool();
