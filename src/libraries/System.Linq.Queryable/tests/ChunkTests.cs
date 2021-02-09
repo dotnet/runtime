@@ -7,7 +7,6 @@ namespace System.Linq.Tests
 {
     public class ChunkTests : EnumerableBasedTests
     {
-
         [Fact]
         public void ThrowsOnNullSource()
         {
@@ -18,8 +17,10 @@ namespace System.Linq.Tests
         [Fact]
         public void Chunk()
         {
-            var count = new[] { 0, 1, 2 }.AsQueryable().Chunk(2).Count();
-            Assert.Equal(2, count);
+            var chunked = new[] {0, 1, 2}.AsQueryable().Chunk(2);
+            
+            Assert.Equal(2, chunked.Count());
+            Assert.Equal(new[] {new[] {0, 1}, new[] {2}}, chunked);
         }
     }
 }
