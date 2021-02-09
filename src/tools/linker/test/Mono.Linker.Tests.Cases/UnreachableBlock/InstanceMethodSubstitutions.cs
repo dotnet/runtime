@@ -19,6 +19,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			var instance = new InstanceMethodSubstitutions ();
 			instance.TestSimpleCallsite ();
 			instance.TestCallOnInstance ();
+			instance.TestCallOnInstanceMulti ();
 			instance.TestInstanceMethodWithoutSubstitution ();
 			instance.TestPropagation ();
 			instance.TestStaticPropagation ();
@@ -41,6 +42,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
+		static bool PropFalse { [Kept] get { return false; } }
+
+		[Kept]
 		[ExpectBodyModified]
 		void TestCallOnInstance ()
 		{
@@ -49,6 +53,21 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 				CallOnInstance_NeverReached ();
 			else
 				CallOnInstance_Reached ();
+		}
+
+		[Kept]
+		[ExpectedInstructionSequence (new[] {
+			"call",
+			"brfalse.s",
+			"ldc.i4.1",
+			"ret",
+		})]
+		int TestCallOnInstanceMulti ()
+		{
+			if (PropFalse && GetInstance ().IsEnabled ())
+				return 3;
+			else
+				return 1;
 		}
 
 		void CallOnInstance_NeverReached ()
