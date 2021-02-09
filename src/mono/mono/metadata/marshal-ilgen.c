@@ -5343,7 +5343,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (action){
 	case MARSHAL_ACTION_CONV_IN: {
-		int dar_release_slot, pos;
+		int dar_release_slot, pos_done;
 
 		conv_arg = mono_mb_add_local (mb, int_type);
 		*conv_arg_type = int_type;
@@ -5351,18 +5351,20 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (!sh_dangerous_add_ref)
 			init_safe_handle ();
 
-		mono_mb_emit_ldarg (mb, argnum);
-		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-		mono_mb_emit_exception (mb, "ArgumentNullException", NULL);
-		
-		mono_mb_patch_branch (mb, pos);
-
 		/* Create local to hold the ref parameter to DangerousAddRef */
 		dar_release_slot = mono_mb_add_local (mb, boolean_type);
 
 		/* set release = false; */
 		mono_mb_emit_icon (mb, 0);
 		mono_mb_emit_stloc (mb, dar_release_slot);
+
+		/* set conv = IntPtr.Zero; */
+		mono_mb_emit_icon (mb, 0);
+		mono_mb_emit_byte (mb, CEE_CONV_I);
+		mono_mb_emit_stloc (mb, conv_arg);
+
+		mono_mb_emit_ldarg (mb, argnum);
+		pos_done = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		if (t->byref) {
 			int old_handle_value_slot = mono_mb_add_local (mb, int_type);
@@ -5398,6 +5400,8 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 			mono_mb_emit_stloc (mb, conv_arg);
 		}
+
+		mono_mb_patch_branch (mb, pos_done);
 
 		break;
 	}
@@ -5482,7 +5486,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 		break;
 	}
-		
+
 	case MARSHAL_ACTION_CONV_RESULT: {
 		ERROR_DECL (error);
 		MonoMethod *ctor = NULL;
@@ -5516,7 +5520,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
 	}
-		
+
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
 		fprintf (stderr, "mono/marshal: SafeHandles missing MANAGED_CONV_IN\n");
 		break;
