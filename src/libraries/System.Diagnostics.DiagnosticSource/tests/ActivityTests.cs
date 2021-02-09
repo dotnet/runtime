@@ -1751,6 +1751,40 @@ namespace System.Diagnostics.Tests
             Assert.True(method.ReturnType.IsValueType);
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RestoreOriginalParentTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Assert.Null(Activity.Current);
+
+                Activity a = new Activity("Root");
+                a.Start();
+
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Root", Activity.Current.OperationName);
+
+                // Create Activity with the parent context to not use Activity.Current as a parent
+                Activity b = new Activity("Child");
+                b.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom());
+                b.Start();
+
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Child", Activity.Current.OperationName);
+
+                b.Stop();
+
+                // Now the child activity stopped. We used to restore null to the Activity.Current but now we restore
+                // the original parent stored in Activity.Current before we started the Activity.
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Root", Activity.Current.OperationName);
+
+                a.Stop();
+                Assert.Null(Activity.Current);
+
+            }).Dispose();
+        }
+
         public void Dispose()
         {
             Activity.Current = null;
