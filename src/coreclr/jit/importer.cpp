@@ -1335,6 +1335,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     }
                     else
                     {
+                        assert(lastArg != nullptr && lastArg->GetNext() != nullptr);
                         GenTreeCall::Use* secondLastArg = lastArg;
                         lastArg                         = lastArg->GetNext();
                         for (; lastArg->GetNext() != nullptr; secondLastArg = lastArg, lastArg = lastArg->GetNext())
