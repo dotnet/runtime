@@ -201,7 +201,9 @@ namespace System.Threading
             return JoinInternal(this, millisecondsTimeout);
         }
 
+#if TARGET_UNIX
         [MemberNotNull(nameof(_waitInfo))]
+#endif
         private void Initialize()
         {
             InitInternal(this);
