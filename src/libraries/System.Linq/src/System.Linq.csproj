@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <OptimizeForSize Condition="'$(TargetsBrowser)' == 'true'">true</OptimizeForSize>
+    <OptimizeForSize Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</OptimizeForSize>
   </PropertyGroup>
   <ItemGroup Condition="'$(OptimizeForSize)' == true">
     <Compile Include="System\Linq\Enumerable.SizeOpt.cs" />
