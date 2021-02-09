@@ -340,7 +340,6 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     hostfxr_get_dotnet_environment_info_result_fn result,
     void* result_context)
 {
-    const host_context_t* context = fx_muxer_t::get_active_host_context();
     if (dotnet_root == nullptr)
     {
         dotnet_root = _X("");
