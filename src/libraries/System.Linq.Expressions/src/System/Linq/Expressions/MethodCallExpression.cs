@@ -1163,7 +1163,7 @@ namespace System.Linq.Expressions
         /// <exception cref="ArgumentNullException">
         /// <paramref name="type"/> or <paramref name="methodName"/> is null.</exception>
         /// <exception cref="InvalidOperationException">No method whose name is <paramref name="methodName"/>, whose type parameters match <paramref name="typeArguments"/>, and whose parameter types match <paramref name="arguments"/> is found in <paramref name="type"/> or its base types.-or-More than one method whose name is <paramref name="methodName"/>, whose type parameters match <paramref name="typeArguments"/>, and whose parameter types match <paramref name="arguments"/> is found in <paramref name="type"/> or its base types.</exception>
-        [RequiresUnreferencedCode("Calling a generic method cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.")]
+        [RequiresUnreferencedCode(GenericMethodRequiresUnreferencedCode)]
         public static MethodCallExpression Call(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type type,
             string methodName,
@@ -1293,7 +1293,7 @@ namespace System.Linq.Expressions
             return ExpressionUtils.TryQuote(parameterType, ref argument);
         }
 
-        [RequiresUnreferencedCode("Calling a generic method cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.")]
+        [RequiresUnreferencedCode(GenericMethodRequiresUnreferencedCode)]
         private static MethodInfo? FindMethod(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type type,
             string methodName,
@@ -1368,7 +1368,7 @@ namespace System.Linq.Expressions
             return true;
         }
 
-        [RequiresUnreferencedCode("Calling a generic method cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.")]
+        [RequiresUnreferencedCode(GenericMethodRequiresUnreferencedCode)]
         private static MethodInfo? ApplyTypeArgs(MethodInfo m, Type[]? typeArgs)
         {
             if (typeArgs == null || typeArgs.Length == 0)
