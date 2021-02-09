@@ -13,21 +13,98 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	{
 		public static void Main ()
 		{
-			Expression.Call (typeof (Foo), "PublicStaticMethod", Type.EmptyTypes);
-			Expression.Call (typeof (Foo), "PublicNonStaticMethod", Type.EmptyTypes);
-			Expression.Call (typeof (Foo), "ProtectedStaticMethod", Type.EmptyTypes);
-			Expression.Call (typeof (Foo), "ProtectedNonStaticMethod", Type.EmptyTypes);
-			Expression.Call (typeof (Foo), "PrivateStaticMethod", Type.EmptyTypes);
-			Expression.Call (typeof (Foo), "PrivateNonStaticMethod", Type.EmptyTypes);
+			PublicMethods.Test ();
+			ProtectedMethods.Test ();
+			PrivateMethods.Test ();
 
 			Expression.Call (typeof (Derived), "PublicOnBase", Type.EmptyTypes);
 			Expression.Call (typeof (Derived), "ProtectedOnBase", Type.EmptyTypes);
 			Expression.Call (typeof (Derived), "PrivateOnBase", Type.EmptyTypes);
 
-			// Keep all methods on type Bar
-			Expression.Call (typeof (Bar), GetUnknownString (), Type.EmptyTypes);
+			// Keep all methods on type UnknownNameMethodClass
+			Expression.Call (typeof (UnknownNameMethodClass), GetUnknownString (), Type.EmptyTypes);
 
 			TestUnknownType.Test ();
+
+			TestGenericMethods.Test ();
+		}
+
+		[Kept]
+		class PublicMethods
+		{
+			[Kept]
+			public static void PublicStaticMethod () { }
+
+			public void PublicInstanceMethod () { }
+
+			protected static void ProtectedStaticMethod () { }
+
+			protected void ProtectedInstanceMethod () { }
+
+			private static void PrivateStaticMethod () { }
+
+			private void PrivateInstanceMethod () { }
+
+			[Kept]
+			public static void Test ()
+			{
+				Expression.Call (typeof (PublicMethods), nameof (PublicStaticMethod), Type.EmptyTypes);
+
+				// This should not mark anything, but it should also not warn (it should fail at runtime to find the method as well)
+				Expression.Call (typeof (PublicMethods), nameof (PublicInstanceMethod), Type.EmptyTypes);
+			}
+		}
+
+		[Kept]
+		class ProtectedMethods
+		{
+			public static void PublicStaticMethod () { }
+
+			public void PublicInstanceMethod () { }
+
+			[Kept]
+			protected static void ProtectedStaticMethod () { }
+
+			protected void ProtectedInstanceMethod () { }
+
+			private static void PrivateStaticMethod () { }
+
+			private void PrivateInstanceMethod () { }
+
+			[Kept]
+			public static void Test ()
+			{
+				Expression.Call (typeof (ProtectedMethods), nameof (ProtectedStaticMethod), Type.EmptyTypes);
+
+				// This should not mark anything, but it should also not warn (it should fail at runtime to find the method as well)
+				Expression.Call (typeof (ProtectedMethods), nameof (ProtectedInstanceMethod), Type.EmptyTypes);
+			}
+		}
+
+		[Kept]
+		class PrivateMethods
+		{
+			public static void PublicStaticMethod () { }
+
+			public void PublicInstanceMethod () { }
+
+			protected static void ProtectedStaticMethod () { }
+
+			protected void ProtectedInstanceMethod () { }
+
+			[Kept]
+			private static void PrivateStaticMethod () { }
+
+			private void PrivateInstanceMethod () { }
+
+			[Kept]
+			public static void Test ()
+			{
+				Expression.Call (typeof (PrivateMethods), nameof (PrivateStaticMethod), Type.EmptyTypes);
+
+				// This should not mark anything, but it should also not warn (it should fail at runtime to find the method as well)
+				Expression.Call (typeof (PrivateMethods), nameof (PrivateInstanceMethod), Type.EmptyTypes);
+			}
 		}
 
 		[Kept]
@@ -80,39 +157,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 		}
 
-
 		[Kept]
-		class Foo
-		{
-			[Kept]
-			public static void PublicStaticMethod ()
-			{
-			}
-
-			public void PublicNonStaticMethod ()
-			{
-			}
-
-			[Kept]
-			protected static void ProtectedStaticMethod ()
-			{
-			}
-			protected void ProtectedNonStaticMethod ()
-			{
-			}
-
-			[Kept]
-			private static void PrivateStaticMethod ()
-			{
-			}
-
-			private void PrivateNonStaticMethod ()
-			{
-			}
-		}
-
-		[Kept]
-		class Bar
+		class UnknownNameMethodClass
 		{
 			[Kept]
 			public static void PublicStaticMethod ()
@@ -167,6 +213,41 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[KeptBaseType (typeof (Base))]
 		class Derived : Base
 		{
+		}
+
+		[Kept]
+		class TestGenericMethods
+		{
+			[Kept]
+			public static void GenericMethodCalledAsNonGeneric<T> () { }
+
+			[Kept]
+			public static void GenericMethodWithNoRequirements<T> () { }
+
+			[Kept]
+			public static void GenericMethodWithRequirements<
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> ()
+			{ }
+
+			[Kept]
+			// BUG:https://github.com/mono/linker/issues/1819
+			// [ExpectedWarning("IL9999", nameof(GenericMethodWithRequirements))]
+			public static void Test ()
+			{
+				// Linker doesn't check if it's valid to call a generic method without generic parameters, it looks like a non-generic call
+				// so it will preserve the target method.
+				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodCalledAsNonGeneric), Type.EmptyTypes);
+
+				// This may not warn - as it's safe
+				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodWithNoRequirements), new Type[] { GetUnknownType () });
+
+				// This must warn - as this is dangerous
+				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodWithRequirements), new Type[] { GetUnknownType () });
+			}
+
+			[Kept]
+			static Type GetUnknownType () { return null; }
 		}
 	}
 }
