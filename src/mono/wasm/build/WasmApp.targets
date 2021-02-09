@@ -197,6 +197,9 @@
       <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt</RuntimeEmccVersionFile>
       <EmccPublishVersionFile>$(_WasmIntermediateOutputPath)emcc-version.txt</EmccPublishVersionFile>
     </PropertyGroup>
+
+    <Error Condition="!Exists('$(RuntimeEmccVersionFile)')" Text="Cannot find $(RuntimeEmccVersionFile)" />
+
     <ReadLinesFromFile File="$(EmccFlagsFile)">
         <Output TaskParameter="Lines" PropertyName="_DefaultEmccFlags" />
     </ReadLinesFromFile>
