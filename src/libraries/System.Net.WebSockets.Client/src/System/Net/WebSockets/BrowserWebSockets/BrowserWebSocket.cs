@@ -42,7 +42,7 @@ namespace System.Net.WebSockets
 
         private Action<JSObject>? _onOpen;
         private Action<JSObject>? _onError;
-        private Action<JSObject>? _onClose;
+        private Action<JSObject?>? _onClose;
         private Action<JSObject>? _onMessage;
 
         private MemoryStream? _writeBuffer;
@@ -168,32 +168,7 @@ namespace System.Net.WebSockets
                 _innerWebSocket.SetObjectProperty("onerror", _onError);
 
                 // Setup the onClose callback
-                _onClose = (closeEvt) =>
-                {
-                    using (closeEvt)
-                    {
-                        _innerWebSocketCloseStatus = (WebSocketCloseStatus)closeEvt.GetObjectProperty("code");
-                        _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
-                        _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
-                        NativeCleanup();
-                        if ((InternalState)_state == InternalState.Connecting || (InternalState)_state == InternalState.Aborted)
-                        {
-                            _state = (int)InternalState.Disposed;
-                            if (cancellationToken.IsCancellationRequested)
-                            {
-                                _tcsConnect.TrySetCanceled(cancellationToken);
-                            }
-                            else
-                            {
-                                _tcsConnect.TrySetException(new WebSocketException(WebSocketError.NativeError));
-                            }
-                        }
-                        else
-                        {
-                            _tcsClose?.TrySetResult();
-                        }
-                    }
-                };
+                _onClose = (closeEvent) => onCloseCallback(closeEvent, cancellationToken);
 
                 // Attach the onClose callback
                 _innerWebSocket.SetObjectProperty("onclose", _onClose);
@@ -249,6 +224,37 @@ namespace System.Net.WebSockets
             finally
             {
                 connectRegistration.Unregister();
+            }
+        }
+
+
+        private void onCloseCallback(JSObject? closeEvt, CancellationToken cancellationToken)
+        {
+            if (closeEvt != null)
+            {
+                using (closeEvt)
+                {
+                    _innerWebSocketCloseStatus = (WebSocketCloseStatus)closeEvt.GetObjectProperty("code");
+                    _innerWebSocketCloseStatusDescription = closeEvt.GetObjectProperty("reason")?.ToString();
+                }
+            }
+            _receiveMessageQueue.Writer.TryWrite(new ReceivePayload(Array.Empty<byte>(), WebSocketMessageType.Close));
+            NativeCleanup();
+            if ((InternalState)_state == InternalState.Connecting || (InternalState)_state == InternalState.Aborted)
+            {
+                _state = (int)InternalState.Disposed;
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    _tcsConnect?.TrySetCanceled(cancellationToken);
+                }
+                else
+                {
+                    _tcsConnect?.TrySetException(new WebSocketException(WebSocketError.NativeError));
+                }
+            }
+            else
+            {
+                _tcsClose?.TrySetResult();
             }
         }
 
@@ -555,7 +561,7 @@ namespace System.Net.WebSockets
             {
                 return Task.FromException(exc);
             }
-            return CloseAsyncCore(closeStatus, statusDescription, cancellationToken);
+            return State == WebSocketState.CloseSent ? Task.CompletedTask : CloseAsyncCore(closeStatus, statusDescription, cancellationToken);
         }
 
         private Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
@@ -596,10 +602,16 @@ namespace System.Net.WebSockets
         {
             try
             {
+                // as per comments
+                // - We clear all events on the websocket (including onClose),
+                // - call websocket.close()
+                // - then call the user provided onClose method manually.
+                NativeCleanup();
                 _innerWebSocketCloseStatus = closeStatus;
                 _innerWebSocketCloseStatusDescription = statusDescription;
                 _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
                 _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
+                onCloseCallback(null, cancellationToken);
                 return Task.CompletedTask;
             }
             catch (Exception exc)
