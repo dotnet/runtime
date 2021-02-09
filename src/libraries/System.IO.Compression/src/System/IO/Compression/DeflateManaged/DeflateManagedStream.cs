@@ -31,7 +31,7 @@ namespace System.IO.Compression
 
             Debug.Assert(method == ZipArchiveEntry.CompressionMethodValues.Deflate64);
 
-            _inflater = new InflaterManaged(null, method == ZipArchiveEntry.CompressionMethodValues.Deflate64 ? true : false, uncompressedSize);
+            _inflater = new InflaterManaged(method == ZipArchiveEntry.CompressionMethodValues.Deflate64, uncompressedSize);
 
             _stream = stream;
             _buffer = new byte[DefaultBufferSize];

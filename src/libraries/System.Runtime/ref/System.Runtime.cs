@@ -7654,6 +7654,12 @@ namespace System.Numerics
 {
     public static partial class BitOperations
     {
+        public static bool IsPow2(int value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool IsPow2(uint value) { throw null; }
+        public static bool IsPow2(long value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool IsPow2(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int LeadingZeroCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]

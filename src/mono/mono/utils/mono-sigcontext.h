@@ -474,6 +474,9 @@ typedef struct ucontext {
 #else
 	#define UCONTEXT_REG_PC(ctx) (((ucontext64_t*)(ctx))->uc_mcontext64->__ss.__pc)
 	#define UCONTEXT_REG_SP(ctx) (((ucontext64_t*)(ctx))->uc_mcontext64->__ss.__sp)
+	#define UCONTEXT_REG_SET_PC(ctx,val) do { \
+		UCONTEXT_REG_PC (ctx) = (__uint64_t)(val); \
+	} while (0)
 #endif
 
 	#define UCONTEXT_REG_R0(ctx) (((ucontext64_t*)(ctx))->uc_mcontext64->__ss.__x [ARMREG_R0])
@@ -497,6 +500,8 @@ typedef struct ucontext {
 #define UCONTEXT_REG_SET_PC(ctx, val) do { \
 	UCONTEXT_REG_PC (ctx) = (val); \
 	 } while (0)
+#endif
+#ifndef UCONTEXT_REG_SET_SP
 #define UCONTEXT_REG_SET_SP(ctx, val) do { \
 	UCONTEXT_REG_SP (ctx) = (val); \
 	 } while (0)

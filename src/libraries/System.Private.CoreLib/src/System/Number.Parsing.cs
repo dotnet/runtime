@@ -2113,7 +2113,7 @@ namespace System
             }
             else
             {
-                ulong bits = NumberToFloatingPointBits(ref number, in FloatingPointInfo.Double);
+                ulong bits = NumberToDoubleFloatingPointBits(ref number, in FloatingPointInfo.Double);
                 result = BitConverter.Int64BitsToDouble((long)(bits));
             }
 
@@ -2135,7 +2135,7 @@ namespace System
             }
             else
             {
-                ushort bits = (ushort)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Half));
+                ushort bits = NumberToHalfFloatingPointBits(ref number, in FloatingPointInfo.Half);
                 result = new Half(bits);
             }
 
@@ -2157,7 +2157,7 @@ namespace System
             }
             else
             {
-                uint bits = (uint)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Single));
+                uint bits = NumberToSingleFloatingPointBits(ref number, in FloatingPointInfo.Single);
                 result = BitConverter.Int32BitsToSingle((int)(bits));
             }
 

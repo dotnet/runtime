@@ -295,6 +295,7 @@ namespace System.Threading
                     Thread workerThread = new Thread(s_workerThreadStart);
                     workerThread.IsThreadPoolThread = true;
                     workerThread.IsBackground = true;
+                    // thread name will be set in thread proc
                     workerThread.UnsafeStart();
                 }
                 catch (ThreadStartException)

@@ -143,11 +143,6 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         pNewRCW->m_pIdentity = pNewRCW;
         m_pIdentity = (IUnknown*)(LPVOID)pNewRCW;
     }
-    else if (m_flags & RCW::CF_QueryForIdentity)
-    {
-        // pNewRCW has the real Identity in this case and we need to use it to insert into RCW cache
-        m_pIdentity = (IUnknown *)pNewRCW->m_pIdentity;
-    }
 
     // If the class is an extensible RCW (managed class deriving from a ComImport class)
     if (fExisting)

@@ -13784,7 +13784,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	if (!acfg->aot_opts.llvm_path)
 		acfg->aot_opts.llvm_path = g_strdup ("");
 	acfg->aot_opts.temp_path = g_strdup ("");
-#ifdef MONOTOUCH
+#if defined(MONOTOUCH)&& !defined(TARGET_AMD64)
 	acfg->aot_opts.use_trampolines_page = TRUE;
 #endif
 	acfg->aot_opts.clangxx = g_strdup ("clang++");
