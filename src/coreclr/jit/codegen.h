@@ -1450,8 +1450,6 @@ public:
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);
-    instruction ins_CopyIntToFloat(var_types srcType, var_types dstTyp);
-    instruction ins_CopyFloatToInt(var_types srcType, var_types dstTyp);
     static instruction ins_FloatStore(var_types type = TYP_DOUBLE);
     static instruction ins_FloatCopy(var_types type = TYP_DOUBLE);
     instruction ins_FloatConv(var_types to, var_types from);
