@@ -224,7 +224,7 @@ namespace System.Net.WebSockets.Client.Tests
                 // data fragments after a close has been sent. The delay allows the received data fragment to be
                 // available before calling close. The WinRT MessageWebSocket implementation doesn't allow receiving
                 // after a call to Close.
-                await Task.Delay(PlatformDetection.IsBrowser ? 500 : 100); // default timeout is not enough for browser sometimes so we will extend it
+                await Task.Delay(500);
                 await cws.CloseOutputAsync(closeStatus, closeDescription, cts.Token);
 
                 // Should be able to receive the message echoed by the server.

@@ -222,9 +222,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
-                // It seems that sometimes the default timeout is not enough for browser so we will extend it
-                // See issue https://github.com/dotnet/runtime/issues/46909
-                var cts = PlatformDetection.IsBrowser ? new CancellationTokenSource(BrowserTimeOutMilliseconds) : new CancellationTokenSource(TimeOutMilliseconds);
+                var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 Task[] tasks = new Task[2];
 
@@ -329,9 +327,7 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var rand = new Random();
 
-                // It seems that sometimes the default timeout is not enough for browser so we will extend it
-                // See issue https://github.com/dotnet/runtime/issues/46909
-                var ctsDefault = PlatformDetection.IsBrowser ? new CancellationTokenSource(BrowserTimeOutMilliseconds) : new CancellationTokenSource(TimeOutMilliseconds);
+                var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 // Values chosen close to boundaries in websockets message length handling as well
                 // as in vectors used in mask application.
