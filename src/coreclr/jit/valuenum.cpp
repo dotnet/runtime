@@ -4309,7 +4309,7 @@ bool ValueNumStore::IsVNPositiveInt32Constant(ValueNum vn)
 //           (IsVNCompareCheckedBound, IsVNCompareCheckedBoundArith) that require further processing.
 //
 // Note:
-//   For comparisons of the form constant <= length, this returns them as (constant - 1) < length 
+//   For comparisons of the form constant <= length, this returns them as (constant - 1) < length
 //
 bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompareCheckedBoundInfo* info)
 {
@@ -4335,7 +4335,7 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 INT32 validIndex = ConstantValue<INT32>(funcApp.m_args[1]) - 1;
                 assert(validIndex >= 0);
 
-                info->vnIdx = VNForIntCon(validIndex);
+                info->vnIdx   = VNForIntCon(validIndex);
                 info->cmpOper = (funcApp.m_func == VNF_GE_UN) ? VNF_LT_UN : VNF_GE_UN;
                 info->vnBound = funcApp.m_args[0];
                 return true;
