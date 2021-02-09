@@ -61,8 +61,8 @@ public: // Unwrapping support
     static bool HasManagedObjectComWrapper(_In_ OBJECTREF object, _Out_ bool* isActive);
 
 public: // GC interaction
-    static void OnBackgroundGCStarted();
-    static void OnBackgroundGCFinished();
+    static void OnFullGCStarted();
+    static void OnFullGCFinished();
 };
 
 class GlobalComWrappersForMarshalling
@@ -146,8 +146,8 @@ public: // Instance inspection
     static bool IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isReferenced);
 
 public: // GC interaction
-    static void OnBackgroundGCStarted();
-    static void OnBackgroundGCFinished();
+    static void OnFullGCStarted();
+    static void OnFullGCFinished();
     static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
 };
 

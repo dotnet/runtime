@@ -16,11 +16,11 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     CONTRACTL_END;
 
     //
-    // Note that we could get nested GCStart/GCEnd calls, such as :
+    // Note that we could get nested GCStart/GCEnd calls, such as:
     // GCStart for Gen 2 background GC
-    //    GCStart for Gen 0/1 foregorund GC
+    //    GCStart for Gen 0/1 foreground GC
     //    GCEnd   for Gen 0/1 foreground GC
-    //    ....
+    //    ...
     // GCEnd for Gen 2 background GC
     //
     // The nCondemnedGeneration >= 2 check takes care of this nesting problem
@@ -29,10 +29,10 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     if (nCondemnedGeneration >= 2)
     {
 #ifdef FEATURE_COMWRAPPERS
-        ComWrappersNative::OnBackgroundGCStarted();
+        ComWrappersNative::OnFullGCStarted();
 #endif // FEATURE_COMWRAPPERS
 #ifdef FEATURE_OBJCBRIDGE
-        ObjCBridgeNative::OnBackgroundGCStarted();
+        ObjCBridgeNative::OnFullGCStarted();
 #endif // FEATURE_OBJCBRIDGE
     }
 }
@@ -46,24 +46,14 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
     }
     CONTRACTL_END;
 
-    //
-    // Note that we could get nested GCStart/GCEnd calls, such as :
-    // GCStart for Gen 2 background GC
-    //    GCStart for Gen 0/1 foregorund GC
-    //    GCEnd   for Gen 0/1 foreground GC
-    //    ....
-    // GCEnd for Gen 2 background GC
-    //
-    // The nCondemnedGeneration >= 2 check takes care of this nesting problem
-    //
     // See Interop::OnGCStarted()
     if (nCondemnedGeneration >= 2)
     {
 #ifdef FEATURE_COMWRAPPERS
-        ComWrappersNative::OnBackgroundGCFinished();
+        ComWrappersNative::OnFullGCFinished();
 #endif // FEATURE_COMWRAPPERS
 #ifdef FEATURE_OBJCBRIDGE
-        ObjCBridgeNative::OnBackgroundGCFinished();
+        ObjCBridgeNative::OnFullGCFinished();
 #endif // FEATURE_OBJCBRIDGE
     }
 }

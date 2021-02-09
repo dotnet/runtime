@@ -18,13 +18,15 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <param name="trackedObjectEnteredFinalization">Called when a tracked object enters the finalization queue.</param>
         /// <exception cref="InvalidOperationException">Thrown if this API has already been called.</exception>
         /// <remarks>
+        /// All callbacks must be written in native code since they will be called by the GC and
+        /// managed code is not able to run at that time.
+        ///
         /// The <paramref name="beginEndCallback"/> will be called when reference tracking begins and ends.
         /// The begin call will be passed a positive non-zero number and the end call
         /// will be passed the same non-zero number but negative (for example, begin: 2, end: -2).
         /// The associated begin/end pair will never be nested and so the callback can
         /// assume that if a value of "X" was passed in that same value will not be passed
-        /// until a value of "-X" is observed. This callback cannot be written in managed code since this will
-        /// be called by the GC and managed code is not able to run at that time.
+        /// until a value of "-X" is observed.
         ///
         /// The <paramref name="isReferencedCallback"/> should return 0 for not reference or 1 for
         /// referenced. Any other value has undefined behavior.
@@ -51,6 +53,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <param name="obj">The object to track.</param>
         /// <param name="scratchMemory">A pointer to scratch memory.</param>
         /// <returns>Reference tracking GC handle.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the Bridge API has not been initialized.</exception>
         /// <remarks>
         /// Reference tracking in the <see cref="Bridge"/> must be initialized prior to calling
         /// this function.

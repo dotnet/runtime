@@ -29,9 +29,6 @@ namespace
     // at this point. See documentation for further details.
     const int BeginValue = 2;
     const int EndValue = -BeginValue;
-
-    // Defined handle types for the specific object uses.
-    const HandleType InstanceHandleType{ HNDTYPE_REFCOUNTED };
 }
 
 BOOL QCALLTYPE ObjCBridgeNative::TryInitializeReferenceTracker(
@@ -108,9 +105,7 @@ void* QCALLTYPE ObjCBridgeNative::CreateReferenceTrackingHandle(
         scratchMemoryLocal = interopInfo->AllocReferenceTrackingScratchMemory();
         _ASSERTE(scratchMemoryLocal != NULL);
 
-        instHandle = GetAppDomain()->CreateTypedHandle(gc.objRef, InstanceHandleType);
-        if (instHandle == NULL)
-            ThrowOutOfMemory();
+        instHandle = GetAppDomain()->CreateTypedHandle(gc.objRef, HNDTYPE_REFCOUNTED);
 
         GCPROTECT_END();
     }
@@ -236,7 +231,7 @@ bool ObjCBridgeNative::IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isR
     return true;
 }
 
-void ObjCBridgeNative::OnBackgroundGCStarted()
+void ObjCBridgeNative::OnFullGCStarted()
 {
     CONTRACTL
     {
@@ -249,7 +244,7 @@ void ObjCBridgeNative::OnBackgroundGCStarted()
         g_BeginEndCallback(BeginValue);
 }
 
-void ObjCBridgeNative::OnBackgroundGCFinished()
+void ObjCBridgeNative::OnFullGCFinished()
 {
     CONTRACTL
     {
