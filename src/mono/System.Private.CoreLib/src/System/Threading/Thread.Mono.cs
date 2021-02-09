@@ -17,7 +17,7 @@ namespace System.Threading
     public partial class Thread
     {
 #pragma warning disable 169, 414, 649
-        #region Sync with metadata/object-internals.h and InternalThread in mcs/class/corlib/System.Threading/Thread.cs
+        #region Sync with metadata/object-internals.h
         private int lock_thread_id;
         // stores a thread handle
         private IntPtr handle;
@@ -209,8 +209,6 @@ namespace System.Threading
 #if TARGET_UNIX
             _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
 #endif
-            // TODO: This can go away once the mono/mono mirror is disabled
-            stack_size = _startHelper!._maxStackSize;
         }
 
         public static void SpinWait(int iterations)
