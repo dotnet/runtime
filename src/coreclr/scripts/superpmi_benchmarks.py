@@ -124,7 +124,7 @@ def execute(coreclr_args, output_mch_name):
     benchmarks_ci_script = path.join(performance_directory, "scripts", "benchmarks_ci.py")
     microbenchmark_proj = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
     corerun_exe = path.join(core_root, corerun_exe)
-    script_args = f"--csproj {microbenchmark_proj} -f net6.0 --incremental no --filter *CheckArray* --architecture {arch}"
+    script_args = f"--csproj {microbenchmark_proj} -f net6.0 --incremental no --filter * --architecture {arch}"
     bdn_artifacts = f"--bdn-artifacts {path.join(performance_directory, 'artifacts', 'BenchmarkDotNet.Artifacts')}"
     bdn_arguments = f"--bdn-arguments=\"--corerun {corerun_exe} --partition-count {partition_count} --partition-index {partition_index} " \
                         f"--envVars COMPlus_JitName:{shim_name} --iterationCount 1 --warmupCount 0 --invocationCount 1 " \
