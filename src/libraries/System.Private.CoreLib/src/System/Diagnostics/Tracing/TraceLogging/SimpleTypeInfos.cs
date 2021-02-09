@@ -6,7 +6,9 @@ using System;
 using System.Diagnostics;
 #endif
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
@@ -286,16 +288,16 @@ namespace System.Diagnostics.Tracing
             this.valueInfo.WriteMetadata(group, "Value", format);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                Justification = "The underlying type of Nullable<T> must be defaultable")]
         public override void WriteData(PropertyValue value)
         {
-            // It's not currently possible to get the HasValue property of a nullable type through reflection when the
-            // value is null. Instead, we simply check that the nullable is not null.
             object? refVal = value.ReferenceValue;
             bool hasValue = refVal is not null;
             TraceLoggingDataCollector.AddScalar(hasValue);
             PropertyValue val = valueInfo.PropertyValueFactory(hasValue
                 ? refVal
-                : Activator.CreateInstance(valueInfo.DataType));
+                : RuntimeHelpers.GetUninitializedObject(valueInfo.DataType));
             this.valueInfo.WriteData(val);
         }
     }
