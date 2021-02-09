@@ -117,7 +117,7 @@ static void DetectCiphersuiteConfiguration()
 
 #else
 
-    /// Produce g_config_specified_ciphersuites = 1 on OpenSSL 1.0.x.
+    // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
     g_config_specified_ciphersuites = 1;
 
 #endif
