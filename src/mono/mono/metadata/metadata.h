@@ -205,6 +205,8 @@ typedef struct {
 
 MONO_API void         mono_metadata_init (void);
 
+void mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, uint32_t *res, int res_size);
+
 MONO_API void         mono_metadata_decode_row (const MonoTableInfo   *t,
 				       int                    idx,
 				       uint32_t               *res,

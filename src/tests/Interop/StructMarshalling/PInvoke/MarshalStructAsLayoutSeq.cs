@@ -31,7 +31,8 @@ public class Managed
         FixedBufferClassificationTestId,
         UnicodeCharArrayClassificationId,
         HFAId,
-        DoubleHFAId
+        DoubleHFAId,
+        Int32CLongId
     }
 
     private static void InitialArray(int[] iarr, int[] icarr)
@@ -335,12 +336,15 @@ public class Managed
 
     [DllImport("MarshalStructAsParam")]
     static extern HFA GetHFA(float f1, float f2, float f3, float f4);
-    
+
     [DllImport("MarshalStructAsParam")]
     static extern float ProductHFA(HFA hfa);
 
     [DllImport("MarshalStructAsParam")]
     static extern double ProductDoubleHFA(DoubleHFA hfa);
+
+    [DllImport("MarshalStructAsParam")]
+    static extern Int32CLongStruct AddCLongs(Int32CLongStruct lhs, Int32CLongStruct rhs);
 
     [DllImport("MarshalStructAsParam")]
     static extern ManyInts GetMultiplesOf(int i);
@@ -376,7 +380,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArraySequentialId:
                     InnerArraySequential source_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
                     InnerArraySequential clone_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
@@ -391,7 +395,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.CharSetAnsiSequentialId:
                     CharSetAnsiSequential source_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
                     CharSetAnsiSequential clone_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
@@ -406,7 +410,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetUnicodeSequentialId:
                     CharSetUnicodeSequential source_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
                     CharSetUnicodeSequential clone_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
@@ -421,7 +425,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.NumberSequentialId:
                     NumberSequential source_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
                     NumberSequential clone_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
@@ -436,7 +440,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S3Id:
                     int[] iarr = new int[256];
                     int[] icarr = new int[256];
@@ -455,7 +459,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S5Id:
                     Enum1 enums = Enum1.e1;
                     Enum1 enumcl = Enum1.e1;
@@ -473,7 +477,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialAnsiId:
                     strOne = new String('a', 512);
                     strTwo = new String('b', 512);
@@ -490,7 +494,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialUnicodeId:
                     strOne = new String('a', 256);
                     strTwo = new String('b', 256);
@@ -507,7 +511,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S8Id:
                     S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
                     S8 cloneS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
@@ -522,7 +526,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S9Id:
                     S9 sourceS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
                     S9 cloneS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
@@ -537,7 +541,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.IncludeOuterIntegerStructSequentialId:
                     IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
                     IncludeOuterIntegerStructSequential cloneIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
@@ -552,7 +556,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S11Id:
                     S11 sourceS11 = Helper.NewS11((int*)new Int32(), 32);
                     S11 cloneS11 = Helper.NewS11((int*)new Int64(), 32);
@@ -594,7 +598,7 @@ public class Managed
                         Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValIntWithInnerSequential.Expected:True;Actual:False");
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.SequentialWrapperId:
                     SequentialWrapper sequentialWrapper = new SequentialWrapper
                     {
@@ -606,7 +610,7 @@ public class Managed
                         Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValSequentialWrapper.Expected:True;Actual:False");
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.SequentialDoubleWrapperId:
                     SequentialDoubleWrapper doubleWrapper = new SequentialDoubleWrapper
                     {
@@ -621,7 +625,7 @@ public class Managed
                         Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValSequentialDoubleWrapper.Expected:True;Actual:False");
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.AggregateSequentialWrapperId:
                     AggregateSequentialWrapper aggregateWrapper = new AggregateSequentialWrapper
                     {
@@ -641,7 +645,7 @@ public class Managed
                         Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValSequentialAggregateSequentialWrapper.Expected:True;Actual:False");
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.FixedBufferClassificationTestId:
                     Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest with nonblittable struct...");
                     unsafe
@@ -745,10 +749,38 @@ public class Managed
                     }
                     break;
                 }
+                case StructID.Int32CLongId:
+                {
+                    Int32CLongStruct str1 = new Int32CLongStruct
+                    {
+                        i = 2,
+                        l = new CLong(30)
+                    };
+                    Int32CLongStruct str2 = new Int32CLongStruct
+                    {
+                        i = 10,
+                        l = new CLong(50)
+                    };
+
+                    Int32CLongStruct expected = new Int32CLongStruct
+                    {
+                        i = 12,
+                        l = new CLong(80)
+                    };
+
+                    Console.WriteLine("\tCalling AddCLongs.");
+                    Int32CLongStruct actual = AddCLongs(str1, str2);
+                    if (!expected.Equals(actual))
+                    {
+                        Console.WriteLine($"\tFAILED! Expected {expected}. Actual {actual}");
+                        failures++;
+                    }
+                    break;
+                }
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
-                    break;               
+                    break;
             }
         }
         catch (Exception e)
@@ -780,7 +812,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.InnerArraySequentialId:
                     InnerArraySequential source_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
                     InnerArraySequential change_ias = Helper.NewInnerArraySequential(77, 77.0F, "changed string");
@@ -809,7 +841,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetUnicodeSequentialId:
                     CharSetUnicodeSequential source_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
                     CharSetUnicodeSequential change_csus = Helper.NewCharSetUnicodeSequential("change string", 'n');
@@ -824,7 +856,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.NumberSequentialId:
                     NumberSequential source_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
                     NumberSequential change_ns = Helper.NewNumberSequential(0, 32, 0, 16, 0, 8, 0, 16, 0, 64, 64.0F, 6.4);
@@ -839,7 +871,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S3Id:
                     int[] iarr = new int[256];
                     int[] icarr = new int[256];
@@ -858,7 +890,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S5Id:
                     Enum1 enums = Enum1.e1;
                     Enum1 enumch = Enum1.e2;
@@ -875,7 +907,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialAnsiId:
                     strOne = new String('a', 512);
                     strTwo = new String('b', 512);
@@ -892,7 +924,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialUnicodeId:
                     strOne = new String('a', 256);
                     strTwo = new String('b', 256);
@@ -909,7 +941,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S8Id:
                     S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
                     S8 changeS8 = Helper.NewS8("world", "HelloWorldAgain", false, 1, 256, 256, 64);
@@ -924,7 +956,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S9Id:
                     S9 sourceS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
                     S9 changeS9 = Helper.NewS9(256, null);
@@ -939,7 +971,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.IncludeOuterIntegerStructSequentialId:
                     IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
                     IncludeOuterIntegerStructSequential changeIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(64, 64);
@@ -954,7 +986,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S11Id:
                     S11 sourceS11 = Helper.NewS11((int*)new Int32(), 32);
                     S11 changeS11 = Helper.NewS11((int*)(32), 64);
@@ -969,11 +1001,11 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
-                    break;    
+                    break;
             }
         }
         catch (Exception e)
@@ -1004,7 +1036,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArraySequentialId:
                     InnerArraySequential source_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
                     InnerArraySequential clone_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
@@ -1019,7 +1051,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.CharSetAnsiSequentialId:
                     CharSetAnsiSequential source_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
                     CharSetAnsiSequential clone_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
@@ -1034,7 +1066,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetUnicodeSequentialId:
                     CharSetUnicodeSequential source_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
                     CharSetUnicodeSequential clone_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
@@ -1049,7 +1081,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.NumberSequentialId:
                     NumberSequential source_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
                     NumberSequential clone_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
@@ -1064,7 +1096,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S3Id:
                     int[] iarr = new int[256];
                     int[] icarr = new int[256];
@@ -1083,7 +1115,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S5Id:
                     Enum1 enums = Enum1.e1;
                     Enum1 enumcl = Enum1.e1;
@@ -1100,7 +1132,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialAnsiId:
                     strOne = new String('a', 512);
                     strTwo = new String('b', 512);
@@ -1117,7 +1149,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialUnicodeId:
                     strOne = new String('a', 256);
                     strTwo = new String('b', 256);
@@ -1134,7 +1166,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S8Id:
                     S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
                     S8 cloneS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
@@ -1149,7 +1181,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S9Id:
                     S9 sourceS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
                     S9 cloneS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
@@ -1164,7 +1196,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.IncludeOuterIntegerStructSequentialId:
                     IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
                     IncludeOuterIntegerStructSequential cloneIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
@@ -1179,7 +1211,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S11Id:
                     S11 sourceS11 = Helper.NewS11((int*)new Int32(), 32);
                     S11 cloneS11 = Helper.NewS11((int*)new Int64(), 32);
@@ -1199,7 +1231,7 @@ public class Managed
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
-                    break;    
+                    break;
             }
         }
         catch (Exception e)
@@ -1230,7 +1262,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArraySequentialId:
                     InnerArraySequential source_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
                     InnerArraySequential clone_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
@@ -1245,7 +1277,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetAnsiSequentialId:
                     CharSetAnsiSequential source_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
                     CharSetAnsiSequential clone_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
@@ -1260,7 +1292,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break; 
+                    break;
                 case StructID.CharSetUnicodeSequentialId:
                     CharSetUnicodeSequential source_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
                     CharSetUnicodeSequential clone_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
@@ -1275,7 +1307,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.NumberSequentialId:
                     NumberSequential source_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
                     NumberSequential change_ns = Helper.NewNumberSequential(0, 32, 0, 16, 0, 8, 0, 16, 0, 64, 64.0F, 6.4);
@@ -1290,7 +1322,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S3Id:
                     int[] iarr = new int[256];
                     int[] icarr = new int[256];
@@ -1309,7 +1341,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S5Id:
                     Enum1 enums = Enum1.e1;
                     Enum1 enumcl = Enum1.e1;
@@ -1326,7 +1358,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialAnsiId:
                     strOne = new String('a', 512);
                     strTwo = new String('b', 512);
@@ -1343,7 +1375,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialUnicodeId:
                     strOne = new String('a', 256);
                     strTwo = new String('b', 256);
@@ -1360,7 +1392,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S8Id:
                     S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
                     S8 cloneS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
@@ -1375,7 +1407,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S9Id:
                     S9 sourceS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
                     S9 cloneS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
@@ -1390,7 +1422,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.IncludeOuterIntegerStructSequentialId:
                     IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
                     IncludeOuterIntegerStructSequential changeIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(64, 64);
@@ -1405,7 +1437,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S11Id:
                     S11 sourceS11 = Helper.NewS11((int*)new Int32(), 32);
                     S11 changeS11 = Helper.NewS11((int*)(32), 64);
@@ -1420,11 +1452,11 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
-                    break;    
+                    break;
             }
         }
         catch (Exception e)
@@ -1455,7 +1487,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArraySequentialId:
                     InnerArraySequential source_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
                     InnerArraySequential clone_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
@@ -1470,7 +1502,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetAnsiSequentialId:
                     CharSetAnsiSequential source_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
                     CharSetAnsiSequential clone_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
@@ -1485,7 +1517,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetUnicodeSequentialId:
                     CharSetUnicodeSequential source_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
                     CharSetUnicodeSequential clone_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
@@ -1500,7 +1532,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.NumberSequentialId:
                     NumberSequential source_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
                     NumberSequential clone_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
@@ -1515,7 +1547,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S3Id:
                     int[] iarr = new int[256];
                     int[] icarr = new int[256];
@@ -1534,7 +1566,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S5Id:
                     Enum1 enums = Enum1.e1;
                     Enum1 enumcl = Enum1.e1;
@@ -1551,7 +1583,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;        
+                    break;
                 case StructID.StringStructSequentialAnsiId:
                     strOne = new String('a', 512);
                     strTwo = new String('b', 512);
@@ -1568,7 +1600,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialUnicodeId:
                     strOne = new String('a', 256);
                     strTwo = new String('b', 256);
@@ -1585,7 +1617,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S8Id:
                     S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
                     S8 cloneS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
@@ -1600,7 +1632,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S9Id:
                     S9 sourceS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
                     S9 cloneS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
@@ -1615,7 +1647,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.IncludeOuterIntegerStructSequentialId:
                     IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
                     IncludeOuterIntegerStructSequential cloneIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
@@ -1630,7 +1662,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S11Id:
                     S11 sourceS11 = Helper.NewS11((int*)32, 32);
                     S11 cloneS11 = Helper.NewS11((int*)32, 32);
@@ -1645,7 +1677,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;   
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -1681,7 +1713,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArraySequentialId:
                     InnerArraySequential source_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
                     InnerArraySequential change_ias = Helper.NewInnerArraySequential(77, 77.0F, "changed string");
@@ -1696,7 +1728,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetAnsiSequentialId:
                     CharSetAnsiSequential source_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
                     CharSetAnsiSequential changeStr1 = Helper.NewCharSetAnsiSequential("change string", 'n');
@@ -1711,7 +1743,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetUnicodeSequentialId:
                     CharSetUnicodeSequential source_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
                     CharSetUnicodeSequential change_csus = Helper.NewCharSetUnicodeSequential("change string", 'n');
@@ -1726,7 +1758,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.NumberSequentialId:
                     NumberSequential source_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
                     NumberSequential change_ns = Helper.NewNumberSequential(0, 32, 0, 16, 0, 8, 0, 16, 0, 64, 64.0F, 6.4);
@@ -1741,7 +1773,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S3Id:
                     int[] iarr = new int[256];
                     int[] icarr = new int[256];
@@ -1760,7 +1792,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S5Id:
                     Enum1 enums = Enum1.e1;
                     Enum1 enumch = Enum1.e2;
@@ -1777,7 +1809,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialAnsiId:
                     strOne = new String('a', 512);
                     strTwo = new String('b', 512);
@@ -1794,7 +1826,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialUnicodeId:
                     strOne = new String('a', 256);
                     strTwo = new String('b', 256);
@@ -1811,7 +1843,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S8Id:
                     S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
                     S8 changeS8 = Helper.NewS8("world", "HelloWorldAgain", false, 1, 256, 256, 64);
@@ -1826,7 +1858,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S9Id:
                     S9 sourceS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
 
@@ -1845,7 +1877,7 @@ public class Managed
                     {
                         Console.WriteLine("\tPASSED!");
                     }
-                    break;    
+                    break;
                 case StructID.IncludeOuterIntegerStructSequentialId:
                     IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
                     IncludeOuterIntegerStructSequential changeIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(64, 64);
@@ -1860,7 +1892,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S11Id:
                     S11 sourceS11 = Helper.NewS11((int*)new Int32(), 32);
                     S11 changeS11 = Helper.NewS11((int*)(32), 64);
@@ -1875,7 +1907,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;  
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -1910,7 +1942,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArraySequentialId:
                     InnerArraySequential source_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
                     InnerArraySequential clone_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
@@ -1925,7 +1957,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetAnsiSequentialId:
                     CharSetAnsiSequential source_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
                     CharSetAnsiSequential clone_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
@@ -1940,7 +1972,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetUnicodeSequentialId:
                     CharSetUnicodeSequential source_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
                     CharSetUnicodeSequential clone_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
@@ -1955,7 +1987,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.NumberSequentialId:
                     NumberSequential source_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
                     NumberSequential clone_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
@@ -1970,7 +2002,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S3Id:
                     int[] iarr = new int[256];
                     int[] icarr = new int[256];
@@ -1989,7 +2021,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S5Id:
                     Enum1 enums = Enum1.e1;
                     Enum1 enumcl = Enum1.e1;
@@ -2006,7 +2038,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialAnsiId:
                     strOne = new String('a', 512);
                     strTwo = new String('b', 512);
@@ -2023,7 +2055,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialUnicodeId:
                     strOne = new String('a', 256);
                     strTwo = new String('b', 256);
@@ -2040,7 +2072,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S8Id:
                     S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
                     S8 cloneS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
@@ -2055,7 +2087,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S9Id:
                     S9 sourceS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
                     S9 cloneS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
@@ -2070,7 +2102,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.IncludeOuterIntegerStructSequentialId:
                     IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
                     IncludeOuterIntegerStructSequential cloneIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
@@ -2085,7 +2117,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S11Id:
                     S11 sourceS11 = Helper.NewS11((int*)new Int32(), 32);
                     S11 cloneS11 = Helper.NewS11((int*)new Int64(), 32);
@@ -2100,7 +2132,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -2136,7 +2168,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.InnerArraySequentialId:
                     InnerArraySequential source_ias = Helper.NewInnerArraySequential(1, 1.0F, "some string");
                     InnerArraySequential change_ias = Helper.NewInnerArraySequential(77, 77.0F, "changed string");
@@ -2151,7 +2183,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetAnsiSequentialId:
                     CharSetAnsiSequential source_csas = Helper.NewCharSetAnsiSequential("some string", 'c');
                     CharSetAnsiSequential changeStr1 = Helper.NewCharSetAnsiSequential("change string", 'n');
@@ -2166,7 +2198,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.CharSetUnicodeSequentialId:
                     CharSetUnicodeSequential source_csus = Helper.NewCharSetUnicodeSequential("some string", 'c');
                     CharSetUnicodeSequential change_csus = Helper.NewCharSetUnicodeSequential("change string", 'n');
@@ -2181,7 +2213,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.NumberSequentialId:
                     NumberSequential source_ns = Helper.NewNumberSequential(Int32.MinValue, UInt32.MaxValue, short.MinValue, ushort.MaxValue, byte.MinValue, sbyte.MaxValue, Int16.MinValue, UInt16.MaxValue, -1234567890, 1234567890, 32.0F, 3.2);
                     NumberSequential change_ns = Helper.NewNumberSequential(0, 32, 0, 16, 0, 8, 0, 16, 0, 64, 64.0F, 6.4);
@@ -2196,7 +2228,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S3Id:
                     int[] iarr = new int[256];
                     int[] icarr = new int[256];
@@ -2215,7 +2247,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S5Id:
                     Enum1 enums = Enum1.e1;
                     Enum1 enumch = Enum1.e2;
@@ -2232,7 +2264,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialAnsiId:
                     strOne = new String('a', 512);
                     strTwo = new String('b', 512);
@@ -2249,7 +2281,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.StringStructSequentialUnicodeId:
                     strOne = new String('a', 256);
                     strTwo = new String('b', 256);
@@ -2266,7 +2298,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S8Id:
                     S8 sourceS8 = Helper.NewS8("hello", null, true, 10, 128, 128, 32);
                     S8 changeS8 = Helper.NewS8("world", "HelloWorldAgain", false, 1, 256, 256, 64);
@@ -2281,7 +2313,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S9Id:
                     S9 sourceS9 = Helper.NewS9(128, new TestDelegate1(testMethod));
                     S9 changeS9 = Helper.NewS9(256, null);
@@ -2296,7 +2328,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.IncludeOuterIntegerStructSequentialId:
                     IncludeOuterIntegerStructSequential sourceIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(32, 32);
                     IncludeOuterIntegerStructSequential changeIncludeOuterIntegerStructSequential = Helper.NewIncludeOuterIntegerStructSequential(64, 64);
@@ -2311,7 +2343,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 case StructID.S11Id:
                     S11 sourceS11 = Helper.NewS11((int*)new Int32(), 32);
                     S11 changeS11 = Helper.NewS11((int*)(32), 64);
@@ -2326,7 +2358,7 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -2371,6 +2403,7 @@ public class Managed
         MarshalStructAsParam_AsSeqByVal(StructID.UnicodeCharArrayClassificationId);
         MarshalStructAsParam_AsSeqByVal(StructID.HFAId);
         MarshalStructAsParam_AsSeqByVal(StructID.DoubleHFAId);
+        MarshalStructAsParam_AsSeqByVal(StructID.Int32CLongId);
     }
 
     [SecuritySafeCritical]

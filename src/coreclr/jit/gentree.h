@@ -4506,17 +4506,17 @@ struct GenTreeCall final : public GenTree
 
     void SetExpRuntimeLookup()
     {
-        gtFlags |= GTF_CALL_M_EXP_RUNTIME_LOOKUP;
+        gtCallMoreFlags |= GTF_CALL_M_EXP_RUNTIME_LOOKUP;
     }
 
     void ClearExpRuntimeLookup()
     {
-        gtFlags &= ~GTF_CALL_M_EXP_RUNTIME_LOOKUP;
+        gtCallMoreFlags &= ~GTF_CALL_M_EXP_RUNTIME_LOOKUP;
     }
 
     bool IsExpRuntimeLookup() const
     {
-        return (gtFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
+        return (gtCallMoreFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
     }
 
     unsigned gtCallMoreFlags; // in addition to gtFlags

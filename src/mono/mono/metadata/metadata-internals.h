@@ -169,11 +169,11 @@ struct _MonoAssemblyName {
 	uint32_t hash_alg;
 	uint32_t hash_len;
 	uint32_t flags;
-#ifdef ENABLE_NETCORE
 	int32_t major, minor, build, revision, arch;
-#else
-	uint16_t major, minor, build, revision, arch;
-#endif
+	//Add members for correct work with mono_stringify_assembly_name
+	MonoBoolean without_version;
+	MonoBoolean without_culture;
+	MonoBoolean without_public_key_token;
 };
 
 struct MonoTypeNameParse {
@@ -189,18 +189,16 @@ struct MonoTypeNameParse {
 typedef enum MonoAssemblyContextKind {
 	/* Default assembly context: Load(String) and assembly references */
 	MONO_ASMCTX_DEFAULT = 0,
-	/* Reflection-only only context: ReflectionOnlyLoad and ReeflectionOnlyLoadFrom */
-	MONO_ASMCTX_REFONLY = 1,
 	/* LoadFrom context: LoadFrom() and references */
-	MONO_ASMCTX_LOADFROM = 2,
+	MONO_ASMCTX_LOADFROM = 1,
 	/* Individual assembly context (.NET Framework docs call this "not in
 	 * any context"): LoadFile(String) and Load(byte[]) are here.
 	 */
-	MONO_ASMCTX_INDIVIDUAL = 3,
+	MONO_ASMCTX_INDIVIDUAL = 2,
 	/* Used internally by the runtime, not visible to managed code */
-	MONO_ASMCTX_INTERNAL = 4,
+	MONO_ASMCTX_INTERNAL = 3,
 
-	MONO_ASMCTX_LAST = 4
+	MONO_ASMCTX_LAST = 3
 } MonoAssemblyContextKind;
 
 typedef struct _MonoAssemblyContext {
@@ -222,19 +220,13 @@ struct _MonoAssembly {
 	MonoImage *image;
 	GSList *friend_assembly_names; /* Computed by mono_assembly_load_friends () */
 	guint8 friend_assembly_names_inited;
-	guint8 in_gac;
 	guint8 dynamic;
-	guint8 corlib_internal;
 	MonoAssemblyContext context;
 	guint8 wrap_non_exception_throws;
 	guint8 wrap_non_exception_throws_inited;
 	guint8 jit_optimizer_disabled;
 	guint8 jit_optimizer_disabled_inited;
 	/* security manager flags (one bit is for lazy initialization) */
-	guint32 ecma:2;		/* Has the ECMA key */
-	guint32 aptc:2;		/* Has the [AllowPartiallyTrustedCallers] attributes */
-	guint32 fulltrust:2;	/* Has FullTrust permission */
-	guint32 unmanaged:2;	/* Has SecurityPermissionFlag.UnmanagedCode permission */
 	guint32 skipverification:2;	/* Has SecurityPermissionFlag.SkipVerification permission */
 };
 
@@ -368,9 +360,6 @@ struct _MonoImage {
 	/* Whenever this is a dynamically emitted module */
 	guint8 dynamic : 1;
 
-	/* Whenever this is a reflection only image */
-	guint8 ref_only : 1;
-
 	/* Whenever this image contains uncompressed metadata */
 	guint8 uncompressed_metadata : 1;
 
@@ -462,12 +451,10 @@ struct _MonoImage {
 	 */
 	MonoAssembly *assembly;
 
-#ifdef ENABLE_NETCORE
 	/*
 	 * The AssemblyLoadContext that this image was loaded into.
 	 */
 	MonoAssemblyLoadContext *alc;
-#endif
 
 	/*
 	 * Indexed by method tokens and typedef tokens.
@@ -570,11 +557,6 @@ struct _MonoImage {
 	MonoConcurrentHashTable *var_gparam_cache;
 	MonoConcurrentHashTable *mvar_gparam_cache;
 
-#ifndef ENABLE_NETCORE
-	/* Maps malloc-ed char* pinvoke scope -> MonoDl* */
-	GHashTable *pinvoke_scopes;
-#endif
-
 	/* The loader used to load this image */
 	MonoImageLoader *loader;
 
@@ -586,6 +568,23 @@ struct _MonoImage {
 	gboolean weak_fields_inited;
 	/* Contains 1 based indexes */
 	GHashTable *weak_field_indexes;
+
+#ifdef ENABLE_METADATA_UPDATE
+	/* List of MonoImages of deltas.  Parent image owns 1 refcount ref of the delta image */
+	GList *delta_image;
+	/* Tail of delta_image for fast appends */
+	GList *delta_image_last;
+
+	/* Metadata delta images only */
+	uint32_t generation; /* global update ID that added this delta image */
+
+	/* Maps MethodDef token indices to something. In base images a boolean
+	 * flag that there's an update for the method; in delta images a
+	 * pointer into the RVA of the delta IL */
+	GHashTable *method_table_update;
+
+
+#endif
 
 	/*
 	 * No other runtime locks must be taken while holding this lock.
@@ -659,8 +658,6 @@ struct _MonoDynamicAssembly {
 	MonoAssembly assembly;
 	char *strong_name;
 	guint32 strong_name_size;
-	guint8 run;
-	guint8 save;
 	MonoDomain *domain;
 };
 
@@ -699,8 +696,6 @@ struct _MonoDynamicImage {
 	 * Maps final token values to the object they describe.
 	 */
 	MonoGHashTable *remapped_tokens;
-	gboolean run;
-	gboolean save;
 	gboolean initial_image;
 	guint32 pe_kind, machine;
 	char *strong_name;
@@ -784,6 +779,7 @@ struct _MonoMethodSignature {
 	unsigned int  pinvoke             : 1;
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;
+	unsigned int  suppress_gc_transition : 1;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -887,6 +883,47 @@ mono_install_image_loader (const MonoImageLoader *loader);
 void
 mono_image_append_class_to_reflection_info_set (MonoClass *klass);
 
+#ifndef ENABLE_METADATA_UPDATE
+static inline gboolean
+mono_metadata_has_updates (void)
+{
+	return FALSE;
+}
+
+static inline void
+mono_image_effective_table (const MonoTableInfo **t, int *idx)
+{
+}
+#else /* ENABLE_METADATA_UPDATE */
+extern int mono_metadata_update_has_updates_private;
+
+/* returns TRUE if there's at least one update */
+static inline gboolean
+mono_metadata_has_updates (void)
+{
+	return mono_metadata_update_has_updates_private != 0;
+}
+
+void
+mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
+
+static inline void
+mono_image_effective_table (const MonoTableInfo **t, int *idx)
+{
+	if (G_UNLIKELY (mono_metadata_has_updates ())) {
+		if (G_UNLIKELY (*idx >= (*t)->rows)) {
+			mono_image_effective_table_slow (t, idx);
+		}
+	}
+}
+
+int
+mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
+
+void
+mono_image_load_enc_delta (MonoDomain *domain, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
+#endif /* ENABLE_METADATA_UPDATE */
+
 gpointer
 mono_image_set_alloc  (MonoImageSet *set, guint size);
 
@@ -942,6 +979,27 @@ mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 
 MONO_API void
 mono_metadata_cleanup (void);
+
+#ifndef ENABLE_METADATA_UPDATE
+static inline gboolean
+mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
+{
+	/* token_index is 1-based. TRUE means the token is out of bounds */
+	return token_index > image->tables [table_index].rows;
+}
+#else
+gboolean
+mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index);
+
+static inline gboolean
+mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
+{
+	/* returns true if given index is not in bounds with provided table/index pair */
+	if (G_LIKELY (token_index <= image->tables [table_index].rows))
+		return FALSE;
+	return mono_metadata_table_bounds_check_slow (image, table_index, token_index);
+}
+#endif
 
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);
@@ -1031,8 +1089,6 @@ void mono_assembly_close_finish (MonoAssembly *assembly);
 gboolean mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2);
 
 void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info);
-void mono_config_parse_assembly_bindings (const char *filename, int major, int minor, void *user_data,
-					  void (*infocb)(MonoAssemblyBindingInfo *info, void *user_data));
 
 gboolean
 mono_assembly_name_parse_full 		     (const char	   *name,
@@ -1112,7 +1168,7 @@ MonoImage *mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname,
 
 MonoImage *mono_image_open_metadata_only (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
 
-MonoImage *mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name, const char *filename);
+MonoImage *mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean metadata_only, const char *name, const char *filename);
 
 MonoException *mono_get_exception_field_access_msg (const char *msg);
 
@@ -1161,9 +1217,6 @@ mono_find_image_set_owner (void *ptr);
 
 void
 mono_loader_register_module (const char *name, MonoDl *module);
-
-gboolean
-mono_assembly_is_problematic_version (const char *name, guint16 major, guint16 minor, guint16 build, guint16 revision);
 
 void
 mono_ginst_get_desc (GString *str, MonoGenericInst *ginst);
@@ -1236,11 +1289,7 @@ static inline
 MonoAssemblyLoadContext *
 mono_image_get_alc (MonoImage *image)
 {
-#ifndef ENABLE_NETCORE
-	return NULL;
-#else
 	return image->alc;
-#endif
 }
 
 static inline

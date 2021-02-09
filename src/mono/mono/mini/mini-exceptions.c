@@ -359,6 +359,8 @@ is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 	guint32 offset;
 	guint16 clause;
 
+	ip = MINI_FTNPTR_TO_ADDR (ip);
+
 	if (ei->try_start > ip || ip >= ei->try_end)
 		return FALSE;
 
@@ -578,6 +580,7 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 		else
 			real_ip = (const char*)ip;
 
+		real_ip = (const char*)MINI_FTNPTR_TO_ADDR (real_ip);
 		if ((real_ip >= start) && (real_ip <= start + ji->code_size))
 			offset = real_ip - start;
 		else
@@ -1994,11 +1997,14 @@ MonoJitInfo*
 mini_jit_info_table_find_ext (MonoDomain *domain, gpointer addr, gboolean allow_trampolines, MonoDomain **out_domain)
 {
 	MonoJitInfo *ji;
-	MonoInternalThread *t = mono_thread_internal_current ();
-	gpointer *refs;
 
 	if (out_domain)
 		*out_domain = NULL;
+
+	// FIXME: Transition all callers to this function
+	// or add it to mono_jit_info_table_find
+	ji = mono_jit_info_table_find_internal (domain, addr, TRUE, allow_trampolines);
+	addr = MINI_FTNPTR_TO_ADDR (addr);
 
 	ji = mono_jit_info_table_find_internal (domain, addr, TRUE, allow_trampolines);
 	if (ji) {
@@ -2014,21 +2020,6 @@ mini_jit_info_table_find_ext (MonoDomain *domain, gpointer addr, gboolean allow_
 			if (out_domain)
 				*out_domain = mono_get_root_domain ();
 			return ji;
-		}
-	}
-
-	if (!t)
-		return NULL;
-
-	refs = (gpointer *)((t->appdomain_refs) ? *(gpointer *) t->appdomain_refs : NULL);
-	for (; refs && *refs; refs++) {
-		if (*refs != domain && *refs != mono_get_root_domain ()) {
-			ji = mono_jit_info_table_find_internal ((MonoDomain*) *refs, addr, TRUE, allow_trampolines);
-			if (ji) {
-				if (out_domain)
-					*out_domain = (MonoDomain*) *refs;
-				return ji;
-			}
 		}
 	}
 
@@ -2184,28 +2175,38 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 		mono_error_assert_ok (error);
 		if (*dynamic_methods) {
 			/* These methods could go away anytime, so save a reference to them in the exception object */
-			GSList *l;
-			MonoMList *list = (MonoMList*)mono_ex->dynamic_methods;
+			MonoDomain *domain = mono_domain_get ();
+			int methods_len = g_slist_length (*dynamic_methods);
+			MonoArray *old_methods = mono_ex->dynamic_methods;
+			int old_methods_len = 0;
 
-			for (l = *dynamic_methods; l; l = l->next) {
-				MonoGCHandle dis_link;
-				MonoDomain *domain = mono_domain_get ();
+			if (old_methods) {
+				old_methods_len = mono_array_length_internal (old_methods);
+				methods_len += old_methods_len;
+			}
 
-				if (domain->method_to_dyn_method) {
-					mono_domain_lock (domain);
-					dis_link = (MonoGCHandle)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
-					mono_domain_unlock (domain);
-					if (dis_link) {
-						MonoObject *o = mono_gchandle_get_target_internal (dis_link);
-						if (o) {
-							list = mono_mlist_prepend_checked (list, o, error);
-							mono_error_assert_ok (error);
-						}
-					}
+			MonoArray *all_methods = mono_array_new_checked (domain, mono_defaults.object_class, methods_len, error);
+			mono_error_assert_ok (error);
+
+			if (old_methods)
+				mono_array_full_copy_unchecked_size (old_methods, all_methods, mono_defaults.object_class, old_methods_len);
+			int index = old_methods_len;
+
+			for (GSList *l = *dynamic_methods; l; l = l->next) {
+				g_assert (domain->method_to_dyn_method);
+
+				mono_domain_lock (domain);
+				MonoGCHandle dis_link = (MonoGCHandle)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
+				mono_domain_unlock (domain);
+
+				if (dis_link) {
+					MonoObject *o = mono_gchandle_get_target_internal (dis_link);
+					mono_array_set_internal (all_methods, MonoObject *, index, o);
+					index++;
 				}
 			}
 
-			MONO_OBJECT_SETREF_INTERNAL (mono_ex, dynamic_methods, list);
+			MONO_OBJECT_SETREF_INTERNAL (mono_ex, dynamic_methods, all_methods);
 
 			g_slist_free (*dynamic_methods);
 			*dynamic_methods = NULL;
@@ -2705,9 +2706,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		MONO_PROFILER_RAISE (exception_throw, (obj));
 		jit_tls->orig_ex_ctx_set = FALSE;
 
-#ifdef ENABLE_NETCORE
 		mono_first_chance_exception_internal (obj);
-#endif
 
 		StackFrameInfo catch_frame;
 		MonoFirstPassResult res;
@@ -2729,20 +2728,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			mono_unhandled_exception_internal (obj);
 		} else {
 			gboolean unhandled = FALSE;
-
-			/*
-			 * The exceptions caught by the mono_runtime_invoke_checked () calls
-			 * in the threadpool needs to be treated as unhandled (#669836).
-			 *
-			 * FIXME: The check below is hackish, but its hard to distinguish
-			 * these runtime invoke calls from others in the runtime.
-			 */
-#ifndef ENABLE_NETCORE
-			if (ji && jinfo_get_method (ji)->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
-				if (prev_ji && jinfo_get_method (prev_ji) == mono_defaults.threadpool_perform_wait_callback_method)
-					unhandled = TRUE;
-			}
-#endif
 
 			if (unhandled)
 				mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
@@ -3570,7 +3555,7 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	if (!ji)
 		return FALSE;
 
-	ip = MONO_CONTEXT_GET_IP (ctx);
+	ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (ctx));
 
 	for (i = 0; i < ji->num_clauses; ++i) {
 		MonoJitExceptionInfo *ei = ji->clauses + i;
@@ -3578,7 +3563,7 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 			continue;
 		/*If ip points to the first instruction it means the handler block didn't start
 		 so we can leave its execution to the EH machinery*/
-		if (ei->handler_start <= ip && ip < ei->data.handler_end) {
+		if (MINI_FTNPTR_TO_ADDR (ei->handler_start) <= ip && ip < MINI_FTNPTR_TO_ADDR (ei->data.handler_end)) {
 			pdata->ji = ji;
 			pdata->ei = ei;
 			pdata->ctx = *ctx;
@@ -3597,13 +3582,13 @@ install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
 	gpointer ip;
 	guint8 *bp;
 
-	ip = MONO_CONTEXT_GET_IP (ctx);
+	ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (ctx));
 
 	for (i = 0; i < ji->num_clauses; ++i) {
 		clause = &ji->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 			continue;
-		if (clause->handler_start <= ip && clause->data.handler_end > ip)
+		if (MINI_FTNPTR_TO_ADDR (clause->handler_start) <= ip && MINI_FTNPTR_TO_ADDR (clause->data.handler_end) > ip)
 			break;
 	}
 

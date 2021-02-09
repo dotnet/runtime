@@ -497,7 +497,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	code = buf = mono_mem_manager_code_reserve_align (mem_manager, TRAMPOLINE_SIZE, 4);
+	code = buf = (guint8 *)mono_mem_manager_code_reserve_align (mem_manager, TRAMPOLINE_SIZE, 4);
 	short_branch = branch_for_target_reachable (code + MONO_PPC_32_64_CASE (8, 5*4), tramp);
 #ifdef __mono_ppc64__
 	/* FIXME: make shorter if possible */

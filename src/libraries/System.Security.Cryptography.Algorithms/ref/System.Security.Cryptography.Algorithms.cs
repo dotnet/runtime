@@ -11,6 +11,7 @@ namespace System.Security.Cryptography
     {
         protected Aes() { }
         public static new System.Security.Cryptography.Aes Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.Aes? Create(string algorithmName) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -125,6 +126,7 @@ namespace System.Security.Cryptography
         protected DES() { }
         public override byte[] Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.DES Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.DES? Create(string algName) { throw null; }
         public static bool IsSemiWeakKey(byte[] rgbKey) { throw null; }
         public static bool IsWeakKey(byte[] rgbKey) { throw null; }
@@ -136,6 +138,7 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.DSA Create() { throw null; }
         public static System.Security.Cryptography.DSA Create(int keySizeInBits) { throw null; }
         public static System.Security.Cryptography.DSA Create(System.Security.Cryptography.DSAParameters parameters) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.DSA? Create(string algName) { throw null; }
         public abstract byte[] CreateSignature(byte[] rgbHash);
         public byte[] CreateSignature(byte[] rgbHash, System.Security.Cryptography.DSASignatureFormat signatureFormat) { throw null; }
@@ -287,6 +290,7 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.ECDiffieHellman Create() { throw null; }
         public static System.Security.Cryptography.ECDiffieHellman Create(System.Security.Cryptography.ECCurve curve) { throw null; }
         public static System.Security.Cryptography.ECDiffieHellman Create(System.Security.Cryptography.ECParameters parameters) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.ECDiffieHellman? Create(string algorithm) { throw null; }
         public byte[] DeriveKeyFromHash(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public virtual byte[] DeriveKeyFromHash(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[]? secretPrepend, byte[]? secretAppend) { throw null; }
@@ -337,6 +341,7 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.ECDsa Create() { throw null; }
         public static System.Security.Cryptography.ECDsa Create(System.Security.Cryptography.ECCurve curve) { throw null; }
         public static System.Security.Cryptography.ECDsa Create(System.Security.Cryptography.ECParameters parameters) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.ECDsa? Create(string algorithm) { throw null; }
         public virtual byte[] ExportECPrivateKey() { throw null; }
         public virtual System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
@@ -519,6 +524,7 @@ namespace System.Security.Cryptography
     {
         protected MD5() { }
         public static new System.Security.Cryptography.MD5 Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.MD5? Create(string algName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
@@ -528,6 +534,7 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class PKCS1MaskGenerationMethod : System.Security.Cryptography.MaskGenerationMethod
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PKCS1MaskGenerationMethod is not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
         public PKCS1MaskGenerationMethod() { }
         public string HashName { get { throw null; } set { } }
         public override byte[] GenerateMask(byte[] rgbSeed, int cbReturn) { throw null; }
@@ -536,6 +543,7 @@ namespace System.Security.Cryptography
     {
         protected RandomNumberGenerator() { }
         public static System.Security.Cryptography.RandomNumberGenerator Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.RandomNumberGenerator? Create(string rngName) { throw null; }
         public void Dispose() { }
@@ -559,6 +567,7 @@ namespace System.Security.Cryptography
         public virtual int EffectiveKeySize { get { throw null; } set { } }
         public override int KeySize { get { throw null; } set { } }
         public static new System.Security.Cryptography.RC2 Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.RC2? Create(string AlgName) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -586,6 +595,7 @@ namespace System.Security.Cryptography
     {
         protected Rijndael() { }
         public static new System.Security.Cryptography.Rijndael Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.Rijndael? Create(string algName) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -594,6 +604,7 @@ namespace System.Security.Cryptography
     {
         public RijndaelManaged() { }
         public override int BlockSize { get { throw null; } set { } }
+        public override int FeedbackSize { get { throw null; } set { } }
         public override byte[] IV { get { throw null; } set { } }
         public override byte[] Key { get { throw null; } set { } }
         public override int KeySize { get { throw null; } set { } }
@@ -617,6 +628,7 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.RSA Create() { throw null; }
         public static System.Security.Cryptography.RSA Create(int keySizeInBits) { throw null; }
         public static System.Security.Cryptography.RSA Create(System.Security.Cryptography.RSAParameters parameters) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.RSA? Create(string algName) { throw null; }
         public virtual byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public virtual byte[] DecryptValue(byte[] rgb) { throw null; }
@@ -674,7 +686,7 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.RSAEncryptionPadding Pkcs1 { get { throw null; } }
         public static System.Security.Cryptography.RSAEncryptionPadding CreateOaep(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Security.Cryptography.RSAEncryptionPadding? other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.RSAEncryptionPadding? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.RSAEncryptionPadding? left, System.Security.Cryptography.RSAEncryptionPadding? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.RSAEncryptionPadding? left, System.Security.Cryptography.RSAEncryptionPadding? right) { throw null; }
@@ -763,7 +775,7 @@ namespace System.Security.Cryptography
         public System.Security.Cryptography.RSASignaturePaddingMode Mode { get { throw null; } }
         public static System.Security.Cryptography.RSASignaturePadding Pkcs1 { get { throw null; } }
         public static System.Security.Cryptography.RSASignaturePadding Pss { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Security.Cryptography.RSASignaturePadding? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.RSASignaturePadding? left, System.Security.Cryptography.RSASignaturePadding? right) { throw null; }
@@ -779,6 +791,7 @@ namespace System.Security.Cryptography
     {
         protected SHA1() { }
         public static new System.Security.Cryptography.SHA1 Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.SHA1? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
@@ -800,6 +813,7 @@ namespace System.Security.Cryptography
     {
         protected SHA256() { }
         public static new System.Security.Cryptography.SHA256 Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.SHA256? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
@@ -821,6 +835,7 @@ namespace System.Security.Cryptography
     {
         protected SHA384() { }
         public static new System.Security.Cryptography.SHA384 Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.SHA384? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
@@ -842,6 +857,7 @@ namespace System.Security.Cryptography
     {
         protected SHA512() { }
         public static new System.Security.Cryptography.SHA512 Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.SHA512? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
@@ -868,8 +884,11 @@ namespace System.Security.Cryptography
         public string? DigestAlgorithm { get { throw null; } set { } }
         public string? FormatterAlgorithm { get { throw null; } set { } }
         public string? KeyAlgorithm { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("CreateDeformatter is not trim compatible because the algorithm implementation referenced by DeformatterAlgorithm might be removed.")]
         public virtual System.Security.Cryptography.AsymmetricSignatureDeformatter CreateDeformatter(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("CreateDigest is not trim compatible because the algorithm implementation referenced by DigestAlgorithm might be removed.")]
         public virtual System.Security.Cryptography.HashAlgorithm? CreateDigest() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("CreateFormatter is not trim compatible because the algorithm implementation referenced by FormatterAlgorithm might be removed.")]
         public virtual System.Security.Cryptography.AsymmetricSignatureFormatter CreateFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -878,6 +897,7 @@ namespace System.Security.Cryptography
         protected TripleDES() { }
         public override byte[] Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.TripleDES Create() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.TripleDES? Create(string str) { throw null; }
         public static bool IsWeakKey(byte[] rgbKey) { throw null; }
     }

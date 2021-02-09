@@ -472,8 +472,11 @@ namespace System.Diagnostics.Tests
             {
                 p = CreateProcessLong();
 
-                // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                SetAccessControl(username, p.StartInfo.FileName, add: true);
+                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+                {
+                    // ensure the new user can access the .exe (otherwise you get Access is denied exception)
+                    SetAccessControl(username, p.StartInfo.FileName, add: true);
+                }
 
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
@@ -500,10 +503,6 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
-
-                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
-
                 if (handle != null)
                     handle.Dispose();
 
@@ -513,6 +512,13 @@ namespace System.Diagnostics.Tests
 
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
+
+                if (PlatformDetection.IsNotWindowsServerCore)
+                {
+                    SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+                }
+
+                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 

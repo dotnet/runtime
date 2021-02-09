@@ -12,10 +12,4 @@
   <assembly fullname="xunit.core">
     <namespace fullname="Xunit" />
   </assembly>
-  <!-- Temporary until https://github.com/mono/linker/issues/1713 is resolved -->
-  <assembly fullname="Microsoft.DotNet.RemoteExecutor">
-    <type fullname="Microsoft.DotNet.RemoteExecutor.Program">
-      <method signature="System.Int32 Main(System.String[])" />
-    </type>
-  </assembly>
 </linker>

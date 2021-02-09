@@ -3,7 +3,7 @@
 
 #include "pal_sec.h"
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 CFStringRef AppleCryptoNative_SecCopyErrorMessageString(int32_t osStatus)
 {
     return SecCopyErrorMessageString(osStatus, NULL);

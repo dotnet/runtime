@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -178,7 +179,8 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="type">A <see cref="Type"/> that has a constructor that takes no arguments.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> property set to the <see cref="ConstructorInfo"/> that represents the parameterless constructor of the specified type.</returns>
-        public static NewExpression New(Type type)
+        public static NewExpression New(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             if (type == typeof(void))

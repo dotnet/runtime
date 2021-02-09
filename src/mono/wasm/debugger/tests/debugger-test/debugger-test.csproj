@@ -4,23 +4,21 @@
     <NoWarn>219</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RunAnalyzers>false</RunAnalyzers>
+    <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
 
   <ItemGroup>
-    <ExtraFileForPublish Include="debugger-driver.html" />
-    <ExtraFileForPublish Include="other.js" />
-    <ExtraFileForPublish Include="runtime-debugger.js" />
+    <WasmExtraFilesToDeploy Include="debugger-driver.html" />
+    <WasmExtraFilesToDeploy Include="other.js" />
+    <WasmExtraFilesToDeploy Include="runtime-debugger.js" />
 
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\lazy-debugger-test\lazy-debugger-test.csproj" Private="true"/>
     <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" Private="true"/>
   </ItemGroup>
 
-  <Target Name="PrepareForWasmBuildApp" BeforeTargets="WasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
+  <Target Name="PrepareForWasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <PropertyGroup>
-      <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
-      <WasmMainAssemblyPath>$(OutDir)debugger-test.dll</WasmMainAssemblyPath>
-      <_JavaScriptDllPath>$(ArtifactsBinDir)\System.Private.Runtime.InteropServices.JavaScript\$(NetCoreAppCurrent)-Browser-$(RuntimeConfiguration)\System.Private.Runtime.InteropServices.JavaScript.dll</_JavaScriptDllPath>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)wasm\runtime-test.js</WasmMainJSPath>
       <WasmDebugLevel>1</WasmDebugLevel>
@@ -29,17 +27,13 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 
-      <WasmAssembliesToBundle Include="$(_JavaScriptDllPath)" />
-
-      <ExtraFileForPublish Include="@(ReferenceCopyLocalPaths)" />
+      <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
-
-    <Copy SourceFiles="@(ExtraFileForPublish)" DestinationFolder="$(AppDir)" />
   </Target>
 
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.targets" />
-
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
 </Project>

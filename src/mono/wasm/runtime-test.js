@@ -391,13 +391,13 @@ var App = {
 			fail_exec ("Unhandled argument: " + args [0]);
 		}
 	},
-	call_test_method: function (method_name, args) {
-		if (arguments.length > 2)
+	call_test_method: function (method_name, args, signature) {
+		if ((arguments.length > 2) && (typeof (signature) !== "string"))
 			throw new Error("Invalid number of arguments for call_test_method");
 
 		var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
 		try {
-			return BINDING.call_static_method(fqn, args || []);
+			return BINDING.call_static_method(fqn, args || [], signature);
 		} catch (exc) {
 			console.error("exception thrown in", fqn);
 			throw exc;

@@ -30,8 +30,6 @@ Assembler::Assembler()
     m_pEmitter = NULL;
     m_pImporter = NULL;
 
-    m_fCPlusPlus = FALSE;
-    m_fWindowsCE = FALSE;
     char* pszFQN = new char[16];
     strcpy_s(pszFQN,16,"<Module>");
     m_pModuleClass = new Class(pszFQN);

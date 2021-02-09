@@ -132,7 +132,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			/* The process is terminating. */
 			return TRUE;
 		file_name = mono_get_module_file_name (hInst);
-		image = mono_image_loaded_internal (alc, file_name, FALSE);
+		image = mono_image_loaded_internal (alc, file_name);
 		if (image)
 			mono_image_close (image);
 

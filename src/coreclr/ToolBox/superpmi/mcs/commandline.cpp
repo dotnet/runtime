@@ -55,8 +55,9 @@ void CommandLine::DumpHelp(const char* program)
     printf("     file1 is read and file2 is written\n");
     printf("     e.g. -copy a.mch b.mch\n");
     printf("\n");
-    printf(" -dump {optional range} inputfile\n");
-    printf("     Dump details for each methodContext\n");
+    printf(" -dump {optional range} inputfile [-simple]\n");
+    printf("     Dump details for each methodContext.\n");
+    printf("     With -simple, don't display the function name/arguments in the header (useful for debugging mcs itself).\n");
     printf("     e.g. -dump a.mc\n");
     printf("\n");
     printf(" -dumpMap inputfile\n");
@@ -378,6 +379,10 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
                 Logger::OpenLogFile(argv[i]);
             }
+            else if ((_strnicmp(&argv[i][1], "simple", argLen) == 0))
+            {
+                o->simple = true;
+            }
             else
             {
                 LogError("CommandLine::Parse() - Unknown verb '%s'", argv[i]);
@@ -395,6 +400,16 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     goto processMCL2;
             }
             goto processInput;
+        }
+    }
+
+    if (o->simple)
+    {
+        if (!o->actionDump)
+        {
+            LogError("CommandLine::Parse() '-simple' requires -dump.");
+            DumpHelp(argv[0]);
+            return false;
         }
     }
 

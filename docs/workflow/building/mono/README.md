@@ -82,7 +82,7 @@ The following packages will be created under `artifacts\packages\<configuration>
 
 ## To get started with "Hello World"
 
-Try the sample at `src/mono/netcore/sample/HelloWorld`.
+Try the sample at `src/mono/sample/HelloWorld`.
 To run this sample, from the above folder
 ```cd ../..
 make run-sample

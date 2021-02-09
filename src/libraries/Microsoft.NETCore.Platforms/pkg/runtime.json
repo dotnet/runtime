@@ -92,6 +92,29 @@
         "alpine.3.11-x64"
       ]
     },
+    "alpine.3.13": {
+      "#import": [
+        "alpine.3.12"
+      ]
+    },
+    "alpine.3.13-arm": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-arm"
+      ]
+    },
+    "alpine.3.13-arm64": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-arm64"
+      ]
+    },
+    "alpine.3.13-x64": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -1396,6 +1419,57 @@
       "#import": [
         "linuxmint.19.2",
         "linuxmint.19.1-x64"
+      ]
+    },
+    "maccatalyst": {
+      "#import": [
+        "ios"
+      ]
+    },
+    "maccatalyst-arm64": {
+      "#import": [
+        "maccatalyst",
+        "ios-arm64"
+      ]
+    },
+    "maccatalyst-x64": {
+      "#import": [
+        "maccatalyst",
+        "ios-x64"
+      ]
+    },
+    "maccatalyst.13": {
+      "#import": [
+        "maccatalyst"
+      ]
+    },
+    "maccatalyst.13-arm64": {
+      "#import": [
+        "maccatalyst.13",
+        "maccatalyst-arm64"
+      ]
+    },
+    "maccatalyst.13-x64": {
+      "#import": [
+        "maccatalyst.13",
+        "maccatalyst-x64"
+      ]
+    },
+    "maccatalyst.14": {
+      "#import": [
+        "maccatalyst.13"
+      ]
+    },
+    "maccatalyst.14-arm64": {
+      "#import": [
+        "maccatalyst.14",
+        "maccatalyst.13-arm64"
+      ]
+    },
+    "maccatalyst.14-x64": {
+      "#import": [
+        "maccatalyst.14",
+        "maccatalyst.13-x64"
       ]
     },
     "ol": {

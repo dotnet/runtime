@@ -89,6 +89,7 @@ HHANDLETABLE    HndGetHandleTable(OBJECTHANDLE handle);
 /*
  * write barrier
  */
+void            HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);
 void            HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF value);
 
 /*

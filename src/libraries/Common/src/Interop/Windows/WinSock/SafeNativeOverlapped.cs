@@ -14,7 +14,7 @@ namespace System.Net.Sockets
     {
         private readonly SafeSocketHandle? _socketHandle;
 
-        private SafeNativeOverlapped()
+        public SafeNativeOverlapped()
             : this(IntPtr.Zero)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);

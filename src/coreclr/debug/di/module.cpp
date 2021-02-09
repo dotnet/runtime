@@ -2758,6 +2758,7 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
 
 HRESULT CordbModule::IsMappedLayout(BOOL *isMapped)
 {
+    PUBLIC_API_ENTRY(this);
     VALIDATE_POINTER_TO_OBJECT(isMapped, BOOL*);
     FAIL_IF_NEUTERED(this);
 
@@ -2765,11 +2766,12 @@ HRESULT CordbModule::IsMappedLayout(BOOL *isMapped)
     CordbProcess *pProcess = GetProcess();
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
-    PUBLIC_API_BEGIN(pProcess);
+
+    EX_TRY
     {
         hr = pProcess->GetDAC()->IsModuleMapped(m_vmModule, isMapped);
     }
-    PUBLIC_API_END(hr);
+    EX_CATCH_HRESULT(hr);
 
     return hr;
 }

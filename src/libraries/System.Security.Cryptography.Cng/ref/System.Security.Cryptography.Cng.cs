@@ -67,8 +67,8 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngAlgorithm Sha256 { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Sha384 { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm Sha512 { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Security.Cryptography.CngAlgorithm? other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.CngAlgorithm? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.CngAlgorithm? left, System.Security.Cryptography.CngAlgorithm? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.CngAlgorithm? left, System.Security.Cryptography.CngAlgorithm? right) { throw null; }
@@ -83,8 +83,8 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngAlgorithmGroup ECDiffieHellman { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup ECDsa { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup Rsa { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Security.Cryptography.CngAlgorithmGroup? other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.CngAlgorithmGroup? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.CngAlgorithmGroup? left, System.Security.Cryptography.CngAlgorithmGroup? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.CngAlgorithmGroup? left, System.Security.Cryptography.CngAlgorithmGroup? right) { throw null; }
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngKeyBlobFormat OpaqueTransportBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat Pkcs8PrivateBlob { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Security.Cryptography.CngKeyBlobFormat? other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.CngKeyBlobFormat? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.CngKeyBlobFormat? left, System.Security.Cryptography.CngKeyBlobFormat? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.CngKeyBlobFormat? left, System.Security.Cryptography.CngKeyBlobFormat? right) { throw null; }
@@ -202,7 +202,7 @@ namespace System.Security.Cryptography
         public CngProperty(string name, byte[]? value, System.Security.Cryptography.CngPropertyOptions options) { throw null; }
         public readonly string Name { get { throw null; } }
         public readonly System.Security.Cryptography.CngPropertyOptions Options { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Security.Cryptography.CngProperty other) { throw null; }
         public override int GetHashCode() { throw null; }
         public byte[]? GetValue() { throw null; }
@@ -226,8 +226,8 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngProvider MicrosoftSmartCardKeyStorageProvider { get { throw null; } }
         public static System.Security.Cryptography.CngProvider MicrosoftSoftwareKeyStorageProvider { get { throw null; } }
         public string Provider { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
-        public bool Equals(System.Security.Cryptography.CngProvider? other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.CngProvider? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.CngProvider? left, System.Security.Cryptography.CngProvider? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.CngProvider? left, System.Security.Cryptography.CngProvider? right) { throw null; }

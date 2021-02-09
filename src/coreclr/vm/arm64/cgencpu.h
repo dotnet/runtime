@@ -58,6 +58,8 @@ extern PCODE GetPreStubEntryPoint();
 #define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
 #define CALLDESCR_RETBUFFARGREG                 1   // CallDescrWorker has RetBuffArg parameter that's separate from arg regs
 
+#define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes.
+
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.
 #define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
@@ -81,13 +83,27 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 // Parameter size
 //**********************************************************************
 
-typedef INT64 StackElemType;
-#define STACK_ELEM_SIZE sizeof(StackElemType)
+inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatHfa)
+{
+#if defined(OSX_ARM64_ABI)
+    if (!isValueType)
+    {
+        // The primitive types' sizes are expected to be powers of 2.
+        _ASSERTE((parmSize & (parmSize - 1)) == 0);
+        // No padding/alignment for primitive types.
+        return parmSize;
+    }
+    if (isFloatHfa)
+    {
+        _ASSERTE((parmSize % 4) == 0);
+        // float hfa is not considered a struct type and passed with 4-byte alignment.
+        return parmSize;
+    }
+#endif
 
-// The expression below assumes STACK_ELEM_SIZE is a power of 2, so check that.
-static_assert(((STACK_ELEM_SIZE & (STACK_ELEM_SIZE-1)) == 0), "STACK_ELEM_SIZE must be a power of 2");
-
-#define StackElemSize(parmSize) (((parmSize) + STACK_ELEM_SIZE - 1) & ~((ULONG)(STACK_ELEM_SIZE - 1)))
+    const unsigned stackSlotSize = 8;
+    return ALIGN_UP(parmSize, stackSlotSize);
+}
 
 //
 // JIT HELPERS.

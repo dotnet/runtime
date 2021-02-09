@@ -676,8 +676,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                         if(pAsm->m_fReportProgress)
                         {
                             pParser->msg("\nAssembling '%s' ", szInputFilename);
-                            if(pAsm->m_fCPlusPlus)  pParser->msg(" C++");
-                            if(pAsm->m_fWindowsCE)  pParser->msg(" WINCE");
                             if(!pAsm->m_fAutoInheritFromObject) pParser->msg(" NOAUTOINHERIT");
                             pParser->msg(IsDLL ? " to DLL" : (IsOBJ? " to OBJ" : " to EXE"));
                             //======================================================================
@@ -778,8 +776,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                         if(pAsm->m_fReportProgress)
                                         {
                                             pParser->msg("\nAssembling delta '%s' ", szInputFilename);
-                                            if(pAsm->m_fCPlusPlus)  pParser->msg(" C++");
-                                            if(pAsm->m_fWindowsCE)  pParser->msg(" WINCE");
                                             if(!pAsm->m_fAutoInheritFromObject) pParser->msg(" NOAUTOINHERIT");
                                             pParser->msg(" to DMETA,DIL");
                                             //======================================================================
@@ -823,33 +819,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                                             pParser->msg("%d methods folded\n",pAsm->m_dwMethodsFolded);
                                                         if(pParser->Success()) exitval = 0;
                                                         else    pParser->msg("Output delta files contain errors\n");
-
-#ifdef GENERATE_SUMMARY_PE_FILE
-                                                        if(pAsm->OnErrGo) exitval = 0;
-
-                                                        //if(FAILED(hr=pAsm->CreatePEFile(wzOutputFilename)))
-                                                        //    pParser->msg("Could not create output file, error code=0x%08X\n",hr);
-                                                        //else
-                                                        {
-                                                            if(pAsm->m_fReportProgress) pParser->msg("Writing %s file\n", pAsm->m_fOBJ ? "COFF" : "PE");
-                                                            // Generate the file
-                                                            if (FAILED(hr = pAsm->m_pCeeFileGen->GenerateCeeFile(pAsm->m_pCeeFile)))
-                                                            {
-                                                                exitval = 1;
-                                                                pParser->msg("Failed to write output file, error code=0x%08X\n",hr);
-                                                            }
-                                                            else if (pAsm->m_pManifest->m_sStrongName.m_fFullSign)
-                                                            {
-                                                                // Strong name sign the resultant assembly.
-                                                                if(pAsm->m_fReportProgress) pParser->msg("Signing file with strong name\n");
-                                                                if (FAILED(hr=pAsm->StrongNameSign()))
-                                                                {
-                                                                    exitval = 1;
-                                                                    pParser->msg("Failed to strong name sign output file, error code=0x%08X\n",hr);
-                                                                }
-                                                            }
-                                                        }
-#endif
                                                     }
                                                 } // end if (pParser->Success() || pAsm->OnErrGo)
                                             } //end if (SUCCEEDED(pAsm->InitMetaDataForENC()))

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 
 #include "../../AnyOS/entrypoints.h"
 
@@ -112,4 +112,4 @@ EXTERN_C const void* CryptoAppleResolveDllImport(const char* name)
     return ResolveDllImport(s_cryptoAppleNative, lengthof(s_cryptoAppleNative), name);
 }
 
-#endif // !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#endif // !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)

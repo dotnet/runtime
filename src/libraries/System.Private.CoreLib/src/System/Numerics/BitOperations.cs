@@ -41,6 +41,36 @@ namespace System.Numerics
         };
 
         /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPow2(int value) => (value & (value - 1)) == 0 && value > 0;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static bool IsPow2(uint value) => (value & (value - 1)) == 0 && value != 0 ;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPow2(long value) => (value & (value - 1)) == 0 && value > 0;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static bool IsPow2(ulong value) => (value & (value - 1)) == 0 && value != 0;
+
+        /// <summary>
         /// Count the number of leading zero bits in a mask.
         /// Similar in behavior to the x86 instruction LZCNT.
         /// </summary>
@@ -213,6 +243,32 @@ namespace System.Numerics
                 ref MemoryMarshal.GetReference(Log2DeBruijn),
                 // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
                 (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
+        }
+
+        /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int Log2Ceiling(uint value)
+        {
+            int result = Log2(value);
+            if (PopCount(value) != 1)
+            {
+                result++;
+            }
+            return result;
+        }
+
+        /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int Log2Ceiling(ulong value)
+        {
+            int result = Log2(value);
+            if (PopCount(value) != 1)
+            {
+                result++;
+            }
+            return result;
         }
 
         /// <summary>

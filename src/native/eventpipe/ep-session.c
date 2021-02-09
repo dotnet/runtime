@@ -45,7 +45,7 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	if (!thread_params->thread || !ep_rt_thread_has_started (thread_params->thread))
 		return 1;
 
-	session->ipc_streaming_thread = ep_thread_get_or_create ();
+	session->ipc_streaming_thread = thread_params->thread;
 
 	bool success = true;
 	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
@@ -325,8 +325,8 @@ ep_session_suspend_write_event (EventPipeSession *session)
 	// Need to disable the session before calling this method.
 	EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 
-	ep_rt_thread_array_t threads;
-	ep_rt_thread_array_alloc (&threads);
+	EP_RT_DECLARE_LOCAL_THREAD_ARRAY (threads);
+	ep_rt_thread_array_init (&threads);
 
 	ep_thread_get_threads (&threads);
 
@@ -344,7 +344,7 @@ ep_session_suspend_write_event (EventPipeSession *session)
 		ep_rt_thread_array_iterator_next (&threads_iterator);
 	}
 
-	ep_rt_thread_array_free (&threads);
+	ep_rt_thread_array_fini (&threads);
 
 	if (session->buffer_manager)
 		// Convert all buffers to read only to ensure they get flushed
