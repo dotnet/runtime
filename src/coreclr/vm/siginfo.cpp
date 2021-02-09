@@ -5432,12 +5432,20 @@ namespace
 }
 
 bool MetaSig::TryApplyModOptToCallingConvention(
-            LPCSTR callConvModOptName,
-            size_t callConvModOptNameLength,
-            CallConvModOptNameType nameType,
-            CorInfoCallConvExtension* pBaseCallConv,
-            CallingConventionModifiers* pCallConvModifiers)
+            _In_z_ LPCSTR callConvModOptName,
+            _In_ size_t callConvModOptNameLength,
+            _In_ CallConvModOptNameType nameType,
+            _Inout_ CorInfoCallConvExtension* pBaseCallConv,
+            _Inout_ CallingConventionModifiers* pCallConvModifiers)
 {
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pBaseCallConv));
+        PRECONDITION(CheckPointer(pCallConvModifiers));
+    }
+    CONTRACTL_END;
+
 #define BASE_CALL_CONV(callConvModOptMetadataName, CallConvExtensionMember)       \
     if (COMPARE_CALLCONV_NAME(callConvModOptName, callConvModOptMetadataName))    \
     {                                                                             \

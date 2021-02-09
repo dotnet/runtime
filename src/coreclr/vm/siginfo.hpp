@@ -816,9 +816,9 @@ class MetaSig
         // This occurs when the modopt is a base calling convention and a base calling convention has already been supplied.
         // Otherwise, returns true.
         static bool TryApplyModOptToCallingConvention(
-            LPCSTR callConvModOptName,
-            size_t callConvModOptNameLength,
-            CallConvModOptNameType nameType,
+            _In_z_ LPCSTR callConvModOptName,
+            _In_ size_t callConvModOptNameLength,
+            _In_ CallConvModOptNameType nameType,
             _Inout_ CorInfoCallConvExtension* pBaseCallConv,
             _Inout_ CallingConventionModifiers* pCallConvModifiers);
 
