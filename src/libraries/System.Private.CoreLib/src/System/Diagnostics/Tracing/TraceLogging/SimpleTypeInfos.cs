@@ -288,8 +288,10 @@ namespace System.Diagnostics.Tracing
             this.valueInfo.WriteMetadata(group, "Value", format);
         }
 
+#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
                 Justification = "The underlying type of Nullable<T> must be defaultable")]
+#endif
         public override void WriteData(PropertyValue value)
         {
             object? refVal = value.ReferenceValue;
