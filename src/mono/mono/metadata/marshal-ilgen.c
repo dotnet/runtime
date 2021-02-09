@@ -5363,16 +5363,15 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_CONV_I);
 		mono_mb_emit_stloc (mb, conv_arg);
 
-		mono_mb_emit_ldarg (mb, argnum);
-		pos_done = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
 		if (t->byref) {
 			int old_handle_value_slot = mono_mb_add_local (mb, int_type);
 
-			if (!is_in (t)) {
-				mono_mb_emit_icon (mb, 0);
-				mono_mb_emit_stloc (mb, conv_arg);
-			} else {
+			if (is_in (t)) {
+				/* Load and check the byref SafeHandle */
+				mono_mb_emit_ldarg(mb, argnum);
+				mono_mb_emit_byte(mb, CEE_LDIND_REF);
+				pos_done = mono_mb_emit_branch(mb, CEE_BRFALSE);
+
 				/* safehandle.DangerousAddRef (ref release) */
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
@@ -5387,8 +5386,14 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_byte (mb, CEE_DUP);
 				mono_mb_emit_stloc (mb, conv_arg);
 				mono_mb_emit_stloc (mb, old_handle_value_slot);
+
+				mono_mb_patch_branch(mb, pos_done);
 			}
 		} else {
+			/* Load and check the SafeHandle */
+			mono_mb_emit_ldarg(mb, argnum);
+			pos_done = mono_mb_emit_branch(mb, CEE_BRFALSE);
+
 			/* safehandle.DangerousAddRef (ref release) */
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc_addr (mb, dar_release_slot);
@@ -5399,9 +5404,9 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoSafeHandle, handle));
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 			mono_mb_emit_stloc (mb, conv_arg);
-		}
 
-		mono_mb_patch_branch (mb, pos_done);
+			mono_mb_patch_branch(mb, pos_done);
+		}
 
 		break;
 	}
