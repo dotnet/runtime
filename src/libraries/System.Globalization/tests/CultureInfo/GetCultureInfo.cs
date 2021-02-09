@@ -11,6 +11,7 @@ namespace System.Globalization.Tests
     public class GetCultureInfoTests
     {
         public static bool PlatformSupportsFakeCulture => (!PlatformDetection.IsWindows || (PlatformDetection.WindowsVersion >= 10 && !PlatformDetection.IsNetFramework)) && PlatformDetection.IsNotBrowser;
+        public static bool PlatformSupportsFakeCultureAndRemoteExecutor => PlatformSupportsFakeCulture && RemoteExecutor.IsSupported;
 
         public static IEnumerable<object[]> GetCultureInfoTestData()
         {
@@ -113,7 +114,7 @@ namespace System.Globalization.Tests
             Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo(name, predefinedOnly: true));
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported), nameof(PlatformSupportsFakeCulture))]
+        [ConditionalTheory(nameof(PlatformSupportsFakeCultureAndRemoteExecutor))]
         [InlineData("1", "xx-XY")]
         [InlineData("1", "zx-ZY")]
         [InlineData("0", "xx-XY")]
