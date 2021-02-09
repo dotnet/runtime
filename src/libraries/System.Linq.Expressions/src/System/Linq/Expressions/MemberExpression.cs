@@ -296,6 +296,7 @@ namespace System.Linq.Expressions
         /// <param name="expression">The containing object of the property.  This can be null for static properties.</param>
         /// <param name="propertyAccessor">An accessor method of the property to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static MemberExpression Property(Expression? expression, MethodInfo propertyAccessor)
         {
             ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
@@ -303,8 +304,7 @@ namespace System.Linq.Expressions
             return Property(expression, GetProperty(propertyAccessor, nameof(propertyAccessor)));
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Since the propertyAccessor is being supplied, the Property won't be trimmed.")]
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         private static PropertyInfo GetProperty(MethodInfo mi, string? paramName, int index = -1)
         {
             Type? type = mi.DeclaringType;
