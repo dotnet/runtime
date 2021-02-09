@@ -9161,6 +9161,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // We only expand the Vtable Call target once in the global morph phase
         if (fgGlobalMorph)
         {
+            assert(call->gtControlExpr == nullptr); // We only call this method and assign gtControlExpr once
             call->gtControlExpr = fgExpandVirtualVtableCallTarget(call);
         }
         // We have to morph and re-morph the control expr
@@ -9310,22 +9311,21 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
 
     noway_assert(call->gtCallType == CT_USER_FUNC);
 
-// get a reference to the thisPtr being passed
-#if 0
-    GenTree* thisPtr = call->gtCallThisArg->GetNode();
-#else
+    // get a reference to the thisPtr being passed
     fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, 0);
     GenTree*       thisPtr         = thisArgTabEntry->GetNode();
-#endif
+
+    // fgMorphArgs must enforce this invariant by creating a temp
+    //
+    assert(thisPtr->OperIsLocal());
 
     // Make a copy of the thisPtr by cloning
-
-    assert(thisPtr->OperIsLocal()); // fgMorphArgs must enforce this invariant
+    //
     thisPtr = gtClone(thisPtr, true);
 
     noway_assert(thisPtr != nullptr);
 
-    // Get hold of the vtable offset (note: this might be expensive)
+    // Get hold of the vtable offset
     unsigned vtabOffsOfIndirection;
     unsigned vtabOffsAfterIndirection;
     bool     isRelative;
@@ -9336,12 +9336,15 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
     GenTree* vtab;
     assert(VPTR_OFFS == 0); // We have to add this value to the thisPtr to get the methodTable
     vtab = gtNewOperNode(GT_IND, TYP_I_IMPL, thisPtr);
-    vtab->gtFlags |= GTF_IND_NONFAULTING;
+    // vtab->gtFlags |= GTF_IND_NONFAULTING;  // This could fault if the Object ref is null
     vtab->gtFlags |= GTF_IND_INVARIANT;
 
     // Get the appropriate vtable chunk
     if (vtabOffsOfIndirection != CORINFO_VIRTUALCALL_NO_CHUNK)
     {
+        // Note this isRelative code path is currently never executed
+        // as the VM doesn't ever return:  isRelative == true
+        //
         if (isRelative)
         {
             // MethodTable offset is a relative pointer.
@@ -9357,7 +9360,7 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
             // result = [tmp + vtabOffsOfIndirection + vtabOffsAfterIndirection + [tmp + vtabOffsOfIndirection]]
             //
             //
-            // If relative pointers are also in second level indirection, additional temporary is used:
+            // When isRelative is true we need to setup two temporary variables
             // var1 = vtab
             // var2 = var1 + vtabOffsOfIndirection + vtabOffsAfterIndirection + [var1 + vtabOffsOfIndirection]
             // result = [var2] + var2
@@ -9381,9 +9384,9 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
             tmpTree2         = gtNewOperNode(GT_ADD, TYP_I_IMPL, tmpTree2, tmpTree1);
             GenTree* asgVar2 = gtNewTempAssign(varNum2, tmpTree2); // var2 = <expression>
 
-            // ToDo: Is this indirection Invariant or not?
-            // -- probably not since it is the last indirection on this path
+            // This last indirection is not invariant, but is non-faulting
             result = gtNewOperNode(GT_IND, TYP_I_IMPL, gtNewLclvNode(varNum2, TYP_I_IMPL), false); // [var2]
+            result->gtFlags |= GTF_IND_NONFAULTING;
 
             result = gtNewOperNode(GT_ADD, TYP_I_IMPL, result, gtNewLclvNode(varNum2, TYP_I_IMPL)); // [var2] + var2
 
@@ -9411,7 +9414,9 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
         // Load the function address
         // result = [result + vtabOffsAfterIndirection]
         result = gtNewOperNode(GT_ADD, TYP_I_IMPL, result, gtNewIconNode(vtabOffsAfterIndirection, TYP_INT));
+        // This last indirection is not invariant, but is non-faulting
         result = gtNewOperNode(GT_IND, TYP_I_IMPL, result, false);
+        result->gtFlags |= GTF_IND_NONFAULTING;
     }
 
     return result;
