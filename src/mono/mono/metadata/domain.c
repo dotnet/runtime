@@ -836,7 +836,6 @@ mono_cleanup (void)
 
 	mono_defaults.corlib = NULL;
 
-	mono_config_cleanup ();
 	mono_loader_cleanup ();
 	mono_classes_cleanup ();
 	mono_assemblies_cleanup ();
@@ -1487,23 +1486,15 @@ app_config_parse (const char *exe_filename)
 	GMarkupParseContext *context;
 	char *text;
 	gsize len;
-	const char *bundled_config;
 	char *config_filename;
 
-	bundled_config = mono_config_string_for_assembly_file (exe_filename);
+	config_filename = g_strconcat (exe_filename, ".config", (const char*)NULL);
 
-	if (bundled_config) {
-		text = g_strdup (bundled_config);
-		len = strlen (text);
-	} else {
-		config_filename = g_strconcat (exe_filename, ".config", (const char*)NULL);
-
-		if (!g_file_get_contents (config_filename, &text, &len, NULL)) {
-			g_free (config_filename);
-			return NULL;
-		}
+	if (!g_file_get_contents (config_filename, &text, &len, NULL)) {
 		g_free (config_filename);
+		return NULL;
 	}
+	g_free (config_filename);
 
 	app_config = g_new0 (AppConfigInfo, 1);
 
