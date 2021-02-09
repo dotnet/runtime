@@ -7186,6 +7186,39 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
         }
 
     }
+#ifdef TARGET_AMD64
+
+#ifndef STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT
+#define STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT ((DWORD)0x80000033L)
+#endif
+
+    if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
+    {
+        HijackArgs hijackArgs;
+        hijackArgs.Rax = pExceptionInfo->ContextRecord->Rax;
+        hijackArgs.Rsp = pExceptionInfo->ContextRecord->Rsp;
+        if (Thread::AreCetShadowStacksEnabled())
+        {
+            // When the CET is enabled, the return address is still on stack, so we need to set the Rsp as
+            // if it was popped.
+            hijackArgs.Rsp += 8;
+        }
+        hijackArgs.Rip = 0 ; // The OnHijackWorker sets this
+        #define CALLEE_SAVED_REGISTER(regname) hijackArgs.Regs.regname = pExceptionInfo->ContextRecord->regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+        #undef CALLEE_SAVED_REGISTER
+
+        OnHijackWorker(&hijackArgs);
+
+        #define CALLEE_SAVED_REGISTER(regname) pExceptionInfo->ContextRecord->regname = hijackArgs.Regs.regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+        #undef CALLEE_SAVED_REGISTER
+
+        pExceptionInfo->ContextRecord->Rax = hijackArgs.Rax;
+
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+#endif
 
     // We need to unhijack the thread here if it is not unhijacked already.  On x86 systems,
     // we do this in Thread::StackWalkFramesEx, but on amd64 systems we have the OS walk the

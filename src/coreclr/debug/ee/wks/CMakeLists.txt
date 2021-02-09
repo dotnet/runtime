@@ -18,7 +18,7 @@ if (CLR_CMAKE_TARGET_WIN32)
 
   else ()
 
-    set(ASM_OPTIONS /c /Zi /W3 /errorReport:prompt)
+    set(ASM_OPTIONS /c /Zi /W3 /errorReport:prompt /guard:ehcont)
 
     if (CLR_CMAKE_HOST_ARCH_I386)
       list (APPEND ASM_OPTIONS /safeseh)
