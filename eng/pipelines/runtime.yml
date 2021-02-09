@@ -212,6 +212,8 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_x86
+    - MacCatalyst_x64
+    - MacCatalyst_arm64
     - tvOS_x64
     - iOS_arm64
     - iOS_x86

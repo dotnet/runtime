@@ -10228,7 +10228,16 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     _ASSERTE(sizeof(ReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
 #endif
 
-    pEEInfoOut->osPageSize = GetOsPageSize();
+    if (!IsReadyToRunCompilation())
+    {
+        pEEInfoOut->osPageSize = GetOsPageSize();
+    }
+    else
+    {
+        // In AOT scenarios the VM reports to the JIT the minimal supported page size.
+        pEEInfoOut->osPageSize = 0x1000;
+    }
+
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
 

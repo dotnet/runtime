@@ -49,9 +49,7 @@ namespace System.Drawing
             Matrix transform = g.Transform;
             if (!transform.IsIdentity)
             {
-                float[] elements = transform.Elements;
-                _transformOffset.X = elements[4];
-                _transformOffset.Y = elements[5];
+                _transformOffset = transform.Offset;
             }
             transform.Dispose();
 

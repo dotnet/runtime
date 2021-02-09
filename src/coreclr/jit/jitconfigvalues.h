@@ -458,6 +458,7 @@ CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_In
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalProfiling, W("JitMinimalProfiling"), 0)
 CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 0)
+CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 0)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

@@ -2583,11 +2583,6 @@ mono_main (int argc, char* argv[])
 		mono_load_coree (argv [i]);
 #endif
 
-	/* Parse gac loading options before loading assemblies. */
-	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER || action == DO_REGRESSION) {
-		mono_config_parse (config_file);
-	}
-
 	mono_set_defaults (mini_verbose_level, opt);
 	mono_set_os_args (argc, argv);
 

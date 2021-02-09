@@ -98,6 +98,8 @@ stages:
       - Android_x86
       - Android_arm
       - Android_arm64
+      - MacCatalyst_x64
+      - MacCatalyst_arm64
       - tvOS_x64
       - tvOS_arm64
       - iOS_x64
