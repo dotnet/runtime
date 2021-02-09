@@ -14,6 +14,7 @@
 #include "hostfxr.h"
 #include "host_context.h"
 #include "bundle/info.h"
+#include <framework_info.h>
 
 namespace
 {
@@ -327,6 +328,77 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
         result(sdk_dirs.size(), &sdk_dirs[0]);
     }
 
+    return StatusCode::Success;
+}
+
+typedef void (HOSTFXR_CALLTYPE* hostfxr_get_dotnet_environment_info_result_fn)(
+    const struct hostfxr_dotnet_environment_info* info);
+
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
+    const pal::char_t* dotnet_root,
+    void* reserved,
+    hostfxr_get_dotnet_environment_info_result_fn result,
+    void* result_context)
+{
+    const host_context_t* context = fx_muxer_t::get_active_host_context();
+    if (dotnet_root == nullptr)
+    {
+        dotnet_root = _X("");
+    }
+
+    std::vector<sdk_info> sdk_infos;
+    sdk_info::get_all_sdk_infos(dotnet_root, &sdk_infos);
+
+    std::vector<hostfxr_dotnet_environment_sdk_info> environment_sdk_infos;
+    if (!sdk_infos.empty())
+    {
+        environment_sdk_infos.reserve(sdk_infos.size());
+        for (const sdk_info& info : sdk_infos)
+        {
+            hostfxr_dotnet_environment_sdk_info sdk
+            {
+                sizeof(hostfxr_dotnet_environment_sdk_info),
+                info.version.version_as_str.c_str(),
+                info.full_path.c_str()
+            };
+
+            environment_sdk_infos.push_back(sdk);
+        }
+    }
+
+    std::vector<framework_info> framework_infos;
+    framework_info::get_all_framework_infos(dotnet_root, _X(""), &framework_infos);
+
+    std::vector<hostfxr_dotnet_environment_framework_info> environment_framework_infos;
+    if (!framework_infos.empty())
+    {
+        environment_framework_infos.reserve(framework_infos.size());
+        for (const framework_info& info : framework_infos)
+        {
+            hostfxr_dotnet_environment_framework_info fw
+            {
+                sizeof(hostfxr_dotnet_environment_framework_info),
+                info.name.c_str(),
+                info.version.version_as_str.c_str(),
+                info.path.c_str()
+            };
+
+            environment_framework_infos.push_back(fw);
+        }
+    }
+
+    const hostfxr_dotnet_environment_info environment_info
+    {
+        sizeof(hostfxr_dotnet_environment_info),
+        _STRINGIFY(HOST_FXR_PKG_VER),
+        _STRINGIFY(REPO_COMMIT_HASH),
+        environment_sdk_infos.size(),
+        (environment_sdk_infos.empty()) ? nullptr : &environment_sdk_infos[0],
+        environment_framework_infos.size(),
+        (environment_framework_infos.empty()) ? nullptr : &environment_framework_infos[0]
+    };
+
+    result(&environment_info);
     return StatusCode::Success;
 }
 

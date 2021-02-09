@@ -244,6 +244,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        public void Hostfxr_get_dotnet_environment_info()
+        {
+            var f = new SdkResolutionFixture(sharedTestState);
+            string expectedSdks = string.Join(';', new[]
+            {
+                 Path.Combine(f.LocalSdkDir, "0.1.2"),
+                 Path.Combine(f.LocalSdkDir, "1.2.3"),
+                 Path.Combine(f.LocalSdkDir, "5.6.7-preview"),
+            });
+
+            f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info", f.ExeDir })
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk versions:[${expectedSdks}]");
+        }
+
+        [Fact]
         public void Hostpolicy_corehost_set_error_writer_test()
         {
             var fixture = sharedTestState.HostApiInvokerAppFixture.Copy();

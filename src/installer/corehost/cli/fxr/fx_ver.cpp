@@ -21,6 +21,7 @@ fx_ver_t::fx_ver_t(int major, int minor, int patch, const pal::string_t& pre, co
     assert(is_empty() || m_patch >= 0);
     assert(m_pre[0] == 0 || validIdentifiers(m_pre));
     assert(m_build[0] == 0 || validIdentifiers(m_build));
+    version_as_str = this->as_str();
 }
 
 fx_ver_t::fx_ver_t(int major, int minor, int patch, const pal::string_t& pre)
