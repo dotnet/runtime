@@ -246,6 +246,12 @@
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'" />
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
+      
+      <!-- Provide toolchain to be able to AOT on helix -->
+      <HelixCorrelationPayload Include="$(EMSDK_PATH)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'" />
+      <HelixCorrelationPayload Include="$(WasmAppBuilderDir)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'" />
+      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'" />
+      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'" />

@@ -256,6 +256,7 @@
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Buffer.Tests\tests\System.Buffer.Tests.csproj" />
   </ItemGroup>
 
+<!--
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
@@ -267,7 +268,7 @@
                       BuildInParallel="false"
                       Condition="'$(TestTrimming)' == 'true'" />
   </ItemGroup>
-
+-->
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')">
     <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
                       BuildInParallel="false" />
@@ -285,10 +286,13 @@
   </ItemGroup>
   
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)\System.Buffers\tests\*.Tests.csproj" />
+  <!--
     <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
                       BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\wasm\**\*.Test.csproj"
                       BuildInParallel="false" />
+  -->
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
