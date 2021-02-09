@@ -17,7 +17,7 @@ import sys
 
 from os import path
 from coreclr_arguments import *
-from superpmi import ChangeDir
+from superpmi import ChangeDir, TempDir
 from superpmi_setup import run_command
 
 # Start of parser object creation.
@@ -28,11 +28,11 @@ parser.add_argument("-performance_directory", help="Path to performance director
 parser.add_argument("-superpmi_directory", help="Path to superpmi directory")
 parser.add_argument("-python_path", help="Path to python")
 parser.add_argument("-core_root", help="Path to Core_Root directory")
-parser.add_argument("-shim_name", help="Name of collector shim")
 parser.add_argument("-output_mch_path", help="Absolute path to the mch file to produce")
 parser.add_argument("-log_file", help="Name of the log file")
 parser.add_argument("-partition_count", help="Total number of partitions")
 parser.add_argument("-partition_index", help="Partition index to do the collection for")
+parser.add_argument("-arch", help="Architecture")
 
 
 def setup_args(args):
@@ -65,7 +65,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "log_file",
-                        lambda log_file: not os.path.isfile(log_file),
+                        lambda log_file: True, #not os.path.isfile(log_file),
                         "log_file already exist")
 
     coreclr_args.verify(args,
@@ -79,11 +79,6 @@ def setup_args(args):
                         "python_path doesn't exist")
 
     coreclr_args.verify(args,
-                        "shim_name",
-                        lambda unused: True,
-                        "Unable to set shim_name")
-
-    coreclr_args.verify(args,
                         "partition_count",
                         lambda partition_count: partition_count.isnumeric(),
                         "Unable to set partition_count")
@@ -92,6 +87,11 @@ def setup_args(args):
                         "partition_index",
                         lambda partition_index: partition_index.isnumeric(),
                         "Unable to set partition_index")
+
+    coreclr_args.verify(args,
+                        "arch",
+                        lambda arch: arch.lower() in ["x86", "x64", "arm", "arm64"],
+                        "Unable to set arch")
 
     return coreclr_args
 
@@ -107,39 +107,98 @@ def execute(coreclr_args, output_mch_name):
     core_root = coreclr_args.core_root
     superpmi_directory = coreclr_args.superpmi_directory
     performance_directory = coreclr_args.performance_directory
-    shim_name = coreclr_args.shim_name
     log_file = coreclr_args.log_file
     partition_count = coreclr_args.partition_count
     partition_index = coreclr_args.partition_index
-    benchmarks_dll = path.join(performance_directory, "artifacts", "Microbenchmarks.dll")
+    arch = coreclr_args.arch
+    if is_windows:
+        shim_name = "superpmi-shim-collector.dll"
+        corerun_exe = "CoreRun.exe"
+        script_name = "run_microbenchmarks.bat"
+    else:
+        shim_name = "libsuperpmi-shim-collector.so"
+        corerun_exe = "corerun"
+        script_name = "run_microbenchmarks.sh"
+    # benchmarks_dll = path.join(performance_directory, "artifacts", "Microbenchmarks.dll")
 
-    with ChangeDir(performance_directory):
-        print("Inside " + performance_directory)
-        dotnet_exe_name = "dotnet.exe" if is_windows else "dotnet"
-        corerun_exe_name = "CoreRun.exe" if is_windows else "corerun"
-        dotnet_exe = path.join(performance_directory, "tools", "dotnet", dotnet_exe_name)
+    benchmarks_ci_script = path.join(performance_directory, "scripts", "benchmarks_ci.py")
+    microbenchmark_proj = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
+    corerun_exe = path.join(core_root, corerun_exe)
+    script_args = f"--csproj {microbenchmark_proj} -f net6.0 --incremental no --filter *CheckArray* --architecture {arch}"
+    bdn_artifacts = f"--bdn-artifacts {path.join(performance_directory, 'artifacts', 'BenchmarkDotNet.Artifacts')}"
+    bdn_arguments = f"--bdn-arguments=\"--corerun {corerun_exe} --partition-count {partition_count} --partition-index {partition_index} " \
+                        f"--envVars COMPlus_JitName:{shim_name} --iterationCount 1 --warmupCount 0 --invocationCount 1 " \
+                        "--unrollFactor 1 --strategy ColdStart\""
+    collection_command = f"{python_path} {benchmarks_ci_script} {script_args} {bdn_artifacts} {bdn_arguments}"
+
+    with TempDir() as temp_location:
+        script_name = path.join(temp_location, script_name) 
+        with open(script_name, "w") as collection_script:
+            contents = ["echo off", f"echo Invoking {collection_command}", collection_command]
+            collection_script.write(os.linesep.join(contents))
+
         run_command([
-            python_path, path.join(superpmi_directory, "superpmi.py"), "collect",
-
-            # dotnet command to execute Microbenchmarks.dll
-            dotnet_exe, benchmarks_dll + " --filter * --corerun " + path.join(core_root, corerun_exe_name) +
-            " --partition-count " + partition_count + " --partition-index " + partition_index +
-            " --envVars COMPlus_JitName:" + shim_name + " --iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart",
-
-            # superpmi.py collect arguments
-
-            # Path to core_root because the script will be ran from "performance" repo.
-            "-core_root", core_root,
-
-            # Specify that temp_dir is current performance directory, because in order to execute
-            # microbenchmarks, it needs access to the source code.
-            # Also, skip cleaning up once done, because the superpmi script is being
-            # executed from the same folder.
-            "-temp_dir", performance_directory, "--skip_cleanup",
-
-            # Disable ReadyToRun so we always JIT R2R methods and collect them
-            "--use_zapdisable",
+            python_path, path.join(superpmi_directory, "superpmi.py"), "collect", script_name, "-core_root", core_root,
+            "-temp_dir", temp_location, "--skip_cleanup", # cleanup will happen once this block is done executing.
+            "--use_zapdisable", # Disable ReadyToRun so we always JIT R2R methods and collect them
             "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug"])
+
+    # with ChangeDir(performance_directory):
+    #     print("Inside " + performance_directory)
+    #     # dotnet_exe_name = "dotnet.exe" if is_windows else "dotnet"
+
+    #     # dotnet_exe = path.join(performance_directory, "tools", "dotnet", dotnet_exe_name)
+    #     benchmarks_ci_script = path.join(performance_directory, "scripts", "benchmarks_ci.py")
+    #     microbenchmark_proj = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
+    #     corerun_exe = path.join(core_root, "CoreRun.exe" if is_windows else "corerun")
+    #     # script_args = " --csproj " + microbenchmark_proj + " -f net6.0 --incremental no --architecture x64"
+    #     # bdn_artifacts = " --bdn-artifacts " + path.join(performance_directory, "artifacts", "BenchmarkDotNet.Artifacts")
+    #     # bdn_arguments = " --bdn-arguments=\"--filter * --corerun {} --partition-count {} --partition-index {} " \
+    #     #                 "--envVars COMPlus_JitName:{} --iterationCount 1 --warmupCount 0 --invocationCount 1 " \
+    #     #                 "--unrollFactor 1 --strategy ColdStart\"".format(corerun_exe, partition_count,
+    #     #                                                                  partition_index, shim_name)
+
+    #     script_args = ["--csproj", microbenchmark_proj, "-f", "net6.0", "--incremental", "no", "--architecture", "x64"]
+    #     bdn_artifacts = ["--bdn-artifacts", path.join(performance_directory, "artifacts", "BenchmarkDotNet.Artifacts")]
+    #     bdn_arguments = ["--bdn-arguments=\"--filter *", "--corerun", corerun_exe, "--partition-count", partition_count, "--partition-index", partition_index,
+    #                     "--envVars", "COMPlus_JitName:" + shim_name, "--iterationCount", "1", "--warmupCount", "0", "--invocationCount", "1",
+    #                     "--unrollFactor", "1", "--strategy", "ColdStart\""]
+
+    #     run_command([
+    #         python_path, path.join(superpmi_directory, "superpmi.py"), "collect",
+
+    #         # dotnet command to execute Microbenchmarks.dll
+    #         # dotnet_exe, benchmarks_dll + " --filter * --corerun " + path.join(core_root, corerun_exe_name) +
+    #         # " --partition-count " + partition_count + " --partition-index " + partition_index +
+    #         # " --envVars COMPlus_JitName:" + shim_name + " --iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart",
+
+    #         # dotnet_exe, "\"" + benchmarks_dll, "--filter", "*", "--corerun", path.join(core_root, corerun_exe_name), "--partition-count",
+    #         # partition_count, "--partition-index", partition_index, "--envVars", "COMPlus_JitName:" + shim_name, "--iterationCount", "1",
+    #         # "--warmupCount", "0", "--invocationCount", "1", "--unrollFactor", "1", "--strategy", "ColdStart\"",
+
+    #         # python_path, benchmarks_ci_script, script_args + bdn_artifacts + bdn_arguments,
+    #         python_path, benchmarks_ci_script, "--csproj", microbenchmark_proj, "-f", "net6.0", "--incremental", "no", "--architecture", "x64",
+    #         "--bdn-artifacts", path.join(performance_directory, "artifacts", "BenchmarkDotNet.Artifacts"),
+    #         "--bdn-arguments=\"--filter *", "--corerun", corerun_exe, "--partition-count", partition_count,
+    #         "--partition-index", partition_index,
+    #         "--envVars", "COMPlus_JitName:" + shim_name, "--iterationCount", "1", "--warmupCount", "0",
+    #         "--invocationCount", "1",
+    #         "--unrollFactor", "1", "--strategy", "ColdStart\"",
+
+    #         # superpmi.py collect arguments
+
+    #         # Path to core_root because the script will be ran from "performance" repo.
+    #         "-core_root", core_root,
+
+    #         # Specify that temp_dir is current performance directory, because in order to execute
+    #         # microbenchmarks, it needs access to the source code.
+    #         # Also, skip cleaning up once done, because the superpmi script is being
+    #         # executed from the same folder.
+    #         "-temp_dir", performance_directory, "--skip_cleanup",
+
+    #         # Disable ReadyToRun so we always JIT R2R methods and collect them
+    #         "--use_zapdisable",
+    #         "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug"])
 
 
 def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):

@@ -51,7 +51,6 @@
     <!-- Related to Benchmarks -->
     <PerformanceDirectory>%HELIX_CORRELATION_PAYLOAD%\performance</PerformanceDirectory>
     <DotnetExe>%PerformanceDirectory%\tools\dotnet\dotnet.exe</DotnetExe>
-    <SpmiCollectorName>superpmi-shim-collector.dll</SpmiCollectorName>
 
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
@@ -67,7 +66,6 @@
     <!-- Related to Benchmarks -->
     <PerformanceDirectory>$HELIX_CORRELATION_PAYLOAD/performance</PerformanceDirectory>
     <DotnetExe>$PerformanceDirectory/tools/dotnet/dotnet</DotnetExe>
-    <SpmiCollectorName>libsuperpmi-shim-collector.so</SpmiCollectorName>
 
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
@@ -80,7 +78,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -python_path $(Python) -core_root $(SuperPMIDirectory) -shim_name $(SpmiCollectorName)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -python_path $(Python) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup>

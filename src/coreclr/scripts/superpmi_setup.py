@@ -457,26 +457,37 @@ def main(main_args):
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
     copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
-    # Clone and build jitutils
-    try:
-        with tempfile.TemporaryDirectory() as jitutils_directory:
-            run_command(
-                ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
-            # Set dotnet path to run bootstrap
-            os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
-            bootstrap_file = "bootstrap.cmd" if is_windows else "bootstrap.sh"
-            run_command([path.join(jitutils_directory, bootstrap_file)], jitutils_directory)
-
-            copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, [path.join(jitutils_directory, "bin", "pmi.dll")])
-    except PermissionError as pe_error:
-        # Details: https://bugs.python.org/issue26660
-        print('Ignoring PermissionError: {0}'.format(pe_error))
-
     # Workitem directories
     workitem_directory = path.join(source_directory, "workitem")
-    pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
     input_artifacts = ""
 
+    if coreclr_args.collection_name == "benchmarks":
+        # Setup microbenchmarks
+        performance_directory = path.join(workitem_directory, "performance")
+        run_command(
+            ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
+    else:
+        # Setup for pmi/crossgen runs
+
+        # Clone and build jitutils
+        try:
+            with tempfile.TemporaryDirectory() as jitutils_directory:
+                run_command(
+                    ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
+                # Set dotnet path to run bootstrap
+                os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
+                bootstrap_file = "bootstrap.cmd" if is_windows else "bootstrap.sh"
+                run_command([path.join(jitutils_directory, bootstrap_file)], jitutils_directory)
+
+                copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, [path.join(jitutils_directory, "bin", "pmi.dll")])
+        except PermissionError as pe_error:
+            # Details: https://bugs.python.org/issue26660
+            print('Ignoring PermissionError: {0}'.format(pe_error))
+
+    # Setup microbenchmarks
+    if coreclr_args.collection_name == "benchmarks":
+        setup_microbenchmark(correlation_payload_directory, arch)
+    else:
     # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
     # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
     # The following will copy .dotnet to the correlation payload in case we change our mind, and need or want to use it for some scenarios.
@@ -489,6 +500,7 @@ def main(main_args):
     #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
 
         # payload
+        pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
         input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
         exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
     exclude_files = native_binaries_to_ignore
