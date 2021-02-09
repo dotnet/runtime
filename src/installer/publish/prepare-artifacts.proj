@@ -77,6 +77,13 @@
       Lines="$(ProductVersionTxtContents)"
       Overwrite="true"
       Encoding="ASCII" />
+
+    <!-- Generate runtime-productVersion.txt containing the value of $(PackageVersion) -->
+    <WriteLinesToFile
+      File="$(ArtifactsShippingPackagesDir)runtime-productVersion.txt"
+      Lines="$(ProductVersionTxtContents)"
+      Overwrite="true"
+      Encoding="ASCII" />
       
     <ItemGroup>
       <ItemsToPush Remove="@(ItemsToPush)" />
@@ -100,6 +107,11 @@
 
       <ItemsToPush Include="$(ArtifactsShippingPackagesDir)productVersion.txt">
         <RelativeBlobPath>$(InstallersRelativePath)productVersion.txt</RelativeBlobPath>
+        <PublishFlatContainer>true</PublishFlatContainer>
+      </ItemsToPush>
+
+      <ItemsToPush Include="$(ArtifactsShippingPackagesDir)runtime-productVersion.txt">
+        <RelativeBlobPath>$(InstallersRelativePath)runtime-productVersion.txt</RelativeBlobPath>
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
