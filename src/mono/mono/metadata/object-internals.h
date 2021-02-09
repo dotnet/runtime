@@ -1656,8 +1656,6 @@ typedef enum {
 
 MonoRuntimeUnhandledExceptionPolicy
 mono_runtime_unhandled_exception_policy_get (void);
-void
-mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy policy);
 
 void
 mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error);
@@ -1946,7 +1944,7 @@ int
 mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc);
 
 MonoAssembly*
-mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
+mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAssembly *requesting, MonoError *error);
 
 gboolean
 mono_runtime_object_init_handle (MonoObjectHandle this_obj, MonoError *error);

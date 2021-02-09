@@ -2,6 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <PackageDescription>Single producer single consumer byte buffer management.
 
 Commonly Used Types:

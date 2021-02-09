@@ -345,7 +345,8 @@ namespace System.DirectoryServices.Protocols
             // Start the thread.
             var thread = new Thread(new ThreadStart(ThreadRoutine))
             {
-                IsBackground = true
+                IsBackground = true,
+                Name = ".NET LDAP Results Retriever"
             };
             thread.Start();
         }

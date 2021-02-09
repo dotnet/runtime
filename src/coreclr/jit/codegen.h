@@ -1301,12 +1301,7 @@ protected:
 
     void genReturn(GenTree* treeNode);
 
-#ifdef TARGET_ARMARCH
-    void genStackPointerConstantAdjustment(ssize_t spDelta);
-#else  // !TARGET_ARMARCH
     void genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
-#endif // !TARGET_ARMARCH
-
     void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp);
 

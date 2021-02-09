@@ -476,9 +476,6 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji);
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx);
 
-char *
-mono_make_shadow_copy (const char *filename, MonoError *error);
-
 // TODO: remove these on netcore, we should always be explicit about allocating from ALCs
 //#ifndef ENABLE_NETCORE
 gpointer
@@ -550,10 +547,10 @@ MonoImage *mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc,
 					   const char *culture);
 
 MonoAssembly *
-mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
+mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, MonoAssembly *requesting, MonoError *error);
 
 MonoAssembly *
-mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload, gpointer user_data, MonoError *error);
+mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean postload, gpointer user_data, MonoError *error);
 
 MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines);
 
@@ -574,7 +571,7 @@ gboolean
 mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error);
 
 GPtrArray*
-mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly);
+mono_domain_get_assemblies (MonoDomain *domain);
 
 void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values);

@@ -19,7 +19,7 @@
     <ExternalsProject Include="externals.csproj" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
-    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"/>
+    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"/>
     <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'Android'" />
     <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'Browser'" />
   </ItemGroup>

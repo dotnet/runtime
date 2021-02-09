@@ -5209,8 +5209,7 @@ add_file_to_modules_array (MonoDomain *domain, MonoArrayHandle dest, int dest_id
 		goto_if_nok (error, leave);
 		if (!m) {
 			const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
-			gboolean refonly = FALSE;
-			mono_error_set_simple_file_not_found (error, filename, refonly);
+			mono_error_set_simple_file_not_found (error, filename);
 			goto leave;
 		}
 		MonoReflectionModuleHandle rm = mono_module_get_object_handle (domain, m, error);
@@ -5465,13 +5464,13 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
 
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
-	image = mono_image_open_a_lot (alc, filename, &status, TRUE, FALSE);
+	image = mono_image_open_a_lot (alc, filename, &status, FALSE);
 
 	if (!image){
 		if (status == MONO_IMAGE_IMAGE_INVALID)
 			mono_error_set_bad_image_by_name (error, filename, "Invalid Image: %s", filename);
 		else
-			mono_error_set_simple_file_not_found (error, filename, FALSE);
+			mono_error_set_simple_file_not_found (error, filename);
 		g_free (filename);
 		return;
 	}

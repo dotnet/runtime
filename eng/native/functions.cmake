@@ -211,7 +211,7 @@ function(generate_exports_file)
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
-  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(SCRIPT_NAME generateexportedsymbols.sh)
   else()
     set(SCRIPT_NAME generateversionscript.sh)
@@ -252,7 +252,7 @@ function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
       set(strip_destination_file ${strip_source_file}.dwarf)
 
       # Ensure that dsymutil and strip are present
@@ -281,7 +281,7 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${strip_command}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
-    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
       set(strip_destination_file ${strip_source_file}.dbg)
 
       add_custom_command(
@@ -293,7 +293,7 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
-    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
 
     set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   else(CLR_CMAKE_HOST_UNIX)
@@ -316,7 +316,7 @@ function(install_with_stripped_symbols targetName kind destination)
       install_symbols(${symbol_file} ${destination})
     endif()
 
-    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
+    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
       # We want to avoid the kind=TARGET install behaviors which corrupt code signatures on osx-arm64
       set(kind PROGRAMS)
     endif()

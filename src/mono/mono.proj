@@ -19,12 +19,13 @@
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
     <CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</CoreClrFileName>
+    <CoreClrFileName Condition="'$(TargetsMacCatalyst)' == 'true'">libcoreclr.dylib</CoreClrFileName>
     <CoreClrFileName Condition="'$(CoreClrFileName)' == ''">libcoreclr.so</CoreClrFileName>
     <MonoFileName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">libmonosgen-2.0.dylib</MonoFileName>
     <MonoFileName Condition="'$(TargetsAndroid)' == 'true'">libmonosgen-2.0.so</MonoFileName>
     <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">libmonosgen-2.0.a</MonoFileName>
     <MonoFileName Condition="'$(MonoFileName)' == ''">$(CoreClrFileName)</MonoFileName>
-    <MonoStaticFileName Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">libmonosgen-2.0.a</MonoStaticFileName>
+    <MonoStaticFileName Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">libmonosgen-2.0.a</MonoStaticFileName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
     <CoreClrTestCoreRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(TargetOS).$(Platform).$(CoreClrTestConfig)', 'Tests', 'Core_Root'))</CoreClrTestCoreRoot>
@@ -64,7 +65,7 @@
   </ItemGroup>
 
   <!-- CI specific build options -->    
-  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true')">
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true')">
     <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
   </ItemGroup>
 
@@ -199,7 +200,22 @@
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <_MonoLDFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
-      <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="arch -arch arm64" />
+      <_MonoBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
+    </ItemGroup>
+    <!-- Mac Catalyst specific options -->
+    <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
+      <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_VARIANT=MacCatalyst" />
+      <!-- https://gitlab.kitware.com/cmake/cmake/-/issues/20132 -->
+      <_MonoCPPFLAGS Include="-Wno-overriding-t-option" />
+      <_MonoCFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
+      <_MonoCFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.5-macabi" />
+      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
+      <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
+      <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.5-macabi" />
+      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
+      <_MonoLDFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
+      <!-- Force running as arm64 even when invoked from an x86 msbuild process -->
+      <_MonoBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
     </ItemGroup>
     <!-- WASM specific options -->
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
@@ -231,6 +247,9 @@
       <_MonoCMakeVersionMin Condition="'$(TargetsiOS)' == 'true'">$(iOSVersionMin)</_MonoCMakeVersionMin>
       <_MonoCMakeVersionMin Condition="'$(TargetstvOS)' == 'true'">$(tvOSVersionMin)</_MonoCMakeVersionMin>
     </PropertyGroup>
+    <ItemGroup Condition="('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true') and '$(Platform)' == 'arm64'">
+      <_MonoCMakeArgs Include="-DCMAKE_OSX_ARCHITECTURES=arm64"/>
+    </ItemGroup>
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_NAME=$(_MonoCMakeSystemName)"/>
       <_MonoCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(_MonoCMakeVersionMin)" />
@@ -498,11 +517,12 @@
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true'">$(MonoObjDir)out\bin\monosgen-2.0.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsMacCatalyst)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetstvOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsBrowser)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
-      <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
+      <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true'">true</_MonoIncludeInterpStaticFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
@@ -555,9 +575,9 @@
     <Copy SourceFiles="@(_MonoIncludeArtifacts)"
           DestinationFiles="@(_MonoIncludeArtifacts->'$(RuntimeBinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true"
-          Condition="'$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')"/>
+          Condition="'$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')"/>
 
-    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="install_name_tool -id @rpath/$(MonoFileName) $(RuntimeBinDir)$(MonoFileName)" />
+    <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="install_name_tool -id @rpath/$(MonoFileName) $(RuntimeBinDir)$(MonoFileName)" />
   </Target>
 
   <Target Name="CleanMono">

@@ -220,7 +220,6 @@ struct _MonoAssembly {
 	MonoImage *image;
 	GSList *friend_assembly_names; /* Computed by mono_assembly_load_friends () */
 	guint8 friend_assembly_names_inited;
-	guint8 in_gac;
 	guint8 dynamic;
 	MonoAssemblyContext context;
 	guint8 wrap_non_exception_throws;
@@ -360,9 +359,6 @@ struct _MonoImage {
 
 	/* Whenever this is a dynamically emitted module */
 	guint8 dynamic : 1;
-
-	/* Whenever this is a reflection only image */
-	guint8 ref_only : 1;
 
 	/* Whenever this image contains uncompressed metadata */
 	guint8 uncompressed_metadata : 1;
@@ -1093,8 +1089,6 @@ void mono_assembly_close_finish (MonoAssembly *assembly);
 gboolean mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2);
 
 void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info);
-void mono_config_parse_assembly_bindings (const char *filename, int major, int minor, void *user_data,
-					  void (*infocb)(MonoAssemblyBindingInfo *info, void *user_data));
 
 gboolean
 mono_assembly_name_parse_full 		     (const char	   *name,

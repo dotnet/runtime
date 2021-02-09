@@ -4940,18 +4940,6 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObjectHandle delegate
 static MonoRuntimeUnhandledExceptionPolicy runtime_unhandled_exception_policy = MONO_UNHANDLED_POLICY_CURRENT;
 
 /**
- * mono_runtime_unhandled_exception_policy_set:
- * \param policy the new policy
- * This is a VM internal routine.
- * Sets the runtime policy for handling unhandled exceptions.
- */
-void
-mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy policy)
-{
-	runtime_unhandled_exception_policy = policy;
-}
-
-/**
  * mono_runtime_unhandled_exception_policy_get:
  *
  * This is a VM internal routine.

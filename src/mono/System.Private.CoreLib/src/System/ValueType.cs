@@ -10,6 +10,14 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class ValueType
     {
+#if TARGET_BROWSER
+        // Tracking issue https://github.com/dotnet/runtime/issues/47909
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.Runtime", "System.Private.Runtime.InteropServices.JavaScript")]
+#endif
+        protected ValueType()
+        {
+        }
+
         // This is also used by RuntimeHelpers
         internal static bool DefaultEquals(object o1, object o2)
         {

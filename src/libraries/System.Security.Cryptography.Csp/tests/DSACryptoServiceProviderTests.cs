@@ -248,11 +248,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void VerifyHash_InvalidHashAlgorithm_Throws()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(DSATestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -264,11 +260,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void SignHash_DefaultAlgorithm_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(DSATestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -280,11 +272,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void SignHash_InvalidHashAlgorithm_Throws()
         {
-            byte[] hashVal;
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                hashVal = sha256.ComputeHash(DSATestData.HelloBytes);
-            }
+            byte[] hashVal = SHA256.HashData(DSATestData.HelloBytes);
 
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -295,11 +283,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void VerifyHash_DefaultAlgorithm_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(DSATestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
             using (var dsa = new DSACryptoServiceProvider())
             {
@@ -311,11 +295,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void VerifyHash_CaseInsensitive_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(DSATestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(DSATestData.HelloBytes);
 
             using (var dsa = new DSACryptoServiceProvider())
             {
