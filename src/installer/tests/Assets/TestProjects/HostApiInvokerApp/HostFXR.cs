@@ -27,40 +27,40 @@ namespace HostApiInvokerApp
             [StructLayout(LayoutKind.Sequential)]
             internal struct hostfxr_dotnet_environment_sdk_info
             {
-                public int size;
+                internal int size;
                 [MarshalAs(UnmanagedType.LPWStr)]
-                public string path;
+                internal string path;
                 [MarshalAs(UnmanagedType.LPWStr)]
-                public string version;
+                internal string version;
             }
 
             [StructLayout(LayoutKind.Sequential)]
             internal struct hostfxr_dotnet_environment_framework_info
             {
-                public int size;
+                internal int size;
                 [MarshalAs(UnmanagedType.LPWStr)]
-                public string name;
+                internal string name;
                 [MarshalAs(UnmanagedType.LPWStr)]
-                public string version;
+                internal string version;
                 [MarshalAs(UnmanagedType.LPWStr)]
-                public string path;
+                internal string path;
             }
 
             [StructLayout(LayoutKind.Sequential)]
             internal struct hostfxr_dotnet_environment_info
             {
-                public int size;
+                internal int size;
 
                 [MarshalAs(UnmanagedType.LPWStr)]
-                public string hostfxr_version;
+                internal string hostfxr_version;
                 [MarshalAs(UnmanagedType.LPWStr)]
-                public string hostfxr_commit_hash;
+                internal string hostfxr_commit_hash;
 
-                public int sdk_count;
-                public IntPtr sdks;
+                internal int sdk_count;
+                internal IntPtr sdks;
 
-                public int framework_count;
-                public IntPtr frameworks;
+                internal int framework_count;
+                internal IntPtr frameworks;
             }
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = Utils.OSCharSet)]
