@@ -34,7 +34,7 @@ For .Net you can examine the list in ```NetCoreAppLibrary.Props```
 
 If the library is part of a targeting pack and also contains an asset applicable to the .NET Framework then we will increment the assembly version for that asset.
 eg.
-``` 
+```
 <AssemblyVersion Condition="$(TargetFramework.StartsWith('net4'))">5.0.0.1</AssemblyVersion>
 <SkipValidatePackage>true</SkipValidatePackage>
 ```
