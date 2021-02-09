@@ -264,7 +264,6 @@
                       Condition="'$(TestPackages)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
                       Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false"
                       Condition="'$(TestTrimming)' == 'true'" />
   </ItemGroup>
 

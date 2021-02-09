@@ -92,15 +92,13 @@
 
   <Target Name="PublishTrimmedProjects"
           DependsOnTargets="GenerateProjects">
-    <PropertyGroup>
-      <TestPublishTrimmedCommand>"$(DotNetTool)"</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) build /t:PublishTrimmed</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /nr:false</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /warnaserror</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
-    </PropertyGroup>
+    <MSBuild Projects="@(TestConsoleApps)"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=$(Configuration);@(CliEnvironment)" />
 
-    <Exec Command="$(TestPublishTrimmedCommand) %(TestConsoleApps.AdditionalArgs)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
+    <MSBuild Projects="@(TestConsoleApps)"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);@(CliEnvironment)" />
   </Target>
 
   <Target Name="ExecuteApplications"
