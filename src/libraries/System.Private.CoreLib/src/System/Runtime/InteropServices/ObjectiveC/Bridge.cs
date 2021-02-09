@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// Initialize reference tracking for the Objective-C bridge API.
         /// </summary>
         /// <param name="beginEndCallback">Called when tracking begins and ends.</param>
-        /// <param name="isReferencedCallback">Called to determine if a managed object instance is reference.</param>
+        /// <param name="isReferencedCallback">Called to determine if a managed object instance is referenced elsewhere, and must not be collected by the GC.</param>
         /// <param name="trackedObjectEnteredFinalization">Called when a tracked object enters the finalization queue.</param>
         /// <exception cref="InvalidOperationException">Thrown if this API has already been called.</exception>
         /// <remarks>
