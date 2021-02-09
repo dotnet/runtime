@@ -3004,22 +3004,21 @@ void Compiler::fgDebugCheckNodesUniqueness()
 
 //------------------------------------------------------------------------------
 // fgDebugCheckLoopTable: checks that the loop table is valid.
-//    - If the method has no loops, no basic block has a loop number
-//    - If the method has loops, loop count is not zero and the loop table is not null
+//    - If the method has natural loops, the loop table is not null
 //    - All basic blocks with loop numbers set have a corresponding loop in the table
+//    - All basic blocks without a loop number are not in a loop
 //    - All parents of the loop with the block contain that block
 //
 void Compiler::fgDebugCheckLoopTable()
 {
-    if (fgHasLoops)
+    if (optLoopCount > 0)
     {
         assert(optLoopTable != nullptr);
-        assert(optLoopCount >= 1);
     }
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
-        if (!fgHasLoops)
+        if (optLoopCount == 0)
         {
             assert(block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP);
             continue;
@@ -3027,28 +3026,40 @@ void Compiler::fgDebugCheckLoopTable()
 
         // Walk the loop table and find the first loop that contains our block.
         // It should be the innermost one.
-        int loopNumber = BasicBlock::NOT_IN_LOOP;
+        int loopNum = BasicBlock::NOT_IN_LOOP;
         for (int i = optLoopCount - 1; i >= 0; i--)
         {
+            // Ignore removed loops
+            if (optLoopTable[i].lpFlags & LPFLG_REMOVED)
+            {
+                continue;
+            }
             // Does this loop contain our block?
             if (optLoopTable[i].lpContains(block))
             {
-                loopNumber = i;
+                loopNum = i;
                 break;
             }
         }
 
-        // There must be at least one loop that contains this block
-        assert(loopNumber != BasicBlock::NOT_IN_LOOP);
-        // It must be the one pointed to by bbNatLoopNum.
-        assert(block->bbNatLoopNum == loopNumber);
+        // If there is at least one loop that contains this block...
+        if (loopNum != BasicBlock::NOT_IN_LOOP)
+        {
+            // ...it must be the one pointed to by bbNatLoopNum.
+            assert(block->bbNatLoopNum == loopNum);
+        }
+        else
+        {
+            // Otherwise, this block should not point to a loop.
+            assert(block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP);
+        }
 
         // All loops that contain the innermost loop with this block must also contain this block.
-        while (loopNumber != BasicBlock::NOT_IN_LOOP)
+        while (loopNum != BasicBlock::NOT_IN_LOOP)
         {
-            assert(optLoopTable[loopNumber].lpContains(block));
+            assert(optLoopTable[loopNum].lpContains(block));
 
-            loopNumber = optLoopTable[loopNumber].lpParent;
+            loopNum = optLoopTable[loopNum].lpParent;
         }
     }
 }

@@ -3832,7 +3832,6 @@ void Compiler::optUnrollLoops()
                     }
                     // Block weight should no longer have the loop multiplier
                     newBlock->modifyBBWeight(newBlock->bbWeight / BB_LOOP_WEIGHT_SCALE);
-
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
                     assert(newBlock->bbJumpDest == nullptr);
 
