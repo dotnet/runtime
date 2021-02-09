@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -24,28 +25,13 @@ namespace System.Linq
                     return element!;
                 }
             }
-            else
+            else if (source is IList<TSource> list)
             {
-                if (source is IList<TSource> list)
-                {
-                    return list[index];
-                }
-
-                if (index >= 0)
-                {
-                    using (IEnumerator<TSource> e = source.GetEnumerator())
-                    {
-                        while (e.MoveNext())
-                        {
-                            if (index == 0)
-                            {
-                                return e.Current;
-                            }
-
-                            index--;
-                        }
-                    }
-                }
+                return list[index];
+            }
+            else if (TryGetElement(source, index, out TSource? element))
+            {
+                return element!;
             }
 
             ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
@@ -74,12 +60,12 @@ namespace System.Linq
                 return source.ElementAt(index.Value);
             }
 
-            if (!TryGetElementAt(source, index.Value, out TSource? result))
+            if (!TryGetElementFromEnd(source, index.Value, out TSource? element))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return result!;
+            return element!;
         }
 
         public static TSource? ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, int index)
@@ -94,30 +80,16 @@ namespace System.Linq
                 return partition.TryGetElementAt(index, out bool _);
             }
 
-            if (index >= 0)
+            if (source is IList<TSource> list)
             {
-                if (source is IList<TSource> list)
+                if (index >= 0 && index < list.Count)
                 {
-                    if (index < list.Count)
-                    {
-                        return list[index];
-                    }
+                    return list[index];
                 }
-                else
-                {
-                    using (IEnumerator<TSource> e = source.GetEnumerator())
-                    {
-                        while (e.MoveNext())
-                        {
-                            if (index == 0)
-                            {
-                                return e.Current;
-                            }
-
-                            index--;
-                        }
-                    }
-                }
+            }
+            else if (TryGetElement(source, index, out TSource? element))
+            {
+                return element;
             }
 
             return default;
@@ -145,15 +117,39 @@ namespace System.Linq
                 return source.ElementAtOrDefault(index.Value);
             }
 
-            TryGetElementAt(source, index.Value, out TSource? result);
-            return result;
+            TryGetElementFromEnd(source, index.Value, out TSource? element);
+            return element;
         }
 
-        private static bool TryGetElementAt<TSource>(IEnumerable<TSource> source, int indexFromEnd, [MaybeNullWhen(false)] out TSource? result)
+        private static bool TryGetElement<TSource>(IEnumerable<TSource> source, int index, [MaybeNullWhen(false)] out TSource element)
         {
+            Debug.Assert(source != null);
+
+            if (index >= 0)
+            {
+                using IEnumerator<TSource> e = source.GetEnumerator();
+                while (e.MoveNext())
+                {
+                    if (index == 0)
+                    {
+                        element = e.Current;
+                        return true;
+                    }
+
+                    index--;
+                }
+            }
+
+            element = default;
+            return false;
+        }
+
+        private static bool TryGetElementFromEnd<TSource>(IEnumerable<TSource> source, int indexFromEnd, [MaybeNullWhen(false)] out TSource element)
+        {
+            Debug.Assert(source != null);
             Debug.Assert(indexFromEnd >= 0);
 
-            result = default;
+            element = default;
             if (indexFromEnd == 0)
             {
                 return false;
@@ -171,7 +167,7 @@ namespace System.Linq
                 {
                     if (indexFromEnd <= count)
                     {
-                        result = partition.TryGetElementAt(count - indexFromEnd, out bool found);
+                        element = partition.TryGetElementAt(count - indexFromEnd, out bool found);
                         return found;
                     }
 
@@ -181,13 +177,23 @@ namespace System.Linq
             else if (source is IList<TSource> list)
             {
                 int count = list.Count;
-                if (indexFromEnd <= count)
+                if (count > 0 && indexFromEnd <= count)
                 {
-                    result = list[count - indexFromEnd];
+                    element = list[count - indexFromEnd];
                     return true;
                 }
 
                 return false;
+            }
+            else if (source is ICollection<TSource> genericCollection)
+            {
+                int count = genericCollection.Count;
+                return count > 0 && TryGetElement(source, count - indexFromEnd, out element);
+            }
+            else if (source is ICollection collection)
+            {
+                int count = collection.Count;
+                return count > 0 && TryGetElement(source, count - indexFromEnd, out element);
             }
 
             using IEnumerator<TSource> e = source.GetEnumerator();
@@ -210,7 +216,7 @@ namespace System.Linq
 
             if (queue.Count == indexFromEnd)
             {
-                result = queue.Dequeue();
+                element = queue.Dequeue();
                 return true;
             }
 

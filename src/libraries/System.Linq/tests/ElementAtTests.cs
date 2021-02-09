@@ -275,6 +275,68 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void NonEmptySource_Consistency_Collection()
+        {
+            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+            Assert.Equal(5, new TestCollection<int>(source).ElementAt(5));
+            Assert.Equal(5, new TestCollection<int>(source).ElementAt(new Index(5)));
+            Assert.Equal(5, new TestCollection<int>(source).ElementAt(^5));
+
+            Assert.Equal(0, new TestCollection<int>(source).ElementAt(0));
+            Assert.Equal(0, new TestCollection<int>(source).ElementAt(new Index(0)));
+            Assert.Equal(0, new TestCollection<int>(source).ElementAt(^10));
+
+            Assert.Equal(9, new TestCollection<int>(source).ElementAt(9));
+            Assert.Equal(9, new TestCollection<int>(source).ElementAt(new Index(9)));
+            Assert.Equal(9, new TestCollection<int>(source).ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^11));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(10)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void NonEmptySource_Consistency_NonGenericCollection()
+        {
+            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+            Assert.Equal(5, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(5));
+            Assert.Equal(5, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(5)));
+            Assert.Equal(5, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^5));
+
+            Assert.Equal(0, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(0));
+            Assert.Equal(0, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(0)));
+            Assert.Equal(0, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^10));
+
+            Assert.Equal(9, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(9));
+            Assert.Equal(9, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(9)));
+            Assert.Equal(9, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^11));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(10)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
         public void EmptySource_Consistency()
         {
             int[] source = {  };
@@ -356,6 +418,48 @@ namespace System.Linq.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(int.MaxValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartition(source).ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void EmptySource_Consistency_Collection()
+        {
+            int[] source = { };
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void EmptySource_Consistency_NonGenericCollection()
+        {
+            int[] source = { };
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MinValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(int.MaxValue)));
         }
     }
 }
