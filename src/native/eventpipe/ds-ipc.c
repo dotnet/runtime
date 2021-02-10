@@ -661,7 +661,7 @@ connect_port_get_ipc_poll_handle_func (
 	if (!connect_port->port.stream) {
 		DS_LOG_INFO_0 ("connect_port_get_ipc_poll_handle - cache was empty!\n");
 		// cache is empty, reconnect, e.g., there was a disconnect
-		connection = ds_ipc_connect (connect_port->port.ipc, callback);
+		connection = ds_ipc_connect (connect_port->port.ipc, 100 /*ms*/, callback);
 		if (!connection) {
 			if (callback)
 				callback("Failed to connect to client connection", -1);

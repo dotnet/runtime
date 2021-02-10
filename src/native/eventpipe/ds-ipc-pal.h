@@ -71,6 +71,7 @@ ds_ipc_accept (
 DiagnosticsIpcStream *
 ds_ipc_connect (
 	DiagnosticsIpc *ipc,
+	uint32_t timeout_ms,
 	ds_ipc_error_callback_func callback);
 
 // Closes an open IPC.

@@ -473,6 +473,7 @@ ep_on_error:
 DiagnosticsIpcStream *
 ds_ipc_connect (
 	DiagnosticsIpc *ipc,
+	uint32_t timeout_ms,
 	ds_ipc_error_callback_func callback)
 {
 	EP_ASSERT (ipc != NULL);
