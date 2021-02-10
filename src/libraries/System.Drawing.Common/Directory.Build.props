@@ -6,6 +6,5 @@
     <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
     <PackageVersion>5.0.1</PackageVersion>
     <AssemblyVersion>5.0.0.1</AssemblyVersion>
-    <HarvestVersion>4.5.2</HarvestVersion>
   </PropertyGroup>
 </Project>
