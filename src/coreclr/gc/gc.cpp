@@ -22139,7 +22139,7 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
                 if (heap_segment_overflow_p (seg))
                 {
                     assert (!concurrent_p);
-                    current_min_add = min (heap_segment_mem (seg), min_add);
+                    current_min_add = max (heap_segment_mem (seg), min_add);
                     current_max_add = min (heap_segment_allocated (seg), max_add);
                 }
 #endif //USE_REGIONS
@@ -26476,11 +26476,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
             }
 #endif //GC_CONFIG_DRIVEN
 
-#ifndef USE_REGIONS
             for (i = 0; i < n_heaps; i++)
             {
                 if (pol_max > g_heaps[i]->gc_policy)
                     g_heaps[i]->gc_policy = pol_max;
+#ifndef USE_REGIONS
                 //get the segment while we are serialized
                 if (g_heaps[i]->gc_policy == policy_expand)
                 {
@@ -26493,8 +26493,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
                         g_heaps[i]->gc_policy = policy_compact;
                     }
                 }
-            }
 #endif //!USE_REGIONS
+            }
 
             BOOL is_full_compacting_gc = FALSE;
 

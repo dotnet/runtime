@@ -39,6 +39,7 @@ namespace System.Net.Sockets.Tests
         public virtual bool ValidatesArrayArguments => true;
         public virtual bool UsesSync => false;
         public virtual bool UsesApm => false;
+        public virtual bool UsesEap => false;
         public virtual bool DisposeDuringOperationResultsInDisposedException => false;
         public virtual bool ConnectAfterDisconnectResultsInInvalidOperationException => false;
         public virtual bool SupportsMultiConnect => true;
@@ -182,7 +183,7 @@ namespace System.Net.Sockets.Tests
                     tcs.TrySetResult(result);
                 }
                 catch (Exception e) { tcs.TrySetException(e); }
-                
+
             }, null);
             return tcs.Task;
         }
@@ -275,6 +276,7 @@ namespace System.Net.Sockets.Tests
 
     public sealed class SocketHelperEap : SocketHelperBase
     {
+        public override bool UsesEap => true;
         public override bool ValidatesArrayArguments => false;
         public override bool SupportsAcceptReceive => true;
 
@@ -423,6 +425,7 @@ namespace System.Net.Sockets.Tests
         public bool ValidatesArrayArguments => _socketHelper.ValidatesArrayArguments;
         public bool UsesSync => _socketHelper.UsesSync;
         public bool UsesApm => _socketHelper.UsesApm;
+        public bool UsesEap => _socketHelper.UsesEap;
         public bool DisposeDuringOperationResultsInDisposedException => _socketHelper.DisposeDuringOperationResultsInDisposedException;
         public bool ConnectAfterDisconnectResultsInInvalidOperationException => _socketHelper.ConnectAfterDisconnectResultsInInvalidOperationException;
         public bool SupportsMultiConnect => _socketHelper.SupportsMultiConnect;
@@ -431,6 +434,22 @@ namespace System.Net.Sockets.Tests
         public bool SupportsSendFileSlicing => _socketHelper.SupportsSendFileSlicing;
         public void Listen(Socket s, int backlog) => _socketHelper.Listen(s, backlog);
         public void ConfigureNonBlocking(Socket s) => _socketHelper.ConfigureNonBlocking(s);
+
+        // A helper method to observe exceptions on sync paths of async variants.
+        // In that case, exceptions should be seen without awaiting completion.
+        // Synchronous variants are started on a separate thread using Task.Run(), therefore we should await the task.
+        protected async Task<TException> AssertThrowsSynchronously<TException>(Func<Task> testCode)
+            where TException : Exception
+        {
+            if (UsesSync)
+            {
+                return await Assert.ThrowsAsync<TException>(testCode);
+            }
+            else
+            {
+                return Assert.Throws<TException>(() => { _ = testCode(); });
+            }
+        }
     }
 
     public class SocketHelperSpanSync : SocketHelperArraySync
@@ -440,6 +459,20 @@ namespace System.Net.Sockets.Tests
             Task.Run(() => s.Receive((Span<byte>)buffer, SocketFlags.None));
         public override Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) =>
             Task.Run(() => s.Send((ReadOnlySpan<byte>)buffer, SocketFlags.None));
+        public override Task<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
+            Task.Run(() =>
+            {
+                SocketFlags socketFlags = SocketFlags.None;
+                IPPacketInformation ipPacketInformation;
+                int received = s.ReceiveMessageFrom((Span<byte>)buffer, ref socketFlags, ref endPoint, out ipPacketInformation);
+                return new SocketReceiveMessageFromResult
+                {
+                    ReceivedBytes = received,
+                    SocketFlags = socketFlags,
+                    RemoteEndPoint = endPoint,
+                    PacketInformation = ipPacketInformation
+                };
+            });
         public override Task SendFileAsync(Socket s, string fileName, ArraySegment<byte> preBuffer, ArraySegment<byte> postBuffer, TransmitFileOptions flags) =>
             Task.Run(() => s.SendFile(fileName, preBuffer, postBuffer, flags));
         public override bool UsesSync => true;

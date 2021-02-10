@@ -29,7 +29,7 @@ namespace System.Linq.Tests
             Assert.True(ReferenceEquals(GetEmptyPartition<int>(), GetEmptyPartition<int>()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, ".NET Core returns the instance as an optimization")]
         public void SkipSame()
         {
@@ -37,7 +37,7 @@ namespace System.Linq.Tests
             Assert.Same(empty, empty.Skip(2));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, ".NET Core returns the instance as an optimization")]
         public void TakeSame()
         {

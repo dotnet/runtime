@@ -17,6 +17,29 @@
 #include "hash.h"
 #include "agnostic.h"
 
+extern bool g_debugRec;
+extern bool g_debugRep;
+
+#if 0
+// Enable these to get verbose logging during record or playback.
+#define DEBUG_REC(x)    \
+    if (g_debugRec) {   \
+        printf("rec");  \
+        x;              \
+        printf("\n");   \
+    }
+
+#define DEBUG_REP(x)    \
+    if (g_debugRep) {   \
+        printf("rep");  \
+        x;              \
+        printf("\n");   \
+    }
+#else
+#define DEBUG_REC(x)
+#define DEBUG_REP(x)
+#endif
+
 // Helper function for dumping.
 const char* toString(CorInfoType cit);
 

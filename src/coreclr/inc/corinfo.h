@@ -1048,6 +1048,9 @@ typedef struct CORINFO_VarArgInfo *         CORINFO_VARARGS_HANDLE;
 // (or the open instantiation) is being referred to.
 typedef struct CORINFO_CONTEXT_STRUCT_*     CORINFO_CONTEXT_HANDLE;
 
+// MethodSignatureInfo is an opaque handle for passing method signature information across the Jit/EE interface
+struct MethodSignatureInfo;
+
 typedef struct CORINFO_DEPENDENCY_STRUCT_
 {
     CORINFO_MODULE_HANDLE moduleFrom;
@@ -1091,10 +1094,11 @@ struct CORINFO_SIG_INFO
     CorInfoType             retType : 8;
     unsigned                flags   : 8;    // used by IL stubs code
     unsigned                numArgs : 16;
-    struct CORINFO_SIG_INST sigInst;  // information about how type variables are being instantiated in generic code
+    struct CORINFO_SIG_INST sigInst;        // information about how type variables are being instantiated in generic code
     CORINFO_ARG_LIST_HANDLE args;
     PCCOR_SIGNATURE         pSig;
     unsigned                cbSig;
+    MethodSignatureInfo*    methodSignature;// used in place of pSig and cbSig to reference a method signature object handle
     CORINFO_MODULE_HANDLE   scope;          // passed to getArgClass
     mdToken                 token;
 

@@ -262,7 +262,7 @@ namespace System.Runtime.InteropServices.JavaScript
             internal RuntimeMethodHandle handle;
         }
 
-        private static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
+        public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
         {
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;

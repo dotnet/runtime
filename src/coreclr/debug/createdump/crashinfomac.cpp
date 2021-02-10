@@ -105,8 +105,10 @@ CrashInfo::EnumerateMemoryRegions()
         mach_msg_type_number_t count = VM_REGION_SUBMAP_INFO_COUNT_64;
         kern_return_t result = ::mach_vm_region_recurse(Task(), &address, &size, &depth, (vm_region_recurse_info_t)&info, &count);
         if (result != KERN_SUCCESS) {
-            fprintf(stderr, "mach_vm_region_recurse for address %016llx %08llx FAILED %x %s\n", address, size, result, mach_error_string(result));
-            return false;
+            // Iteration can be ended on a KERN_INVALID_ADDRESS
+            // Allow other kernel errors to continue too so we can get at least part of a dump
+            TRACE("mach_vm_region_recurse for address %016llx %08llx FAILED %x %s\n", address, size, result, mach_error_string(result));
+            break;
         }
         TRACE("%016llx - %016llx (%06llx) %08llx %s %d %d %d %c%c%c %02x\n",
             address,

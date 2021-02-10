@@ -35,7 +35,6 @@
 #include "mono/metadata/cominterop.h"
 #include "mono/metadata/remoting.h"
 #include "mono/metadata/reflection-internals.h"
-#include "mono/metadata/threadpool.h"
 #include "mono/metadata/handle.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/icall-internals.h"
@@ -1645,13 +1644,11 @@ handle_enum:
 
 	if (sig->ret->byref) {
 		/* perform indirect load and return by value */
-#ifdef ENABLE_NETCORE
 		int pos;
 		mono_mb_emit_byte (mb, CEE_DUP);
 		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
 		mono_mb_emit_exception_full (mb, "Mono", "NullByRefReturnException", NULL);
 		mono_mb_patch_branch (mb, pos);
-#endif
 
 		int ldind_op;
 		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
@@ -2061,7 +2058,6 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	if (need_gc_safe)
 		gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
 
-#ifdef ENABLE_NETCORE
 	if (!func && !aot && !func_param && !MONO_CLASS_IS_IMPORT (mb->method->klass)) {
 		/*
 		 * On netcore, its possible to register pinvoke resolvers at runtime, so
@@ -2094,7 +2090,6 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_stloc (mb, func_addr_local);
 	}
-#endif
 
 	/*
 	 * cookie = mono_threads_enter_gc_safe_region_unbalanced (ref dummy);
@@ -5348,19 +5343,13 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (action){
 	case MARSHAL_ACTION_CONV_IN: {
-		int dar_release_slot, pos;
+		int dar_release_slot, pos_done;
 
 		conv_arg = mono_mb_add_local (mb, int_type);
 		*conv_arg_type = int_type;
 
 		if (!sh_dangerous_add_ref)
 			init_safe_handle ();
-
-		mono_mb_emit_ldarg (mb, argnum);
-		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-		mono_mb_emit_exception (mb, "ArgumentNullException", NULL);
-		
-		mono_mb_patch_branch (mb, pos);
 
 		/* Create local to hold the ref parameter to DangerousAddRef */
 		dar_release_slot = mono_mb_add_local (mb, boolean_type);
@@ -5369,13 +5358,20 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_icon (mb, 0);
 		mono_mb_emit_stloc (mb, dar_release_slot);
 
+		/* set conv = IntPtr.Zero; */
+		mono_mb_emit_icon (mb, 0);
+		mono_mb_emit_byte (mb, CEE_CONV_I);
+		mono_mb_emit_stloc (mb, conv_arg);
+
 		if (t->byref) {
 			int old_handle_value_slot = mono_mb_add_local (mb, int_type);
 
-			if (!is_in (t)) {
-				mono_mb_emit_icon (mb, 0);
-				mono_mb_emit_stloc (mb, conv_arg);
-			} else {
+			if (is_in (t)) {
+				/* Load and check the byref SafeHandle */
+				mono_mb_emit_ldarg(mb, argnum);
+				mono_mb_emit_byte(mb, CEE_LDIND_REF);
+				pos_done = mono_mb_emit_branch(mb, CEE_BRFALSE);
+
 				/* safehandle.DangerousAddRef (ref release) */
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
@@ -5390,8 +5386,14 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				mono_mb_emit_byte (mb, CEE_DUP);
 				mono_mb_emit_stloc (mb, conv_arg);
 				mono_mb_emit_stloc (mb, old_handle_value_slot);
+
+				mono_mb_patch_branch(mb, pos_done);
 			}
 		} else {
+			/* Load and check the SafeHandle */
+			mono_mb_emit_ldarg(mb, argnum);
+			pos_done = mono_mb_emit_branch(mb, CEE_BRFALSE);
+
 			/* safehandle.DangerousAddRef (ref release) */
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc_addr (mb, dar_release_slot);
@@ -5402,6 +5404,8 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoSafeHandle, handle));
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 			mono_mb_emit_stloc (mb, conv_arg);
+
+			mono_mb_patch_branch(mb, pos_done);
 		}
 
 		break;
@@ -5487,7 +5491,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 		break;
 	}
-		
+
 	case MARSHAL_ACTION_CONV_RESULT: {
 		ERROR_DECL (error);
 		MonoMethod *ctor = NULL;
@@ -5521,7 +5525,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
 	}
-		
+
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
 		fprintf (stderr, "mono/marshal: SafeHandles missing MANAGED_CONV_IN\n");
 		break;
@@ -6513,11 +6517,7 @@ emit_create_string_hack_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig,
 {
 	int i;
 
-#ifdef ENABLE_NETCORE
 	g_assert (!mono_method_signature_internal (res)->hasthis);
-#else
-	mono_mb_emit_byte (mb, CEE_LDARG_0);
-#endif
 	for (i = 1; i <= csig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i);
 	mono_mb_emit_managed_call (mb, res, NULL);

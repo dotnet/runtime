@@ -487,7 +487,7 @@ namespace Internal.JitInterface
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
-                            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                            var methodIL = HandleToObject(pResolvedToken.tokenScope);
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
                             helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
                         }
@@ -878,7 +878,7 @@ namespace Internal.JitInterface
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             mdToken token = pResolvedToken.token;
-            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+            var methodIL = HandleToObject(pResolvedToken.tokenScope);
             EcmaModule module;
 
             // If the method body is synthetized by the compiler (the definition of the MethodIL is not
@@ -952,7 +952,7 @@ namespace Internal.JitInterface
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
-            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            MethodIL methodIL = HandleToObject(module);
 
             // If this is not a MethodIL backed by a physical method body, we need to remap the token.
             Debug.Assert(methodIL.GetMethodILDefinition() is EcmaMethodIL);
@@ -1453,7 +1453,7 @@ namespace Internal.JitInterface
                     constrainedType == null &&
                     exactType == MethodBeingCompiled.OwningType)
                 {
-                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    var methodIL = HandleToObject(pResolvedToken.tokenScope);
                     var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token);
                     if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
                     {
@@ -2516,7 +2516,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                var sig = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
+                var sig = HandleToObject(callSiteSig->methodSignature);
                 return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>());
             }
         }

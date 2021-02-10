@@ -16,13 +16,22 @@ namespace SafeHandleTests
         {
             var testHandle = new TestSafeHandle(initialValue);
             Assert.IsTrue(SafeHandleNative.SafeHandleByValue(testHandle, initialValue));
+            Assert.IsTrue(SafeHandleNative.SafeHandleByValue(null, IntPtr.Zero));
 
             Assert.IsTrue(SafeHandleNative.SafeHandleByRef(ref testHandle, initialValue, newValue));
+            Assert.AreEqual(newValue, testHandle.DangerousGetHandle());
+
+            testHandle = null;
+            Assert.IsTrue(SafeHandleNative.SafeHandleByRef(ref testHandle, IntPtr.Zero, newValue));
             Assert.AreEqual(newValue, testHandle.DangerousGetHandle());
 
             AbstractDerivedSafeHandle abstrHandle = new AbstractDerivedSafeHandleImplementation(initialValue);
             Assert.IsTrue(SafeHandleNative.SafeHandleInByRef(abstrHandle, initialValue));
             Assert.Throws<MarshalDirectiveException>(() => SafeHandleNative.SafeHandleByRef(ref abstrHandle, initialValue, newValue));
+
+            abstrHandle = null;
+            Assert.IsTrue(SafeHandleNative.SafeHandleInByRef(abstrHandle, IntPtr.Zero));
+            Assert.AreEqual(null, abstrHandle);
 
             NoDefaultConstructorSafeHandle noDefaultCtorHandle = new NoDefaultConstructorSafeHandle(initialValue);
             Assert.Throws<MissingMethodException>(() => SafeHandleNative.SafeHandleByRef(ref noDefaultCtorHandle, initialValue, newValue));

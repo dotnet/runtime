@@ -7,8 +7,7 @@
                 "/usr/local/include",
                 "${workspaceRoot}",
                 "${workspaceRoot}/mono",
-                "${workspaceRoot}/mono/eglib",
-                "${workspaceRoot}/support"
+                "${workspaceRoot}/mono/eglib"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
@@ -18,8 +17,7 @@
                     "/usr/local/include",
                     "${workspaceRoot}",
                     "${workspaceRoot}/mono",
-                    "${workspaceRoot}/mono/eglib",
-                    "${workspaceRoot}/support"
+                    "${workspaceRoot}/mono/eglib"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
@@ -38,8 +36,7 @@
                 "/usr/local/include",
                 "${workspaceRoot}",
                 "${workspaceRoot}/mono",
-                "${workspaceRoot}/mono/eglib",
-                "${workspaceRoot}/support"
+                "${workspaceRoot}/mono/eglib"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
@@ -50,8 +47,7 @@
                     "/usr/local/include",
                     "${workspaceRoot}",
                     "${workspaceRoot}/mono",
-                    "${workspaceRoot}/mono/eglib",
-                    "${workspaceRoot}/support"
+                    "${workspaceRoot}/mono/eglib"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
@@ -65,7 +61,6 @@
                 "${workspaceRoot}",
                 "${workspaceRoot}/mono",
                 "${workspaceRoot}/mono/eglib",
-                "${workspaceRoot}/support"
             ],
             "defines": [
                 "_DEBUG",
@@ -78,8 +73,7 @@
                     "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/include/*",
                     "${workspaceRoot}",
                     "${workspaceRoot}/mono",
-                    "${workspaceRoot}/mono/eglib",
-                    "${workspaceRoot}/support"
+                    "${workspaceRoot}/mono/eglib"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""

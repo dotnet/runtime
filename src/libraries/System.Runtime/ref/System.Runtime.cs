@@ -5187,8 +5187,11 @@ namespace System.CodeDom.Compiler
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string NewLine { get { throw null; } set { } }
         public override void Close() { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync() { throw null; }
         protected virtual void OutputTabs() { }
+        protected virtual System.Threading.Tasks.Task OutputTabsAsync() { throw null; }
         public override void Write(bool value) { }
         public override void Write(char value) { }
         public override void Write(char[]? buffer) { }
@@ -5202,6 +5205,11 @@ namespace System.CodeDom.Compiler
         public override void Write(string format, object? arg0) { }
         public override void Write(string format, object? arg0, object? arg1) { }
         public override void Write(string format, params object?[] arg) { }
+        public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(string? value) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public override void WriteLine() { }
         public override void WriteLine(bool value) { }
         public override void WriteLine(char value) { }
@@ -5219,6 +5227,13 @@ namespace System.CodeDom.Compiler
         [System.CLSCompliantAttribute(false)]
         public override void WriteLine(uint value) { }
         public void WriteLineNoTabs(string? s) { }
+        public System.Threading.Tasks.Task WriteLineNoTabsAsync(string? s) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(string? value) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
 }
 namespace System.Collections
@@ -7157,6 +7172,7 @@ namespace System.IO
         public override void Flush() { }
         public virtual void Flush(bool flushToDisk) { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public virtual void Lock(long position, long length) { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int Read(System.Span<byte> buffer) { throw null; }
@@ -7165,6 +7181,7 @@ namespace System.IO
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public virtual void Unlock(long position, long length) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
@@ -7637,6 +7654,12 @@ namespace System.Numerics
 {
     public static partial class BitOperations
     {
+        public static bool IsPow2(int value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool IsPow2(uint value) { throw null; }
+        public static bool IsPow2(long value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool IsPow2(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int LeadingZeroCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]

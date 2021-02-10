@@ -1241,7 +1241,8 @@ namespace System.StubHelpers
         {
             if (pHandle == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pHandle, ExceptionResource.ArgumentNull_SafeHandle);
+                success = false;
+                return IntPtr.Zero;
             }
 
             pHandle.DangerousAddRef(ref success);
@@ -1251,11 +1252,7 @@ namespace System.StubHelpers
         // Releases the SH (to be called from finally block).
         internal static void SafeHandleRelease(SafeHandle pHandle)
         {
-            if (pHandle == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pHandle, ExceptionResource.ArgumentNull_SafeHandle);
-            }
-
+            Debug.Assert(pHandle != null);
             pHandle.DangerousRelease();
         }
 
