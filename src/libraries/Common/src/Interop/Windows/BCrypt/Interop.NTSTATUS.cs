@@ -12,6 +12,7 @@ internal static partial class Interop
             STATUS_INVALID_PARAMETER = 0xc000000d,
             STATUS_NO_MEMORY = 0xc0000017,
             STATUS_AUTH_TAG_MISMATCH = 0xc000a002,
+            STATUS_INVALID_HANDLE = 0xc0000008,
         }
     }
 }

@@ -59,13 +59,18 @@ namespace System.Security.Cryptography.DeriveBytesTests
             Assert.Contains("1000", ex.Message); // Exception should be formatted with the minimum iterations.
         }
 
-        [Fact]
-        public static void Pbkdf2DeriveBytes_PasswordBytes_SaltBytes_Success()
+        [Theory]
+        [InlineData(nameof(HashAlgorithmName.SHA1))]
+        [InlineData(nameof(HashAlgorithmName.SHA256))]
+        [InlineData(nameof(HashAlgorithmName.SHA384))]
+        [InlineData(nameof(HashAlgorithmName.SHA512))]
+        public static void Pbkdf2DeriveBytes_PasswordBytes_SaltBytes_Success(string hashAlgorithm)
         {
-            using Rfc2898DeriveBytes instanceKdf = new Rfc2898DeriveBytes(s_passwordBytes, s_salt, iterations: 1000, HashAlgorithmName.SHA256);
+            HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
+            using Rfc2898DeriveBytes instanceKdf = new Rfc2898DeriveBytes(s_passwordBytes, s_salt, iterations: 1000, hashAlgorithmName);
             byte[] key1 = instanceKdf.GetBytes(s_extractLength);
             byte[] key2 = Rfc2898DeriveBytes.Pbkdf2DeriveBytes(
-                s_passwordBytes, s_salt, iterations: 1000, s_extractLength, HashAlgorithmName.SHA256);
+                s_passwordBytes, s_salt, iterations: 1000, s_extractLength, hashAlgorithmName);
             Assert.Equal(key1, key2);
         }
     }
