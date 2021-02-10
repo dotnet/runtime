@@ -55,15 +55,27 @@ namespace Mono.Linker.Steps
 				Annotations.AddPreservedMethod (ep.DeclaringType, ep);
 				break;
 			case AssemblyRootMode.VisibleMembers:
-				var preserve = HasInternalsVisibleTo (assembly) ? TypePreserveMembers.AllVisibleOrInternal : TypePreserveMembers.AllVisible;
+				var preserve_visible = TypePreserveMembers.Visible;
+				if (HasInternalsVisibleTo (assembly))
+					preserve_visible |= TypePreserveMembers.Internal;
 
-				var module = assembly.MainModule;
-				if (module.HasExportedTypes)
-					foreach (var type in module.ExportedTypes)
-						MarkAndPreserveVisible (assembly, type, preserve);
+				MarkAndPreserve (assembly, preserve_visible);
+				break;
 
-				foreach (var type in module.Types)
-					MarkAndPreserveVisible (type, preserve);
+			case AssemblyRootMode.Library:
+				var preserve_library = TypePreserveMembers.Visible | TypePreserveMembers.Library;
+				if (HasInternalsVisibleTo (assembly))
+					preserve_library |= TypePreserveMembers.Internal;
+
+				MarkAndPreserve (assembly, preserve_library);
+
+				// Assembly root mode wins over any enabled optimization which
+				// could conflict with library rooting behaviour
+				Context.Optimizations.Disable (
+					CodeOptimizations.Sealer |
+					CodeOptimizations.UnusedTypeChecks |
+					CodeOptimizations.UnreachableBodies |
+					CodeOptimizations.UnusedInterfaces, assembly.Name.Name);
 				break;
 			case AssemblyRootMode.AllMembers:
 				Context.Annotations.SetAction (assembly, AssemblyAction.Copy);
@@ -85,14 +97,27 @@ namespace Mono.Linker.Steps
 			return assembly;
 		}
 
-		void MarkAndPreserveVisible (TypeDefinition type, TypePreserveMembers preserve)
+		void MarkAndPreserve (AssemblyDefinition assembly, TypePreserveMembers preserve)
 		{
-			switch (preserve) {
-			case TypePreserveMembers.AllVisible when !IsTypeVisible (type):
+			var module = assembly.MainModule;
+			if (module.HasExportedTypes)
+				foreach (var type in module.ExportedTypes)
+					MarkAndPreserve (assembly, type, preserve);
+
+			foreach (var type in module.Types)
+				MarkAndPreserve (type, preserve);
+		}
+
+		void MarkAndPreserve (TypeDefinition type, TypePreserveMembers preserve)
+		{
+			if ((preserve & TypePreserveMembers.Visible) != 0 && !IsTypeVisible (type))
+				preserve &= ~TypePreserveMembers.Visible;
+
+			if ((preserve & TypePreserveMembers.Internal) != 0 && IsTypePrivate (type))
+				preserve &= ~TypePreserveMembers.Internal;
+
+			if (preserve == 0)
 				return;
-			case TypePreserveMembers.AllVisibleOrInternal when !IsTypeVisibleOrInternal (type):
-				return;
-			}
 
 			Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly));
 			Annotations.SetMembersPreserve (type, preserve);
@@ -101,10 +126,10 @@ namespace Mono.Linker.Steps
 				return;
 
 			foreach (TypeDefinition nested in type.NestedTypes)
-				MarkAndPreserveVisible (nested, preserve);
+				MarkAndPreserve (nested, preserve);
 		}
 
-		void MarkAndPreserveVisible (AssemblyDefinition assembly, ExportedType type, TypePreserveMembers preserve)
+		void MarkAndPreserve (AssemblyDefinition assembly, ExportedType type, TypePreserveMembers preserve)
 		{
 			var di = new DependencyInfo (DependencyKind.RootAssembly, assembly);
 			Context.Annotations.Mark (type, di);
@@ -117,9 +142,9 @@ namespace Mono.Linker.Steps
 			return type.IsPublic || type.IsNestedPublic || type.IsNestedFamily || type.IsNestedFamilyOrAssembly;
 		}
 
-		static bool IsTypeVisibleOrInternal (TypeDefinition type)
+		static bool IsTypePrivate (TypeDefinition type)
 		{
-			return !type.IsNestedPrivate;
+			return type.IsNestedPrivate;
 		}
 
 		static bool HasInternalsVisibleTo (AssemblyDefinition assembly)

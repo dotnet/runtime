@@ -23,7 +23,8 @@ namespace Mono.Linker.Steps
 		public void Parse (SubstitutionInfo xmlInfo)
 		{
 			_substitutionInfo = xmlInfo;
-			ProcessXml (_context.StripSubstitutions, _context.IgnoreSubstitutions);
+			bool stripSubstitutions = _context.IsOptimizationEnabled (CodeOptimizations.RemoveSubstitutions, _resourceAssembly);
+			ProcessXml (stripSubstitutions, _context.IgnoreSubstitutions);
 		}
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)

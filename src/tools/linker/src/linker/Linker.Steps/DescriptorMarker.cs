@@ -34,7 +34,8 @@ namespace Mono.Linker.Steps
 
 		public void Mark ()
 		{
-			ProcessXml (_context.StripDescriptors, _context.IgnoreDescriptors);
+			bool stripDescriptors = _context.IsOptimizationEnabled (CodeOptimizations.RemoveDescriptors, _resourceAssembly);
+			ProcessXml (stripDescriptors, _context.IgnoreDescriptors);
 		}
 
 		protected override AllowedAssemblies AllowedAssemblySelector { get => AllowedAssemblies.AnyAssembly; }

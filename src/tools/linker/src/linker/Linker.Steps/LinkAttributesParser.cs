@@ -29,7 +29,8 @@ namespace Mono.Linker.Steps
 		public void Parse (AttributeInfo xmlInfo)
 		{
 			_attributeInfo = xmlInfo;
-			ProcessXml (_context.StripLinkAttributes, _context.IgnoreLinkAttributes);
+			bool stripLinkAttributes = _context.IsOptimizationEnabled (CodeOptimizations.RemoveLinkAttributes, _resourceAssembly);
+			ProcessXml (stripLinkAttributes, _context.IgnoreLinkAttributes);
 		}
 
 		IEnumerable<CustomAttribute> ProcessAttributes (XPathNavigator nav, ICustomAttributeProvider provider)

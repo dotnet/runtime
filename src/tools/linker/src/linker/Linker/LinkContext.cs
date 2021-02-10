@@ -128,19 +128,11 @@ namespace Mono.Linker
 
 		public bool KeepUsedAttributeTypesOnly { get; set; }
 
-		public bool KeepDependencyAttributes { get; set; }
-
 		public bool IgnoreDescriptors { get; set; }
 
 		public bool IgnoreSubstitutions { get; set; }
 
 		public bool IgnoreLinkAttributes { get; set; }
-
-		public bool StripDescriptors { get; set; }
-
-		public bool StripSubstitutions { get; set; }
-
-		public bool StripLinkAttributes { get; set; }
 
 		public Dictionary<string, bool> FeatureSettings { get; private set; }
 
@@ -231,9 +223,6 @@ namespace Mono.Linker
 			Tracer = factory.CreateTracer (this);
 			ReflectionPatternRecorder = new LoggingReflectionPatternRecorder (this);
 			MarkedKnownMembers = new KnownMembers ();
-			StripDescriptors = true;
-			StripSubstitutions = true;
-			StripLinkAttributes = true;
 			PInvokes = new List<PInvokeInfo> ();
 			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
 			NoWarn = new HashSet<int> ();
@@ -247,7 +236,11 @@ namespace Mono.Linker
 				CodeOptimizations.UnusedInterfaces |
 				CodeOptimizations.UnusedTypeChecks |
 				CodeOptimizations.IPConstantPropagation |
-				CodeOptimizations.UnreachableBodies;
+				CodeOptimizations.UnreachableBodies |
+				CodeOptimizations.RemoveDescriptors |
+				CodeOptimizations.RemoveLinkAttributes |
+				CodeOptimizations.RemoveSubstitutions |
+				CodeOptimizations.RemoveDynamicDependencyAttribute;
 
 			Optimizations = new CodeOptimizationsSettings (defaultOptimizations);
 		}
@@ -501,6 +494,12 @@ namespace Mono.Linker
 			return Optimizations.IsEnabled (optimization, context);
 		}
 
+		public bool CanApplyOptimization (CodeOptimizations optimization, AssemblyDefinition context)
+		{
+			return Annotations.GetAction (context) == AssemblyAction.Link &&
+				IsOptimizationEnabled (optimization, context);
+		}
+
 		public void LogMessage (MessageContainer message)
 		{
 			if (message == MessageContainer.Empty)
@@ -750,6 +749,12 @@ namespace Mono.Linker
 		/// <summary>
 		/// Option to inline typechecks for never instantiated types
 		/// </summary>
-		UnusedTypeChecks = 1 << 6
+		UnusedTypeChecks = 1 << 6,
+
+
+		RemoveDescriptors = 1 << 20,
+		RemoveSubstitutions = 1 << 21,
+		RemoveLinkAttributes = 1 << 22,
+		RemoveDynamicDependencyAttribute = 1 << 23,
 	}
 }

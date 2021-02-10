@@ -358,16 +358,7 @@ namespace Mono.Linker
 
 		static TypePreserveMembers CombineMembers (TypePreserveMembers left, TypePreserveMembers right)
 		{
-			Debug.Assert (left != 0);
-			Debug.Assert (right != 0);
-
-			if (left == TypePreserveMembers.AllVisible)
-				return right;
-
-			if (right == TypePreserveMembers.AllVisible)
-				return left;
-
-			return TypePreserveMembers.AllVisibleOrInternal;
+			return left | right;
 		}
 
 		public void SetMembersPreserve (ExportedType type, TypePreserveMembers preserve)

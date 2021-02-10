@@ -9,6 +9,7 @@ namespace Mono.Linker
 		Default = 0,
 		EntryPoint,
 		AllMembers,
-		VisibleMembers
+		VisibleMembers,
+		Library
 	}
 }

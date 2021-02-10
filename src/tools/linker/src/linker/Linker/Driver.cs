@@ -227,19 +227,19 @@ namespace Mono.Linker
 						continue;
 
 					case "--strip-descriptors":
-						if (!GetBoolParam (token, l => context.StripDescriptors = l))
+						if (!GetBoolParam (token, l => set_optimizations.Add ((CodeOptimizations.RemoveDescriptors, null, l))))
 							return -1;
 
 						continue;
 
 					case "--strip-substitutions":
-						if (!GetBoolParam (token, l => context.StripSubstitutions = l))
+						if (!GetBoolParam (token, l => set_optimizations.Add ((CodeOptimizations.RemoveSubstitutions, null, l))))
 							return -1;
 
 						continue;
 
 					case "--strip-link-attributes":
-						if (!GetBoolParam (token, l => context.StripLinkAttributes = l))
+						if (!GetBoolParam (token, l => set_optimizations.Add ((CodeOptimizations.RemoveLinkAttributes, null, l))))
 							return -1;
 
 						continue;
@@ -289,7 +289,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--keep-dep-attributes":
-						if (!GetBoolParam (token, l => context.KeepDependencyAttributes = l))
+						if (!GetBoolParam (token, l => set_optimizations.Add ((CodeOptimizations.RemoveDynamicDependencyAttribute, null, !l))))
 							return -1;
 
 						continue;
@@ -908,6 +908,8 @@ namespace Mono.Linker
 				return AssemblyRootMode.VisibleMembers;
 			case "entrypoint":
 				return AssemblyRootMode.EntryPoint;
+			case "library":
+				return AssemblyRootMode.Library;
 			}
 
 			context.LogError ($"Invalid assembly root mode '{s}'", 1037);
@@ -1057,7 +1059,8 @@ namespace Mono.Linker
 			Console.WriteLine ("                        all: Keep all members in root assembly");
 			Console.WriteLine ("                        default: Use entry point for applications and all members for libraries");
 			Console.WriteLine ("                        entrypoint: Use assembly entry point as only root in the assembly");
-			Console.WriteLine ("                        visible: Keep all members and types visible outside of root assembly");
+			Console.WriteLine ("                        library: All assembly members and data needed for secondary trimming are retained");
+			Console.WriteLine ("                        visible: Keep all members and types visible outside of the assembly");
 			Console.WriteLine ("  -x FILE             XML descriptor file with members to be kept");
 
 			Console.WriteLine ();
