@@ -9,8 +9,10 @@ using System.Text;
 namespace System.Numerics
 {
     /// <summary>Represents a vector with three  single-precision floating-point values.</summary>
-    /// <remarks>The <see cref="System.Numerics.Vector3" /> structure provides support for hardware acceleration.
-    /// [!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]</remarks>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// The <xref:System.Numerics.Vector3> structure provides support for hardware acceleration.
+    /// [!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]
+    /// ]]></format></remarks>
     [Intrinsic]
     public partial struct Vector3 : IEquatable<Vector3>, IFormattable
     {
