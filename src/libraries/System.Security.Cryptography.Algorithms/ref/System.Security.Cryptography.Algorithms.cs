@@ -595,6 +595,7 @@ namespace System.Security.Cryptography
         public static byte[] Pbkdf2DeriveBytes(string password, byte[] salt, int iterations, int length, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public override void Reset() { }
     }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class Rijndael : System.Security.Cryptography.SymmetricAlgorithm
     {
