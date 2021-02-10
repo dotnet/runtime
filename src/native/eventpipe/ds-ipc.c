@@ -235,6 +235,7 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 {
 	bool result = true;
 
+#ifndef DS_IPC_DISABLE_CONNECT_PORTS
 	ep_char8_t *ports = ds_rt_config_value_get_ports ();
 	if (ports) {
 		DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY (port_configs);
@@ -294,8 +295,10 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 
 		ds_rt_port_config_array_fini (&port_config_parts);
 		ds_rt_port_config_array_fini (&port_configs);
+		ep_rt_utf8_string_free (ports);
 	}
-
+#endif
+#ifndef DS_IPC_DISABLE_LISTEN_PORT
 	// create the default listen port
 	uint32_t port_suspend = ds_rt_config_value_get_default_port_suspend ();
 
@@ -311,8 +314,8 @@ ds_ipc_stream_factory_configure (ds_ipc_error_callback_func callback)
 	} else {
 		result &= false;
 	}
+#endif
 
-	ep_rt_utf8_string_free (ports);
 	return result;
 }
 

@@ -10,8 +10,8 @@
 #ifdef ENABLE_PERFTRACING
 #ifdef HOST_WIN32
 
-#define DS_IMPL_IPC_WIN32_GETTER_SETTER
-#include "ds-ipc-win32.h"
+#define DS_IMPL_IPC_PAL_NAMEDPIPE_GETTER_SETTER
+#include "ds-ipc-pal-namedpipe.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -101,9 +101,21 @@ ipc_stream_alloc (
  * DiagnosticsIpc.
  */
 
+bool
+ds_ipc_pal_init (void)
+{
+	return true;
+}
+
+bool
+ds_ipc_pal_shutdown (void)
+{
+	return true;
+}
+
 DiagnosticsIpc *
 ds_ipc_alloc (
-	const ep_char8_t *pipe_name,
+	const ep_char8_t *ipc_name,
 	DiagnosticsIpcConnectionMode mode,
 	ds_ipc_error_callback_func callback)
 {
@@ -121,12 +133,12 @@ ds_ipc_alloc (
 	instance->overlap.hEvent = INVALID_HANDLE_VALUE;
 	instance->pipe = INVALID_HANDLE_VALUE;
 
-	if (pipe_name) {
+	if (ipc_name) {
 		characters_written = sprintf_s (
 			(char *)&instance->pipe_name,
 			(size_t)DS_IPC_WIN32_MAX_NAMED_PIPE_LEN,
 			(const char *)"\\\\.\\pipe\\%s",
-			pipe_name);
+			ipc_name);
 	} else {
 		characters_written = sprintf_s (
 			(char *)&instance->pipe_name,

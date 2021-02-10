@@ -191,6 +191,12 @@ ds_server_init (void)
 
 	bool result = false;
 
+	// Initialize PAL layer.
+	if (!ds_ipc_pal_init ()) {
+		DS_LOG_ERROR_1 ("Failed to initialize PAL layer (%d).\n", ep_rt_get_last_error ());
+		ep_raise_error ();
+	}
+
 	// Initialize the RuntimeIndentifier before use
 	ds_ipc_advertise_cookie_v1_init ();
 
@@ -238,6 +244,7 @@ ds_server_shutdown (void)
 		ds_ipc_stream_factory_shutdown (server_error_callback_close);
 
 	ds_ipc_stream_factory_fini ();
+	ds_ipc_pal_shutdown ();
 	return true;
 }
 

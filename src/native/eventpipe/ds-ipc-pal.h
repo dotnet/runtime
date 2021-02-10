@@ -17,6 +17,12 @@
  * DiagnosticsIpc.
  */
 
+bool
+ds_ipc_pal_init (void);
+
+bool
+ds_ipc_pal_shutdown (void);
+
 int32_t
 ds_ipc_get_handle_int32_t (DiagnosticsIpc *ipc);
 
