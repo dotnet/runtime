@@ -365,33 +365,31 @@ def setup_microbenchmark(workitem_directory, arch):
     performance_directory = path.join(workitem_directory, "performance")
 
     run_command(
-        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/kunalspathak/performance", performance_directory])
+        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
 
     with ChangeDir(performance_directory):
-        print("Inside directory: " + performance_directory)
-        dotnet_directory = os.path.join(performance_directory, "tools", "dotnet")
+        dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
         dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
-        dotnet_exe = os.path.join(dotnet_directory, "dotnet")
-        artifacts_directory = os.path.join(performance_directory, "artifacts")
-        artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
+        # dotnet_exe = os.path.join(dotnet_directory, "dotnet")
+        # artifacts_directory = os.path.join(performance_directory, "artifacts")
+        # artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
 
         if not isfile(dotnet_install_script):
             print("Missing " + dotnet_install_script)
             return
 
-        build_env_vars = os.environ.copy()
-        build_env_vars["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1"
-        build_env_vars["DOTNET_MULTILEVEL_LOOKUP"] = "0"
-        build_env_vars["UseSharedCompilation"] = "false"
+        # build_env_vars = os.environ.copy()
+        # build_env_vars["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1"
+        # build_env_vars["DOTNET_MULTILEVEL_LOOKUP"] = "0"
+        # build_env_vars["UseSharedCompilation"] = "false"
 
         run_command(
             get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir", dotnet_directory, "--verbose"])
-        run_command([dotnet_exe, "restore", "src/benchmarks/micro/MicroBenchmarks.csproj", "--packages",
-                     artifacts_packages_directory], _env=build_env_vars)
-        run_command([dotnet_exe, "build", "src/benchmarks/micro/MicroBenchmarks.csproj", "--configuration", "Release",
-                     "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
-                     "-o", artifacts_directory], _env=build_env_vars)
-
+        # run_command([dotnet_exe, "restore", "src/benchmarks/micro/MicroBenchmarks.csproj", "--packages",
+        #              artifacts_packages_directory], _env=build_env_vars)
+        # run_command([dotnet_exe, "build", "src/benchmarks/micro/MicroBenchmarks.csproj", "--configuration", "Release",
+        #              "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
+        #              "-o", artifacts_directory], _env=build_env_vars)
 
 def get_python_name():
     """Gets the python name
@@ -463,9 +461,10 @@ def main(main_args):
 
     if coreclr_args.collection_name == "benchmarks":
         # Setup microbenchmarks
-        performance_directory = path.join(correlation_payload_directory, "performance")
-        run_command(
-            ["git", "clone", "--quiet", "--depth", "1", "https://github.com/kunalspathak/performance", performance_directory])
+        setup_microbenchmark(correlation_payload_directory, arch)
+        # performance_directory = path.join(correlation_payload_directory, "performance")
+        # run_command(
+        #     ["git", "clone", "--quiet", "--depth", "1", "https://github.com/kunalspathak/performance", performance_directory])
     else:
         # Setup for pmi/crossgen runs
 

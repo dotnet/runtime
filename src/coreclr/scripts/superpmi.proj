@@ -78,7 +78,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -python_path $(Python) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup>
