@@ -12,7 +12,7 @@ namespace System.Xml.Linq.xNodeReader.Tests
         [Fact]
         public void GetAttributeThrowsOnIndexMinusOne()
         {
-            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElement();
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElementOne();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => dataReader.GetAttribute(-1));
         }
@@ -20,7 +20,7 @@ namespace System.Xml.Linq.xNodeReader.Tests
         [Fact]
         public void GetAttributeThrowsOnIndexMinusTwo()
         {
-            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElement();
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElementOne();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => dataReader.GetAttribute(-2));
         }
@@ -28,7 +28,7 @@ namespace System.Xml.Linq.xNodeReader.Tests
         [Fact]
         public void IndexerThrowsOnIndexMinusOne()
         {
-            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElement();
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElementOne();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => dataReader[-1]);
         }
@@ -36,9 +36,41 @@ namespace System.Xml.Linq.xNodeReader.Tests
         [Fact]
         public void IndexerThrowsOnIndexMinusTwo()
         {
-            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElement();
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElementOne();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => dataReader[-2]);
+        }
+
+        [Fact]
+        public void GetAttributeThrowsOnAttributeCount()
+        {
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElementZero();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => dataReader.GetAttribute(dataReader.AttributeCount));
+        }
+
+        [Fact]
+        public void GetAttributeThrowsOnAttributeCountPlusOne()
+        {
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElementOne();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => dataReader.GetAttribute(dataReader.AttributeCount + 1));
+        }
+
+        [Fact]
+        public void IndexerThrowsOnAttributeCount()
+        {
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElementZero();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => dataReader[dataReader.AttributeCount]);
+        }
+
+        [Fact]
+        public void IndexerThrowsOnAttributeCountPlusOne()
+        {
+            XmlReader dataReader = GetReaderFromXDocumentAndPositionOnElementOne();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => dataReader[dataReader.AttributeCount + 1]);
         }
 
         [Fact]
@@ -106,11 +138,43 @@ namespace System.Xml.Linq.xNodeReader.Tests
             }
         }
 
-        private static XmlReader GetReaderFromXDocumentAndPositionOnElement()
+        [Fact]
+        public void GetAttributeThrowsOnOutOfRangeUpperBound()
+        {
+            var xElement = new XElement("element");
+            xElement.SetAttributeValue("attr", "val");
+
+            using XmlReader r = xElement.CreateReader();
+            r.Read();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => r.GetAttribute(1));
+        }
+
+        [Fact]
+        public void IndexerThrowsOnOutOfRangeUpperBound()
+        {
+            var xElement = new XElement("element");
+            xElement.SetAttributeValue("attr", "val");
+
+            using XmlReader r = xElement.CreateReader();
+            r.Read();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => r[1]);
+        }
+
+        private static XmlReader GetReaderFromXDocumentAndPositionOnElementOne()
         {
             var bridgeHelpers = new BridgeHelpers();
             var dataReader = bridgeHelpers.GetReader();
             bridgeHelpers.PositionOnElement(dataReader, "ACT1");
+            return dataReader;
+        }
+
+        private static XmlReader GetReaderFromXDocumentAndPositionOnElementZero()
+        {
+            var bridgeHelpers = new BridgeHelpers();
+            var dataReader = bridgeHelpers.GetReader();
+            bridgeHelpers.PositionOnElement(dataReader, "ACT0");
             return dataReader;
         }
 

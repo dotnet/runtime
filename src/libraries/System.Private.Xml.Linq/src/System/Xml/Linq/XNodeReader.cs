@@ -583,7 +583,7 @@ namespace System.Xml.Linq
                     } while (a != e.lastAttr);
                 }
             }
-            return null!;
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
         public override string? LookupNamespace(string prefix)

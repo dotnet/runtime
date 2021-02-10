@@ -306,8 +306,6 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(OrdinalWithGetAttrSingleQ) { Attribute = new VariationAttribute("GetAttribute[i] Verify with This[i] - Single Quote") });
                     this.AddChild(new TestVariation(GetAttributeWithMoveAttrDoubleQ) { Attribute = new VariationAttribute("GetAttribute(i) Verify with MoveToAttribute[i] - Double Quote") { Priority = 0 } });
                     this.AddChild(new TestVariation(GetAttributeWithMoveAttrSingleQ) { Attribute = new VariationAttribute("GetAttribute(i) Verify with MoveToAttribute[i] - Single Quote") });
-                    this.AddChild(new TestVariation(FieldCountOrdinal) { Attribute = new VariationAttribute("GetAttribute(i) FieldCountOrdinal") });
-                    this.AddChild(new TestVariation(OrdinalPlusOne) { Attribute = new VariationAttribute("GetAttribute(i) OrdinalPlusOne") { Priority = 0 } });
                 }
             }
             public partial class TCGetAttributeName : BridgeHelpers
@@ -342,8 +340,6 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(OrdinalWithGetAttrSingleQ) { Attribute = new VariationAttribute("This[i] Verify with GetAttribute[i] - Single Quote") });
                     this.AddChild(new TestVariation(OrdinalWithMoveAttrSingleQ) { Attribute = new VariationAttribute("This[i] Verify with MoveToAttribute[i] - Single Quote") });
                     this.AddChild(new TestVariation(OrdinalWithMoveAttrDoubleQ) { Attribute = new VariationAttribute("This[i] Verify with MoveToAttribute[i] - Double Quote") { Priority = 0 } });
-                    this.AddChild(new TestVariation(FieldCountOrdinal) { Attribute = new VariationAttribute("ThisOrdinal FieldCountOrdinal") });
-                    this.AddChild(new TestVariation(OrdinalPlusOne) { Attribute = new VariationAttribute("ThisOrdinal OrdinalPlusOne") { Priority = 0 } });
                 }
             }
             public partial class TCMoveToAttributeOrdinal : BridgeHelpers
