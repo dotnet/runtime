@@ -9,8 +9,10 @@ using System.Text;
 namespace System.Numerics
 {
     /// <summary>Represents a vector with two single-precision floating-point values.</summary>
-    /// <remarks>The <see cref="System.Numerics.Vector2" /> structure provides support for hardware acceleration.
-    /// [!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]</remarks>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// The <xref:System.Numerics.Vector2> structure provides support for hardware acceleration.
+    /// [!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]
+    /// ]]></format></remarks>
     [Intrinsic]
     public partial struct Vector2 : IEquatable<Vector2>, IFormattable
     {
@@ -288,7 +290,9 @@ namespace System.Numerics
         /// <param name="value2">The second vector.</param>
         /// <param name="amount">A value between 0 and 1 that indicates the weight of <paramref name="value2" />.</param>
         /// <returns>The interpolated vector.</returns>
-        /// <remarks>The behavior of this method changed in .NET 5.0. For more information, see [Behavior change for Vector2.Lerp and Vector4.Lerp](/dotnet/core/compatibility/3.1-5.0#behavior-change-for-vector2lerp-and-vector4lerp).</remarks>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The behavior of this method changed in .NET 5.0. For more information, see [Behavior change for Vector2.Lerp and Vector4.Lerp](/dotnet/core/compatibility/3.1-5.0#behavior-change-for-vector2lerp-and-vector4lerp).
+        /// ]]></format></remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Lerp(Vector2 value1, Vector2 value2, float amount)
         {
