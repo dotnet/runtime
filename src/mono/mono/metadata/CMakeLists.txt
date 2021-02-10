@@ -142,8 +142,6 @@ set(metadata_common_sources
     mono-ptr-array.h
     mono-route.c
     monitor.h
-    normalization-tables.h
-    number-formatter.h
     number-ms.h
     object.c
     object-forward.h
