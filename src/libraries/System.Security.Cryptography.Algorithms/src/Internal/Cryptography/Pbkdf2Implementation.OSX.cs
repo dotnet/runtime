@@ -16,6 +16,9 @@ namespace Internal.Cryptography
             HashAlgorithmName hashAlgorithmName,
             Span<byte> destination)
         {
+            Debug.Assert(!salt.IsEmpty);
+            Debug.Assert(!destination.IsEmpty);
+
             PAL_HashAlgorithm prfAlgorithm = hashAlgorithmName.Name switch {
                 "SHA1" => PAL_HashAlgorithm.Sha1,
                 "SHA256" => PAL_HashAlgorithm.Sha256,

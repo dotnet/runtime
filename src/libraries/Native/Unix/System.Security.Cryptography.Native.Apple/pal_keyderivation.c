@@ -9,7 +9,7 @@ static int32_t PrfAlgorithmFromHashAlgorithm(PAL_HashAlgorithm hashAlgorithm, CC
 {
     if (algorithm == NULL)
         return 0;
-    
+
     switch (hashAlgorithm)
     {
         case PAL_SHA1:
@@ -43,7 +43,7 @@ int32_t AppleCryptoNative_KeyDerivationPBKDF(PAL_HashAlgorithm prfAlgorithm,
     if (errorCode != NULL)
         *errorCode = noErr;
 
-    if (password == NULL || passwordLen < 0 || salt == NULL || saltLen < 0 ||
+    if (passwordLen < 0 || salt == NULL || saltLen < 0 ||
         iterations < 0 || derivedKey == NULL || derivedKeyLen < 0 || errorCode == NULL)
     {
         return -1;

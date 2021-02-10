@@ -8,10 +8,6 @@ namespace System.Security.Cryptography
 {
     public partial class Rfc2898DeriveBytes
     {
-        private const int OneShotMinIterations = 1000;
-        private const int OneShotMinSaltLength = 128 / 8; // 128-bits
-        private const int OneShotMinExtractLength = 112 / 8; // 114-bits
-
         public static byte[] Pbkdf2DeriveBytes(
             byte[] password,
             byte[] salt,
@@ -34,8 +30,8 @@ namespace System.Security.Cryptography
             int length,
             HashAlgorithmName hashAlgorithm)
         {
-            if (length < OneShotMinExtractLength)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.Format(SR.Argument_Rfc2898_MinLength, OneShotMinExtractLength));
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             byte[] result = new byte[length];
             Pbkdf2DeriveBytes(password, salt, iterations, hashAlgorithm, result);
@@ -74,8 +70,8 @@ namespace System.Security.Cryptography
             int length,
             HashAlgorithmName hashAlgorithm)
         {
-            if (length < OneShotMinExtractLength)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.Format(SR.Argument_Rfc2898_MinLength, OneShotMinExtractLength));
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             byte[] result = new byte[length];
             Pbkdf2DeriveBytes(password, salt, iterations, hashAlgorithm, result);
@@ -103,12 +99,10 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             Span<byte> destination)
         {
-            if (salt.Length < OneShotMinSaltLength)
-                throw new ArgumentOutOfRangeException(nameof(salt), SR.Format(SR.Argument_Rfc2898_SaltTooShort, OneShotMinSaltLength));
-            if (iterations < OneShotMinIterations)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.Format(SR.Argument_Rfc2898_MinIterations, OneShotMinIterations));
-            if (destination.Length < OneShotMinExtractLength)
-                throw new ArgumentOutOfRangeException(nameof(destination), SR.Format(SR.Argument_Rfc2898_MinLength, OneShotMinExtractLength));
+            if (salt.Length < MinimumSaltSize)
+                throw new ArgumentOutOfRangeException(nameof(salt), SR.Cryptography_PasswordDerivedBytes_FewBytesSalt);
+            if (iterations <= 0)
+                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
