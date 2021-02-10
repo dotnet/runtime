@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using PAL_HashAlgorithm = Interop.AppleCrypto.PAL_HashAlgorithm;
 
