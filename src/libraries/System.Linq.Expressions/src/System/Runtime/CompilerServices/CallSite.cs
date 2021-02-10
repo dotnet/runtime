@@ -386,7 +386,7 @@ namespace System.Runtime.CompilerServices
             ParameterExpression originalRule = Expression.Variable(typeof(T), "originalRule");
             vars.UncheckedAdd(originalRule);
 
-            Expression target = Expression.Field(@this, nameof(Target));
+            Expression target = Expression.Field(@this, typeof(CallSite<T>).GetField(nameof(Target))!);
             body.UncheckedAdd(Expression.Assign(originalRule, target));
 
             ParameterExpression? result = null;
@@ -603,7 +603,7 @@ namespace System.Runtime.CompilerServices
                     rule,
                     Expression.Call(
                         CallSiteOps_Bind.MakeGenericMethod(typeArgs),
-                        Expression.Property(@this, nameof(Binder)),
+                        Expression.Property(@this, typeof(CallSite).GetProperty(nameof(Binder))!),
                         @this,
                         args
                     )
