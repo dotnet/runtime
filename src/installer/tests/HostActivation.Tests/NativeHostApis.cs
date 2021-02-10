@@ -3,6 +3,7 @@
 
 using Microsoft.DotNet.Cli.Build;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -66,12 +67,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public string SelfRegistered => Path.Combine(ExeDir, "sr");
             public string WorkingDir => Path.Combine(_fixture.TestProject.ProjectDirectory, "wd");
             public string ProgramFilesGlobalSdkDir => Path.Combine(ProgramFiles, "dotnet", "sdk");
+            public string ProgramFilesGlobalFrameworksDir => Path.Combine(ProgramFiles, "dotnet", "shared");
             public string SelfRegisteredGlobalSdkDir => Path.Combine(SelfRegistered, "sdk");
             public string LocalSdkDir => Path.Combine(ExeDir, "sdk");
+            public string LocalFrameworksDir => Path.Combine(ExeDir, "shared");
             public string GlobalJson => Path.Combine(WorkingDir, "global.json");
             public string[] ProgramFilesGlobalSdks = new[] { "4.5.6", "1.2.3", "2.3.4-preview" };
+            public List<(string fwName, string[] fwVersions)> ProgramFilesGlobalFrameworks =
+                new List<(string fwName, string[] fwVersions)>()
+                {
+                    ("HostFxr.Test.A", new[] { "1.2.3", "3.0.0" }),
+                    ("HostFxr.Test.B", new[] { "5.6.7-A" })
+                };
             public string[] SelfRegisteredGlobalSdks = new[] { "3.0.0", "15.1.4-preview", "5.6.7" };
             public string[] LocalSdks = new[] { "0.1.2", "5.6.7-preview", "1.2.3" };
+            public List<(string fwName, string[] fwVersions)> LocalFrameworks =
+                new List<(string fwName, string[] fwVersions)>()
+                {
+                    ("HostFxr.Test.B", new[] { "4.0.0", "5.6.7-A" }),
+                    ("HostFxr.Test.C", new[] { "3.0.0" })
+                };
 
             public SdkResolutionFixture(SharedTestState state)
             {
@@ -98,18 +113,29 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 {
                     Directory.CreateDirectory(Path.Combine(LocalSdkDir, sdk));
                 }
-            } 
+
+                foreach ((string fwName, string[] fwVersions) in ProgramFilesGlobalFrameworks)
+                {
+                    foreach (string fwVersion in fwVersions)
+                        Directory.CreateDirectory(Path.Combine(ProgramFilesGlobalFrameworksDir, fwName, fwVersion));
+                }
+                foreach ((string fwName, string[] fwVersions) in LocalFrameworks)
+                {
+                    foreach (string fwVersion in fwVersions)
+                        Directory.CreateDirectory(Path.Combine(LocalFrameworksDir, fwName, fwVersion));
+                }
+            }
         }
 
         [Fact]
         public void Hostfxr_get_available_sdks_with_multilevel_lookup()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) 
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // multilevel lookup is not supported on non-Windows
                 return;
             }
-            
+
             var f = new SdkResolutionFixture(sharedTestState);
 
             // With multi-level lookup (windows only): get local and global sdks sorted by ascending version,
@@ -261,17 +287,38 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                  Path.Combine(f.LocalSdkDir, "5.6.7-preview"),
             });
 
-            using (TestOnlyProductBehavior.Enable(f.Dotnet.GreatestVersionHostFxrFilePath))
+            string expectedFrameworkNames = string.Join(';', new[]
             {
-                f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info", f.ExeDir })
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk versions:[{expectedSdkVersions}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk paths:[{expectedSdkPaths}]");
-            }
+                "HostFxr.Test.B",
+                "HostFxr.Test.B",
+                "HostFxr.Test.C"
+            });
+
+            string expectedFrameworkVersions = string.Join(';', new[]
+            {
+                "4.0.0",
+                "5.6.7-A",
+                "3.0.0"
+            });
+
+            string expectedFrameworkPaths = string.Join(';', new[]
+            {
+                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.B"),
+                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.B"),
+                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.C")
+            });
+
+            f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info", f.ExeDir })
+            .CaptureStdOut()
+            .CaptureStdErr()
+            .Execute()
+            .Should().Pass()
+            .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
+            .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk versions:[{expectedSdkVersions}]")
+            .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk paths:[{expectedSdkPaths}]")
+            .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework names:[{expectedFrameworkNames}]")
+            .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework versions:[{expectedFrameworkVersions}]")
+            .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[{expectedFrameworkPaths}]");
         }
 
         [Fact]
@@ -310,6 +357,36 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.4-preview"),
             });
 
+            string expectedFrameworkNames = string.Join(';', new[]
+            {
+                "HostFxr.Test.A",
+                "HostFxr.Test.A",
+                "HostFxr.Test.B",
+                "HostFxr.Test.B",
+                "HostFxr.Test.B",
+                "HostFxr.Test.C"
+            });
+
+            string expectedFrameworkVersions = string.Join(';', new[]
+            {
+                "1.2.3",
+                "3.0.0",
+                "4.0.0",
+                "5.6.7-A",
+                "5.6.7-A",
+                "3.0.0"
+            });
+
+            string expectedFrameworkPaths = string.Join(';', new[]
+            {
+                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
+                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
+                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.B"),
+                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.B"),
+                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.B"),
+                Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.C")
+            });
+
             using (TestOnlyProductBehavior.Enable(f.Dotnet.GreatestVersionHostFxrFilePath))
             {
                 f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info", f.ExeDir })
@@ -321,7 +398,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass()
                 .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk versions:[{expectedSdkVersions}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk paths:[{expectedSdkPaths}]");
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk paths:[{expectedSdkPaths}]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework names:[{expectedFrameworkNames}]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework versions:[{expectedFrameworkVersions}]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[{expectedFrameworkPaths}]");
             }
         }
 
@@ -355,6 +435,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.4-preview"),
             });
 
+            string expectedFrameworkNames = string.Join(';', new[]
+            {
+                "HostFxr.Test.A",
+                "HostFxr.Test.A",
+                "HostFxr.Test.B",
+            });
+
+            string expectedFrameworkVersions = string.Join(';', new[]
+            {
+                "1.2.3",
+                "3.0.0",
+                "5.6.7-A",
+            });
+
+            string expectedFrameworkPaths = string.Join(';', new[]
+            {
+                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
+                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.A"),
+                Path.Combine(f.ProgramFilesGlobalFrameworksDir, "HostFxr.Test.B"),
+            });
+
             using (TestOnlyProductBehavior.Enable(f.Dotnet.GreatestVersionHostFxrFilePath))
             {
                 // We pass f.WorkingDir so that we don't resolve dotnet_dir to the global installation
@@ -368,7 +469,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass()
                 .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk versions:[{expectedSdkVersions}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk paths:[{expectedSdkPaths}]");
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk paths:[{expectedSdkPaths}]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework names:[{expectedFrameworkNames}]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework versions:[{expectedFrameworkVersions}]")
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[{expectedFrameworkPaths}]");
             }
         }
 
@@ -424,7 +528,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                         RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
 
                     FileUtils.CopyIntoDirectory(
-                        hostfxr, 
+                        hostfxr,
                         Path.GetDirectoryName(fixture.TestProject.AppDll));
                 }
             }
