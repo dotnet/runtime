@@ -5321,6 +5321,9 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         noway_assert(cloneOk);
 
 #if FEATURE_LOOP_ALIGN
+        // If the original loop is aligned, do not align the cloned loop because cloned loop will be executed in
+        // rare scenario. Additionally, having to align cloned loop will force us to disable some VEX prefix encoding
+        // and adding compensation for over-estimated instructions.
         if (blk->isLoopAlign())
         {
             newBlk->bbFlags &= ~BBF_LOOP_ALIGN;
