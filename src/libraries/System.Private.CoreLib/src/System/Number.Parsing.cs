@@ -336,10 +336,10 @@ namespace System
                     {
                         if (digCount < maxDigCount)
                         {
-                            number.Digits[digCount++] = (byte)(ch);
+                            number.Digits[digCount] = (byte)(ch);
                             if ((ch != '0') || (number.Kind != NumberBufferKind.Integer))
                             {
-                                digEnd = digCount;
+                                digEnd = digCount + 1;
                             }
                         }
                         else if (ch != '0')
@@ -370,6 +370,7 @@ namespace System
                                 numberOfTrailingZeros = 0;
                             }
                         }
+                        digCount++;
                         state |= StateNonZero;
                     }
                     else if ((state & StateDecimal) != 0)
@@ -394,11 +395,20 @@ namespace System
             }
 
             bool negExp = false;
-            number.DigitsCount = digEnd - numberOfTrailingZeros;
+            if (digEnd == maxDigCount && numberOfTrailingZeros > 0 && number.HasNonZeroTail)
+            {
+                // We have an additional non-zero digit in the input past maxDigitCount. We already handle this properly.
+                number.DigitsCount = digEnd;
+            }
+            else
+            {
+                // We have only 0s in the fractional part. We can strip it all out
+                number.DigitsCount = digEnd - numberOfTrailingZeros;
+            }
             number.Digits[digEnd] = (byte)('\0');
             if (numberOfTrailingZeros != 0)
             {
-                for (int i = digEnd - numberOfTrailingZeros; i < digEnd; i++)
+                for (int i = number.DigitsCount; i < digEnd; i++)
                 {
                     number.Digits[i] = (byte)('\0');
                 }
