@@ -326,7 +326,6 @@ namespace System.Net.WebSockets.Client.Tests
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var rand = new Random();
-
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 // Values chosen close to boundaries in websockets message length handling as well
