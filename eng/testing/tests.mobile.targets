@@ -206,7 +206,12 @@
   <Target Name="BundleTestWasmApp"
           Condition="'$(TargetOS)' == 'Browser' and '$(ShouldBuildWasmLocally)' != 'true'">
 
-    <Copy SourceFiles="$(PublishDir)*\*.*" DestinationFolder="$(BundleDir)" />
+    <ItemGroup>
+      <BundleFiles Include="$(PublishDir)\*.*" />
+      <BundleFiles Include="$(MonoProjectRoot)\wasm\build\aot-build.csproj" />
+      <BundleFiles Include="$(MonoProjectRoot)\wasm\runtime-test.js" />
+    </ItemGroup>
+    <Copy SourceFiles="@(BundleFiles)" DestinationFolder="$(BundleDir)publish" />
   </Target>
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">

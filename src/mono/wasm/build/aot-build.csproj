@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <BundleDir>$(HELIX_CORRELATION_PAYLOAD)</BundleDir>
+    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <MonoAOTCompilerTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\monoaotcompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\wasmappbuilder</WasmAppBuilderTasksAssemblyPath>
+    <EMSDK_PATH>$(HELIX_CORRELATION_PAYLOAD)\emsdk</EMSDK_PATH>
+  </PropertyGroup>
+
+  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\WasmApp.props" />
+  <PropertyGroup>
+      <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+
+  <Target Name="BundleTestWasmApp" DependsOnTargets="Build;WasmBuildApp" />
+
+  <Target Name="PrepareForWasmBuildApp">
+    <PropertyGroup>
+      <WasmAppDir>$(BundleDir)</WasmAppDir>
+      <WasmMainAssemblyFileName>$(HELIX_CORRELATION_PAYLOAD)\WasmTestRunner.dll</WasmMainAssemblyFileName>
+      <WasmMainJSPath>$(HELIX_CORRELATION_PAYLOAD)\publish\runtime-test.js</WasmMainJSPath>
+      <!--<WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>-->
+      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmSatelliteAssemblies Include="$(HELIX_CORRELATION_PAYLOAD)\publish*\*.resources.dll" />
+      <WasmSatelliteAssemblies>
+        <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
+      </WasmSatelliteAssemblies>
+
+      <WasmAssembliesToBundle Include="$(HELIX_CORRELATION_PAYLOAD)\publish\*.dll"/>
+
+      <!--<WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
+      <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />-->
+      <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
+      <!-- Include files specified by test projects from publish dir -->
+      <WasmFilesToIncludeInFileSystem Include="@(WasmFilesToIncludeFromPublishDir -> '$(HELIX_CORRELATION_PAYLOAD)\publish\%(Identity)')" />
+    </ItemGroup>
+  </Target>
+</Project>
