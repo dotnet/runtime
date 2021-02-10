@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <NativeRuntimeAsset Include="$(MonoCrossAOTDir)$(TargetCrossRid)\**" TargetPath="tools/" />
+    <NativeRuntimeAsset Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.Sdk.props" TargetPath="Sdk/Sdk.props" />
   </ItemGroup>
 
   <Target Name="ValidateProperties" BeforeTargets="GenerateNuspec">
