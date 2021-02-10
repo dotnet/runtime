@@ -214,7 +214,7 @@ namespace System.Collections.Generic
         private void AddWithResize(T item)
         {
             int size = _size;
-            EnsureCapacity(size + 1);
+            IncreaseCapacityTo(size + 1);
             _size = size + 1;
             _items[size] = item;
         }
@@ -394,8 +394,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Ensures that the capacity of this list is at least the specified <paramref name="capacity"/>.
         /// If the current capacity of the list is less than specified <paramref name="capacity"/>,
-        /// the capacity is increased to twice the current capacity or to <paramref name="capacity"/>,
-        /// whichever is larger.
+        /// the capacity is increased by continuously twice current capacity until it is at least the specified <paramref name="capacity"/>.
         /// </summary>
         /// <param name="capacity">The minimum capacity to ensure</param>
         public int EnsureCapacity(int capacity)
@@ -407,29 +406,46 @@ namespace System.Collections.Generic
 
             if (_items.Length < capacity)
             {
-                int newCapacity = _items.Length == 0 ? DefaultCapacity : _items.Length * 2;
-                while (newCapacity < capacity)
-                {
-                    newCapacity *= 2;
-                }
-                // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
-                // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                if ((uint)newCapacity > Array.MaxArrayLength)
-                {
-                    newCapacity = Array.MaxArrayLength;
-                    if (newCapacity < capacity) newCapacity = capacity;
-                }
-
-                T[] newItems = new T[newCapacity];
-                if (_size > 0)
-                {
-                    Array.Copy(_items, newItems, _size);
-                }
-                _items = newItems;
+                IncreaseCapacityTo(capacity);
                 _version++;
             }
 
             return _items.Length;
+        }
+
+        private void EnsureCapacityWithoutUpdatingVersion(int capacity)
+        {
+            if (_items.Length < capacity)
+            {
+                IncreaseCapacityTo(capacity);
+            }
+        }
+
+        /// <summary>
+        /// Increase the capacity of this list to at least the specified <paramref name="min"/> by continuously twice current capacity.
+        /// </summary>
+        /// <param name="min">The minimum capacity to ensure</param>
+        private void IncreaseCapacityTo(int min)
+        {
+            int newCapacity = _items.Length == 0 ? DefaultCapacity : _items.Length * 2;
+            while (newCapacity < min)
+            {
+                newCapacity *= 2;
+            }
+            // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
+            // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
+            if ((uint)newCapacity > Array.MaxArrayLength)
+            {
+                newCapacity = Array.MaxArrayLength;
+                if (newCapacity < min) newCapacity = min;
+            }
+
+            T[] newItems = new T[newCapacity];
+            if (_size > 0)
+            {
+                Array.Copy(_items, newItems, _size);
+            }
+            _items = newItems;
         }
 
         public bool Exists(Predicate<T> match)
@@ -691,7 +707,7 @@ namespace System.Collections.Generic
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
             }
-            if (_size == _items.Length) EnsureCapacity(_size + 1);
+            if (_size == _items.Length) IncreaseCapacityTo(_size + 1);
             if (index < _size)
             {
                 Array.Copy(_items, index, _items, index + 1, _size - index);
@@ -737,7 +753,7 @@ namespace System.Collections.Generic
                 int count = c.Count;
                 if (count > 0)
                 {
-                    EnsureCapacity(_size + count);
+                    EnsureCapacityWithoutUpdatingVersion(_size + count);
                     if (index < _size)
                     {
                         Array.Copy(_items, index, _items, index + count, _size - index);
