@@ -201,9 +201,6 @@ namespace HostApiInvokerApp
         /// <param name="args[1]">(Optional) Path to the directory with dotnet.exe</param>
         static void Test_hostfxr_get_dotnet_environment_info(string[] args)
         {
-            //while (!System.Diagnostics.Debugger.IsAttached)
-            //    System.Threading.Thread.Sleep(5000);
-
             string? dotnetExeDir = null;
             if (args.Length >= 2)
                 dotnetExeDir = args[1];
