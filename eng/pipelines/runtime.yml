@@ -159,7 +159,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       pgoType: 'PGO'
-#
+
 #
 # Build CoreCLR Formatting Job
 # Only when CoreCLR is changed, and only in the 'master' branch (no release branches;
@@ -629,25 +629,25 @@ jobs:
     jobParameters:
       liveRuntimeBuildConfig: release
 
- template: /eng/pipelines/common/platform-matrix.yml
- parameters:
-   jobTemplate: /eng/pipelines/libraries/build-job.yml
-   buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-   platforms:
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_x64
-    - OSX_arm64
-    - OSX_x64
-   - windows_x64
-    - FreeBSD_x64
-   jobParameters:
-     testScope: innerloop
-     testBuildPlatforms:
-      - Linux_x64
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+     - Linux_arm64
+     - Linux_musl_x64
+     - Linux_x64
+     - OSX_arm64
+     - OSX_x64
      - windows_x64
-      - OSX_x64
-     liveRuntimeBuildConfig: release
+     - FreeBSD_x64
+    jobParameters:
+      testScope: innerloop
+      testBuildPlatforms:
+       - Linux_x64
+       - windows_x64
+       - OSX_x64
+      liveRuntimeBuildConfig: release
 
 #
 # Libraries Build that only run when libraries is changed
@@ -1036,6 +1036,10 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
+#
+# Libraries Test Execution against a checked runtime
+# Only if CoreCLR or Libraries is changed
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
