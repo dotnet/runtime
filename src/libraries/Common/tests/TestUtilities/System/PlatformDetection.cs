@@ -207,6 +207,7 @@ namespace System
         public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
 
+        [DynamicDependency("GetICUVersion", "Interop/Globalization", "System.Private.CoreLib")]
         private static Version GetICUVersion()
         {
             int version = 0;
