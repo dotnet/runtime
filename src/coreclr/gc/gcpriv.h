@@ -1214,6 +1214,8 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
+    void verify_regions (int gen_number);
+    PER_HEAP
     void verify_regions();
     PER_HEAP
     void verify_heap (BOOL begin_gc_p);
@@ -3081,6 +3083,8 @@ protected:
     size_t end_space_after_gc();
     PER_HEAP
     size_t estimated_reclaim (int gen_number);
+    PER_HEAP
+    bool is_full_compacting_gc_productive();
     PER_HEAP
     BOOL decide_on_compacting (int condemned_gen_number,
                                size_t fragmentation,

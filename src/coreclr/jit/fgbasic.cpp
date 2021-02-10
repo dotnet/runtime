@@ -170,7 +170,10 @@ void Compiler::fgInit()
     fgPgoSchemaCount     = 0;
     fgNumProfileRuns     = 0;
     fgPgoBlockCounts     = 0;
+    fgPgoEdgeCounts      = 0;
     fgPgoClassProfiles   = 0;
+    fgCountInstrumentor  = nullptr;
+    fgClassInstrumentor  = nullptr;
     fgPredListSortVector = nullptr;
 }
 
@@ -418,15 +421,20 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
     }
 }
 
-/*****************************************************************************
- * fgReplaceSwitchJumpTarget:
- *
- * We have a BBJ_SWITCH at 'blockSwitch' and we want to replace all entries
- * in the jumpTab[] such that so that jumps that previously went to
- * 'oldTarget' now go to 'newTarget'.
- * We also must update the predecessor lists for 'oldTarget' and 'newPred'.
- */
-
+//------------------------------------------------------------------------
+// fgReplaceSwitchJumpTarget: update BBJ_SWITCH block  so that all control
+//   that previously flowed to oldTarget now flows to newTarget.
+//
+// Arguments:
+//   blockSwitch - block ending in a switch
+//   newTarget   - new branch target
+//   oldTarget   - old branch target
+//
+// Notes:
+//   Updates the jump table and the cached unique target set (if any).
+//   Can be called before or after pred lists are built.
+//   If pred lists are built, updates pred lists.
+//
 void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* newTarget, BasicBlock* oldTarget)
 {
     noway_assert(blockSwitch != nullptr);
@@ -450,7 +458,10 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
         {
             // Remove the old edge [oldTarget from blockSwitch]
             //
-            fgRemoveAllRefPreds(oldTarget, blockSwitch);
+            if (fgComputePredsDone)
+            {
+                fgRemoveAllRefPreds(oldTarget, blockSwitch);
+            }
 
             //
             // Change the jumpTab entry to branch to the new location
@@ -460,7 +471,12 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
             //
             // Create the new edge [newTarget from blockSwitch]
             //
-            flowList* newEdge = fgAddRefPred(newTarget, blockSwitch);
+            flowList* newEdge = nullptr;
+
+            if (fgComputePredsDone)
+            {
+                newEdge = fgAddRefPred(newTarget, blockSwitch);
+            }
 
             // Now set the correct value of newEdge->flDupCount
             // and replace any other jumps in jumpTab[] that go to oldTarget.
@@ -479,7 +495,10 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
                     //
                     // Increment the flDupCount
                     //
-                    newEdge->flDupCount++;
+                    if (fgComputePredsDone)
+                    {
+                        newEdge->flDupCount++;
+                    }
                 }
                 i++; // Check the next entry in jumpTab[]
             }
@@ -1778,11 +1797,6 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
         while (compGetNextExitScope(0))
         { /* do nothing */
         }
-    }
-
-    if (compIsForInlining())
-    {
-        fgComputeProfileScale();
     }
 
     do
@@ -3591,22 +3605,27 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 //              'succ' might be the fall-through path or the branch path from 'curr'.
 //
 // Arguments:
-//    curr - A block which branches conditionally to 'succ'
+//    curr - A block which branches to 'succ'
 //    succ - The target block
 //
 // Return Value:
 //    Returns a new block, that is a successor of 'curr' and which branches unconditionally to 'succ'
 //
 // Assumptions:
-//    'curr' must have a bbJumpKind of BBJ_COND or BBJ_SWITCH
+//    'curr' must have a bbJumpKind of BBJ_COND, BBJ_ALWAYS, or BBJ_SWITCH
 //
 // Notes:
 //    The returned block is empty.
+//    Can be invoked before pred lists are built.
 
 BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 {
-    assert(curr->bbJumpKind == BBJ_COND || curr->bbJumpKind == BBJ_SWITCH);
-    assert(fgGetPredForBlock(succ, curr) != nullptr);
+    assert(curr->bbJumpKind == BBJ_COND || curr->bbJumpKind == BBJ_SWITCH || curr->bbJumpKind == BBJ_ALWAYS);
+
+    if (fgComputePredsDone)
+    {
+        assert(fgGetPredForBlock(succ, curr) != nullptr);
+    }
 
     BasicBlock* newBlock;
     if (succ == curr->bbNext)
@@ -3639,20 +3658,30 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         }
         fgAddRefPred(newBlock, curr);
     }
-    else
+    else if (curr->bbJumpKind == BBJ_SWITCH)
     {
-        assert(curr->bbJumpKind == BBJ_SWITCH);
-
         // newBlock replaces 'succ' in the switch.
         fgReplaceSwitchJumpTarget(curr, newBlock, succ);
 
         // And 'succ' has 'newBlock' as a new predecessor.
         fgAddRefPred(succ, newBlock);
     }
+    else
+    {
+        assert(curr->bbJumpKind == BBJ_ALWAYS);
+        fgReplacePred(succ, curr, newBlock);
+        curr->bbJumpDest = newBlock;
+        newBlock->bbFlags |= BBF_JMP_TARGET;
+        fgAddRefPred(newBlock, curr);
+    }
 
     // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
     // branch 50% of the time.
-    newBlock->inheritWeightPercentage(curr, 50);
+    //
+    if (curr->bbJumpKind != BBJ_ALWAYS)
+    {
+        newBlock->inheritWeightPercentage(curr, 50);
+    }
 
     // The bbLiveIn and bbLiveOut are both equal to the bbLiveIn of 'succ'
     if (fgLocalVarLivenessDone)

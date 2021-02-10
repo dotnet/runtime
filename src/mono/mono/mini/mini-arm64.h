@@ -21,7 +21,7 @@
 #define MONO_MAX_FREGS 32
 #define MONO_MAX_XREGS 32
 
-#if !defined(DISABLE_SIMD) && defined(ENABLE_NETCORE)
+#if !defined(DISABLE_SIMD)
 #define MONO_ARCH_SIMD_INTRINSICS 1
 #endif
 

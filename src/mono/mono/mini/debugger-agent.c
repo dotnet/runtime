@@ -63,7 +63,6 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/runtime.h>
@@ -1907,7 +1906,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	res = (Id *)g_ptr_array_index (ids [type], GPOINTER_TO_INT (id - 1));
 	dbg_unlock ();
 
-	if (res->domain == NULL || res->domain->state == MONO_APPDOMAIN_UNLOADED) {
+	if (res->domain == NULL) {
 		PRINT_DEBUG_MSG (1, "ERR_UNLOADED, id=%d, type=%d.\n", id, type);
 		*err = ERR_UNLOADED;
 		return NULL;
@@ -2439,11 +2438,6 @@ suspend_vm (void)
 		 */
 		tp_suspend = TRUE;
 	mono_loader_unlock ();
-
-#ifndef ENABLE_NETCORE
-	if (tp_suspend)
-		mono_threadpool_suspend ();
-#endif
 }
 
 /*
@@ -2482,11 +2476,6 @@ resume_vm (void)
 	if (suspend_count == 0)
 		tp_resume = TRUE;
 	mono_loader_unlock ();
-
-#ifndef ENABLE_NETCORE
-	if (tp_resume)
-		mono_threadpool_resume ();
-#endif
 }
 
 /*
@@ -3647,7 +3636,7 @@ static void
 runtime_initialized (MonoProfiler *prof)
 {
 	process_profiler_event (EVENT_KIND_VM_START, mono_thread_current ());
-	if (CHECK_PROTOCOL_VERSION (3, 0))
+	if (CHECK_PROTOCOL_VERSION (2, 59))
 		process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, (mono_defaults.corlib->assembly));
 	if (agent_config.defer) {
 		ERROR_DECL (error);
@@ -3884,9 +3873,6 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 	MonoDomain* old_domain;
 	AgentDomainInfo *info = NULL;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
 	info = get_agent_domain_info (domain);
 	g_assert (info);
 
@@ -3906,9 +3892,6 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 {
 	GSList *tmp;
 	MonoDomain* old_domain;
-
-	if (mono_domain_is_unloading (domain))
-		return;
 
 	old_domain = mono_domain_get ();
 
@@ -5029,7 +5012,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 
 		if (!obj) {
 			buffer_add_byte (buf, VALUE_TYPE_ID_NULL);
-			if (CHECK_PROTOCOL_VERSION (3, 0)) {
+			if (CHECK_PROTOCOL_VERSION (2, 59)) {
 				buffer_add_info_for_null_value(buf, t, domain);
 			}
 		} else {
@@ -5924,7 +5907,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 		return ERR_INVALID_ARGUMENT;
 	} else if (m_class_is_valuetype (m->klass) && (m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		/* Should be null */
-		if (!CHECK_PROTOCOL_VERSION (3, 0)) { //on icordbg I couldn't find type information when invoking a static method maybe I can change this later
+		if (!CHECK_PROTOCOL_VERSION (2, 59)) { //on icordbg I couldn't find type information when invoking a static method maybe I can change this later
 			int type = decode_byte (p, &p, end);
 			if (type != VALUE_TYPE_ID_NULL) {
 				PRINT_DEBUG_MSG (1, "[%p] Error: Static vtype method invoked with this argument.\n", (gpointer) (gsize) mono_native_thread_id_get ());
@@ -5946,14 +5929,14 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 					return err;
 			}
 	} else {
-		if (!(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (3, 0))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
+		if (!(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (2, 59))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
 			err = decode_value(m_class_get_byval_arg(m->klass), domain, this_buf, p, &p, end, FALSE);
 			if (err != ERR_NONE)
 				return err;
 		}
 	}
 
-	if (!m_class_is_valuetype (m->klass) && !(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (3, 0))) //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
+	if (!m_class_is_valuetype (m->klass) && !(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (2, 59))) //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
 		this_arg = *(MonoObject**)this_buf;
 	else
 		this_arg = NULL;
@@ -6321,9 +6304,6 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
@@ -6362,9 +6342,6 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 
 	GetTypesForSourceFileArgs *ud = (GetTypesForSourceFileArgs*)user_data;
 	MonoDomain *domain = (MonoDomain*)key;
-
-	if (mono_domain_is_unloading (domain))
-		return;
 
 	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
 
@@ -6671,11 +6648,6 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 			mono_environment_exitcode_set (exit_code);
 
-			/* Suspend all managed threads since the runtime is going away */
-#ifndef ENABLE_NETCORE
-			PRINT_DEBUG_MSG (1, "Suspending all threads...\n");
-			mono_thread_suspend_all_other_threads ();
-#endif
 			PRINT_DEBUG_MSG (1, "Shutting down the runtime...\n");
 			mono_runtime_quit_internal ();
 			transport_close2 ();
@@ -6733,7 +6705,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		tls->pending_invoke->endp = tls->pending_invoke->p + (end - p);
 		tls->pending_invoke->suspend_count = suspend_count;
 		tls->pending_invoke->nmethods = nmethods;
-		if (!CHECK_PROTOCOL_VERSION (3, 0)) { //on icordbg they send a resume after calling an invoke method
+		if (!CHECK_PROTOCOL_VERSION (2, 59)) { //on icordbg they send a resume after calling an invoke method
 			if (flags & INVOKE_FLAG_SINGLE_THREADED) {
 				resume_thread(THREAD_TO_INTERNAL(thread));
 			}
@@ -6785,7 +6757,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 		tls->abort_requested = TRUE;
 
-		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread), FALSE);
+		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread));
 		mono_loader_unlock ();
 		break;
 	}
@@ -7540,7 +7512,7 @@ field_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_typeid (buf, domain, f->parent);
 		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (f->type));
 		buffer_add_int (buf, f->type->attrs);
-		if (CHECK_PROTOCOL_VERSION (3, 0)) {
+		if (CHECK_PROTOCOL_VERSION (2, 59)) {
 			buffer_add_int (buf, f->type->type);
 			buffer_add_int (buf, m_class_get_type_token (f->parent));
 			buffer_add_int (buf, m_class_get_type_token (mono_class_from_mono_type_internal (f->type)));
@@ -7684,7 +7656,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		while ((m = mono_class_get_methods (klass, &iter))) {
 			buffer_add_methodid (buf, domain, m);
-			if (CHECK_PROTOCOL_VERSION (3, 0))
+			if (CHECK_PROTOCOL_VERSION (2, 59))
 				buffer_add_int(buf, m->token);
 			i ++;
 		}

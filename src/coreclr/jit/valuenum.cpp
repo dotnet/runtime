@@ -4286,18 +4286,33 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 }
 
 //------------------------------------------------------------------------
+// IsVNPositiveInt32Constant: returns true iff vn is a known Int32 constant that is greater then 0
+//
+// Arguments:
+//    vn - Value number to query
+bool ValueNumStore::IsVNPositiveInt32Constant(ValueNum vn)
+{
+    return IsVNInt32Constant(vn) && (ConstantValue<INT32>(vn) > 0);
+}
+
+//------------------------------------------------------------------------
 // IsVNArrLenUnsignedBound: Checks if the specified vn represents an expression
-//    such as "(uint)i < (uint)len" that implies that the index is valid
-//    (0 <= i && i < a.len).
+//    of one of the following forms:
+//    - "(uint)i < (uint)len" that implies (0 <= i < len)
+//    - "const < (uint)len" that implies "len > const"
+//    - "const <= (uint)len" that implies "len > const - 1"
 //
 // Arguments:
 //    vn - Value number to query
 //    info - Pointer to an UnsignedCompareCheckedBoundInfo object to return information about
 //           the expression. Not populated if the vn expression isn't suitable (e.g. i <= len).
-//           This enables optCreateJTrueBoundAssertion to immediatly create an OAK_NO_THROW
+//           This enables optCreateJTrueBoundAssertion to immediately create an OAK_NO_THROW
 //           assertion instead of the OAK_EQUAL/NOT_EQUAL assertions created by signed compares
 //           (IsVNCompareCheckedBound, IsVNCompareCheckedBoundArith) that require further processing.
-
+//
+// Note:
+//   For comparisons of the form constant <= length, this returns them as (constant - 1) < length
+//
 bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompareCheckedBoundInfo* info)
 {
     VNFuncApp funcApp;
@@ -4314,6 +4329,19 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 info->vnBound = funcApp.m_args[1];
                 return true;
             }
+            // We care about (uint)len < constant and its negation "(uint)len >= constant"
+            else if (IsVNPositiveInt32Constant(funcApp.m_args[1]) && IsVNCheckedBound(funcApp.m_args[0]))
+            {
+                // Change constant < len into (uint)len >= (constant - 1)
+                // to make consuming this simpler (and likewise for it's negation).
+                INT32 validIndex = ConstantValue<INT32>(funcApp.m_args[1]) - 1;
+                assert(validIndex >= 0);
+
+                info->vnIdx   = VNForIntCon(validIndex);
+                info->cmpOper = (funcApp.m_func == VNF_GE_UN) ? VNF_LT_UN : VNF_GE_UN;
+                info->vnBound = funcApp.m_args[0];
+                return true;
+            }
         }
         else if ((funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN))
         {
@@ -4324,6 +4352,19 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 // Let's keep a consistent operand order - it's always i < len, never len > i
                 info->cmpOper = (funcApp.m_func == VNF_GT_UN) ? VNF_LT_UN : VNF_GE_UN;
                 info->vnBound = funcApp.m_args[0];
+                return true;
+            }
+            // Look for constant > (uint)len and its negation "constant <= (uint)len"
+            else if (IsVNPositiveInt32Constant(funcApp.m_args[0]) && IsVNCheckedBound(funcApp.m_args[1]))
+            {
+                // Change constant <= (uint)len to (constant - 1) < (uint)len
+                // to make consuming this simpler (and likewise for it's negation).
+                INT32 validIndex = ConstantValue<INT32>(funcApp.m_args[0]) - 1;
+                assert(validIndex >= 0);
+
+                info->vnIdx   = VNForIntCon(validIndex);
+                info->cmpOper = (funcApp.m_func == VNF_LE_UN) ? VNF_LT_UN : VNF_GE_UN;
+                info->vnBound = funcApp.m_args[1];
                 return true;
             }
         }

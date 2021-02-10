@@ -2628,7 +2628,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_PlaintextStreamFilter(ITestOutputHelper output) : base(output) { }
 
-        public static IEnumerable<object> PlaintextStreamFilter_ContextHasCorrectProperties_Success_MemberData() =>
+        public static IEnumerable<object[]> PlaintextStreamFilter_ContextHasCorrectProperties_Success_MemberData() =>
             from useSsl in new[] { false, true }
             from syncRequest in new[] { false, true }
             from syncCallback in new[] { false, true }

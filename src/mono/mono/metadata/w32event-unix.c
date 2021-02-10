@@ -378,20 +378,6 @@ ves_icall_System_Threading_Events_CloseEvent_internal (gpointer handle)
 	mono_w32handle_close (handle);
 }
 
-#ifndef ENABLE_NETCORE
-gpointer
-ves_icall_System_Threading_Events_OpenEvent_icall (const gunichar2 *name, gint32 name_length,
-	gint32 rights, gint32 *win32error, MonoError *error)
-{
-	*win32error = ERROR_SUCCESS;
-	char *utf8_name = mono_utf16_to_utf8 (name, name_length, error);
-	return_val_if_nok (error, NULL);
-	gpointer handle = mono_w32event_open (utf8_name, rights, win32error);
-	g_free (utf8_name);
-	return handle;
-}
-#endif
-
 gpointer
 mono_w32event_open (const gchar *utf8_name, gint32 rights G_GNUC_UNUSED, gint32 *win32error)
 {

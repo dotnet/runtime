@@ -15,7 +15,7 @@
 var Module = {
   onRuntimeInitialized: function () {
     ...
-    
+
     if (config.enable_profiler)
     {
       config.aot_profiler_options = {
@@ -52,17 +52,17 @@ function saveProfile() {
 1. To enable profiling during a build, we need to make use of WasmApp.InTree.targets/props by importing into the project file:
 
 `<Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />` <br/>
-`<Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />` 
+`<Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />`
 
 For more information on how to utilize WasmApp.InTree.targets/props consult the wasm build directory [README.md](../../../../wasm/build/README.md)
 
-2. To get the profile data, run: 
+2. To get the profile data, run:
 
 `make get-aot-profile`
 
 Which will build and run the current project with AOT disabled and the AOT profiler enabled.
 
-3. Go to localhost:8000 and the profile will automatically download. 
+3. Go to localhost:8000 and the profile will automatically download.
 
 4. To use the profile data in the project, run:
 
