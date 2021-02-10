@@ -39,7 +39,6 @@ namespace System.Threading
         internal bool threadpool_thread;
         private bool thread_interrupt_requested;
         /* These are used from managed code */
-        internal int stack_size;
         internal byte apartment_state;
         internal int managed_id;
         private int small_id;
@@ -247,13 +246,13 @@ namespace System.Threading
 
         private void StartCore()
         {
-             StartInternal(this);
+             StartInternal(this, _startHelper?._maxStackSize ?? 0);
         }
 
         [DynamicDependency(nameof(StartCallback))]
         [DynamicDependency(nameof(ThrowThreadStartException))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void StartInternal(Thread runtime_thread);
+        private static extern void StartInternal(Thread runtimeThread, int stackSize);
 
         partial void ThreadNameChanged(string? value)
         {

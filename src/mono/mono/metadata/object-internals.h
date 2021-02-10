@@ -569,7 +569,6 @@ struct _MonoInternalThread {
 	MonoLongLivedThreadData *longlived;
 	MonoBoolean threadpool_thread;
 	MonoBoolean thread_interrupt_requested;
-	int stack_size;
 	guint8	apartment_state;
 	gint32 managed_id;
 	guint32 small_id;

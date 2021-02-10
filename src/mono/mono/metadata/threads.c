@@ -198,7 +198,6 @@ static MonoThreadCleanupFunc mono_thread_cleanup_fn = NULL;
 
 /* The default stack size for each thread */
 static guint32 default_stacksize = 0;
-#define default_stacksize_for_thread(thread) ((thread)->stack_size? (thread)->stack_size: default_stacksize)
 
 static void mono_free_static_data (gpointer* static_data);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
@@ -1228,7 +1227,7 @@ throw_thread_start_exception (guint32 error_code, MonoError *error)
  */
 static gboolean
 create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart start_func, gpointer start_func_arg,
-			   MonoThreadCreateFlags flags, MonoError *error)
+			   gint32 stack_size, MonoThreadCreateFlags flags, MonoError *error)
 {
 	StartInfo *start_info = NULL;
 	MonoNativeThreadId tid;
@@ -1280,7 +1279,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 	mono_coop_sem_init (&start_info->registered, 0);
 
 	if (flags != MONO_THREAD_CREATE_FLAGS_SMALL_STACK)
-		stack_set_size = default_stacksize_for_thread (internal);
+		stack_set_size = stack_size ? stack_size : default_stacksize;
 	else
 		stack_set_size = 0;
 
@@ -1297,8 +1296,6 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 		ret = FALSE;
 		goto done;
 	}
-
-	internal->stack_size = (int) stack_set_size;
 
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Launching thread %p (%" G_GSIZE_FORMAT ")", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
 
@@ -1373,7 +1370,7 @@ mono_thread_create_internal (MonoThreadStart func, gpointer arg, MonoThreadCreat
 
 	LOCK_THREAD (internal);
 
-	res = create_thread (thread, internal, func, arg, flags, error);
+	res = create_thread (thread, internal, func, arg, 0, flags, error);
 	(void)res;
 
 	UNLOCK_THREAD (internal);
@@ -5397,7 +5394,7 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gb
 #endif
 
 void
-ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_handle, MonoError *error)
+ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_handle, gint32 stack_size, MonoError *error)
 {
 	MonoThread *internal = MONO_HANDLE_RAW (thread_handle);
 	gboolean res;
@@ -5422,7 +5419,7 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 		return;
 	}
 
-	res = create_thread (internal, internal, NULL, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	res = create_thread (internal, internal, NULL, NULL, stack_size, MONO_THREAD_CREATE_FLAGS_NONE, error);
 	if (!res) {
 		UNLOCK_THREAD (internal);
 		return;
