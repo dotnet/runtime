@@ -90,6 +90,8 @@ elseif(CLR_CMAKE_TARGET_LINUX)
         ${CORECLR_STATIC_LIB_LOCATION}/libnativeresourcestring.a
     )
 
+    set(RUNTIMEINFO_LIB ${CORECLR_STATIC_LIB_LOCATION}/libruntimeinfo.a)
+
     # currently linking coreclr into the singlefilehost is only supported on linux
     # the following code here would be needed if/when BSD and OSX are supported too
     #
@@ -200,7 +202,8 @@ endif(NOT CLR_CMAKE_TARGET_LINUX)
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
-target_link_libraries(singlefilehost
+target_link_libraries(
+    singlefilehost
     libhostcommon
     ${CORECLR_LIBRARIES}
 
@@ -209,6 +212,7 @@ target_link_libraries(singlefilehost
     ${NATIVE_LIBS_EXTRA}
 
     ${START_WHOLE_ARCHIVE}
+    ${RUNTIMEINFO_LIB}
     ${NATIVE_LIBS}
     ${END_WHOLE_ARCHIVE}
 )
