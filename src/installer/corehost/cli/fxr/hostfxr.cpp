@@ -332,21 +332,70 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
 }
 
 typedef void (HOSTFXR_CALLTYPE* hostfxr_get_dotnet_environment_info_result_fn)(
-    const struct hostfxr_dotnet_environment_info* info);
+    const struct hostfxr_dotnet_environment_info* info,
+    void* result_context);
 
+//
+// Returns available SDKs and frameworks.
+//
+// Resolves the existing SDKs and frameworks from a dotnet root directory (if
+// any), or the global default location. If multi-level lookup is enabled and
+// the dotnet root location is different than the global location, the SDKs and
+// frameworks will be enumerated from both locations.
+//
+// The SDKs are sorted in ascending order by version, multi-level lookup
+// locations are put before private ones.
+//
+// The frameworks are sorted in ascending order by name followed by version,
+// multi-level lookup locations are put before private ones.
+//
+// Parameters:
+//    dotnet_root
+//      The path to a directory containing a dotnet executable.
+//
+//    reserved
+//      Reserved for future parameters.
+//
+//    result
+//      Callback invoke to return the list of SDKs and frameworks.
+//      Structs and their elements are valid for the duration of the call.
+//
+//    result_context
+//      Additional context passed to the result callback.
+//
+// Return value:
+//   0 on success, otherwise failure.
+//
+// String encoding:
+//   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
+//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     const pal::char_t* dotnet_root,
     void* reserved,
     hostfxr_get_dotnet_environment_info_result_fn result,
     void* result_context)
 {
+    assert(reserved == nullptr);
+    pal::string_t dotnet_dir;
     if (dotnet_root == nullptr)
     {
-        dotnet_root = _X("");
+        if (pal::get_dotnet_self_registered_dir(&dotnet_dir) || pal::get_default_installation_dir(&dotnet_dir))
+        {
+            trace::info(_X("Using global installation location [%s]."), dotnet_dir.c_str());
+        }
+        else
+        {
+            trace::info(_X("No default dotnet installation could be obtained."));
+        }
+    }
+    else
+    {
+        dotnet_dir = dotnet_root;
     }
 
     std::vector<sdk_info> sdk_infos;
-    sdk_info::get_all_sdk_infos(dotnet_root, &sdk_infos);
+    sdk_info::get_all_sdk_infos(dotnet_dir, &sdk_infos);
 
     std::vector<hostfxr_dotnet_environment_sdk_info> environment_sdk_infos;
     if (!sdk_infos.empty())
@@ -366,7 +415,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     }
 
     std::vector<framework_info> framework_infos;
-    framework_info::get_all_framework_infos(dotnet_root, _X(""), &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_dir, _X(""), &framework_infos);
 
     std::vector<hostfxr_dotnet_environment_framework_info> environment_framework_infos;
     if (!framework_infos.empty())
@@ -397,7 +446,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
         (environment_framework_infos.empty()) ? nullptr : &environment_framework_infos[0]
     };
 
-    result(&environment_info);
+    result(&environment_info, result_context);
     return StatusCode::Success;
 }
 

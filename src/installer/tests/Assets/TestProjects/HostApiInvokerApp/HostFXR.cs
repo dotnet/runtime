@@ -29,9 +29,9 @@ namespace HostApiInvokerApp
             {
                 internal int size;
                 [MarshalAs(UnmanagedType.LPWStr)]
-                internal string path;
-                [MarshalAs(UnmanagedType.LPWStr)]
                 internal string version;
+                [MarshalAs(UnmanagedType.LPWStr)]
+                internal string path;
             }
 
             [StructLayout(LayoutKind.Sequential)]
@@ -96,11 +96,12 @@ namespace HostApiInvokerApp
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = Utils.OSCharSet)]
             internal delegate void hostfxr_get_dotnet_environment_info_result_fn(
-                 hostfxr_dotnet_environment_info info);
+                 hostfxr_dotnet_environment_info info,
+                 IntPtr result_context);
 
             [DllImport(nameof(hostfxr), CharSet = Utils.OSCharSet, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int hostfxr_get_dotnet_environment_info(
-                string dotnet_root,
+                string? dotnet_root,
                 IntPtr reserved,
                 hostfxr_get_dotnet_environment_info_result_fn result,
                 IntPtr result_context);
@@ -193,17 +194,29 @@ namespace HostApiInvokerApp
             }
         }
 
+        /// <summary>
+        /// Test that invokes native api hostfxr_get_dotnet_environment_info.
+        /// </summary>
+        /// <param name="args[0]">hostfxr_get_dotnet_environment_info</param>
+        /// <param name="args[1]">(Optional) Path to the directory with dotnet.exe</param>
         static void Test_hostfxr_get_dotnet_environment_info(string[] args)
         {
+            //while (!System.Diagnostics.Debugger.IsAttached)
+            //    System.Threading.Thread.Sleep(5000);
+
+            string? dotnetExeDir = null;
+            if (args.Length >= 2)
+                dotnetExeDir = args[1];
+
             string hostfxr_version;
             string hostfxr_commit_hash;
             List<hostfxr.hostfxr_dotnet_environment_sdk_info> sdks = new List<hostfxr.hostfxr_dotnet_environment_sdk_info>();
             List<hostfxr.hostfxr_dotnet_environment_framework_info> frameworks = new List<hostfxr.hostfxr_dotnet_environment_framework_info>();
 
             int rc = hostfxr.hostfxr_get_dotnet_environment_info(
-                dotnet_root: args[1],
+                dotnet_root: dotnetExeDir,
                 reserved: IntPtr.Zero,
-                result: (info) => {
+                result: (info, result_context) => {
                     hostfxr_version = info.hostfxr_version;
                     hostfxr_commit_hash = info.hostfxr_commit_hash;
                     for (int i = 0; i < info.sdk_count; i++)
