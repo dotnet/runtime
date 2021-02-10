@@ -3805,6 +3805,8 @@ namespace System.Diagnostics.Tracing
         static EventListener()
         {
 #if FEATURE_PERFTRACING
+            // This allows NativeRuntimeEventSource to get initialized so that EventListeners can subscribe to the runtime events emitted from
+            // native side.
             GC.KeepAlive(NativeRuntimeEventSource.Log);
 #endif
         }
