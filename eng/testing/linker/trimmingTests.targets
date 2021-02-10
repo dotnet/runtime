@@ -11,10 +11,6 @@
     <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles\Directory.Build.*">
       <DestinationFolder>$(TrimmingTestDir)</DestinationFolder>
     </TestSupportFiles>
-
-    <CliEnvironment Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <CliEnvironment Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
-    <CliEnvironment Include="DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
   <Target Name="CreateTestDir"
@@ -94,11 +90,11 @@
           DependsOnTargets="GenerateProjects">
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Restore"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=$(Configuration);@(CliEnvironment)" />
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=$(Configuration)" />
 
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Publish"
-             Properties="Configuration=$(Configuration);@(CliEnvironment)" />
+             Properties="Configuration=$(Configuration)" />
   </Target>
 
   <Target Name="ExecuteApplications"
