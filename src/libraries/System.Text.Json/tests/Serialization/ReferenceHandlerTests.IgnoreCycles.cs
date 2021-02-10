@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public class ReferenceHandlerTests_IgnoreCycle
+    public class ReferenceHandlerTests_IgnoreCycles
     {
         private static readonly JsonSerializerOptions s_optionsIgnoreCycles =
             new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles };
