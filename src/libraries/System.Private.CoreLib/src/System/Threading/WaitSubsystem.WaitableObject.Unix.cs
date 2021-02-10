@@ -221,7 +221,7 @@ namespace System.Threading
                         --_signalCount;
 
                         Debug.Assert(_ownershipInfo!.Thread == null);
-                        _ownershipInfo!.AssignOwnership(this, waitInfo);
+                        _ownershipInfo.AssignOwnership(this, waitInfo);
                         return;
                 }
             }
@@ -743,8 +743,9 @@ namespace System.Threading
 
                 Debug.Assert(IsMutex);
                 Debug.Assert(!IsSignaled);
+                Debug.Assert(_ownershipInfo != null);
 
-                _ownershipInfo!.RelinquishOwnership(this, isAbandoned);
+                _ownershipInfo.RelinquishOwnership(this, isAbandoned);
 
                 for (ThreadWaitInfo.WaitedListNode? waiterNode = _waitersHead, nextWaiterNode;
                     waiterNode != null;
@@ -757,7 +758,7 @@ namespace System.Threading
                     ThreadWaitInfo waitInfo = waiterNode.WaitInfo;
                     if (waitInfo.TrySignalToSatisfyWait(waiterNode, isAbandoned))
                     {
-                        _ownershipInfo!.AssignOwnership(this, waitInfo);
+                        _ownershipInfo.AssignOwnership(this, waitInfo);
                         return;
                     }
                 }
