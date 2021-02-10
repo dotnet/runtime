@@ -567,6 +567,53 @@ namespace Microsoft.Extensions.Options.Tests
             ValidateFailure<ComplexOptions>(error, Options.DefaultName, 3, "A validation error has occurred.", "Virtual", "Integer");
         }
 
+        [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+        public class FromAttribute : ValidationAttribute
+        {
+            public string Accepted { get; set; }
+
+            public override bool IsValid(object value)
+                => value == null || value.ToString() == Accepted;
+        }
+
+        [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+        public class DepValidator : ValidationAttribute
+        {
+            public string Target { get; set; }
+
+            protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+            {
+                object instance = validationContext.ObjectInstance;
+                Type type = instance.GetType();
+                var dep1 = type.GetProperty("Dep1")?.GetValue(instance);
+                var dep2 = type.GetProperty(Target)?.GetValue(instance);
+                if (dep1 == dep2)
+                {
+                    return ValidationResult.Success;
+                }
+                return new ValidationResult("Dep1 != "+Target, new string[] { "Dep1", Target });
+            }
+        }
+
+        private class AnnotatedOptions
+        {
+            [Required]
+            public string Required { get; set; }
+
+            [StringLength(5, ErrorMessage = "Too long.")]
+            public string StringLength { get; set; }
+
+            [Range(-5, 5, ErrorMessage = "Out of range.")]
+            public int IntRange { get; set; }
+
+            [From(Accepted = "USA")]
+            public string Custom { get; set; }
+
+            [DepValidator(Target = "Dep2")]
+            public string Dep1 { get; set; }
+            public string Dep2 { get; set; }
+        }
+
         [Fact]
         public void CanValidateDataAnnotations()
         {
