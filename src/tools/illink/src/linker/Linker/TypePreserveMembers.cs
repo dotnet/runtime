@@ -6,9 +6,11 @@ using System;
 
 namespace Mono.Linker
 {
+	[Flags]
 	public enum TypePreserveMembers
 	{
-		AllVisible = 1,
-		AllVisibleOrInternal,
+		Visible = 1 << 1,
+		Internal = 1 << 2,
+		Library = 1 << 3
 	}
 }

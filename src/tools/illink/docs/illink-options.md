@@ -21,10 +21,14 @@ When a library is used instead of executable linker will root and mark all membe
 assembly entry point. This rooting behaviour can be customized by passing additional option
 which can use one of following values.
 
-- `all` - Keep all members in root assembly
+- `all` - Keep all members in root assembly. This is equivalent to using `copy` link action
+for the assembly.
 - `default` - Use entry point for applications and all members for libraries
-- `entrypoint` - Use assembly entry point as only root in the assembly
-- `visible` - Keep all members and types visible outside of root assembly
+- `entrypoint` - Use assembly entry point as the only root in the assembly. This option is useful
+for multi entry-point libraries bundles.
+- `library` - All visible members and metadata are retained. This useful mode for trimming a library before publishing.
+- `visible` - Keep all members and types visible outside of the assembly. All internals members
+are also rooted when assembly contains InternalsVisibleToAttribute.
 
 You can retain all public members of `Program.exe` application even if they are not
 referenced by any dependency by calling linker like
