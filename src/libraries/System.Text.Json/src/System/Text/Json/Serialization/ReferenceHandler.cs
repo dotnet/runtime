@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization
     public abstract class ReferenceHandler
     {
         /// <summary>
-        /// Indicates whether this ReferenceHandler implementation should use <see cref="ReferenceHandlingStrategy.Preserve"/> semantics or <see cref="ReferenceHandlingStrategy.IgnoreCycle"/> semantics.
+        /// Indicates whether this ReferenceHandler implementation should use <see cref="ReferenceHandlingStrategy.Preserve"/> semantics or <see cref="ReferenceHandlingStrategy.IgnoreCycles"/> semantics.
         /// The defualt is Preserve.
         /// </summary>
         internal ReferenceHandlingStrategy HandlingStrategy = ReferenceHandlingStrategy.Preserve;
@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Ignores an object when a reference cycle is detected during serialization.
         /// </summary>
-        public static ReferenceHandler IgnoreCycle { get; } = new IgnoreReferenceHandler();
+        public static ReferenceHandler IgnoreCycles { get; } = new IgnoreReferenceHandler();
 
         /// <summary>
         /// Returns the <see cref="ReferenceResolver "/> used for each serialization call.

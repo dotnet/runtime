@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Tests
     public class ReferenceHandlerTests_IgnoreCycle
     {
         private static readonly JsonSerializerOptions s_optionsIgnoreCycles =
-            new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycle };
+            new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles };
 
         [Fact]
         public async Task IgnoreCycles_OnObject()
@@ -319,7 +319,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var opts = new JsonSerializerOptions
             {
-                ReferenceHandler = ReferenceHandler.IgnoreCycle,
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
 

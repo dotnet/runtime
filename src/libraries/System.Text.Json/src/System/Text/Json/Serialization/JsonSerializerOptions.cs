@@ -492,7 +492,7 @@ namespace System.Text.Json
             }
         }
 
-        // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycle semanitcs or None of them.
+        // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semanitcs or None of them.
         internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
 
         internal MemberAccessor MemberAccessorStrategy

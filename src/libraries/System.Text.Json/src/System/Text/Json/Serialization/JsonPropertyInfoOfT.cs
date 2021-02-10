@@ -138,7 +138,7 @@ namespace System.Text.Json
         {
             T value = Get!(obj);
 
-            if (Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycle &&
+            if (Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
                 !Converter.IsValueType && value != null &&
                 state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
             {

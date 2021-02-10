@@ -313,7 +313,7 @@ namespace System.Text.Json.Serialization
             }
 
             bool ignoreCyclesPopReference = false;
-            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycle &&
+            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
                 !IsValueType && !IsNull(value))
             {
                 ReferenceResolver resolver = state.ReferenceResolver;
@@ -362,7 +362,7 @@ namespace System.Text.Json.Serialization
                     JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
                     if (jsonConverter != this)
                     {
-                        if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycle &&
+                        if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
                             jsonConverter.IsValueType)
                         {
                             // For boxed value types: push the value before it gets unboxed on TryWriteAsObject.
