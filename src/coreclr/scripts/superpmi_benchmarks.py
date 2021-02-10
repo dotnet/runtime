@@ -15,6 +15,7 @@ import argparse
 import re
 import sys
 
+import stat
 from os import path
 from coreclr_arguments import *
 from superpmi import ChangeDir, TempDir
@@ -136,6 +137,9 @@ def execute(coreclr_args, output_mch_name):
         with open(script_name, "w") as collection_script:
             contents = ["echo off", f"echo Invoking {collection_command}", collection_command]
             collection_script.write(os.linesep.join(contents))
+
+        if not is_windows:
+            os.chmod(script_name, stat.S_IRWXU)
 
         run_command([
             python_path, path.join(superpmi_directory, "superpmi.py"), "collect", script_name, "-core_root", core_root,

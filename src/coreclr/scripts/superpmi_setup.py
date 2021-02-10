@@ -365,7 +365,7 @@ def setup_microbenchmark(workitem_directory, arch):
     performance_directory = path.join(workitem_directory, "performance")
 
     run_command(
-        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
+        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/kunalspathak/performance", performance_directory])
 
     with ChangeDir(performance_directory):
         print("Inside directory: " + performance_directory)
