@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 
-namespace Microsoft.Extensions.Options.Tests
+namespace Microsoft.Extensions.Hosting.Tests
 {
     public class OptionsBuilderExtensionsTests
     {
@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Options.Tests
         {
             var hostBuilder = CreateHostBuilder(services =>
             {
-                OptionsBuilder<AnnotatedOptions> optionsBuilder = null;
+                OptionsBuilder<ComplexOptions> optionsBuilder = null;
                 optionsBuilder.ValidateOnStart();
             });
 
@@ -283,148 +283,6 @@ namespace Microsoft.Extensions.Options.Tests
                 });
 
                 ValidateFailure<ComplexOptions>(error, 3, "Virtual", "Integer");
-            }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task ValidateOnStart_CallValidateDataAnnotations_ValidationSuccessful()
-        {
-            var hostBuilder = CreateHostBuilder(services =>
-            {
-                services.AddOptions<AnnotatedOptions>()
-                    .Configure(o =>
-                    {
-                        o.StringLength = "111111";
-                        o.IntRange = 10;
-                        o.Custom = "nowhere";
-                        o.Dep1 = "Not dep2";
-                    })
-                    .ValidateDataAnnotations()
-                    .ValidateOnStart();
-            });
-
-            using (var host = hostBuilder.Build())
-            {
-                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
-                {
-                    await host.StartAsync();
-                });
-
-                ValidateFailure<AnnotatedOptions>(error, 5,
-                    "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                    "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                    "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                    "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                    "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.");
-            }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task ValidateOnStart_CallValidateAndValidateDataAnnotations_FailuresCaughtFromBothValidateAndValidateDataAnnotations()
-        {
-            var hostBuilder = CreateHostBuilder(services =>
-            {
-                services.AddOptions<AnnotatedOptions>()
-                    .Configure(o =>
-                    {
-                        o.StringLength = "111111";
-                        o.IntRange = 10;
-                        o.Custom = "nowhere";
-                        o.Dep1 = "Not dep2";
-                    })
-                    .ValidateDataAnnotations()
-                    .Validate(o => o.Custom != "nowhere", "I don't want to go to nowhere!")
-                    .ValidateOnStart();
-            });
-
-            using (var host = hostBuilder.Build())
-            {
-                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
-                {
-                    await host.StartAsync();
-                });
-
-                ValidateFailure<AnnotatedOptions>(error, 6,
-                    "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                    "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                    "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                    "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                    "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
-                    "I don't want to go to nowhere!");
-            }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task ValidateOnStart_CallValidateOnStartFirst_ValidationSuccessful()
-        {
-            var hostBuilder = CreateHostBuilder(services =>
-            {
-                services.AddOptions<AnnotatedOptions>()
-                    .ValidateOnStart()
-                    .Configure(o =>
-                    {
-                        o.StringLength = "111111";
-                        o.IntRange = 10;
-                        o.Custom = "nowhere";
-                        o.Dep1 = "Not dep2";
-                    })
-                    .ValidateDataAnnotations()
-                    .Validate(o => o.Custom != "nowhere", "I don't want to go to nowhere!");
-            });
-
-            using (var host = hostBuilder.Build())
-            {
-                var error = await Assert.ThrowsAsync<OptionsValidationException>(async () =>
-                {
-                    await host.StartAsync();
-                });
-
-                ValidateFailure<AnnotatedOptions>(error, 6,
-                    "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                    "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                    "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                    "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                    "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
-                    "I don't want to go to nowhere!");
-            }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task ValidateOnStart_ConfigureBasedOnDataAnnotationRestrictions_ValidationSuccessful()
-        {
-            var hostBuilder = CreateHostBuilder(services =>
-            {
-                services.AddOptions<AnnotatedOptions>()
-                    .Configure(o =>
-                    {
-                        o.Required = "required";
-                        o.StringLength = "1111";
-                        o.IntRange = 0;
-                        o.Custom = "USA";
-                        o.Dep1 = "dep";
-                        o.Dep2 = "dep";
-                    })
-                    .ValidateDataAnnotations()
-                    .ValidateOnStart()
-                    .Validate(o => o.Custom != "nowhere", "I don't want to go to nowhere!");
-            });
-
-            using (var host = hostBuilder.Build())
-            {
-                try
-                {
-                    await host.StartAsync();
-                }
-    #pragma warning disable CA1031 // Do not catch general exception types
-                catch (Exception ex)
-    #pragma warning restore CA1031 // Do not catch general exception types
-                {
-                    Assert.True(false, "Expected no exception, but got: " + ex.Message);
-                }
             }
         }
 
