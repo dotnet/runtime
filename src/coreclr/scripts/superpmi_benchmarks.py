@@ -143,8 +143,12 @@ def build_and_run(coreclr_args, output_mch_name):
         script_name = path.join(temp_location, script_name)
         with open(script_name, "w") as collection_script:
             contents = []
+            # Unset the JitName so dotnet process will not fail
             if not is_windows:
                 contents.append("#!/bin/bash")
+                contents.append("unset COMPlus_JitName")
+            else:
+                contents.append("set COMPlus_JitName=")
             contents.append(f"pushd {performance_directory}")
             contents.append(collection_command)
 
@@ -333,12 +337,12 @@ def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):
     methods_to_strip_list = path.join(performance_directory, "methods_to_strip.mcl")
 
     mcs_exe = path.join(core_root, "mcs")
-    mcs_command = [mcs_exe, "/dumpMap", old_mch_filename]
+    mcs_command = [mcs_exe, "-dumpMap", old_mch_filename]
 
     # Gather method list to strip
     (mcs_out, mcs_error) = run_command(mcs_command, _capture_output=True)
     if len(mcs_error) > 0:
-        print("Error executing mcs /dumpMap")
+        print("Error executing mcs -dumpMap")
         return
 
     method_context_list = mcs_out.decode("utf-8").split(os.linesep)
