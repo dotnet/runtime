@@ -11541,6 +11541,10 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 {
                     code = AddRexWPrefix(ins, code);
                 }
+                else
+                {
+                    id->idOpSize(EA_4BYTE);
+                }
 
                 // Set the 'w' bit to get the large version
                 code |= 0x1;
