@@ -9,9 +9,7 @@ namespace System.Numerics
 {
     /// <summary>Represents a vector that is used to encode three-dimensional physical rotations.</summary>
     /// <remarks>The <see cref="System.Numerics.Quaternion" /> structure is used to efficiently rotate an object about the (x,y,z) vector by the angle theta, where:
-    /// ```
-    /// w = cos(theta/2)
-    /// ```</remarks>
+    /// <c>w = cos(theta/2)</c></remarks>
     [Intrinsic]
     public struct Quaternion : IEquatable<Quaternion>
     {
@@ -636,7 +634,7 @@ namespace System.Numerics
 
         /// <summary>Returns a string that represents this quaternion.</summary>
         /// <returns>The string representation of this quaternion.</returns>
-        /// <remarks>The numeric values in the returned string are formatted by using the conventions of the current culture. For example, for the en-US culture, the returned string might appear as `{X:1.1 Y:2.2 Z:3.3 W:4.4}`.</remarks>
+        /// <remarks>The numeric values in the returned string are formatted by using the conventions of the current culture. For example, for the en-US culture, the returned string might appear as <c>{X:1.1 Y:2.2 Z:3.3 W:4.4}</c>.</remarks>
         public override readonly string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "{{X:{0} Y:{1} Z:{2} W:{3}}}", X, Y, Z, W);
