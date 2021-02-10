@@ -444,7 +444,8 @@ if (MSVC)
 
   # Disable Warnings:
   # 4291: Delete not defined for new, c++ exception may cause leak.
-  add_compile_options(/wd4291)
+  # 5105: Windows SDK headers use 'defined' operator in some macros
+  add_compile_options(/wd4291 /wd5105)
 
   # Treat Warnings as Errors:
   # 4007: 'main' : must be __cdecl.
