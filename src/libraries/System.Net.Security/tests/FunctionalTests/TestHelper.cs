@@ -26,6 +26,14 @@ namespace System.Net.Security.Tests
                 },
                 false);
 
+        private static readonly X509EnhancedKeyUsageExtension s_tlsClientEku =
+            new X509EnhancedKeyUsageExtension(
+                new OidCollection
+                {
+                    new Oid("1.3.6.1.5.5.7.3.2", null)
+                },
+                false);
+
         private static readonly X509BasicConstraintsExtension s_eeConstraints =
             new X509BasicConstraintsExtension(false, false, 0, false);
 
@@ -107,7 +115,8 @@ namespace System.Net.Security.Tests
             }
             catch { };
         }
-        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, string? testName = null, bool longChain = false)
+
+        internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, string? testName = null, bool longChain = false, bool serverCertificate = true)
         {
             const int keySize = 2048;
 
@@ -124,7 +133,7 @@ namespace System.Net.Security.Tests
             extensions.Add(builder.Build());
             extensions.Add(s_eeConstraints);
             extensions.Add(s_eeKeyUsage);
-            extensions.Add(s_tlsServerEku);
+            extensions.Add(serverCertificate ? s_tlsServerEku : s_tlsClientEku);
 
             CertificateAuthority.BuildPrivatePki(
                 PkiOptions.IssuerRevocationViaCrl,

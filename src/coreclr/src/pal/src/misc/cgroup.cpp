@@ -14,6 +14,7 @@ Abstract:
 #include "pal/dbgmsg.h"
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #include "pal/palinternal.h"
+#include <limits>
 #include <limits.h>
 #include <sys/resource.h>
 #include "pal/virtual.h"

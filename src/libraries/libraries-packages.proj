@@ -20,11 +20,12 @@
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
     <ProjectReference Include="$(PkgDir)runtime.native.System.IO.Ports\runtime.native.System.IO.Ports.proj" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.IO.Ports\pkg\System.IO.Ports.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\pkg\Microsoft.Windows.Compatibility\Microsoft.Windows.Compatibility.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.Speech\pkg\System.Speech.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.PerformanceCounter\pkg\System.Diagnostics.PerformanceCounter.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.EventLog\pkg\System.Diagnostics.EventLog.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
-    <ProjectReference Include="$(PkgDir)\Microsoft.NETCore.Platforms\Microsoft.NETCore.Platforms.proj" />
+    <!-- This is merge marker 1 to help automerge -->
+    <!-- This is merge marker 2 to help automerge --> 
+    <!-- This is merge marker 3 to help automerge --> 
+    <!-- This is merge marker 4 to help automerge --> 
+    <!-- This is merge marker 5 to help automerge --> 
+    <!-- This is merge marker 6 to help automerge --> 
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
