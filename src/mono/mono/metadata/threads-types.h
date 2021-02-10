@@ -289,10 +289,8 @@ MonoInternalThreadHandle
 mono_thread_internal_current_handle (void);
 
 gboolean
-mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload);
+mono_thread_internal_abort (MonoInternalThread *thread);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
-
-gboolean mono_thread_internal_has_appdomain_ref (MonoInternalThread *thread, MonoDomain *domain);
 
 void mono_thread_internal_reset_abort (MonoInternalThread *thread);
 
@@ -352,12 +350,6 @@ mono_thread_set_name (MonoInternalThread *thread,
 	mono_thread_set_name ((thread), name, G_N_ELEMENTS (name) - 1,  \
 		MONO_THREAD_NAME_WINDOWS_CONSTANT (name),               \
 		(flags) | MonoSetThreadNameFlag_Constant, NULL)
-
-gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
-
-void mono_thread_push_appdomain_ref (MonoDomain *domain);
-void mono_thread_pop_appdomain_ref (void);
-gboolean mono_thread_has_appdomain_ref (MonoThread *thread, MonoDomain *domain);
 
 gboolean mono_thread_interruption_requested (void);
 

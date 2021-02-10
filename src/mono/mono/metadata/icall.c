@@ -66,7 +66,6 @@
 #include <mono/metadata/appdomain-icalls.h>
 #include <mono/metadata/string-icalls.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/w32process.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/security.h>
@@ -2116,25 +2115,14 @@ MonoObjectHandle
 ves_icall_RuntimeFieldInfo_GetValueInternal (MonoReflectionFieldHandle field_handle, MonoObjectHandle obj_handle, MonoError *error)
 {	
 	MonoReflectionField * const field = MONO_HANDLE_RAW (field_handle);
-	MonoClass *fklass = field->klass;
 	MonoClassField *cf = field->field;
-
-	if (mono_asmctx_get_kind (&m_class_get_image (fklass)->assembly->context) == MONO_ASMCTX_REFONLY) {
-		mono_error_set_invalid_operation (error,
-			"It is illegal to get the value on a field on a type loaded using the ReflectionOnly methods.");
-		return NULL_HANDLE;
-	}
-
-	if (mono_security_core_clr_enabled () &&
-	    !mono_security_core_clr_ensure_reflection_access_field (cf, error)) {
-		return NULL_HANDLE;
-	}
 
 	MonoObject * const obj = MONO_HANDLE_RAW (obj_handle);
 	MonoObject *result;
 
 #ifndef DISABLE_REMOTING
 	if (G_UNLIKELY (obj != NULL && mono_class_is_transparent_proxy (mono_object_class (obj)))) {
+		MonoClass *fklass = field->klass;
 		/* We get here if someone used a
 		 * System.Reflection.FieldInfo:GetValue on a
 		 * ContextBoundObject's or cross-domain MarshalByRefObject's
@@ -2152,19 +2140,10 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 {
 	MonoClassField *cf = MONO_HANDLE_GETVAL (field, field);
 
-	MonoClass *field_klass = MONO_HANDLE_GETVAL (field, klass);
-	if (mono_asmctx_get_kind (&m_class_get_image (field_klass)->assembly->context) == MONO_ASMCTX_REFONLY) {
-		mono_error_set_invalid_operation (error, "It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods.");
-		return;
-	}
-
-	if (mono_security_core_clr_enabled () &&
-	    !mono_security_core_clr_ensure_reflection_access_field (cf, error)) {
-		return;
-	}
 
 #ifndef DISABLE_REMOTING
 	if (G_UNLIKELY (!MONO_HANDLE_IS_NULL (obj) && mono_class_is_transparent_proxy (mono_handle_class (obj)))) {
+		MonoClass *field_klass = MONO_HANDLE_GETVAL (field, klass);
 		/* We get here if someone used a
 		 * System.Reflection.FieldInfo:SetValue on a
 		 * ContextBoundObject's or cross-domain MarshalByRefObject's
@@ -3494,11 +3473,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 
 	*MONO_HANDLE_REF (exception_out) = NULL;
 
-	if (mono_security_core_clr_enabled () &&
-	    !mono_security_core_clr_ensure_reflection_access_method (m, error)) {
-		goto return_null;
-	}
-
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		if (!mono_class_vtable_checked (mono_object_domain (method), m->klass, error)) {
 			mono_error_cleanup (error); /* FIXME does this make sense? */
@@ -3560,15 +3534,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	}
 
 	image = m_class_get_image (m->klass);
-	if (mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY) {
-		exception = mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api.");
-		goto return_null;
-	}
-
-	if (image_is_dynamic (image) && !((MonoDynamicImage*)image)->run) {
-		exception = mono_get_exception_not_supported ("Cannot invoke a method in a dynamic assembly without run access.");
-		goto return_null;
-	}
 	
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
 		int i;
@@ -4775,50 +4740,18 @@ fail:
 	return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
 }
 
-static gboolean
-replace_shadow_path (MonoDomain *domain, gchar *dirname, gchar **filename)
-{
-	gchar *content;
-	gchar *shadow_ini_file;
-	gsize len;
-
-	/* Check for shadow-copied assembly */
-	if (mono_is_shadow_copy_enabled (domain, dirname)) {
-		shadow_ini_file = g_build_filename (dirname, "__AssemblyInfo__.ini", (const char*)NULL);
-		content = NULL;
-		if (!g_file_get_contents (shadow_ini_file, &content, &len, NULL) ||
-			!g_file_test (content, G_FILE_TEST_IS_REGULAR)) {
-			g_free (content);
-			content = NULL;
-		}
-		g_free (shadow_ini_file);
-		if (content != NULL) {
-			g_free (*filename);
-			*filename = content;
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
 MonoStringHandle
 ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoBoolean escaped, MonoError *error)
 {
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (assembly);
 	MonoAssembly *mass = MONO_HANDLE_GETVAL (assembly, assembly);
 	gchar *absolute;
-	gchar *dirname;
 	
 	if (g_path_is_absolute (mass->image->name)) {
 		absolute = g_strdup (mass->image->name);
-		dirname = g_path_get_dirname (absolute);
 	} else {
 		absolute = g_build_filename (mass->basedir, mass->image->name, (const char*)NULL);
-		dirname = g_strdup (mass->basedir);
 	}
-
-	replace_shadow_path (domain, dirname, &absolute);
-	g_free (dirname);
 
 	mono_icall_make_platform_path (absolute);
 
@@ -5276,10 +5209,7 @@ add_file_to_modules_array (MonoDomain *domain, MonoArrayHandle dest, int dest_id
 		goto_if_nok (error, leave);
 		if (!m) {
 			const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
-			gboolean refonly = FALSE;
-			if (image->assembly)
-				refonly = mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY;
-			mono_error_set_simple_file_not_found (error, filename, refonly);
+			mono_error_set_simple_file_not_found (error, filename);
 			goto leave;
 		}
 		MonoReflectionModuleHandle rm = mono_module_get_object_handle (domain, m, error);
@@ -5524,7 +5454,6 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 	char *codebase = NULL;
 	gboolean res;
 	MonoImage *image;
-	char *dirname;
 
 	error_init (error);
 
@@ -5532,20 +5461,16 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 	filename = mono_string_handle_to_utf8 (fname, error);
 	return_if_nok (error);
 
-	dirname = g_path_get_dirname (filename);
-	replace_shadow_path (mono_domain_get (), dirname, &filename);
-	g_free (dirname);
-
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
 
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
-	image = mono_image_open_a_lot (alc, filename, &status, TRUE, FALSE);
+	image = mono_image_open_a_lot (alc, filename, &status, FALSE);
 
 	if (!image){
 		if (status == MONO_IMAGE_IMAGE_INVALID)
 			mono_error_set_bad_image_by_name (error, filename, "Invalid Image: %s", filename);
 		else
-			mono_error_set_simple_file_not_found (error, filename, FALSE);
+			mono_error_set_simple_file_not_found (error, filename);
 		g_free (filename);
 		return;
 	}
@@ -6735,17 +6660,6 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 		return NULL_HANDLE;
 	}
 
-	if (mono_security_core_clr_enabled ()) {
-		ERROR_DECL (security_error);
-		if (!mono_security_core_clr_ensure_delegate_creation (method, security_error)) {
-			if (throwOnBindFailure)
-				mono_error_move (error, security_error);
-			else
-				mono_error_cleanup (security_error);
-			return NULL_HANDLE;
-		}
-	}
-
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
 		if (!method->is_inflated) {
 			mono_error_set_argument (error, "method", " Cannot bind to the target method because its signature differs from that of the delegate type");
@@ -7139,7 +7053,7 @@ leave:
 MonoBoolean
 ves_icall_System_Environment_get_HasShutdownStarted (void)
 {
-	return mono_runtime_is_shutting_down () || mono_domain_is_unloading (mono_domain_get ());
+	return mono_runtime_is_shutting_down ();
 }
 
 gint32

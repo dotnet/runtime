@@ -29,9 +29,20 @@ If this library ships both inbox on a platform and in its own library package th
 ```
 Where the `AssemblyVersion` is set to the old version before updating. To determine if the library ships inbox you can look at for `InboxOnTargetFramework` item groups or `TreatAsOutOfBox` suppressions in the pkgproj for the library.
 
+If the library is part of a Aspnetcore or .NET targeting pack then we cannot increment the assembly version. For Aspnetcore, You can examine the ```<IsAspNetCoreApp>true</IsAspNetCoreApp>``` property in the library`s ```Directory.Build.Props```
+For .Net you can examine the list in ```NetCoreAppLibrary.Props```
+
+If the library is part of a targeting pack and also contains an asset applicable to the .NET Framework then we will increment the assembly version for that asset.
+eg.
+```
+<AssemblyVersion Condition="$(TargetFramework.StartsWith('net4'))">5.0.0.1</AssemblyVersion>
+<SkipValidatePackage>true</SkipValidatePackage>
+```
+
 ## Update the package index
 
 If you incremented the `AssemblyVersion` in the last step, you'll also need to add an entry to [packageIndex.json](https://github.com/dotnet/runtime/blob/master/src/libraries/pkg/Microsoft.Private.PackageBaseline/packageIndex.json). Find the entry for your library in that file (again, making sure you're in the correct release branch), then find the subsection labeled `AssemblyVersionInPackageVersion`. There, add an entry that maps your new `AssemblyVersion` to your new `PackageVersion`. For an example, see [this PR](https://github.com/dotnet/runtime/commit/d0e4dcc7ebf008e7b6835cafbd03878c3a0e75f8#diff-ec9fd7a62cb0c494d86029014940382cR107), where we bumped the `PackageVersion` of `Microsoft.Diagnostics.Tracing.EventSource` from `2.0.0` to `2.0.1`, and bumped the `AssemblyVersion` from `2.0.0.0` to `2.0.1.0`. Therefore, we added an entry to `packageIndex.json` of the form `"2.0.1.0": "2.0.1"`.
+The baseline version for the assembly in the package index should also be incremented so that all the other packages can use this servicing version for package dependencies.
 
 ## Add your package to libraries-packages.proj
 

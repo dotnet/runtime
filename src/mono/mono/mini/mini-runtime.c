@@ -3246,20 +3246,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	info = (RuntimeInvokeInfo *)mono_conc_hashtable_lookup (domain_info->runtime_invoke_hash, method);
 
 	if (!info) {
-		if (mono_security_core_clr_enabled ()) {
-			/*
-			 * This might be redundant since mono_class_vtable () already does this,
-			 * but keep it just in case for moonlight.
-			 */
-			mono_class_setup_vtable (method->klass);
-			if (mono_class_has_failure (method->klass)) {
-				mono_error_set_for_class_failure (error, method->klass);
-				if (exc)
-					*exc = (MonoObject*)mono_class_get_exception_for_failure (method->klass);
-				return NULL;
-			}
-		}
-
 		gpointer compiled_method;
 
 		callee = method;
@@ -4003,7 +3989,7 @@ mini_parse_debug_option (const char *option)
 	else if (!strcmp (option, "use-fallback-tls"))
 		mini_debug_options.use_fallback_tls = TRUE;
 	else if (!strcmp (option, "debug-domain-unload"))
-		mono_enable_debug_domain_unload (TRUE);
+		g_error ("MONO_DEBUG option debug-domain-unload is deprecated.");
 	else if (!strcmp (option, "partial-sharing"))
 		mono_set_partial_sharing_supported (TRUE);
 	else if (!strcmp (option, "align-small-structs"))

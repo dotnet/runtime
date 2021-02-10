@@ -2117,7 +2117,9 @@ init_amodule_got (MonoAotModule *amodule, gboolean preinit)
 #ifdef MONOTOUCH
 // Follow branch islands on ARM iOS machines.
 static inline guint8 *
-method_address_resolve (guint8 *code_addr) {
+method_address_resolve (guint8 *code_addr)
+{
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
 #if defined(TARGET_ARM)
 	// Skip branches to thumb destinations; the convention used is that the
 	// lowest bit is set if the destination is thumb. See
@@ -2132,6 +2134,8 @@ method_address_resolve (guint8 *code_addr) {
 		if (next == NULL) return code_addr;
 		code_addr = next;
 	}
+#endif
+	return code_addr;
 }
 #else
 static inline guint8 *
@@ -2240,7 +2244,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		 */
 		return;
 
-	if (image_is_dynamic (assembly->image) || mono_asmctx_get_kind (&assembly->context) == MONO_ASMCTX_REFONLY || mono_domain_get () != mono_get_root_domain ())
+	if (image_is_dynamic (assembly->image) || mono_domain_get () != mono_get_root_domain ())
 		return;
 
 	mono_aot_lock ();

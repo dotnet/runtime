@@ -45,7 +45,6 @@
 #include <mono/metadata/w32mutex.h>
 #include <mono/metadata/w32semaphore.h>
 #include <mono/metadata/w32event.h>
-#include <mono/metadata/w32process.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
@@ -54,8 +53,6 @@
 #include <mono/utils/w32subset.h>
 #include "external-only.h"
 #include "mono/utils/mono-tls-inline.h"
-
-//#define DEBUG_DOMAIN_UNLOAD 1
 
 #define GET_APPDOMAIN    mono_tls_get_domain
 #define SET_APPDOMAIN(x) do { \
@@ -73,7 +70,6 @@ static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
 static MonoDomain **appdomains_list = NULL;
 static MonoImage *exe_image;
-static gboolean debug_domain_unload;
 
 gboolean mono_dont_free_domains;
 
@@ -378,7 +374,6 @@ domain_id_alloc (MonoDomain *domain)
 
 static gsize domain_gc_bitmap [sizeof(MonoDomain)/4/32 + 1];
 static MonoGCDescriptor domain_gc_desc = MONO_GC_DESCRIPTOR_NULL;
-static guint32 domain_shadow_serial = 0L;
 
 /**
  * mono_domain_create:
@@ -405,10 +400,8 @@ MonoDomain *
 mono_domain_create (void)
 {
 	MonoDomain *domain;
-	guint32 shadow_serial;
   
 	mono_appdomains_lock ();
-	shadow_serial = domain_shadow_serial++;
   
 	if (!domain_gc_desc) {
 		unsigned int i, bit = 0;
@@ -425,7 +418,6 @@ mono_domain_create (void)
 	else
 		domain = (MonoDomain *)mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc, MONO_ROOT_SOURCE_DOMAIN, NULL, "Domain Structure");
 
-	domain->shadow_serial = shadow_serial;
 	domain->domain = NULL;
 	domain->friendly_name = NULL;
 	domain->search_path = NULL;
@@ -435,8 +427,6 @@ mono_domain_create (void)
 	domain->lock_free_mp = lock_free_mempool_new ();
 	domain->env = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
 	domain->domain_assemblies = NULL;
-	domain->assembly_bindings = NULL;
-	domain->assembly_bindings_parsed = FALSE;
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	mono_jit_code_hash_init (&domain->jit_code_hash);
 	domain->ldstr_table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
@@ -496,10 +486,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	GSList *runtimes = NULL;
 
-#ifdef DEBUG_DOMAIN_UNLOAD
-	debug_domain_unload = TRUE;
-#endif
-
 	if (domain)
 		g_assert_not_reached ();
 
@@ -516,7 +502,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_w32mutex_init ();
 	mono_w32semaphore_init ();
 	mono_w32event_init ();
-	mono_w32process_init ();
 	mono_w32file_init ();
 
 #ifndef DISABLE_PERFCOUNTERS
@@ -564,7 +549,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		runtimes = get_runtimes_from_exe (exe_filename, &exe_image);
 #ifdef HOST_WIN32
 		if (!exe_image) {
-			exe_image = mono_assembly_open_from_bundle (mono_domain_default_alc (domain), exe_filename, NULL, FALSE, NULL);
+			exe_image = mono_assembly_open_from_bundle (mono_domain_default_alc (domain), exe_filename, NULL, NULL);
 			if (!exe_image)
 				exe_image = mono_image_open (exe_filename, NULL);
 		}
@@ -592,7 +577,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	while (tmp != NULL) {
 		current_runtime = (MonoRuntimeInfo*)tmp->data;
 		g_assert (current_runtime);
-		ass = mono_assembly_load_corlib (current_runtime, &status);
+		ass = mono_assembly_load_corlib (&status);
 		if (status != MONO_IMAGE_OK && status != MONO_IMAGE_ERROR_ERRNO)
 			break;
 		tmp = tmp->next;
@@ -851,7 +836,6 @@ mono_cleanup (void)
 
 	mono_defaults.corlib = NULL;
 
-	mono_config_cleanup ();
 	mono_loader_cleanup ();
 	mono_classes_cleanup ();
 	mono_assemblies_cleanup ();
@@ -861,7 +845,6 @@ mono_cleanup (void)
 
 	mono_coop_mutex_destroy (&appdomains_mutex);
 
-	mono_w32process_cleanup ();
 	mono_w32file_cleanup ();
 }
 
@@ -1503,23 +1486,15 @@ app_config_parse (const char *exe_filename)
 	GMarkupParseContext *context;
 	char *text;
 	gsize len;
-	const char *bundled_config;
 	char *config_filename;
 
-	bundled_config = mono_config_string_for_assembly_file (exe_filename);
+	config_filename = g_strconcat (exe_filename, ".config", (const char*)NULL);
 
-	if (bundled_config) {
-		text = g_strdup (bundled_config);
-		len = strlen (text);
-	} else {
-		config_filename = g_strconcat (exe_filename, ".config", (const char*)NULL);
-
-		if (!g_file_get_contents (config_filename, &text, &len, NULL)) {
-			g_free (config_filename);
-			return NULL;
-		}
+	if (!g_file_get_contents (config_filename, &text, &len, NULL)) {
 		g_free (config_filename);
+		return NULL;
 	}
+	g_free (config_filename);
 
 	app_config = g_new0 (AppConfigInfo, 1);
 
@@ -1615,7 +1590,7 @@ get_runtimes_from_exe (const char *file, MonoImage **out_image)
 	}
 	
 	/* Look for a runtime with the exact version */
-	image = mono_assembly_open_from_bundle (mono_domain_default_alc (mono_domain_get ()), file, NULL, FALSE, NULL);
+	image = mono_assembly_open_from_bundle (mono_domain_default_alc (mono_domain_get ()), file, NULL, NULL);
 
 	if (image == NULL)
 		image = mono_image_open (file, NULL);
@@ -1650,23 +1625,6 @@ mono_get_runtime_info (void)
 	return current_runtime;
 }
 
-/**
- * mono_framework_version:
- *
- * Return the major version of the framework curently executing.
- */
-int
-mono_framework_version (void)
-{
-	return current_runtime->framework_version [0] - '0';
-}
-
-void
-mono_enable_debug_domain_unload (gboolean enable)
-{
-	debug_domain_unload = enable;
-}
-
 MonoAotCacheConfig *
 mono_get_aot_cache_config (void)
 {
@@ -1686,7 +1644,7 @@ mono_domain_unlock (MonoDomain *domain)
 }
 
 GPtrArray*
-mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly)
+mono_domain_get_assemblies (MonoDomain *domain)
 {
 	GSList *tmp;
 	GPtrArray *assemblies;
@@ -1696,11 +1654,6 @@ mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly)
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = (MonoAssembly *)tmp->data;
-		gboolean ass_ref_only = mono_asmctx_get_kind (&ass->context) == MONO_ASMCTX_REFONLY;
-		if (refonly != ass_ref_only)
-			continue;
-		if (ass->corlib_internal)
-			continue;
 		g_ptr_array_add (assemblies, ass);
 	}
 	mono_domain_assemblies_unlock (domain);

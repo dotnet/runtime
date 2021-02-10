@@ -882,9 +882,14 @@ struct BasicBlock : private LIR::Range
     void ensurePredListOrder(Compiler* compiler);
     void reorderPredList(Compiler* compiler);
 
-    BlockSet    bbReach; // Set of all blocks that can reach this one
-    BasicBlock* bbIDom;  // Represent the closest dominator to this block (called the Immediate
-                         // Dominator) used to compute the dominance tree.
+    BlockSet bbReach; // Set of all blocks that can reach this one
+
+    union {
+        BasicBlock* bbIDom;      // Represent the closest dominator to this block (called the Immediate
+                                 // Dominator) used to compute the dominance tree.
+        void* bbSparseProbeList; // Used early on by fgInstrument
+        void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
+    };
 
     unsigned bbPostOrderNum; // the block's post order number in the graph.
 

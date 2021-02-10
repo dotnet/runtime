@@ -46,6 +46,13 @@
         <PackageTargetRuntime>osx</PackageTargetRuntime>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'MacCatalyst'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsMacCatalyst>true</TargetsMacCatalyst>
+        <PackageTargetRuntime>maccatalyst</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(TargetFrameworkSuffix)' == 'tvOS'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>

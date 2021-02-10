@@ -42,6 +42,7 @@
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/w32event.h>
+#include <mono/metadata/w32process.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/utils/strenc.h>
@@ -502,12 +503,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		if (mono_domain_get () != domain) {
 			/* Transfer into the target domain */
 			last_domain = mono_domain_get ();
-			if (!mono_domain_set_fast (domain, FALSE)) {
-				vtable->initialized = 1;
-				mono_type_initialization_unlock ();
-				mono_error_set_exception_instance (error, mono_get_exception_appdomain_unloaded ());
-				goto return_false;
-			}
+			mono_domain_set_fast (domain, FALSE);
 		}
 		lock = (TypeInitializationLock *)g_malloc0 (sizeof (TypeInitializationLock));
 		mono_coop_mutex_init_recursive (&lock->mutex);
@@ -4942,18 +4938,6 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObjectHandle delegate
 }
 
 static MonoRuntimeUnhandledExceptionPolicy runtime_unhandled_exception_policy = MONO_UNHANDLED_POLICY_CURRENT;
-
-/**
- * mono_runtime_unhandled_exception_policy_set:
- * \param policy the new policy
- * This is a VM internal routine.
- * Sets the runtime policy for handling unhandled exceptions.
- */
-void
-mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy policy)
-{
-	runtime_unhandled_exception_policy = policy;
-}
 
 /**
  * mono_runtime_unhandled_exception_policy_get:

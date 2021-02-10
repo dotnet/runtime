@@ -23,6 +23,11 @@
           AfterTargets="Build"
           DependsOnTargets="Publish" />
 
-  <Target Name="GetFilesToPackage" />
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks" />
+      <FilesToPackage Include="$(PublishDir)System.Reflection.MetadataLoadContext.dll" TargetPath="tasks" />
+    </ItemGroup>
+  </Target>
 
 </Project>

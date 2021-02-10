@@ -265,20 +265,6 @@ typedef struct {
 	LockFreeMempoolChunk *current, *chunks;
 } LockFreeMempool;
 
-/*
- * We have two unloading states because the domain
- * must remain fully functional while AppDomain::DomainUnload is
- * processed.
- * After that unloading began and all domain facilities are teared down
- * such as execution of new threadpool jobs.  
- */
-typedef enum {
-	MONO_APPDOMAIN_CREATED,
-	MONO_APPDOMAIN_UNLOADING_START,
-	MONO_APPDOMAIN_UNLOADING,
-	MONO_APPDOMAIN_UNLOADED
-} MonoAppDomainState;
-
 typedef struct _MonoThunkFreeList {
 	guint32 size;
 	int length;		/* only valid for the wait list */
@@ -323,7 +309,6 @@ struct _MonoDomain {
 	guint32            state;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
-	gint32             shadow_serial;
 	/*
 	 * For framework Mono, this is every assembly loaded in this
 	 * domain. For netcore, this is every assembly loaded in every ALC in
@@ -386,17 +371,6 @@ struct _MonoDomain {
 
 	/* Contains the compiled method used by async resylt creation to capture thread context*/
 	gpointer            capture_context_method;
-
-	/* Assembly bindings, the per-domain part */
-	GSList *assembly_bindings;
-	gboolean assembly_bindings_parsed;
-
-	/* Used by socket-io.c */
-	/* These are domain specific, since the assembly can be unloaded */
-	MonoImage *socket_assembly;
-	MonoClass *sockaddr_class;
-	MonoClassField *sockaddr_data_field;
-	MonoClassField *sockaddr_data_length_field;
 
 	/* Cache function pointers for architectures  */
 	/* that require wrappers */
@@ -502,12 +476,6 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji);
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx);
 
-char *
-mono_make_shadow_copy (const char *filename, MonoError *error);
-
-gboolean
-mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name);
-
 // TODO: remove these on netcore, we should always be explicit about allocating from ALCs
 //#ifndef ENABLE_NETCORE
 gpointer
@@ -556,7 +524,7 @@ void
 mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash);
 
 MonoAssembly *
-mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status);
+mono_assembly_load_corlib (MonoImageOpenStatus *status);
 
 const MonoRuntimeInfo*
 mono_get_runtime_info (void);
@@ -567,9 +535,6 @@ mono_runtime_set_no_exec (gboolean val);
 gboolean
 mono_runtime_get_no_exec (void);
 
-void
-mono_domain_parse_assembly_bindings (MonoDomain *domain, int amajor, int aminor, gchar *domain_config_file_name);
-
 gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname);
 
@@ -579,18 +544,13 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 MonoImage *mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc,
 					   const char *filename,
 					   MonoImageOpenStatus *status,
-					   gboolean refonly,
 					   const char *culture);
 
 MonoAssembly *
-mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, MonoAssembly *requesting, gboolean refonly, MonoError *error);
+mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname, MonoAssembly *requesting, MonoError *error);
 
 MonoAssembly *
-mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean refonly, gboolean postload, gpointer user_data, MonoError *error);
-
-int mono_framework_version (void);
-
-void mono_assembly_cleanup_domain_bindings (guint32 domain_id);
+mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean postload, gpointer user_data, MonoError *error);
 
 MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines);
 
@@ -611,7 +571,7 @@ gboolean
 mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error);
 
 GPtrArray*
-mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly);
+mono_domain_get_assemblies (MonoDomain *domain);
 
 void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values);

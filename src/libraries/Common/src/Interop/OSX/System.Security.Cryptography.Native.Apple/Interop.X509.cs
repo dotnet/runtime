@@ -21,7 +21,7 @@ internal static partial class Interop
         private static int AppleCryptoNative_X509ImportCertificate(
             ReadOnlySpan<byte> keyBlob,
             X509ContentType contentType,
-            SafeCreateHandle cfPfxPassphrase,
+            SafeCreateHandle? cfPfxPassphrase,
             SafeKeychainHandle tmpKeychain,
             int exportable,
             out SafeSecCertificateHandle pCertOut,
@@ -45,7 +45,7 @@ internal static partial class Interop
             ref byte pbKeyBlob,
             int cbKeyBlob,
             X509ContentType contentType,
-            SafeCreateHandle cfPfxPassphrase,
+            SafeCreateHandle? cfPfxPassphrase,
             SafeKeychainHandle tmpKeychain,
             int exportable,
             out SafeSecCertificateHandle pCertOut,
@@ -57,7 +57,7 @@ internal static partial class Interop
             ref byte pbKeyBlob,
             int cbKeyBlob,
             X509ContentType contentType,
-            SafeCreateHandle cfPfxPassphrase,
+            SafeCreateHandle? cfPfxPassphrase,
             SafeKeychainHandle tmpKeychain,
             int exportable,
             out SafeCFArrayHandle pCollectionOut,
@@ -98,7 +98,7 @@ internal static partial class Interop
         private static extern int AppleCryptoNative_X509ExportData(
             SafeCreateHandle data,
             X509ContentType type,
-            SafeCreateHandle cfExportPassphrase,
+            SafeCreateHandle? cfExportPassphrase,
             out SafeCFDataHandle pExportOut,
             out int pOSStatus);
 
@@ -191,12 +191,10 @@ internal static partial class Interop
             SafeSecCertificateHandle certHandle;
             int osStatus;
 
-            SafeCreateHandle cfPassphrase = importPassword ?? s_nullExportString;
-
             int ret = AppleCryptoNative_X509ImportCertificate(
                 bytes,
                 contentType,
-                cfPassphrase,
+                importPassword,
                 keychain,
                 exportable ? 1 : 0,
                 out certHandle,
@@ -238,7 +236,7 @@ internal static partial class Interop
             SafeKeychainHandle keychain,
             bool exportable)
         {
-            SafeCreateHandle cfPassphrase = s_nullExportString;
+            SafeCreateHandle? cfPassphrase = null;
             bool releasePassword = false;
 
             int ret;
@@ -280,10 +278,7 @@ internal static partial class Interop
                     importPassword.DangerousRelease();
                 }
 
-                if (cfPassphrase != s_nullExportString)
-                {
-                    cfPassphrase.Dispose();
-                }
+                cfPassphrase?.Dispose();
             }
 
             collectionHandle.Dispose();
@@ -477,7 +472,7 @@ internal static partial class Interop
             return null;
         }
 
-        private static byte[] X509Export(X509ContentType contentType, SafeCreateHandle cfPassphrase, IntPtr[] certHandles)
+        private static byte[] X509Export(X509ContentType contentType, SafeCreateHandle? cfPassphrase, IntPtr[] certHandles)
         {
             Debug.Assert(contentType == X509ContentType.Pkcs7 || contentType == X509ContentType.Pkcs12);
 
@@ -514,7 +509,7 @@ internal static partial class Interop
 
         internal static byte[] X509ExportPkcs7(IntPtr[] certHandles)
         {
-            return X509Export(X509ContentType.Pkcs7, s_nullExportString, certHandles);
+            return X509Export(X509ContentType.Pkcs7, null, certHandles);
         }
 
         internal static byte[] X509ExportPfx(IntPtr[] certHandles, SafePasswordHandle exportPassword)

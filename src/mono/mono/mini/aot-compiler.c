@@ -12853,7 +12853,7 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 		return;
 
 	/* Images */
-	GPtrArray *assemblies = mono_domain_get_assemblies (mono_get_root_domain (), FALSE);
+	GPtrArray *assemblies = mono_domain_get_assemblies (mono_get_root_domain ());
 	g_hash_table_iter_init (&iter, data->images);
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		ImageProfileData *idata = (ImageProfileData*)value;
@@ -13784,7 +13784,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	if (!acfg->aot_opts.llvm_path)
 		acfg->aot_opts.llvm_path = g_strdup ("");
 	acfg->aot_opts.temp_path = g_strdup ("");
-#ifdef MONOTOUCH
+#if defined(MONOTOUCH)&& !defined(TARGET_AMD64)
 	acfg->aot_opts.use_trampolines_page = TRUE;
 #endif
 	acfg->aot_opts.clangxx = g_strdup ("clang++");
