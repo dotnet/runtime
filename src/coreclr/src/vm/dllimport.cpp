@@ -260,7 +260,8 @@ protected:
                 DWORD dwStubFlags,
                 int iLCIDParamIdx,
                 MethodDesc* pTargetMD)
-            : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx, fTargetHasThis, fStubHasThis)
+        : m_slIL(dwStubFlags, pStubModule, signature, pTypeContext, pTargetMD, iLCIDParamIdx, fTargetHasThis, fStubHasThis)
+        , m_dwStubFlags(dwStubFlags)
     {
         STANDARD_VM_CONTRACT;
 
@@ -292,7 +293,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         m_slIL.Begin(dwStubFlags);
-        m_dwStubFlags = dwStubFlags;
+        _ASSERTE(m_dwStubFlags == dwStubFlags);
     }
 
     void MarshalReturn(MarshalInfo* pInfo, int argOffset)
@@ -1204,6 +1205,8 @@ public:
 
     TokenLookupMap* GetTokenLookupMap() { WRAPPER_NO_CONTRACT; return m_slIL.GetTokenLookupMap(); }
 
+    DWORD GetFlags() const { return m_dwStubFlags; }
+
 protected:
     CQuickBytes         m_qbNativeFnSigBuffer;
     NDirectStubLinker   m_slIL;
@@ -1350,7 +1353,7 @@ public:
                 pTypeContext,
                 TargetHasThis(dwStubFlags),
                 StubHasThis(dwStubFlags),
-                dwStubFlags,
+                UpdateStubFlags(dwStubFlags, pTargetMD),
                 iLCIDParamIdx,
                 pTargetMD)
     {
@@ -1363,6 +1366,15 @@ public:
     }
 
 private:
+    static DWORD UpdateStubFlags(DWORD dwStubFlags, MethodDesc* pTargetMD)
+    {
+        if (TargetSuppressGCTransition(dwStubFlags, pTargetMD))
+        {
+            dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
+        }
+        return dwStubFlags;
+    }
+
     static BOOL TargetHasThis(DWORD dwStubFlags)
     {
         //
@@ -1380,6 +1392,11 @@ private:
         // 'this' pointer, but the unmanaged target will not.
         //
         return SF_IsForwardDelegateStub(dwStubFlags);
+    }
+
+    static BOOL TargetSuppressGCTransition(DWORD dwStubFlags, MethodDesc* pTargetMD)
+    {
+        return SF_IsForwardStub(dwStubFlags) && pTargetMD && pTargetMD->ShouldSuppressGCTransition();
     }
 };
 
@@ -4642,7 +4659,6 @@ MethodDesc* CreateInteropILStub(
                          CorNativeLinkType  nlType,
                          CorNativeLinkFlags nlFlags,
                          CorPinvokeMap      unmgdCallConv,
-                         DWORD              dwStubFlags,            // NDirectStubFlags
                          int                nParamTokens,
                          mdParamDef*        pParamTokenArray,
                          int                iLCIDArg,
@@ -4675,6 +4691,8 @@ MethodDesc* CreateInteropILStub(
     // pTargetMD may be null in the case of calli pinvoke
     // and vararg pinvoke.
     //
+
+    DWORD dwStubFlags = pss->GetFlags();
 
 #ifdef FEATURE_COMINTEROP
     //
@@ -5018,7 +5036,6 @@ MethodDesc* NDirect::CreateCLRToNativeILStub(
                 nlType,
                 nlFlags,
                 unmgdCallConv,
-                dwStubFlags,
                 numParamTokens,
                 pParamTokenArray,
                 iLCIDArg);
@@ -5092,7 +5109,6 @@ MethodDesc* NDirect::CreateFieldAccessILStub(
                 (CorNativeLinkType)0,
                 (CorNativeLinkFlags)0,
                 (CorPinvokeMap)0,
-                dwStubFlags,
                 numParamTokens,
                 pParamTokenArray,
                 -1);
@@ -5201,7 +5217,6 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
         (CorNativeLinkType)0,
         (CorNativeLinkFlags)0,
         (CorPinvokeMap)0,
-        dwStubFlags,
         numParamTokens,
         pParamTokenArray,
         -1,
