@@ -5319,6 +5319,15 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         // checked them to guarantee they are clonable.
         bool cloneOk = BasicBlock::CloneBlockState(this, newBlk, blk);
         noway_assert(cloneOk);
+
+#if FEATURE_LOOP_ALIGN
+        if (blk->isLoopAlign())
+        {
+            newBlk->bbFlags &= ~BBF_LOOP_ALIGN;
+            JITDUMP("Removing LOOP_ALIGN flag from cloned loop in " FMT_BB "\n", newBlk->bbNum);
+        }
+#endif
+
         // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert
         // the cloned loop in the loop table.  For now, however, we'll just make these blocks be part of the surrounding
         // loop, if one exists -- the parent of the loop we're cloning.
