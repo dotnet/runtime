@@ -9164,9 +9164,12 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             assert(call->gtControlExpr == nullptr); // We only call this method and assign gtControlExpr once
             call->gtControlExpr = fgExpandVirtualVtableCallTarget(call);
         }
-        // We have to morph and re-morph the control expr
+        // We always have to morph or re-morph the control expr
         //
         call->gtControlExpr = fgMorphTree(call->gtControlExpr);
+
+        // Propogate any gtFlags into the call
+        call->gtFlags |= call->gtControlExpr->gtFlags;
     }
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
@@ -9336,7 +9339,6 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
     GenTree* vtab;
     assert(VPTR_OFFS == 0); // We have to add this value to the thisPtr to get the methodTable
     vtab = gtNewOperNode(GT_IND, TYP_I_IMPL, thisPtr);
-    // vtab->gtFlags |= GTF_IND_NONFAULTING;  // This could fault if the Object ref is null
     vtab->gtFlags |= GTF_IND_INVARIANT;
 
     // Get the appropriate vtable chunk

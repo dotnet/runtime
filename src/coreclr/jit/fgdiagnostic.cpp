@@ -2481,6 +2481,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     chkFlags |= (call->gtCallAddr->gtFlags & GTF_SIDE_EFFECT);
                 }
 
+                if ((call->gtControlExpr != nullptr) && call->IsExpandedEarly() && call->IsVirtualVtable())
+                {
+                    fgDebugCheckFlags(call->gtControlExpr);
+                    chkFlags |= (call->gtControlExpr->gtFlags & GTF_SIDE_EFFECT);
+                }
+
                 if (call->IsUnmanaged() && (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL))
                 {
                     if (call->gtCallArgs->GetNode()->OperGet() == GT_NOP)
