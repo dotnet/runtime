@@ -397,7 +397,7 @@ namespace System
             bool negExp = false;
             if (digEnd == maxDigCount && numberOfTrailingZeros > 0 && number.HasNonZeroTail)
             {
-                // We have an additional non-zero digit in the input past maxDigitCount. We already handle this properly.
+                // We have a non-zero digit in the input past maxDigitCount. We already handle this properly.
                 number.DigitsCount = digEnd;
             }
             else
