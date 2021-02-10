@@ -84,7 +84,7 @@ namespace System.Diagnostics
         private string? _displayName;
         private ActivityStatusCode _statusCode;
         private string? _statusDescription;
-        private Activity? _originalParent;
+        private Activity? _previousActiveActivity;
 
         /// <summary>
         /// Gets status code of the current activity object.
@@ -622,15 +622,15 @@ namespace System.Diagnostics
             }
             else
             {
-                _originalParent = Current;
+                _previousActiveActivity = Current;
                 if (_parentId == null && _parentSpanId is null)
                 {
-                    if (_originalParent != null)
+                    if (_previousActiveActivity != null)
                     {
                         // The parent change should not form a loop.   We are actually guaranteed this because
                         // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
                         // 2. All started activities have a finite parent change (by inductive reasoning).
-                        Parent = _originalParent;
+                        Parent = _previousActiveActivity;
                     }
                 }
 
@@ -687,7 +687,7 @@ namespace System.Diagnostics
                 }
 
                 Source.NotifyActivityStop(this);
-                SetCurrent(Parent ?? ((_originalParent != null && !_originalParent.IsFinished) ? _originalParent : null));
+                SetCurrent(_previousActiveActivity);
             }
         }
 
@@ -1004,7 +1004,7 @@ namespace System.Diagnostics
             activity.Source = source;
             activity.Kind = kind;
 
-            activity._originalParent = Current;
+            activity._previousActiveActivity = Current;
             if (parentId != null)
             {
                 activity._parentId = parentId;
@@ -1023,12 +1023,12 @@ namespace System.Diagnostics
             }
             else
             {
-                if (activity._originalParent != null)
+                if (activity._previousActiveActivity != null)
                 {
                     // The parent change should not form a loop. We are actually guaranteed this because
                     // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
                     // 2. All started activities have a finite parent change (by inductive reasoning).
-                    activity.Parent = activity._originalParent;
+                    activity.Parent = activity._previousActiveActivity;
                 }
             }
 
