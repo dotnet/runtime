@@ -19,20 +19,101 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task IgnoreCycles_OnObject()
         {
-            var root = new Node();
-            root.Next = root;
+            await Verify<NodeWithNodeProperty>();
+            await Verify<NodeWithObjectProperty>();
 
-            await Test_Serialize_And_SerializeAsync(root, @"{""Next"":null}", s_optionsIgnoreCycles);
+            async Task Verify<T>() where T : class, new()
+            {
+                T root = new T();
+                SetNextProperty(typeof(T), root, root);
+
+                await Test_Serialize_And_SerializeAsync(root, @"{""Next"":null}", s_optionsIgnoreCycles);
+
+                // Verify that object property is not mutated on serialization.
+                object rootNext = GetNextProperty(typeof(T), root);
+                Assert.NotNull(rootNext);
+                Assert.Same(rootNext, root);
+            }
         }
 
         [Fact]
-        public async Task IgnoreCycles_OnObject_NonProperty()
+        public async Task IgnoreCycles_OnObject_AsProperty()
         {
-            var node = new Node();
-            var rootList = new List<object>() { node };
-            node.Next = rootList;
+            await Verify<NodeWithNodeProperty>();
+            await Verify<NodeWithObjectProperty>();
 
-            await Test_Serialize_And_SerializeAsync(rootList, @"[{""Next"":null}]", s_optionsIgnoreCycles);
+            async Task Verify<T>() where T : class, new()
+            {
+                var node = new T();
+                SetNextProperty(typeof(T), node, node);
+
+                var root = new ClassWithGenericProperty<T>();
+                root.Foo = node;
+                await Test_Serialize_And_SerializeAsync(root, expected: @"{""Foo"":{""Next"":null}}", s_optionsIgnoreCycles);
+
+                object nodeNext = GetNextProperty(typeof(T), node);
+                Assert.NotNull(nodeNext);
+                Assert.Same(nodeNext, node);
+
+                var rootWithObjProperty = new ClassWithGenericProperty<object>();
+                rootWithObjProperty.Foo = node;
+                await Test_Serialize_And_SerializeAsync(rootWithObjProperty, expected: @"{""Foo"":{""Next"":null}}", s_optionsIgnoreCycles);
+
+                nodeNext = GetNextProperty(typeof(T), node);
+                Assert.NotNull(nodeNext);
+                Assert.Same(nodeNext, node);
+            }
+        }
+
+        [Fact]
+        public async Task IgnoreCycles_OnBoxedValueType()
+        {
+            await Verify<ValueNodeWithIValueNodeProperty>();
+            await Verify<ValueNodeWithObjectProperty>();
+
+            async Task Verify<T>() where T : new()
+            {
+                object root = new T();
+                SetNextProperty(typeof(T), root, root);
+                await Test_Serialize_And_SerializeAsync(root, expected: @"{""Next"":null}", s_optionsIgnoreCycles);
+
+                object rootNext = GetNextProperty(typeof(T), root);
+                Assert.NotNull(rootNext);
+                Assert.Same(rootNext, root);
+            }
+        }
+
+        [Fact]
+        public async Task IgnoreCycles_OnBoxedValueType_Interface()
+        {
+            IValueNodeWithIValueNodeProperty root = new ValueNodeWithIValueNodeProperty();
+            root.Next = root;
+            await Test_Serialize_And_SerializeAsync(root, expected: @"{""Next"":null}", s_optionsIgnoreCycles);
+
+            IValueNodeWithObjectProperty root2 = new ValueNodeWithObjectProperty();
+            root2.Next = root2;
+            await Test_Serialize_And_SerializeAsync(root2, expected: @"{""Next"":null}", s_optionsIgnoreCycles);
+        }
+
+        [Fact]
+        public async Task IgnoreCycles_OnBoxedValueType_AsProperty()
+        {
+            await Verify<ValueNodeWithIValueNodeProperty>();
+            await Verify<ValueNodeWithObjectProperty>();
+
+            async Task Verify<T>() where T : new()
+            {
+                object node = new T();
+                SetNextProperty(typeof(T), node, node);
+
+                var rootWithObjProperty = new ClassWithGenericProperty<object>();
+                rootWithObjProperty.Foo = node;
+                await Test_Serialize_And_SerializeAsync(rootWithObjProperty, expected: @"{""Foo"":{""Next"":null}}", s_optionsIgnoreCycles);
+
+                object nodeNext = GetNextProperty(typeof(T), node);
+                Assert.NotNull(nodeNext);
+                Assert.Same(nodeNext, node);
+            }
         }
 
         [Theory]
@@ -40,8 +121,17 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(GenericIDictionaryWrapper<string, object>))]
         public async Task IgnoreCycles_OnDictionary(Type typeToSerialize)
         {
-            var root = (ICollection<KeyValuePair<string, object>>)Activator.CreateInstance(typeToSerialize);
-            root.Add(new KeyValuePair<string, object>("self", root));
+            var root = (IDictionary<string, object>)Activator.CreateInstance(typeToSerialize);
+            root.Add("self", root);
+
+            await Test_Serialize_And_SerializeAsync(root, @"{""self"":null}", s_optionsIgnoreCycles);
+        }
+
+        [Fact]
+        public async Task IgnoreCycles_OnRecursiveDictionary()
+        {
+            var root = new RecursiveDictionary();
+            root.Add("self", root);
 
             await Test_Serialize_And_SerializeAsync(root, @"{""self"":null}", s_optionsIgnoreCycles);
         }
@@ -51,8 +141,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             var innerDictionary = new Dictionary<string, object>();
             var root = new ReadOnlyDictionary<string, object>(innerDictionary);
-
             innerDictionary.Add("self", root);
+
             await Test_Serialize_And_SerializeAsync(root, @"{""self"":null}", s_optionsIgnoreCycles);
         }
 
@@ -61,6 +151,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var root = new WrapperForIDictionary();
             root.Add("self", root);
+
             await Test_Serialize_And_SerializeAsync(root, @"{""self"":null}", s_optionsIgnoreCycles);
         }
 
@@ -75,9 +166,17 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(List<object>))]
         [InlineData(typeof(GenericIListWrapper<object>))]
-        public async Task IgnoreCycles_OnLists(Type typeToSerialize)
+        public async Task IgnoreCycles_OnList(Type typeToSerialize)
         {
             var root = (IList<object>)Activator.CreateInstance(typeToSerialize);
+            root.Add(root);
+            await Test_Serialize_And_SerializeAsync(root, "[null]", s_optionsIgnoreCycles);
+        }
+
+        [Fact]
+        public async Task IgnoreCycles_OnRecursiveList()
+        {
+            var root = new RecursiveList();
             root.Add(root);
             await Test_Serialize_And_SerializeAsync(root, "[null]", s_optionsIgnoreCycles);
         }
@@ -129,27 +228,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task IgnoreCycles_OnBoxedValueTypes()
-        {
-            IValueNode root = new ValueNode();
-            root.Next = root;
-
-            await Test_Serialize_And_SerializeAsync(root, @"{""Next"":null}", s_optionsIgnoreCycles);
-        }
-
-        [Fact]
-        public async Task IgnoreCycles_OnBoxedValueTypes_AsProperty()
-        {
-            IValueNode node = new ValueNode();
-            node.Next = node;
-
-            var root = new Node();
-            root.Next = node;
-
-            await Test_Serialize_And_SerializeAsync(root, @"{""Next"":{""Next"":null}}", s_optionsIgnoreCycles);
-        }
-
-        [Fact]
         public async Task IgnoreCycles_DoesNotSupportPreserveSemantics()
         {
             // Object
@@ -189,16 +267,16 @@ namespace System.Text.Json.Serialization.Tests
         public async Task IgnoreCycles_DoesNotSupportPreserveSemantics_Polymorphic()
         {
             // Object
-            var node = new Node();
+            var node = new NodeWithObjectProperty();
             node.Next = node;
             string json = SerializeWithPreserve(node);
 
-            node = JsonSerializer.Deserialize<Node>(json, s_optionsIgnoreCycles);
+            node = JsonSerializer.Deserialize<NodeWithObjectProperty>(json, s_optionsIgnoreCycles);
             JsonElement nodeAsJsonElement = Assert.IsType<JsonElement>(node.Next);
             Assert.True(nodeAsJsonElement.GetProperty("$ref").GetString() == "1");
 
             using var ms = new MemoryStream(Encoding.UTF8.GetBytes(json));
-            node = await JsonSerializer.DeserializeAsync<Node>(ms, s_optionsIgnoreCycles);
+            node = await JsonSerializer.DeserializeAsync<NodeWithObjectProperty>(ms, s_optionsIgnoreCycles);
             nodeAsJsonElement = Assert.IsType<JsonElement>(node.Next);
             Assert.True(nodeAsJsonElement.GetProperty("$ref").GetString() == "1");
 
@@ -216,21 +294,24 @@ namespace System.Text.Json.Serialization.Tests
             return JsonSerializer.Serialize(value, opts);
         }
 
-        // Test for correctness when the object reference is found on a sibling branch.
-        [Theory]
-        [InlineData(typeof(EmptyClass), "{}")]
-        [InlineData(typeof(EmptyStruct), "{}")]
-        [InlineData(typeof(object), "{}")]
-        [InlineData(typeof(Dictionary<string,object>), "{}")]
-        [InlineData(typeof(List<string>), "[]")]
-        public async Task AlreadySeenInstance_ShouldNotBeIgnoredOnSecondBranch(Type objectType, string objectPayload)
+        [Fact]
+        public async Task AlreadySeenInstance_ShouldNotBeIgnoredOnSiblingBranch()
         {
-            object obj = Activator.CreateInstance(objectType);
-            var root = new TreeNode();
-            root.Left = obj;
-            root.Right = obj;
+            await Verify<EmptyClass>(expectedPayload: "{}");
+            await Verify<EmptyStruct>(expectedPayload: "{}");
+            await Verify<object>(expectedPayload: "{}");
+            await Verify<Dictionary<string, object>>(expectedPayload: "{}");
+            await Verify<List<string>>(expectedPayload: "[]");
 
-            await Test_Serialize_And_SerializeAsync(root, $@"{{""Left"":{objectPayload},""Right"":{objectPayload}}}", s_optionsIgnoreCycles);
+            async Task Verify<T>(string expectedPayload) where T : new()
+            {
+                T value = new();
+                var root = new TreeNode<T> { Left = value, Right = value };
+                await Test_Serialize_And_SerializeAsync(root, $@"{{""Left"":{expectedPayload},""Right"":{expectedPayload}}}", s_optionsIgnoreCycles);
+
+                var rootWithObjectProperties = new TreeNode<object> { Left = value, Right = value };
+                await Test_Serialize_And_SerializeAsync(rootWithObjectProperties, $@"{{""Left"":{expectedPayload},""Right"":{expectedPayload}}}", s_optionsIgnoreCycles);
+            }
         }
 
         [Fact]
@@ -243,7 +324,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             // Reference cycles are treated as null, hence the JsonIgnoreCondition can be used to actually ignore the property.
-            var rootObj = new Node();
+            var rootObj = new NodeWithObjectProperty();
             rootObj.Next = rootObj;
 
             await Test_Serialize_And_SerializeAsync(rootObj, "{}", opts);
@@ -261,44 +342,81 @@ namespace System.Text.Json.Serialization.Tests
             await Test_Serialize_And_SerializeAsync(rootDictionary, @"{""self"":null}", opts);
         }
 
-        private async Task Test_Serialize_And_SerializeAsync(object obj, string expected, JsonSerializerOptions options)
+        private async Task Test_Serialize_And_SerializeAsync<T>(T obj, string expected, JsonSerializerOptions options)
         {
-            string json = JsonSerializer.Serialize(obj, options);
+            string json;
+            Type objType = typeof(T);
+
+            if (objType != typeof(object))
+            {
+                json = JsonSerializer.Serialize(obj, options);
+                Assert.Equal(expected, json);
+
+                using var ms1 = new MemoryStream();
+                await JsonSerializer.SerializeAsync(ms1, obj, options).ConfigureAwait(false);
+                json = Encoding.UTF8.GetString(ms1.ToArray());
+                Assert.Equal(expected, json);
+            }
+
+            json = JsonSerializer.Serialize(obj, objType, options);
             Assert.Equal(expected, json);
 
-            using var ms = new MemoryStream();
-            await JsonSerializer.SerializeAsync(ms, obj, options).ConfigureAwait(false);
-            json = Encoding.UTF8.GetString(ms.ToArray());
+            using var ms2 = new MemoryStream();
+            await JsonSerializer.SerializeAsync(ms2, obj, objType, options).ConfigureAwait(false);
+            json = Encoding.UTF8.GetString(ms2.ToArray());
             Assert.Equal(expected, json);
         }
 
-        private class Employee
+        private const string Next = nameof(Next);
+        private void SetNextProperty(Type type, object obj, object value)
         {
-            public string Name { get; set; }
-            public Employee Manager { get; set; }
-            public List<Employee> Subordinates { get; set; }
-            public Dictionary<string, Employee> Colleagues { get; set; }
+            type.GetProperty(Next).SetValue(obj, value);
         }
 
-        private class Node
+        private object GetNextProperty(Type type, object obj)
+        {
+            return type.GetProperty(Next).GetValue(obj);
+        }
+
+        private class NodeWithObjectProperty
         {
             public object Next { get; set; }
         }
 
-        private class TreeNode
+        private class NodeWithNodeProperty
         {
-            public object Left { get; set; }
-            public object Right { get; set; }
+            public NodeWithNodeProperty Next { get; set; }
         }
 
-        private struct ValueNode : IValueNode
+        private class ClassWithGenericProperty<T>
+        {
+            public T Foo { get; set; }
+        }
+
+        private class TreeNode<T>
+        {
+            public T Left { get; set; }
+            public T Right { get; set; }
+        }
+
+        interface IValueNodeWithObjectProperty
         {
             public object Next { get; set; }
         }
 
-        interface IValueNode
+        private struct ValueNodeWithObjectProperty : IValueNodeWithObjectProperty
         {
             public object Next { get; set; }
+        }
+
+        interface IValueNodeWithIValueNodeProperty
+        {
+            public IValueNodeWithIValueNodeProperty Next { get; set; }
+        }
+
+        private struct ValueNodeWithIValueNodeProperty : IValueNodeWithIValueNodeProperty
+        {
+            public IValueNodeWithIValueNodeProperty Next { get; set; }
         }
 
         private class EmptyClass { }

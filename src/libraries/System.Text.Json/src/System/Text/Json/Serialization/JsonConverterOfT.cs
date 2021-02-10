@@ -323,7 +323,8 @@ namespace System.Text.Json.Serialization
                     writer.WriteNullValue();
                     return true;
                 }
-                // For boxed reference types: do not push when boxed in order to avoid false positives when we run above check for the converter of the unboxed value.
+                // For boxed reference types: do not push when boxed in order to avoid false positives
+                //   when we run the ContainsReferenceForCycleDetection check for the converter of the unboxed value.
                 if (!CanBePolymorphic)
                 {
                     resolver.PushReferenceForCycleDetection(value);

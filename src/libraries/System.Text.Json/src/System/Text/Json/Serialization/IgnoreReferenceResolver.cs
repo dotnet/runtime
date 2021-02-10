@@ -13,10 +13,8 @@ namespace System.Text.Json.Serialization
 
         internal override void PopReferenceForCycleDetection()
         {
-            if (_stackForCycleDetection != null)
-            {
-                _stackForCycleDetection.Pop();
-            }
+            Debug.Assert(_stackForCycleDetection != null);
+            _stackForCycleDetection.Pop();
         }
 
         internal override bool ContainsReferenceForCycleDetection(object value)
@@ -36,7 +34,9 @@ namespace System.Text.Json.Serialization
         }
 
         public override void AddReference(string referenceId, object value) => throw new InvalidOperationException();
+
         public override string GetReference(object value, out bool alreadyExists) => throw new InvalidOperationException();
+
         public override object ResolveReference(string referenceId) => throw new InvalidOperationException();
     }
 }

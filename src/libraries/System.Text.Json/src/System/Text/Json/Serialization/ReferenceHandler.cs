@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization
     public abstract class ReferenceHandler
     {
         /// <summary>
-        /// One of the enumeration values that indicates whether this ReferenceHandler implementation should use Preserve semantics or IgnoreCycle semantics.
+        /// Indicates whether this ReferenceHandler implementation should use <see cref="ReferenceHandlingStrategy.Preserve"/> semantics or <see cref="ReferenceHandlingStrategy.IgnoreCycle"/> semantics.
         /// The defualt is Preserve.
         /// </summary>
         internal ReferenceHandlingStrategy HandlingStrategy = ReferenceHandlingStrategy.Preserve;
