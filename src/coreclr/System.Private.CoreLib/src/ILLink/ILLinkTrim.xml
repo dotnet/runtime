@@ -5,6 +5,8 @@
       <method name="_RegisterFrozenSegment" />
       <method name="_UnregisterFrozenSegment" />
     </type>
+    <!-- The private Event methods are accessed by private reflection in the base EventSource class. -->
+    <type fullname="System.Diagnostics.Tracing.NativeRuntimeEventSource" />
     <!-- Accessed via native code. -->
     <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
     <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerator" />
