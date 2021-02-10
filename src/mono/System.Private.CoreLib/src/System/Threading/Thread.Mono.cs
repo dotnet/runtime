@@ -68,7 +68,7 @@ namespace System.Threading
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
 #if TARGET_UNIX
-        internal WaitSubsystem.ThreadWaitInfo _waitInfo;
+        internal WaitSubsystem.ThreadWaitInfo WaitInfo;
 #endif
 
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
@@ -202,14 +202,14 @@ namespace System.Threading
         }
 
 #if TARGET_UNIX
-        [MemberNotNull(nameof(_waitInfo))]
+        [MemberNotNull(nameof(WaitInfo))]
 #endif
         private void Initialize()
         {
             InitInternal(this);
 
 #if TARGET_UNIX
-            _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
+            WaitInfo = new WaitSubsystem.ThreadWaitInfo(this);
 #endif
         }
 

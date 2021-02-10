@@ -833,7 +833,7 @@ namespace System.Threading
                     Debug.Assert(waitableObject._ownershipInfo == this);
 
                     Debug.Assert(_thread != null);
-                    ThreadWaitInfo waitInfo = _thread._waitInfo;
+                    ThreadWaitInfo waitInfo = _thread.WaitInfo;
                     Debug.Assert(isAbandoned ? _reacquireCount >= 0 : _reacquireCount == 0);
                     Debug.Assert(!_isAbandoned);
 
