@@ -4297,14 +4297,16 @@ bool ValueNumStore::IsVNPositiveInt32Constant(ValueNum vn)
 
 //------------------------------------------------------------------------
 // IsVNArrLenUnsignedBound: Checks if the specified vn represents an expression
-//    such as "(uint)i < (uint)len", constant < (uint)len or "constant <= len" that
-//    implies that the index is valid (0 <= i && i < a.len), or a.len >(=) constant .
+//    of one of the following forms:
+//    - "(uint)i < (uint)len" that implies (0 <= i < len)
+//    - "const < (uint)len" that implies "len > const"
+//    - "const <= (uint)len" that implies "len > const - 1"
 //
 // Arguments:
 //    vn - Value number to query
 //    info - Pointer to an UnsignedCompareCheckedBoundInfo object to return information about
 //           the expression. Not populated if the vn expression isn't suitable (e.g. i <= len).
-//           This enables optCreateJTrueBoundAssertion to immediatly create an OAK_NO_THROW
+//           This enables optCreateJTrueBoundAssertion to immediately create an OAK_NO_THROW
 //           assertion instead of the OAK_EQUAL/NOT_EQUAL assertions created by signed compares
 //           (IsVNCompareCheckedBound, IsVNCompareCheckedBoundArith) that require further processing.
 //
