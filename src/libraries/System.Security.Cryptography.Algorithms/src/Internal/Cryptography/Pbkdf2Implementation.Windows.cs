@@ -13,7 +13,9 @@ namespace Internal.Cryptography
 {
     internal partial class Pbkdf2Implementation
     {
-        private static volatile bool s_useCompatOneShot;
+        // BCryptDeriveKeyPBKDF2 on Windows 7 will crash the process with an access violation
+        // when given a pseudo handle, so we can't detect based on the NTSTATUS of the native call.
+        private static readonly bool s_usePseudoHandles = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 0);
 
         public static unsafe void Fill(
             ReadOnlySpan<byte> password,
@@ -25,18 +27,17 @@ namespace Internal.Cryptography
             Debug.Assert(iterations >= 0);
             Debug.Assert(hashAlgorithmName.Name is not null);
 
-            const BCryptOpenAlgorithmProviderFlags OpenAlgorithmFlags = BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG;
             NTSTATUS status;
 
             fixed (byte* pPassword = password)
             fixed (byte* pSalt = salt)
             fixed (byte* pDestination = destination)
             {
-                if (!s_useCompatOneShot)
+                if (s_usePseudoHandles)
                 {
-                    BCryptAlgPseudoHandle psuedoHandle = PseudoHandleFromIdentifier(hashAlgorithmName.Name);
+                    BCryptAlgPseudoHandle pseudoHandle = PseudoHandleFromIdentifier(hashAlgorithmName.Name);
                     status = Interop.BCrypt.BCryptDeriveKeyPBKDF2(
-                        (nuint)psuedoHandle,
+                        (nuint)pseudoHandle,
                         pPassword,
                         password.Length,
                         pSalt,
@@ -45,35 +46,25 @@ namespace Internal.Cryptography
                         pDestination,
                         destination.Length,
                         dwFlags: 0);
-
-                    switch (status)
-                    {
-                        case NTSTATUS.STATUS_SUCCESS:
-                            return;
-                        case NTSTATUS.STATUS_INVALID_HANDLE:
-                            s_useCompatOneShot = true;
-                            break;
-                        default:
-                            throw Interop.BCrypt.CreateCryptographicException(status);
-                    }
                 }
+                else
+                {
+                    const BCryptOpenAlgorithmProviderFlags OpenAlgorithmFlags = BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG;
+                    // Do not dispose handle since it is shared and cached.
+                    SafeBCryptAlgorithmHandle handle =
+                        Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgorithmName.Name, OpenAlgorithmFlags, out _);
 
-                Debug.Assert(s_useCompatOneShot);
-
-                // Do not dispose handle since it is shared and cached.
-                SafeBCryptAlgorithmHandle handle =
-                    Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgorithmName.Name, OpenAlgorithmFlags, out _);
-
-                status = Interop.BCrypt.BCryptDeriveKeyPBKDF2(
-                    handle,
-                    pPassword,
-                    password.Length,
-                    pSalt,
-                    salt.Length,
-                    (ulong)iterations,
-                    pDestination,
-                    destination.Length,
-                    dwFlags: 0);
+                    status = Interop.BCrypt.BCryptDeriveKeyPBKDF2(
+                        handle,
+                        pPassword,
+                        password.Length,
+                        pSalt,
+                        salt.Length,
+                        (ulong)iterations,
+                        pDestination,
+                        destination.Length,
+                        dwFlags: 0);
+                }
 
                 if (status != NTSTATUS.STATUS_SUCCESS)
                 {
