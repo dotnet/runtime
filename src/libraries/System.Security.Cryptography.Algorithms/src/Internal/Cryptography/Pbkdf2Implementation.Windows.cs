@@ -16,15 +16,16 @@ namespace Internal.Cryptography
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
             int iterations,
-            string hashAlgorithmName,
+            HashAlgorithmName hashAlgorithmName,
             Span<byte> destination)
         {
             Debug.Assert(iterations >= 0);
+            Debug.Assert(hashAlgorithmName.Name is not null);
             const BCryptOpenAlgorithmProviderFlags OpenAlgorithmFlags = BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG;
 
             // Do not dispose handle since it is shared and cached.
             SafeBCryptAlgorithmHandle handle =
-                Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgorithmName, OpenAlgorithmFlags, out _);
+                Interop.BCrypt.BCryptAlgorithmCache.GetCachedBCryptAlgorithmHandle(hashAlgorithmName.Name, OpenAlgorithmFlags, out _);
 
             fixed (byte* pPassword = password)
             fixed (byte* pSalt = salt)

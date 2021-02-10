@@ -13,10 +13,11 @@ namespace Internal.Cryptography
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
             int iterations,
-            string hashAlgorithmName,
+            HashAlgorithmName hashAlgorithmName,
             Span<byte> destination)
         {
-            IntPtr evpHashType = HashProviderDispenser.HashAlgorithmToEvp(hashAlgorithmName);
+            Debug.Assert(hashAlgorithmName.Name is not null);
+            IntPtr evpHashType = HashProviderDispenser.HashAlgorithmToEvp(hashAlgorithmName.Name);
             int result = Interop.Crypto.Pkcs5Pbkdf2Hmac(password, salt, iterations, evpHashType, destination);
             const int Success = 1;
 

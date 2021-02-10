@@ -128,7 +128,7 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            Pbkdf2Implementation.Fill(password, salt, iterations, hashAlgorithm.Name, destination);
+            Pbkdf2Implementation.Fill(password, salt, iterations, hashAlgorithm, destination);
         }
     }
 }

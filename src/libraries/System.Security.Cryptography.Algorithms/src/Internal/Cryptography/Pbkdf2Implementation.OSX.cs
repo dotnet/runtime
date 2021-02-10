@@ -13,10 +13,10 @@ namespace Internal.Cryptography
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
             int iterations,
-            string hashAlgorithmName,
+            HashAlgorithmName hashAlgorithmName,
             Span<byte> destination)
         {
-            PAL_HashAlgorithm prfAlgorithm = hashAlgorithmName switch {
+            PAL_HashAlgorithm prfAlgorithm = hashAlgorithmName.Name switch {
                 "SHA1" => PAL_HashAlgorithm.Sha1,
                 "SHA256" => PAL_HashAlgorithm.Sha256,
                 "SHA384" => PAL_HashAlgorithm.Sha384,
