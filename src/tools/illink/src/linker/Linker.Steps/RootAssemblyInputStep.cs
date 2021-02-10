@@ -110,13 +110,14 @@ namespace Mono.Linker.Steps
 
 		void MarkAndPreserve (TypeDefinition type, TypePreserveMembers preserve)
 		{
+			TypePreserveMembers preserve_anything = preserve;
 			if ((preserve & TypePreserveMembers.Visible) != 0 && !IsTypeVisible (type))
-				preserve &= ~TypePreserveMembers.Visible;
+				preserve_anything &= ~TypePreserveMembers.Visible;
 
 			if ((preserve & TypePreserveMembers.Internal) != 0 && IsTypePrivate (type))
-				preserve &= ~TypePreserveMembers.Internal;
+				preserve_anything &= ~TypePreserveMembers.Internal;
 
-			if (preserve == 0)
+			if (preserve_anything == 0)
 				return;
 
 			Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly));

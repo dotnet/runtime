@@ -48,4 +48,13 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		{
 		}
 	}
+
+#if RootLibraryInternalsWithIVT
+	[Kept]
+	internal interface InternalIface
+	{
+		[Kept]
+		void Foo ();
+	}
+#endif
 }
