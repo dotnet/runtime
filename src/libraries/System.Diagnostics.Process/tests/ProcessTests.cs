@@ -2378,6 +2378,145 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task CancelRead_WaitForExit_ReturnsImmediately(bool cancelByKill, bool useAsyncAPI)
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.CheckExitCode = false;
+            options.StartInfo.RedirectStandardOutput = true;
+            options.StartInfo.RedirectStandardError = true;
+            using var handle = RemoteExecutor.Invoke(() =>
+            {
+                try
+                {
+                    // Start a child that will keep the standard streams open longer than its parent.
+                    var process = Process.Start("sleep", "600"); // sleep 10 minutes.
+
+                    // Signal the test process.
+                    Console.WriteLine("Sleep child started");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message.Replace(Environment.NewLine, "  "));
+                }
+            }, options);
+
+            // Wait for the sleep child to be started.
+            Process process = handle.Process;
+            TaskCompletionSource<string> childOutputTcs = new();
+            TaskCompletionSource<object> eofTcs = new();
+            process.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
+            {
+                childOutputTcs.TrySetResult(e.Data);
+                if (e.Data == null)
+                {
+                    eofTcs.SetResult(null);
+                }
+            };
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            string childOutput = await childOutputTcs.Task.TimeoutAfter(30_000);
+            Assert.Equal("Sleep child started", childOutput);
+
+            if (cancelByKill)
+            {
+                process.Kill();
+            }
+            else
+            {
+                process.CancelOutputRead();
+                process.CancelErrorRead();
+            }
+
+            Task asyncWaitTask = useAsyncAPI ? process.WaitForExitAsync() :
+                                               Task.Run(() => process.WaitForExit());
+            await asyncWaitTask.TimeoutAfter(30_000);
+            Assert.True(process.HasExited);
+
+            if (cancelByKill)
+            {
+                await eofTcs.Task.TimeoutAfter(30_000);
+            }
+            else
+            {
+                Assert.False(eofTcs.Task.IsCompleted);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task KillTree_WaitForExit_ReturnsImmediately(bool useAsyncAPI)
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.CheckExitCode = false;
+            options.StartInfo.RedirectStandardOutput = true;
+            options.StartInfo.RedirectStandardError = true;
+            using var handle = RemoteExecutor.Invoke(() =>
+            {
+                string myPid = Process.GetCurrentProcess().Id.ToString();
+                var handle = RemoteExecutor.Invoke(parentPid =>
+                {
+                    try
+                    {
+                        // Start a child that will keep the standard streams open longer than its parent.
+                        var process = Process.Start("sleep", "600"); // sleep 10 minutes.
+
+                        // Wait untill we're orphaned.
+                        try
+                        {
+                            Process parentProcess = Process.GetProcessById(int.Parse(parentPid));
+                            parentProcess.WaitForExit();
+                        }
+                        catch (ArgumentException)
+                        { }
+                        Thread.Sleep(1000);
+
+                        // Signal the test process.
+                        Console.WriteLine("Sleep child started");
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message.Replace(Environment.NewLine, "  "));
+                    }
+                }, myPid, new RemoteInvokeOptions() { CheckExitCode = false });
+
+                // Stop the handle from Killing or Waiting for the Process.
+                handle.Process = null;
+                return 0;
+            }, options);
+
+            // Wait for the sleep child to be started.
+            Process process = handle.Process;
+            TaskCompletionSource<string> childOutputTcs = new();
+            TaskCompletionSource<object> eofTcs = new();
+            process.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
+            {
+                childOutputTcs.TrySetResult(e.Data);
+                if (e.Data == null)
+                {
+                    eofTcs.SetResult(null);
+                }
+            };
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            string childOutput = await childOutputTcs.Task.TimeoutAfter(30_000);
+            Assert.Equal("Sleep child started", childOutput);
+
+            process.Kill(entireProcessTree: true);
+
+            Task asyncWaitTask = useAsyncAPI ? process.WaitForExitAsync() :
+                                               Task.Run(() => process.WaitForExit());
+            await asyncWaitTask.TimeoutAfter(30_000);
+            Assert.True(process.HasExited);
+
+            await eofTcs.Task.TimeoutAfter(30_000);
+        }
+
         private IReadOnlyList<Process> CreateProcessTree()
         {
             (Process Value, string Message) rootResult = ListenForAnonymousPipeMessage(rootPipeHandleString =>

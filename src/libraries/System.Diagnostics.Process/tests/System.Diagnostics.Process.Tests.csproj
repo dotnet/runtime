@@ -13,6 +13,8 @@
              Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
              Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonTestPath)Microsoft\Win32\TempRegistryKey.cs"
              Link="Common\Microsoft\Win32\TempRegistryKey.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"

@@ -22,6 +22,12 @@ namespace System.Diagnostics
 {
     internal sealed class AsyncStreamReader : IDisposable
     {
+        private const int OperationStateNone = 0;
+        private const int OperationStateReading = 1;
+        private const int OperationStateCanceled = 2;
+        private const int OperationStateCanceledPendingEof = 3;
+        private const int OperationStateEof = 4;
+
         private const int DefaultBufferSize = 1024;  // Byte buffer size
 
         private readonly Stream _stream;
@@ -37,7 +43,7 @@ namespace System.Diagnostics
         private readonly Queue<string?> _messageQueue;
         private StringBuilder? _sb;
         private bool _bLastCarriageReturn;
-        private bool _cancelOperation;
+        private int _operationState = OperationStateNone; // modify using Interlocked to ensure we don't overwrite OperationStateEof.
 
         // Cache the last position scanned in sb when searching for lines.
         private int _currentLinePos;
@@ -67,7 +73,17 @@ namespace System.Diagnostics
         // User calls BeginRead to start the asynchronous read
         internal void BeginReadLine()
         {
-            _cancelOperation = false;
+            int state = _operationState;
+            if ((state != OperationStateNone) &&
+                (state != OperationStateCanceled))
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _operationState, OperationStateReading, state) != state)
+            {
+                return;
+            }
 
             if (_sb == null)
             {
@@ -80,9 +96,29 @@ namespace System.Diagnostics
             }
         }
 
-        internal void CancelOperation()
+        internal void CancelOperation(bool fakeEof = false)
         {
-            _cancelOperation = true;
+            if (_operationState == OperationStateReading)
+            {
+                if (fakeEof)
+                {
+                    bool flushQueue = false;
+                    lock (_messageQueue)
+                    {
+                        if (Interlocked.CompareExchange(ref _operationState, OperationStateCanceledPendingEof, OperationStateReading) == OperationStateReading)
+                        {
+                            _messageQueue.Enqueue(null);
+                            flushQueue = true;
+                        }
+                    }
+                    if (flushQueue)
+                    {
+                        ThreadPool.QueueUserWorkItem(reader => ((AsyncStreamReader)reader!).FlushMessageQueue(rethrowInNewThread: false), this);
+                        return;
+                    }
+                }
+                Interlocked.CompareExchange(ref _operationState, OperationStateCanceled, OperationStateReading);
+            }
         }
 
         // This is the async callback function. Only one thread could/should call this.
@@ -228,12 +264,18 @@ namespace System.Diagnostics
                             break;
                         }
                         line = _messageQueue.Dequeue();
+                        if (_operationState == OperationStateCanceled ||
+                            _operationState == OperationStateEof)
+                        {
+                            continue;
+                        }
+                        if (line == null)
+                        {
+                            _operationState = OperationStateEof;
+                        }
                     }
 
-                    if (!_cancelOperation)
-                    {
-                        _userCallBack(line); // invoked outside of the lock
-                    }
+                    _userCallBack(line); // invoked outside of the lock
                 }
                 return false;
             }
@@ -255,7 +297,7 @@ namespace System.Diagnostics
         // We will lose some information if we don't do this.
         internal void WaitUntilEOF()
         {
-            if (_readToBufferTask is Task task)
+            if (_operationState == OperationStateReading && _readToBufferTask is Task task)
             {
                 task.GetAwaiter().GetResult();
             }
@@ -263,7 +305,7 @@ namespace System.Diagnostics
 
         internal Task WaitUntilEOFAsync(CancellationToken cancellationToken)
         {
-            if (_readToBufferTask is Task task)
+            if (_operationState == OperationStateReading && _readToBufferTask is Task task)
             {
                 return task.WithCancellation(cancellationToken);
             }

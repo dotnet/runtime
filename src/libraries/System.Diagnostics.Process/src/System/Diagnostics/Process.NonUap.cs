@@ -25,6 +25,10 @@ namespace System.Diagnostics
 
                 if (result != null && result.Count != 0)
                     throw new AggregateException(SR.KillEntireProcessTree_TerminationIncomplete, result);
+
+                // Don't wait for output on WaitForExit.
+                _output?.CancelOperation(fakeEof: true);
+                _error?.CancelOperation(fakeEof: true);
             }
         }
 
