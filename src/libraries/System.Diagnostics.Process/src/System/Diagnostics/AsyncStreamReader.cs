@@ -44,6 +44,7 @@ namespace System.Diagnostics
         private StringBuilder? _sb;
         private bool _bLastCarriageReturn;
         private int _operationState = OperationStateNone; // modify using Interlocked to ensure we don't overwrite OperationStateEof.
+        private bool _flushing;
 
         // Cache the last position scanned in sb when searching for lines.
         private int _currentLinePos;
@@ -108,7 +109,7 @@ namespace System.Diagnostics
                         if (Interlocked.CompareExchange(ref _operationState, OperationStateCanceledPendingEof, OperationStateReading) == OperationStateReading)
                         {
                             _messageQueue.Enqueue(null);
-                            flushQueue = true;
+                            flushQueue = !_flushing;
                         }
                     }
                     if (flushQueue)
@@ -154,7 +155,7 @@ namespace System.Diagnostics
 
                 // If user's delegate throws exception we treat this as EOF and
                 // completing without processing current buffer content
-                if (FlushMessageQueue(rethrowInNewThread: true))
+                if (!FlushMessageQueue(rethrowInNewThread: true))
                 {
                     return;
                 }
@@ -244,13 +245,14 @@ namespace System.Diagnostics
             }
         }
 
-        // If everything runs without exception, returns false.
-        // If an exception occurs and rethrowInNewThread is true, returns true.
-        // If an exception occurs and rethrowInNewThread is false, the exception propagates.
+        // Returns true if more messages should be read.
+        // Returns false when there is an EOF condition.
         private bool FlushMessageQueue(bool rethrowInNewThread)
         {
+            bool isFlushing = false;
             try
             {
+                bool continueReading;
                 // Keep going until we're out of data to process.
                 while (true)
                 {
@@ -259,8 +261,20 @@ namespace System.Diagnostics
                     string? line;
                     lock (_messageQueue)
                     {
+                        continueReading = _operationState != OperationStateEof &&
+                                          _operationState != OperationStateCanceledPendingEof;
+                        if (!isFlushing)
+                        {
+                            if (_flushing)
+                            {
+                                // someone else is flushing.
+                                break;
+                            }
+                            _flushing = isFlushing = true;
+                        }
                         if (_messageQueue.Count == 0)
                         {
+                            isFlushing = _flushing = false;
                             break;
                         }
                         line = _messageQueue.Dequeue();
@@ -277,17 +291,24 @@ namespace System.Diagnostics
 
                     _userCallBack(line); // invoked outside of the lock
                 }
-                return false;
+                return continueReading;
             }
             catch (Exception e)
             {
+                lock (_messageQueue)
+                {
+                    if (isFlushing)
+                    {
+                        _flushing = false;
+                    }
+                }
                 // If rethrowInNewThread is true, we can't let the exception propagate synchronously on this thread,
-                // so propagate it in a thread pool thread and return true to indicate to the caller that this failed.
+                // so propagate it in a thread pool thread and return false to indicate to the caller that this failed.
                 // Otherwise, let the exception propagate.
                 if (rethrowInNewThread)
                 {
                     ThreadPool.QueueUserWorkItem(edi => ((ExceptionDispatchInfo)edi!).Throw(), ExceptionDispatchInfo.Capture(e));
-                    return true;
+                    return false;
                 }
                 throw;
             }
