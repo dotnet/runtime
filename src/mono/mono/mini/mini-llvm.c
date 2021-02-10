@@ -12002,6 +12002,9 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 		{ "crypto",	MONO_CPU_ARM64_CRYPTO },
 		{ "neon",	MONO_CPU_ARM64_ADVSIMD }
 #endif
+#if defined(TARGET_WASM)
+		{ "simd",	MONO_CPU_WASM_SIMD },
+#endif
 	};
 	if (!cpu_features)
 		cpu_features = MONO_CPU_INITED | (MonoCPUFeatures)mono_llvm_check_cpu_features (flags_map, G_N_ELEMENTS (flags_map));

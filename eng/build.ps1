@@ -6,7 +6,7 @@ Param(
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
-  [ValidateSet("windows","Linux","OSX","Browser")][string]$os,
+  [ValidateSet("windows","Linux","OSX","Android","Browser")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
@@ -35,7 +35,7 @@ function Get-Help() {
   Write-Host "  -help (-h)                     Print help and exit."
   Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   Write-Host "                                 [Default: Debug]"
-  Write-Host "  -os                            Target operating system: windows, Linux, OSX, or Browser."
+  Write-Host "  -os                            Target operating system: windows, Linux, OSX, Android or Browser."
   Write-Host "                                 [Default: Your machine's OS.]"
   Write-Host "  -runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
