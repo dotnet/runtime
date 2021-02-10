@@ -69,7 +69,6 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-utils-debug.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/icall-decl.h>
 #include "mono/metadata/icall-signatures.h"
 
@@ -5074,7 +5073,7 @@ initialize_array_data (MonoCompile *cfg, MonoMethod *method, gboolean aot, gucha
 	if  ((ip = il_read_dup (ip, end))
 			&& ip_in_bb (cfg, cfg->cbb, ip)
 			&& (ip = il_read_ldtoken (ip, end, &field_token))
-			&& IS_FIELD_DEF (field_token)
+			&& (mono_metadata_token_table (field_token) == MONO_TABLE_FIELD)
 			&& ip_in_bb (cfg, cfg->cbb, ip)
 			&& (ip = il_read_call (ip, end, &token))) {
 		ERROR_DECL (error);

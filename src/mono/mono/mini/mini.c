@@ -43,7 +43,6 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/attach.h>
 #include <mono/metadata/runtime.h>
@@ -961,61 +960,7 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 static gboolean
 mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 {
-	GSList *tmp, *res;
-	gboolean is_fulltrust;
-
-	if (mono_method_get_verification_success (method))
-		return FALSE;
-
-	if (!mono_verifier_is_enabled_for_method (method))
-		return FALSE;
-
-	/*skip verification implies the assembly must be */
-	is_fulltrust = mono_verifier_is_method_full_trust (method) ||  mini_assembly_can_skip_verification (cfg->domain, method);
-
-	res = mono_method_verify_with_current_settings (method, cfg->skip_visibility, is_fulltrust);
-
-	if (res) { 
-		for (tmp = res; tmp; tmp = tmp->next) {
-			MonoVerifyInfoExtended *info = (MonoVerifyInfoExtended *)tmp->data;
-			if (info->info.status == MONO_VERIFY_ERROR) {
-				if (fail_compile) {
-				char *method_name = mono_method_full_name (method, TRUE);
-					cfg->exception_type = (MonoExceptionType)info->exception_type;
-					cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
-					g_free (method_name);
-				}
-				mono_free_verify_list (res);
-				return TRUE;
-			}
-			if (info->info.status == MONO_VERIFY_NOT_VERIFIABLE && (!is_fulltrust || info->exception_type == MONO_EXCEPTION_METHOD_ACCESS || info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)) {
-				if (fail_compile) {
-					char *method_name = mono_method_full_name (method, TRUE);
-					char *msg = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
-
-					if (info->exception_type == MONO_EXCEPTION_METHOD_ACCESS)
-						mono_error_set_generic_error (cfg->error, "System", "MethodAccessException", "%s", msg);
-					else if (info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)
-						mono_error_set_generic_error (cfg->error, "System", "FieldAccessException", "%s", msg);
-					else if (info->exception_type == MONO_EXCEPTION_UNVERIFIABLE_IL)
-						mono_error_set_generic_error (cfg->error, "System.Security", "VerificationException", "%s", msg);
-					if (!is_ok (cfg->error)) {
-						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-						g_free (msg);
-					} else {
-						cfg->exception_type = (MonoExceptionType)info->exception_type;
-						cfg->exception_message = msg;
-					}
-					g_free (method_name);
-				}
-				mono_free_verify_list (res);
-				return TRUE;
-			}
-		}
-		mono_free_verify_list (res);
-	}
-	mono_method_set_verification_success (method);
-	return FALSE;
+        return FALSE;
 }
 
 /*Returns true if something went wrong*/

@@ -19,7 +19,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/security-manager.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-counters.h>
@@ -2767,11 +2766,6 @@ mono_class_init_internal (MonoClass *klass)
 	 * information and write it to @klass inside a lock.
 	 */
 
-	if (mono_verifier_is_enabled_for_class (klass) && !mono_verifier_verify_class (klass)) {
-		mono_class_set_type_load_failure (klass, "%s", concat_two_strings_with_zero (klass->image, klass->name, klass->image->assembly_name));
-		goto leave;
-	}
-
 	MonoType *klass_byval_arg;
 	klass_byval_arg = m_class_get_byval_arg (klass);
 	if (klass_byval_arg->type == MONO_TYPE_ARRAY || klass_byval_arg->type == MONO_TYPE_SZARRAY) {
@@ -2949,9 +2943,6 @@ mono_class_init_internal (MonoClass *klass)
 	locked = FALSE;
 
 	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, TRUE);
-
-	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass))
-		mono_class_set_type_load_failure (klass, "Invalid generic instantiation");
 
 	goto leave;
 

@@ -66,7 +66,6 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/runtime.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/w32socket.h>
 #include <mono/utils/mono-coop-mutex.h>
@@ -8511,8 +8510,6 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			mono_error_cleanup (error);
 			return ERR_INVALID_ARGUMENT;
 		}
-		if (!mono_verifier_is_method_valid_generic_instantiation (inflated))
-			return ERR_INVALID_ARGUMENT;
 		buffer_add_methodid (buf, domain, inflated);
 		break;
 	}

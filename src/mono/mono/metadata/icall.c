@@ -77,7 +77,6 @@
 #include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-ptr-array.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/file-mmap.h>
 #include <mono/metadata/seq-points-data.h>
@@ -3083,14 +3082,6 @@ ves_icall_RuntimeType_MakeGenericType (MonoReflectionTypeHandle reftype, MonoArr
 	MonoType *geninst = mono_reflection_bind_generic_parameters (reftype, count, types, error);
 	g_free (types);
 	if (!geninst) {
-		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
-	}
-
-	MonoClass *klass = mono_class_from_mono_type_internal (geninst);
-
-	/*we might inflate to the GTD*/
-	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass)) {
-		mono_error_set_argument (error, "typeArguments", "Invalid generic arguments");
 		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
 	}
 

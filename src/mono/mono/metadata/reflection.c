@@ -44,7 +44,6 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-ptr-array.h>
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/utils/mono-string.h>
@@ -2638,11 +2637,6 @@ reflection_bind_generic_method_parameters (MonoMethod *method, MonoArrayHandle t
 
 	inflated = mono_class_inflate_generic_method_checked (method, &tmp_context, error);
 	mono_error_assert_ok (error);
-
-	if (!mono_verifier_is_method_valid_generic_instantiation (inflated)) {
-		mono_error_set_argument (error, NULL, "Invalid generic arguments");
-		return NULL;
-	}
 
 	return inflated;
 }

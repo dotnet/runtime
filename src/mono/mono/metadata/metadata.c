@@ -25,7 +25,6 @@
 #include "metadata-internals.h"
 #include "reflection-internals.h"
 #include "metadata-update.h"
-#include "verify-internals.h"
 #include "class.h"
 #include "marshal.h"
 #include "debug-helpers.h"
@@ -4638,7 +4637,6 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
 	const char *ptr;
 	unsigned char flags, format;
 	guint16 fat_flags;
-	ERROR_DECL (error);
 
 	/*Only the GMD has a pointer to the metadata.*/
 	while (method->is_inflated)
@@ -4670,12 +4668,6 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
 	idx = mono_metadata_token_index (method->token);
 	img = m_class_get_image (method->klass);
 	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
-
-	/*We must run the verifier since we'll be decoding it.*/
-	if (!mono_verifier_verify_method_header (img, rva, error)) {
-		mono_error_cleanup (error);
-		return FALSE;
-	}
 
 	ptr = mono_image_rva_map (img, rva);
 	if (!ptr)
@@ -4793,8 +4785,6 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		}
 		mono_metadata_decode_row (t, idx, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
 
-		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], error))
-			goto fail;
 	}
 	if (fat_flags & METHOD_HEADER_MORE_SECTS) {
 		clauses = parse_section_data (m, &num_clauses, (const unsigned char*)ptr, error);
@@ -6875,9 +6865,6 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
 
-	if (!mono_verifier_verify_typespec_signature (image, cols [MONO_TYPESPEC_SIGNATURE], type_spec, error))
-		return NULL;
-
 	mono_metadata_decode_value (ptr, &ptr);
 
 	type = mono_metadata_parse_type_checked (image, NULL, 0, TRUE, ptr, &ptr, error);
@@ -7324,9 +7311,6 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 	result = g_new (MonoMethod*, num * 2);
 	for (i = 0; i < num; ++i) {
 		MonoMethod *method;
-
-		if (!mono_verifier_verify_methodimpl_row (image, start + i, error))
-			break;
 
 		mono_metadata_decode_row (tdef, start + i, cols, MONO_METHODIMPL_SIZE);
 		method = mono_method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_DECLARATION], generic_context, error);
