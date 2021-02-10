@@ -20,6 +20,7 @@
 #include "pal_trust.h"
 #include "pal_x509.h"
 #include "pal_x509chain.h"
+#include "pal_keyderivation.h"
 
 static const Entry s_cryptoAppleNative[] =
 {
