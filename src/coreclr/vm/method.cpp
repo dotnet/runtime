@@ -29,6 +29,8 @@
 #include "prettyprintsig.h"
 #include "formattype.h"
 #include "fieldmarshaler.h"
+#include "versionresilienthashcode.h"
+#include "typehashingalgorithms.h"
 
 #ifdef FEATURE_PREJIT
 #include "compile.h"
@@ -650,15 +652,11 @@ PTR_MethodDesc MethodDesc::GetDeclMethodDesc(UINT32 slotNumber)
 //*******************************************************************************
 // Returns a hash for the method.
 // The hash will be the same for the method across multiple process runs.
+#ifndef DACCESS_COMPILE
 COUNT_T MethodDesc::GetStableHash()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsRestored_NoLogging());
-    DefineFullyQualifiedNameForClass();
-
-    const char *  moduleName = GetModule()->GetSimpleName();
-    const char *  className;
-    const char *  methodName = GetName();
+    const char *  className = NULL;
 
     if (IsLCGMethod())
     {
@@ -668,62 +666,18 @@ COUNT_T MethodDesc::GetStableHash()
     {
         className = ILStubResolver::GetStubClassName(this);
     }
+
+    if (className == NULL)
+    {
+        return GetVersionResilientMethodHashCode(this);
+    }
     else
     {
-#if defined(_DEBUG)
-        // Calling _GetFullyQualifiedNameForClass in chk build is very expensive
-        // since it construct the class name everytime we call this method. In chk
-        // builds we already have a cheaper way to get the class name -
-        // GetDebugClassName - which doesn't calculate the class name everytime.
-        // This results in huge saving in Ngen time for checked builds.
-        className = m_pszDebugClassName;
-#else // !_DEBUG
-        // since this is for diagnostic purposes only,
-        // give up on the namespace, as we don't have a buffer to concat it
-        // also note this won't show array class names.
-        LPCUTF8       nameSpace;
-        MethodTable * pMT = GetMethodTable();
-
-        className = pMT->GetFullyQualifiedNameInfo(&nameSpace);
-#endif // !_DEBUG
+        int typeHash = ComputeNameHashCode("", className);
+        return typeHash ^ ComputeNameHashCode(GetName());
     }
-
-    COUNT_T hash = HashStringA(moduleName);             // Start the hash with the Module name
-    hash = HashCOUNT_T(hash, HashStringA(className));   // Hash in the name of the Class name
-    hash = HashCOUNT_T(hash, HashStringA(methodName));  // Hash in the name of the Method name
-
-    // Handle Generic Types and Generic Methods
-    //
-    if (HasClassInstantiation() && !GetMethodTable()->IsGenericTypeDefinition())
-    {
-        Instantiation classInst = GetClassInstantiation();
-        for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
-        {
-            MethodTable * pMT = classInst[i].GetMethodTable();
-            // pMT can be NULL for TypeVarTypeDesc
-            // @TODO: Implement TypeHandle::GetStableHash instead of
-            // checking pMT==NULL
-            if (pMT)
-                hash = HashCOUNT_T(hash, HashStringA(GetFullyQualifiedNameForClass(pMT)));
-        }
-    }
-
-    if (HasMethodInstantiation() && !IsGenericMethodDefinition())
-    {
-        Instantiation methodInst = GetMethodInstantiation();
-        for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
-        {
-            MethodTable * pMT = methodInst[i].GetMethodTable();
-            // pMT can be NULL for TypeVarTypeDesc
-            // @TODO: Implement TypeHandle::GetStableHash instead of
-            // checking pMT==NULL
-            if (pMT)
-                hash = HashCOUNT_T(hash, HashStringA(GetFullyQualifiedNameForClass(pMT)));
-        }
-    }
-
-    return hash;
 }
+#endif // DACCESS_COMPILE
 
 //*******************************************************************************
 // Get the number of type parameters to a generic method

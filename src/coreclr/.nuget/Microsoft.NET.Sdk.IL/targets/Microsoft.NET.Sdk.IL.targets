@@ -16,7 +16,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     <DefaultLanguageSourceExtension>.il</DefaultLanguageSourceExtension>
     <Language>IL</Language>
     <TargetRuntime>Managed</TargetRuntime>
+    <DefaultProjectTypeGuid Condition="'$(DefaultProjectTypeGuid)' == ''">{F571AB99-FB84-49F4-A0DF-F27AA55F3F3F}</DefaultProjectTypeGuid>
+    <AppDesignerFolder Condition="'$(AppDesignerFolder)' == ''">Properties</AppDesignerFolder>
+    <AlwaysUseNumericalSuffixInItemNames>true</AlwaysUseNumericalSuffixInItemNames>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectCapability Include="Managed" />
+    <ProjectCapability Include="ReferencesFolder" />
+  </ItemGroup>
 
   <PropertyGroup>
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('windows'))">win</_OSPlatform>

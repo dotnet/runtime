@@ -31,7 +31,7 @@ extern "C"
 /* A type to wrap the native context type, which is ucontext_t on some
  * platforms and another type elsewhere. */
 #if HAVE_UCONTEXT_T
-#include <sys/ucontext.h>
+#include <ucontext.h>
 
 typedef ucontext_t native_context_t;
 #else   // HAVE_UCONTEXT_T

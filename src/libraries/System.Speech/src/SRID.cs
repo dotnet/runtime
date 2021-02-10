@@ -265,7 +265,7 @@ namespace System.Speech
         NumberOfSamplesInvalid,
         // Do not change ordering of codes below here; they correspond to the
         // numerical codes in sperror.h, from SPERR_UNINITIALIZED onwards.
-        SapiErrorUninitialized,
+        SapiErrorUninitialized, // 0x80045001 == SPERR_UNINITIALIZED == SPERR_FIRST
         SapiErrorAlreadyInitialized,
         SapiErrorNotSupportedFormat,
         SapiErrorInvalidFlags,
@@ -351,10 +351,10 @@ namespace System.Speech
         SapiErrorNotTopLevelRule,
         SapiErrorNoRuleActive,
         SapiErrorLexRequiresCookie,
-        SapiErrorStreamUninitialized,
-        SapiErrorUnused0,
-        SapiErrorNotSupportedLang,
-        SapiErrorVoicePaused,
+        SapiErrorStreamUninitialized, // 0x80045057
+        SapiErrorUnused0,             // 0x80045058 is not used by SAPI, but it keeps counting
+        SapiErrorNotSupportedLang,    // 0x80045059
+        SapiErrorVoicePaused,         // 0x8004505a
         SapiErrorAudioBufferUnderflow,
         SapiErrorAudioStoppedUnexpectedly,
         SapiErrorNoWordPronunciation,
@@ -368,10 +368,16 @@ namespace System.Speech
         SapiErrorAudioStopped,
         SapiErrorRecoXMLGenerationFail,
         SapiErrorSMLGenerationFail,
-        SapiErrorNotPromptVoice,
-        SapiErrorRootRuleAlreadyDefined,
-        SapiErrorScriptDisallowed,
-        SapiErrorRemoteCallTimedOutStart,
+        SapiErrorNotPromptVoice,         // 0x80045068
+        SapiErrorRootRuleAlreadyDefined, // 0x80045069 == SPERR_ROOTRULE_ALREADY_DEFINED, then it skips 6
+        SapiErrorUnused1, // skipped
+        SapiErrorUnused2, // skipped
+        SapiErrorUnused3, // skipped
+        SapiErrorUnused4, // skipped
+        SapiErrorUnused5, // skipped
+        SapiErrorUnused6, // skipped
+        SapiErrorScriptDisallowed,          // 0x80045070 == SPERR_SCRIPT_DISALLOWED
+        SapiErrorRemoteCallTimedOutStart,   // 0x80045071
         SapiErrorRemoteCallTimedOutConnect,
         SapiErrorSecMgrChangeNotAllowed,
         SapiErrorCompleteButExtendable,
@@ -389,18 +395,22 @@ namespace System.Speech
         NotSupported,
         SapiErrorTopicNotAdaptable,
         SapiErrorPhonemeConversion,
-        SapiErrorNotSupportedForInprocRecognizer
-        /* would continue as follows:
-        SPERR_OVERLOAD The operation cannot be carried out due to overload and should be attempted again.
-        SPERR_LEX_INVALID_DATA The lexicon data is invalid or corrupted.
-        SPERR_CFG_INVALID_DATA The data in the CFG grammar is invalid or corrupted   // currently == SPERR_LAST
-        SPERR_LEX_UNEXPECTED_FORMAT The lexicon is not in the expected format.
-        SPERR_STRING_TOO_LONG The string is too long.
-        SPERR_STRING_EMPTY The string cannot be empty.
-        SPERR_NON_WORD_TRANSITION One of the parse transitions is not a word transition.
-        SPERR_SISR_ATTRIBUTES_NOT_ALLOWED Attributes are not allowed at the top level.
-        SPERR_SISR_MIXED_NOT_ALLOWED Mixed content is not allowed at the top level.
-        SPERR_VOICE_NOT_FOUND NO given voice is found
-*/
+        SapiErrorNotSupportedForInprocRecognizer,
+        SapiErrorOverload,
+        SapiLexInvalidData,
+        SapiConfigInvalidData,
+        SapiLexUnexpectedFormat,
+        SapiStringTooLong,   // 0x80045088
+        SapiStringEmpty,     // 0x80045089 == SPERR_STRING_EMPTY, then it skips 6
+        SapiErrorUnused7,    // skipped
+        SapiErrorUnused8,    // skipped
+        SapiErrorUnused9,    // skipped
+        SapiErrorUnused10,   // skipped
+        SapiErrorUnused11,   // skipped
+        SapiErrorUnused12,   // skipped
+        SapiNonWordTransition,        // 0x80045090 == SPERR_NON_WORD_TRANSITION
+        SapiSisrAttributesNotAllowed, // 0x80045091
+        SapiSisrMixedNotAllowed,      // 0x80045092
+        SapiVoiceNotFound             // 0x80045093 == SPERR_VOICE_NOT_FOUND == SPERR_LAST
     }
 }

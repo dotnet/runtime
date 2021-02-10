@@ -19,6 +19,7 @@
     <Compile Include="System\Buffers\BoundedMemory.Unix.cs" />
     <Compile Include="System\Buffers\BoundedMemory.Windows.cs" />
     <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeBufferUtil.cs" />
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\TestEnvironment.cs" />
     <Compile Include="System\ThreadCultureChange.cs" />
@@ -56,6 +57,8 @@
   </ItemGroup>
   <!-- Unix imports -->
   <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslGetProtocolSupport.cs"

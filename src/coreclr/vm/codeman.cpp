@@ -1263,6 +1263,10 @@ bool DoesOSSupportAVX()
 
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
+#ifdef TARGET_ARM64
+extern "C" DWORD64 __stdcall GetDataCacheZeroIDReg();
+#endif
+
 void EEJitManager::SetCpuInfo()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1514,6 +1518,16 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Crc32);
     }
 #endif // HOST_64BIT
+#ifndef CROSSGEN_COMPILE
+    if (GetDataCacheZeroIDReg() == 4)
+    {
+        // DCZID_EL0<4> (DZP) indicates whether use of DC ZVA instructions is permitted (0) or prohibited (1).
+        // DCZID_EL0<3:0> (BS) specifies Log2 of the block size in words.
+        //
+        // We set the flag when the instruction is permitted and the block size is 64 bytes.
+        CPUCompileFlags.Set(InstructionSet_Dczva);
+    }
+#endif
 #endif // TARGET_ARM64
 
     CPUCompileFlags.Set64BitInstructionSetVariants();

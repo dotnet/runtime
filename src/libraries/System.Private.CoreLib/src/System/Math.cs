@@ -43,6 +43,12 @@ namespace System
           1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15
         };
 
+        private const double SCALEB_C1 = 8.98846567431158E+307; // 0x1p1023
+
+        private const double SCALEB_C2 = 2.2250738585072014E-308; // 0x1p-1022
+
+        private const double SCALEB_C3 = 9007199254740992; // 0x1p53
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
@@ -151,6 +157,11 @@ namespace System
                 low = tmp;
                 return high;
             }
+            else if (ArmBase.Arm64.IsSupported)
+            {
+                low = a * b;
+                return ArmBase.Arm64.MultiplyHigh(a, b);
+            }
 
             return SoftwareFallback(a, b, out low);
 
@@ -185,6 +196,12 @@ namespace System
         /// <returns>The high 64-bit of the product of the specied numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
+            if (ArmBase.Arm64.IsSupported)
+            {
+                low = a * b;
+                return ArmBase.Arm64.MultiplyHigh(a, b);
+            }
+
             ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
             low = (long)ulow;
             return (long)high - ((a >> 63) & b) - ((b >> 63) & a);
@@ -1080,6 +1097,50 @@ namespace System
             return y;
         }
 
+        /// <summary>Returns an estimate of the reciprocal of a specified number.</summary>
+        /// <param name="d">The number whose reciprocal is to be estimated.</param>
+        /// <returns>An estimate of the reciprocal of <paramref name="d" />.</returns>
+        /// <remarks>
+        ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On hardware without specialized support, this may just return <c>1.0 / d</c>.</para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double ReciprocalEstimate(double d)
+        {
+            // x86 doesn't provide an estimate instruction for double-precision reciprocal
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
+            }
+            else
+            {
+                return 1.0 / d;
+            }
+        }
+
+        /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
+        /// <param name="d">The number whose reciprocal square root is to be estimated.</param>
+        /// <returns>An estimate of the reciprocal square root <paramref name="d" />.</returns>
+        /// <remarks>
+        ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(d)</c>.</para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double ReciprocalSqrtEstimate(double d)
+        {
+            // x86 doesn't provide an estimate instruction for double-precision reciprocal square root
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalSquareRootEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
+            }
+            else
+            {
+                return 1.0 / Sqrt(d);
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Round(decimal d)
         {
@@ -1345,6 +1406,48 @@ namespace System
         private static void ThrowMinMaxException<T>(T min, T max)
         {
             throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
+        }
+
+        public static double ScaleB(double x, int n)
+        {
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/scalbln.c
+            //
+            // Performs the calculation x * 2^n efficiently. It constructs a double from 2^n by building
+            // the correct biased exponent. If n is greater than the maximum exponent (1023) or less than
+            // the minimum exponent (-1022), adjust x and n to compute correct result.
+
+            double y = x;
+            if (n > 1023)
+            {
+                y *= SCALEB_C1;
+                n -= 1023;
+                if (n > 1023)
+                {
+                    y *= SCALEB_C1;
+                    n -= 1023;
+                    if (n > 1023)
+                    {
+                        n = 1023;
+                    }
+                }
+            }
+            else if (n < -1022)
+            {
+                y *= SCALEB_C2 * SCALEB_C3;
+                n += 1022 - 53;
+                if (n < -1022)
+                {
+                    y *= SCALEB_C2 * SCALEB_C3;
+                    n += 1022 - 53;
+                    if (n < -1022)
+                    {
+                        n = -1022;
+                    }
+                }
+            }
+
+            double u = BitConverter.Int64BitsToDouble(((long)(0x3ff + n) << 52));
+            return y * u;
         }
     }
 }

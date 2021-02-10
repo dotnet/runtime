@@ -25,7 +25,9 @@
 #include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-tls-inline.h>
+#include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-membar.h>
 
 #ifdef HAVE_ALLOCA_H
@@ -45,7 +47,6 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
@@ -418,12 +419,27 @@ interp_free_context (gpointer ctx)
 		set_context (NULL);
 	}
 
+	context->safepoint_frame = NULL;
+
 	mono_vfree (context->stack_start, INTERP_STACK_SIZE, MONO_MEM_ACCOUNT_INTERP_STACK);
 	/* Prevent interp_mark_stack from trying to scan the data_stack, before freeing it */
 	context->stack_start = NULL;
 	mono_compiler_barrier ();
 	frame_data_allocator_free (&context->data_stack);
 	g_free (context);
+}
+
+static void
+context_set_safepoint_frame (ThreadContext *context, InterpFrame *frame)
+{
+	g_assert (!context->has_resume_state);
+	context->safepoint_frame = frame;
+}
+
+static void
+context_clear_safepoint_frame (ThreadContext *context)
+{
+	context->safepoint_frame = NULL;
 }
 
 void
@@ -1553,11 +1569,9 @@ ves_pinvoke_method (
 	}
 #endif
 
-#ifdef ENABLE_NETCORE
 	if (save_last_error) {
 		mono_marshal_clear_last_error ();
 	}
-#endif
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
@@ -1682,34 +1696,6 @@ interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpoint
 
 	mono_delegate_ctor (this_obj, target, entry, imethod->method, error);
 }
-
-/*
- * From the spec:
- * runtime specifies that the implementation of the method is automatically
- * provided by the runtime and is primarily used for the methods of delegates.
- */
-#ifndef ENABLE_NETCORE
-static MONO_NEVER_INLINE MonoException*
-ves_imethod (InterpFrame *frame, MonoMethod *method, MonoMethodSignature *sig, stackval *sp)
-{
-	const char *name = method->name;
-	mono_class_init_internal (method->klass);
-
-	if (method->klass == mono_defaults.array_class) {
-		if (!strcmp (name, "UnsafeMov")) {
-			/* TODO: layout checks */
-			stackval_from_data (sig->ret, sp, (char*) sp, FALSE);
-			return NULL;
-		}
-		if (!strcmp (name, "UnsafeLoad"))
-			return ves_array_get (frame, sp, sp, sig, FALSE);
-	}
-	
-	g_error ("Don't know how to exec runtime method %s.%s::%s", 
-			m_class_get_name_space (method->klass), m_class_get_name (method->klass),
-			method->name);
-}
-#endif
 
 #if DEBUG_INTERP
 static void
@@ -1995,6 +1981,7 @@ interp_entry (InterpEntryData *data)
 	context->stack_pointer = (guchar*)sp;
 
 	g_assert (!context->has_resume_state);
+	g_assert (!context->safepoint_frame);
 
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
@@ -2015,10 +2002,8 @@ interp_entry (InterpEntryData *data)
 static void
 do_icall (MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
-#ifdef ENABLE_NETCORE
 	if (save_last_error)
 		mono_marshal_clear_last_error ();
-#endif
 
 	switch (op) {
 	case MINT_ICALL_V_V: {
@@ -2133,6 +2118,7 @@ do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval
 	interp_pop_lmf (&ext);
 
 	goto exit_icall; // prevent unused label warning in some configurations
+	/* If an exception is thrown from native code, execution will continue here */
 exit_icall:
 	return NULL;
 }
@@ -2884,7 +2870,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 			return addr;
 		}
 
-#ifdef ENABLE_NETCORE
 		/*
 		 * The runtime expects a function pointer unique to method and
 		 * the native caller expects a function pointer with the
@@ -2892,7 +2877,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		 */
 		mono_error_set_platform_not_supported (error, "No native to managed transitions on this platform.");
 		return NULL;
-#endif
 	}
 #endif
 	return (gpointer)interp_no_native_to_managed;
@@ -3730,18 +3714,8 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLRUN) {
-#ifndef ENABLE_NETCORE
-			MonoMethod *target_method = (MonoMethod*) frame->imethod->data_items [ip [2]];
-			MonoMethodSignature *sig = (MonoMethodSignature*) frame->imethod->data_items [ip [3]];
-
-			MonoException *ex = ves_imethod (frame, target_method, sig, (stackval*)(locals + ip [1]));
-			if (ex)
-				THROW_EX (ex, ip);
-
-			ip += 4;
-#else
 			g_assert_not_reached ();
-#endif
+
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_RET)
@@ -5149,8 +5123,12 @@ call:
 		MINT_IN_CASE(MINT_SAFEPOINT)
 			/* Do synchronous checking of abort requests */
 			EXCEPTION_CHECKPOINT;
-			/* Poll safepoint */
-			mono_threads_safepoint ();
+			if (G_UNLIKELY (mono_polling_required)) {
+				context_set_safepoint_frame (context, frame);
+				/* Poll safepoint */
+				mono_threads_safepoint ();
+				context_clear_safepoint_frame (context);
+			}
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLDA_UNSAFE) {
@@ -7390,12 +7368,89 @@ invalidate_transform (gpointer imethod_)
 }
 
 static void
+copy_imethod_for_frame (MonoDomain *domain, InterpFrame *frame)
+{
+	InterpMethod *copy = (InterpMethod *) mono_domain_alloc0 (domain, sizeof (InterpMethod));
+	memcpy (copy, frame->imethod, sizeof (InterpMethod));
+	copy->next_jit_code_hash = NULL; /* we don't want that in our copy */
+	frame->imethod = copy;
+	/* Note: The copy will be around until the domain is unloading. Ideally we
+	 * would reclaim its memory when the corresponding InterpFrame is popped.
+	 */
+}
+
+static void
+interp_metadata_update_init (MonoError *error)
+{
+	if ((mono_interp_opt & INTERP_OPT_INLINE) != 0)
+		mono_error_set_execution_engine (error, "Interpreter inlining must be turned off for metadata updates");
+}
+
+#ifdef ENABLE_METADATA_UPDATE
+static void
+metadata_update_backup_frames (MonoDomain *domain, MonoThreadInfo *info, InterpFrame *frame)
+{
+	while (frame) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "threadinfo=%p, copy imethod for method=%s", info, mono_method_full_name (frame->imethod->method, 1));
+		copy_imethod_for_frame (domain, frame);
+		frame = frame->parent;
+	}
+}
+
+static void
+metadata_update_prepare_to_invalidate (MonoDomain *domain)
+{
+	/* (1) make a copy of imethod for every interpframe that is on the stack,
+	 * so we do not invalidate currently running methods */
+
+	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
+		if (!info || !info->jit_data)
+			continue;
+
+		ThreadContext *context = (ThreadContext*)info->jit_data->interp_context;
+
+		/* If the thread was in the interpreter and hit a safepoint
+		 * opcode and suspended, backup the frames since the last lmf.
+		 */
+		if (context && context->safepoint_frame) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "threadinfo=%p, has safepoint frame %p", info, context->safepoint_frame);
+			metadata_update_backup_frames (domain, info, context->safepoint_frame);
+		}
+
+		MonoLMF *lmf = info->jit_data->lmf;
+		while (lmf) {
+			if (((gsize) lmf->previous_lmf) & 2) {
+				MonoLMFExt *ext = (MonoLMFExt *) lmf;
+				if (ext->kind == MONO_LMFEXT_INTERP_EXIT || ext->kind == MONO_LMFEXT_INTERP_EXIT_WITH_CTX) {
+					InterpFrame *frame = ext->interp_exit_data;
+					metadata_update_backup_frames (domain, info, frame);
+				}
+			}
+			lmf = (MonoLMF *)(((gsize) lmf->previous_lmf) & ~3);
+		}
+	} FOREACH_THREAD_END
+
+	/* (2) invalidate all the registered imethods */
+}
+#endif
+
+
+static void
 interp_invalidate_transformed (MonoDomain *domain)
 {
+	gboolean need_stw_restart = FALSE;
+#ifdef ENABLE_METADATA_UPDATE
+	need_stw_restart = TRUE;
+	mono_gc_stop_world ();
+	metadata_update_prepare_to_invalidate (domain);
+#endif
 	MonoJitDomainInfo *info = domain_jit_info (domain);
 	mono_domain_jit_code_hash_lock (domain);
 	mono_internal_hash_table_apply (&info->interp_code_hash, invalidate_transform);
 	mono_domain_jit_code_hash_unlock (domain);
+
+	if (need_stw_restart)
+		mono_gc_restart_world ();
 }
 
 static void

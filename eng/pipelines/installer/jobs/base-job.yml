@@ -13,7 +13,7 @@ parameters:
   buildSteps: []
   dependsOn: []
   dependsOnGlobalBuild: false
-  useCheckoutBundle: false
+  dependOnEvaluatePaths: false
   globalBuildSuffix: ''
   variables: []
   name: ''
@@ -295,8 +295,8 @@ jobs:
       value: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
 
   dependsOn:
-  - ${{ if eq(parameters.useCheckoutBundle, true) }}:
-    - checkout
+  - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
+    - evaluate_paths
   - ${{ parameters.dependsOn }}
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
@@ -348,9 +348,9 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
-  - template: /eng/pipelines/common/checkout-step.yml
-    parameters:
-      useBundle: ${{ parameters.useCheckoutBundle }}
+  - checkout: self
+    clean: true
+    fetchDepth: $(checkoutFetchDepth)
 
   - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
@@ -401,7 +401,7 @@ jobs:
             path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
             entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
-    - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+packs
+    - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+host.tests+packs
       displayName: Build and Package
       continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 

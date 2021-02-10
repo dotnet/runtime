@@ -198,7 +198,9 @@ mono_draw_code_cfg (MonoCompile *cfg, FILE *fp)
 void
 mono_draw_graph (MonoCompile *cfg, MonoGraphOptions draw_options)
 {
+#ifdef HAVE_SYSTEM
 	char *com;
+#endif
 	const char *fn;
 	FILE *fp;
 	int _i G_GNUC_UNUSED;

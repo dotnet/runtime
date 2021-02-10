@@ -94,7 +94,12 @@ enum ReasonForNotSharing
     ReasonForNotSharing_ClosureComparisonFailed = 0x8,
 };
 
-#define NO_FRIEND_ASSEMBLIES_MARKER ((FriendAssemblyDescriptor *)S_FALSE)
+static CrstStatic g_friendAssembliesCrst;
+
+void Assembly::Initialize()
+{
+    g_friendAssembliesCrst.Init(CrstLeafLock);
+}
 
 //----------------------------------------------------------------------------------------------
 // The ctor's job is to initialize the Assembly enough so that the dtor can safely run.
@@ -255,8 +260,8 @@ Assembly::~Assembly()
 
     Terminate();
 
-    if (m_pFriendAssemblyDescriptor != NULL && m_pFriendAssemblyDescriptor != NO_FRIEND_ASSEMBLIES_MARKER)
-        delete m_pFriendAssemblyDescriptor;
+    if (m_pFriendAssemblyDescriptor != NULL)
+        m_pFriendAssemblyDescriptor->Release();
 
     if (m_pManifestFile)
     {
@@ -1234,25 +1239,77 @@ void Assembly::CacheFriendAssemblyInfo()
 
     if (m_pFriendAssemblyDescriptor == NULL)
     {
-        FriendAssemblyDescriptor *pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetManifestFile());
-        if (pFriendAssemblies == NULL)
-        {
-            pFriendAssemblies = NO_FRIEND_ASSEMBLIES_MARKER;
-        }
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetManifestFile());
+        _ASSERTE(pFriendAssemblies != NULL);
 
-        void *pvPreviousDescriptor = InterlockedCompareExchangeT(&m_pFriendAssemblyDescriptor,
-                                                                 pFriendAssemblies,
-                                                                 NULL);
+        CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
 
-        if (pvPreviousDescriptor != NULL && pFriendAssemblies != NO_FRIEND_ASSEMBLIES_MARKER)
+        if (m_pFriendAssemblyDescriptor == NULL)
         {
-            if (pFriendAssemblies != NO_FRIEND_ASSEMBLIES_MARKER)
-            {
-                delete pFriendAssemblies;
-            }
+            m_pFriendAssemblyDescriptor = pFriendAssemblies.Extract();
         }
     }
 } // void Assembly::CacheFriendAssemblyInfo()
+
+void Assembly::UpdateCachedFriendAssemblyInfo()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END
+
+    ReleaseHolder<FriendAssemblyDescriptor> pOldFriendAssemblyDescriptor;
+    
+    {
+        CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
+        if (m_pFriendAssemblyDescriptor != NULL)
+        {
+            m_pFriendAssemblyDescriptor->AddRef();
+            pOldFriendAssemblyDescriptor = m_pFriendAssemblyDescriptor;
+        }
+    }
+
+    while (true)
+    {
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetManifestFile());
+        FriendAssemblyDescriptor* pFriendAssemblyDescriptorNextLoop = NULL;
+
+        {
+            CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
+
+            if (m_pFriendAssemblyDescriptor == pOldFriendAssemblyDescriptor)
+            {
+                if (m_pFriendAssemblyDescriptor != NULL)
+                    m_pFriendAssemblyDescriptor->Release();
+
+                m_pFriendAssemblyDescriptor = pFriendAssemblies.Extract();
+                return;
+            }
+            else
+            {
+                m_pFriendAssemblyDescriptor->AddRef();
+                pFriendAssemblyDescriptorNextLoop = m_pFriendAssemblyDescriptor;
+            }
+        }
+
+        // Initialize this here to avoid calling Release on the previous value of pOldFriendAssemblyDescriptor while holding the lock
+        pOldFriendAssemblyDescriptor = pFriendAssemblyDescriptorNextLoop;
+    }
+}
+
+ReleaseHolder<FriendAssemblyDescriptor> Assembly::GetFriendAssemblyInfo()
+{
+    CacheFriendAssemblyInfo();
+
+    CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
+    m_pFriendAssemblyDescriptor->AddRef();
+    ReleaseHolder<FriendAssemblyDescriptor> friendAssemblyDescriptor(m_pFriendAssemblyDescriptor);
+
+    return friendAssemblyDescriptor;
+}
 
 //*****************************************************************************
 // Is the given assembly a friend of this assembly?
@@ -1260,42 +1317,21 @@ bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, FieldDesc *pFD
 {
     WRAPPER_NO_CONTRACT;
 
-    CacheFriendAssemblyInfo();
-
-    if (m_pFriendAssemblyDescriptor == NO_FRIEND_ASSEMBLIES_MARKER)
-    {
-        return false;
-    }
-
-    return m_pFriendAssemblyDescriptor->GrantsFriendAccessTo(pAccessingAssembly, pFD);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pFD);
 }
 
 bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
 
-    CacheFriendAssemblyInfo();
-
-    if (m_pFriendAssemblyDescriptor == NO_FRIEND_ASSEMBLIES_MARKER)
-    {
-        return false;
-    }
-
-    return m_pFriendAssemblyDescriptor->GrantsFriendAccessTo(pAccessingAssembly, pMD);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMD);
 }
 
 bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodTable *pMT)
 {
     WRAPPER_NO_CONTRACT;
 
-    CacheFriendAssemblyInfo();
-
-    if (m_pFriendAssemblyDescriptor == NO_FRIEND_ASSEMBLIES_MARKER)
-    {
-        return false;
-    }
-
-    return m_pFriendAssemblyDescriptor->GrantsFriendAccessTo(pAccessingAssembly, pMT);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMT);
 }
 
 bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
@@ -1308,19 +1344,12 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
     }
     CONTRACTL_END;
 
-    CacheFriendAssemblyInfo();
-
-    if (m_pFriendAssemblyDescriptor == NO_FRIEND_ASSEMBLIES_MARKER)
-    {
-        return false;
-    }
-
     if (pAccessedAssembly->IsDisabledPrivateReflection())
     {
         return false;
     }
 
-    return m_pFriendAssemblyDescriptor->IgnoresAccessChecksTo(pAccessedAssembly);
+    return GetFriendAssemblyInfo()->IgnoresAccessChecksTo(pAccessedAssembly);
 }
 
 
@@ -2270,11 +2299,11 @@ FriendAssemblyDescriptor::~FriendAssemblyDescriptor()
 //    pAssembly - assembly to get friend assembly information for
 //
 // Return Value:
-//    A friend assembly descriptor if the assembly declares any friend assemblies, otherwise NULL
+//    A friend assembly descriptor if the assembly declares any friend assemblies
 //
 
 // static
-FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(PEAssembly *pAssembly)
+ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(PEAssembly *pAssembly)
 {
     CONTRACTL
     {
@@ -2284,7 +2313,7 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
     }
     CONTRACTL_END
 
-    NewHolder<FriendAssemblyDescriptor> pFriendAssemblies = new FriendAssemblyDescriptor;
+    ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = new FriendAssemblyDescriptor;
 
     // We're going to do this twice, once for InternalsVisibleTo and once for IgnoresAccessChecks
     ReleaseHolder<IMDInternalImport> pImport(pAssembly->GetMDImportWithRef());
@@ -2373,8 +2402,7 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
         }
     }
 
-    pFriendAssemblies.SuppressRelease();
-    return pFriendAssemblies.Extract();
+    return pFriendAssemblies;
 }
 
 //---------------------------------------------------------------------------------------

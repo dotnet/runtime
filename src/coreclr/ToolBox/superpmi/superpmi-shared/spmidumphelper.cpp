@@ -13,7 +13,7 @@
 #include <assert.h>
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(
-    const MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin& tokenIn)
+    const Agnostic_CORINFO_RESOLVED_TOKENin& tokenIn)
 {
     char buffer[MAX_BUFFER_SIZE];
     sprintf_s(buffer, MAX_BUFFER_SIZE, "tc-%016llX ts-%016llX tok-%08X tt-%u", tokenIn.tokenContext, tokenIn.tokenScope,
@@ -22,7 +22,7 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(
 }
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENout(
-    const MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut)
+    const Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut)
 {
     char buffer[MAX_BUFFER_SIZE];
     sprintf_s(buffer, MAX_BUFFER_SIZE, "cls-%016llX meth-%016llX fld-%016llX ti-%u ts-%u mi-%u ms-%u", tokenOut.hClass,
@@ -32,14 +32,14 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENout(
 }
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(
-    const MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN& token)
+    const Agnostic_CORINFO_RESOLVED_TOKEN& token)
 {
     return DumpAgnostic_CORINFO_RESOLVED_TOKENin(token.inValue) + std::string(" ") +
            DumpAgnostic_CORINFO_RESOLVED_TOKENout(token.outValue);
 }
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP_KIND(
-    const MethodContext::Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
+    const Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
 {
     char buffer[MAX_BUFFER_SIZE];
     sprintf_s(buffer, MAX_BUFFER_SIZE, "nrl-%u rlk-%u", lookupKind.needsRuntimeLookup, lookupKind.runtimeLookupKind);
@@ -47,7 +47,7 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP_KIND(
 }
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(
-    const MethodContext::Agnostic_CORINFO_CONST_LOOKUP& constLookup)
+    const Agnostic_CORINFO_CONST_LOOKUP& constLookup)
 {
     char buffer[MAX_BUFFER_SIZE];
     sprintf_s(buffer, MAX_BUFFER_SIZE, "at-%u handle/address-%016llX", constLookup.accessType, constLookup.handle);
@@ -55,7 +55,7 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(
 }
 
 std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RUNTIME_LOOKUP(
-    const MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
+    const Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
 {
     char buffer[MAX_BUFFER_SIZE];
     sprintf_s(buffer, MAX_BUFFER_SIZE, " sig-%016llX hlp-%u ind-%u tfn-%u tff-%u so-%u { ", lookup.signature, lookup.helper,
@@ -70,7 +70,7 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RUNTIME_LOOKUP(
     return resultDump;
 }
 
-std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(const MethodContext::Agnostic_CORINFO_LOOKUP& lookup)
+std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(const Agnostic_CORINFO_LOOKUP& lookup)
 {
     std::string kind = DumpAgnostic_CORINFO_LOOKUP_KIND(lookup.lookupKind);
     std::string lookupDescription;

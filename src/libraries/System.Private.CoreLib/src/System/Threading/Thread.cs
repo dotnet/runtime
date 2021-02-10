@@ -94,7 +94,6 @@ namespace System.Threading
             }
         }
 
-#if !MONO // Workaround for #46389
         public Thread(ThreadStart start)
         {
             if (start == null)
@@ -154,8 +153,27 @@ namespace System.Threading
 #if !TARGET_BROWSER
         internal const bool IsThreadStartSupported = true;
 
+        /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
+        /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
+        /// <exception cref="ThreadStateException">The thread has already been started.</exception>
+        /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
+        /// <exception cref="InvalidOperationException">This thread was created using a <see cref="ThreadStart"/> delegate instead of a <see cref="ParameterizedThreadStart"/> delegate.</exception>
         [UnsupportedOSPlatform("browser")]
-        public void Start(object? parameter)
+        public void Start(object? parameter) => Start(parameter, captureContext: true);
+
+        /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
+        /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
+        /// <exception cref="ThreadStateException">The thread has already been started.</exception>
+        /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
+        /// <exception cref="InvalidOperationException">This thread was created using a <see cref="ThreadStart"/> delegate instead of a <see cref="ParameterizedThreadStart"/> delegate.</exception>
+        /// <remarks>
+        /// Unlike <see cref="Start"/>, which captures the current <see cref="ExecutionContext"/> and uses that context to invoke the thread's delegate,
+        /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
+        /// </remarks>
+        [UnsupportedOSPlatform("browser")]
+        public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
+
+        private void Start(object? parameter, bool captureContext)
         {
             StartHelper? startHelper = _startHelper;
 
@@ -170,14 +188,29 @@ namespace System.Threading
                 }
 
                 startHelper._startArg = parameter;
-                startHelper._executionContext = ExecutionContext.Capture();
+                startHelper._executionContext = captureContext ? ExecutionContext.Capture() : null;
             }
 
             StartCore();
         }
 
+        /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
+        /// <exception cref="ThreadStateException">The thread has already been started.</exception>
+        /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
         [UnsupportedOSPlatform("browser")]
-        public void Start()
+        public void Start() => Start(captureContext: true);
+
+        /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
+        /// <exception cref="ThreadStateException">The thread has already been started.</exception>
+        /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
+        /// <remarks>
+        /// Unlike <see cref="Start"/>, which captures the current <see cref="ExecutionContext"/> and uses that context to invoke the thread's delegate,
+        /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
+        /// </remarks>
+        [UnsupportedOSPlatform("browser")]
+        public void UnsafeStart() => Start(captureContext: false);
+
+        private void Start(bool captureContext)
         {
             StartHelper? startHelper = _startHelper;
 
@@ -186,17 +219,8 @@ namespace System.Threading
             if (startHelper != null)
             {
                 startHelper._startArg = null;
-                startHelper._executionContext = ExecutionContext.Capture();
+                startHelper._executionContext = captureContext ? ExecutionContext.Capture() : null;
             }
-
-            StartCore();
-        }
-
-        internal void UnsafeStart()
-        {
-            Debug.Assert(_startHelper != null);
-            Debug.Assert(_startHelper._startArg == null);
-            Debug.Assert(_startHelper._executionContext == null);
 
             StartCore();
         }
@@ -237,7 +261,6 @@ namespace System.Threading
                 startHelper._culture = value;
             }
         }
-#endif // Workaround for #46389
 
         partial void ThreadNameChanged(string? value);
 
@@ -320,15 +343,10 @@ namespace System.Threading
             {
                 lock (this)
                 {
-                    if (_name != null)
+                    if (_name != value)
                     {
-                        throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
-                    }
-
-                    _name = value;
-                    ThreadNameChanged(value);
-                    if (value != null)
-                    {
+                        _name = value;
+                        ThreadNameChanged(value);
                         _mayNeedResetForThreadPool = true;
                     }
                 }
@@ -342,10 +360,8 @@ namespace System.Threading
 
             lock (this)
             {
-                // Bypass the exception from setting the property
                 _name = ThreadPool.WorkerThreadName;
                 ThreadNameChanged(ThreadPool.WorkerThreadName);
-                _name = null;
             }
         }
 
@@ -372,7 +388,7 @@ namespace System.Threading
 
             _mayNeedResetForThreadPool = false;
 
-            if (_name != null)
+            if (_name != ThreadPool.WorkerThreadName)
             {
                 SetThreadPoolWorkerThreadName();
             }

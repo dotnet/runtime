@@ -2,8 +2,6 @@
 #include <mono/utils/mono-compiler.h>
 #include "monovm.h"
 
-#if ENABLE_NETCORE
-
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/environment.h>
@@ -102,7 +100,7 @@ parse_lookup_paths (const char *search_path)
 }
 
 static MonoAssembly*
-mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gboolean refonly, gpointer user_data, MonoError *error)
+mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gpointer user_data, MonoError *error)
 {
 	MonoAssembly *result = NULL;
 	MonoCoreTrustedPlatformAssemblies *a = (MonoCoreTrustedPlatformAssemblies *)user_data;
@@ -116,7 +114,6 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 
 	g_assert (aname);
 	g_assert (aname->name);
-	g_assert (!refonly);
 	/* alc might be a user ALC - we get here from alc.LoadFromAssemblyName(), but we should load TPA assemblies into the default alc */
 	MonoAssemblyLoadContext *default_alc;
 	default_alc = mono_domain_default_alc (mono_alc_domain (alc));
@@ -161,7 +158,7 @@ leave:
 static void
 install_assembly_loader_hooks (void)
 {
-	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE, FALSE);
+	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE);
 }
 
 static gboolean
@@ -271,25 +268,3 @@ monovm_shutdown (int *latchedExitCode)
 
 	return 0;
 }
-
-#else
-
-int
-monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues)
-{
-	return -1;
-}
-
-int
-monovm_execute_assembly (int argc, const char **argv, const char *managedAssemblyPath, unsigned int *exitCode)
-{
-	return -1;
-}
-
-int
-monovm_shutdown (int *latchedExitCode)
-{
-	return -1;
-}
-
-#endif // ENABLE_NETCORE

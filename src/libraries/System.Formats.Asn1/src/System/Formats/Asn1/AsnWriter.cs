@@ -7,6 +7,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 
 namespace System.Formats.Asn1
@@ -701,7 +702,7 @@ namespace System.Formats.Asn1
                 return Tag.Equals(other.Tag) && Offset == other.Offset && ItemType == other.ItemType;
             }
 
-            public override bool Equals(object? obj) => obj is StackFrame other && Equals(other);
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is StackFrame other && Equals(other);
 
             public override int GetHashCode()
             {

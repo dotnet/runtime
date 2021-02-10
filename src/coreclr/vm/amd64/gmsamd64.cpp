@@ -25,6 +25,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     CONTEXT                         ctx;
     KNONVOLATILE_CONTEXT_POINTERS   nonVolRegPtrs;
 
+    ctx.ContextFlags = 0; // Read by PAL_VirtualUnwind.
+
     ctx.Rip = baseState->m_CaptureRip;
     ctx.Rsp = baseState->m_CaptureRsp + 8; // +8 for return addr pushed before calling LazyMachStateCaptureState
 

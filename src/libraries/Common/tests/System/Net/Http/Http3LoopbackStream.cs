@@ -5,8 +5,11 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Net.Quic;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Net.Test.Common
@@ -21,6 +24,11 @@ namespace System.Net.Test.Common
         private const long HeadersFrame = 0x1;
         private const long SettingsFrame = 0x4;
 
+        public const long ControlStream = 0x0;
+        public const long PushStream = 0x1;
+
+        public const long MaxHeaderListSize = 0x6;
+
         private readonly QuicStream _stream;
 
         public bool CanRead => _stream.CanRead;
@@ -34,6 +42,12 @@ namespace System.Net.Test.Common
         public void Dispose()
         {
             _stream.Dispose();
+        }
+        public async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
+        {
+            HttpRequestData request = await ReadRequestDataAsync().ConfigureAwait(false);
+            await SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
+            return request;
         }
 
         public async Task SendUnidirectionalStreamTypeAsync(long streamType)
@@ -175,6 +189,83 @@ namespace System.Net.Test.Common
             return requestData;
         }
 
+        public async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
+        {
+            IEnumerable<HttpHeaderData> newHeaders = headers ?? Enumerable.Empty<HttpHeaderData>();
+
+            if (content != null && !newHeaders.Any(x => x.Name == "Content-Length"))
+            {
+                newHeaders = newHeaders.Append(new HttpHeaderData("Content-Length", content.Length.ToString(CultureInfo.InvariantCulture)));
+            }
+
+            await SendResponseHeadersAsync(statusCode, newHeaders).ConfigureAwait(false);
+            await SendResponseBodyAsync(Encoding.UTF8.GetBytes(content ?? ""), isFinal).ConfigureAwait(false);
+        }
+
+        public async Task SendResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null)
+        {
+            headers ??= Enumerable.Empty<HttpHeaderData>();
+
+            // Some tests use Content-Length with a null value to indicate Content-Length should not be set.
+            headers = headers.Where(x => x.Name != "Content-Length" || x.Value != null);
+
+            if (statusCode != null)
+            {
+                headers = headers.Prepend(new HttpHeaderData(":status", ((int)statusCode).ToString(CultureInfo.InvariantCulture)));
+            }
+
+            await SendHeadersFrameAsync(headers).ConfigureAwait(false);
+        }
+
+        public async Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
+        {
+            if (content?.Length != 0)
+            {
+                await SendDataFrameAsync(content).ConfigureAwait(false);
+            }
+
+            if (isFinal)
+            {
+                await ShutdownSendAsync().ConfigureAwait(false);
+                Dispose();
+            }
+        }
+
+        public async Task<List<(long settingId, long settingValue)>> ReadSettingsAsync()
+        {
+            (long? frameType, byte[] payload) = await ReadFrameAsync().ConfigureAwait(false);
+
+            if (frameType == null) throw new Exception("Unable to read settings; unexpected end of stream.");
+            if (frameType != SettingsFrame) throw new Exception($"Unable to read settings; received frame type 0x{frameType:x}.");
+
+            return ParseSettingsPayload(payload);
+        }
+
+        private List<(long settingId, long settingValue)> ParseSettingsPayload(ReadOnlySpan<byte> settingsPayload)
+        {
+            var settings = new List<(long settingId, long settingValue)>();
+
+            while (settingsPayload.Length != 0)
+            {
+                if (!TryDecodeHttpInteger(settingsPayload, out long settingId, out int bytesRead))
+                {
+                    throw new Exception("Unable to read setting ID; unexpected end of payload.");
+                }
+
+                settingsPayload = settingsPayload.Slice(bytesRead);
+
+                if (!TryDecodeHttpInteger(settingsPayload, out long settingValue, out bytesRead))
+                {
+                    throw new Exception($"Unable to read value for setting 0x{settingId:x}; unexpected end of payload.");
+                }
+
+                settingsPayload = settingsPayload.Slice(bytesRead);
+                settings.Add((settingId, settingValue));
+            }
+
+            return settings;
+        }
+
         private HttpRequestData ParseHeaders(ReadOnlySpan<byte> buffer)
         {
             HttpRequestData request = new HttpRequestData { RequestId = Http3LoopbackConnection.GetRequestId(_stream) };
@@ -201,7 +292,7 @@ namespace System.Net.Test.Common
                         break;
                 }
             }
-            request.Version = HttpVersion30.Value;
+            request.Version = HttpVersion.Version30;
 
             return request;
         }
@@ -228,10 +319,10 @@ namespace System.Net.Test.Common
 
         public async Task<(long? frameType, byte[] payload)> ReadFrameAsync()
         {
-            long? frameType = await ReadInteger().ConfigureAwait(false);
+            long? frameType = await ReadIntegerAsync().ConfigureAwait(false);
             if (frameType == null) return (null, null);
 
-            long? payloadLength = await ReadInteger().ConfigureAwait(false);
+            long? payloadLength = await ReadIntegerAsync().ConfigureAwait(false);
             if (payloadLength == null) throw new Exception("Unable to read frame; unexpected end of stream.");
 
             byte[] payload = new byte[checked((int)payloadLength)];
@@ -248,7 +339,7 @@ namespace System.Net.Test.Common
             return (frameType, payload);
         }
 
-        public async Task<long?> ReadInteger()
+        public async Task<long?> ReadIntegerAsync()
         {
             byte[] buffer = new byte[MaximumVarIntBytes];
             int bufferActiveLength = 0;

@@ -1318,22 +1318,24 @@ void interceptor_ICJI::reportFatalError(
     original_ICorJitInfo->reportFatalError(result);
 }
 
-HRESULT interceptor_ICJI::allocMethodBlockCounts(
-          UINT32 count,
-          ICorJitInfo::BlockCounts** pBlockCounts)
+HRESULT interceptor_ICJI::getPgoInstrumentationResults(
+          CORINFO_METHOD_HANDLE ftnHnd,
+          PgoInstrumentationSchema** pSchema,
+          UINT32* pCountSchemaItems,
+          BYTE** pInstrumentationData)
 {
-    mcs->AddCall("allocMethodBlockCounts");
-    return original_ICorJitInfo->allocMethodBlockCounts(count, pBlockCounts);
+    mcs->AddCall("getPgoInstrumentationResults");
+    return original_ICorJitInfo->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
 }
 
-HRESULT interceptor_ICJI::getMethodBlockCounts(
+HRESULT interceptor_ICJI::allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,
-          UINT32* pCount,
-          ICorJitInfo::BlockCounts** pBlockCounts,
-          UINT32* pNumRuns)
+          PgoInstrumentationSchema* pSchema,
+          UINT32 countSchemaItems,
+          BYTE** pInstrumentationData)
 {
-    mcs->AddCall("getMethodBlockCounts");
-    return original_ICorJitInfo->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
+    mcs->AddCall("allocPgoInstrumentationBySchema");
+    return original_ICorJitInfo->allocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getLikelyClass(

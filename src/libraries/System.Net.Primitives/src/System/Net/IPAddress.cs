@@ -546,7 +546,7 @@ namespace System.Net
         }
 
         /// <summary>Compares two IP addresses.</summary>
-        public override bool Equals(object? comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             return comparand is IPAddress address && Equals(address);
         }

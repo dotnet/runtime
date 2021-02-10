@@ -64,7 +64,7 @@ HRESULT EventPipeWritingProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
             0,                              // Keywords
             1,                              // Version
             COR_PRF_EVENTPIPE_LOGALWAYS,    // Level
-            12,                              // opcode
+            0,                              // opcode
             true,                           // Needs stack
             allTypesParamsCount,            // size of params
             allTypesParams,                 // Param descriptors

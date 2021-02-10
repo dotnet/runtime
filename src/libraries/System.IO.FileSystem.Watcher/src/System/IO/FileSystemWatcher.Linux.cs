@@ -295,9 +295,12 @@ namespace System.IO
 
             internal void Start()
             {
-                // Schedule a task to read from the inotify queue and process the events.
-                Task.Factory.StartNew(obj => ((RunningInstance)obj!).ProcessEvents(),
-                    this, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                // Spawn a thread to read from the inotify queue and process the events.
+                new Thread(obj => ((RunningInstance)obj!).ProcessEvents())
+                {
+                    IsBackground = true,
+                    Name = ".NET File Watcher"
+                }.Start(this);
 
                 // PERF: As needed, we can look into making this use async I/O rather than burning
                 // a thread that blocks in the read syscall.

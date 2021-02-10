@@ -146,7 +146,7 @@
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(MonoProjectRoot)\wasm\build\WasmApp.targets"
+          Include="$(MonoProjectRoot)\wasm\build\*"
           TargetDir="build/"/>
     </ItemGroup>
 

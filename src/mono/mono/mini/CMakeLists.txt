@@ -124,8 +124,6 @@ set(mini_common_sources
     branch-opts.c
     mini-generic-sharing.c
     simd-methods.h
-    tasklets.c
-    tasklets.h
     simd-intrinsics.c
     mini-native-types.c
     mini-unwind.h
@@ -157,7 +155,6 @@ set(mini_common_sources
     mini-runtime.h
     llvmonly-runtime.h
     llvmonly-runtime.c
-    simd-intrinsics-netcore.c
     monovm.h
     monovm.c)
 
@@ -166,6 +163,8 @@ set(debugger_sources
   debugger-engine.c
   debugger-agent.h
   debugger-agent.c
+  debugger-protocol.h
+  debugger-protocol.c
   debugger-agent-stubs.c
   debugger-state-machine.h
   debugger-state-machine.c)

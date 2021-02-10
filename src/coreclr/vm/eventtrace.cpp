@@ -5395,6 +5395,83 @@ VOID ETW::MethodLog::GetR2RGetEntryPointStart(MethodDesc *pMethodDesc)
     }
 }
 
+VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t typeHandles)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+    const uint32_t chunkSize = 40000;
+    const uint32_t maxDataSize = chunkSize * 0x1000;
+    const uint32_t FinalChunkFlag = 0x80000000;
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
+    {
+        EX_TRY
+        {
+            SendMethodDetailsEvent(method);
+
+            // If there are any type handles, fire the BulkType events to describe them
+            if (typeHandles != 0)
+            {
+                BulkTypeEventLogger typeLogger;
+
+                for (uint32_t iTypeHandle = 0; iTypeHandle < typeHandles; iTypeHandle++)
+                {
+                    ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, (ULONGLONG)pTypeHandles[iTypeHandle].AsPtr(), ETW::TypeSystemLog::kTypeLogBehaviorAlwaysLog);
+                }
+                typeLogger.FireBulkTypeEvent();
+            }
+
+            ULONG ulMethodToken=0;
+            auto pModule = method->GetModule_NoLogging();
+            bool bIsDynamicMethod = method->IsDynamicMethod();
+            BOOL bIsGenericMethod = FALSE;
+            if(method->GetMethodTable_NoLogging())
+                bIsGenericMethod = method->HasClassOrMethodInstantiation_NoLogging();
+
+            // Use MethodDesc if Dynamic or Generic methods
+            if( bIsDynamicMethod || bIsGenericMethod)
+            {
+                if(bIsGenericMethod)
+                    ulMethodToken = (ULONG)method->GetMemberDef_NoLogging();
+                if(bIsDynamicMethod) // if its a generic and a dynamic method, we would set the methodtoken to 0
+                    ulMethodToken = (ULONG)0;
+            }
+            else
+                ulMethodToken = (ULONG)method->GetMemberDef_NoLogging();
+
+            SString tNamespace, tMethodName, tMethodSignature;
+            method->GetMethodInfo(tNamespace, tMethodName, tMethodSignature);
+
+            PCWSTR pNamespace = (PCWSTR)tNamespace.GetUnicode();
+            PCWSTR pMethodName = (PCWSTR)tMethodName.GetUnicode();
+            PCWSTR pMethodSignature = (PCWSTR)tMethodSignature.GetUnicode();
+
+            // Send data in 40,000 byte chunks
+            uint32_t chunkIndex = 0;
+            for (; cbData > 0; chunkIndex++)
+            {
+                bool finalChunk = cbData <= chunkSize;
+                uint32_t chunkSizeToEmit = finalChunk ? cbData : chunkSize;
+
+                FireEtwJitInstrumentationDataVerbose(
+                    GetClrInstanceId(),
+                    chunkIndex | (finalChunk ? FinalChunkFlag : 0),
+                    chunkSizeToEmit,
+                    (ULONGLONG)(TADDR) method,
+                    (ULONGLONG)(TADDR) pModule,
+                    ulMethodToken,
+                    pNamespace,
+                    pMethodName,
+                    pMethodSignature,
+                    (BYTE*)data);
+                data += chunkSizeToEmit;
+                cbData -= chunkSizeToEmit;
+            }
+        } EX_CATCH{ } EX_END_CATCH(SwallowAllExceptions);
+    }
+}
 
 /*******************************************************/
 /* This is called by the runtime when a method is jitted completely */

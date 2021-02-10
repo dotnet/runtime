@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Tests;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
@@ -12,6 +13,8 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         public int? Integer { get; }
         public int? IntegerNull { get; }
+
+        public StructWithPublicDefaultConstructor StructWithConstructor { get; }
 
         public ClassWithOptionalArgsCtorWithStructs(
             DateTime dateTime = new DateTime(),
@@ -27,13 +30,15 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             ConsoleColor? color = ConsoleColor.DarkGreen,
             ConsoleColor? colorNull = null,
             int? integer = 12,
-            int? integerNull = null
+            int? integerNull = null,
+            StructWithPublicDefaultConstructor structWithConstructor = default
         )
         {
             Color = color;
             ColorNull = colorNull;
             Integer = integer;
             IntegerNull = integerNull;
+            StructWithConstructor = structWithConstructor;
         }
 
         public struct CustomStruct { }

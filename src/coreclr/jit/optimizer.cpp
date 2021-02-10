@@ -2578,6 +2578,41 @@ NO_MORE_LOOPS:
 #endif // DEBUG
 }
 
+//-----------------------------------------------------------------------------
+//
+// All the inner loops that whose block weight meets a threshold are marked
+// as needing alignment.
+//
+
+void Compiler::optIdentifyLoopsForAlignment()
+{
+#if FEATURE_LOOP_ALIGN
+    if (codeGen->ShouldAlignLoops())
+    {
+        for (unsigned char loopInd = 0; loopInd < optLoopCount; loopInd++)
+        {
+            BasicBlock* first = optLoopTable[loopInd].lpFirst;
+
+            // An innerloop candidate that might need alignment
+            if (optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP)
+            {
+                if (first->getBBWeight(this) >= (opts.compJitAlignLoopMinBlockWeight * BB_UNITY_WEIGHT))
+                {
+                    first->bbFlags |= BBF_LOOP_ALIGN;
+                    JITDUMP("L%02u that starts at " FMT_BB " needs alignment, weight=%f.\n", loopInd, first->bbNum,
+                            first->getBBWeight(this));
+                }
+                else
+                {
+                    JITDUMP("Skip alignment for L%02u that starts at " FMT_BB " weight=%f.\n", loopInd, first->bbNum,
+                            first->getBBWeight(this));
+                }
+            }
+        }
+    }
+#endif
+}
+
 void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap)
 {
     BasicBlock* newJumpDest = nullptr;
@@ -3757,6 +3792,22 @@ void Compiler::optUnrollLoops()
 #endif
         }
 
+#if FEATURE_LOOP_ALIGN
+        for (block = head->bbNext;; block = block->bbNext)
+        {
+            if (block->isLoopAlign())
+            {
+                block->bbFlags &= ~BBF_LOOP_ALIGN;
+                JITDUMP("Removing LOOP_ALIGN flag from unrolled loop in " FMT_BB "\n", block->bbNum);
+            }
+
+            if (block == bottom)
+            {
+                break;
+            }
+        }
+#endif
+
         /* Create the unrolled loop statement list */
         {
             BlockToBlockMap blockMap(getAllocator());
@@ -4506,6 +4557,10 @@ void Compiler::optOptimizeLoops()
             }
         }
 
+        // Check if any of the loops need alignment
+
+        optIdentifyLoopsForAlignment();
+
 #if COUNT_LOOPS
         totalUnnatLoopCount += loopNum;
 #endif
@@ -5146,9 +5201,10 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 {
     assert(loopInd < optLoopCount);
 
-    JITDUMP("\nCloning loop %d: [h: %d, f: %d, t: %d, e: %d, b: %d].\n", loopInd, optLoopTable[loopInd].lpHead->bbNum,
-            optLoopTable[loopInd].lpFirst->bbNum, optLoopTable[loopInd].lpTop->bbNum,
-            optLoopTable[loopInd].lpEntry->bbNum, optLoopTable[loopInd].lpBottom->bbNum);
+    JITDUMP("\nCloning loop %d: [h: %d, f: %d, t: %d, e: %d, b: %d, c: %d].\n", loopInd,
+            optLoopTable[loopInd].lpHead->bbNum, optLoopTable[loopInd].lpFirst->bbNum,
+            optLoopTable[loopInd].lpTop->bbNum, optLoopTable[loopInd].lpEntry->bbNum,
+            optLoopTable[loopInd].lpBottom->bbNum, optLoopTable[loopInd].lpChild);
 
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
     unsigned             depth         = optLoopDepth(loopInd);
@@ -7975,6 +8031,20 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 // Marks the containsCall information to "lnum" and any parent loops.
 void Compiler::AddContainsCallAllContainingLoops(unsigned lnum)
 {
+
+#if FEATURE_LOOP_ALIGN
+    // If this is the inner most loop, reset the LOOP_ALIGN flag
+    // because a loop having call will not likely to benefit from
+    // alignment
+    if (optLoopTable[lnum].lpChild == BasicBlock::NOT_IN_LOOP)
+    {
+        BasicBlock* first = optLoopTable[lnum].lpFirst;
+        first->bbFlags &= ~BBF_LOOP_ALIGN;
+        JITDUMP("Removing LOOP_ALIGN flag for L%02u that starts at " FMT_BB " because loop has a call.\n", lnum,
+                first->bbNum);
+    }
+#endif
+
     assert(0 <= lnum && lnum < optLoopCount);
     while (lnum != BasicBlock::NOT_IN_LOOP)
     {

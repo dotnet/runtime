@@ -21,7 +21,7 @@
 #define MONO_MAX_FREGS 32
 #define MONO_MAX_XREGS 32
 
-#if !defined(DISABLE_SIMD) && defined(ENABLE_NETCORE)
+#if !defined(DISABLE_SIMD)
 #define MONO_ARCH_SIMD_INTRINSICS 1
 #endif
 
@@ -283,6 +283,10 @@ guint8* mono_arm_emit_load_regarray (guint8 *code, guint64 regs, int basereg, in
 
 /* MonoJumpInfo **ji */
 guint8* mono_arm_emit_aotconst (gpointer ji, guint8 *code, guint8 *code_start, int dreg, guint32 patch_type, gconstpointer data);
+
+guint8* mono_arm_emit_brx (guint8 *code, int reg);
+
+guint8* mono_arm_emit_blrx (guint8 *code, int reg);
 
 void mono_arm_patch (guint8 *code, guint8 *target, int relocation);
 

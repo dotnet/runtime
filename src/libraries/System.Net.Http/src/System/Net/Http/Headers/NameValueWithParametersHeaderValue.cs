@@ -45,7 +45,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             bool result = base.Equals(obj);
 

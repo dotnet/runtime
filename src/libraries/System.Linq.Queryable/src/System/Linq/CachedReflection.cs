@@ -843,6 +843,13 @@ namespace System.Linq
              (s_Zip_TFirst_TSecond_TResult_3 = new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object, object>>, IQueryable<object>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TFirst, TSecond, TResult);
 
+        private static MethodInfo? s_Zip_TFirst_TSecond_TThird_3;
+
+        public static MethodInfo Zip_TFirst_TSecond_TThird_3(Type TFirst, Type TSecond, Type TThird) =>
+             (s_Zip_TFirst_TSecond_TThird_3 ??
+             (s_Zip_TFirst_TSecond_TThird_3 = new Func<IQueryable<object>, IEnumerable<object>, IEnumerable<object>, IQueryable<(object, object, object)>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition()))
+              .MakeGenericMethod(TFirst, TSecond, TThird);
+
 
         private static MethodInfo? s_SkipLast_TSource_2;
 
