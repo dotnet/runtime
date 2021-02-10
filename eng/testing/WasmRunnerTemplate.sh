@@ -2,6 +2,7 @@
 
 EXECUTION_DIR=$(dirname $0)
 SCENARIO=$3
+BUILD_AOT=$4
 
 cd $EXECUTION_DIR
 
@@ -23,6 +24,10 @@ if [ "$SCENARIO" == "WasmTestOnBrowser" ]; then
 	XHARNESS_COMMAND="test-browser"
 elif [ -z "$XHARNESS_COMMAND" ]; then
 	XHARNESS_COMMAND="test"
+fi
+
+if [ "$BUILD_AOT" == "AOT" ]; then
+	dotnet msbuild publish/aot-build.proj
 fi
 
 # RunCommands defined in tests.mobile.targets

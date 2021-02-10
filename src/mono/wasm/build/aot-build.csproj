@@ -1,26 +1,40 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project DefaultTargets="BundleTestWasmApp">
   <PropertyGroup>
+    <HELIX_WORKITEM_ROOT>/Users/steve/dev/helix-out/</HELIX_WORKITEM_ROOT>
+    <HELIX_CORRELATION_PAYLOAD>/Users/steve/dev/helix-out</HELIX_CORRELATION_PAYLOAD>
     <RunAOTCompilation>true</RunAOTCompilation>
-    <BundleDir>$(HELIX_CORRELATION_PAYLOAD)</BundleDir>
-    <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <TestName>System.Buffers.Tests</TestName>
+    <TestRootDir>$(HELIX_WORKITEM_ROOT)/$(TestName)</TestRootDir>
+    <BundleDir>$(TestRootDir)</BundleDir>
+    <WasmSrcPath>$(HELIX_CORRELATION_PAYLOAD)/wasm-source/</WasmSrcPath>
+    <WasmNativeLibPath>$(TestRootDir)/publish/</WasmNativeLibPath>
+    <IntermediateOutputPath>$(HELIX_WORKITEM_ROOT)\obj</IntermediateOutputPath>
     <MonoAOTCompilerTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\monoaotcompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
-    <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\wasmappbuilder</WasmAppBuilderTasksAssemblyPath>
+    <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\wasmappbuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <MonoAotCrossCompilerPath>/Users/steve/dev/net5/runtime/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/runtimes/browser-wasm/native/cross/browser-wasm/mono-aot-cross</MonoAotCrossCompilerPath>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(HELIX_WORKITEM_ROOT)</MicrosoftNetCoreAppRuntimePackRidDir>
     <EMSDK_PATH>$(HELIX_CORRELATION_PAYLOAD)\emsdk</EMSDK_PATH>
+
+    <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
+    <SkipEmccVersionCheck>true</SkipEmccVersionCheck>
   </PropertyGroup>
 
   <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\WasmApp.props" />
+  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\WasmApp.targets" />
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
 
-  <Target Name="BundleTestWasmApp" DependsOnTargets="Build;WasmBuildApp" />
+  <Target Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
   <Target Name="PrepareForWasmBuildApp">
+
+    <!--<MakeDir Directories="$(IntermediateOutputPath)" /> -->
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
-      <WasmMainAssemblyFileName>$(HELIX_CORRELATION_PAYLOAD)\WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath>$(HELIX_CORRELATION_PAYLOAD)\publish\runtime-test.js</WasmMainJSPath>
-      <!--<WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>-->
+      <WasmMainAssemblyFileName>$(TestRootDir)\publish\WasmTestRunner.dll</WasmMainAssemblyFileName>
+      <WasmMainJSPath>$(TestRootDir)\publish\runtime-test.js</WasmMainJSPath>
+      <WasmInvariantGlobalization>true</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>
 
@@ -30,13 +44,13 @@
         <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
       </WasmSatelliteAssemblies>
 
-      <WasmAssembliesToBundle Include="$(HELIX_CORRELATION_PAYLOAD)\publish\*.dll"/>
+      <WasmAssembliesToBundle Include="$(TestRootDir)\publish\*.dll"/>
 
       <!--<WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />-->
       <WasmFilesToIncludeInFileSystem Include="@(WasmSatelliteAssemblies)" TargetPath="%(WasmSatelliteAssemblies.CultureName)\%(WasmSatelliteAssemblies.Filename)%(WasmSatelliteAssemblies.Extension)" />
       <!-- Include files specified by test projects from publish dir -->
-      <WasmFilesToIncludeInFileSystem Include="@(WasmFilesToIncludeFromPublishDir -> '$(HELIX_CORRELATION_PAYLOAD)\publish\%(Identity)')" />
+      <WasmFilesToIncludeInFileSystem Include="@(WasmFilesToIncludeFromPublishDir -> '$(TestRootDir)\publish\%(Identity)')" />
     </ItemGroup>
   </Target>
 </Project>

@@ -61,6 +61,7 @@
   <PropertyGroup>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
+    <WasmNativeLibPath Condition="'$(WasmNativeLibPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\</WasmNativeLibPath>
     <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     <WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>
@@ -165,11 +166,11 @@
 
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
+      <WasmNativeAsset Include="$(WasmNativeLibPath)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
+      <WasmNativeAsset Include="$(WasmNativeLibPath)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
 
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\$(WasmIcuDataFileName)" Condition="'$(WasmInvariantGlobalization)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.timezones.blat" />
+      <WasmNativeAsset Include="$(WasmNativeLibPath)$(WasmIcuDataFileName)" Condition="'$(WasmInvariantGlobalization)' != 'true'" />
+      <WasmNativeAsset Include="$(WasmNativeLibPath)dotnet.timezones.blat" />
     </ItemGroup>
 
     <WasmAppBuilder
@@ -193,8 +194,11 @@
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_GenerateDriverGenC" Condition="'$(WasmBuildNative)' == 'true'">
     <PropertyGroup>
-      <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-flags.txt</EmccFlagsFile>
-      <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt</RuntimeEmccVersionFile>
+      <_WasmSrcPath Condition="'$(WasmSrcPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)</_WasmSrcPath>
+      <_WasmSrcPath Condition="'$(WasmSrcPath)' != ''">$(WasmSrcPath)</_WasmSrcPath>
+
+      <EmccFlagsFile>$(WasmSrcPath)src/emcc-flags.txt</EmccFlagsFile>
+      <RuntimeEmccVersionFile>$(WasmSrcPath)src/emcc-version.txt</RuntimeEmccVersionFile>
       <EmccPublishVersionFile>$(_WasmIntermediateOutputPath)emcc-version.txt</EmccPublishVersionFile>
     </PropertyGroup>
     <ReadLinesFromFile File="$(EmccFlagsFile)">
@@ -217,7 +221,7 @@
     <ReadLinesFromFile File="$(EmccPublishVersionFile)">
         <Output TaskParameter="Lines" PropertyName="EmccVersion" />
     </ReadLinesFromFile>
-    <Error Condition="'$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
+    <Error Condition="'$(SkipEmccVersionCheck)' != 'true' and '$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
 
    <ItemGroup>
       <_WasmPInvokeModules Include="libSystem.Native" />
@@ -250,7 +254,7 @@
      <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
      <_WasmRuntimePackNativeLibs Include="libicuuc.a"/>
      <_WasmRuntimePackNativeLibs Include="libicui18n.a"/>
-     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
+     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(WasmNativeLibPath)%(FileName)%(Extension)')" />
 
      <_WasmObjects Include="$(_WasmIntermediateOutputPath)driver.o"/>
      <_WasmObjects Include="$(_WasmIntermediateOutputPath)pinvoke.o"/>
@@ -258,10 +262,10 @@
    </ItemGroup>
 
    <PropertyGroup>
-     <_WasmIncludeDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/include</_WasmIncludeDir>
-     <_WasmSrcDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/src</_WasmSrcDir>
-     <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 -I$(_WasmIntermediateOutputPath) -I$(_WasmIncludeDir)/mono-2.0 -I$(_WasmIncludeDir)/wasm</EmccCFlags>
-     <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
+    <_WasmIncludeDir>$(_WasmSrcPath)include</_WasmIncludeDir>
+    <_WasmSrcDir>$(_WasmSrcPath)src</_WasmSrcDir>
+    <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 -I$(_WasmIntermediateOutputPath) -I$(_WasmIncludeDir)/mono-2.0 -I$(_WasmIncludeDir)/wasm</EmccCFlags>
+    <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
    </PropertyGroup>
 
     <Exec Command="bash -c '$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/driver.c -c -o $(_WasmIntermediateOutputPath)driver.o'" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" />

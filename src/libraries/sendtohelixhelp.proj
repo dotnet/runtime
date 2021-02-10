@@ -264,6 +264,10 @@
         <Destination>wasm-build</Destination>
         <IncludeDirectoryName>true</IncludeDirectoryName>
       </HelixCorrelationPayload>
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)\src;$(MicrosoftNetCoreAppRuntimePackNativeDir)\include" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
+        <Destination>wasm-source</Destination>
+        <IncludeDirectoryName>true</IncludeDirectoryName>
+      </HelixCorrelationPayload>
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'" />
