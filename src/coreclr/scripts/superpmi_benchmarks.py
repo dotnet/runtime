@@ -112,43 +112,69 @@ def build_and_run(coreclr_args, output_mch_name):
     #TODO: Use TMP instead of os.path.join(performance_directory, "artifacts")
     artifacts_directory = os.path.join(performance_directory, "artifacts")
     artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
-    benchmarks_dll = path.join(artifacts_directory, "Microbenchmarks.dll")
+    project_file = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
+    # benchmarks_dll = path.join('/home/kpathak/temp/artifacts', "MicroBenchmarks.dll")
+    benchmarks_dll = path.join(artifacts_directory, "MicroBenchmarks.dll")
 
     if is_windows:
         shim_name = "superpmi-shim-collector.dll"
         corerun_exe = "CoreRun.exe"
+        script_name = "run_microbenchmarks.bat"
     else:
         shim_name = "libsuperpmi-shim-collector.so"
         corerun_exe = "corerun"
+        script_name = "run_microbenchmarks.sh"
 
     run_command(
-        [dotnet_exe, "restore", "src/benchmarks/micro/MicroBenchmarks.csproj", "--packages",
+        [dotnet_exe, "restore", project_file, "--packages",
         artifacts_packages_directory])
 
     run_command(
-        [dotnet_exe, "build", "src/benchmarks/micro/MicroBenchmarks.csproj", "--configuration", "Release",
+        [dotnet_exe, "build", project_file, "--configuration", "Release",
         "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
         "-o", artifacts_directory])
 
-    with ChangeDir(performance_directory):
+    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter *Array* --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
+        f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
+        "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
+
+    with TempDir() as temp_location:
+        # script_name = path.join('/home/kpathak/temp/output', script_name)
+        script_name = path.join(temp_location, script_name)
+        with open(script_name, "w") as collection_script:
+            contents = []
+            if not is_windows:
+                contents.append("#!/bin/bash")
+            contents.append(f"pushd {performance_directory}")
+            contents.append(collection_command)
+
+            print()
+            print(f"{script_name} contents:")
+            print("******************************************")
+            print(os.linesep.join(contents))
+            print("******************************************")
+
+            collection_script.write(os.linesep.join(contents))
+
+        if not is_windows:
+            os.chmod(script_name, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+
+    # with ChangeDir(performance_directory):
         run_command([
             python_path, path.join(superpmi_directory, "superpmi.py"), "collect", "-core_root", core_root,
-            # Specify that temp_dir is current performance directory, because in order to execute
-            # microbenchmarks, it needs access to the source code.
-            # Also, skip cleaning up once done, because the superpmi script is being
-            # executed from the same folder.
-            "-temp_dir", performance_directory, "--skip_cleanup",
             # Disable ReadyToRun so we always JIT R2R methods and collect them
             "--use_zapdisable",
             "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug",
+            script_name,
+            #----------------------------
+            # # collection_command
+            # dotnet_exe,
 
-            # collection_command
-            dotnet_exe,
-
-            # collection_args
-            f"{benchmarks_dll}  --filter * --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
-            f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
-            "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart",
+            # # collection_args
+            # f"\"{benchmarks_dll}  --filter * --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
+            # f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
+            # "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart\"",
+            #----------------------------
 
             # dotnet command to execute Microbenchmarks.dll
             # dotnet_exe, benchmarks_dll + " --filter * --corerun " + path.join(core_root, corerun_exe_name) +
@@ -221,7 +247,7 @@ def execute(coreclr_args, output_mch_name):
     collection_command = f"{python_path} {benchmarks_ci_script} {script_args} {bdn_artifacts} {bdn_arguments}"
 
     with TempDir() as temp_location:
-        script_name = path.join(temp_location, script_name) 
+        script_name = path.join(temp_location, script_name)
         with open(script_name, "w") as collection_script:
             contents = ["echo off", f"echo Invoking {collection_command}", collection_command]
             collection_script.write(os.linesep.join(contents))
