@@ -110,7 +110,7 @@
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
     <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
     <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePerfTracing>
-    <FeatureManagedThreadingUnix Condition="'$(TargetsUnix)' == 'true'">true</FeatureManagedThreadingUnix>
+    <FeatureManagedThreading>true</FeatureManagedThreading>
   </PropertyGroup>
 
   <PropertyGroup>
