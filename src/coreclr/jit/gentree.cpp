@@ -2845,7 +2845,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
             if (firstNode->gtFlags & strictEffects & GTF_PERSISTENT_SIDE_EFFECTS)
             {
                 // We have to be conservative - can swap iff op2 is constant.
-                if (IsInvariant(secondNode)
+                if (IsInvariant(secondNode))
                 {
                     canSwap = false;
                 }
@@ -19567,3 +19567,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
     return false;
 }
 #endif // TARGET_ARM
+
+bool GenTree::IsInvariant() const {
+    return Compiler::IsInvariant((GenTree*)AsOp());
+}

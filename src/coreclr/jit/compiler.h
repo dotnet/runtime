@@ -4363,6 +4363,8 @@ private:
 #endif // DEBUG
 
     static BOOL impIsAddressInLocal(GenTree* tree, GenTree** lclVarTreeOut);
+    
+    static BOOL IsInvariant(GenTree* tree);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 
@@ -10375,9 +10377,6 @@ public:
     GenTree* fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntryPtr);
 
     bool killGCRefs(GenTree* tree);
-
-public:
-    static BOOL IsInvariant(GenTree* tree);
 }; // end of class Compiler
 
 //---------------------------------------------------------------------------------------------------------------------

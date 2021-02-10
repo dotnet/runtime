@@ -28,7 +28,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "simd.h"
 #include "namedintrinsiclist.h"
 #include "layout.h"
-#include "compiler.h"
 
 // Debugging GenTree is much easier if we add a magic virtual function to make the debugger able to figure out what type
 // it's got. This is enabled by default in DEBUG. To enable it in RET builds (temporarily!), you need to change the
@@ -2179,10 +2178,12 @@ private:
 public:
     bool Precedes(GenTree* other);
 
+    bool IsInvariant() const;
+
     bool IsReuseRegVal() const
     {
         // This can be extended to non-constant nodes, but not to local or indir nodes.
-        if (Compiler::IsInvariant((GenTree*)this) && ((gtFlags & GTF_REUSE_REG_VAL) != 0))
+        if (IsInvariant() && ((gtFlags & GTF_REUSE_REG_VAL) != 0))
         {
             return true;
         }
