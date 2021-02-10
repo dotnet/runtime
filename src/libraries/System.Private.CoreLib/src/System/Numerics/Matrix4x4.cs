@@ -284,7 +284,7 @@ namespace System.Numerics
                     value1.M41 != value2.M41 || value1.M42 != value2.M42 || value1.M43 != value2.M43 || value1.M44 != value2.M44);
         }
 
-        /// <summary>Returns the matrix that results from multiplying two matrices together.</summary>
+        /// <summary>Multiplies two matrices together to compute the product.</summary>
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The product matrix.</returns>
@@ -401,7 +401,7 @@ namespace System.Numerics
             return m;
         }
 
-        /// <summary>Returns the matrix that results from scaling all the elements of a specified matrix by a scalar factor.</summary>
+        /// <summary>Multiplies a matrix by a float to compute the product.</summary>
         /// <param name="value1">The matrix to scale.</param>
         /// <param name="value2">The scaling value to use.</param>
         /// <returns>The scaled matrix.</returns>
@@ -1715,7 +1715,7 @@ namespace System.Numerics
             }
         }
 
-        /// <summary>Returns the matrix that results from multiplying two matrices together.</summary>
+        /// <summary>Multiplies two matrices together to compute the product.</summary>
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The product matrix.</returns>
@@ -1725,7 +1725,7 @@ namespace System.Numerics
             return value1 * value2;
         }
 
-        /// <summary>Returns the matrix that results from scaling all the elements of a specified matrix by a scalar factor.</summary>
+        /// <summary>Multiplies a matrix by a float to compute the product.</summary>
         /// <param name="value1">The matrix to scale.</param>
         /// <param name="value2">The scaling value to use.</param>
         /// <returns>The scaled matrix.</returns>

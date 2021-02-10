@@ -68,7 +68,7 @@ namespace System.Numerics
             get => _identity;
         }
 
-        /// <summary>Indicates whether the current matrix is the identity matrix.</summary>
+        /// <summary>Gets a value that indicates whether the current matrix is the identity matrix.</summary>
         /// <value><see langword="true" /> if the current matrix is the identity matrix; otherwise, <see langword="false" />.</value>
         public readonly bool IsIdentity
         {
@@ -134,7 +134,7 @@ namespace System.Numerics
             return !(value1 == value2);
         }
 
-        /// <summary>Returns the matrix that results from multiplying two matrices together.</summary>
+        /// <summary>Multiplies two matrices together to compute the product.</summary>
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The product matrix.</returns>
@@ -158,7 +158,7 @@ namespace System.Numerics
             return m;
         }
 
-        /// <summary>Returns the matrix that results from scaling all the elements of a specified matrix by a scalar factor.</summary>
+        /// <summary>Multiplies a matrix by a float to compute the product.</summary>
         /// <param name="value1">The matrix to scale.</param>
         /// <param name="value2">The scaling value to use.</param>
         /// <returns>The scaled matrix.</returns>
@@ -508,7 +508,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Inverts the specified matrix. The return value indicates whether the operation succeeded.</summary>
+        /// <summary>Tries to invert the specified matrix. The return value indicates whether the operation succeeded.</summary>
         /// <param name="matrix">The matrix to invert.</param>
         /// <param name="result">When this method returns, contains the inverted matrix if the operation succeeded.</param>
         /// <returns><see langword="true" /> if <paramref name="matrix" /> was converted successfully; otherwise,  <see langword="false" />.</returns>
@@ -560,7 +560,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Returns the matrix that results from multiplying two matrices together.</summary>
+        /// <summary>Multiplies two matrices together to compute the product.</summary>
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The product matrix.</returns>
@@ -570,7 +570,7 @@ namespace System.Numerics
             return value1 * value2;
         }
 
-        /// <summary>Returns the matrix that results from scaling all the elements of a specified matrix by a scalar factor.</summary>
+        /// <summary>Multiplies a matrix by a float to compute the product.</summary>
         /// <param name="value1">The matrix to scale.</param>
         /// <param name="value2">The scaling value to use.</param>
         /// <returns>The scaled matrix.</returns>

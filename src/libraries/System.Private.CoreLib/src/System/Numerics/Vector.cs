@@ -151,7 +151,7 @@ namespace System.Numerics
         /// <summary>Returns a new integral vector whose elements signal whether the elements in one integral vector are less than their corresponding elements in a second integral vector.</summary>
         /// <param name="left">The first vector to compare.</param>
         /// <param name="right">The second vector to compare.</param>
-        /// <returns>The resulting integral vector</returns>
+        /// <returns>The resulting integral vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> LessThan(Vector<int> left, Vector<int> right)
