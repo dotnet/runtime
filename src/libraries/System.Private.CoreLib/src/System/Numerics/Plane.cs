@@ -8,7 +8,9 @@ using System.Runtime.CompilerServices;
 namespace System.Numerics
 {
     /// <summary>Represents a plane in three-dimensional space.</summary>
-    /// <remarks>[!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]</remarks>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// [!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]
+    /// ]]></format></remarks>
     [Intrinsic]
     public struct Plane : IEquatable<Plane>
     {
@@ -318,7 +320,7 @@ namespace System.Numerics
 
         /// <summary>Returns the string representation of this plane object.</summary>
         /// <returns>A string that represents this <see cref="System.Numerics.Plane" /> object.</returns>
-        /// <remarks>The string representation of a <see cref="System.Numerics.Plane" /> object use the formatting conventions of the current culture to format the numeric values in the returned string. For example, a <see cref="System.Numerics.Plane" /> object whose string representation is formatted by using the conventions of the en-US culture might appear as `{Normal:&lt;1.1, 2.2, 3.3&gt; D:4.4}`.</remarks>
+        /// <remarks>The string representation of a <see cref="System.Numerics.Plane" /> object use the formatting conventions of the current culture to format the numeric values in the returned string. For example, a <see cref="System.Numerics.Plane" /> object whose string representation is formatted by using the conventions of the en-US culture might appear as <c>{Normal:&lt;1.1, 2.2, 3.3&gt; D:4.4}</c>.</remarks>
         public override readonly string ToString()
         {
             CultureInfo ci = CultureInfo.CurrentCulture;
