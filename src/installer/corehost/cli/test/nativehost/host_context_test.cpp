@@ -11,6 +11,7 @@
 #include <corehost_context_contract.h>
 #include "hostfxr_exports.h"
 #include "host_context_test.h"
+#include <thread>
 #include <utils.h>
 
 namespace
