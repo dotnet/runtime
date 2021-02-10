@@ -9,8 +9,10 @@ using System.Text;
 namespace System.Numerics
 {
     /// <summary>Represents a vector with four single-precision floating-point values.</summary>
-    /// <remarks>The <see cref="System.Numerics.Vector4" /> structure provides support for hardware acceleration.
-    /// [!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]</remarks>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// The <xref:System.Numerics.Vector4> structure provides support for hardware acceleration.
+    /// [!INCLUDE[vectors-are-rows-paragraph](~/includes/system-numerics-vectors-are-rows.md)]
+    /// ]]></format></remarks>
     [Intrinsic]
     public partial struct Vector4 : IEquatable<Vector4>, IFormattable
     {
@@ -74,7 +76,7 @@ namespace System.Numerics
 
         /// <summary>Gets a vector whose 4 elements are equal to one.</summary>
         /// <value>Returns <see cref="System.Numerics.Vector4" />.</value>
-        /// <remarks>A vector whose four elements are equal to one (that is, it returns the vector `(1,1,1,1)`.</remarks>
+        /// <remarks>A vector whose four elements are equal to one (that is, it returns the vector <c>(1,1,1,1)</c>.</remarks>
         public static Vector4 One
         {
             [Intrinsic]
@@ -344,7 +346,9 @@ namespace System.Numerics
         /// <param name="value2">The second vector.</param>
         /// <param name="amount">A value between 0 and 1 that indicates the weight of <paramref name="value2" />.</param>
         /// <returns>The interpolated vector.</returns>
-        /// <remarks>The behavior of this method changed in .NET 5.0. For more information, see [Behavior change for Vector2.Lerp and Vector4.Lerp](/dotnet/core/compatibility/3.1-5.0#behavior-change-for-vector2lerp-and-vector4lerp).</remarks>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The behavior of this method changed in .NET 5.0. For more information, see [Behavior change for Vector2.Lerp and Vector4.Lerp](/dotnet/core/compatibility/3.1-5.0#behavior-change-for-vector2lerp-and-vector4lerp).
+        /// ]]></format></remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Lerp(Vector4 value1, Vector4 value2, float amount)
         {
