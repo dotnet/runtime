@@ -1369,7 +1369,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Inverts the specified matrix. The return value indicates whether the operation succeeded.</summary>
+        /// <summary>Tries to invert the specified matrix. The return value indicates whether the operation succeeded.</summary>
         /// <param name="matrix">The matrix to invert.</param>
         /// <param name="result">When this method returns, contains the inverted matrix if the operation succeeded.</param>
         /// <returns><see langword="true" /> if <paramref name="matrix" /> was converted successfully; otherwise,  <see langword="false" />.</returns>
