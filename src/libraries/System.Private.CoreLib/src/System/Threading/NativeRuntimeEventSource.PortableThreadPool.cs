@@ -11,7 +11,7 @@ namespace System.Diagnostics.Tracing
     // This is part of the NativeRuntimeEventsource, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
     // It contains the handwritten implementation of the ThreadPool events.
     // The events here do not call into the typical WriteEvent* APIs unlike most EventSources.
-    // Instead, they call directly into QCalls provided by the runtime (refer to XplatEventLogger.Logcs) which call
+    // Instead, they call directly into QCalls provided by the runtime (refer to XplatEventLogger.cs) which call
     // FireEtw* methods auto-generated from ClrEtwAll.man. This ensures that corresponding event sinks are being used
     // for the native platform. Refer to src/coreclr/vm/nativeruntimesource.cpp.
     internal sealed partial class NativeRuntimeEventSource : EventSource
