@@ -122,7 +122,10 @@ namespace System.Net.WebSockets
         {
             // Check that we have not started already.
             int prevState = _state;
-            _state = _state == (int)InternalState.Created ? (int)InternalState.Connecting : _state;
+            if (prevState == (int)InternalState.Created)
+            {
+                _state = (int)InternalState.Connecting;
+            }
 
             switch ((InternalState)prevState)
             {
