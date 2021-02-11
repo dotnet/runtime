@@ -222,15 +222,10 @@
   <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
   <Target Name="SetCommonILLinkArgs">
     <PropertyGroup>
-      <!-- don't remove the embedded link attributes xml resource since ILLink may run again on the assembly -->
-      <!-- and ignore the link attributes xml file during the library build, since we need the attributes preserved until the final app is linked -->
-      <ILLinkArgs>$(ILLinkArgs) --strip-link-attributes false --ignore-link-attributes true</ILLinkArgs>
+      <!-- don't remove attributes after build, our tooling is not ready for that -->
+      <ILLinkArgs>$(ILLinkArgs) --ignore-link-attributes true</ILLinkArgs>
       <!-- ignore unresolved references -->
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
-      <!-- keep interface implementations -->
-      <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
-      <!-- keep any type check -->
-      <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedtypechecks</ILLinkArgs>
     </PropertyGroup>
   </Target>
 
@@ -250,14 +245,8 @@
       <!-- trim the target assembly -->
       <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
-      <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
-      <ILLinkArgs Condition="'$(ILLinkTrimXml)' != ''">$(ILLinkArgs) --strip-descriptors false</ILLinkArgs>
       <!-- pass the non-embedded root xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>
-      <!-- don't remove the embedded substitutions xml resource since ILLink may run again on the assembly -->
-      <ILLinkArgs Condition="'$(ILLinkSubstitutionsXml)' != ''">$(ILLinkArgs) --strip-substitutions false</ILLinkArgs>
-      <!-- keep DynamicDependencyAttribute unless a project explicitly disables it -->
-      <ILLinkArgs Condition="'$(ILLinkKeepDepAttributes)' != 'false'">$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
       <!-- suppress warnings with the following codes:
            IL2008: Could not find type A specified in resource B
            IL2009: Could not find method A in type B specified in resource C
@@ -307,7 +296,7 @@
       <_DependencyDirectories Remove="@(_DependencyDirectories)" />
       <_DependencyDirectories Include="%(_DependencyDirectoriesNoSlash.PathWithoutSlash)" />
       <ILLinkTrimInputAssembly Include="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)">
-        <RootMode>visible</RootMode>
+        <RootMode>library</RootMode>
       </ILLinkTrimInputAssembly>
     </ItemGroup>
 
