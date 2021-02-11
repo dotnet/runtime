@@ -34,6 +34,7 @@ namespace System.IO
         {
             IgnoreInaccessible = true;
             AttributesToSkip = FileAttributes.Hidden | FileAttributes.System;
+            MaxRecursionDepth = int.MaxValue;
         }
 
         /// <summary>
@@ -95,6 +96,12 @@ namespace System.IO
         /// Default is to match platform defaults, which are gleaned from the case sensitivity of the temporary folder.
         /// </remarks>
         public MatchCasing MatchCasing { get; set; }
+
+        /// <summary>
+        /// Stop recursion if current depth exceeds the value.
+        /// Default is int.MaxValue.
+        /// </summary>
+        public int MaxRecursionDepth { get; set; }
 
         /// <summary>
         /// Set to true to return "." and ".." directory entries.
