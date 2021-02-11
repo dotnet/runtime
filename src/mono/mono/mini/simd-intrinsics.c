@@ -818,6 +818,14 @@ static SimdIntrinsic crc32_methods [] = {
 	{SN_get_IsSupported}
 };
 
+static SimdIntrinsic crypto_aes_methods [] = {
+	{SN_Decrypt, OP_XOP_X_X_X, SIMD_OP_AES_DEC},
+	{SN_Encrypt, OP_XOP_X_X_X, SIMD_OP_AES_ENC},
+	{SN_InverseMixColumns, OP_XOP_X_X, SIMD_OP_AES_IMC},
+	{SN_MixColumns, OP_XOP_X_X, SIMD_OP_ARM64_AES_AESMC},
+	{SN_get_IsSupported}
+};
+
 static SimdIntrinsic sha1_methods [] = {
 	{SN_FixedRotate, OP_XOP_X_X, SIMD_OP_ARM64_SHA1H},
 	{SN_HashUpdateChoose, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1C},
@@ -928,6 +936,12 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		feature = MONO_CPU_ARM64_CRYPTO;
 		intrinsics = sha1_methods;
 		intrinsics_size = sizeof (sha1_methods);
+	}
+
+	if (is_hw_intrinsics_class (klass, "Aes", &is_64bit)) {
+		feature = MONO_CPU_ARM64_CRYPTO;
+		intrinsics = crypto_aes_methods;
+		intrinsics_size = sizeof (crypto_aes_methods);
 	}
 
 	/*
