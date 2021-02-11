@@ -96,10 +96,10 @@ namespace System.Text.Encodings.Web
             get { return 10; } // "&#x10FFFF;" is the longest encoded form
         }
 
-        private static readonly char[] s_quote = "&quot;".ToCharArray();
-        private static readonly char[] s_ampersand = "&amp;".ToCharArray();
-        private static readonly char[] s_lessthan = "&lt;".ToCharArray();
-        private static readonly char[] s_greaterthan = "&gt;".ToCharArray();
+        private static ReadOnlySpan<byte> s_quote => new byte[] { (byte)'&', (byte)'q', (byte)'u', (byte)'o', (byte)'t', (byte)';' };
+        private static ReadOnlySpan<byte> s_ampersand => new byte[] { (byte)'&', (byte)'a', (byte)'m', (byte)'p', (byte)';' };
+        private static ReadOnlySpan<byte> s_lessthan => new byte[] { (byte)'&', (byte)'l', (byte)'t', (byte)';' };
+        private static ReadOnlySpan<byte> s_greaterthan => new byte[] { (byte)'&', (byte)'g', (byte)'t', (byte)';' };
 
         public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {
@@ -108,11 +108,12 @@ namespace System.Text.Encodings.Web
                 throw new ArgumentNullException(nameof(buffer));
             }
 
-            if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\"') { return TryCopyCharacters(s_quote, buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '&') { return TryCopyCharacters(s_ampersand, buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '<') { return TryCopyCharacters(s_lessthan, buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '>') { return TryCopyCharacters(s_greaterthan, buffer, bufferLength, out numberOfCharactersWritten); }
+            Span<char> destination = new Span<char>(buffer, bufferLength);
+            if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, destination, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '\"') { return TryCopyAsciiCharacters(s_quote, destination, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '&') { return TryCopyAsciiCharacters(s_ampersand, destination, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '<') { return TryCopyAsciiCharacters(s_lessthan, destination, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '>') { return TryCopyAsciiCharacters(s_greaterthan, destination, out numberOfCharactersWritten); }
             else { return TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
         }
 

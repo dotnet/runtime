@@ -161,7 +161,7 @@ namespace System.Text.Encodings.Web
                 throw new ArgumentNullException(nameof(buffer));
             }
 
-            if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
+            if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, new Span<char>(buffer, bufferLength), out numberOfCharactersWritten); }
 
             numberOfCharactersWritten = 0;
 

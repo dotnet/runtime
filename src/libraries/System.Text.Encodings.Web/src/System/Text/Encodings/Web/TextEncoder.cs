@@ -898,11 +898,11 @@ namespace System.Text.Encodings.Web
             }
         }
 
-        internal static unsafe bool TryCopyCharacters(char[] source, char* destination, int destinationLength, out int numberOfCharactersWritten)
+        internal static bool TryCopyAsciiCharacters(ReadOnlySpan<byte> source, Span<char> destination, out int numberOfCharactersWritten)
         {
-            Debug.Assert(source != null && destination != null && destinationLength >= 0);
+            Debug.Assert(source.Length > 0);
 
-            if (destinationLength < source.Length)
+            if (destination.Length < source.Length)
             {
                 numberOfCharactersWritten = 0;
                 return false;
@@ -910,7 +910,7 @@ namespace System.Text.Encodings.Web
 
             for (int i = 0; i < source.Length; i++)
             {
-                destination[i] = source[i];
+                destination[i] = (char)source[i];
             }
 
             numberOfCharactersWritten = source.Length;
@@ -918,17 +918,15 @@ namespace System.Text.Encodings.Web
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool TryWriteScalarAsChar(int unicodeScalar, char* destination, int destinationLength, out int numberOfCharactersWritten)
+        internal static bool TryWriteScalarAsChar(int unicodeScalar, Span<char> destination, out int numberOfCharactersWritten)
         {
-            Debug.Assert(destination != null && destinationLength >= 0);
-
             Debug.Assert(unicodeScalar < ushort.MaxValue);
-            if (destinationLength < 1)
+            if (destination.Length < 1)
             {
                 numberOfCharactersWritten = 0;
                 return false;
             }
-            *destination = (char)unicodeScalar;
+            destination[0] = (char)unicodeScalar;
             numberOfCharactersWritten = 1;
             return true;
         }
