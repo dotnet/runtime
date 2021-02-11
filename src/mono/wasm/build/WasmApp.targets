@@ -23,7 +23,7 @@
       - $(WasmProfilers)     - Profilers to use
       - $(AOTMode)           - Defaults to `LLVMOnly`
       - $(AOTProfilePath)    - profile data file to be used for profile-guided optimization
-      - $(WasmInvariantGlobalization)
+      - $(WasmInvariantGlobalization)       - Whenever to disable ICU. Defaults to false.
 
       - $(WasmResolveAssembliesBeforeBuild) - Resolve the assembly dependencies. Defaults to false
       - $(WasmAssemblySearchPaths)          - used for resolving assembly dependencies
@@ -64,6 +64,7 @@
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     <WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>
     <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross</MonoAotCrossCompilerPath>
+	<InvariantGlobalization Condition="'$(WasmInvariantGlobalization)' == 'true'">true</InvariantGlobalization>
   </PropertyGroup>
 
   <!-- Having this separate target allows users to cleanly add After/BeforeTargets for this -->
