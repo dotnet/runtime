@@ -11,6 +11,8 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
+        internal const int WSA_E_CANCELLED = 10111;
+
         internal const string GetAddrInfoExCancelFunctionName = "GetAddrInfoExCancel";
 
         internal const int NS_ALL = 0;
