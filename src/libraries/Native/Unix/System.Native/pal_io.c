@@ -1275,18 +1275,16 @@ static int16_t ConvertLockType(int16_t managedLockType)
             return F_RDLCK;
         case 1:
             return F_WRLCK;
-        case 2:
-            return F_UNLCK;
         default:
-            assert_msg(false, "Unknown Lock Type", (int)managedLockType);
-            return -1;
+            assert_msg(managedLockType == 2, "Unknown Lock Type");
+            return F_UNLCK;
     }
 }
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
     int16_t unixLockType = ConvertLockType(lockType);
-    if (offset < 0 || length < 0 || unixLockType < 0)
+    if (offset < 0 || length < 0)
     {
         errno = EINVAL;
         return -1;
