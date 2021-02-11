@@ -74,14 +74,15 @@ namespace System.IO.Compression
         {
             if (_bitsInBuffer < 8)
             {
-                if (!_buffer.IsEmpty)
+                if (_buffer.Length > 1)
                 {
-                    _bitBuffer |= (uint)_buffer.Span[0] << _bitsInBuffer;
-                    _buffer = _buffer.Slice(1);
-                    _bitsInBuffer += 8;
+                    Span<byte> span = _buffer.Span;
+                    _bitBuffer |= (uint)span[0] << _bitsInBuffer;
+                    _bitBuffer |= (uint)span[1] << (_bitsInBuffer + 8);
+                    _buffer = _buffer.Slice(2);
+                    _bitsInBuffer += 16;
                 }
-
-                if (!_buffer.IsEmpty)
+                else if (_buffer.Length != 0)
                 {
                     _bitBuffer |= (uint)_buffer.Span[0] << _bitsInBuffer;
                     _buffer = _buffer.Slice(1);
