@@ -3,6 +3,7 @@
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
+    <PackageVersion Condition="'$(PackageTargetRuntime)' == ''">5.0.1</PackageVersion>
   </PropertyGroup>
   <ItemGroup Condition="'$(PackageTargetRuntime)' == 'linux-arm' or '$(PackageTargetRuntime)' == 'linux-arm64' or '$(PackageTargetRuntime)' == 'linux-x64' or '$(PackageTargetRuntime)' == 'osx-x64' or '$(PackageTargetRuntime)' == 'freebsd-x64'">
     <File Include="$(NativeBinDir)$(LibraryFilePrefix)System.IO.Ports.Native$(LibraryFileExtension)" >
@@ -11,7 +12,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
     <_buildRIDWithMetadata Include="@(BuildRID)">
-      <Version>$(PackageVersion)</Version>
+      <Version>5.0.0</Version>
     </_buildRIDWithMetadata>
     <IndexedDependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
   </ItemGroup>
