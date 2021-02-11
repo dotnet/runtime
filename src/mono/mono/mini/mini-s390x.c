@@ -2692,7 +2692,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IADD_OVF_UN:
 		case OP_S390_IADD_OVF_UN: {
 			CHECK_SRCDST_COM;
-			s390_algr  (code, ins->dreg, src2);
+			s390_alr   (code, ins->dreg, src2);
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
 			s390_llgfr (code, ins->dreg, ins->dreg);
 		}
@@ -3356,21 +3356,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_IMUL_OVF: {
 			short int *o[2];
-			s390_ltr  (code, s390_r1, ins->sreg1);
-			s390_jz   (code, 0); CODEPTR(code, o[0]);
-			s390_ltr  (code, s390_r0, ins->sreg2);
-			s390_jnz  (code, 6);
-			s390_lhi  (code, s390_r1, 0);
-			s390_j    (code, 0); CODEPTR(code, o[1]);
-			s390_xr	  (code, s390_r0, s390_r1);
-			s390_msr  (code, s390_r1, ins->sreg2);
-			s390_xr   (code, s390_r0, s390_r1);
-			s390_srl  (code, s390_r0, 0, 31);
-			s390_ltr  (code, s390_r0, s390_r0);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NZ, "OverflowException");
-			PTRSLOT	  (code, o[0]); 
-			PTRSLOT   (code, o[1]);
-			s390_lgfr (code, ins->dreg, s390_r1);
+			if (mono_hwcap_s390x_has_mie2) {
+				s390_msrkc (code, ins->dreg, ins->sreg1, ins->sreg2);
+				EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+				s390_lgfr (code, ins->dreg, ins->dreg);
+			} else {
+				s390_ltr  (code, s390_r1, ins->sreg1);
+				s390_jz   (code, 0); CODEPTR(code, o[0]);
+				s390_ltr  (code, s390_r0, ins->sreg2);
+				s390_jnz  (code, 6);
+				s390_lhi  (code, s390_r1, 0);
+				s390_j    (code, 0); CODEPTR(code, o[1]);
+				s390_xr	  (code, s390_r0, s390_r1);
+				s390_msr  (code, s390_r1, ins->sreg2);
+				s390_xr   (code, s390_r0, s390_r1);
+				s390_srl  (code, s390_r0, 0, 31);
+				s390_ltr  (code, s390_r0, s390_r0);
+				EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NZ, "OverflowException");
+				PTRSLOT	  (code, o[0]);
+				PTRSLOT   (code, o[1]);
+				s390_lgfr (code, ins->dreg, s390_r1);
+			}
 		}
 			break;
 		case OP_IMUL_OVF_UN: {
@@ -3516,21 +3522,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_lgr (code, s390_r1, ins->sreg1);
 
 			/*
-			 * If the IMT/RGCTX register is in use then don't restore over it
+			 * We have to restore R6, so it cannot be used as argument register.
+			 * This is ensured by mono_arch_tailcall_supported, but verify here.
 			 */
-			if ((call->used_iregs & (MONO_ARCH_RGCTX_REG << 1)) || (call->rgctx_reg))
-				s390_lgr (code, s390_r0, MONO_ARCH_RGCTX_REG);
-			/*
-			 * If R6 is used for a parameter then don't restore the other
-			 * parameter registers are volatile
-			 */ 
-			if (call->used_iregs & (1 << 6))
-				s390_lmg (code, s390_r7, s390_r14, STK_BASE, S390_NONPARM_SAVE_OFFSET);
-			else
-				s390_lmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
+			g_assert (!(call->used_iregs & (1 << S390_LAST_ARG_REG)));
 
-			if ((call->used_iregs & (MONO_ARCH_RGCTX_REG << 1)) || (call->rgctx_reg))
-				s390_lgr (code, MONO_ARCH_RGCTX_REG, s390_r0);
+			/*
+			 * Likewise for the IMT/RGCTX register
+			 */
+			g_assert (!(call->used_iregs & (1 << MONO_ARCH_RGCTX_REG)));
+			g_assert (!(call->rgctx_reg));
+
+			/*
+			 * Restore all general registers
+			 */
+			s390_lmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 
 			/*
 			 * Restore any FP registers that have been altered
@@ -4147,17 +4153,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 			break;
+		case OP_ICONV_TO_R4:
+			s390_cefbr (code, ins->dreg, ins->sreg1);
+			if (!cfg->r4fp)
+				s390_ldebr (code, ins->dreg, ins->dreg);
+			break;
 		case OP_LCONV_TO_R4:
-		case OP_ICONV_TO_R4: {
 			s390_cegbr (code, ins->dreg, ins->sreg1);
 			if (!cfg->r4fp)
 				s390_ldebr (code, ins->dreg, ins->dreg);
-		}
+			break;
+		case OP_ICONV_TO_R8:
+			s390_cdfbr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_LCONV_TO_R8:
-		case OP_ICONV_TO_R8: {
 			s390_cdgbr (code, ins->dreg, ins->sreg1);
-		}
 			break;
 		case OP_FCONV_TO_I1:
 			s390_cgdbr (code, ins->dreg, 5, ins->sreg1);
@@ -4581,7 +4591,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_ADD_I8: {
 			if (mono_hwcap_s390x_has_ia) {
 				s390_laag(code, s390_r0, ins->sreg2, ins->inst_basereg, ins->inst_offset);
-				s390_lg  (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
+				if (mono_hwcap_s390x_has_mlt) {
+				    s390_agrk(code, ins->dreg, s390_r0, ins->sreg2);
+				} else {
+				    s390_agr (code, s390_r0, ins->sreg2);
+				    s390_lgr (code, ins->dreg, s390_r0);
+				}
 			} else {
 				s390_lgr (code, s390_r1, ins->sreg2);
 				s390_lg  (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
@@ -4602,7 +4617,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_ADD_I4: {
 			if (mono_hwcap_s390x_has_ia) {
 				s390_laa (code, s390_r0, ins->sreg2, ins->inst_basereg, ins->inst_offset);
-				s390_lgf (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
+				s390_ar  (code, s390_r0, ins->sreg2);
+				s390_lgfr(code, ins->dreg, s390_r0);
 			} else {
 				s390_lgfr(code, s390_r1, ins->sreg2);
 				s390_lgf (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
@@ -6920,6 +6936,13 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 	for (int i = 0; res && i < callee_sig->param_count; ++i) {
 		switch(ainfo[i].regtype) {
 		case RegTypeGeneral :
+			// R6 is both used as argument register and call-saved
+			// This means we cannot use a tail call if R6 is needed
+			if (ainfo[i].reg == S390_LAST_ARG_REG)
+				res = FALSE;
+			else
+				res = TRUE;
+			break;
 		case RegTypeFP :
 		case RegTypeFPR4 :
 		case RegTypeStructByValInFP :

@@ -16,7 +16,14 @@ namespace System
         private class RawData
         {
             public IntPtr Bounds;
-            public IntPtr Count;
+#if MONO_BIG_ARRAYS
+            public ulong Count;
+#else
+            public uint Count;
+#if !ARCH_32
+            private uint _Pad;
+#endif
+#endif
             public byte Data;
         }
 
