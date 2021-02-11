@@ -16,6 +16,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 	[SetupLinkAttributesFile ("DynamicDependencyFromAttributeXml.mono.Attributes.xml")]
 #endif
 	[IgnoreLinkAttributes (false)]
+	[SetupLinkerArgument ("--enable-opt", "unreachablebodies", "missing.dll")]
 	class DynamicDependencyFromAttributeXml
 	{
 		public static void Main ()

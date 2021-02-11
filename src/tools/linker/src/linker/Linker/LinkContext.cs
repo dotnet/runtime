@@ -674,7 +674,7 @@ namespace Mono.Linker
 			// Only one bit is set
 			Debug.Assert (optimizations != 0 && (optimizations & (optimizations - 1)) == 0);
 
-			if (perAssembly.Count > 0 &&
+			if (perAssembly.Count > 0 && assemblyName != null &&
 				perAssembly.TryGetValue (assemblyName, out CodeOptimizations assembly)) {
 				return (assembly & optimizations) != 0;
 			}
