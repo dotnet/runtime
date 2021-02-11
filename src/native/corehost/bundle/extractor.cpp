@@ -44,6 +44,7 @@ pal::string_t& extractor_t::extraction_dir()
             }
 
             m_extraction_dir = cwd;
+            dir_utils_t::fixup_path_separator(relative_path);
             append_path(&m_extraction_dir, relative_path.c_str());
         }
 
