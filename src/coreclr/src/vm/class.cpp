@@ -1169,6 +1169,12 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
             if (!pMD->RequiresCovariantReturnTypeChecking() && !pParentMD->RequiresCovariantReturnTypeChecking())
                 continue;
 
+            // Locate the MethodTable defining the pParentMD.
+            while (pParentMT->GetCanonicalMethodTable() != pParentMD->GetMethodTable())
+            {
+                pParentMT = pParentMT->GetParentMethodTable();
+            }
+
             SigTypeContext context1(pParentMT->GetInstantiation(), pMD->GetMethodInstantiation());
             MetaSig methodSig1(pParentMD);
             TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
