@@ -339,4 +339,10 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
     <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
   </Target>
+
+  <Target Name="_AfterWasmBuildApp">
+    <ItemGroup>
+      <WasmAssembliesFinal Include="@(_WasmAssemblies)" />
+    </ItemGroup>
+  </Target>
 </Project>
