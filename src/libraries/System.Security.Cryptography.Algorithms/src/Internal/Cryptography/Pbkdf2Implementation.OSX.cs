@@ -27,7 +27,7 @@ namespace Internal.Cryptography
                 _ => throw new CryptographicException() // Should have been validated before getting here.
             };
 
-            Interop.AppleCrypto.KeyDerivationPBKDF(prfAlgorithm, password, salt, iterations, destination);
+            Interop.AppleCrypto.Pbkdf2(prfAlgorithm, password, salt, iterations, destination);
         }
     }
 }

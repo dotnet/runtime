@@ -30,15 +30,15 @@ static int32_t PrfAlgorithmFromHashAlgorithm(PAL_HashAlgorithm hashAlgorithm, CC
     }
 }
 
-int32_t AppleCryptoNative_KeyDerivationPBKDF(PAL_HashAlgorithm prfAlgorithm,
-                                             const char* password,
-                                             int32_t passwordLen,
-                                             const uint8_t* salt,
-                                             int32_t saltLen,
-                                             int32_t iterations,
-                                             uint8_t* derivedKey,
-                                             uint32_t derivedKeyLen,
-                                             int32_t* errorCode)
+int32_t AppleCryptoNative_Pbkdf2(PAL_HashAlgorithm prfAlgorithm,
+                                 const char* password,
+                                 int32_t passwordLen,
+                                 const uint8_t* salt,
+                                 int32_t saltLen,
+                                 int32_t iterations,
+                                 uint8_t* derivedKey,
+                                 uint32_t derivedKeyLen,
+                                 int32_t* errorCode)
 {
     if (errorCode != NULL)
         *errorCode = noErr;
