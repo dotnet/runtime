@@ -1,26 +1,26 @@
 <Project DefaultTargets="BundleTestWasmApp">
   <PropertyGroup>
-    <HELIX_WORKITEM_ROOT>/Users/steve/dev/helix-out/</HELIX_WORKITEM_ROOT>
-    <HELIX_CORRELATION_PAYLOAD>/Users/steve/dev/helix-out</HELIX_CORRELATION_PAYLOAD>
+    <!--<HELIX_WORKITEM_ROOT>/Users/steve/dev/helix-out/</HELIX_WORKITEM_ROOT>
+    <HELIX_CORRELATION_PAYLOAD>/Users/steve/dev/helix-out</HELIX_CORRELATION_PAYLOAD>-->
     <RunAOTCompilation>true</RunAOTCompilation>
     <TestName>System.Buffers.Tests</TestName>
-    <TestRootDir>$(HELIX_WORKITEM_ROOT)/$(TestName)</TestRootDir>
+    <TestRootDir>$(HELIX_WORKITEM_ROOT)</TestRootDir>
     <BundleDir>$(TestRootDir)</BundleDir>
     <WasmSrcPath>$(HELIX_CORRELATION_PAYLOAD)/wasm-source/</WasmSrcPath>
     <WasmNativeLibPath>$(TestRootDir)/publish/</WasmNativeLibPath>
     <IntermediateOutputPath>$(HELIX_WORKITEM_ROOT)\obj</IntermediateOutputPath>
-    <MonoAOTCompilerTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\monoaotcompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
-    <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\wasmappbuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
-    <MonoAotCrossCompilerPath>/Users/steve/dev/net5/runtime/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/runtimes/browser-wasm/native/cross/browser-wasm/mono-aot-cross</MonoAotCrossCompilerPath>
+    <MonoAOTCompilerTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\monoaotcompiler\net5.0\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\wasmappbuilder\publish\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <MonoAotCrossCompilerPath>$(HELIX_CORRELATION_PAYLOAD)/cross/cross/browser-wasm/mono-aot-cross</MonoAotCrossCompilerPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(HELIX_WORKITEM_ROOT)</MicrosoftNetCoreAppRuntimePackRidDir>
-    <EMSDK_PATH>$(HELIX_CORRELATION_PAYLOAD)\emsdk</EMSDK_PATH>
+    <EMSDK_PATH>$(HELIX_CORRELATION_PAYLOAD)/emsdk/emsdk</EMSDK_PATH>
 
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <SkipEmccVersionCheck>true</SkipEmccVersionCheck>
   </PropertyGroup>
 
-  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\WasmApp.props" />
-  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\WasmApp.targets" />
+  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\build\WasmApp.props" />
+  <Import Project="$(HELIX_CORRELATION_PAYLOAD)\wasm-build\build\WasmApp.targets" />
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
@@ -39,7 +39,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmSatelliteAssemblies Include="$(HELIX_CORRELATION_PAYLOAD)\publish*\*.resources.dll" />
+      <WasmSatelliteAssemblies Include="$(TestRootDir)\publish\*.resources.dll" />
       <WasmSatelliteAssemblies>
         <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
       </WasmSatelliteAssemblies>

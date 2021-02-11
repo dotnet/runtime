@@ -72,13 +72,15 @@
     <HelixType Condition="'$(TestPackages)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
-    <IncludeXHarnessCli>true</IncludeXHarnessCli>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
+    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestPackages)' == 'true'">
@@ -263,6 +265,10 @@
       </HelixCorrelationPayload>
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
         <Destination>monoaotcompiler</Destination>
+        <IncludeDirectoryName>true</IncludeDirectoryName>
+      </HelixCorrelationPayload>
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
+        <Destination>cross</Destination>
         <IncludeDirectoryName>true</IncludeDirectoryName>
       </HelixCorrelationPayload>
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
