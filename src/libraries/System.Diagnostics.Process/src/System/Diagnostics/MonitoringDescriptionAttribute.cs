@@ -18,7 +18,7 @@ namespace System.Diagnostics
 
         /// <summary>Initializes a new instance of the <see cref="System.Diagnostics.MonitoringDescriptionAttribute" /> class, using the specified description.</summary>
         /// <param name="description">The application-defined description text.</param>
-        /// <remarks>The description you specify in the <xref:System.Diagnostics.MonitoringDescriptionAttribute.%23ctor%2A> constructor is displayed by a visual designer when you access the property, event, or extender to which the attribute applies</remarks>
+        /// <remarks>The description you specify in the <see cref="System.Diagnostics.MonitoringDescriptionAttribute.MonitoringDescriptionAttribute(string)" /> constructor is displayed by a visual designer when you access the property, event, or extender to which the attribute applies</remarks>
         /// <altmember cref="System.Diagnostics.MonitoringDescriptionAttribute.Description"/>
         public MonitoringDescriptionAttribute(string description) : base(description)
         {
@@ -26,7 +26,7 @@ namespace System.Diagnostics
 
         /// <summary>Gets description text associated with the item monitored.</summary>
         /// <value>An application-defined description.</value>
-        /// <altmember cref="System.Diagnostics.MonitoringDescriptionAttribute.#ctor(string)"/>
+        /// <altmember cref="System.Diagnostics.MonitoringDescriptionAttribute.MonitoringDescriptionAttribute(string)"/>
         public override string Description
         {
             get
