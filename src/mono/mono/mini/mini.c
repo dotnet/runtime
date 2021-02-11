@@ -91,13 +91,13 @@ gboolean mono_using_xdebug;
 /* Counters */
 static guint32 discarded_code;
 static gint64 discarded_jit_time;
-static guint32 jinfo_try_holes_size;
 
 #define mono_jit_lock() mono_os_mutex_lock (&jit_mutex)
 #define mono_jit_unlock() mono_os_mutex_unlock (&jit_mutex)
 static mono_mutex_t jit_mutex;
 
 #ifndef DISABLE_JIT
+static guint32 jinfo_try_holes_size;
 static MonoBackend *current_backend;
 
 gpointer

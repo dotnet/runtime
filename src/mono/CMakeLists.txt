@@ -694,6 +694,10 @@ if(TARGET_IOS OR TARGET_ANDROID)
 else()
   set(DISABLE_DLLMAP 1)
 endif()
+if (TARGET_BROWSER)
+  # sys/errno.h exists, but just emits a warning and includes errno.h
+  unset(HAVE_SYS_ERRNO_H)
+endif()
 ### End of OS specific checks
 
 add_subdirectory(mono)
