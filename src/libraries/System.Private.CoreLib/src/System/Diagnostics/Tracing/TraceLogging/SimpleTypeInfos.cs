@@ -4,6 +4,7 @@
 #if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
+using System.Runtime.Serialization;
 #endif
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
