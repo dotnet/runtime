@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security;
 using System.Security.Authentication;
@@ -208,9 +207,6 @@ namespace System
         public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
 
-#if NETCOREAPP
-        [DynamicDependency("GetICUVersion", "Interop/Globalization", "System.Private.CoreLib")]
-#endif
         private static Version GetICUVersion()
         {
             int version = 0;

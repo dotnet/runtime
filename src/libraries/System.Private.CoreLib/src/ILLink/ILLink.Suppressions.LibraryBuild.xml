@@ -8,9 +8,5 @@
       <property name="Target">M:System.Resources.ManifestBasedResourceGroveler.CreateResourceSet(System.IO.Stream,System.Reflection.Assembly)</property>
       <property name="Justification">This warning is left in the product so developers get an ILLink warning when trimming an app with System.Resources.ResourceManager.AllowCustomResourceTypes=true.</property>
     </attribute>
-    <type fullname="Interop/Globalization">
-      <!-- Internal API used by tests only. -->
-      <method name="GetICUVersion" />
-    </type>
   </assembly>
 </linker>
