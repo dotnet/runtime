@@ -113,7 +113,7 @@ jobs:
       value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: nativeTestArtifactName
-      value: 'CoreCLRNativeTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'CoreCLRNativeTestArtifacts$(pgoType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: nativeTestArtifactRootFolderPath
       value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
