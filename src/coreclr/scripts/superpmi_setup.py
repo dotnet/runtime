@@ -274,13 +274,14 @@ def run_command(command_to_run, _cwd=None, _env=None, _exit_on_fail=False):
     with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd, env=_env) as proc:
         command_stdout, command_stderr = proc.communicate()
         return_code = proc.returncode
-        if _exit_on_fail and return_code != 0:
-            print("Command failed. Exiting.")
-            sys.exit(1)
+
         if len(command_stdout) > 0:
             print(command_stdout.decode("utf-8"))
         if len(command_stderr) > 0:
             print(command_stderr.decode("utf-8"))
+        if _exit_on_fail and return_code != 0:
+            print("Command failed. Exiting.")
+            sys.exit(1)
     return (command_stdout, command_stderr, return_code)
 
 
