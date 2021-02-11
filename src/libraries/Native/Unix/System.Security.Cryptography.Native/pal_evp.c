@@ -161,8 +161,8 @@ int32_t CryptoNative_Pkcs5Pbkdf2Hmac(const char* password,
                                      unsigned char* destination,
                                      int32_t destinationLength)
 {
-    if (passwordLength < 0 || salt == NULL || saltLength < 0 ||
-        iterations <= 0 || digest == NULL || destination == NULL || destinationLength < 0)
+    if (passwordLength < 0 || saltLength < 0 || iterations <= 0 || digest == NULL ||
+        destination == NULL || destinationLength < 0)
     {
         return -1;
     }

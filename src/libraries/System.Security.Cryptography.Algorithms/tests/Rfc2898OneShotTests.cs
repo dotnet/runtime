@@ -36,12 +36,12 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
-        public static void Pbkdf2DeriveBytes_PasswordBytes_SaltBytes_TooShort()
+        public static void Pbkdf2DeriveBytes_PasswordBytes_SaltBytes_SaltEmpty()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("salt", () =>
-                Rfc2898DeriveBytes.Pbkdf2DeriveBytes(
-                    s_passwordBytes, salt: new byte[0], iterations: 1, s_extractLength, HashAlgorithmName.SHA256)
-            );
+            byte[] expectedKey = "1E437A1C79D75BE61E91141DAE20".HexToByteArray();
+            byte[] key = Rfc2898DeriveBytes.Pbkdf2DeriveBytes(
+                new byte[0], salt: new byte[0], iterations: 1, s_extractLength, HashAlgorithmName.SHA1);
+            Assert.Equal(expectedKey, key);
         }
 
         [Fact]
@@ -99,12 +99,12 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
-        public static void Pbkdf2DeriveBytes_PasswordString_SaltBytes_TooShort()
+        public static void Pbkdf2DeriveBytes_PasswordString_SaltBytes_SaltEmpty()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("salt", () =>
-                Rfc2898DeriveBytes.Pbkdf2DeriveBytes(
-                    Password, salt: new byte[0], iterations: 1, s_extractLength, HashAlgorithmName.SHA256)
-            );
+            byte[] expectedKey = "1E437A1C79D75BE61E91141DAE20".HexToByteArray();
+            byte[] key = Rfc2898DeriveBytes.Pbkdf2DeriveBytes(
+                password: "", salt: new byte[0], iterations: 1, s_extractLength, HashAlgorithmName.SHA1);
+            Assert.Equal(expectedKey, key);
         }
 
         [Fact]

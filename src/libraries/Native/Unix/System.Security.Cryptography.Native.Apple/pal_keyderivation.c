@@ -43,8 +43,8 @@ int32_t AppleCryptoNative_KeyDerivationPBKDF(PAL_HashAlgorithm prfAlgorithm,
     if (errorCode != NULL)
         *errorCode = noErr;
 
-    if (passwordLen < 0 || salt == NULL || saltLen < 0 ||
-        iterations < 0 || derivedKey == NULL || derivedKeyLen < 0 || errorCode == NULL)
+    if (passwordLen < 0 || saltLen < 0 || iterations < 0 || derivedKey == NULL ||
+        derivedKeyLen < 0 || errorCode == NULL)
     {
         return -1;
     }

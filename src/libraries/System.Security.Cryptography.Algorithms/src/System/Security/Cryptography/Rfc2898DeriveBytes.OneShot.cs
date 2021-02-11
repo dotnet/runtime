@@ -99,8 +99,6 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             Span<byte> destination)
         {
-            if (salt.Length < MinimumSaltSize)
-                throw new ArgumentOutOfRangeException(nameof(salt), SR.Cryptography_PasswordDerivedBytes_FewBytesSalt);
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
             if (string.IsNullOrEmpty(hashAlgorithm.Name))

@@ -16,7 +16,6 @@ namespace Internal.Cryptography
             HashAlgorithmName hashAlgorithmName,
             Span<byte> destination)
         {
-            Debug.Assert(!salt.IsEmpty);
             Debug.Assert(!destination.IsEmpty);
             Debug.Assert(hashAlgorithmName.Name is not null);
             IntPtr evpHashType = HashProviderDispenser.HashAlgorithmToEvp(hashAlgorithmName.Name);
