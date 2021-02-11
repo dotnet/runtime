@@ -72,6 +72,7 @@ namespace Internal.Cryptography.Pal
                         ret = newColl;
                         _nativeCollection = newColl;
                         _recheckStopwatch.Restart();
+                        _forceRefresh = false;
                     }
                 }
             }
