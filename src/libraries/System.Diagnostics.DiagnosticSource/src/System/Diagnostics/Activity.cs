@@ -833,14 +833,14 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// When starting an Activity which not having any parent context, the Trace Id will automatically generated using random numbers.
-        /// TraceIdGenerator can be used to generate the Trace Id instead of using the default Trace Id generation which using the random numbers.
+        /// When starting an Activity which does not have a parent context, the Trace Id will automatically be generated using random numbers.
+        /// TraceIdGenerator can be used to override the runtime's default Trace Id generation algorithm.
         /// </summary>
         /// <remarks>
         /// - TraceIdGenerator needs to be set only if the default Trace Id generation is not enough for the app scenario.
         /// - When setting TraceIdGenerator, ensure it is performant enough to avoid any slowness in the Activity starting operation.
         /// - If TraceIdGenerator is set multiple times, the last set will be the one used for the Trace Id generation.
-        /// - Setting TraceIdGenerator to null will enable back the default Trace Id generation.
+        /// - Setting TraceIdGenerator to null will re-enable the default Trace Id generation algorithm.
         /// </remarks>
         public static Func<ActivityTraceId>? TraceIdGenerator { get; set; }
 
