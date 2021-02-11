@@ -94,16 +94,6 @@ ep_rt_object_array_free (void *ptr)
 	if (ptr)
 		free (ptr);
 }
-#endif /* !FEATURE_PERFTRACING_STANDALONE_PAL */
-
-#if defined(__APPLE__) && defined(DS_IPC_PAL_AF_UNIX)
-#define APPLICATION_CONTAINER_BASE_PATH_SUFFIX "/Library/Group Containers/"
-
-// Not much to go with, but Max semaphore length on Mac is 31 characters. In a sandbox, the semaphore name
-// must be prefixed with an application group ID. This will be 10 characters for developer ID and extra 2
-// characters for group name. For example ABCDEFGHIJ.MS. We still need some characters left
-// for the actual semaphore names.
-#define MAX_APPLICATION_GROUP_ID_LENGTH 13
 #endif
 
 static bool _ipc_pal_socket_init = false;
@@ -111,6 +101,56 @@ static bool _ipc_pal_socket_init = false;
 /*
  * Forward declares of all static functions.
  */
+
+static
+int
+ipc_socket_connect (
+	ds_ipc_socket_t s,
+	ds_ipc_socket_address_t *address,
+	int address_len,
+	uint32_t timeout_ms);
+
+static
+bool
+ipc_socket_recv (
+	ds_ipc_socket_t s,
+	uint8_t * buffer,
+	ssize_t bytes_to_read,
+	ssize_t *bytes_read);
+
+static
+bool
+ipc_socket_send (
+	ds_ipc_socket_t s,
+	uint8_t * buffer,
+	ssize_t bytes_to_write,
+	ssize_t *bytes_written);
+
+static
+bool
+ipc_transport_get_default_name (
+	ep_char8_t *name,
+	int32_t name_len);
+
+static
+bool
+ipc_init_listener (
+	DiagnosticsIpc *ipc,
+	ds_ipc_error_callback_func callback);
+
+static
+DiagnosticsIpc *
+ipc_alloc_uds_address (
+	DiagnosticsIpc *ipc,
+	DiagnosticsIpcConnectionMode mode,
+	const ep_char8_t *ipc_name);
+
+static
+DiagnosticsIpc *
+ipc_alloc_tcp_address (
+	DiagnosticsIpc *ipc,
+	DiagnosticsIpcConnectionMode mode,
+	const ep_char8_t *ipc_name);
 
 static
 void
@@ -148,19 +188,9 @@ ipc_stream_alloc (
 	int client_socket,
 	DiagnosticsIpcConnectionMode mode);
 
-#ifdef DS_IPC_PAL_AF_UNIX
-static
-bool
-ipc_transport_get_default_name (
-	ep_char8_t *name,
-	int32_t name_len);
-#endif
-
-static
-bool
-ipc_init_listener (
-	DiagnosticsIpc *ipc,
-	ds_ipc_error_callback_func callback);
+/*
+ * DiagnosticsIpc Socket PAL.
+ */
 
 static
 inline
@@ -188,8 +218,29 @@ ipc_set_last_error (int error)
 
 static
 inline
+int
+ipc_get_last_socket_error (ds_ipc_socket_t s)
+{
+	int opt_value = DS_IPC_SOCKET_ERROR;
+	int result_getsockopt;
+#ifdef HOST_WIN32
+	int opt_value_len = sizeof (opt_value);
+	DS_ENTER_BLOCKING_PAL_SECTION;
+	result_getsockopt = getsockopt (s, SOL_SOCKET, SO_ERROR, (char *)&opt_value, &opt_value_len);
+	DS_EXIT_BLOCKING_PAL_SECTION;
+#else
+	socklen_t opt_value_len = sizeof (opt_value);
+	DS_ENTER_BLOCKING_PAL_SECTION;
+	result_getsockopt = getsockopt (s, SOL_SOCKET, SO_ERROR, &opt_value, &opt_value_len);
+	DS_EXIT_BLOCKING_PAL_SECTION;
+#endif
+	return result_getsockopt == 0 ? opt_value : result_getsockopt;
+}
+
+static
+inline
 ds_ipc_mode_t
-ipc_set_permission (void)
+ipc_socket_set_default_umask (void)
 {
 #if defined(DS_IPC_PAL_AF_UNIX) && defined(__APPLE__)
 	// This will set the default permission bit to 600
@@ -202,34 +253,77 @@ ipc_set_permission (void)
 static
 inline
 void
-ipc_reset_permission (ds_ipc_mode_t mode)
+ipc_socket_reset_umask (ds_ipc_mode_t mode)
 {
 #if defined(DS_IPC_PAL_AF_UNIX) && defined(__APPLE__)
 	umask (mode)
 #endif
 }
 
+#if defined(DS_IPC_PAL_AF_UNIX)
 static
 inline
 ds_ipc_socket_t
-ipc_socket_create (DiagnosticsIpc *ipc) {
+ipc_socket_create_uds (DiagnosticsIpc *ipc)
+{
+	EP_ASSERT (ipc->server_address_family == AF_UNIX);
+
 	ds_ipc_socket_t new_socket = DS_IPC_INVALID_SOCKET;
 	DS_ENTER_BLOCKING_PAL_SECTION;
-#if defined(DS_IPC_PAL_AF_UNIX)
-	EP_ASSERT (ipc->server_address_family == AF_UNIX);
 	new_socket = socket (ipc->server_address_family, SOCK_STREAM, 0);
-#elif defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
+	DS_EXIT_BLOCKING_PAL_SECTION;
+	return new_socket;
+}
+#endif
+
+#if defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
+static
+inline
+ds_ipc_socket_t
+ipc_socket_create_tcp (DiagnosticsIpc *ipc)
+{
 #if defined(DS_IPC_PAL_AF_INET) && defined(DS_IPC_PAL_AF_INET6)
 	EP_ASSERT (ipc->server_address_family == AF_INET || ipc->server_address_family == AF_INET6);
 #else
 	EP_ASSERT (ipc->server_address_family == AF_INET);
 #endif
+
+	ds_ipc_socket_t new_socket = DS_IPC_INVALID_SOCKET;
+	DS_ENTER_BLOCKING_PAL_SECTION;
 	new_socket = socket (ipc->server_address_family, SOCK_STREAM, IPPROTO_TCP);
+	DS_EXIT_BLOCKING_PAL_SECTION;
+	return new_socket;
+}
+#endif
+
+static
+inline
+ds_ipc_socket_t
+ipc_socket_create (DiagnosticsIpc *ipc)
+{
+#if defined(DS_IPC_PAL_AF_UNIX)
+	return ipc_socket_create_uds (ipc);
+#elif defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
+	return ipc_socket_create_tcp (ipc);
 #else
 	#error "Unknown address family"
 #endif
+}
+
+static
+inline
+int
+ipc_socket_close (ds_ipc_socket_t s)
+{
+	int result_close;
+	DS_ENTER_BLOCKING_PAL_SECTION;
+#ifdef HOST_WIN32
+	result_close = closesocket (s);
+#else
+	result_close = close (s);
+#endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
-	return new_socket;
+	return result_close;
 }
 
 static
@@ -255,19 +349,18 @@ ipc_socket_set_blocking (
 	ds_ipc_socket_t s,
 	bool blocking)
 {
-	int ret = DS_IPC_SOCKET_ERROR;
+	int result = DS_IPC_SOCKET_ERROR;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 #ifdef HOST_WIN32
 	u_long blocking_mode = blocking ? 0 : 1;
-	ret = ioctlsocket (s, FIONBIO, &blocking_mode);
+	result = ioctlsocket (s, FIONBIO, &blocking_mode);
 #else
-	int ret = fcntl (s, F_GETFL, 0);
-	if (ret != -1) {
-		ret = fcntl (s, F_SETFL, blocking ? (ret & (~O_NONBLOCK)) : (ret | (O_NONBLOCK)));
-	}
+	int result = fcntl (s, F_GETFL, 0);
+	if (result != -1)
+		result = fcntl (s, F_SETFL, blocking ? (result & (~O_NONBLOCK)) : (result | (O_NONBLOCK)));
 #endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
-	return ret;
+	return result;
 }
 
 static
@@ -334,7 +427,6 @@ ipc_socket_accept (
 }
 
 static
-inline
 int
 ipc_socket_connect (
 	ds_ipc_socket_t s,
@@ -343,77 +435,57 @@ ipc_socket_connect (
 	uint32_t timeout_ms)
 {
 	int result_connect;
+
+	// We don't expect this to block on Unix Domain Socket.  `connect` may block until the
+	// TCP handshake is complete for TCP/IP sockets, but UDS don't use TCP.  `connect` will return even if
+	// the server hasn't called `accept`.
+
+#if defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
+	if (timeout_ms != DS_IPC_TIMEOUT_INFINITE) {
+		// Set socket to none blocking.
+		ipc_socket_set_blocking (s, false);
+	}
+#endif
+
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	result_connect = connect (s, address, address_len);
 	DS_EXIT_BLOCKING_PAL_SECTION;
 
 	if (timeout_ms != DS_IPC_TIMEOUT_INFINITE) {
 		if (result_connect == DS_IPC_SOCKET_ERROR) {
-#ifdef HOST_WIN32
-			if (WSAEWOULDBLOCK == WSAGetLastError ()) {
-#else
-			if (EINPROGRESS == errno) {
-#endif
+			if (ipc_get_last_error () == DS_IPC_SOCKET_ERROR_WOULDBLOCK) {
 				ds_ipc_pollfd_t pfd;
 				pfd.fd = s;
 				pfd.events = POLLOUT;
-
 				int result_poll = ipc_poll_fds (&pfd, 1, timeout_ms);
 				if (result_poll <= 0 || !(pfd.revents & POLLOUT)) {
 					// timeout or error
 					result_connect = DS_IPC_SOCKET_ERROR;
 				} else {
-					// check none blocking connect result.
-#ifdef HOST_WIN32
-					int opt_value = DS_IPC_SOCKET_ERROR;
-					int opt_value_len = sizeof (opt_value);
-					int result_getsockopt;
-					DS_ENTER_BLOCKING_PAL_SECTION;
-					result_getsockopt = getsockopt (s, SOL_SOCKET, SO_ERROR, (char *)&opt_value, &opt_value_len);
-					DS_EXIT_BLOCKING_PAL_SECTION;
-#else
-					int opt_value = DS_IPC_SOCKET_ERROR;
-					socklen_t opt_value_len = sizeof (opt_value);
-					int result_getsockopt;
-					DS_ENTER_BLOCKING_PAL_SECTION;
-					result_getsockopt = getsockopt (s, SOL_SOCKET, SO_ERROR, &opt_value, &opt_value_len);
-					DS_EXIT_BLOCKING_PAL_SECTION;
-#endif
-					if (result_getsockopt == DS_IPC_SOCKET_ERROR) {
+					// check non-blocking connect result.
+					result_connect = ipc_get_last_socket_error (s);
+					if (result_connect != 0 && result_connect != DS_IPC_SOCKET_ERROR) {
+						ipc_set_last_error (result_connect);
 						result_connect = DS_IPC_SOCKET_ERROR;
-					} else {
-						result_connect = 0;
-						if (opt_value != 0) {
-							result_connect = DS_IPC_SOCKET_ERROR;
-							ipc_set_last_error (opt_value);
-						}
 					}
 				}
 			}
 		}
 	}
 
+#if defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
+	if (timeout_ms != DS_IPC_TIMEOUT_INFINITE) {
+		// Reset socket to blocking.
+		int last_error = ipc_get_last_error ();
+		ipc_socket_set_blocking (s, true);
+		ipc_set_last_error (last_error);
+	}
+#endif
+
 	return result_connect;
 }
 
 static
-inline
-int
-ipc_socket_close (ds_ipc_socket_t s)
-{
-	int result_close;
-	DS_ENTER_BLOCKING_PAL_SECTION;
-#ifdef HOST_WIN32
-	result_close = closesocket (s);
-#else
-	result_close = close (s);
-#endif
-	DS_EXIT_BLOCKING_PAL_SECTION;
-	return result_close;
-}
-
-static
-inline
 bool
 ipc_socket_recv (
 	ds_ipc_socket_t s,
@@ -446,7 +518,6 @@ ipc_socket_recv (
 }
 
 static
-inline
 bool
 ipc_socket_send (
 	ds_ipc_socket_t s,
@@ -482,7 +553,6 @@ ipc_socket_send (
  * DiagnosticsIpc.
  */
 
-#ifdef DS_IPC_PAL_AF_UNIX
 static
 inline
 bool
@@ -490,6 +560,7 @@ ipc_transport_get_default_name (
 	ep_char8_t *name,
 	int32_t name_len)
 {
+#ifdef DS_IPC_PAL_AF_UNIX
 #ifndef FEATURE_PERFTRACING_STANDALONE_PAL
 	return ds_transport_get_default_name (
 		name,
@@ -512,8 +583,10 @@ ipc_transport_get_default_name (
 #else
 	return false;
 #endif
-}
+#else
+	return false;
 #endif
+}
 
 static
 bool
@@ -525,7 +598,7 @@ ipc_init_listener (
 	EP_ASSERT (ipc->mode == DS_IPC_CONNECTION_MODE_LISTEN);
 
 	bool success = false;
-	ds_ipc_mode_t prev_mode = ipc_set_permission ();
+	ds_ipc_mode_t prev_mode = ipc_socket_set_default_umask ();
 
 	ds_ipc_socket_t server_socket = ipc_socket_create (ipc);
 	if (server_socket == DS_IPC_INVALID_SOCKET) {
@@ -562,7 +635,7 @@ ipc_init_listener (
 	success = true;
 
 ep_on_exit:
-	ipc_reset_permission (prev_mode);
+	ipc_socket_reset_umask (prev_mode);
 	return success;
 
 ep_on_error:
@@ -572,7 +645,7 @@ ep_on_error:
 
 static
 DiagnosticsIpc *
-ipc_alloc_address (
+ipc_alloc_uds_address (
 	DiagnosticsIpc *ipc,
 	DiagnosticsIpcConnectionMode mode,
 	const ep_char8_t *ipc_name)
@@ -606,8 +679,19 @@ ipc_alloc_address (
 
 	return ipc;
 #else
-	EP_ASSERT (ipc != NULL);
+	return NULL;
+#endif
+}
 
+static
+DiagnosticsIpc *
+ipc_alloc_tcp_address (
+	DiagnosticsIpc *ipc,
+	DiagnosticsIpcConnectionMode mode,
+	const ep_char8_t *ipc_name)
+{
+#if defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
+	EP_ASSERT (ipc != NULL);
 	ep_return_null_if_nok (ipc_name != NULL);
 
 #ifdef DS_IPC_PAL_AF_INET
@@ -692,19 +776,45 @@ ep_on_error:
 #endif
 	ipc = NULL;
 	ep_exit_error_handler ();
+#else
+	return NULL;
 #endif
 }
 
 static
-void
-ipc_free_address (DiagnosticsIpc *ipc)
+inline
+DiagnosticsIpc *
+ipc_alloc_address (
+	DiagnosticsIpc *ipc,
+	DiagnosticsIpcConnectionMode mode,
+	const ep_char8_t *ipc_name)
 {
 #ifdef DS_IPC_PAL_AF_UNIX
-	EP_ASSERT (ipc != NULL);
-	EP_ASSERT (ipc->server_address_family == AF_UNIX);
-	ep_rt_object_free ((struct sockaddr_un *)ipc->server_address);
+	return ipc_alloc_uds_address (ipc, mode, ipc_name);
+#elif defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
+	return ipc_alloc_tcp_address (ipc, mode, ipc_name);
 #else
-	EP_ASSERT (ipc != NULL);
+	#error "Unknown address family"
+#endif
+}
+
+static
+inline
+void
+ipc_free_uds_address (DiagnosticsIpc *ipc)
+{
+#ifdef DS_IPC_PAL_AF_UNIX
+	if (ipc->server_address_family == AF_UNIX) {
+		ep_rt_object_free ((struct sockaddr_un *)ipc->server_address);
+	}
+#endif
+}
+
+static
+inline
+void
+ipc_free_tcp_address (DiagnosticsIpc *ipc)
+{
 #ifdef DS_IPC_PAL_AF_INET
 	if (ipc->server_address_family == AF_INET) {
 		ep_rt_object_free ((struct sockaddr_in *)ipc->server_address);
@@ -715,6 +825,20 @@ ipc_free_address (DiagnosticsIpc *ipc)
 		ep_rt_object_free ((struct sockaddr_in6 *)ipc->server_address);
 	}
 #endif
+}
+
+static
+inline
+void
+ipc_free_address (DiagnosticsIpc *ipc)
+{
+	EP_ASSERT (ipc != NULL);
+#ifdef DS_IPC_PAL_AF_UNIX
+	ipc_free_uds_address (ipc);
+#elif defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
+	ipc_free_tcp_address (ipc);
+#else
+	#error "Unknown address family"
 #endif
 }
 
@@ -975,16 +1099,6 @@ ds_ipc_connect (
 		ep_raise_error ();
 	}
 
-#ifndef DS_IPC_PAL_AF_UNIX
-	if (timeout_ms != DS_IPC_TIMEOUT_INFINITE) {
-		// Set socket to none blocking.
-		ipc_socket_set_blocking (client_socket, false);
-	}
-#endif
-
-	// We don't expect this to block on Unix Domain Socket.  `connect` may block until the
-	// TCP handshake is complete for TCP/IP sockets, but UDS don't use TCP.  `connect` will return even if
-	// the server hasn't called `accept`.
 	int result_connect = ipc_socket_connect (client_socket, ipc->server_address, ipc->server_address_len, timeout_ms);
 	if (result_connect < 0) {
 		if (callback)
@@ -996,13 +1110,6 @@ ds_ipc_connect (
 
 		ep_raise_error ();
 	}
-
-#ifndef DS_IPC_PAL_AF_UNIX
-	if (timeout_ms != DS_IPC_TIMEOUT_INFINITE) {
-		// Reset socket to blocking.
-		ipc_socket_set_blocking (client_socket, true);
-	}
-#endif
 
 	stream = ipc_stream_alloc (client_socket, DS_IPC_CONNECTION_MODE_CONNECT);
 

@@ -16,6 +16,7 @@
 #include <winsock2.h>
 #define DS_IPC_INVALID_SOCKET INVALID_SOCKET
 #define DS_IPC_SOCKET_ERROR SOCKET_ERROR
+#define DS_IPC_SOCKET_ERROR_WOULDBLOCK WSAEWOULDBLOCK
 typedef ADDRINFOA ds_ipc_addrinfo_t;
 typedef SOCKET ds_ipc_socket_t;
 typedef SOCKADDR ds_ipc_socket_address_t;
@@ -25,6 +26,7 @@ typedef int ds_ipc_mode_t;
 #else
 #define DS_IPC_INVALID_SOCKET -1
 #define DS_IPC_SOCKET_ERROR -1
+#define DS_IPC_SOCKET_ERROR_WOULDBLOCK EINPROGRESS
 typedef struct addrinfo ds_ipc_addrinfo_t;
 typedef int ds_ipc_socket_t;
 typedef struct socketaddr ds_ipc_socket_address_t;
