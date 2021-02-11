@@ -121,7 +121,7 @@ namespace System.IO.Compression
 
         /// <summary>
         /// Copies bytes from input buffer to output buffer.
-        /// You have to make sure, that t he buffer is byte aligned. If not enough bytes are
+        /// You have to make sure, that the buffer is byte aligned. If not enough bytes are
         /// available, copies fewer bytes.
         /// </summary>
         /// <returns>Returns the number of bytes copied, 0 if no byte is available.</returns>

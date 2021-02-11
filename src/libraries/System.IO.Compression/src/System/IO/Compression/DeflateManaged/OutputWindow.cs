@@ -140,10 +140,10 @@ namespace System.IO.Compression
             {
                 // this means we need to copy two parts separately
                 // copy the taillen bytes from the end of the output window
-                _window.AsMemory(WindowSize - tailLen, tailLen).CopyTo(output);
+                _window.AsSpan(WindowSize - tailLen, tailLen).CopyTo(output.Span);
                 output = output.Slice(tailLen, copy_end);
             }
-            _window.AsMemory(copy_end - output.Length, output.Length).CopyTo(output);
+            _window.AsSpan(copy_end - output.Length, output.Length).CopyTo(output.Span);
             _bytesUsed -= copied;
             Debug.Assert(_bytesUsed >= 0, "check this function and find why we copied more bytes than we have");
             return copied;
