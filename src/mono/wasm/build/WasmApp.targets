@@ -62,9 +62,10 @@
     <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
     <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+    <WasmInvariantGlobalization Condition="'$(WasmInvariantGlobalization)' == ''">false</WasmInvariantGlobalization>
     <WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>
     <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross</MonoAotCrossCompilerPath>
-	<InvariantGlobalization Condition="'$(WasmInvariantGlobalization)' == 'true'">true</InvariantGlobalization>
+    <InvariantGlobalization Condition="'$(WasmInvariantGlobalization)' == 'true'">true</InvariantGlobalization>
   </PropertyGroup>
 
   <!-- Having this separate target allows users to cleanly add After/BeforeTargets for this -->
@@ -251,8 +252,8 @@
      <_WasmRuntimePackNativeLibs Include="libSystem.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libSystem.IO.Compression.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
-     <_WasmRuntimePackNativeLibs Include="libicuuc.a"/>
-     <_WasmRuntimePackNativeLibs Include="libicui18n.a"/>
+     <_WasmRuntimePackNativeLibs Include="libicuuc.a" Condition="'$(WasmInvariantGlobalization)' == 'false'" />
+     <_WasmRuntimePackNativeLibs Include="libicui18n.a" Condition="'$(WasmInvariantGlobalization)' == 'false'" />
      <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
 
      <_WasmObjects Include="$(_WasmIntermediateOutputPath)driver.o"/>
