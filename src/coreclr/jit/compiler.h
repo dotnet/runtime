@@ -7495,19 +7495,6 @@ public:
         return (target_size_t)eeGetEEInfo()->osPageSize;
     }
 
-    // Returns the frame size at which we will generate a loop to probe the stack.
-    target_size_t getVeryLargeFrameSize()
-    {
-#ifdef TARGET_ARM
-        // The looping probe code is 40 bytes, whereas the straight-line probing for
-        // the (0x2000..0x3000) case is 44, so use looping for anything 0x2000 bytes
-        // or greater, to generate smaller code.
-        return 2 * eeGetPageSize();
-#else
-        return 3 * eeGetPageSize();
-#endif
-    }
-
     //------------------------------------------------------------------------
     // VirtualStubParam: virtual stub dispatch extra parameter (slot address).
     //
