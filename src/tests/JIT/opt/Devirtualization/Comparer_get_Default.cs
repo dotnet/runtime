@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -61,14 +62,20 @@ class Program
     private static void Compare_nuint(nuint a, nuint b) =>
         AssertEquals(a.CompareTo(b), Comparer<nuint>.Default.Compare(a, b));
 
-    private static void Compare_Enum(MethodImplOptions a, MethodImplOptions b) =>
+    private static void Compare_Enum_Int32(MethodImplOptions a, MethodImplOptions b) =>
         AssertEquals(a.CompareTo(b), Comparer<MethodImplOptions>.Default.Compare(a, b));
+
+    private static void Compare_Enum_Byte(Enum_byte a, Enum_byte b) =>
+        AssertEquals(a.CompareTo(b), Comparer<Enum_byte>.Default.Compare(a, b));
 
     private static void Compare_String(String a, String b) =>
         AssertEquals(a.CompareTo(b), Comparer<String>.Default.Compare(a, b));
 
     private static void Compare_DateTime(DateTime a, DateTime b) =>
         AssertEquals(a.CompareTo(b), Comparer<DateTime>.Default.Compare(a, b));
+
+    private static void Compare_Struct1(Struct1 a, Struct1 b) =>
+        AssertEquals(a.CompareTo(b), Comparer<Struct1>.Default.Compare(a, b));
 
     private static void Compare_Int32_Nullable(long? a, long? b)
     {
@@ -83,10 +90,9 @@ class Program
 
     public static int Main(string[] args)
     {
-        ;
         long[] values = Enumerable.Range(1000, 2000)
             .Select(i => (long)i)
-            .Concat(new []
+            .Concat(new[]
             {
                 short.MinValue, short.MinValue + 1, short.MaxValue - 1, short.MaxValue, short.MaxValue + 1,
                 int.MinValue, int.MinValue + 1, int.MaxValue, int.MaxValue - 1,
@@ -157,9 +163,17 @@ class Program
                 var nuintB = Unsafe.As<long, nuint>(ref b);
                 Compare_nuint(nuintA, nuintB);
 
-                var enumA = Unsafe.As<long, MethodImplOptions>(ref a);
-                var enumB = Unsafe.As<long, MethodImplOptions>(ref b);
-                Compare_Enum(enumA, enumB);
+                var enumIntA = Unsafe.As<long, MethodImplOptions>(ref a);
+                var enumIntB = Unsafe.As<long, MethodImplOptions>(ref b);
+                Compare_Enum_Int32(enumIntA, enumIntB);
+
+                var enumByteA = Unsafe.As<long, Enum_byte>(ref a);
+                var enumByteB = Unsafe.As<long, Enum_byte>(ref b);
+                Compare_Enum_Byte(enumByteA, enumByteB);
+
+                var structA = new Struct1 {a = a, b = b};
+                var structB = new Struct1 {a = b, b = a};
+                Compare_Struct1(structA, structB);
 
                 Compare_DateTime(
                     new DateTime(Math.Clamp(a, DateTime.MinValue.Ticks, DateTime.MaxValue.Ticks)),
@@ -214,10 +228,17 @@ class Program
     }
 }
 
-public struct Struct1
+public enum Enum_byte : byte
+{
+    A,B,C,D,E
+}
+
+public struct Struct1 : IComparable
 {
     public long a;
     public long b;
-    public long c;
-    public long d;
+    public int CompareTo(object? obj)
+    {
+        return b.CompareTo(((Struct1) obj).b);
+    }
 }
