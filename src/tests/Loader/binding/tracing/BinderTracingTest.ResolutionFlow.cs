@@ -442,7 +442,6 @@ namespace BinderTracingTests
         public static BindOperation AssemblyLoadContextResolvingEvent_DefaultALC_Exception()
         {
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
-            System.Diagnostics.Debugger.Break();
             using (var handlers = new Handlers(HandlerReturn.Exception, AssemblyLoadContext.Default))
             {
                 Assert.Throws<FileLoadException, BinderTestException>(() => AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName));
