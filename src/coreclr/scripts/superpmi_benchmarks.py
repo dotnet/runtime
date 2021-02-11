@@ -106,39 +106,43 @@ def build_and_run(coreclr_args, output_mch_name):
     log_file = coreclr_args.log_file
     partition_count = coreclr_args.partition_count
     partition_index = coreclr_args.partition_index
-    dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
-    dotnet_exe = os.path.join(dotnet_directory, "dotnet")
 
-    #TODO: Use TMP instead of os.path.join(performance_directory, "artifacts")
-    artifacts_directory = os.path.join(performance_directory, "artifacts")
-    artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
-    project_file = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
-    # benchmarks_dll = path.join('/home/kpathak/temp/artifacts', "MicroBenchmarks.dll")
-    benchmarks_dll = path.join(artifacts_directory, "MicroBenchmarks.dll")
+    with TempDir() as temp_location:
+        dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
+        dotnet_exe = os.path.join(dotnet_directory, "dotnet")
+        project_file = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
 
-    if is_windows:
-        shim_name = "superpmi-shim-collector.dll"
-        corerun_exe = "CoreRun.exe"
-        script_name = "run_microbenchmarks.bat"
-    else:
-        shim_name = "libsuperpmi-shim-collector.so"
-        corerun_exe = "corerun"
-        script_name = "run_microbenchmarks.sh"
+        # Produce artifacts in temp folder because on docker, payload directory (where performance 
+        # directory resides) is read-only.
+        artifacts_directory = os.path.join(temp_location, "artifacts")
+        artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
+        benchmarks_dll = path.join(artifacts_directory, "MicroBenchmarks.dll")
+        # benchmarks_dll = path.join('/home/kpathak/temp/artifacts', "MicroBenchmarks.dll")
 
-    run_command(
+        if is_windows:
+            # shim_name = "superpmi-shim-collector.dll"
+            shim_name = "%JitName%"
+            corerun_exe = "CoreRun.exe"
+            script_name = "run_microbenchmarks.bat"
+        else:
+            # shim_name = "libsuperpmi-shim-collector.so"
+            shim_name = "$JitName"
+            corerun_exe = "corerun"
+            script_name = "run_microbenchmarks.sh"
+
+        run_command(
         [dotnet_exe, "restore", project_file, "--packages",
         artifacts_packages_directory])
 
-    run_command(
-        [dotnet_exe, "build", project_file, "--configuration", "Release",
-        "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
-        "-o", artifacts_directory])
+        run_command(
+            [dotnet_exe, "build", project_file, "--configuration", "Release",
+            "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
+            "-o", artifacts_directory])
 
-    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter *Array* --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
-        f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
-        "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
+        collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter *Array* --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
+            f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
+            "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
 
-    with TempDir() as temp_location:
         # script_name = path.join('/home/kpathak/temp/output', script_name)
         script_name = path.join(temp_location, script_name)
         with open(script_name, "w") as collection_script:
@@ -146,8 +150,10 @@ def build_and_run(coreclr_args, output_mch_name):
             # Unset the JitName so dotnet process will not fail
             if not is_windows:
                 contents.append("#!/bin/bash")
+                contents.append("export JitName=$COMPlus_JitName")
                 contents.append("unset COMPlus_JitName")
             else:
+                contents.append("set JitName=%COMPlus_JitName%")
                 contents.append("set COMPlus_JitName=")
             contents.append(f"pushd {performance_directory}")
             contents.append(collection_command)
@@ -372,15 +378,17 @@ def main(main_args):
     """
     coreclr_args = setup_args(main_args)
 
-    all_output_mch_name = path.join(coreclr_args.output_mch_path + "_all.mch")
-    # execute(coreclr_args, all_output_mch_name)
-    build_and_run(coreclr_args, all_output_mch_name)
-    if os.path.isfile(all_output_mch_name):
-        pass
-    else:
+    # all_output_mch_name = path.join(coreclr_args.output_mch_path + "_all.mch")
+    # build_and_run(coreclr_args, all_output_mch_name)
+    build_and_run(coreclr_args, coreclr_args.output_mch_path)
+
+    # if not os.path.isfile(all_output_mch_name):
+    #     print("No mch file generated.")
+    if not os.path.isfile(coreclr_args.output_mch_path):
         print("No mch file generated.")
 
-    strip_unrelated_mc(coreclr_args, all_output_mch_name, coreclr_args.output_mch_path)
+    #TODO: Disable stripping for now until we solve mcs.exe problems
+    # strip_unrelated_mc(coreclr_args, all_output_mch_name, coreclr_args.output_mch_path)
 
 
 if __name__ == "__main__":
