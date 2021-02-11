@@ -193,12 +193,12 @@ namespace System.Net.WebSockets
                             }
                             else
                             {
-                                _tcsConnect.SetResult();
+                                _tcsConnect.TrySetResult();
                             }
                         }
                         else
                         {
-                            _tcsConnect.SetCanceled(cancellationToken);
+                            _tcsConnect.TrySetCanceled(cancellationToken);
                         }
                     }
                 };
