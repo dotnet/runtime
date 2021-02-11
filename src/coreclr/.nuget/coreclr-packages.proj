@@ -13,6 +13,7 @@
     <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.proj" />
     <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.proj" />
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.proj" />
+    <ProjectReference Include="ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.pkgproj" />
   </ItemGroup>
 
   <Import Project="versioning.targets" />
