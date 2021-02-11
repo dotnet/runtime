@@ -1139,7 +1139,7 @@ namespace System.Text.Unicode
                     }
                     else
                     {
-                        pOutputBuffer[0] = (byte)(thisDWord >> 24); // extract [ AA 00 ## ## ]
+                        pOutputBuffer[0] = (byte)(thisDWord >> 16); // extract [ 00 AA ## ## ]
                     }
 
                     pInputBuffer++;
