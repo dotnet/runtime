@@ -86,7 +86,11 @@
       </_AotInputAssemblies>
 
       <_WasmAssemblies Remove="@(_WasmAssemblies)" />
+
+      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native" />
+      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net6.0" />
     </ItemGroup>
+
     <PropertyGroup>
       <AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">AotInterp</AOTMode>
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
@@ -98,6 +102,7 @@
       Mode="$(AOTMode)"
       OutputType="AsmOnly"
       Assemblies="@(_AotInputAssemblies)"
+      AdditionalAssemblySearchPaths="@(_WasmAOTSearchPaths)"
       UseAotDataFile="false"
       AOTProfilePath="$(AOTProfilePath)"
       Profilers="$(WasmProfilers)"
