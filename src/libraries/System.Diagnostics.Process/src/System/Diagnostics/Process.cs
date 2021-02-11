@@ -48,10 +48,10 @@ namespace System.Diagnostics
     /// [!code-fsharp[System.Diagnostics.Process#1](~/samples/snippets/fsharp/VS_Snippets_CLR_System/system.diagnostics.process/fs/Start1.fs#1)]
     /// The code for the `runProc` function was written by [ImaginaryDevelopment](http://fssnip.net/authors/ImaginaryDevelopment) and is available under the [Microsoft Public License](https://opensource.org/licenses/ms-pl).
     /// ]]></format></remarks>
-    /// <altmember cref="System.Diagnostics.Process.Start()"/>
+    /// <altmember cref="O:System.Diagnostics.Process.Start"/>
     /// <altmember cref="System.Diagnostics.ProcessStartInfo"/>
     /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-    /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+    /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
     /// <altmember cref="System.Diagnostics.ProcessThread"/>
     /// <related type="ExternalDocumentation" href="https://code.msdn.microsoft.com/windowsdesktop/Using-the-NET-Process-Class-d70597ef">Using the .NET Process Class</related>
     [Designer("System.Diagnostics.Design.ProcessDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -154,11 +154,11 @@ namespace System.Diagnostics
 
         /// <summary>Initializes a new instance of the <see cref="System.Diagnostics.Process" /> class.</summary>
         /// <remarks>If you do not specify the <see cref="System.Diagnostics.Process.MachineName" /> property, the default is the local computer, (".").
-        /// You have two options for associating a new <see cref="System.Diagnostics.Process" /> component with a process on the computer. The first option is to use the constructor to create the <see cref="System.Diagnostics.Process" /> component, set the appropriate members of the <see cref="System.Diagnostics.Process.StartInfo" /> property and call <see cref="System.Diagnostics.Process.Start()" /> to associate the <see cref="System.Diagnostics.Process" /> with a new system process. The second option is to associate the <see cref="System.Diagnostics.Process" /> with a running system process by using <see cref="System.Diagnostics.Process.GetProcessById(int)" /> or one of the <see cref="System.Diagnostics.Process.GetProcesses()" /> return values.
-        /// If you use a <see langword="static" /> overload of the <see cref="System.Diagnostics.Process.Start()" /> method to start a new system process, the method creates a new <see cref="System.Diagnostics.Process" /> component and associates it with the process.
+        /// You have two options for associating a new <see cref="System.Diagnostics.Process" /> component with a process on the computer. The first option is to use the constructor to create the <see cref="System.Diagnostics.Process" /> component, set the appropriate members of the <see cref="System.Diagnostics.Process.StartInfo" /> property and call <see cref="O:System.Diagnostics.Process.Start" /> to associate the <see cref="System.Diagnostics.Process" /> with a new system process. The second option is to associate the <see cref="System.Diagnostics.Process" /> with a running system process by using <see cref="O:System.Diagnostics.Process.GetProcessById" /> or one of the <see cref="O:System.Diagnostics.Process.GetProcesses" /> return values.
+        /// If you use a <see langword="static" /> overload of the <see cref="O:System.Diagnostics.Process.Start" /> method to start a new system process, the method creates a new <see cref="System.Diagnostics.Process" /> component and associates it with the process.
         /// When the <see cref="System.Diagnostics.ProcessStartInfo.UseShellExecute" /> property is set to its default value, <see langword="true" />, you can start applications and documents in a way that is similar to using the `Run` dialog box of the Windows `Start` menu. When <see cref="System.Diagnostics.ProcessStartInfo.UseShellExecute" /> is <see langword="false" />, you can start only executables.
-        /// Any executable file that you can call from the command line can be started in one of two ways: by setting the appropriate members of the <see cref="System.Diagnostics.Process.StartInfo" /> property and calling the <see cref="System.Diagnostics.Process.Start()" /> method with no parameters, or by passing the appropriate parameter to the <see langword="static" /><see cref="System.Diagnostics.Process.Start()" /> member.
-        /// You can create a <see cref="System.Diagnostics.Process" /> component by using the constructor, one of the static <see cref="System.Diagnostics.Process.Start()" /> overloads, or any of the <see cref="System.Diagnostics.Process.GetProcessById(int)" />, <see cref="System.Diagnostics.Process.GetProcesses()" />, or <see cref="System.Diagnostics.Process.GetProcessesByName(string?)" /> methods. After you have done so, you have a view into the associated process. This is not a dynamic view that updates itself automatically when the process properties have changed in memory. Instead, you must call <see cref="System.Diagnostics.Process.Refresh" /> for the component to update the <see cref="System.Diagnostics.Process" /> property information in your application.</remarks>
+        /// Any executable file that you can call from the command line can be started in one of two ways: by setting the appropriate members of the <see cref="System.Diagnostics.Process.StartInfo" /> property and calling the <see cref="O:System.Diagnostics.Process.Start" /> method with no parameters, or by passing the appropriate parameter to the <see langword="static" /><see cref="O:System.Diagnostics.Process.Start" /> member.
+        /// You can create a <see cref="System.Diagnostics.Process" /> component by using the constructor, one of the static <see cref="O:System.Diagnostics.Process.Start" /> overloads, or any of the <see cref="O:System.Diagnostics.Process.GetProcessById" />, <see cref="O:System.Diagnostics.Process.GetProcesses" />, or <see cref="O:System.Diagnostics.Process.GetProcessesByName" /> methods. After you have done so, you have a view into the associated process. This is not a dynamic view that updates itself automatically when the process properties have changed in memory. Instead, you must call <see cref="System.Diagnostics.Process.Refresh" /> for the component to update the <see cref="System.Diagnostics.Process" /> property information in your application.</remarks>
         public Process()
         {
             // This class once inherited a finalizer. For backward compatibility it has one so that
@@ -203,7 +203,7 @@ namespace System.Diagnostics
         /// <value>The handle that the operating system assigned to the associated process when the process was started. The system uses this handle to keep track of process attributes.</value>
         /// <remarks>An application can obtain a handle to a process that can be used as a parameter to many process-information and control functions. You can use this handle to initialize a <see cref="System.Threading.WaitHandle" /> or to call native methods with platform invoke.
         /// This process handle is private to an application--in other words, process handles cannot be shared. A process also has a process <see cref="System.Diagnostics.Process.Id" /> which, unlike the <see cref="System.Diagnostics.Process.Handle" />, is unique and, therefore, valid throughout the system.
-        /// Only processes started through a call to <see cref="System.Diagnostics.Process.Start()" /> set the <see cref="System.Diagnostics.Process.Handle" /> property of the corresponding <see cref="System.Diagnostics.Process" /> instances.</remarks>
+        /// Only processes started through a call to <see cref="O:System.Diagnostics.Process.Start" /> set the <see cref="System.Diagnostics.Process.Handle" /> property of the corresponding <see cref="System.Diagnostics.Process" /> instances.</remarks>
         /// <exception cref="System.InvalidOperationException">The process has not been started or has exited. The <see cref="System.Diagnostics.Process.Handle" /> property cannot be read because there is no process associated with this <see cref="System.Diagnostics.Process" /> instance.
         /// -or-
         /// The <see cref="System.Diagnostics.Process" /> instance has been attached to a running process but you do not have the necessary permissions to get a handle with full access rights.</exception>
@@ -212,7 +212,7 @@ namespace System.Diagnostics
         /// <altmember cref="System.Diagnostics.Process.ExitCode"/>
         /// <altmember cref="System.Diagnostics.Process.ExitTime"/>
         /// <altmember cref="System.Diagnostics.Process.HandleCount"/>
-        /// <altmember cref="System.Diagnostics.Process.Start()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Start"/>
         /// <altmember cref="System.Diagnostics.Process.Refresh"/>
         public IntPtr Handle => SafeHandle.DangerousGetHandle();
 
@@ -282,7 +282,7 @@ namespace System.Diagnostics
         /// <exception cref="System.NotSupportedException">You are trying to access the <see cref="System.Diagnostics.Process.ExitCode" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.HasExited"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
         /// <altmember cref="System.Diagnostics.Process.WaitForExit(int)"/>
         /// <altmember cref="System.Diagnostics.Process.EnableRaisingEvents"/>
         public int ExitCode
@@ -415,7 +415,7 @@ namespace System.Diagnostics
         /// [!code-vb[process_GetProcessesByName2_2#2](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process_GetProcessesByName2_2/VB/process_getprocessesbyname2_2.vb#2)]
         /// ]]></format></remarks>
         /// <exception cref="System.InvalidOperationException">There is no process associated with this <see cref="System.Diagnostics.Process" /> object.</exception>
-        /// <altmember cref="System.Diagnostics.Process.GetProcesses(string)"/>
+        /// <altmember cref="O:System.Diagnostics.Process.GetProcesses"/>
         /// <altmember cref="System.Diagnostics.Process.GetProcessById(int,string)"/>
         /// <altmember cref="System.Diagnostics.Process.GetProcessesByName(string)"/>
         public string MachineName
@@ -506,7 +506,7 @@ namespace System.Diagnostics
         /// <remarks>The value returned by this property represents the most recently refreshed modules. To get the most up to date information, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
         /// A process module represents a.dll or .exe file that is loaded into a particular process. A <see cref="System.Diagnostics.ProcessModule" /> instance lets you view information about a module, including the module name, file name, and module memory details.
         /// A process can load multiple modules into memory. For example,.exe files that load additional .dll files have multiple modules.
-        /// After starting the process, this collection is empty until the system has loaded the process. If the process has a main window, you can call <see cref="System.Diagnostics.Process.WaitForInputIdle()" /> before retrieving this property to ensure that the collection is nonempty when you get the list.</remarks>
+        /// After starting the process, this collection is empty until the system has loaded the process. If the process has a main window, you can call <see cref="O:System.Diagnostics.Process.WaitForInputIdle" /> before retrieving this property to ensure that the collection is nonempty when you get the list.</remarks>
         /// <exception cref="System.NotSupportedException">You are attempting to access the <see cref="System.Diagnostics.Process.Modules" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <exception cref="System.InvalidOperationException">The process <see cref="System.Diagnostics.Process.Id" /> is not available.</exception>
         /// <exception cref="System.ComponentModel.Win32Exception">You are attempting to access the <see cref="System.Diagnostics.Process.Modules" /> property for either the system process or the idle process. These processes do not have modules.</exception>
@@ -934,7 +934,7 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets or sets the properties to pass to the <see cref="System.Diagnostics.Process.Start()" /> method of the <see cref="System.Diagnostics.Process" />.</summary>
+        /// <summary>Gets or sets the properties to pass to the <see cref="O:System.Diagnostics.Process.Start" /> method of the <see cref="System.Diagnostics.Process" />.</summary>
         /// <value>The <see cref="System.Diagnostics.ProcessStartInfo" /> that represents the data with which to start the process. These arguments include the name of the executable file or document used to start the process.</value>
         /// <remarks><format type="text/markdown"><![CDATA[
         /// <xref:System.Diagnostics.Process.StartInfo%2A> represents the set of parameters to use to start a process. When <xref:System.Diagnostics.Process.Start%2A> is called, the <xref:System.Diagnostics.Process.StartInfo%2A> is used to specify the process to start. The only necessary <xref:System.Diagnostics.Process.StartInfo%2A> member to set is the <xref:System.Diagnostics.ProcessStartInfo.FileName%2A> property. Starting a process by specifying the <xref:System.Diagnostics.ProcessStartInfo.FileName%2A> property is similar to typing the information in the **Run** dialog box of the Windows **Start** menu. Therefore, the <xref:System.Diagnostics.ProcessStartInfo.FileName%2A> property does not need to represent an executable file. It can be of any file type for which the extension has been associated with an application installed on the system. For example the <xref:System.Diagnostics.ProcessStartInfo.FileName%2A> can have a .txt extension if you have associated text files with an editor, such as Notepad, or it can have a .doc if you have associated .doc files with a word processing tool, such as Microsoft Word. Similarly, in the same way that the **Run** dialog box can accept an executable file name with or without the .exe extension, the .exe extension is optional in the <xref:System.Diagnostics.ProcessStartInfo.FileName%2A> member. For example, you can set the <xref:System.Diagnostics.ProcessStartInfo.FileName%2A> property to either "Notepad.exe" or "Notepad".
@@ -950,8 +950,8 @@ namespace System.Diagnostics
         /// [!code-vb[Process.Start_instance#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process.Start_instance/VB/processstart.vb#1)]
         /// ]]></format></remarks>
         /// <exception cref="System.ArgumentNullException">The value that specifies the <see cref="System.Diagnostics.Process.StartInfo" /> is <see langword="null" />.</exception>
-        /// <exception cref="System.InvalidOperationException">.NET 5+ and .NET Core only: The <see cref="System.Diagnostics.Process.Start()" /> method was not used to start the process.</exception>
-        /// <altmember cref="System.Diagnostics.Process.Start()"/>
+        /// <exception cref="System.InvalidOperationException">.NET 5+ and .NET Core only: The <see cref="O:System.Diagnostics.Process.Start" /> method was not used to start the process.</exception>
+        /// <altmember cref="O:System.Diagnostics.Process.Start"/>
         /// <altmember cref="System.Diagnostics.ProcessStartInfo.FileName"/>
         public ProcessStartInfo StartInfo
         {
@@ -1020,9 +1020,9 @@ namespace System.Diagnostics
         /// <remarks>The value returned by this property represents the most recently refreshed handle count. To get the most up to date handle count, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
         /// Handles provide a way for a process to refer to objects. A process can obtain handles to files, resources, message queues, and many other operating system objects. The operating system reclaims the memory associated with the process only when the handle count is zero.</remarks>
         /// <altmember cref="System.Diagnostics.Process.Handle"/>
-        /// <altmember cref="System.Diagnostics.Process.Start()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Start"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
         public int HandleCount
         {
             get
@@ -1072,7 +1072,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets or sets whether the <see cref="System.Diagnostics.Process.Exited" /> event should be raised when the process terminates.</summary>
-        /// <value><see langword="true" /> if the <see cref="System.Diagnostics.Process.Exited" /> event should be raised when the associated process is terminated (through either an exit or a call to <see cref="System.Diagnostics.Process.Kill()" />); otherwise, <see langword="false" />. The default is <see langword="false" />. Note that the <see cref="System.Diagnostics.Process.Exited" /> event is raised even if the value of <see cref="System.Diagnostics.Process.EnableRaisingEvents" /> is <see langword="false" /> when the process exits during or before the user performs a <see cref="System.Diagnostics.Process.HasExited" /> check.</value>
+        /// <value><see langword="true" /> if the <see cref="System.Diagnostics.Process.Exited" /> event should be raised when the associated process is terminated (through either an exit or a call to <see cref="O:System.Diagnostics.Process.Kill" />); otherwise, <see langword="false" />. The default is <see langword="false" />. Note that the <see cref="System.Diagnostics.Process.Exited" /> event is raised even if the value of <see cref="System.Diagnostics.Process.EnableRaisingEvents" /> is <see langword="false" /> when the process exits during or before the user performs a <see cref="System.Diagnostics.Process.HasExited" /> check.</value>
         /// <remarks><format type="text/markdown"><![CDATA[
         /// The <xref:System.Diagnostics.Process.EnableRaisingEvents%2A> property suggests whether the component should be notified when the operating system has shut down a process. The <xref:System.Diagnostics.Process.EnableRaisingEvents%2A> property is used in asynchronous processing to notify your application that a process has exited. To force your application to synchronously wait for an exit event (which interrupts processing of the application until the exit event has occurred), use the <xref:System.Diagnostics.Process.WaitForExit%2A> method.
         /// > [!NOTE]
@@ -1089,7 +1089,7 @@ namespace System.Diagnostics
         /// <altmember cref="System.Diagnostics.Process.WaitForExit(int)"/>
         /// <altmember cref="System.Diagnostics.Process.Exited"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
         /// <altmember cref="System.Diagnostics.Process.Handle"/>
         /// <altmember cref="System.Diagnostics.Process.ExitTime"/>
         /// <altmember cref="System.Diagnostics.Process.HasExited"/>
@@ -1383,9 +1383,9 @@ namespace System.Diagnostics
 
         /// <summary>Causes the <see cref="System.Diagnostics.Process" /> component to wait indefinitely for the associated process to enter an idle state. This overload applies only to processes with a user interface and, therefore, a message loop.</summary>
         /// <returns><see langword="true" /> if the associated process has reached an idle state.</returns>
-        /// <remarks>Use <see cref="System.Diagnostics.Process.WaitForInputIdle()" /> to force the processing of your application to wait until the message loop has returned to the idle state. When a process with a user interface is executing, its message loop executes every time a Windows message is sent to the process by the operating system. The process then returns to the message loop. A process is said to be in an idle state when it is waiting for messages inside of a message loop. This state is useful, for example, when your application needs to wait for a starting process to finish creating its main window before the application communicates with that window.
-        /// If a process does not have a message loop, <see cref="System.Diagnostics.Process.WaitForInputIdle()" /> throws an <see cref="System.InvalidOperationException" />.
-        /// The <see cref="System.Diagnostics.Process.WaitForInputIdle()" /> overload instructs the <see cref="System.Diagnostics.Process" /> component to wait indefinitely for the process to become idle in the message loop. This instruction can cause an application to stop responding. For example, if the process is written to always exit its message loop immediately, as in the code fragment `while(true)`.</remarks>
+        /// <remarks>Use <see cref="O:System.Diagnostics.Process.WaitForInputIdle" /> to force the processing of your application to wait until the message loop has returned to the idle state. When a process with a user interface is executing, its message loop executes every time a Windows message is sent to the process by the operating system. The process then returns to the message loop. A process is said to be in an idle state when it is waiting for messages inside of a message loop. This state is useful, for example, when your application needs to wait for a starting process to finish creating its main window before the application communicates with that window.
+        /// If a process does not have a message loop, <see cref="O:System.Diagnostics.Process.WaitForInputIdle" /> throws an <see cref="System.InvalidOperationException" />.
+        /// The <see cref="O:System.Diagnostics.Process.WaitForInputIdle" /> overload instructs the <see cref="System.Diagnostics.Process" /> component to wait indefinitely for the process to become idle in the message loop. This instruction can cause an application to stop responding. For example, if the process is written to always exit its message loop immediately, as in the code fragment `while(true)`.</remarks>
         /// <exception cref="System.InvalidOperationException">The process does not have a graphical interface.
         /// -or-
         /// An unknown error occurred. The process failed to enter an idle state.
@@ -1393,7 +1393,7 @@ namespace System.Diagnostics
         /// The process has already exited.
         /// -or-
         /// No process is associated with this <see cref="System.Diagnostics.Process" /> object.</exception>
-        /// <altmember cref="System.Diagnostics.Process.Start()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Start"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
         public bool WaitForInputIdle()
         {
@@ -1416,7 +1416,7 @@ namespace System.Diagnostics
         /// The process has already exited.
         /// -or-
         /// No process is associated with this <see cref="System.Diagnostics.Process" /> object.</exception>
-        /// <altmember cref="System.Diagnostics.Process.Start()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Start"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
         public bool WaitForInputIdle(int milliseconds)
         {
@@ -1635,7 +1635,7 @@ namespace System.Diagnostics
         /// <altmember cref="System.Diagnostics.Process.Id"/>
         /// <altmember cref="System.Diagnostics.Process.MachineName"/>
         /// <altmember cref="System.Diagnostics.Process.GetProcessesByName(string)"/>
-        /// <altmember cref="System.Diagnostics.Process.GetProcesses()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.GetProcesses"/>
         /// <altmember cref="System.Diagnostics.Process.GetCurrentProcess"/>
         public static Process GetProcessById(int processId, string machineName)
         {
@@ -1664,7 +1664,7 @@ namespace System.Diagnostics
         /// <exception cref="System.InvalidOperationException">The process was not started by this object.</exception>
         /// <altmember cref="System.Diagnostics.Process.Id"/>
         /// <altmember cref="System.Diagnostics.Process.GetProcessesByName(string)"/>
-        /// <altmember cref="System.Diagnostics.Process.GetProcesses()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.GetProcesses"/>
         /// <altmember cref="System.Diagnostics.Process.GetCurrentProcess"/>
         public static Process GetProcessById(int processId)
         {
@@ -1687,7 +1687,7 @@ namespace System.Diagnostics
         /// <exception cref="System.InvalidOperationException">There are problems accessing the performance counter APIs used to get process information. This exception is specific to Windows NT, Windows 2000, and Windows XP.</exception>
         /// <altmember cref="System.Diagnostics.Process.ProcessName"/>
         /// <altmember cref="System.Diagnostics.Process.GetProcessById(int,string)"/>
-        /// <altmember cref="System.Diagnostics.Process.GetProcesses()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.GetProcesses"/>
         /// <altmember cref="System.Diagnostics.Process.GetCurrentProcess"/>
         public static Process[] GetProcessesByName(string? processName)
         {
@@ -1766,7 +1766,7 @@ namespace System.Diagnostics
         /// ]]></format></remarks>
         /// <altmember cref="System.Diagnostics.Process.GetProcessById(int,string)"/>
         /// <altmember cref="System.Diagnostics.Process.GetProcessesByName(string)"/>
-        /// <altmember cref="System.Diagnostics.Process.GetProcesses()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.GetProcesses"/>
         public static Process GetCurrentProcess()
         {
             return new Process(".", false, Environment.ProcessId, null);
@@ -1922,7 +1922,7 @@ namespace System.Diagnostics
         /// <altmember cref="System.Diagnostics.ProcessStartInfo.FileName"/>
         /// <altmember cref="System.Diagnostics.ProcessStartInfo"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
         public bool Start()
         {
             Close();
@@ -1988,7 +1988,7 @@ namespace System.Diagnostics
         /// <altmember cref="System.Diagnostics.ProcessStartInfo.FileName"/>
         /// <altmember cref="System.Diagnostics.Process.StartInfo"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
         public static Process Start(string fileName)
         {
             // the underlying Start method can only return null on Windows platforms,
@@ -2031,7 +2031,7 @@ namespace System.Diagnostics
         /// <altmember cref="System.Diagnostics.Process.StartInfo"/>
         /// <altmember cref="System.Diagnostics.ProcessStartInfo"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
         public static Process Start(string fileName, string arguments)
         {
             // the underlying Start method can only return null on Windows platforms,
@@ -2102,7 +2102,7 @@ namespace System.Diagnostics
         /// <altmember cref="System.Diagnostics.ProcessStartInfo.FileName"/>
         /// <altmember cref="System.Diagnostics.ProcessStartInfo"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
         public static Process? Start(ProcessStartInfo startInfo)
         {
             Process process = new Process();
@@ -2191,9 +2191,9 @@ namespace System.Diagnostics
         /// -or-
         /// There is no process associated with this <see cref="System.Diagnostics.Process" /> object.
         /// -or-
-        /// You are attempting to call <see cref="System.Diagnostics.Process.WaitForExit()" /> for a process that is running on a remote computer. This method is available only for processes that are running on the local computer.</exception>
+        /// You are attempting to call <see cref="O:System.Diagnostics.Process.WaitForExit" /> for a process that is running on a remote computer. This method is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
         /// <altmember cref="System.Diagnostics.Process.Handle"/>
         /// <altmember cref="System.Diagnostics.Process.ExitTime"/>
         /// <altmember cref="System.Diagnostics.Process.EnableRaisingEvents"/>
@@ -2226,7 +2226,7 @@ namespace System.Diagnostics
         /// You are attempting to call <see cref="System.Diagnostics.Process.WaitForExit(int)" /> for a process that is running on a remote computer. This method is available only for processes that are running on the local computer.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="milliseconds" /> is a negative number other than -1, which represents an infinite time-out.</exception>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
         /// <altmember cref="System.Diagnostics.Process.Handle"/>
         /// <altmember cref="System.Diagnostics.Process.ExitTime"/>
         /// <altmember cref="System.Diagnostics.Process.EnableRaisingEvents"/>

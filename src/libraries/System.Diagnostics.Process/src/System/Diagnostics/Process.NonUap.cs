@@ -39,10 +39,10 @@ namespace System.Diagnostics
     /// [!code-fsharp[System.Diagnostics.Process#1](~/samples/snippets/fsharp/VS_Snippets_CLR_System/system.diagnostics.process/fs/Start1.fs#1)]
     /// The code for the `runProc` function was written by [ImaginaryDevelopment](http://fssnip.net/authors/ImaginaryDevelopment) and is available under the [Microsoft Public License](https://opensource.org/licenses/ms-pl).
     /// ]]></format></remarks>
-    /// <altmember cref="System.Diagnostics.Process.Start()"/>
+    /// <altmember cref="O:System.Diagnostics.Process.Start"/>
     /// <altmember cref="System.Diagnostics.ProcessStartInfo"/>
     /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-    /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+    /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
     /// <altmember cref="System.Diagnostics.ProcessThread"/>
     /// <related type="ExternalDocumentation" href="https://code.msdn.microsoft.com/windowsdesktop/Using-the-NET-Process-Class-d70597ef">Using the .NET Process Class</related>
     public partial class Process : IDisposable
@@ -53,7 +53,7 @@ namespace System.Diagnostics
         /// <exception cref="System.ComponentModel.Win32Exception">The associated process could not be terminated.
         /// -or-
         /// The process is terminating.</exception>
-        /// <exception cref="System.NotSupportedException">You are attempting to call <see cref="System.Diagnostics.Process.Kill()" /> for a process that is running on a remote computer. The method is available only for processes running on the local computer.</exception>
+        /// <exception cref="System.NotSupportedException">You are attempting to call <see cref="O:System.Diagnostics.Process.Kill" /> for a process that is running on a remote computer. The method is available only for processes running on the local computer.</exception>
         /// <exception cref="System.InvalidOperationException">The process has already exited.
         /// -or-
         /// There is no process associated with this <see cref="System.Diagnostics.Process" /> object.
@@ -62,7 +62,7 @@ namespace System.Diagnostics
         /// <exception cref="System.AggregateException">Not all processes in the associated process' descendant tree could be terminated.</exception>
         /// <altmember cref="System.Environment.Exit(int)"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Start()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Start"/>
         public void Kill(bool entireProcessTree)
         {
             if (!entireProcessTree)

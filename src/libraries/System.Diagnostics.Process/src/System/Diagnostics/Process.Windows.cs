@@ -46,10 +46,10 @@ namespace System.Diagnostics
     /// [!code-fsharp[System.Diagnostics.Process#1](~/samples/snippets/fsharp/VS_Snippets_CLR_System/system.diagnostics.process/fs/Start1.fs#1)]
     /// The code for the `runProc` function was written by [ImaginaryDevelopment](http://fssnip.net/authors/ImaginaryDevelopment) and is available under the [Microsoft Public License](https://opensource.org/licenses/ms-pl).
     /// ]]></format></remarks>
-    /// <altmember cref="System.Diagnostics.Process.Start()"/>
+    /// <altmember cref="O:System.Diagnostics.Process.Start"/>
     /// <altmember cref="System.Diagnostics.ProcessStartInfo"/>
     /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-    /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+    /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
     /// <altmember cref="System.Diagnostics.ProcessThread"/>
     /// <related type="ExternalDocumentation" href="https://code.msdn.microsoft.com/windowsdesktop/Using-the-NET-Process-Class-d70597ef">Using the .NET Process Class</related>
     public partial class Process : IDisposable
@@ -82,7 +82,7 @@ namespace System.Diagnostics
         /// <altmember cref="System.Diagnostics.Process.ProcessName"/>
         /// <altmember cref="System.Diagnostics.Process.MachineName"/>
         /// <altmember cref="System.Diagnostics.Process.GetProcessById(int,string)"/>
-        /// <altmember cref="System.Diagnostics.Process.GetProcesses()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.GetProcesses"/>
         /// <altmember cref="System.Diagnostics.Process.GetCurrentProcess"/>
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
@@ -206,11 +206,11 @@ namespace System.Diagnostics
 
         /// <summary>Immediately stops the associated process.</summary>
         /// <exception cref="System.ComponentModel.Win32Exception">The associated process could not be terminated.</exception>
-        /// <exception cref="System.NotSupportedException">You are attempting to call <see cref="System.Diagnostics.Process.Kill()" /> for a process that is running on a remote computer. The method is available only for processes running on the local computer.</exception>
+        /// <exception cref="System.NotSupportedException">You are attempting to call <see cref="O:System.Diagnostics.Process.Kill" /> for a process that is running on a remote computer. The method is available only for processes running on the local computer.</exception>
         /// <exception cref="System.InvalidOperationException">There is no process associated with this <see cref="System.Diagnostics.Process" /> object.</exception>
         /// <altmember cref="System.Environment.Exit(int)"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Start()"/>
+        /// <altmember cref="O:System.Diagnostics.Process.Start"/>
         public void Kill()
         {
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false))

@@ -43,10 +43,10 @@ namespace System.Diagnostics
     /// [!code-fsharp[System.Diagnostics.Process#1](~/samples/snippets/fsharp/VS_Snippets_CLR_System/system.diagnostics.process/fs/Start1.fs#1)]
     /// The code for the `runProc` function was written by [ImaginaryDevelopment](http://fssnip.net/authors/ImaginaryDevelopment) and is available under the [Microsoft Public License](https://opensource.org/licenses/ms-pl).
     /// ]]></format></remarks>
-    /// <altmember cref="System.Diagnostics.Process.Start()"/>
+    /// <altmember cref="O:System.Diagnostics.Process.Start"/>
     /// <altmember cref="System.Diagnostics.ProcessStartInfo"/>
     /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-    /// <altmember cref="System.Diagnostics.Process.Kill()"/>
+    /// <altmember cref="O:System.Diagnostics.Process.Kill"/>
     /// <altmember cref="System.Diagnostics.ProcessThread"/>
     /// <related type="ExternalDocumentation" href="https://code.msdn.microsoft.com/windowsdesktop/Using-the-NET-Process-Class-d70597ef">Using the .NET Process Class</related>
     public partial class Process : IDisposable
@@ -270,7 +270,7 @@ namespace System.Diagnostics
         /// <remarks>The main window is the window opened by the process that currently has the focus (the <see langword="System.Windows.Forms.Form.TopLevel" /> form). You must use the <see cref="System.Diagnostics.Process.Refresh" /> method to refresh the <see cref="System.Diagnostics.Process" /> object to get the most up to date main window handle if it has changed. In general, because the window handle is cached, use <see cref="System.Diagnostics.Process.Refresh" /> beforehand to guarantee that you'll retrieve the current handle.
         /// You can get the <see cref="System.Diagnostics.Process.MainWindowHandle" /> property only for processes that are running on the local computer. The <see cref="System.Diagnostics.Process.MainWindowHandle" /> property is a value that uniquely identifies the window that is associated with the process.
         /// A process has a main window associated with it only if the process has a graphical interface. If the associated process does not have a main window, the <see cref="System.Diagnostics.Process.MainWindowHandle" /> value is zero. The value is also zero for processes that have been hidden, that is, processes that are not visible in the taskbar. This can be the case for processes that appear as icons in the notification area, at the far right of the taskbar.
-        /// If you have just started a process and want to use its main window handle, consider using the <see cref="System.Diagnostics.Process.WaitForInputIdle()" /> method to allow the process to finish starting, ensuring that the main window handle has been created. Otherwise, an exception will be thrown.</remarks>
+        /// If you have just started a process and want to use its main window handle, consider using the <see cref="O:System.Diagnostics.Process.WaitForInputIdle" /> method to allow the process to finish starting, ensuring that the main window handle has been created. Otherwise, an exception will be thrown.</remarks>
         /// <exception cref="System.InvalidOperationException">The <see cref="System.Diagnostics.Process.MainWindowHandle" /> is not defined because the process has exited.</exception>
         /// <exception cref="System.NotSupportedException">You are trying to access the <see cref="System.Diagnostics.Process.MainWindowHandle" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.MainWindowTitle"/>
