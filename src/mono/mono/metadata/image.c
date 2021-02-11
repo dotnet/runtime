@@ -42,7 +42,6 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/security-core-clr.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/image-internals.h>
 #include <mono/metadata/loaded-images-internals.h>
@@ -1233,9 +1232,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		if (care_about_pecoff == FALSE)
 			goto done;
 
-		if (image->loader == &pe_loader && !mono_verifier_verify_pe_data (image, error))
-			goto invalid_image;
-
 		if (!mono_image_load_pe_data (image))
 			goto invalid_image;
 	} else {
@@ -1246,13 +1242,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		goto done;
 	}
 
-	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_cli_data (image, error))
-		goto invalid_image;
-
 	if (!mono_image_load_cli_data (image))
-		goto invalid_image;
-
-	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_table_data (image, error))
 		goto invalid_image;
 
 #ifdef ENABLE_METADATA_UPDATE
