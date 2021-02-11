@@ -668,15 +668,15 @@ namespace System.Tests
 
             // 2^11 + 1. Not exactly representable
             yield return new object[] { "2049.0", defaultStyle, invariantFormat, 2048.0f };
+            yield return new object[] { "2049.000000000000001", defaultStyle, invariantFormat, 2050.0f };
             yield return new object[] { "2049.0000000000000001", defaultStyle, invariantFormat, 2050.0f };
-            yield return new object[] { "5.004", defaultStyle, invariantFormat, 5.004f };
-            yield return new object[] { "5.040", defaultStyle, invariantFormat, 5.04f };
-            // input equal to half.BufferSize
+            yield return new object[] { "2049.00000000000000001", defaultStyle, invariantFormat, 2050.0f };
             yield return new object[] { "5.000000000000000004", defaultStyle, invariantFormat, 5.0f };
-            yield return new object[] { "5.004000000000000000", defaultStyle, invariantFormat, 5.004f };
-            // input greater than half.BufferSize
             yield return new object[] { "5.0000000000000000004", defaultStyle, invariantFormat, 5.0f };
+            yield return new object[] { "5.004", defaultStyle, invariantFormat, 5.004f };
+            yield return new object[] { "5.004000000000000000", defaultStyle, invariantFormat, 5.004f };
             yield return new object[] { "5.0040000000000000000", defaultStyle, invariantFormat, 5.004f };
+            yield return new object[] { "5.040", defaultStyle, invariantFormat, 5.04f };
 
             yield return new object[] { "5004.000000000000000", defaultStyle, invariantFormat, 5004.0f };
             yield return new object[] { "50040.0", defaultStyle, invariantFormat, 50040.0f };

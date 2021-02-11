@@ -76,21 +76,12 @@ namespace System
                 uint integerDigitsPresent = Math.Min(positiveExponent, totalDigits);
                 uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
 
-                // Verify that the fractional part does not have any trailing zeros
-                int numberOfTrailingZeros = 0;
-                for (int i = DigitsCount - (int)fractionalDigitsPresent; i < DigitsCount; i++)
+                // For a number like 1.23000, verify that we don't store trailing zeros in Digits
+                // However, if the number of digits exceeds maxDigCount and rounding is required, we store the trailing zeros in the buffer.
+                if (fractionalDigitsPresent > 0 && !HasNonZeroTail)
                 {
-                    byte digit = Digits[i];
-                    if (digit == 0)
-                    {
-                        numberOfTrailingZeros++;
-                    }
-                    else
-                    {
-                        numberOfTrailingZeros = 0;
-                    }
+                    Debug.Assert(Digits[DigitsCount - 1] != '0');
                 }
-                Debug.Assert(numberOfTrailingZeros == 0, "Fractional part should not have trailing zeros");
 
 #endif // DEBUG
             }

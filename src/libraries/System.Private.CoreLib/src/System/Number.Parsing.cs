@@ -402,17 +402,10 @@ namespace System
             }
             else
             {
-                // We have only 0s in the fractional part. We can strip it all out
+                // We have trailing 0s in the fractional part. We can strip it all out
                 number.DigitsCount = digEnd - numberOfTrailingZeros;
             }
-            number.Digits[digEnd] = (byte)('\0');
-            if (numberOfTrailingZeros != 0)
-            {
-                for (int i = number.DigitsCount; i < digEnd; i++)
-                {
-                    number.Digits[i] = (byte)('\0');
-                }
-            }
+            number.Digits[number.DigitsCount] = (byte)('\0');
             if ((state & StateDigits) != 0)
             {
                 if ((ch == 'E' || ch == 'e') && ((styles & NumberStyles.AllowExponent) != 0))
