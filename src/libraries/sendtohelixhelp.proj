@@ -76,6 +76,11 @@
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(TestPackages)' == 'true'">
     <HelixPreCommand Include="set DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixPreCommand Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />

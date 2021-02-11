@@ -97,10 +97,7 @@
                                   $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture) $(TargetOS) $(TestProjectName) $(ExpectedExitCode)</RunTestsCommand>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-      <RunTestsCommand Condition="'$(ShouldBuildWasmLocally)' == 'true'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario)</RunTestsCommand>
-      <RunTestsCommand Condition="'$(ShouldBuildWasmLocally)' != 'true'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario) AOT</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario)</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->
