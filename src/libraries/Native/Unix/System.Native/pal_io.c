@@ -1276,7 +1276,7 @@ static int16_t ConvertLockType(int16_t managedLockType)
         case 1:
             return F_WRLCK;
         default:
-            assert_msg(managedLockType == 2, "Unknown Lock Type");
+            assert_msg(managedLockType == 2, "Unknown Lock Type", (int)managedLockType);
             return F_UNLCK;
     }
 }
