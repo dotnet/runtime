@@ -926,8 +926,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     GenTreeCall* result = gtNewHelperCallNode(helper, type, argList);
     result->gtFlags |= callFlags;
 
-    // If we're importing the special EqualityComparer<T>.Default
-    // intrinsic, flag the helper call. Later during inlining, we can
+    // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
+    // intrinsics, flag the helper call. Later during inlining, we can
     // remove the helper call if the associated field lookup is unused.
     if ((info.compFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
     {
