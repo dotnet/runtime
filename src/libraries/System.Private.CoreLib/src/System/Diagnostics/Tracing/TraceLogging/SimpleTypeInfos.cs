@@ -299,7 +299,11 @@ namespace System.Diagnostics.Tracing
             TraceLoggingDataCollector.AddScalar(hasValue);
             PropertyValue val = valueInfo.PropertyValueFactory(hasValue
                 ? refVal
-                : RuntimeHelpers.GetUninitializedObject(valueInfo.DataType));
+#if ES_BUILD_STANDALONE
+                : FormatterServices.GetUninitializedObject(t);
+ #else
+                : RuntimeHelpers.GetUninitializedObject(t);
+ #endif
             this.valueInfo.WriteData(val);
         }
     }
