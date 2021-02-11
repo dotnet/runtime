@@ -1119,7 +1119,8 @@ namespace System.Diagnostics
                 if (!TrySetTraceIdFromParent())
                 {
                     Func<ActivityTraceId>? traceIdGenerator = TraceIdGenerator;
-                    _traceId = traceIdGenerator == null ? ActivityTraceId.CreateRandom().ToHexString() : traceIdGenerator().ToHexString();
+                    ActivityTraceId id = traceIdGenerator == null ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+                    _traceId = id.ToHexString();
                 }
             }
 
