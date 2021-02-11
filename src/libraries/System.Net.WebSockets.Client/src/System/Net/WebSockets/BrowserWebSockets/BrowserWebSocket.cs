@@ -350,7 +350,7 @@ namespace System.Net.WebSockets
                 if (!_cts.IsCancellationRequested)
                 {
                     // registered by the CancellationTokenSource cts in the connect method
-                    _cts.Cancel(false);
+                    _cts.Cancel();
                     _cts.Dispose();
                 }
 
