@@ -14,40 +14,42 @@ using System.Threading;
 namespace System.Diagnostics
 {
     /// <summary>Provides access to local and remote processes and enables you to start and stop local system processes.</summary>
-    /// <remarks>A <see cref="System.Diagnostics.Process" /> component provides access to a process that is running on a computer. A process, in the simplest terms, is a running app. A thread is the basic unit to which the operating system allocates processor time. A thread can execute any part of the code of the process, including parts currently being executed by another thread.
-    /// The <see cref="System.Diagnostics.Process" /> component is a useful tool for starting, stopping, controlling, and monitoring apps. You can use the <see cref="System.Diagnostics.Process" /> component, to obtain a list of the processes that are running, or you can start a new process. A <see cref="System.Diagnostics.Process" /> component is used to access system processes. After a <see cref="System.Diagnostics.Process" /> component has been initialized, it can be used to obtain information about the running process. Such information includes the set of threads, the loaded modules (.dll and .exe files), and performance information such as the amount of memory the process is using.
-    /// This type implements the <see cref="System.IDisposable" /> interface. When you have finished using the type, you should dispose of it either directly or indirectly. To dispose of the type directly, call its <see cref="System.IDisposable.Dispose" /> method in a `try`/`finally` block. To dispose of it indirectly, use a language construct such as `using` (in C#) or `Using` (in Visual Basic). For more information, see the "Using an Object that Implements IDisposable" section in the <see cref="System.IDisposable" /> interface topic.
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// A <xref:System.Diagnostics.Process> component provides access to a process that is running on a computer. A process, in the simplest terms, is a running app. A thread is the basic unit to which the operating system allocates processor time. A thread can execute any part of the code of the process, including parts currently being executed by another thread.
+    /// The <xref:System.Diagnostics.Process> component is a useful tool for starting, stopping, controlling, and monitoring apps. You can use the <xref:System.Diagnostics.Process> component, to obtain a list of the processes that are running, or you can start a new process. A <xref:System.Diagnostics.Process> component is used to access system processes. After a <xref:System.Diagnostics.Process> component has been initialized, it can be used to obtain information about the running process. Such information includes the set of threads, the loaded modules (.dll and .exe files), and performance information such as the amount of memory the process is using.
+    /// This type implements the <xref:System.IDisposable> interface. When you have finished using the type, you should dispose of it either directly or indirectly. To dispose of the type directly, call its <xref:System.IDisposable.Dispose%2A> method in a `try`/`finally` block. To dispose of it indirectly, use a language construct such as `using` (in C#) or `Using` (in Visual Basic). For more information, see the "Using an Object that Implements IDisposable" section in the <xref:System.IDisposable> interface topic.
     /// > [!NOTE]
-    /// >  32-bit processes cannot access the modules of a 64-bit process. If you try to get information about a 64-bit process from a 32-bit process, you will get a <see cref="System.ComponentModel.Win32Exception" /> exception. A 64-bit process, on the other hand, can access the modules of a 32-bit process.
-    /// The process component obtains information about a group of properties all at once. After the <see cref="System.Diagnostics.Process" /> component has obtained information about one member of any group, it will cache the values for the other properties in that group and not obtain new information about the other members of the group until you call the <see cref="System.Diagnostics.Process.Refresh" /> method. Therefore, a property value is not guaranteed to be any newer than the last call to the <see cref="System.Diagnostics.Process.Refresh" /> method. The group breakdowns are operating-system dependent.
+    /// >  32-bit processes cannot access the modules of a 64-bit process. If you try to get information about a 64-bit process from a 32-bit process, you will get a <xref:System.ComponentModel.Win32Exception> exception. A 64-bit process, on the other hand, can access the modules of a 32-bit process.
+    /// The process component obtains information about a group of properties all at once. After the <xref:System.Diagnostics.Process> component has obtained information about one member of any group, it will cache the values for the other properties in that group and not obtain new information about the other members of the group until you call the <xref:System.Diagnostics.Process.Refresh%2A> method. Therefore, a property value is not guaranteed to be any newer than the last call to the <xref:System.Diagnostics.Process.Refresh%2A> method. The group breakdowns are operating-system dependent.
     /// If you have a path variable declared in your system using quotes, you must fully qualify that path when starting any process found in that location. Otherwise, the system will not find the path. For example, if `c:\mypath` is not in your path, and you add it using quotation marks: `path = %path%;"c:\mypath"`, you must fully qualify any process in `c:\mypath` when starting it.
-    /// A system process is uniquely identified on the system by its process identifier. Like many Windows resources, a process is also identified by its handle, which might not be unique on the computer. A handle is the generic term for an identifier of a resource. The operating system persists the process handle, which is accessed through the <see cref="System.Diagnostics.Process.Handle" /> property of the <see cref="System.Diagnostics.Process" /> component, even when the process has exited. Thus, you can get the process's administrative information, such as the <see cref="System.Diagnostics.Process.ExitCode" /> (usually either zero for success or a nonzero error code) and the <see cref="System.Diagnostics.Process.ExitTime" />. Handles are an extremely valuable resource, so leaking handles is more virulent than leaking memory.
+    /// A system process is uniquely identified on the system by its process identifier. Like many Windows resources, a process is also identified by its handle, which might not be unique on the computer. A handle is the generic term for an identifier of a resource. The operating system persists the process handle, which is accessed through the <xref:System.Diagnostics.Process.Handle%2A> property of the <xref:System.Diagnostics.Process> component, even when the process has exited. Thus, you can get the process's administrative information, such as the <xref:System.Diagnostics.Process.ExitCode%2A> (usually either zero for success or a nonzero error code) and the <xref:System.Diagnostics.Process.ExitTime%2A>. Handles are an extremely valuable resource, so leaking handles is more virulent than leaking memory.
     /// > [!NOTE]
-    /// >  This class contains a link demand and an inheritance demand at the class level that applies to all members. A <see cref="System.Security.SecurityException" /> is thrown when either the immediate caller or the derived class does not have full-trust permission. For details about security demands, see [Link Demands](/dotnet/framework/misc/link-demands).
+    /// >  This class contains a link demand and an inheritance demand at the class level that applies to all members. A <xref:System.Security.SecurityException> is thrown when either the immediate caller or the derived class does not have full-trust permission. For details about security demands, see [Link Demands](/dotnet/framework/misc/link-demands).
     /// <a name="Core"></a>
     /// ## [!INCLUDE[net_core](~/includes/net-core-md.md)] Notes
-    /// In the .NET Framework, the <see cref="System.Diagnostics.Process" /> class by default uses <see cref="System.Console" /> encodings, which are typically code page encodings, for the input, output, and error streams. For example code, on systems whose culture is English (United States), code page 437 is the default encoding for the <see cref="System.Console" /> class. However, [!INCLUDE[net_core](~/includes/net-core-md.md)] may make only a limited subset of these encodings available. If this is the case, it uses <see cref="System.Text.Encoding.UTF8" /> as the default encoding.
-    /// If a <see cref="System.Diagnostics.Process" /> object depends on specific code page encodings, you can still make them available by doing the following *before* you call any <see cref="System.Diagnostics.Process" /> methods:
+    /// In the .NET Framework, the <xref:System.Diagnostics.Process> class by default uses <xref:System.Console> encodings, which are typically code page encodings, for the input, output, and error streams. For example code, on systems whose culture is English (United States), code page 437 is the default encoding for the <xref:System.Console> class. However, [!INCLUDE[net_core](~/includes/net-core-md.md)] may make only a limited subset of these encodings available. If this is the case, it uses <xref:System.Text.Encoding.UTF8%2A?displayProperty=nameWithType> as the default encoding.
+    /// If a <xref:System.Diagnostics.Process> object depends on specific code page encodings, you can still make them available by doing the following *before* you call any <xref:System.Diagnostics.Process> methods:
     /// 1.  Add a reference to the System.Text.Encoding.CodePages.dll assembly to your project.
-    /// 2.  Retrieve the <see cref="System.Text.EncodingProvider" /> object from the <see cref="System.Text.CodePagesEncodingProvider.Instance" /> property.
-    /// 3.  Pass the <see cref="System.Text.EncodingProvider" /> object to the <see cref="System.Text.Encoding.RegisterProvider" /> method to make the additional encodings supported by the encoding provider available.
-    /// The <see cref="System.Diagnostics.Process" /> class will then automatically use the default system encoding rather than UTF8, provided that you have registered the encoding provider before calling any <see cref="System.Diagnostics.Process" /> methods.
+    /// 2.  Retrieve the <xref:System.Text.EncodingProvider> object from the <xref:System.Text.CodePagesEncodingProvider.Instance%2A?displayProperty=nameWithType> property.
+    /// 3.  Pass the <xref:System.Text.EncodingProvider> object to the <xref:System.Text.Encoding.RegisterProvider%2A?displayProperty=nameWithType> method to make the additional encodings supported by the encoding provider available.
+    /// The <xref:System.Diagnostics.Process> class will then automatically use the default system encoding rather than UTF8, provided that you have registered the encoding provider before calling any <xref:System.Diagnostics.Process> methods.
     /// ## Examples
-    /// The following example uses an instance of the <see cref="System.Diagnostics.Process" /> class to start a process.
+    /// The following example uses an instance of the <xref:System.Diagnostics.Process> class to start a process.
     /// [!code-cpp[Process.Start_instance#1](~/samples/snippets/cpp/VS_Snippets_CLR/Process.Start_instance/CPP/processstart.cpp#1)]
     /// [!code-csharp[Process.Start_instance#1](~/samples/snippets/csharp/VS_Snippets_CLR/Process.Start_instance/CS/processstart.cs#1)]
     /// [!code-vb[Process.Start_instance#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process.Start_instance/VB/processstart.vb#1)]
-    /// The following example uses the <see cref="System.Diagnostics.Process" /> class itself and a static <see cref="System.Diagnostics.Process.Start" /> method to start a process.
+    /// The following example uses the <xref:System.Diagnostics.Process> class itself and a static <xref:System.Diagnostics.Process.Start%2A> method to start a process.
     /// [!code-cpp[Process.Start_static#1](~/samples/snippets/cpp/VS_Snippets_CLR/Process.Start_static/CPP/processstartstatic.cpp)]
     /// [!code-csharp[Process.Start_static#1](~/samples/snippets/csharp/VS_Snippets_CLR/Process.Start_static/CS/processstartstatic.cs)]
     /// [!code-vb[Process.Start_static#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process.Start_static/VB/processstartstatic.vb)]
     /// The following F# example defines a `runProc` function that starts a process, captures all output and error information, and records the number of milliseconds that the process has run.  The `runProc` function has three parameters: the name of application to launch, the arguments to supply to the application, and the starting directory.
     /// [!code-fsharp[System.Diagnostics.Process#1](~/samples/snippets/fsharp/VS_Snippets_CLR_System/system.diagnostics.process/fs/Start1.fs#1)]
-    /// The code for the `runProc` function was written by [ImaginaryDevelopment](http://fssnip.net/authors/ImaginaryDevelopment) and is available under the [Microsoft Public License](https://opensource.org/licenses/ms-pl).</remarks>
-    /// <altmember cref="System.Diagnostics.Process.Start"/>
+    /// The code for the `runProc` function was written by [ImaginaryDevelopment](http://fssnip.net/authors/ImaginaryDevelopment) and is available under the [Microsoft Public License](https://opensource.org/licenses/ms-pl).
+    /// ]]></format></remarks>
+    /// <altmember cref="System.Diagnostics.Process.Start()"/>
     /// <altmember cref="System.Diagnostics.ProcessStartInfo"/>
     /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-    /// <altmember cref="System.Diagnostics.Process.Kill"/>
+    /// <altmember cref="System.Diagnostics.Process.Kill()"/>
     /// <altmember cref="System.Diagnostics.ProcessThread"/>
     /// <related type="ExternalDocumentation" href="https://code.msdn.microsoft.com/windowsdesktop/Using-the-NET-Process-Class-d70597ef">Using the .NET Process Class</related>
     public partial class Process : IDisposable
@@ -58,16 +60,18 @@ namespace System.Diagnostics
         /// <param name="processName">The friendly name of the process.</param>
         /// <param name="machineName">The name of a computer on the network.</param>
         /// <returns>An array of type <see cref="System.Diagnostics.Process" /> that represents the process resources running the specified application or file.</returns>
-        /// <remarks>Use this method to create an array of new <see cref="System.Diagnostics.Process" /> components and associate them with all the process resources that are running the same executable file on the specified computer. The process resources must already exist on the computer, because <see cref="System.Diagnostics.Process.GetProcessesByName" /> does not create system resources but rather associates them with application-generated <see cref="System.Diagnostics.Process" /> components. A <paramref name="processName" /> can be specified for an executable file that is not currently running on the local computer, so the array the method returns can be empty.
-        /// The process name is a friendly name for the process, such as Outlook, that does not include the .exe extension or the path. <see cref="System.Diagnostics.Process.GetProcessesByName" /> is helpful for getting and manipulating all the processes that are associated with the same executable file. For example, you can pass an executable file name as the <paramref name="processName" /> parameter, in order to shut down all the running instances of that executable file.
-        /// Although a process <see cref="System.Diagnostics.Process.Id" /> is unique to a single process resource on the system, multiple processes on the local computer can be running the application specified by the <paramref name="processName" /> parameter. Therefore, <see cref="System.Diagnostics.Process.GetProcessById" /> returns one process at most, but <see cref="System.Diagnostics.Process.GetProcessesByName" /> returns an array containing all the associated processes. If you need to manipulate the process using standard API calls, you can query each of these processes in turn for its identifier. You cannot access process resources through the process name alone but, once you have retrieved an array of <see cref="System.Diagnostics.Process" /> components that have been associated with the process resources, you can start, terminate, and otherwise manipulate the system resources.
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// Use this method to create an array of new <xref:System.Diagnostics.Process> components and associate them with all the process resources that are running the same executable file on the specified computer. The process resources must already exist on the computer, because <xref:System.Diagnostics.Process.GetProcessesByName%2A> does not create system resources but rather associates them with application-generated <xref:System.Diagnostics.Process> components. A `processName` can be specified for an executable file that is not currently running on the local computer, so the array the method returns can be empty.
+        /// The process name is a friendly name for the process, such as Outlook, that does not include the .exe extension or the path. <xref:System.Diagnostics.Process.GetProcessesByName%2A> is helpful for getting and manipulating all the processes that are associated with the same executable file. For example, you can pass an executable file name as the `processName` parameter, in order to shut down all the running instances of that executable file.
+        /// Although a process <xref:System.Diagnostics.Process.Id%2A> is unique to a single process resource on the system, multiple processes on the local computer can be running the application specified by the `processName` parameter. Therefore, <xref:System.Diagnostics.Process.GetProcessById%2A> returns one process at most, but <xref:System.Diagnostics.Process.GetProcessesByName%2A> returns an array containing all the associated processes. If you need to manipulate the process using standard API calls, you can query each of these processes in turn for its identifier. You cannot access process resources through the process name alone but, once you have retrieved an array of <xref:System.Diagnostics.Process> components that have been associated with the process resources, you can start, terminate, and otherwise manipulate the system resources.
         /// You can use this overload to get processes on the local computer as well as on a remote computer. Use "." to specify the local computer. Another overload exists that uses the local computer by default.
-        /// You can access processes on remote computers only to view information, such as statistics, about the processes. You cannot close, terminate (using <see cref="System.Diagnostics.Process.Kill" />), or start processes on remote computers.
+        /// You can access processes on remote computers only to view information, such as statistics, about the processes. You cannot close, terminate (using <xref:System.Diagnostics.Process.Kill%2A>), or start processes on remote computers.
         /// ## Examples
         /// The following example retrieves information of the current process, processes running on the local computer, all instances of Notepad running on the local computer, and a specific process on the local computer. It then retrieves information for the same processes on a remote computer.
         /// [!code-cpp[Process.GetProcesses_noexception#1](~/samples/snippets/cpp/VS_Snippets_CLR/Process.GetProcesses_noexception/CPP/processstaticget.cpp#1)]
         /// [!code-csharp[Process.GetProcesses_noexception#1](~/samples/snippets/csharp/VS_Snippets_CLR/Process.GetProcesses_noexception/CS/processstaticget.cs#1)]
-        /// [!code-vb[Process.GetProcesses_noexception#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process.GetProcesses_noexception/VB/processstaticget.vb#1)]</remarks>
+        /// [!code-vb[Process.GetProcesses_noexception#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process.GetProcesses_noexception/VB/processstaticget.vb#1)]
+        /// ]]></format></remarks>
         /// <exception cref="System.ArgumentException">The <paramref name="machineName" /> parameter syntax is invalid. It might have length zero (0).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="machineName" /> parameter is <see langword="null" />.</exception>
         /// <exception cref="System.PlatformNotSupportedException">The operating system platform does not support this operation on remote computers.</exception>
@@ -78,7 +82,7 @@ namespace System.Diagnostics
         /// <altmember cref="System.Diagnostics.Process.ProcessName"/>
         /// <altmember cref="System.Diagnostics.Process.MachineName"/>
         /// <altmember cref="System.Diagnostics.Process.GetProcessById(int,string)"/>
-        /// <altmember cref="System.Diagnostics.Process.GetProcesses"/>
+        /// <altmember cref="System.Diagnostics.Process.GetProcesses()"/>
         /// <altmember cref="System.Diagnostics.Process.GetCurrentProcess"/>
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
@@ -111,20 +115,22 @@ namespace System.Diagnostics
         /// <param name="password">A <see cref="System.Security.SecureString" /> that contains the password to use when starting the process.</param>
         /// <param name="domain">The domain to use when starting the process.</param>
         /// <returns>A new <see cref="System.Diagnostics.Process" /> that is associated with the process resource, or <see langword="null" /> if no process resource is started. Note that a new process that's started alongside already running instances of the same process will be independent from the others. In addition, Start may return a non-null Process with its <see cref="System.Diagnostics.Process.HasExited" /> property already set to <see langword="true" />. In this case, the started process may have activated an existing instance of itself and then exited.</returns>
-        /// <remarks>Use this overload to create a new process and its primary thread by specifying its file name, user name, password, and domain. The new process then runs the specified executable file in the security context of the specified credentials (user, domain, and password).
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// Use this overload to create a new process and its primary thread by specifying its file name, user name, password, and domain. The new process then runs the specified executable file in the security context of the specified credentials (user, domain, and password).
         /// > [!NOTE]
         /// >  When the executable file is located on a remote drive, you must identify the network share by using a uniform resource identifier (URI), not a linked drive letter.
         /// > [!NOTE]
-        /// >  If the address of the executable file to start is a URL, the process is not started and <see langword="null" /> is returned.
-        /// This overload lets you start a process without first creating a new <see cref="System.Diagnostics.Process" /> instance. The overload is an alternative to the explicit steps of creating a new <see cref="System.Diagnostics.Process" /> instance, setting the <see cref="System.Diagnostics.ProcessStartInfo.FileName" />, <see cref="System.Diagnostics.ProcessStartInfo.UserName" />, <see cref="System.Diagnostics.ProcessStartInfo.Password" />, and <see cref="System.Diagnostics.ProcessStartInfo.Domain" /> properties of the <see cref="System.Diagnostics.Process.StartInfo" /> property, and calling <see cref="System.Diagnostics.Process.Start" /> for the <see cref="System.Diagnostics.Process" /> instance.
-        /// Similarly, in the same way that the **Run** dialog box can accept an executable file name with or without the .exe extension, the .exe extension is optional in the <paramref name="fileName" /> parameter. For example, you can set the <paramref name="fileName" /> parameter to either "Notepad.exe" or "Notepad". If the <paramref name="fileName" /> parameter represents an executable file, the `arguments` parameter might represent a file to act upon, such as the text file in `Notepad.exe myfile.txt`.
+        /// >  If the address of the executable file to start is a URL, the process is not started and `null` is returned.
+        /// This overload lets you start a process without first creating a new <xref:System.Diagnostics.Process> instance. The overload is an alternative to the explicit steps of creating a new <xref:System.Diagnostics.Process> instance, setting the <xref:System.Diagnostics.ProcessStartInfo.FileName%2A>, <xref:System.Diagnostics.ProcessStartInfo.UserName%2A>, <xref:System.Diagnostics.ProcessStartInfo.Password%2A>, and <xref:System.Diagnostics.ProcessStartInfo.Domain%2A> properties of the <xref:System.Diagnostics.Process.StartInfo%2A> property, and calling <xref:System.Diagnostics.Process.Start%2A> for the <xref:System.Diagnostics.Process> instance.
+        /// Similarly, in the same way that the **Run** dialog box can accept an executable file name with or without the .exe extension, the .exe extension is optional in the `fileName` parameter. For example, you can set the `fileName` parameter to either "Notepad.exe" or "Notepad". If the `fileName` parameter represents an executable file, the `arguments` parameter might represent a file to act upon, such as the text file in `Notepad.exe myfile.txt`.
         /// > [!NOTE]
-        /// >  The file name must represent an executable file in the <see cref="System.Diagnostics.Process.Start" /> overloads that have <paramref name="userName" />, <paramref name="password" />, and <paramref name="domain" /> parameters.
-        /// Whenever you use <see cref="System.Diagnostics.Process.Start" /> to start a process, you might need to close it or you risk losing system resources. Close processes using <see cref="System.Diagnostics.Process.CloseMainWindow" /> or <see cref="System.Diagnostics.Process.Kill" />. You can check whether a process has already been closed by using its <see cref="System.Diagnostics.Process.HasExited" /> property.
+        /// >  The file name must represent an executable file in the <xref:System.Diagnostics.Process.Start%2A> overloads that have `userName`, `password`, and `domain` parameters.
+        /// Whenever you use <xref:System.Diagnostics.Process.Start%2A> to start a process, you might need to close it or you risk losing system resources. Close processes using <xref:System.Diagnostics.Process.CloseMainWindow%2A> or <xref:System.Diagnostics.Process.Kill%2A>. You can check whether a process has already been closed by using its <xref:System.Diagnostics.Process.HasExited%2A> property.
         /// ## Examples
-        /// The following code example shows the use of this overload to start an executable file and also demonstrates the throwing of a <see cref="System.ComponentModel.Win32Exception" /> when an attempt is made to start an application associated with a nonexecutable file.
+        /// The following code example shows the use of this overload to start an executable file and also demonstrates the throwing of a <xref:System.ComponentModel.Win32Exception> when an attempt is made to start an application associated with a nonexecutable file.
         /// [!code-csharp[System.Diagnostics.Process.Start#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Diagnostics.Process.Start/CS/program.cs#1)]
-        /// [!code-vb[System.Diagnostics.Process.Start#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Diagnostics.Process.Start/VB/program.vb#1)]</remarks>
+        /// [!code-vb[System.Diagnostics.Process.Start#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Diagnostics.Process.Start/VB/program.vb#1)]
+        /// ]]></format></remarks>
         /// <exception cref="System.InvalidOperationException">No file name was specified.</exception>
         /// <exception cref="System.ComponentModel.Win32Exception">There was an error in opening the associated file.
         /// -or-
@@ -150,16 +156,18 @@ namespace System.Diagnostics
         /// <param name="password">A <see cref="System.Security.SecureString" /> that contains the password to use when starting the process.</param>
         /// <param name="domain">The domain to use when starting the process.</param>
         /// <returns>A new <see cref="System.Diagnostics.Process" /> that is associated with the process resource, or <see langword="null" /> if no process resource is started. Note that a new process that's started alongside already running instances of the same process will be independent from the others. In addition, Start may return a non-null Process with its <see cref="System.Diagnostics.Process.HasExited" /> property already set to <see langword="true" />. In this case, the started process may have activated an existing instance of itself and then exited.</returns>
-        /// <remarks>Use this overload to create a new process and its primary thread by specifying its file name, command-line arguments, user name, password, and domain. The new process then runs the specified executable file in the security context of the specified credentials (user, domain, and password).
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// Use this overload to create a new process and its primary thread by specifying its file name, command-line arguments, user name, password, and domain. The new process then runs the specified executable file in the security context of the specified credentials (user, domain, and password).
         /// > [!NOTE]
         /// >  When the executable file is located on a remote drive, you must identify the network share by using a uniform resource identifier (URI), not a linked drive letter.
         /// > [!NOTE]
-        /// >  If the address of the executable file to start is a URL, the process is not started and <see langword="null" /> is returned.
-        /// This overload lets you start a process without first creating a new <see cref="System.Diagnostics.Process" /> instance. The overload is an alternative to the explicit steps of creating a new <see cref="System.Diagnostics.Process" /> instance, setting the <see cref="System.Diagnostics.ProcessStartInfo.FileName" />, <see cref="System.Diagnostics.ProcessStartInfo.Arguments" />, <see cref="System.Diagnostics.ProcessStartInfo.UserName" />, <see cref="System.Diagnostics.ProcessStartInfo.Password" />, and <see cref="System.Diagnostics.ProcessStartInfo.Domain" /> properties of the <see cref="System.Diagnostics.Process.StartInfo" /> property, and calling <see cref="System.Diagnostics.Process.Start" /> for the <see cref="System.Diagnostics.Process" /> instance.
-        /// Similarly, in the same way that the **Run** dialog box can accept an executable file name with or without the .exe extension, the .exe extension is optional in the <paramref name="fileName" /> parameter. For example, you can set the <paramref name="fileName" /> parameter to either "Notepad.exe" or "Notepad". If the <paramref name="fileName" /> parameter represents an executable file, the <paramref name="arguments" /> parameter might represent a file to act upon, such as the text file in `Notepad.exe myfile.txt`.
+        /// >  If the address of the executable file to start is a URL, the process is not started and `null` is returned.
+        /// This overload lets you start a process without first creating a new <xref:System.Diagnostics.Process> instance. The overload is an alternative to the explicit steps of creating a new <xref:System.Diagnostics.Process> instance, setting the <xref:System.Diagnostics.ProcessStartInfo.FileName%2A>, <xref:System.Diagnostics.ProcessStartInfo.Arguments%2A>, <xref:System.Diagnostics.ProcessStartInfo.UserName%2A>, <xref:System.Diagnostics.ProcessStartInfo.Password%2A>, and <xref:System.Diagnostics.ProcessStartInfo.Domain%2A> properties of the <xref:System.Diagnostics.Process.StartInfo%2A> property, and calling <xref:System.Diagnostics.Process.Start%2A> for the <xref:System.Diagnostics.Process> instance.
+        /// Similarly, in the same way that the **Run** dialog box can accept an executable file name with or without the .exe extension, the .exe extension is optional in the `fileName` parameter. For example, you can set the `fileName` parameter to either "Notepad.exe" or "Notepad". If the `fileName` parameter represents an executable file, the `arguments` parameter might represent a file to act upon, such as the text file in `Notepad.exe myfile.txt`.
         /// > [!NOTE]
-        /// >  The file name must represent an executable file in the <see cref="System.Diagnostics.Process.Start" /> overloads that have <paramref name="userName" />, <paramref name="password" />, and <paramref name="domain" /> parameters.
-        /// Whenever you use <see cref="System.Diagnostics.Process.Start" /> to start a process, you might need to close it or you risk losing system resources. Close processes using <see cref="System.Diagnostics.Process.CloseMainWindow" /> or <see cref="System.Diagnostics.Process.Kill" />. You can check whether a process has already been closed by using its <see cref="System.Diagnostics.Process.HasExited" /> property.</remarks>
+        /// >  The file name must represent an executable file in the <xref:System.Diagnostics.Process.Start%2A> overloads that have `userName`, `password`, and `domain` parameters.
+        /// Whenever you use <xref:System.Diagnostics.Process.Start%2A> to start a process, you might need to close it or you risk losing system resources. Close processes using <xref:System.Diagnostics.Process.CloseMainWindow%2A> or <xref:System.Diagnostics.Process.Kill%2A>. You can check whether a process has already been closed by using its <xref:System.Diagnostics.Process.HasExited%2A> property.
+        /// ]]></format></remarks>
         /// <exception cref="System.InvalidOperationException">No file name was specified.</exception>
         /// <exception cref="System.ComponentModel.Win32Exception">An error occurred when opening the associated file.
         /// -or-
@@ -198,11 +206,11 @@ namespace System.Diagnostics
 
         /// <summary>Immediately stops the associated process.</summary>
         /// <exception cref="System.ComponentModel.Win32Exception">The associated process could not be terminated.</exception>
-        /// <exception cref="System.NotSupportedException">You are attempting to call <see cref="System.Diagnostics.Process.Kill" /> for a process that is running on a remote computer. The method is available only for processes running on the local computer.</exception>
+        /// <exception cref="System.NotSupportedException">You are attempting to call <see cref="System.Diagnostics.Process.Kill()" /> for a process that is running on a remote computer. The method is available only for processes running on the local computer.</exception>
         /// <exception cref="System.InvalidOperationException">There is no process associated with this <see cref="System.Diagnostics.Process" /> object.</exception>
         /// <altmember cref="System.Environment.Exit(int)"/>
         /// <altmember cref="System.Diagnostics.Process.CloseMainWindow"/>
-        /// <altmember cref="System.Diagnostics.Process.Start"/>
+        /// <altmember cref="System.Diagnostics.Process.Start()"/>
         public void Kill()
         {
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false))
@@ -384,11 +392,13 @@ namespace System.Diagnostics
 
         /// <summary>Gets the privileged processor time for this process.</summary>
         /// <value>A <see cref="System.TimeSpan" /> that indicates the amount of time that the process has spent running code inside the operating system core.</value>
-        /// <remarks>## Examples
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// ## Examples
         /// The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
-        /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]</remarks>
+        /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
+        /// ]]></format></remarks>
         /// <exception cref="System.NotSupportedException">You are attempting to access the <see cref="System.Diagnostics.Process.PrivilegedProcessorTime" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.UserProcessorTime"/>
         /// <altmember cref="System.Diagnostics.Process.PrivilegedProcessorTime"/>
@@ -405,11 +415,13 @@ namespace System.Diagnostics
 
         /// <summary>Gets the total processor time for this process.</summary>
         /// <value>A <see cref="System.TimeSpan" /> that indicates the amount of time that the associated process has spent utilizing the CPU. This value is the sum of the <see cref="System.Diagnostics.Process.UserProcessorTime" /> and the <see cref="System.Diagnostics.Process.PrivilegedProcessorTime" />.</value>
-        /// <remarks>## Examples
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// ## Examples
         /// The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
-        /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]</remarks>
+        /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
+        /// ]]></format></remarks>
         /// <exception cref="System.NotSupportedException">You are attempting to access the <see cref="System.Diagnostics.Process.TotalProcessorTime" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.UserProcessorTime"/>
         /// <altmember cref="System.Diagnostics.Process.PrivilegedProcessorTime"/>
@@ -420,11 +432,13 @@ namespace System.Diagnostics
 
         /// <summary>Gets the user processor time for this process.</summary>
         /// <value>A <see cref="System.TimeSpan" /> that indicates the amount of time that the associated process has spent running code inside the application portion of the process (not inside the operating system core).</value>
-        /// <remarks>## Examples
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// ## Examples
         /// The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
-        /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]</remarks>
+        /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
+        /// ]]></format></remarks>
         /// <exception cref="System.NotSupportedException">You are attempting to access the <see cref="System.Diagnostics.Process.UserProcessorTime" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.UserProcessorTime"/>
         /// <altmember cref="System.Diagnostics.Process.PrivilegedProcessorTime"/>

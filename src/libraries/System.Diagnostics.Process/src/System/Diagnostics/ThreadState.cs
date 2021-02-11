@@ -4,8 +4,10 @@
 namespace System.Diagnostics
 {
     /// <summary>Specifies the current execution state of the thread.</summary>
-    /// <remarks>> [!IMPORTANT]
-    /// >  There are two thread state enumerations, <see cref="System.Diagnostics.ThreadState" /> and <see cref="System.Threading.ThreadState" />.  The thread state enumerations are only of interest in a few debugging scenarios. Your code should never use thread state to synchronize the activities of threads.</remarks>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// > [!IMPORTANT]
+    /// >  There are two thread state enumerations, <xref:System.Diagnostics.ThreadState?displayProperty=nameWithType> and <xref:System.Threading.ThreadState?displayProperty=nameWithType>.  The thread state enumerations are only of interest in a few debugging scenarios. Your code should never use thread state to synchronize the activities of threads.
+    /// ]]></format></remarks>
     /// <altmember cref="System.Diagnostics.ProcessThread"/>
     /// <altmember cref="System.Diagnostics.Process"/>
     public enum ThreadState
