@@ -256,28 +256,32 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _cwd=None, _env=None, _capture_output=False):
+def run_command(command_to_run, _cwd=None, _env=None, _exit_on_fail=False):
     """ Runs the command.
 
     Args:
         command_to_run ([string]): Command to run along with arguments.
         _cwd (string): Current working directory.
         _env (string): Environment variables, if any.
-        _capture_output (bool): If should capture output.
+        _exit_on_fail (bool): If it should exit on failure.
     Returns:
         (string, string): Returns a tuple of stdout and stderr
     """
     print("Running: " + " ".join(command_to_run))
     command_stdout = ""
     command_stderr = ""
+    return_code = 1
     with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd, env=_env) as proc:
         command_stdout, command_stderr = proc.communicate()
-        if not _capture_output:
-            if len(command_stdout) > 0:
-                print(command_stdout.decode("utf-8"))
-            if len(command_stderr) > 0:
-                print(command_stderr.decode("utf-8"))
-    return (command_stdout, command_stderr)
+        return_code = proc.returncode
+        if _exit_on_fail and return_code != 0:
+            print("Command failed. Exiting.")
+            sys.exit(1)
+        if len(command_stdout) > 0:
+            print(command_stdout.decode("utf-8"))
+        if len(command_stderr) > 0:
+            print(command_stderr.decode("utf-8"))
+    return (command_stdout, command_stderr, return_code)
 
 
 def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda path: True):

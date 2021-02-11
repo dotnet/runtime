@@ -18,6 +18,7 @@ import sys
 import stat
 from os import path
 from os.path import isfile
+from shutil import copyfile
 from coreclr_arguments import *
 from superpmi import ChangeDir, TempDir
 from superpmi_setup import run_command
@@ -131,13 +132,13 @@ def build_and_run(coreclr_args, output_mch_name):
             script_name = "run_microbenchmarks.sh"
 
         run_command(
-        [dotnet_exe, "restore", project_file, "--packages",
-        artifacts_packages_directory])
+            [dotnet_exe, "restore", project_file, "--packages",
+            artifacts_packages_directory], _exit_on_fail=True)
 
         run_command(
             [dotnet_exe, "build", project_file, "--configuration", "Release",
             "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
-            "-o", artifacts_directory])
+            "-o", artifacts_directory], _exit_on_fail=True)
 
         collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter *Array* --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
             f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
@@ -218,7 +219,7 @@ def build_and_run(coreclr_args, output_mch_name):
             # # Disable ReadyToRun so we always JIT R2R methods and collect them
             # "--use_zapdisable",
             # "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug"
-            ])
+            ], _exit_on_fail=True)
 
 def execute(coreclr_args, output_mch_name):
     """Execute the superpmi collection for Microbenchmarks
@@ -346,10 +347,7 @@ def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):
     mcs_command = [mcs_exe, "-dumpMap", old_mch_filename]
 
     # Gather method list to strip
-    (mcs_out, mcs_error) = run_command(mcs_command, _capture_output=True)
-    if len(mcs_error) > 0:
-        print("Error executing mcs -dumpMap")
-        return
+    (mcs_out, _, _) = run_command(mcs_command, _exit_on_fail=True)
 
     method_context_list = mcs_out.decode("utf-8").split(os.linesep)
     filtered_context_list = []
@@ -363,8 +361,13 @@ def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):
     with open(methods_to_strip_list, "w") as f:
         f.write('\n'.join(filtered_context_list))
 
+    print(f"Stripping {len(filtered_context_list)} entries.")
+
     # Strip and produce new .mcs file
-    run_command([mcs_exe, "-strip", methods_to_strip_list, old_mch_filename, new_mch_filename])
+    if run_command([mcs_exe, "-strip", methods_to_strip_list, old_mch_filename, new_mch_filename])[2] != 0:
+        # If strip command fails, then just copy the old_mch to new_mch
+        copyfile(old_mch_filename, new_mch_filename)
+        return
 
     # Create toc file
     run_command([mcs_exe, "-toc", new_mch_filename])
