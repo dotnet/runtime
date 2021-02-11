@@ -3667,15 +3667,18 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
 }
 #endif // FEATURE_SIMD
 
-/*-----------------------------------------------------------------------------
- *
- *  Push any callee-saved registers we have used
- */
-
+//------------------------------------------------------------------------
+// genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
+//
+// Arguments (arm64):
+//    initReg        - A scratch register (that gets set to zero on some platforms).
+//    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
+//                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
+//
 #if defined(TARGET_ARM64)
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 #else
-void          CodeGen::genPushCalleeSavedRegisters()
+void CodeGen::genPushCalleeSavedRegisters()
 #endif
 {
     assert(compiler->compGeneratingProlog);

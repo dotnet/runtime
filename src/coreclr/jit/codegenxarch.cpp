@@ -8950,11 +8950,9 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 #endif // PROFILING_SUPPORTED
 
-/*-----------------------------------------------------------------------------
- *
- *  Push any callee-saved registers we have used
- */
-
+//------------------------------------------------------------------------
+// genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
+//
 void CodeGen::genPushCalleeSavedRegisters()
 {
     assert(compiler->compGeneratingProlog);
