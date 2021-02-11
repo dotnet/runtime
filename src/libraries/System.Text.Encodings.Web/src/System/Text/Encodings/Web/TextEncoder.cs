@@ -898,7 +898,7 @@ namespace System.Text.Encodings.Web
             }
         }
 
-        internal static bool TryCopyAsciiCharacters(ReadOnlySpan<byte> source, Span<char> destination, out int numberOfCharactersWritten)
+        internal static bool TryCopyCharacters(string source, Span<char> destination, out int numberOfCharactersWritten)
         {
             Debug.Assert(source.Length > 0);
 
@@ -910,7 +910,7 @@ namespace System.Text.Encodings.Web
 
             for (int i = 0; i < source.Length; i++)
             {
-                destination[i] = (char)source[i];
+                destination[i] = source[i];
             }
 
             numberOfCharactersWritten = source.Length;

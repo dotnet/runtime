@@ -389,12 +389,12 @@ namespace System.Text.Encodings.Web
         // surrogate pairs in the output.
         public override int MaxOutputCharactersPerInputCharacter => 12; // "\uFFFF\uFFFF" is the longest encoded form
 
-        private static ReadOnlySpan<byte> s_b => new byte[] { (byte)'\\', (byte)'b' };
-        private static ReadOnlySpan<byte> s_t => new byte[] { (byte)'\\', (byte)'t' };
-        private static ReadOnlySpan<byte> s_n => new byte[] { (byte)'\\', (byte)'n' };
-        private static ReadOnlySpan<byte> s_f => new byte[] { (byte)'\\', (byte)'f' };
-        private static ReadOnlySpan<byte> s_r => new byte[] { (byte)'\\', (byte)'r' };
-        private static ReadOnlySpan<byte> s_back => new byte[] { (byte)'\\', (byte)'\\' };
+        private const string s_b = "\\b";
+        private const string s_t = "\\t";
+        private const string s_n = "\\n";
+        private const string s_f = "\\f";
+        private const string s_r = "\\r";
+        private const string s_back = "\\\\";
 
         // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
         // See ECMA-262, Sec. 7.8.4, and ECMA-404, Sec. 9
@@ -423,7 +423,7 @@ namespace System.Text.Encodings.Web
                 return TryWriteScalarAsChar(unicodeScalar, destination, out numberOfCharactersWritten);
             }
 
-            ReadOnlySpan<byte> toCopy;
+            string toCopy;
             switch (unicodeScalar)
             {
                 case '\b':
@@ -447,7 +447,7 @@ namespace System.Text.Encodings.Web
                 default:
                     return JavaScriptEncoderHelper.TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten);
             }
-            return TryCopyAsciiCharacters(toCopy, destination, out numberOfCharactersWritten);
+            return TryCopyCharacters(toCopy, destination, out numberOfCharactersWritten);
         }
 
         private static ReadOnlySpan<byte> AllowList => new byte[byte.MaxValue + 1]
