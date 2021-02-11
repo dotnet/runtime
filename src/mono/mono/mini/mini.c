@@ -950,33 +950,6 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 	return mono_assembly_has_skip_verification (assembly);
 }
 
-/*
- * mini_method_verify:
- * 
- * Verify the method using the verfier.
- * 
- * Returns true if the method is invalid. 
- */
-static gboolean
-mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
-{
-        return FALSE;
-}
-
-/*Returns true if something went wrong*/
-gboolean
-mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
-{
-	MonoMethod *method_definition = method;
-
-	while (method_definition->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
-		method_definition = imethod->declaring;
-	}
-
-	return mini_method_verify (cfg, method_definition, fail_compile);
-}
-
 static void
 mono_dynamic_code_hash_insert (MonoDomain *domain, MonoMethod *method, MonoJitDynamicMethodInfo *ji)
 {
@@ -3411,13 +3384,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	 * created by this.
 	 */
 	//cfg->enable_extended_bblocks = TRUE;
-
-	/*We must verify the method before doing any IR generation as mono_compile_create_vars can assert.*/
-	if (mono_compile_is_broken (cfg, cfg->method, TRUE)) {
-		if (mini_debug_options.break_on_unverified)
-			G_BREAKPOINT ();
-		return cfg;
-	}
 
 	/*
 	 * create MonoInst* which represents arguments and local variables
