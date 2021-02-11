@@ -143,14 +143,14 @@ LargeHeapHandleBucket::LargeHeapHandleBucket(LargeHeapHandleBucket *pNext, DWORD
 
     // Allocate the array in the large object heap.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass, TRUE);
+    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass, /* bAllocateInPinnedHeap = */TRUE);
 
     // Retrieve the pointer to the data inside the array. This is legal since the array
     // is located in the large object heap and is guaranteed not to move.
     m_pArrayDataPtr = (OBJECTREF *)HandleArrayObj->GetDataPtr();
 
     // Store the array in a strong handle to keep it alive.
-    m_hndHandleArray = pDomain->CreatePinningHandle((OBJECTREF)HandleArrayObj);
+    m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)HandleArrayObj);
 }
 
 
@@ -166,7 +166,7 @@ LargeHeapHandleBucket::~LargeHeapHandleBucket()
 
     if (m_hndHandleArray)
     {
-        DestroyPinningHandle(m_hndHandleArray);
+        DestroyStrongHandle(m_hndHandleArray);
         m_hndHandleArray = NULL;
     }
 }
@@ -517,7 +517,7 @@ ThreadStaticHandleBucket::ThreadStaticHandleBucket(ThreadStaticHandleBucket *pNe
 
     // Allocate the array on the GC heap.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass, FALSE);
+    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass);
 
     // Store the array in a strong handle to keep it alive.
     m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)HandleArrayObj);
