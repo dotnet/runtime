@@ -171,7 +171,7 @@ namespace System.Net.WebSockets
                 _innerWebSocket.SetObjectProperty("onerror", _onError);
 
                 // Setup the onClose callback
-                _onClose = (closeEvent) => onCloseCallback(closeEvent, cancellationToken);
+                _onClose = (closeEvent) => OnCloseCallback(closeEvent, cancellationToken);
 
                 // Attach the onClose callback
                 _innerWebSocket.SetObjectProperty("onclose", _onClose);
@@ -207,7 +207,7 @@ namespace System.Net.WebSockets
                 _innerWebSocket.SetObjectProperty("onopen", _onOpen);
 
                 // Setup the onMessage callback
-                _onMessage = (messageEvent) => onMessageCallback(messageEvent);
+                _onMessage = (messageEvent) => OnMessageCallback(messageEvent);
 
                 // Attach the onMessage callaback
                 _innerWebSocket.SetObjectProperty("onmessage", _onMessage);
@@ -231,7 +231,7 @@ namespace System.Net.WebSockets
         }
 
 
-        private void onCloseCallback(JSObject? closeEvt, CancellationToken cancellationToken)
+        private void OnCloseCallback(JSObject? closeEvt, CancellationToken cancellationToken)
         {
             if (closeEvt != null)
             {
@@ -261,7 +261,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private void onMessageCallback(JSObject messageEvent)
+        private void OnMessageCallback(JSObject messageEvent)
         {
             // get the events "data"
             using (messageEvent)
@@ -614,7 +614,7 @@ namespace System.Net.WebSockets
                 _innerWebSocketCloseStatusDescription = statusDescription;
                 _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
                 _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
-                onCloseCallback(null, cancellationToken);
+                OnCloseCallback(null, cancellationToken);
                 return Task.CompletedTask;
             }
             catch (Exception exc)
