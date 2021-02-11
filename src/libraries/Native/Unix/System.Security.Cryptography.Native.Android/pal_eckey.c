@@ -5,29 +5,82 @@
 
 #include <assert.h>
 
+EC_KEY* CryptoNative_NewEcKey(jobject curveParameters, jobject keyPair)
+{
+    assert(curveParameters);
+    assert(keyPair);
+
+    EC_KEY* keyInfo = malloc(sizeof(EC_KEY));
+    memset(keyInfo, 0, sizeof(keyInfo));
+    keyInfo->refCount = 1;
+    keyInfo->curveParameters = curveParameters;
+    keyInfo->keyPair = keyPair;
+    return keyInfo;
+}
+
 void CryptoNative_EcKeyDestroy(EC_KEY* r)
 {
-    EC_KEY_free(r);
+    if (r)
+    {
+        r->refCount--;
+        if (r->refCount == 0)
+        {
+            JNIEnv* env = GetJNIEnv();
+            // TODO: Destroy private key.
+            ReleaseGRef(env, r->keyPair);
+            ReleaseGRef(env, r->curveParameters);
+            free(r);
+        }
+    }
 }
 
 EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
 {
-    // oid can be friendly name or value
-    int nid = OBJ_txt2nid(oid);
-    return EC_KEY_new_by_curve_name(nid);
+    JNIEnv* env = GetJNIEnv();
+
+    jstring oidStr = JSTRING(oid);
+    jstring ec = JSTRING("EC");
+
+    // First, generate the key pair based on the curve defined by the oid.
+    jobject paramSpec = (*env)->NewObject(g_ECGenParameterSpecClass, g_ECGenParameterSpecCtor, oidStr);
+    (*env)->DeleteLocalRef(oid);
+    
+    jobject keyPairGenerator = (*env)->CallStaticObjectMethod(g_keyPairGenClass, g_keyPairGenGetInstanceMethod, ec);
+    (*env)->CallVoidMethod(keyPairGenerator, g_keyPairGenInitializeMethod, paramSpec);
+
+    (*env)->DeleteLocalRef(paramSpec);
+
+    jobject keyPair = (*env)->CallObjectMethod(keyPairGenerator, g_keyPairGenGenKeyPairMethod);
+    
+    (*env)->DeleteLocalRef(keyPairGenerator);
+    
+    // Now that we have the key pair, we can get the curve parameters from the public key.
+    jobject keyFactory = (*env)->CallStaticObjectMethod(g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, ec);
+    jobject publicKey = (*env)->CallObjectMethod(keyPair, g_keyPairGetPublicMethod);
+    jobject keySpec = (*env)->CallObjectMethod(keyFactory, g_KeyFactoryGetKeySpecMethod, publicKey, g_ECPublicKeySpecClass);
+
+    (*env)->DeleteLocalRef(keyFactory);
+
+    jobject curveParameters = (*env)->CallObjectMethod(keySpec, g_ECPublicKeySpecGetParamsMethod);
+    
+    (*env)->DeleteLocalRef(publicKey);
+
+    return CryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
 }
 
 int32_t CryptoNative_EcKeyGenerateKey(EC_KEY* eckey)
 {
-    if (!EC_KEY_generate_key(eckey))
-        return 0;
-
-    return EC_KEY_check_key(eckey);
+    // We have to generate the key in CryptoNative_EcKeyCreateByOid to get the curve parameters,
+    // so by the time we get here, we've already generated the key.
+    return SUCCESS;
 }
 
 int32_t CryptoNative_EcKeyUpRef(EC_KEY* r)
 {
-    return EC_KEY_up_ref(r);
+    if (!rsa)
+        return FAIL;
+    rsa->refCount++;
+    return SUCCESS;
 }
 
 int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
@@ -40,29 +93,19 @@ int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
     if (!key)
         return 0;
 
-    const EC_GROUP* group = EC_KEY_get0_group(key);
-    if (!group)
-        return 0;
+    JNIEnv* env = GetJNIEnv();
 
-    *keySize = EC_GROUP_get_degree(group);
+    jobject curve = (*env)->CallObjectMethod(key->curveParameters, g_ECParameterSpecGetCurve);
+    jobject field = (*env)->CallObjectMethod(curve, g_EllipticCurveGetField);
+    *keySize = (*env)->CallIntMethod(field, g_ECFieldGetFieldSize);
 
+    (*env)->DeleteLocalRef(field);
+    (*env)->DeleteLocalRef(curve);
     return 1;
 }
 
 int32_t CryptoNative_EcKeyGetCurveName2(const EC_KEY* key, int32_t* nidName)
 {
-    if (!nidName)
-        return 0;
-
-    *nidName = NID_undef;
-
-    if (!key)
-        return 0;
-
-    const EC_GROUP* group = EC_KEY_get0_group(key);
-    if (!group)
-        return 0;
-
-    *nidName = EC_GROUP_get_curve_name(group);
-    return 1;
+    // TODO: The public APIs do not support getting a name from an ECKeyParameters object.
+    return FAIL;
 }

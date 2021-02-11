@@ -3,12 +3,11 @@
 
 #include "pal_types.h"
 #include "pal_compiler.h"
-#include "pal_atomic.h"
 #include "pal_jni.h"
 
 typedef struct
 {
-    atomic_int refCount;
+    int32_t refCount;
     jobject curveParameters;
     jobject keyPair;
 } EC_KEY;

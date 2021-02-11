@@ -119,6 +119,11 @@ extern jclass    g_KeyFactoryClass;
 extern jmethodID g_KeyFactoryGetInstanceMethod;
 extern jmethodID g_KeyFactoryGenPrivateMethod;
 extern jmethodID g_KeyFactoryGenPublicMethod;
+extern jmethodID g_KeyFactoryGetKeySpecMethod;
+
+// java/security/spec/ECField
+extern jclass    g_ECFieldClass;
+extern jmethodID g_ECFieldGetFieldSize;
 
 // java/security/spec/ECFieldFp
 extern jclass    g_ECFieldFpClass;
@@ -128,18 +133,33 @@ extern jmethodID g_ECFieldFpCtor;
 extern jclass    g_ECFieldF2mClass;
 extern jmethodID g_ECFieldF2mCtorWithCoefficientBigInteger;
 
+// java/security/spec/ECGenParameterSpec
+extern jclass    g_ECGenParameterSpecClass;
+extern jmethodID g_ECGenParameterSpecCtor;
+
 // java/security/spec/ECParameterSpec
 extern jclass    g_ECParameterSpecClass;
 extern jmethodID g_ECParameterSpecCtor;
+extern jmethodID g_ECParameterSpecGetCurve;
 
 // java/security/spec/ECPoint
 extern jclass    g_ECPointClass;
 extern jmethodID g_ECPointCtor;
 
+// java/security/spec/ECPublicKeySpec
+extern jclass    g_ECPublicKeySpecClass;
+extern jmethodID g_ECPublicKeySpecCtor;
+extern jmethodID g_ECPublicKeySpecGetParamsMethod;
+
+// java/security/spec/ECPrivateKeySpec
+extern jclass    g_ECPrivateKeySpecClass;
+extern jmethodID g_ECPrivateKeySpecCtor;
+
 // java/security/spec/EllipticCurve
 extern jclass    g_EllipticCurveClass;
 extern jmethodID g_EllipticCurveCtor;
 extern jmethodID g_EllipticCurveCtorWithSeed;
+extern jmethodID g_EllipticCurveGetField;
 
 // java/security/spec/X509EncodedKeySpec
 extern jclass    g_X509EncodedKeySpecClass;
