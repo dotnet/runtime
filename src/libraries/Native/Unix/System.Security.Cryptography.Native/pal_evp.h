@@ -121,11 +121,11 @@ Returns the maxium bytes for a message digest.
 */
 PALEXPORT int32_t CryptoNative_GetMaxMdSize(void);
 
-PALEXPORT int32_t CryptoNative_Pkcs5Pbkdf2Hmac(const char* password,
-                                               int32_t passwordLength,
-                                               const unsigned char* salt,
-                                               int32_t saltLength,
-                                               int32_t iterations,
-                                               const EVP_MD* digest,
-                                               unsigned char* destination,
-                                               int32_t destinationLength);
+PALEXPORT int32_t CryptoNative_Pbkdf2(const char* password,
+                                      int32_t passwordLength,
+                                      const unsigned char* salt,
+                                      int32_t saltLength,
+                                      int32_t iterations,
+                                      const EVP_MD* digest,
+                                      unsigned char* destination,
+                                      int32_t destinationLength);

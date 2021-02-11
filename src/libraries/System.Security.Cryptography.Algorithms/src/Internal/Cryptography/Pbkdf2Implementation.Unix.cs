@@ -19,7 +19,7 @@ namespace Internal.Cryptography
             Debug.Assert(!destination.IsEmpty);
             Debug.Assert(hashAlgorithmName.Name is not null);
             IntPtr evpHashType = HashProviderDispenser.HashAlgorithmToEvp(hashAlgorithmName.Name);
-            int result = Interop.Crypto.Pkcs5Pbkdf2Hmac(password, salt, iterations, evpHashType, destination);
+            int result = Interop.Crypto.Pbkdf2(password, salt, iterations, evpHashType, destination);
             const int Success = 1;
 
             if (result != Success)

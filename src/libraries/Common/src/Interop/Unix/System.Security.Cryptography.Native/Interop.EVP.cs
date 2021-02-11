@@ -54,8 +54,8 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMaxMdSize")]
         private static extern int GetMaxMdSize();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs5Pbkdf2Hmac")]
-        private static unsafe extern int Pkcs5Pbkdf2Hmac(
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pbkdf2")]
+        private static unsafe extern int Pbkdf2(
             byte* pPassword,
             int passwordLength,
             byte* pSalt,
@@ -65,7 +65,7 @@ internal static partial class Interop
             byte* pDestination,
             int destinationLength);
 
-        internal static unsafe int Pkcs5Pbkdf2Hmac(
+        internal static unsafe int Pbkdf2(
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
             int iterations,
@@ -76,7 +76,7 @@ internal static partial class Interop
             fixed (byte* pSalt = salt)
             fixed (byte* pDestination = destination)
             {
-                return Pkcs5Pbkdf2Hmac(
+                return Pbkdf2(
                     pPassword,
                     password.Length,
                     pSalt,
