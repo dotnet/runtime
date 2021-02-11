@@ -26,6 +26,8 @@ namespace System.Threading
             if (numHandles == 1)
                 waitAll = false;
 
+            Thread currentThread = Thread.CurrentThread;
+#if !MONO // TODO: reentrant wait support
             bool reentrantWait = Thread.ReentrantWaitsEnabled;
 
             if (reentrantWait)
@@ -43,7 +45,6 @@ namespace System.Threading
                     throw new NotSupportedException(SR.NotSupported_MaxWaitHandles_STA);
             }
 
-            Thread currentThread = Thread.CurrentThread;
             currentThread.SetWaitSleepJoinState();
 
             int result;
@@ -56,7 +57,9 @@ namespace System.Threading
             {
                 result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll, (uint)millisecondsTimeout, false);
             }
-
+#else
+            int result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll, (uint)millisecondsTimeout, false);
+#endif
             currentThread.ClearWaitSleepJoinState();
 
             if (result == Interop.Kernel32.WAIT_FAILED)
