@@ -2767,11 +2767,6 @@ mono_class_init_internal (MonoClass *klass)
 	 * information and write it to @klass inside a lock.
 	 */
 
-	if (mono_verifier_is_enabled_for_class (klass) && !mono_verifier_verify_class (klass)) {
-		mono_class_set_type_load_failure (klass, "%s", concat_two_strings_with_zero (klass->image, klass->name, klass->image->assembly_name));
-		goto leave;
-	}
-
 	MonoType *klass_byval_arg;
 	klass_byval_arg = m_class_get_byval_arg (klass);
 	if (klass_byval_arg->type == MONO_TYPE_ARRAY || klass_byval_arg->type == MONO_TYPE_SZARRAY) {

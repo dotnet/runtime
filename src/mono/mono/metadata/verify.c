@@ -35,25 +35,6 @@
 #include <string.h>
 #include <ctype.h>
 
-static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
-static gboolean verify_all = FALSE;
-
-/*
- * Set the desired level of checks for the verfier.
- * 
- */
-void
-mono_verifier_set_mode (MiniVerifierMode mode)
-{
-	verifier_mode = mode;
-}
-
-void
-mono_verifier_enable_verify_all ()
-{
-	verify_all = TRUE;
-}
-
 /*
  * Returns TURE if @type is VAR or MVAR
  */
@@ -167,55 +148,6 @@ mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method)
 }
 
 
-gboolean
-mono_verifier_verify_class (MonoClass *klass)
-{
-	/* The verifier was disabled at compile time */
-	return TRUE;
-}
-
-GSList*
-mono_method_verify_with_current_settings (MonoMethod *method, gboolean skip_visibility, gboolean is_fulltrust)
-{
-	/* The verifier was disabled at compile time */
-	return NULL;
-}
-
-gboolean
-mono_verifier_is_class_full_trust (MonoClass *klass)
-{
-	/* The verifier was disabled at compile time */
-	return TRUE;
-}
-
-gboolean
-mono_verifier_is_method_full_trust (MonoMethod *method)
-{
-	/* The verifier was disabled at compile time */
-	return TRUE;
-}
-
-gboolean
-mono_verifier_is_enabled_for_image (MonoImage *image)
-{
-	/* The verifier was disabled at compile time */
-	return FALSE;
-}
-
-gboolean
-mono_verifier_is_enabled_for_class (MonoClass *klass)
-{
-	/* The verifier was disabled at compile time */
-	return FALSE;
-}
-
-gboolean
-mono_verifier_is_enabled_for_method (MonoMethod *method)
-{
-	/* The verifier was disabled at compile time */
-	return FALSE;
-}
-
 GSList*
 mono_method_verify (MonoMethod *method, int level)
 {
@@ -231,3 +163,8 @@ mono_free_verify_list (GSList *list)
 }
 
 
+char*
+mono_verify_corlib (void)
+{
+        return NULL;
+}
