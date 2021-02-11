@@ -1,12 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// That was a repro for a wrong IL stack optimization that happen when all conditions were met:
+//   - debug code, so we spill entries often,
+//   - we reimport blocks, `reimportSpillClique = true`,
+//   - there is a value that is popped and we were bashing it to nop(wrong optimization);
+//   - during reimportation we were asked to spill 'nop' value to the stack.
+
 .assembly extern System.Console {}
 
 .assembly Test1 {}
 .assembly extern mscorlib{auto}
 .class FullProof {
-.method static int32 Test() {
+.method static void Test() {
 .maxstack 500
 
 IL_352:       ldc.i8 1
@@ -37,6 +43,7 @@ IL_457:       add
 IL_490:       pop
 IL_491:       conv.ovf.i8.un
               pop
+              pop
 IL_500:       ret
 }
 
@@ -46,8 +53,7 @@ IL_500:       ret
 .maxstack 3
    .try
    {
-      call int32 FullProof::Test()
-      pop
+      call void FullProof::Test()
       leave.s WithoutEH
    }
    catch [mscorlib]System.Exception 
