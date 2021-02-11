@@ -4363,7 +4363,7 @@ private:
 #endif // DEBUG
 
     static BOOL impIsAddressInLocal(GenTree* tree, GenTree** lclVarTreeOut);
-    
+
     static BOOL IsInvariant(GenTree* tree);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
