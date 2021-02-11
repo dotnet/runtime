@@ -3,46 +3,32 @@
 
 namespace System.Diagnostics
 {
-    /// <devdoc>
-    ///     Specifies the priority level of a thread.  The priority level is not an absolute
-    ///     level, but instead contributes to the actual thread priority by considering the
-    ///     priority class of the process.
-    /// </devdoc>
+    /// <summary>Specifies the priority level of a thread.</summary>
+    /// <remarks>Every thread has a base-priority level determined by the thread's priority value and the priority class of its process. The operating system uses the base-priority level of all executable threads to determine which thread gets the next slice of processor time.
+    /// The priority level is not an absolute value, but instead is a range of priority values. The operating system computes the priority by using the process priority class to determine where, in the range specified by the <see cref="System.Diagnostics.ProcessThread.PriorityLevel" /> property, to set the thread's priority.</remarks>
+    /// <altmember cref="System.Diagnostics.ProcessThread.PriorityLevel"/>
+    /// <altmember cref="System.Diagnostics.ProcessPriorityClass"/>
     public enum ThreadPriorityLevel
     {
-        /// <devdoc>
-        ///     Idle priority
-        /// </devdoc>
+        /// <summary>Specifies idle priority. This is the lowest possible priority value of all threads, independent of the value of the associated <see cref="System.Diagnostics.ProcessPriorityClass" />.</summary>
         Idle = -15,
 
-        /// <devdoc>
-        ///     Lowest priority
-        /// </devdoc>
+        /// <summary>Specifies lowest priority. This is two steps below the normal priority for the associated <see cref="System.Diagnostics.ProcessPriorityClass" />.</summary>
         Lowest = -2,
 
-        /// <devdoc>
-        ///     Below normal priority
-        /// </devdoc>
+        /// <summary>Specifies one step below the normal priority for the associated <see cref="System.Diagnostics.ProcessPriorityClass" />.</summary>
         BelowNormal = -1,
 
-        /// <devdoc>
-        ///     Normal priority
-        /// </devdoc>
+        /// <summary>Specifies normal priority for the associated <see cref="System.Diagnostics.ProcessPriorityClass" />.</summary>
         Normal = 0,
 
-        /// <devdoc>
-        ///     Above normal priority
-        /// </devdoc>
+        /// <summary>Specifies one step above the normal priority for the associated <see cref="System.Diagnostics.ProcessPriorityClass" />.</summary>
         AboveNormal = 1,
 
-        /// <devdoc>
-        ///     Highest priority
-        /// </devdoc>
+        /// <summary>Specifies highest priority. This is two steps above the normal priority for the associated <see cref="System.Diagnostics.ProcessPriorityClass" />.</summary>
         Highest = 2,
 
-        /// <devdoc>
-        ///     Time critical priority
-        /// </devdoc>
+        /// <summary>Specifies time-critical priority. This is the highest priority of all threads, independent of the value of the associated <see cref="System.Diagnostics.ProcessPriorityClass" />.</summary>
         TimeCritical = 15
     }
 }

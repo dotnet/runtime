@@ -3,79 +3,51 @@
 
 namespace System.Diagnostics
 {
-    /// <devdoc>
-    ///     Specifies the reason a thread is waiting.
-    /// </devdoc>
+    /// <summary>Specifies the reason a thread is waiting.</summary>
+    /// <remarks>The thread wait reason is only valid when the <see cref="System.Diagnostics.ThreadState" /> is <see cref="System.Diagnostics.ThreadState.Wait" />.</remarks>
+    /// <altmember cref="System.Diagnostics.ThreadState"/>
     public enum ThreadWaitReason
     {
-        /// <devdoc>
-        ///     Thread is waiting for the scheduler.
-        /// </devdoc>
+        /// <summary>The thread is waiting for the scheduler.</summary>
         Executive,
 
-        /// <devdoc>
-        ///     Thread is waiting for a free virtual memory page.
-        /// </devdoc>
+        /// <summary>The thread is waiting for a free virtual memory page.</summary>
         FreePage,
 
-        /// <devdoc>
-        ///     Thread is waiting for a virtual memory page to arrive in memory.
-        /// </devdoc>
+        /// <summary>The thread is waiting for a virtual memory page to arrive in memory.</summary>
         PageIn,
 
-        /// <devdoc>
-        ///     Thread is waiting for a system allocation.
-        /// </devdoc>
+        /// <summary>The thread is waiting for system allocation.</summary>
         SystemAllocation,
 
-        /// <devdoc>
-        ///     Thread execution is delayed.
-        /// </devdoc>
+        /// <summary>Thread execution is delayed.</summary>
         ExecutionDelay,
 
-        /// <devdoc>
-        ///     Thread execution is suspended.
-        /// </devdoc>
+        /// <summary>Thread execution is suspended.</summary>
         Suspended,
 
-        /// <devdoc>
-        ///     Thread is waiting for a user request.
-        /// </devdoc>
+        /// <summary>The thread is waiting for a user request.</summary>
         UserRequest,
 
-        /// <devdoc>
-        ///     Thread is waiting for event pair high.
-        /// </devdoc>
+        /// <summary>The thread is waiting for event pair high.</summary>
         EventPairHigh,
 
-        /// <devdoc>
-        ///     Thread is waiting for event pair low.
-        /// </devdoc>
+        /// <summary>The thread is waiting for event pair low.</summary>
         EventPairLow,
 
-        /// <devdoc>
-        ///     Thread is waiting for a local procedure call to arrive.
-        /// </devdoc>
+        /// <summary>The thread is waiting for a local procedure call to arrive.</summary>
         LpcReceive,
 
-        /// <devdoc>
-        ///     Thread is waiting for reply to a local procedure call to arrive.
-        /// </devdoc>
+        /// <summary>The thread is waiting for reply to a local procedure call to arrive.</summary>
         LpcReply,
 
-        /// <devdoc>
-        ///     Thread is waiting for virtual memory.
-        /// </devdoc>
+        /// <summary>The thread is waiting for the system to allocate virtual memory.</summary>
         VirtualMemory,
 
-        /// <devdoc>
-        ///     Thread is waiting for a virtual memory page to be written to disk.
-        /// </devdoc>
+        /// <summary>The thread is waiting for a virtual memory page to be written to disk.</summary>
         PageOut,
 
-        /// <devdoc>
-        ///     Thread is waiting for an unknown reason.
-        /// </devdoc>
+        /// <summary>The thread is waiting for an unknown reason.</summary>
         Unknown
     }
 }

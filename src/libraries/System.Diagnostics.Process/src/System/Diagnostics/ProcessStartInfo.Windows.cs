@@ -6,13 +6,33 @@ using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
+    /// <summary>Specifies a set of values that are used when you start a process.</summary>
+    /// <remarks><see cref="System.Diagnostics.ProcessStartInfo" /> is used together with the <see cref="System.Diagnostics.Process" /> component. When you start a process using the <see cref="System.Diagnostics.Process" /> class, you have access to process information in addition to that available when attaching to a running process.
+    /// You can use the <see cref="System.Diagnostics.ProcessStartInfo" /> class for better control over the process you start. You must at least set the <see cref="System.Diagnostics.ProcessStartInfo.FileName" /> property, either manually or using the constructor. The file name is any application or document. Here a document is defined to be any file type that has an open or default action associated with it. You can view registered file types and their associated applications for your computer by using the **Folder Options** dialog box, which is available through the operating system. The **Advanced** button leads to a dialog box that shows whether there is an open action associated with a specific registered file type.
+    /// In addition, you can set other properties that define actions to take with that file. You can specify a value specific to the type of the <see cref="System.Diagnostics.ProcessStartInfo.FileName" /> property for the <see cref="System.Diagnostics.ProcessStartInfo.Verb" /> property. For example, you can specify "print" for a document type. Additionally, you can specify <see cref="System.Diagnostics.ProcessStartInfo.Arguments" /> property values to be command-line arguments to pass to the file's open procedure. For example, if you specify a text editor application in the <see cref="System.Diagnostics.ProcessStartInfo.FileName" /> property, you can use the <see cref="System.Diagnostics.ProcessStartInfo.Arguments" /> property to specify a text file to be opened by the editor.
+    /// Standard input is usually the keyboard, and standard output and standard error are usually the monitor screen. However, you can use the <see cref="System.Diagnostics.ProcessStartInfo.RedirectStandardInput" />, <see cref="System.Diagnostics.ProcessStartInfo.RedirectStandardOutput" />, and <see cref="System.Diagnostics.ProcessStartInfo.RedirectStandardError" /> properties to cause the process to get input from or return output to a file or other device. If you use the <see cref="System.Diagnostics.Process.StandardInput" />, <see cref="System.Diagnostics.Process.StandardOutput" />, or <see cref="System.Diagnostics.Process.StandardError" /> properties on the <see cref="System.Diagnostics.Process" /> component, you must first set the corresponding value on the <see cref="System.Diagnostics.ProcessStartInfo" /> property. Otherwise, the system throws an exception when you read or write to the stream.
+    /// Set the <see cref="System.Diagnostics.ProcessStartInfo.UseShellExecute" /> property to specify whether to start the process by using the operating system shell. If <see cref="System.Diagnostics.ProcessStartInfo.UseShellExecute" /> is set to <see langword="false" />, the new process inherits the standard input, standard output, and standard error streams of the calling process, unless the <see cref="System.Diagnostics.ProcessStartInfo.RedirectStandardInput" />, <see cref="System.Diagnostics.ProcessStartInfo.RedirectStandardOutput" />, or <see cref="System.Diagnostics.ProcessStartInfo.RedirectStandardError" /> properties, respectively, are set to <see langword="true" />.
+    /// You can change the value of any <see cref="System.Diagnostics.ProcessStartInfo" /> property up to the time that the process starts. After you start the process, changing these values has no effect.
+    /// > [!NOTE]
+    /// >  This class contains a link demand at the class level that applies to all members. A <see cref="System.Security.SecurityException" /> is thrown when the immediate caller does not have full-trust permission. For details about security demands, see [Link Demands](/dotnet/framework/misc/link-demands).
+    /// ## Examples
+    /// The following code example demonstrates how to use the <see cref="System.Diagnostics.ProcessStartInfo" /> class to start Internet Explorer, providing the destination URLs as <see cref="System.Diagnostics.ProcessStartInfo" /> arguments.
+    /// [!code-cpp[Process.Start_static#1](~/samples/snippets/cpp/VS_Snippets_CLR/Process.Start_static/CPP/processstartstatic.cpp)]
+    /// [!code-csharp[Process.Start_static#1](~/samples/snippets/csharp/VS_Snippets_CLR/Process.Start_static/CS/processstartstatic.cs)]
+    /// [!code-vb[Process.Start_static#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process.Start_static/VB/processstartstatic.vb)]</remarks>
+    /// <altmember cref="System.Diagnostics.Process"/>
     public sealed partial class ProcessStartInfo
     {
         private string? _domain;
 
+        /// <summary>Gets or sets the user password in clear text to use when starting the process.</summary>
+        /// <value>The user password in clear text.</value>
         [SupportedOSPlatform("windows")]
         public string? PasswordInClearText { get; set; }
 
+        /// <summary>Gets or sets a value that identifies the domain to use when starting the process. If this value is <see langword="null" />, the <see cref="System.Diagnostics.ProcessStartInfo.UserName" /> property must be specified in UPN format.</summary>
+        /// <value>The Active Directory domain to use when starting the process. If this value is <see langword="null" />, the <see cref="System.Diagnostics.ProcessStartInfo.UserName" /> property must be specified in UPN format.</value>
+        /// <remarks>This property is primarily of interest to users within enterprise environments that use Active Directory.</remarks>
         [SupportedOSPlatform("windows")]
         public string Domain
         {
@@ -20,9 +40,25 @@ namespace System.Diagnostics
             set => _domain = value;
         }
 
+        /// <summary>Gets or sets a value that indicates whether the Windows user profile is to be loaded from the registry.</summary>
+        /// <value><see langword="true" /> if the Windows user profile should be loaded; otherwise, <see langword="false" />. The default is <see langword="false" />.</value>
+        /// <remarks>This property is referenced if the process is being started by using the user name, password, and domain.
+        /// If the value is <see langword="true" />, the user's profile in the `HKEY_USERS` registry key is loaded. Loading the profile can be time-consuming. Therefore, it is best to use this value only if you must access the information in the `HKEY_CURRENT_USER` registry key.
+        /// In Windows Server 2003 and Windows 2000, the profile is unloaded after the new process has been terminated, regardless of whether the process has created child processes.
+        /// In Windows XP, the profile is unloaded after the new process and all child processes it has created have been terminated.</remarks>
         [SupportedOSPlatform("windows")]
         public bool LoadUserProfile { get; set; }
 
+        /// <summary>Gets or sets a secure string that contains the user password to use when starting the process.</summary>
+        /// <value>The user password to use when starting the process.</value>
+        /// <remarks>> [!IMPORTANT]
+        /// >  The <see cref="System.Diagnostics.ProcessStartInfo.WorkingDirectory" /> property must be set if <see cref="System.Diagnostics.ProcessStartInfo.UserName" /> and <see cref="System.Diagnostics.ProcessStartInfo.Password" /> are provided. If the property is not set, the default working directory is %SYSTEMROOT%\system32.
+        /// > [!NOTE]
+        /// >  Setting the <see cref="System.Diagnostics.ProcessStartInfo.Domain" />, <see cref="System.Diagnostics.ProcessStartInfo.UserName" />, and the <see cref="System.Diagnostics.ProcessStartInfo.Password" /> properties in a <see cref="System.Diagnostics.ProcessStartInfo" /> object is the recommended practice for starting a process with user credentials.
+        /// A <see cref="System.Security.SecureString" /> object is like a <see cref="string" /> object in that it has a text value. However, the value of a <see cref="System.Security.SecureString" /> object is automatically encrypted, it can be modified until your application marks it as read-only, and it can be deleted from computer memory by either your application or the .NET Framework garbage collector.
+        /// For more information about secure strings and an example of how to obtain a password to set this property, see the <see cref="System.Security.SecureString" /> class.
+        /// > [!NOTE]
+        /// >  If you provide a value for the <see cref="System.Diagnostics.ProcessStartInfo.Password" /> property, the <see cref="System.Diagnostics.ProcessStartInfo.UseShellExecute" /> property must be <see langword="false" />, or an <see cref="System.InvalidOperationException" /> will be thrown when the <xref:System.Diagnostics.Process.Start%28System.Diagnostics.ProcessStartInfo%29?displayProperty=nameWithType> method is called.</remarks>
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public SecureString? Password { get; set; }

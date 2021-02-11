@@ -3,49 +3,35 @@
 
 namespace System.Diagnostics
 {
-    /// <devdoc>
-    ///     Specifies the execution state of a thread.
-    /// </devdoc>
+    /// <summary>Specifies the current execution state of the thread.</summary>
+    /// <remarks>> [!IMPORTANT]
+    /// >  There are two thread state enumerations, <see cref="System.Diagnostics.ThreadState" /> and <see cref="System.Threading.ThreadState" />.  The thread state enumerations are only of interest in a few debugging scenarios. Your code should never use thread state to synchronize the activities of threads.</remarks>
+    /// <altmember cref="System.Diagnostics.ProcessThread"/>
+    /// <altmember cref="System.Diagnostics.Process"/>
     public enum ThreadState
     {
-        /// <devdoc>
-        ///     The thread has been initialized, but has not started yet.
-        /// </devdoc>
+        /// <summary>A state that indicates the thread has been initialized, but has not yet started.</summary>
         Initialized,
 
-        /// <devdoc>
-        ///     The thread is in ready state.
-        /// </devdoc>
+        /// <summary>A state that indicates the thread is waiting to use a processor because no processor is free. The thread is prepared to run on the next available processor.</summary>
         Ready,
 
-        /// <devdoc>
-        ///     The thread is running.
-        /// </devdoc>
+        /// <summary>A state that indicates the thread is currently using a processor.</summary>
         Running,
 
-        /// <devdoc>
-        ///     The thread is in standby state.
-        /// </devdoc>
+        /// <summary>A state that indicates the thread is about to use a processor. Only one thread can be in this state at a time.</summary>
         Standby,
 
-        /// <devdoc>
-        ///     The thread has exited.
-        /// </devdoc>
+        /// <summary>A state that indicates the thread has finished executing and has exited.</summary>
         Terminated,
 
-        /// <devdoc>
-        ///     The thread is waiting.
-        /// </devdoc>
+        /// <summary>A state that indicates the thread is not ready to use the processor because it is waiting for a peripheral operation to complete or a resource to become free. When the thread is ready, it will be rescheduled.</summary>
         Wait,
 
-        /// <devdoc>
-        ///     The thread is transitioning between states.
-        /// </devdoc>
+        /// <summary>A state that indicates the thread is waiting for a resource, other than the processor, before it can execute. For example, it might be waiting for its execution stack to be paged in from disk.</summary>
         Transition,
 
-        /// <devdoc>
-        ///     The thread state is unknown.
-        /// </devdoc>
+        /// <summary>The state of the thread is unknown.</summary>
         Unknown
     }
 }

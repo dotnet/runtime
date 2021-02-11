@@ -16,6 +16,7 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
+    /// <summary>Provides a managed wrapper for a process handle.</summary>
     public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         protected override bool ReleaseHandle()
