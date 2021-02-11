@@ -30,15 +30,12 @@ hostfxr_exports::hostfxr_exports(const pal::string_t &hostfxr_path)
 
     get_native_search_directories = (hostfxr_get_native_search_directories_fn)pal::get_symbol(_dll, "hostfxr_get_native_search_directories");
 
-    get_dotnet_environment_info = (hostfxr_get_dotnet_environment_info_result_fn)pal::get_symbol(_dll, "hostfxr_get_dotnet_environment_info");
-
     if (init_command_line == nullptr || run_app == nullptr
         || init_config == nullptr || get_delegate == nullptr
         || get_prop_value == nullptr || set_prop_value == nullptr
         || get_properties == nullptr || close == nullptr
         || main_startupinfo == nullptr || set_error_writer == nullptr
-        || get_native_search_directories == nullptr
-        || get_dotnet_environment_info == nullptr)
+        || get_native_search_directories == nullptr)
     {
         std::cout << "Failed to get hostfxr entry points" << std::endl;
         throw StatusCode::CoreHostEntryPointFailure;
