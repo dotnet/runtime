@@ -33,7 +33,7 @@ namespace System.Text.Encodings.Web
             // it's unfortunately common for developers to
             // forget to HTML-encode a string once it has been JS-encoded,
             // so this offers extra protection.
-            DefaultHtmlEncoder.ForbidHtmlCharacters(allowedCharacters);
+            HtmlEncoderHelper.ForbidHtmlCharacters(allowedCharacters);
 
             // '\' (U+005C REVERSE SOLIDUS) must always be escaped in Javascript / ECMAScript / JSON.
             // '/' (U+002F SOLIDUS) is not Javascript / ECMAScript / JSON-sensitive so doesn't need to be escaped.
