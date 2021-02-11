@@ -118,11 +118,11 @@ def build_and_run(coreclr_args, output_mch_name):
     benchmarks_dll = path.join(artifacts_directory, "MicroBenchmarks.dll")
 
     if is_windows:
-        shim_name = "superpmi-shim-collector.dll"
+        shim_name = "%JitName%"
         corerun_exe = "CoreRun.exe"
         script_name = "run_microbenchmarks.bat"
     else:
-        shim_name = "libsuperpmi-shim-collector.so"
+        shim_name = "$JitName"
         corerun_exe = "corerun"
         script_name = "run_microbenchmarks.sh"
 
@@ -135,7 +135,7 @@ def build_and_run(coreclr_args, output_mch_name):
         "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
         "-o", artifacts_directory])
 
-    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter *Array* --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
+    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter * --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
         f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
         "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
 
@@ -147,8 +147,10 @@ def build_and_run(coreclr_args, output_mch_name):
             # Unset the JitName so dotnet process will not fail
             if not is_windows:
                 contents.append("#!/bin/bash")
+                contents.append("export JitName=$COMPlus_JitName")
                 contents.append("unset COMPlus_JitName")
             else:
+                contents.append("set JitName=%COMPlus_JitName%")
                 contents.append("set COMPlus_JitName=")
             contents.append(f"pushd {performance_directory}")
             contents.append(collection_command)
