@@ -3,15 +3,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 class Program
 {
     private static int s_ReturnCode = 100;
 
-    private static void AssertEquals(int expected, int actual, [CallerLineNumber] int line = 0)
+    private static void AssertEquals<T>(T expected, T actual, [CallerLineNumber] int line = 0)
     {
-        if (expected != actual)
+        if (!expected.Equals(actual))
         {
             Console.WriteLine($"{expected} != {actual}, L{line}");
             s_ReturnCode++;
@@ -69,9 +70,29 @@ class Program
     private static void Compare_DateTime(DateTime a, DateTime b) =>
         AssertEquals(a.CompareTo(b), Comparer<DateTime>.Default.Compare(a, b));
 
+    private static void Compare_Int32_Nullable(long? a, long? b)
+    {
+        int actual = Comparer<long?>.Default.Compare(a, b);
+        int expected = 0;
+        if (a.HasValue)
+            expected = b.HasValue ? a.Value.CompareTo(b.Value) : 1;
+        else
+            expected = b.HasValue ? -1 : 0;
+        AssertEquals(expected, actual);
+    }
+
     public static int Main(string[] args)
     {
-        long[] values = {1, 2, 3, long.MaxValue};
+        ;
+        long[] values = Enumerable.Range(1000, 2000)
+            .Select(i => (long)i)
+            .Concat(new []
+            {
+                short.MinValue, short.MinValue + 1, short.MaxValue - 1, short.MaxValue, short.MaxValue + 1,
+                int.MinValue, int.MinValue + 1, int.MaxValue, int.MaxValue - 1,
+                long.MinValue, long.MinValue + 1, long.MaxValue, long.MaxValue - 1,
+            })
+            .ToArray();
 
         for (var i = 0; i < values.Length; i++)
         {
@@ -139,14 +160,16 @@ class Program
                 var enumA = Unsafe.As<long, MethodImplOptions>(ref a);
                 var enumB = Unsafe.As<long, MethodImplOptions>(ref b);
                 Compare_Enum(enumA, enumB);
-                
+
                 Compare_DateTime(
-                    new DateTime(Math.Clamp(a, DateTime.MinValue.Ticks, DateTime.MaxValue.Ticks)), 
+                    new DateTime(Math.Clamp(a, DateTime.MinValue.Ticks, DateTime.MaxValue.Ticks)),
                     new DateTime(Math.Clamp(b, DateTime.MinValue.Ticks, DateTime.MaxValue.Ticks)));
+
+                Compare_Int32_Nullable(a, b);
             }
         }
 
-        string[] strings = {"", "0", "00", "1", "11", "111", "привет", "Hello"};
+        string[] strings = { "", "0", "00", "1", "11", "111", "привет", "Hello" };
         foreach (var str1 in strings)
         {
             foreach (var str2 in strings)
@@ -156,6 +179,45 @@ class Program
             }
         }
 
+        Compare_Int32_Nullable(null, 0);
+        Compare_Int32_Nullable(0, null);
+        Compare_Int32_Nullable(null, null);
+        Compare_Int32_Nullable(null, 1);
+        Compare_Int32_Nullable(1, null);
+        Compare_Int32_Nullable(null, -1);
+        Compare_Int32_Nullable(-1, null);
+
+        GetTypeTests();
+        GetHashCodeTests();
+
         return s_ReturnCode;
     }
+
+    private static void GetTypeTests()
+    {
+        AssertEquals("System.Collections.Generic.GenericComparer`1[System.Int32]", Comparer<int>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.GenericComparer`1[System.String]", Comparer<string>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.GenericComparer`1[System.Guid]", Comparer<Guid>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.EnumComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[System.Byte]", Comparer<byte?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.ObjectComparer`1[Struct1]", Comparer<Struct1>.Default.GetType().ToString());
+    }
+    private static int GetHashCodeTests()
+    {
+        // Just to make sure it doesn't crash
+        return Comparer<int>.Default.GetHashCode() +
+               Comparer<string>.Default.GetHashCode() +
+               Comparer<MethodImplOptions>.Default.GetHashCode() +
+               Comparer<byte?>.Default.GetHashCode() +
+               Comparer<Guid>.Default.GetHashCode() +
+               Comparer<Struct1>.Default.GetHashCode();
+    }
+}
+
+public struct Struct1
+{
+    public long a;
+    public long b;
+    public long c;
+    public long d;
 }
