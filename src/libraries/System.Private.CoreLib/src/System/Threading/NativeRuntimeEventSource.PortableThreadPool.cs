@@ -10,8 +10,10 @@ namespace System.Diagnostics.Tracing
 {
     // This is part of the NativeRuntimeEventsource, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
     // It contains the handwritten implementation of the ThreadPool events.
-    // The events here do not call into the typical WriteEvent* APIs unlike most EventSources.
-    // Instead, they call directly into QCalls provided by the runtime (refer to XplatEventLogger.cs) which call
+    // The events here do not call into the typical WriteEvent* APIs unlike most EventSources because that results in the
+    // events to be forwarded to EventListeners twice, once directly from the managed WriteEvent API, and another time
+    // from the mechanism in NativeRuntimeEventSource.ProcessEvents that forwards native runtime events to EventListeners.
+    // To prevent this, these events call directly into QCalls provided by the runtime (refer to NativeRuntimeEventSource.cs) which call
     // FireEtw* methods auto-generated from ClrEtwAll.man. This ensures that corresponding event sinks are being used
     // for the native platform. Refer to src/coreclr/vm/nativeruntimesource.cpp.
     internal sealed partial class NativeRuntimeEventSource : EventSource
@@ -71,7 +73,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                XplatEventLogger.LogThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+                LogThreadPoolWorkerThreadStart(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
             }
         }
 
@@ -83,7 +85,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                XplatEventLogger.LogThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+                LogThreadPoolWorkerThreadStop(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
             }
         }
 
@@ -96,7 +98,7 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Informational, Keywords.ThreadingKeyword))
             {
-                XplatEventLogger.LogThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
+                LogThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID);
             }
         }
 
@@ -109,7 +111,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            XplatEventLogger.LogThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
+            LogThreadPoolWorkerThreadAdjustmentSample(Throughput, ClrInstanceID);
         }
 
         [Event(55, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentAdjustment, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Adjustment, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -123,7 +125,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            XplatEventLogger.LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
+            LogThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID);
         }
 
         [Event(56, Level = EventLevel.Verbose, Message = Messages.WorkerThreadAdjustmentStats, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Stats, Version = 0, Keywords = Keywords.ThreadingKeyword)]
@@ -144,7 +146,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            XplatEventLogger.LogThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID);
+            LogThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID);
         }
 
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
@@ -155,7 +157,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             int multiDequeuesInt = Convert.ToInt32(MultiDequeues); // bool maps to "win:Boolean", a 4-byte boolean
-            XplatEventLogger.LogThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
+            LogThreadPoolIOEnqueue(NativeOverlapped, Overlapped, MultiDequeues, ClrInstanceID);
         }
 
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
@@ -176,7 +178,7 @@ namespace System.Diagnostics.Tracing
             IntPtr Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
-            XplatEventLogger.LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
+            LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
         }
 
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
@@ -198,7 +200,7 @@ namespace System.Diagnostics.Tracing
             {
                 return;
             }
-            XplatEventLogger.LogThreadPoolWorkingThreadCount(Count, ClrInstanceID);
+            LogThreadPoolWorkingThreadCount(Count, ClrInstanceID);
         }
     }
 }

@@ -10,7 +10,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
-#if FEATURE_PERFTRACING
+#if FEATURE_EVENTSOURCE_XPLAT
 
 namespace System.Diagnostics.Tracing
 {
@@ -18,7 +18,6 @@ namespace System.Diagnostics.Tracing
     {
         public XplatEventLogger() {}
 
-#if FEATURE_EVENTSOURCE_XPLAT
         private static readonly Lazy<string?> eventSourceNameFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventSourceFilter"));
         private static readonly Lazy<string?> eventSourceEventFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventNameFilter"));
 
@@ -172,6 +171,10 @@ namespace System.Diagnostics.Tracing
         protected internal override void OnEventWritten(EventWrittenEventArgs eventData)
         {
             // Don't enable forwarding of NativeRuntimeEventSource events.
+            // NativeRuntimeEventSource events are written to the native side via QCalls (see NativeRuntimeEventSource.cs/nativeeventsource.cpp)
+            // and is forwarded back to this EventListener via NativeRuntimeEventSource.ProcessEvent. We need to filter these events here
+            // because then these events can get logged back into the native runtime as EventSourceEvent events which we use to log
+            // managed events from other EventSources to LTTng.
             if (eventData.EventSource.GetType() == typeof(NativeRuntimeEventSource))
             {
                 return;
@@ -201,55 +204,6 @@ namespace System.Diagnostics.Tracing
 
             LogEventSource(eventData.EventId, eventData.EventName, eventData.EventSource.Name, payload);
         }
-#endif //FEATURE_EVENTSOURCE_XPLAT
-
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, NativeRuntimeEventSource.ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkerThreadAdjustmentStats(
-            double Duration,
-            double Throughput,
-            double ThreadPoolWorkerThreadWait,
-            double ThroughputWave,
-            double ThroughputErrorEstimate,
-            double AverageThroughputErrorEstimate,
-            double ThroughputRatio,
-            double Confidence,
-            double NewControlSetting,
-            ushort NewThreadWaveMagnitude,
-            ushort ClrInstanceID);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolIOEnqueue(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
-            bool MultiDequeues,
-            ushort ClrInstanceID);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolIODequeue(
-            IntPtr NativeOverlapped,
-            IntPtr Overlapped,
-            ushort ClrInstanceID);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void LogThreadPoolWorkingThreadCount(
-            uint Count,
-            ushort ClrInstanceID
-        );
     }
 }
-#endif //FEATURE_PERFTRACING
+#endif //FEATURE_EVENTSOURCE_XPLAT
