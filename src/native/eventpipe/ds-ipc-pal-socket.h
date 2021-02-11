@@ -14,25 +14,16 @@
 
 #ifdef HOST_WIN32
 #include <winsock2.h>
-#define DS_IPC_INVALID_SOCKET INVALID_SOCKET
-#define DS_IPC_SOCKET_ERROR SOCKET_ERROR
-#define DS_IPC_SOCKET_ERROR_WOULDBLOCK WSAEWOULDBLOCK
-typedef ADDRINFOA ds_ipc_addrinfo_t;
 typedef SOCKET ds_ipc_socket_t;
 typedef SOCKADDR ds_ipc_socket_address_t;
 typedef ADDRESS_FAMILY ds_ipc_socket_family_t;
-typedef WSAPOLLFD ds_ipc_pollfd_t;
-typedef int ds_ipc_mode_t;
+typedef int ds_ipc_socket_len_t;
 #else
-#define DS_IPC_INVALID_SOCKET -1
-#define DS_IPC_SOCKET_ERROR -1
-#define DS_IPC_SOCKET_ERROR_WOULDBLOCK EINPROGRESS
-typedef struct addrinfo ds_ipc_addrinfo_t;
+#include <sys/socket.h>
 typedef int ds_ipc_socket_t;
-typedef struct socketaddr ds_ipc_socket_address_t;
+typedef struct sockaddr ds_ipc_socket_address_t;
 typedef int ds_ipc_socket_family_t;
-typedef struct pollfd ds_ipc_pollfd_t;
-typedef mode_t ds_ipc_mode_t;
+typedef socklen_t ds_ipc_socket_len_t;
 #endif
 
 /*
@@ -45,7 +36,7 @@ struct _DiagnosticsIpc {
 struct _DiagnosticsIpc_Internal {
 #endif
 	ds_ipc_socket_address_t *server_address;
-	size_t server_address_len;
+	ds_ipc_socket_len_t server_address_len;
 	ds_ipc_socket_family_t server_address_family;
 	ds_ipc_socket_t server_socket;
 	bool is_listening;
