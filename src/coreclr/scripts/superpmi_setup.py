@@ -465,7 +465,7 @@ def main(main_args):
 
     if coreclr_args.collection_name == "benchmarks":
         # Setup microbenchmarks
-        setup_microbenchmark(correlation_payload_directory, arch)
+        setup_microbenchmark(workitem_directory, arch)
         # performance_directory = path.join(correlation_payload_directory, "performance")
         # run_command(
         #     ["git", "clone", "--quiet", "--depth", "1", "https://github.com/kunalspathak/performance", performance_directory])
