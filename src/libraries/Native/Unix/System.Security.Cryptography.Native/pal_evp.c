@@ -171,13 +171,21 @@ int32_t CryptoNative_Pbkdf2(const char* password,
 
     if (salt == NULL)
     {
-        assert(saltLength == 0);
+        if (saltLength != 0)
+        {
+            return -1;
+        }
+
         salt = (const unsigned char*)empty;
     }
 
     if (password == NULL)
     {
-        assert(passwordLength == 0);
+        if (passwordLength != 0)
+        {
+            return -1;
+        }
+
         password = empty;
     }
 
