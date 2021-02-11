@@ -292,6 +292,10 @@ struct hostfxr_dotnet_environment_sdk_info
     const char_t* path;
 };
 
+typedef void(HOSTFXR_CALLTYPE* hostfxr_get_dotnet_environment_info_result_fn)(
+    const struct hostfxr_dotnet_environment_info* info,
+    void* result_context);
+
 struct hostfxr_dotnet_environment_framework_info
 {
     size_t size;
@@ -308,7 +312,7 @@ struct hostfxr_dotnet_environment_info
     const char_t* hostfxr_commit_hash;
 
     int32_t sdk_count;
-    const struct hostfxr_dotnet_environment_sdk_info* sdks;
+    const hostfxr_dotnet_environment_sdk_info* sdks;
 
     int32_t framework_count;
     const hostfxr_dotnet_environment_framework_info* frameworks;

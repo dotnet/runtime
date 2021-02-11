@@ -27,6 +27,8 @@ public:
 
     hostfxr_get_native_search_directories_fn get_native_search_directories;
 
+    hostfxr_get_dotnet_environment_info_result_fn get_dotnet_environment_info;
+
 public:
     hostfxr_exports(const pal::string_t &hostfxr_path);
     ~hostfxr_exports();

@@ -331,10 +331,6 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
     return StatusCode::Success;
 }
 
-typedef void (HOSTFXR_CALLTYPE* hostfxr_get_dotnet_environment_info_result_fn)(
-    const struct hostfxr_dotnet_environment_info* info,
-    void* result_context);
-
 //
 // Returns available SDKs and frameworks.
 //
@@ -376,7 +372,6 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     hostfxr_get_dotnet_environment_info_result_fn result,
     void* result_context)
 {
-    assert(reserved == nullptr);
     pal::string_t dotnet_dir;
     if (dotnet_root == nullptr)
     {

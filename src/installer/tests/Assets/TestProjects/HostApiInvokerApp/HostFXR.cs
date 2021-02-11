@@ -24,36 +24,29 @@ namespace HostApiInvokerApp
                 global_json_path = 1,
             }
 
-            [StructLayout(LayoutKind.Sequential)]
+            [StructLayout(LayoutKind.Sequential, CharSet = Utils.OSCharSet)]
             internal struct hostfxr_dotnet_environment_sdk_info
             {
                 internal int size;
-                [MarshalAs(UnmanagedType.LPWStr)]
                 internal string version;
-                [MarshalAs(UnmanagedType.LPWStr)]
                 internal string path;
             }
 
-            [StructLayout(LayoutKind.Sequential)]
+            [StructLayout(LayoutKind.Sequential, CharSet = Utils.OSCharSet)]
             internal struct hostfxr_dotnet_environment_framework_info
             {
                 internal int size;
-                [MarshalAs(UnmanagedType.LPWStr)]
                 internal string name;
-                [MarshalAs(UnmanagedType.LPWStr)]
                 internal string version;
-                [MarshalAs(UnmanagedType.LPWStr)]
                 internal string path;
             }
 
-            [StructLayout(LayoutKind.Sequential)]
+            [StructLayout(LayoutKind.Sequential, CharSet = Utils.OSCharSet)]
             internal struct hostfxr_dotnet_environment_info
             {
                 internal int size;
 
-                [MarshalAs(UnmanagedType.LPWStr)]
                 internal string hostfxr_version;
-                [MarshalAs(UnmanagedType.LPWStr)]
                 internal string hostfxr_commit_hash;
 
                 internal int sdk_count;
@@ -96,12 +89,12 @@ namespace HostApiInvokerApp
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = Utils.OSCharSet)]
             internal delegate void hostfxr_get_dotnet_environment_info_result_fn(
-                 hostfxr_dotnet_environment_info info,
+                 IntPtr info,
                  IntPtr result_context);
 
             [DllImport(nameof(hostfxr), CharSet = Utils.OSCharSet, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int hostfxr_get_dotnet_environment_info(
-                string? dotnet_root,
+                string dotnet_root,
                 IntPtr reserved,
                 hostfxr_get_dotnet_environment_info_result_fn result,
                 IntPtr result_context);
@@ -201,7 +194,7 @@ namespace HostApiInvokerApp
         /// <param name="args[1]">(Optional) Path to the directory with dotnet.exe</param>
         static void Test_hostfxr_get_dotnet_environment_info(string[] args)
         {
-            string? dotnetExeDir = null;
+            string dotnetExeDir = string.Empty;
             if (args.Length >= 2)
                 dotnetExeDir = args[1];
 
@@ -214,17 +207,19 @@ namespace HostApiInvokerApp
                 dotnet_root: dotnetExeDir,
                 reserved: IntPtr.Zero,
                 result: (info, result_context) => {
-                    hostfxr_version = info.hostfxr_version;
-                    hostfxr_commit_hash = info.hostfxr_commit_hash;
-                    for (int i = 0; i < info.sdk_count; i++)
+                    hostfxr.hostfxr_dotnet_environment_info environment_info = Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_info>(info);
+
+                    hostfxr_version = environment_info.hostfxr_version;
+                    hostfxr_commit_hash = environment_info.hostfxr_commit_hash;
+                    for (int i = 0; i < environment_info.sdk_count; i++)
                     {
-                        IntPtr pSdkInfo = new IntPtr(info.sdks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_sdk_info>()));
+                        IntPtr pSdkInfo = new IntPtr(environment_info.sdks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_sdk_info>()));
                         sdks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_sdk_info>(pSdkInfo));
                     }
 
-                    for (int i = 0; i < info.framework_count; i++)
+                    for (int i = 0; i < environment_info.framework_count; i++)
                     {
-                        IntPtr pFrameworkInfo = new IntPtr(info.frameworks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_framework_info>()));
+                        IntPtr pFrameworkInfo = new IntPtr(environment_info.frameworks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_framework_info>()));
                         frameworks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_framework_info>(pFrameworkInfo));
                     }
                 },
