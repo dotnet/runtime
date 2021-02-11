@@ -372,6 +372,12 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     hostfxr_get_dotnet_environment_info_result_fn result,
     void* result_context)
 {
+    if (result == nullptr)
+    {
+        trace::error(_X("hostfxr_get_dotnet_environment_info received an invalid argument: result should not be null."));
+        return StatusCode::InvalidArgFailure;
+    }
+
     pal::string_t dotnet_dir;
     if (dotnet_root == nullptr)
     {

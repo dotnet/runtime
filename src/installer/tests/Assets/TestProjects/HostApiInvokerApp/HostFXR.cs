@@ -194,7 +194,7 @@ namespace HostApiInvokerApp
         /// <param name="args[1]">(Optional) Path to the directory with dotnet.exe</param>
         static void Test_hostfxr_get_dotnet_environment_info(string[] args)
         {
-            string dotnetExeDir = string.Empty;
+            string dotnetExeDir = null;
             if (args.Length >= 2)
                 dotnetExeDir = args[1];
 
@@ -202,6 +202,9 @@ namespace HostApiInvokerApp
             string hostfxr_commit_hash;
             List<hostfxr.hostfxr_dotnet_environment_sdk_info> sdks = new List<hostfxr.hostfxr_dotnet_environment_sdk_info>();
             List<hostfxr.hostfxr_dotnet_environment_framework_info> frameworks = new List<hostfxr.hostfxr_dotnet_environment_framework_info>();
+            int environment_info_size = 0;
+            int sdk_info_size = 0;
+            int framework_info_size = 0;
 
             int rc = hostfxr.hostfxr_get_dotnet_environment_info(
                 dotnet_root: dotnetExeDir,
@@ -222,20 +225,32 @@ namespace HostApiInvokerApp
                         IntPtr pFrameworkInfo = new IntPtr(environment_info.frameworks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_framework_info>()));
                         frameworks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_framework_info>(pFrameworkInfo));
                     }
+
+                    environment_info_size = environment_info.size;
+                    sdk_info_size = (sdks.Count > 0) ? sdks[0].size : 0;
+                    framework_info_size = (frameworks.Count > 0) ? frameworks[0].size : 0;
+
+                    long result_context_as_int = result_context.ToInt64();
+                    if (result_context_as_int != 42)
+                        throw new Exception($"result_context value expected to be 42 but was {result_context_as_int}.");
                 },
-                result_context: IntPtr.Zero);
+                result_context: new IntPtr(42));
 
             if (rc != 0)
             {
                 Console.WriteLine($"hostfxr_get_dotnet_environment_info:Fail[{rc}]");
             }
 
+            Console.WriteLine($"hostfxr_get_dotnet_environment_info environment info size:[{environment_info_size}]");
+
             Console.WriteLine($"hostfxr_get_dotnet_environment_info sdk versions:[{string.Join(";", sdks.Select(s => s.version).ToList())}]");
             Console.WriteLine($"hostfxr_get_dotnet_environment_info sdk paths:[{string.Join(";", sdks.Select(s => s.path).ToList())}]");
+            Console.WriteLine($"hostfxr_get_dotnet_environment_info sdk info size:[{sdk_info_size}]");
 
             Console.WriteLine($"hostfxr_get_dotnet_environment_info framework names:[{string.Join(";", frameworks.Select(f => f.name).ToList())}]");
             Console.WriteLine($"hostfxr_get_dotnet_environment_info framework versions:[{string.Join(";", frameworks.Select(f => f.version).ToList())}]");
             Console.WriteLine($"hostfxr_get_dotnet_environment_info framework paths:[{string.Join(";", frameworks.Select(f => f.path).ToList())}]");
+            Console.WriteLine($"hostfxr_get_dotnet_environment_info framework info size:[{framework_info_size}]");
 
             Console.WriteLine("hostfxr_get_dotnet_environment_info:Success");
         }
