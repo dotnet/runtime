@@ -49,13 +49,14 @@ int32_t AppleCryptoNative_KeyDerivationPBKDF(PAL_HashAlgorithm prfAlgorithm,
         return -1;
     }
 
-    char empty = 0;
+    const char* empty = "";
 
-    if (passwordLen == 0)
+    if (password == NULL)
     {
         // macOS will not accept a null password, but it will accept a zero-length
         // password with a valid pointer.
-        password = &empty;
+        password = empty;
+        passwordLen = 0;
     }
 
     CCPseudoRandomAlgorithm prf;

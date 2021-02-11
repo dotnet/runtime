@@ -167,6 +167,20 @@ int32_t CryptoNative_Pkcs5Pbkdf2Hmac(const char* password,
         return -1;
     }
 
+    const char* empty = "";
+
+    if (salt == NULL)
+    {
+        assert(saltLength == 0);
+        salt = (const unsigned char*)empty;
+    }
+
+    if (password == NULL)
+    {
+        assert(passwordLength == 0);
+        password = empty;
+    }
+
     return PKCS5_PBKDF2_HMAC(
         password, passwordLength, salt, saltLength, iterations, digest, destinationLength, destination);
 }
