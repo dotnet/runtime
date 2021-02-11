@@ -42,8 +42,6 @@ struct fx_ver_t
 
     static bool parse(const pal::string_t& ver, fx_ver_t* fx_ver, bool parse_only_production = false);
 
-    pal::string_t version_as_str;
-
 private:
     int m_major;
     int m_minor;

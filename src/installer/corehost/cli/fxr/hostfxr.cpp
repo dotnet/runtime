@@ -399,15 +399,18 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     sdk_info::get_all_sdk_infos(dotnet_dir, &sdk_infos);
 
     std::vector<hostfxr_dotnet_environment_sdk_info> environment_sdk_infos;
+    std::vector<pal::string_t> sdk_versions;
     if (!sdk_infos.empty())
     {
         environment_sdk_infos.reserve(sdk_infos.size());
+        sdk_versions.reserve(sdk_infos.size());
         for (const sdk_info& info : sdk_infos)
         {
+            sdk_versions.push_back(info.version.as_str());
             hostfxr_dotnet_environment_sdk_info sdk
             {
                 sizeof(hostfxr_dotnet_environment_sdk_info),
-                info.version.version_as_str.c_str(),
+                sdk_versions.back().c_str(),
                 info.full_path.c_str()
             };
 
@@ -419,16 +422,19 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     framework_info::get_all_framework_infos(dotnet_dir, _X(""), &framework_infos);
 
     std::vector<hostfxr_dotnet_environment_framework_info> environment_framework_infos;
+    std::vector<pal::string_t> framework_versions;
     if (!framework_infos.empty())
     {
         environment_framework_infos.reserve(framework_infos.size());
+        framework_versions.reserve(framework_infos.size());
         for (const framework_info& info : framework_infos)
         {
+            framework_versions.push_back(info.version.as_str());
             hostfxr_dotnet_environment_framework_info fw
             {
                 sizeof(hostfxr_dotnet_environment_framework_info),
                 info.name.c_str(),
-                info.version.version_as_str.c_str(),
+                framework_versions.back().c_str(),
                 info.path.c_str()
             };
 

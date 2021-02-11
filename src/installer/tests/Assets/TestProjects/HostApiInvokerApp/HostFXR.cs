@@ -202,9 +202,6 @@ namespace HostApiInvokerApp
             string hostfxr_commit_hash;
             List<hostfxr.hostfxr_dotnet_environment_sdk_info> sdks = new List<hostfxr.hostfxr_dotnet_environment_sdk_info>();
             List<hostfxr.hostfxr_dotnet_environment_framework_info> frameworks = new List<hostfxr.hostfxr_dotnet_environment_framework_info>();
-            int environment_info_size = 0;
-            int sdk_info_size = 0;
-            int framework_info_size = 0;
 
             int rc = hostfxr.hostfxr_get_dotnet_environment_info(
                 dotnet_root: dotnetExeDir,
@@ -226,13 +223,22 @@ namespace HostApiInvokerApp
                         frameworks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_framework_info>(pFrameworkInfo));
                     }
 
-                    environment_info_size = environment_info.size;
-                    sdk_info_size = (sdks.Count > 0) ? sdks[0].size : 0;
-                    framework_info_size = (frameworks.Count > 0) ? frameworks[0].size : 0;
+                    int env_info_size = Marshal.SizeOf(environment_info);
+                    if (env_info_size != environment_info.size)
+                        throw new Exception($"Size field value of hostfxr_dotnet_environment_info struct is {environment_info.size} but {env_info_size} was expected.");
+
+                    
+                    int env_sdk_info_size = (sdks.Count > 0) ? Marshal.SizeOf(sdks[0]) : -1;
+                    if (env_sdk_info_size != -1 && (env_sdk_info_size != sdks[0].size))
+                        throw new Exception($"Size field value of hostfxr_dotnet_environment_sdk_info struct is {sdks[0].size} but {env_sdk_info_size} was expected.");
+
+                    int env_fw_info_size = (frameworks.Count > 0) ? Marshal.SizeOf(frameworks[0]) : -1;
+                    if (env_fw_info_size != -1 && (env_fw_info_size != frameworks[0].size))
+                        throw new Exception($"Size field value of hostfxr_dotnet_environment_framework_info struct is {frameworks[0].size} but {env_fw_info_size} was expected.");
 
                     long result_context_as_int = result_context.ToInt64();
                     if (result_context_as_int != 42)
-                        throw new Exception($"result_context value expected to be 42 but was {result_context_as_int}.");
+                        throw new Exception($"Invalid result_context value: expected 42 but was {result_context_as_int}.");
                 },
                 result_context: new IntPtr(42));
 
@@ -241,16 +247,12 @@ namespace HostApiInvokerApp
                 Console.WriteLine($"hostfxr_get_dotnet_environment_info:Fail[{rc}]");
             }
 
-            Console.WriteLine($"hostfxr_get_dotnet_environment_info environment info size:[{environment_info_size}]");
-
             Console.WriteLine($"hostfxr_get_dotnet_environment_info sdk versions:[{string.Join(";", sdks.Select(s => s.version).ToList())}]");
             Console.WriteLine($"hostfxr_get_dotnet_environment_info sdk paths:[{string.Join(";", sdks.Select(s => s.path).ToList())}]");
-            Console.WriteLine($"hostfxr_get_dotnet_environment_info sdk info size:[{sdk_info_size}]");
 
             Console.WriteLine($"hostfxr_get_dotnet_environment_info framework names:[{string.Join(";", frameworks.Select(f => f.name).ToList())}]");
             Console.WriteLine($"hostfxr_get_dotnet_environment_info framework versions:[{string.Join(";", frameworks.Select(f => f.version).ToList())}]");
             Console.WriteLine($"hostfxr_get_dotnet_environment_info framework paths:[{string.Join(";", frameworks.Select(f => f.path).ToList())}]");
-            Console.WriteLine($"hostfxr_get_dotnet_environment_info framework info size:[{framework_info_size}]");
 
             Console.WriteLine("hostfxr_get_dotnet_environment_info:Success");
         }

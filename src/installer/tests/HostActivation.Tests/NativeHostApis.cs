@@ -387,10 +387,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Path.Combine(f.LocalFrameworksDir, "HostFxr.Test.C")
             });
 
-            int expected_env_info_size = 56;
-            int expected_sdk_info_size = 24;
-            int expected_fw_info_size = 32;
-
             using (TestOnlyProductBehavior.Enable(f.Dotnet.GreatestVersionHostFxrFilePath))
             {
                 f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info", f.ExeDir })
@@ -401,14 +397,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info environment info size:[{expected_env_info_size}]")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk versions:[{expectedSdkVersions}]")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk paths:[{expectedSdkPaths}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info sdk info size:[{expected_sdk_info_size}]")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework names:[{expectedFrameworkNames}]")
                 .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework versions:[{expectedFrameworkVersions}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[{expectedFrameworkPaths}]")
-                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework info size:[{expected_fw_info_size}]");
+                .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info framework paths:[{expectedFrameworkPaths}]");
             }
         }
 
@@ -495,15 +488,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && IntPtr.Size == 4)
                 globalInstallPath = "Program Files (x86)\\dotnet";
 
-            int expected_env_info_size = 56;
-
             f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info" })
             .CaptureStdOut()
             .CaptureStdErr()
             .Execute()
             .Should().Pass()
             .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
-            .And.HaveStdOutContaining($"hostfxr_get_dotnet_environment_info environment info size:[{expected_env_info_size}]")
             .And.HaveStdOutContaining($"{globalInstallPath}");
         }
 
