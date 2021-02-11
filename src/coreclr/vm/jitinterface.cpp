@@ -9112,7 +9112,10 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
 
     TypeHandle elemTypeHnd(elemType);
 
-    // Else we'll need to find the appropriate instantation
+    // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
+    // And in compile.cpp's SpecializeComparer
+    //   
+    // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
 
     // If T implements IComparable<T>
@@ -9210,7 +9213,10 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
         return CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__BYTE_EQUALITYCOMPARER));
     }
 
-    // Else we'll need to find the appropriate instantation
+    // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
+    // And in compile.cpp's SpecializeComparer
+    //   
+    // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
 
     // If T implements IEquatable<T>
