@@ -932,7 +932,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     if ((info.compFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
     {
         NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
-        if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+        if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
+            (ni == NI_System_Collections_Generic_Comparer_get_Default))
         {
             JITDUMP("\nmarking helper call [%06u] as special dce...\n", result->gtTreeID);
             result->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;

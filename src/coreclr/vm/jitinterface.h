@@ -452,6 +452,10 @@ public:
 
     bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
 
+    CORINFO_CLASS_HANDLE getDefaultComparerClassHelper(
+        CORINFO_CLASS_HANDLE elemType
+        );
+
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClassHelper(
         CORINFO_CLASS_HANDLE elemType
         );

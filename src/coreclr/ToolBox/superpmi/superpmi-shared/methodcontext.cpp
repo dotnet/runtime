@@ -3101,6 +3101,23 @@ CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ft
     return (CORINFO_METHOD_HANDLE)(result.A);
 }
 
+void MethodContext::recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetDefaultComparerClass == nullptr)
+        GetDefaultComparerClass = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetDefaultComparerClass->Add(CastHandle(cls), CastHandle(result));
+}
+void MethodContext::dmpGetDefaultComparerClass(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetDefaultComparerClass key cls-%016llX, value cls-%016llX", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls)
+{
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)GetDefaultComparerClass->Get(CastHandle(cls));
+    return result;
+}
+
 void MethodContext::recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
 {
     if (GetDefaultEqualityComparerClass == nullptr)
