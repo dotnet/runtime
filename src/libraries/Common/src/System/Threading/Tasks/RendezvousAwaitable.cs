@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
@@ -13,17 +13,17 @@ namespace System.Threading.Tasks
     internal class RendezvousAwaitable<TResult> : ICriticalNotifyCompletion
     {
         /// <summary>Sentinel object indicating that the operation has completed prior to OnCompleted being called.</summary>
-        private static readonly Action s_completionSentinel = () => Debug.Fail("Completion sentinel should never be invoked");
+        private static readonly Action s_completionSentinel = static () => Debug.Fail("Completion sentinel should never be invoked");
 
         /// <summary>
         /// The continuation to invoke when the operation completes, or <see cref="s_completionSentinel"/> if the operation
         /// has completed before OnCompleted is called.
         /// </summary>
-        private Action _continuation;
+        private Action? _continuation;
         /// <summary>The exception representing the failed async operation, if it failed.</summary>
-        private ExceptionDispatchInfo _error;
+        private ExceptionDispatchInfo? _error;
         /// <summary>The result of the async operation, if it succeeded.</summary>
-        private TResult _result;
+        private TResult? _result;
 #if DEBUG
         private bool _resultSet;
 #endif
@@ -39,7 +39,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                Action c = Volatile.Read(ref _continuation);
+                Action? c = Volatile.Read(ref _continuation);
                 Debug.Assert(c == null || c == s_completionSentinel);
                 return c != null;
             }
@@ -55,7 +55,7 @@ namespace System.Threading.Tasks
 
             // Propagate any error if there is one, clearing it out first to prepare for reuse.
             // We don't need to clear a result, as result and error are mutually exclusive.
-            ExceptionDispatchInfo error = _error;
+            ExceptionDispatchInfo? error = _error;
             if (error != null)
             {
                 _error = null;
@@ -63,7 +63,7 @@ namespace System.Threading.Tasks
             }
 
             // The operation completed successfully.  Clear and return the result.
-            TResult result = _result;
+            TResult result = _result!;
             _result = default(TResult);
 #if DEBUG
             _resultSet = false;
@@ -101,7 +101,7 @@ namespace System.Threading.Tasks
         /// <summary>Alerts any awaiter that the operation has completed.</summary>
         private void NotifyAwaiter()
         {
-            Action c = _continuation ?? Interlocked.CompareExchange(ref _continuation, s_completionSentinel, null);
+            Action? c = _continuation ?? Interlocked.CompareExchange(ref _continuation, s_completionSentinel, null);
             if (c != null)
             {
                 Debug.Assert(c != s_completionSentinel);
@@ -122,7 +122,7 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(continuation != null);
 
-            Action c = _continuation ?? Interlocked.CompareExchange(ref _continuation, continuation, null);
+            Action? c = _continuation ?? Interlocked.CompareExchange(ref _continuation, continuation, null);
             if (c != null)
             {
                 Debug.Assert(c == s_completionSentinel);

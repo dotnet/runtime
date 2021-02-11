@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -71,7 +74,7 @@ namespace System.IO.Pipes.Tests
             from accessControl in new[] { AccessControlType.Allow, AccessControlType.Deny }
             select new object[] { rights, accessControl };
 
-        // These tests match NetFX behavior
+        // These tests match .NET Framework behavior
         [Theory]
         [MemberData(nameof(Create_CombineRightsAndAccessControl_MemberData))]
         public void Create_CombineRightsAndAccessControl(PipeAccessRights rights, AccessControlType accessControl)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net.Test.Common
 {
@@ -8,9 +7,9 @@ namespace System.Net.Test.Common
     {
         public static partial class Sockets
         {
-           public static Uri SocketServer => GetUriValue("COREFX_NET_SOCKETS_SERVERURI", new Uri("http://" + DefaultAzureServer));
+           public static Uri SocketServer => GetUriValue("DOTNET_TEST_NET_SOCKETS_SERVERURI", new Uri("http://" + DefaultAzureServer));
 
-           public static string InvalidHost => GetValue("COREFX_NET_SOCKETS_INVALIDSERVER", "notahostname.invalid.corp.microsoft.com");
+           public static string InvalidHost => GetValue("DOTNET_TEST_NET_SOCKETS_INVALIDSERVER", "notahostname.invalid.corp.microsoft.com");
         }
     }
 }

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -26,26 +25,33 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_StreamContractTest_Success()
         {
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
             using (var client = new NegotiateStream(clientStream))
             using (var server = new NegotiateStream(serverStream))
             {
                 Assert.False(client.CanSeek);
                 Assert.False(client.CanRead);
-                Assert.False(client.CanTimeout);
+                Assert.Equal(clientStream.CanTimeout, client.CanTimeout);
                 Assert.False(client.CanWrite);
                 Assert.False(server.CanSeek);
                 Assert.False(server.CanRead);
-                Assert.False(server.CanTimeout);
+                Assert.Equal(serverStream.CanTimeout, server.CanTimeout);
                 Assert.False(server.CanWrite);
 
-                Assert.Throws<InvalidOperationException>(() => client.ReadTimeout);
-                Assert.Throws<InvalidOperationException>(() => client.WriteTimeout);
-                Assert.Throws<NotImplementedException>(() => client.Length);
-                Assert.Throws<NotImplementedException>(() => client.Position);
+                if (!client.CanTimeout)
+                {
+                    Assert.Throws<InvalidOperationException>(() => client.ReadTimeout);
+                }
+
+                if (!server.CanTimeout)
+                {
+                    Assert.Throws<InvalidOperationException>(() => client.WriteTimeout);
+                }
+
+                Assert.Throws<NotSupportedException>(() => client.Length);
+                Assert.Throws<NotSupportedException>(() => client.Position);
                 Assert.Throws<NotSupportedException>(() => client.Seek(0, new SeekOrigin()));
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
@@ -63,12 +69,9 @@ namespace System.Net.Security.Tests
         public async Task NegotiateStream_EndReadEndWriteInvalidParameter_Throws()
         {
             byte[] recvBuf = new byte[s_sampleMsg.Length];
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                     client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty),
@@ -99,86 +102,12 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public async Task NegotiateStream_ConcurrentAsyncReadOrWrite_ThrowsNotSupportedException()
-        {
-            byte[] recvBuf = new byte[s_sampleMsg.Length];
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
-            {
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty),
-                    server.AuthenticateAsServerAsync());
-
-                // Custom EndWrite/Read will not reset the variable which monitors concurrent write/read.
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    Task.Factory.FromAsync(client.BeginWrite, (ar) => { Assert.NotNull(ar); }, s_sampleMsg, 0, s_sampleMsg.Length, client),
-                    Task.Factory.FromAsync(server.BeginRead, (ar) => { Assert.NotNull(ar); }, recvBuf, 0, s_sampleMsg.Length, server));
-
-                Assert.Throws<NotSupportedException>(() => client.BeginWrite(s_sampleMsg, 0, s_sampleMsg.Length, (ar) => { Assert.Null(ar); }, null));
-                Assert.Throws<NotSupportedException>(() => server.BeginRead(recvBuf, 0, s_sampleMsg.Length, (ar) => { Assert.Null(ar); }, null));
-            }
-        }
-
-        [Fact]
-        public async Task NegotiateStream_ConcurrentSyncReadOrWrite_ThrowsNotSupportedException()
-        {
-            byte[] recvBuf = new byte[s_sampleMsg.Length];
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
-            {
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty),
-                    server.AuthenticateAsServerAsync());
-
-                // Custom EndWrite/Read will not reset the variable which monitors concurrent write/read.
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    Task.Factory.FromAsync(client.BeginWrite, (ar) => { Assert.NotNull(ar); }, s_sampleMsg, 0, s_sampleMsg.Length, client),
-                    Task.Factory.FromAsync(server.BeginRead, (ar) => { Assert.NotNull(ar); }, recvBuf, 0, s_sampleMsg.Length, server));
-
-                Assert.Throws<NotSupportedException>(() => client.Write(s_sampleMsg, 0, s_sampleMsg.Length));
-                Assert.Throws<NotSupportedException>(() => server.Read(recvBuf, 0, s_sampleMsg.Length));
-            }
-        }
-
-        [Fact]
-        public async Task NegotiateStream_DisposeTooEarly_Throws()
-        {
-            byte[] recvBuf = new byte[s_sampleMsg.Length];
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
-            {
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                    client.AuthenticateAsClientAsync(),
-                    server.AuthenticateAsServerAsync());
-
-                server.Dispose();
-                Assert.Throws<IOException>(() => client.Write(s_sampleMsg, 0, s_sampleMsg.Length));
-                Assert.Throws<IOException>(() => client.Read(recvBuf, 0, s_sampleMsg.Length));
-            }
-        }
-
-        [Fact]
         public void NegotiateStream_InvalidPolicy_Throws()
         {
-            var network = new VirtualNetwork();
             var policy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 // If ExtendedProtection is on, either CustomChannelBinding or CustomServiceNames must be set.
                 AssertExtensions.Throws<ArgumentException>(nameof(policy), () => server.AuthenticateAsServer(policy));
@@ -188,12 +117,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_TokenImpersonationLevelRequirmentNotMatch_Throws()
         {
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                     Assert.ThrowsAsync<AuthenticationException>(() =>
@@ -208,7 +134,6 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_SPNRequirmentNotMeet_Throws()
         {
-            var network = new VirtualNetwork();
             var snc = new List<string>
             {
                 "serviceName"
@@ -216,10 +141,9 @@ namespace System.Net.Security.Tests
             // PolicyEnforcement.Always will force clientSpn check.
             var policy = new ExtendedProtectionPolicy(PolicyEnforcement.Always, ProtectionScenario.TransportSelected, new ServiceNameCollection(snc));
 
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                     Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty)),
@@ -230,12 +154,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public void NegotiateStream_DisposedState_Throws()
         {
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 client.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => client.AuthenticateAsClient());
@@ -245,12 +166,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_DoubleAuthentication_Throws()
         {
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                     client.AuthenticateAsClientAsync(),
@@ -265,43 +183,31 @@ namespace System.Net.Security.Tests
         [Fact]
         public void NegotiateStream_NullCredential_Throws()
         {
-            NetworkCredential credential = null;
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
-                AssertExtensions.Throws<ArgumentNullException>(nameof(credential), () => client.AuthenticateAsClient(null, TargetName));
+                AssertExtensions.Throws<ArgumentNullException>("credential", () => client.AuthenticateAsClient(null, TargetName));
             }
         }
 
         [Fact]
         public void NegotiateStream_NullServicePrincipalName_Throws()
         {
-            string servicePrincipalName = null;
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
-                AssertExtensions.Throws<ArgumentNullException>(nameof(servicePrincipalName),
-                    () => client.AuthenticateAsClient(CredentialCache.DefaultNetworkCredentials, servicePrincipalName));
+                AssertExtensions.Throws<ArgumentNullException>("servicePrincipalName", () => client.AuthenticateAsClient(CredentialCache.DefaultNetworkCredentials, null));
             }
         }
 
         [Fact]
         public async Task NegotiateStream_SecurityRequirmentNotMeet_Throws()
         {
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 // ProtectionLevel not match.
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
@@ -319,12 +225,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_EndAuthenticateInvalidParameter_Throws()
         {
-            var network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                     Task.Factory.FromAsync(client.BeginAuthenticateAsClient, (asyncResult) =>
@@ -336,7 +239,6 @@ namespace System.Net.Security.Tests
                         AssertExtensions.Throws<ArgumentException>(nameof(asyncResult), () => authStream.EndAuthenticateAsClient(result));
 
                         authStream.EndAuthenticateAsClient(asyncResult);
-                        Assert.Throws<InvalidOperationException>(() => authStream.EndAuthenticateAsClient(asyncResult));
                     }, CredentialCache.DefaultNetworkCredentials, string.Empty, client),
 
                     Task.Factory.FromAsync(server.BeginAuthenticateAsServer, (asyncResult) =>
@@ -348,7 +250,6 @@ namespace System.Net.Security.Tests
                         AssertExtensions.Throws<ArgumentException>(nameof(asyncResult), () => authStream.EndAuthenticateAsServer(result));
 
                         authStream.EndAuthenticateAsServer(asyncResult);
-                        Assert.Throws<InvalidOperationException>(() => authStream.EndAuthenticateAsServer(asyncResult));
                     }, server));
             }
         }
@@ -356,15 +257,13 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_InvalidParametersForReadWrite_Throws()
         {
-            var network = new VirtualNetwork();
             byte[] buffer = s_sampleMsg;
             int offset = 0;
             int count = s_sampleMsg.Length;
 
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new NegotiateStream(clientStream))
-            using (var server = new NegotiateStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new NegotiateStream(stream1))
+            using (var server = new NegotiateStream(stream2))
             {
                 // Need to do authentication first, because Read/Write operation
                 // is only allowed using a successfully authenticated context.

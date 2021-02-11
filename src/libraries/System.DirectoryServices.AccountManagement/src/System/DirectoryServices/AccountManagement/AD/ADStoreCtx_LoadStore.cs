@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -628,13 +627,13 @@ namespace System.DirectoryServices.AccountManagement
                                 innerLdapFilter.Append(filterVal);
                     }
 
-                    innerLdapFilter.Append(")");
+                    innerLdapFilter.Append(')');
 
-                    ldapFilter.Append(innerLdapFilter.ToString());
+                    ldapFilter.Append(innerLdapFilter);
                 }
 
                 // Wrap off the filter
-                ldapFilter.Append(")");
+                ldapFilter.Append(')');
 
                 ds.Filter = ldapFilter.ToString();
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "FindPrincipalByIdentRefHelper: using LDAP filter {0}", ds.Filter);
@@ -799,12 +798,12 @@ namespace System.DirectoryServices.AccountManagement
 
         /************************/
         // This table only includes properties that are writeable.
-        private static Hashtable s_propertyMappingTableByProperty = null;
-        private static Hashtable s_propertyMappingTableByLDAP = null;
-        protected static Dictionary<string, bool> NonPresentAttrDefaultStateMapping = null;
-        private static Hashtable s_propertyMappingTableByPropertyFull = null;
+        private static Hashtable s_propertyMappingTableByProperty;
+        private static Hashtable s_propertyMappingTableByLDAP;
+        protected static Dictionary<string, bool> NonPresentAttrDefaultStateMapping;
+        private static Hashtable s_propertyMappingTableByPropertyFull;
 
-        protected static Dictionary<int, Dictionary<Type, StringCollection>> TypeToLdapPropListMap = null;
+        protected static Dictionary<int, Dictionary<Type, StringCollection>> TypeToLdapPropListMap;
 
         private class PropertyMappingTableEntry
         {
@@ -1244,7 +1243,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Preexisting values that have not been removed.
                 // This also includes inserted values.
                 sb.Append(value);
-                sb.Append(",");
+                sb.Append(',');
             }
 
             // We have an extra comma at the end (assuming we added any values to the string).  Remove it.

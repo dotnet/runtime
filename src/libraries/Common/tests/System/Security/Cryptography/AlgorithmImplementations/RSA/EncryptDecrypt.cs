@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Test.Cryptography;
 using Xunit;
@@ -25,6 +24,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
     }
 
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract class EncryptDecrypt
     {
         public static bool SupportsSha2Oaep => RSAFactory.SupportsSha2Oaep;
@@ -546,8 +546,8 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.Pkcs1);
                 Array.Resize(ref encrypted, encrypted.Length + 1);
 
-                // Baseline/exempt a NetFx difference for RSACng
-                if (!PlatformDetection.IsFullFramework ||
+                // Baseline/exempt a .NET Framework difference for RSACng
+                if (!PlatformDetection.IsNetFramework ||
                     rsa.GetType().Assembly.GetName().Name != "System.Core")
                 {
                     Assert.ThrowsAny<CryptographicException>(
@@ -571,7 +571,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA1);
                 Array.Resize(ref encrypted, encrypted.Length + 1);
 
-                if (!PlatformDetection.IsFullFramework)
+                if (!PlatformDetection.IsNetFramework)
                 {
                     Assert.ThrowsAny<CryptographicException>(
                         () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
@@ -587,7 +587,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                     encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA256);
                     Array.Resize(ref encrypted, encrypted.Length + 1);
 
-                    if (!PlatformDetection.IsFullFramework)
+                    if (!PlatformDetection.IsNetFramework)
                     {
                         Assert.ThrowsAny<CryptographicException>(
                             () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA256));
@@ -611,7 +611,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] crypt = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
 
                 // Export the key, this should not clear/destroy the key.
-                RSAParameters ignored = rsa.ExportParameters(true);
+                rsa.ExportParameters(true);
                 output = Decrypt(rsa, crypt, RSAEncryptionPadding.OaepSHA1);
             }
 

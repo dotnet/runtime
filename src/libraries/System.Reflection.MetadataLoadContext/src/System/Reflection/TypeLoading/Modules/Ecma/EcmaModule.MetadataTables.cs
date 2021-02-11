@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -22,7 +21,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyTypeDefTable;
             }
         }
-        private volatile MetadataTable<EcmaDefinitionType, EcmaModule> _lazyTypeDefTable;
+        private volatile MetadataTable<EcmaDefinitionType, EcmaModule>? _lazyTypeDefTable;
 
         private void EnsureTypeDefTableFullyFilled()
         {
@@ -46,7 +45,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyTypeRefTable;
             }
         }
-        private volatile MetadataTable<RoDefinitionType, EcmaModule> _lazyTypeRefTable;
+        private volatile MetadataTable<RoDefinitionType, EcmaModule>? _lazyTypeRefTable;
 
         internal MetadataTable<EcmaGenericParameterType, EcmaModule> GenericParamTable
         {
@@ -57,7 +56,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyGenericParamTable;
             }
         }
-        private volatile MetadataTable<EcmaGenericParameterType, EcmaModule> _lazyGenericParamTable;
+        private volatile MetadataTable<EcmaGenericParameterType, EcmaModule>? _lazyGenericParamTable;
 
         internal MetadataTable<RoAssembly, EcmaModule> AssemblyRefTable
         {
@@ -68,7 +67,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyAssemblyRefTable;
             }
         }
-        private volatile MetadataTable<RoAssembly, EcmaModule> _lazyAssemblyRefTable;
+        private volatile MetadataTable<RoAssembly, EcmaModule>? _lazyAssemblyRefTable;
 
         private MetadataTable<T, EcmaModule> CreateTable<T>(TableIndex tableIndex) where T : class
         {

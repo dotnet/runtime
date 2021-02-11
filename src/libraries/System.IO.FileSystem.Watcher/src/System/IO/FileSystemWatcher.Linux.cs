@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -110,10 +109,6 @@ namespace System.IO
             // thus we need to explicitly call it here.
             StopRaisingEvents();
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
 
         /// <summary>Path to the procfs file that contains the maximum number of inotify instances an individual user may create.</summary>
         private const string MaxUserInstancesPath = "/proc/sys/fs/inotify/max_user_instances";
@@ -300,9 +295,12 @@ namespace System.IO
 
             internal void Start()
             {
-                // Schedule a task to read from the inotify queue and process the events.
-                Task.Factory.StartNew(obj => ((RunningInstance)obj!).ProcessEvents(),
-                    this, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                // Spawn a thread to read from the inotify queue and process the events.
+                new Thread(obj => ((RunningInstance)obj!).ProcessEvents())
+                {
+                    IsBackground = true,
+                    Name = ".NET File Watcher"
+                }.Start(this);
 
                 // PERF: As needed, we can look into making this use async I/O rather than burning
                 // a thread that blocks in the read syscall.
@@ -395,7 +393,12 @@ namespace System.IO
                     // of the world, but there's little that can be done about that.)
                     if (directoryEntry.Parent != parent)
                     {
-                        directoryEntry.Parent?.Children!.Remove (directoryEntry);
+                        // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
+                        if (directoryEntry.Parent != null)
+                        {
+                            directoryEntry.Parent.Children!.Remove(directoryEntry);
+                        }
+
                         directoryEntry.Parent = parent;
                         if (parent != null)
                         {
@@ -448,7 +451,12 @@ namespace System.IO
                 Debug.Assert (_includeSubdirectories);
                 lock (SyncObj)
                 {
-                    directoryEntry.Parent?.Children!.Remove(directoryEntry);
+                    // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
+                    if (directoryEntry.Parent != null)
+                    {
+                        directoryEntry.Parent.Children!.Remove(directoryEntry);
+                    }
+
                     RemoveWatchedDirectoryUnlocked (directoryEntry, removeInotify);
                 }
             }
@@ -680,11 +688,11 @@ namespace System.IO
                                     // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
                                     // for the next event to arrive).
                                     const int MillisecondsTimeout = 2;
-                                    Interop.Sys.PollEvents events;
-                                    Interop.Sys.Poll(_inotifyHandle, Interop.Sys.PollEvents.POLLIN, MillisecondsTimeout, out events);
+                                    Interop.PollEvents events;
+                                    Interop.Sys.Poll(_inotifyHandle, Interop.PollEvents.POLLIN, MillisecondsTimeout, out events);
 
                                     // If we error or don't have any signaled handles, send the deleted event
-                                    if (events == Interop.Sys.PollEvents.POLLNONE)
+                                    if (events == Interop.PollEvents.POLLNONE)
                                     {
                                         // There isn't any more data in the queue so this is a deleted event
                                         watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);

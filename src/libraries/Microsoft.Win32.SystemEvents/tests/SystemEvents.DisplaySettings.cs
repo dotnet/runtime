@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -20,13 +19,13 @@ namespace Microsoft.Win32.SystemEventsTests
             SendMessage(User32.WM_REFLECT + User32.WM_DISPLAYCHANGE, IntPtr.Zero, IntPtr.Zero);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void SignalsDisplayEventsAsynchronouslyOnDISPLAYCHANGE()
         {
             var changing = new AutoResetEvent(false);
             var changed = new AutoResetEvent(false);
-            EventHandler changedHandler = (o, e) => changed.Set();
-            EventHandler changingHandler = (o, e) => changing.Set();
+            EventHandler changedHandler = (o, e) => { Assert.NotNull(o); changed.Set(); };
+            EventHandler changingHandler = (o, e) => { Assert.NotNull(o); changing.Set(); };
 
             SystemEvents.DisplaySettingsChanged += changedHandler;
             SystemEvents.DisplaySettingsChanging += changingHandler;
@@ -46,12 +45,12 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void SignalsDisplayEventsSynchronouslyOnREFLECTDISPLAYCHANGE()
         {
             bool changing = false, changed = false;
-            EventHandler changedHandler = (o, e) => changed = true;
-            EventHandler changingHandler = (o, e) => changing = true;
+            EventHandler changedHandler = (o, e) => { Assert.NotNull(o); changed = true; };
+            EventHandler changingHandler = (o, e) => { Assert.NotNull(o); changing = true; };
 
             SystemEvents.DisplaySettingsChanged += changedHandler;
             SystemEvents.DisplaySettingsChanging += changingHandler;

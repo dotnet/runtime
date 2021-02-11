@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -264,6 +263,39 @@ namespace System.Tests
 
             yield return new object[] { new ulong[0], 0, 0, (ulong)0, null, -1 };
 
+            // // [ActiveIssue("https://github.com/xunit/xunit/issues/1771")]
+            // // IntPtr
+
+            // IntPtr[] intPtrArray = new IntPtr[] { IntPtr.MinValue, (IntPtr)0, (IntPtr)0, IntPtr.MaxValue };
+
+            // yield return new object[] { intPtrArray, 0, 4, IntPtr.MinValue, null, 0 };
+            // yield return new object[] { intPtrArray, 0, 4, (IntPtr)0, null, 1 };
+            // yield return new object[] { intPtrArray, 0, 4, IntPtr.MaxValue, null, 3 };
+            // yield return new object[] { intPtrArray, 0, 4, (IntPtr)1, null, -4 };
+
+            // yield return new object[] { intPtrArray, 0, 1, IntPtr.MinValue, null, 0 };
+            // yield return new object[] { intPtrArray, 1, 3, IntPtr.MaxValue, null, 3 };
+            // yield return new object[] { intPtrArray, 1, 3, IntPtr.MinValue, null, -2 };
+            // yield return new object[] { intPtrArray, 1, 0, (IntPtr)0, null, -2 };
+
+            // yield return new object[] { new IntPtr[0], 0, 0, (IntPtr)0, null, -1 };
+
+            // // UIntPtr
+
+            // UIntPtr[] uintPtrArray = new UIntPtr[] { UIntPtr.MinValue, (UIntPtr)5, (UIntPtr)5, UIntPtr.MaxValue };
+
+            // yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MinValue, null, 0 };
+            // yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)5, null, 1 };
+            // yield return new object[] { uintPtrArray, 0, 4, UIntPtr.MaxValue, null, 3 };
+            // yield return new object[] { uintPtrArray, 0, 4, (UIntPtr)1, null, -2 };
+
+            // yield return new object[] { uintPtrArray, 0, 1, UIntPtr.MinValue, null, 0 };
+            // yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MaxValue, null, 3 };
+            // yield return new object[] { uintPtrArray, 1, 3, UIntPtr.MinValue, null, -2 };
+            // yield return new object[] { uintPtrArray, 1, 0, (UIntPtr)5, null, -2 };
+
+            // yield return new object[] { new UIntPtr[0], 0, 0, (UIntPtr)0, null, -1 };
+
             // Char
             char[] charArray = new char[] { char.MinValue, (char)5, (char)5, char.MaxValue };
 
@@ -439,10 +471,6 @@ namespace System.Tests
 
             // Type does not implement IComparable
             yield return new object[] { new object[] { new object() }, new object() };
-
-            // IntPtr and UIntPtr are not supported
-            yield return new object[] { new IntPtr[] { IntPtr.Zero }, IntPtr.Zero };
-            yield return new object[] { new UIntPtr[] { UIntPtr.Zero }, UIntPtr.Zero };
 
             // Conversion between primitives is not allowed
             yield return new object[] { new sbyte[] { 0 }, 0 };
@@ -1749,11 +1777,22 @@ namespace System.Tests
                 new object[] { typeof(IntPtr), default(IntPtr) },
                 new object[] { typeof(UIntPtr), default(UIntPtr) },
 
+                // Primitives enums
+                new object[] { typeof(SByteEnum), default(SByteEnum) },
+                new object[] { typeof(ByteEnum), default(ByteEnum) },
+                new object[] { typeof(Int16Enum), default(Int16Enum) },
+                new object[] { typeof(UInt16Enum), default(UInt16Enum) },
+                new object[] { typeof(Int32Enum), default(Int32Enum) },
+                new object[] { typeof(UInt32Enum), default(UInt32Enum) },
+                new object[] { typeof(Int64Enum), default(Int64Enum) },
+                new object[] { typeof(UInt64Enum), default(UInt64Enum) },
+
                 // Array, pointers
                 new object[] { typeof(int[]), default(int[]) },
+                new object[] { typeof(string[]), default(string[]) },
                 new object[] { typeof(int*), null },
 
-                // Classes, structs, interfaces, enums
+                // Classes, structs, interface
                 new object[] { typeof(NonGenericClass1), default(NonGenericClass1) },
                 new object[] { typeof(GenericClass<int>), default(GenericClass<int>) },
                 new object[] { typeof(NonGenericStruct), default(NonGenericStruct) },
@@ -1762,7 +1801,6 @@ namespace System.Tests
                 new object[] { typeof(GenericInterface<int>), default(GenericInterface<int>) },
                 new object[] { typeof(AbstractClass), default(AbstractClass) },
                 new object[] { typeof(StaticClass), default(StaticClass) },
-                new object[] { typeof(Int32Enum), default(Int32Enum) }
             };
         }
 
@@ -1770,10 +1808,10 @@ namespace System.Tests
         [MemberData(nameof(CreateInstance_TestData))]
         public static void CreateInstance(Type elementType, object repeatedValue)
         {
-            CreateInstance(elementType, new int[] { 10 }, new int[1], repeatedValue);
-            CreateInstance(elementType, new int[] { 0 }, new int[1], repeatedValue);
-            CreateInstance(elementType, new int[] { 1, 2 }, new int[] { 1, 2 }, repeatedValue);
-            CreateInstance(elementType, new int[] { 5, 6 }, new int[] { int.MinValue, 0 }, repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 10 }, new int[1], repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 0 }, new int[1], repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 1, 2 }, new int[] { 1, 2 }, repeatedValue);
+            CreateInstance_Advanced(elementType, new int[] { 5, 6 }, new int[] { int.MinValue, 0 }, repeatedValue);
         }
 
         [Theory]
@@ -1785,7 +1823,7 @@ namespace System.Tests
         [InlineData(typeof(int), new int[] { 7 }, new int[] { 1 }, default(int))]
         [InlineData(typeof(int), new int[] { 7, 8 }, new int[] { 1, 2 }, default(int))]
         [InlineData(typeof(int), new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 }, default(int))]
-        public static void CreateInstance(Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
+        public static void CreateInstance_Advanced(Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
             bool lowerBoundsAreAllZero = lowerBounds.All(lowerBound => lowerBound == 0);
             if ((!lowerBoundsAreAllZero) && !PlatformDetection.IsNonZeroLowerBoundArraySupported)
@@ -1843,6 +1881,10 @@ namespace System.Tests
             yield return new object[] { typeof(GenericClass<>) };
             yield return new object[] { typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)) };
             yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GetGenericArguments()[0] };
+            yield return new object[] { typeof(TypedReference) };
+            yield return new object[] { typeof(ArgIterator) };
+            yield return new object[] { typeof(RuntimeArgumentHandle) };
+            yield return new object[] { typeof(Span<int>) };
         }
 
         [Theory]
@@ -1855,6 +1897,21 @@ namespace System.Tests
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, new int[1]));
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, new long[1]));
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, new int[1], new int[1]));
+        }
+
+        [Fact]
+        public void CreateInstance_TypeNotRuntimeType_ThrowsArgumentException()
+        {
+            // This cannot be a [Theory] due to https://github.com/xunit/xunit/issues/1325.
+            foreach (Type elementType in Helpers.NonRuntimeTypes)
+            {
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1, 1));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1, 1, 1));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new int[1]));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new long[1]));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new int[1], new int[1]));
+            }
         }
 
         [Fact]
@@ -1918,6 +1975,18 @@ namespace System.Tests
         public void CreateInstance_LengthsAndLowerBoundsHaveDifferentLengths_ThrowsArgumentException(int length)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[1], new int[length]));
+        }
+
+        [Theory]
+        [InlineData(33)]
+        [InlineData(256)]
+        [InlineData(257)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39002", TestRuntimes.Mono)]
+        public void CreateInstance_RankMoreThanMaxRank_ThrowsTypeLoadException(int length)
+        {
+            var lengths = new int[length];
+            var lowerBounds = new int[length];
+            Assert.Throws<TypeLoadException>(() => Array.CreateInstance(typeof(int), lengths, lowerBounds));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
@@ -2945,7 +3014,8 @@ namespace System.Tests
         [Fact]
         public static void IStructuralComparable_NullComparer_ThrowsNullReferenceException()
         {
-            // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+            // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+            // See https://github.com/dotnet/runtime/issues/19265
             IStructuralComparable comparable = new int[] { 1, 2, 3 };
             Assert.Throws<NullReferenceException>(() => comparable.CompareTo(new int[] { 1, 2, 3 }, null));
         }
@@ -2988,7 +3058,8 @@ namespace System.Tests
         [Fact]
         public static void IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException()
         {
-            // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+            // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+            // See https://github.com/dotnet/runtime/issues/19265
             IStructuralEquatable equatable = new int[] { 1, 2, 3 };
             Assert.Throws<NullReferenceException>(() => equatable.Equals(new int[] { 1, 2, 3 }, null));
         }
@@ -3255,6 +3326,7 @@ namespace System.Tests
             yield return new object[] { new string[] { "5", "2", "9", "8", "4", "3", "2", "4", "6" }, 0, 9, new StringComparer(), new string[] { "2", "2", "3", "4", "4", "5", "6", "8", "9" } };
             yield return new object[] { new string[] { "5", null, "2", "9", "8", "4", "3", "2", "4", "6" }, 0, 10, new StringComparer(), new string[] { null, "2", "2", "3", "4", "4", "5", "6", "8", "9" } };
             yield return new object[] { new string[] { "5", null, "2", "9", "8", "4", "3", "2", "4", "6" }, 3, 4, new StringComparer(), new string[] { "5", null, "2", "3", "4", "8", "9", "2", "4", "6" } };
+            yield return new object[] { new string[] { null, null, null, null, null, "foo", null, null, null, null, null, "bar", null, null, null, null, null }, 0, 17, null, new string[] { null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "bar", "foo" } };
             yield return new object[] { new int[] { 1, 2, 3, 4 }, 0, 4, null, new int[] { 1, 2, 3, 4 } };
             yield return new object[] { new int[] { 4, 3, 2, 1 }, 0, 4, null, new int[] { 1, 2, 3, 4 } };
             yield return new object[] { new int[] { 4, 3, 2, 1 }, 1, 2, null, new int[] { 4, 2, 3, 1 } };
@@ -3323,6 +3395,24 @@ namespace System.Tests
             yield return new object[] { new ulong[] { 5, 6, 3, 6 }, 0, 0, null, new ulong[] { 5, 6, 3, 6 } };
             yield return new object[] { new ulong[1], 0, 1, null, new ulong[1] };
             yield return new object[] { new ulong[0], 0, 0, null, new ulong[0] };
+
+            // IntPtr
+            yield return new object[] { new IntPtr[] { (IntPtr)3, (IntPtr)5, (IntPtr)6, (IntPtr)6 }, 0, 4, null, new IntPtr[] { (IntPtr)3, (IntPtr)5, (IntPtr)6, (IntPtr)6 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)5, (IntPtr)6, (IntPtr)3, (IntPtr)6 }, 0, 4, null, new IntPtr[] { (IntPtr)3, (IntPtr)5, (IntPtr)6, (IntPtr)6 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)5, (IntPtr)6, (IntPtr)3, (IntPtr)6 }, 0, 4, null, new IntPtr[] { (IntPtr)3, (IntPtr)5, (IntPtr)6, (IntPtr)6 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)5, (IntPtr)6, (IntPtr)3, (IntPtr)6 }, 1, 2, null, new IntPtr[] { (IntPtr)5, (IntPtr)3, (IntPtr)6, (IntPtr)6 } };
+            yield return new object[] { new IntPtr[] { (IntPtr)5, (IntPtr)6, (IntPtr)3, (IntPtr)6 }, 0, 0, null, new IntPtr[] { (IntPtr)5, (IntPtr)6, (IntPtr)3, (IntPtr)6 } };
+            yield return new object[] { new IntPtr[1], 0, 1, null, new IntPtr[1] };
+            yield return new object[] { new IntPtr[0], 0, 0, null, new IntPtr[0] };
+
+            // UIntPtr
+            yield return new object[] { new UIntPtr[] { (UIntPtr)3, (UIntPtr)5, (UIntPtr)6, (UIntPtr)6 }, 0, 4, null, new UIntPtr[] { (UIntPtr)3, (UIntPtr)5, (UIntPtr)6, (UIntPtr)6 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)5, (UIntPtr)6, (UIntPtr)3, (UIntPtr)6 }, 0, 4, null, new UIntPtr[] { (UIntPtr)3, (UIntPtr)5, (UIntPtr)6, (UIntPtr)6 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)5, (UIntPtr)6, (UIntPtr)3, (UIntPtr)6 }, 0, 4, null, new UIntPtr[] { (UIntPtr)3, (UIntPtr)5, (UIntPtr)6, (UIntPtr)6 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)5, (UIntPtr)6, (UIntPtr)3, (UIntPtr)6 }, 1, 2, null, new UIntPtr[] { (UIntPtr)5, (UIntPtr)3, (UIntPtr)6, (UIntPtr)6 } };
+            yield return new object[] { new UIntPtr[] { (UIntPtr)5, (UIntPtr)6, (UIntPtr)3, (UIntPtr)6 }, 0, 0, null, new UIntPtr[] { (UIntPtr)5, (UIntPtr)6, (UIntPtr)3, (UIntPtr)6 } };
+            yield return new object[] { new UIntPtr[1], 0, 1, null, new UIntPtr[1] };
+            yield return new object[] { new UIntPtr[0], 0, 0, null, new UIntPtr[0] };
 
             // Int64
             yield return new object[] { new long[] { 3, 5, 6, 6 }, 0, 4, null, new long[] { 3, 5, 6, 6 } };
@@ -3491,8 +3581,6 @@ namespace System.Tests
         public static IEnumerable<object[]> Sort_NotComparable_TestData()
         {
             yield return new object[] { new object[] { "1", 2, new object() } };
-            yield return new object[] { new IntPtr[2] };
-            yield return new object[] { new UIntPtr[2] };
         }
 
         [Theory]
@@ -3575,7 +3663,7 @@ namespace System.Tests
         [InlineData(10, 1)]
         [InlineData(9, 2)]
         [InlineData(0, 11)]
-        public void Store_NegativeLength_ThrowsArgumentOutOfRangeException(int index, int length)
+        public void Store_NegativeLength_ThrowsArgumentException(int index, int length)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], index, length));
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], index, length, null));
@@ -4232,21 +4320,6 @@ namespace System.Tests
             Reverse(array, int.MinValue, 0, new int[] { 1, 2, 3 });
             Reverse(array, int.MinValue, 1, new int[] { 1, 2, 3 });
             Reverse(array, int.MinValue, 2, new int[] { 2, 1, 3 });
-        }
-
-        [Fact]
-        public void CreateInstance_TypeNotRuntimeType_ThrowsArgumentException()
-        {
-            // This cannot be a [Theory] due to https://github.com/xunit/xunit/issues/1325.
-            foreach (Type elementType in Helpers.NonRuntimeTypes)
-            {
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1));
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1, 1));
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, 1, 1, 1));
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new int[1]));
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new long[1]));
-                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new int[1], new int[1]));
-            }
         }
 
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)

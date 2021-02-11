@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection;
@@ -51,7 +50,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object self = frame.Pop();
+            object? self = frame.Pop();
 
             NullCheck(self);
             frame.Push(_field.GetValue(self));
@@ -72,8 +71,8 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object value = frame.Pop();
-            object self = frame.Pop();
+            object? value = frame.Pop();
+            object? self = frame.Pop();
 
             NullCheck(self);
             _field.SetValue(self, value);
@@ -95,7 +94,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object value = frame.Pop();
+            object? value = frame.Pop();
             _field.SetValue(null, value);
             return 1;
         }

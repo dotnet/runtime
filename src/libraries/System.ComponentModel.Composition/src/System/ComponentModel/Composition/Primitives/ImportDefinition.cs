@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -17,13 +16,13 @@ namespace System.ComponentModel.Composition.Primitives
     public class ImportDefinition
     {
         internal static readonly string EmptyContractName = string.Empty;
-        private readonly Expression<Func<ExportDefinition, bool>> _constraint;
+        private readonly Expression<Func<ExportDefinition, bool>>? _constraint;
         private readonly ImportCardinality _cardinality = ImportCardinality.ExactlyOne;
         private readonly string _contractName = EmptyContractName;
         private readonly bool _isRecomposable;
         private readonly bool _isPrerequisite = true;
-        private Func<ExportDefinition, bool> _compiledConstraint;
-        private readonly IDictionary<string, object> _metadata = MetadataServices.EmptyMetadata;
+        private Func<ExportDefinition, bool>? _compiledConstraint;
+        private readonly IDictionary<string, object?> _metadata = MetadataServices.EmptyMetadata;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ImportDefinition"/> class.
@@ -79,8 +78,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <paramref name="cardinality"/> is not one of the <see cref="ImportCardinality"/>
         ///     values.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite)
+        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite)
             : this(contractName, cardinality, isRecomposable, isPrerequisite, MetadataServices.EmptyMetadata)
         {
             Requires.NotNull(constraint, nameof(constraint));
@@ -88,8 +86,7 @@ namespace System.ComponentModel.Composition.Primitives
             _constraint = constraint;
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object> metadata)
+        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object?>? metadata)
             : this(contractName, cardinality, isRecomposable, isPrerequisite, metadata)
         {
             Requires.NotNull(constraint, nameof(constraint));
@@ -97,7 +94,7 @@ namespace System.ComponentModel.Composition.Primitives
             _constraint = constraint;
         }
 
-        internal ImportDefinition(string contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object> metadata)
+        internal ImportDefinition(string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object?>? metadata)
         {
             if (
                 (cardinality != ImportCardinality.ExactlyOne) &&
@@ -105,7 +102,7 @@ namespace System.ComponentModel.Composition.Primitives
                 (cardinality != ImportCardinality.ZeroOrOne)
                 )
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_InvalidEnum, nameof(cardinality), cardinality, typeof(ImportCardinality).Name), nameof(cardinality));
+                throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_InvalidEnum, nameof(cardinality), cardinality, nameof(ImportCardinality)), nameof(cardinality));
             }
 
             _contractName = contractName ?? EmptyContractName;
@@ -159,7 +156,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///         </note>
         ///     </para>
         /// </remarks>
-        public virtual IDictionary<string, object> Metadata
+        public virtual IDictionary<string, object?> Metadata
         {
             get
             {
@@ -200,7 +197,6 @@ namespace System.ComponentModel.Composition.Primitives
         ///         Overriders of this property should never return <see langword="null"/>.
         ///     </note>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public virtual Expression<Func<ExportDefinition, bool>> Constraint
         {
             get

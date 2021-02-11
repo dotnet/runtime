@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -438,7 +437,6 @@ namespace System.Globalization
         internal virtual int GetDatePart(long ticks, int part)
         {
             // The Gregorian year, month, day value for ticks.
-            int gregorianYear, gregorianMonth, gregorianDay;
             int hebrewYearType;                // lunar year type
             long AbsoluteDate;                // absolute date - absolute date 1/1/1600
 
@@ -449,7 +447,7 @@ namespace System.Globalization
             DateTime time = new DateTime(ticks);
 
             // Save the Gregorian date values.
-            time.GetDatePart(out gregorianYear, out gregorianMonth, out gregorianDay);
+            time.GetDate(out int gregorianYear, out int gregorianMonth, out int gregorianDay);
 
             DateBuffer lunarDate = new DateBuffer();    // lunar month and day for Jan 1
 
@@ -666,7 +664,7 @@ namespace System.Globalization
             int monthDays = LunarMonthLen[hebrewYearType * MaxMonthPlusOne + month];
             if (monthDays == 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
+                ThrowHelper.ThrowArgumentOutOfRange_Month(month);
             }
 
             return monthDays;

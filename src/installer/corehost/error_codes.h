@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __ERROR_CODES_H__
 #define __ERROR_CODES_H__
@@ -51,6 +50,7 @@ enum StatusCode
     HostInvalidState                    = 0x800080a3,
     HostPropertyNotFound                = 0x800080a4,
     CoreHostIncompatibleConfig          = 0x800080a5,
+    HostApiUnsupportedScenario          = 0x800080a6,
 };
 
 #define STATUS_CODE_SUCCEEDED(status_code) ((static_cast<int>(static_cast<StatusCode>(status_code))) >= 0)

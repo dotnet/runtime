@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -24,11 +23,11 @@ namespace Microsoft.Win32.SystemEventsTests
             SendMessage(User32.WM_REFLECT + MessageId, IntPtr.Zero, IntPtr.Zero);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void SignalsEventsAsynchronouslyOnMessage()
         {
             var signal = new AutoResetEvent(false);
-            EventHandler signaledHandler = (o, e) => signal.Set();
+            EventHandler signaledHandler = (o, e) => { Assert.NotNull(o); signal.Set(); };
 
             Event += signaledHandler;
 
@@ -44,11 +43,11 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void SignalsEventsSynchronouslyOnReflectedMessage()
         {
             bool signal = false;
-            EventHandler signaledHandler = (o, e) => signal = true;
+            EventHandler signaledHandler = (o, e) => { Assert.NotNull(o); signal = true; };
 
             Event += signaledHandler;
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
@@ -55,9 +54,9 @@ namespace System.Reflection.Internal
         /// whose underlying backing field is modified.
         /// </remarks>
         /// <returns>An immutable array.</returns>
-        internal static ImmutableArray<byte> DangerousCreateFromUnderlyingArray(ref byte[] array)
+        internal static ImmutableArray<byte> DangerousCreateFromUnderlyingArray(ref byte[]? array)
         {
-            byte[] givenArray = array;
+            byte[] givenArray = array!;
             array = null;
 
             ByteArrayUnion union = default;
@@ -80,7 +79,7 @@ namespace System.Reflection.Internal
         /// whose underlying backing field is modified.
         /// </remarks>
         /// <returns>The underlying array, or null if <see cref="ImmutableArray{T}.IsDefault"/> is true.</returns>
-        internal static byte[] DangerousGetUnderlyingArray(ImmutableArray<byte> array)
+        internal static byte[]? DangerousGetUnderlyingArray(ImmutableArray<byte> array)
         {
             ByteArrayUnion union = default;
             union.ImmutableArray = array;
@@ -91,7 +90,7 @@ namespace System.Reflection.Internal
         private struct ByteArrayUnion
         {
             [FieldOffset(0)]
-            internal byte[] UnderlyingArray;
+            internal byte[]? UnderlyingArray;
 
             [FieldOffset(0)]
             internal ImmutableArray<byte> ImmutableArray;

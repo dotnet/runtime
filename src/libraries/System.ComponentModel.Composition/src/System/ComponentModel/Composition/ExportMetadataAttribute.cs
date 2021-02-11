@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.ComponentModel.Composition
 {
@@ -25,7 +24,7 @@ namespace System.ComponentModel.Composition
         ///     An <see cref="object"/> containing the metadata value. This can be
         ///     <see langword="null"/>.
         /// </param>
-        public ExportMetadataAttribute(string name, object value)
+        public ExportMetadataAttribute(string? name, object? value)
         {
             Name = name ?? string.Empty;
             Value = value;
@@ -49,7 +48,7 @@ namespace System.ComponentModel.Composition
         /// <value>
         ///     An <see cref="object"/> containing the metadata value.
         /// </value>
-        public object Value
+        public object? Value
         {
             get;
             private set;

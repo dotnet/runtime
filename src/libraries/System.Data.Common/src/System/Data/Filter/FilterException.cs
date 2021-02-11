@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -18,9 +17,9 @@ namespace System.Data
         }
 
         public InvalidExpressionException() : base() { }
-        public InvalidExpressionException(string s) : base(s) { }
+        public InvalidExpressionException(string? s) : base(s) { }
 
-        public InvalidExpressionException(string message, Exception innerException) : base(message, innerException) { }
+        public InvalidExpressionException(string? message, Exception? innerException) : base(message, innerException) { }
     }
 
     [Serializable]
@@ -33,9 +32,9 @@ namespace System.Data
         }
 
         public EvaluateException() : base() { }
-        public EvaluateException(string s) : base(s) { }
+        public EvaluateException(string? s) : base(s) { }
 
-        public EvaluateException(string message, Exception innerException) : base(message, innerException) { }
+        public EvaluateException(string? message, Exception? innerException) : base(message, innerException) { }
     }
 
     [Serializable]
@@ -48,9 +47,9 @@ namespace System.Data
         }
 
         public SyntaxErrorException() : base() { }
-        public SyntaxErrorException(string s) : base(s) { }
+        public SyntaxErrorException(string? s) : base(s) { }
 
-        public SyntaxErrorException(string message, Exception innerException) : base(message, innerException) { }
+        public SyntaxErrorException(string? message, Exception? innerException) : base(message, innerException) { }
     }
 
     internal sealed class ExprException
@@ -81,7 +80,7 @@ namespace System.Data
             ExceptionBuilder.TraceExceptionAsReturnValue(e);
             return e;
         }
-        private static EvaluateException _Eval(string error, Exception innerException)
+        private static EvaluateException _Eval(string error, Exception? innerException)
         {
             EvaluateException e = new EvaluateException(error/*, innerException*/);
             ExceptionBuilder.TraceExceptionAsReturnValue(e);
@@ -170,7 +169,7 @@ namespace System.Data
             return _Eval(SR.Format(SR.Expr_DatatypeConvertion, type1.ToString(), type2.ToString()));
         }
 
-        public static Exception DatavalueConvertion(object value, Type type, Exception innerException)
+        public static Exception DatavalueConvertion(object value, Type type, Exception? innerException)
         {
             return _Eval(SR.Format(SR.Expr_DatavalueConvertion, value.ToString(), type.ToString()), innerException);
         }

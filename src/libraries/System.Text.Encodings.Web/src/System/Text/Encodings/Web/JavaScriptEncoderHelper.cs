@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Text.Unicode;
@@ -54,13 +53,13 @@ namespace System.Text.Encodings.Web
             buffer++;
             *buffer = 'u';
             buffer++;
-            *buffer = HexUtil.Int32LsbToHexDigit(unicodeScalar >> 12);
+            *buffer = HexConverter.ToCharUpper(unicodeScalar >> 12);
             buffer++;
-            *buffer = HexUtil.Int32LsbToHexDigit((int)((unicodeScalar >> 8) & 0xFU));
+            *buffer = HexConverter.ToCharUpper(unicodeScalar >> 8);
             buffer++;
-            *buffer = HexUtil.Int32LsbToHexDigit((int)((unicodeScalar >> 4) & 0xFU));
+            *buffer = HexConverter.ToCharUpper(unicodeScalar >> 4);
             buffer++;
-            *buffer = HexUtil.Int32LsbToHexDigit((int)(unicodeScalar & 0xFU));
+            *buffer = HexConverter.ToCharUpper(unicodeScalar);
 
             numberOfCharactersWritten = 6;
             return true;

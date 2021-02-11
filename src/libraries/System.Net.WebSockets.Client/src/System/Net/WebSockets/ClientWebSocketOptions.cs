@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
@@ -16,23 +15,24 @@ namespace System.Net.WebSockets
         private bool _isReadOnly; // After ConnectAsync is called the options cannot be modified.
         private TimeSpan _keepAliveInterval = WebSocket.DefaultKeepAliveInterval;
         private bool _useDefaultCredentials;
-        private ICredentials _credentials;
-        private IWebProxy _proxy;
-        private CookieContainer _cookies;
+        private ICredentials? _credentials;
+        private IWebProxy? _proxy;
+        private CookieContainer? _cookies;
         private int _receiveBufferSize = 0x1000;
         private ArraySegment<byte>? _buffer;
-        private RemoteCertificateValidationCallback _remoteCertificateValidationCallback;
+        private RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;
 
-        internal X509CertificateCollection _clientCertificates;
-        internal WebHeaderCollection _requestHeaders;
-        internal List<string> _requestedSubProtocols;
+        internal X509CertificateCollection? _clientCertificates;
+        internal WebHeaderCollection? _requestHeaders;
+        internal List<string>? _requestedSubProtocols;
 
         internal ClientWebSocketOptions() { } // prevent external instantiation
 
         #region HTTP Settings
 
+        [UnsupportedOSPlatform("browser")]
         // Note that some headers are restricted like Host.
-        public void SetRequestHeader(string headerName, string headerValue)
+        public void SetRequestHeader(string headerName, string? headerValue)
         {
             ThrowIfReadOnly();
 
@@ -40,18 +40,14 @@ namespace System.Net.WebSockets
             RequestHeaders.Set(headerName, headerValue);
         }
 
-        internal WebHeaderCollection RequestHeaders =>
-            _requestHeaders ?? (_requestHeaders = new WebHeaderCollection());
+        internal WebHeaderCollection RequestHeaders => _requestHeaders ??= new WebHeaderCollection();
 
-        internal List<string> RequestedSubProtocols =>
-            _requestedSubProtocols ?? (_requestedSubProtocols = new List<string>());
+        internal List<string> RequestedSubProtocols => _requestedSubProtocols ??= new List<string>();
 
+        [UnsupportedOSPlatform("browser")]
         public bool UseDefaultCredentials
         {
-            get
-            {
-                return _useDefaultCredentials;
-            }
+            get => _useDefaultCredentials;
             set
             {
                 ThrowIfReadOnly();
@@ -59,12 +55,10 @@ namespace System.Net.WebSockets
             }
         }
 
-        public ICredentials Credentials
+        [UnsupportedOSPlatform("browser")]
+        public ICredentials? Credentials
         {
-            get
-            {
-                return _credentials;
-            }
+            get => _credentials;
             set
             {
                 ThrowIfReadOnly();
@@ -72,12 +66,10 @@ namespace System.Net.WebSockets
             }
         }
 
-        public IWebProxy Proxy
+        [UnsupportedOSPlatform("browser")]
+        public IWebProxy? Proxy
         {
-            get
-            {
-                return _proxy;
-            }
+            get => _proxy;
             set
             {
                 ThrowIfReadOnly();
@@ -85,30 +77,19 @@ namespace System.Net.WebSockets
             }
         }
 
-        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly",
-            Justification = "This collection will be handed off directly to HttpWebRequest.")]
+        [UnsupportedOSPlatform("browser")]
         public X509CertificateCollection ClientCertificates
         {
-            get
-            {
-                if (_clientCertificates == null)
-                {
-                    _clientCertificates = new X509CertificateCollection();
-                }
-                return _clientCertificates;
-            }
+            get => _clientCertificates ??= new X509CertificateCollection();
             set
             {
                 ThrowIfReadOnly();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-                _clientCertificates = value;
+                _clientCertificates = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
-        public RemoteCertificateValidationCallback RemoteCertificateValidationCallback
+        [UnsupportedOSPlatform("browser")]
+        public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback
         {
             get => _remoteCertificateValidationCallback;
             set
@@ -118,12 +99,10 @@ namespace System.Net.WebSockets
             }
         }
 
-        public CookieContainer Cookies
+        [UnsupportedOSPlatform("browser")]
+        public CookieContainer? Cookies
         {
-            get
-            {
-                return _cookies;
-            }
+            get => _cookies;
             set
             {
                 ThrowIfReadOnly();
@@ -152,12 +131,10 @@ namespace System.Net.WebSockets
             subprotocols.Add(subProtocol);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public TimeSpan KeepAliveInterval
         {
-            get
-            {
-                return _keepAliveInterval;
-            }
+            get => _keepAliveInterval;
             set
             {
                 ThrowIfReadOnly();
@@ -174,6 +151,7 @@ namespace System.Net.WebSockets
         internal int ReceiveBufferSize => _receiveBufferSize;
         internal ArraySegment<byte>? Buffer => _buffer;
 
+        [UnsupportedOSPlatform("browser")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize)
         {
             ThrowIfReadOnly();
@@ -191,6 +169,7 @@ namespace System.Net.WebSockets
             _buffer = null;
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize, ArraySegment<byte> buffer)
         {
             ThrowIfReadOnly();

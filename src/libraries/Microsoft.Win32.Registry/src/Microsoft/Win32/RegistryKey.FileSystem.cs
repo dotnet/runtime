@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -92,17 +91,17 @@ namespace Microsoft.Win32
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
 
-        private object InternalGetValueCore(string name, object defaultValue, bool doNotExpand)
+        private object InternalGetValueCore(string? name, object? defaultValue, bool doNotExpand)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
 
-        private RegistryValueKind GetValueKindCore(string name)
+        private RegistryValueKind GetValueKindCore(string? name)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
 
-        private void SetValueCore(string name, object value, RegistryValueKind valueKind)
+        private void SetValueCore(string? name, object value, RegistryValueKind valueKind)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }

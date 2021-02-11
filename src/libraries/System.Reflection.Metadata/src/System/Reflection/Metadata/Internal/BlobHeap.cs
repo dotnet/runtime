@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection.Internal;
 using System.Threading;
@@ -9,10 +8,10 @@ namespace System.Reflection.Metadata.Ecma335
 {
     internal struct BlobHeap
     {
-        private static byte[][] s_virtualValues;
+        private static byte[][]? s_virtualValues;
 
         internal readonly MemoryBlock Block;
-        private VirtualHeap _lazyVirtualHeap;
+        private VirtualHeap? _lazyVirtualHeap;
 
         internal BlobHeap(MemoryBlock block, MetadataKind metadataKind)
         {
@@ -162,7 +161,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal byte[] GetVirtualBlobBytes(BlobHandle handle, bool unique)
         {
             BlobHandle.VirtualIndex index = handle.GetVirtualIndex();
-            byte[] result = s_virtualValues[(int)index];
+            byte[] result = s_virtualValues![(int)index];
 
             switch (index)
             {
@@ -206,7 +205,6 @@ namespace System.Reflection.Metadata.Ecma335
 
                 var partReader = GetBlobReader(blobReader.ReadBlobHandle());
 
-                // TODO: avoid allocating temp string (https://github.com/dotnet/corefx/issues/2102)
                 builder.Append(partReader.ReadUTF8(partReader.Length));
                 isFirstPart = false;
             }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Security;
 
@@ -8,14 +7,16 @@ namespace System.Net.Quic.Implementations.Mock
 {
     internal sealed class MockImplementationProvider : QuicImplementationProvider
     {
-        internal override QuicListenerProvider CreateListener(IPEndPoint listenEndPoint, SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        public override bool IsSupported => true;
+
+        internal override QuicListenerProvider CreateListener(QuicListenerOptions options)
         {
-            return new MockListener(listenEndPoint, sslServerAuthenticationOptions);
+            return new MockListener(options);
         }
 
-        internal override QuicConnectionProvider CreateConnection(IPEndPoint remoteEndPoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint)
+        internal override QuicConnectionProvider CreateConnection(QuicClientConnectionOptions options)
         {
-            return new MockConnection(remoteEndPoint, sslClientAuthenticationOptions, localEndPoint);
+            return new MockConnection(options.RemoteEndPoint, options.ClientAuthenticationOptions, options.LocalEndPoint);
         }
     }
 }

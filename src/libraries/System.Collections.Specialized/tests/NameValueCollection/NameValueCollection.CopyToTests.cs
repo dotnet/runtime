@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -59,7 +58,7 @@ namespace System.Collections.Specialized.Tests
         {
             NameValueCollection nameValueCollection = Helpers.CreateNameValueCollection(count);
             AssertExtensions.Throws<ArgumentNullException>("dest", () => nameValueCollection.CopyTo(null, 0));
-            AssertExtensions.Throws<ArgumentException>("dest", null, () => nameValueCollection.CopyTo(new string[count, count], 0)); // in netfx when passing multidimensional arrays Exception.ParamName is null.
+            AssertExtensions.Throws<ArgumentException>("dest", null, () => nameValueCollection.CopyTo(new string[count, count], 0)); // in .NET Framework when passing multidimensional arrays Exception.ParamName is null.
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => nameValueCollection.CopyTo(new string[count], -1));
 

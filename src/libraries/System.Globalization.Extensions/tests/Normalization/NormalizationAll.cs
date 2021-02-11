@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Text;
@@ -23,6 +22,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34577", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Normalize()
         {
             // Windows 8 test data came from http://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt
@@ -51,11 +51,15 @@ namespace System.Globalization.Tests
                         // Form D
                         VerifyConformanceInvariant(NormalizationForm.FormD, part0, part1, part2, part3, part4);
 
-                        // Form KC
-                        VerifyConformanceInvariant(NormalizationForm.FormKC, part0, part1, part2, part3, part4);
+                        // Browser's ICU doesn't support FormKC and FormKD
+                        if (PlatformDetection.IsNotBrowser)
+                        {
+                            // Form KC
+                            VerifyConformanceInvariant(NormalizationForm.FormKC, part0, part1, part2, part3, part4);
 
-                        // Form KD
-                        VerifyConformanceInvariant(NormalizationForm.FormKD, part0, part1, part2, part3, part4);
+                            // Form KD
+                            VerifyConformanceInvariant(NormalizationForm.FormKD, part0, part1, part2, part3, part4);
+                        }
                     }
                 }
             }

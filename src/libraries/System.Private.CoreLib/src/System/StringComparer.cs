@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -13,14 +13,9 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string?>, IEqualityComparer<string?>
     {
-        private static readonly CultureAwareComparer s_invariantCulture = new CultureAwareComparer(CultureInfo.InvariantCulture, CompareOptions.None);
-        private static readonly CultureAwareComparer s_invariantCultureIgnoreCase = new CultureAwareComparer(CultureInfo.InvariantCulture, CompareOptions.IgnoreCase);
-        private static readonly OrdinalCaseSensitiveComparer s_ordinal = new OrdinalCaseSensitiveComparer();
-        private static readonly OrdinalIgnoreCaseComparer s_ordinalIgnoreCase = new OrdinalIgnoreCaseComparer();
+        public static StringComparer InvariantCulture => CultureAwareComparer.InvariantCaseSensitiveInstance;
 
-        public static StringComparer InvariantCulture => s_invariantCulture;
-
-        public static StringComparer InvariantCultureIgnoreCase => s_invariantCultureIgnoreCase;
+        public static StringComparer InvariantCultureIgnoreCase => CultureAwareComparer.InvariantIgnoreCaseInstance;
 
         public static StringComparer CurrentCulture =>
             new CultureAwareComparer(CultureInfo.CurrentCulture, CompareOptions.None);
@@ -28,9 +23,9 @@ namespace System
         public static StringComparer CurrentCultureIgnoreCase =>
             new CultureAwareComparer(CultureInfo.CurrentCulture, CompareOptions.IgnoreCase);
 
-        public static StringComparer Ordinal => s_ordinal;
+        public static StringComparer Ordinal => OrdinalCaseSensitiveComparer.Instance;
 
-        public static StringComparer OrdinalIgnoreCase => s_ordinalIgnoreCase;
+        public static StringComparer OrdinalIgnoreCase => OrdinalIgnoreCaseComparer.Instance;
 
         // Convert a StringComparison to a StringComparer
         public static StringComparer FromComparison(StringComparison comparisonType)
@@ -129,6 +124,9 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class CultureAwareComparer : StringComparer, ISerializable
     {
+        internal static readonly CultureAwareComparer InvariantCaseSensitiveInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.None);
+        internal static readonly CultureAwareComparer InvariantIgnoreCaseInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.IgnoreCase);
+
         private const CompareOptions ValidCompareMaskOffFlags = ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
 
         private readonly CompareInfo _compareInfo; // Do not rename (binary serialization)
@@ -181,11 +179,11 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            return _compareInfo.GetHashCodeOfString(obj, _options);
+            return _compareInfo.GetHashCode(obj, _options);
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return
                 obj is CultureAwareComparer comparer &&
@@ -247,7 +245,7 @@ namespace System
                 {
                     return false;
                 }
-                return CompareInfo.EqualsOrdinalIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
+                return System.Globalization.Ordinal.EqualsIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
             }
             return x.Equals(y);
         }
@@ -268,7 +266,7 @@ namespace System
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is OrdinalComparer comparer))
             {
@@ -287,7 +285,9 @@ namespace System
     [Serializable]
     internal sealed class OrdinalCaseSensitiveComparer : OrdinalComparer, ISerializable
     {
-        public OrdinalCaseSensitiveComparer() : base(false)
+        internal static readonly OrdinalCaseSensitiveComparer Instance = new OrdinalCaseSensitiveComparer();
+
+        private OrdinalCaseSensitiveComparer() : base(false)
         {
         }
 
@@ -314,7 +314,9 @@ namespace System
     [Serializable]
     internal sealed class OrdinalIgnoreCaseComparer : OrdinalComparer, ISerializable
     {
-        public OrdinalIgnoreCaseComparer() : base(true)
+        internal static readonly OrdinalIgnoreCaseComparer Instance = new OrdinalIgnoreCaseComparer();
+
+        private OrdinalIgnoreCaseComparer() : base(true)
         {
         }
 
@@ -337,7 +339,7 @@ namespace System
                 return false;
             }
 
-            return CompareInfo.EqualsOrdinalIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
+            return System.Globalization.Ordinal.EqualsIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
         }
 
         public override int GetHashCode(string obj)

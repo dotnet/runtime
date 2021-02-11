@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Globalization
@@ -40,7 +39,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return CSng(Result)
 
             Catch e As FormatException
-                Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromStringTo, Left(Value, 32), "Single"), e)
+                Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromStringTo, Left(Value, 32), "Single"), e)
             End Try
 
         End Function
@@ -129,7 +128,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
 
 ThrowInvalidCast:
-            Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(Value), "Single"))
+            Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(Value), "Single"))
         End Function
 
         Private Shared Function DecimalToSingle(ByVal ValueInterface As IConvertible) As Single

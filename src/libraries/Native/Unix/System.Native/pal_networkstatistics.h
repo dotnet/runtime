@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -149,24 +148,24 @@ typedef struct
     uint64_t Flags;
 } NativeIPInterfaceStatistics;
 
-DLLEXPORT int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats);
+PALEXPORT int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats);
 
-DLLEXPORT int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats);
+PALEXPORT int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats);
 
-DLLEXPORT int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats);
+PALEXPORT int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats);
 
-DLLEXPORT int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats);
+PALEXPORT int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats);
 
-DLLEXPORT int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats);
+PALEXPORT int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats);
 
-DLLEXPORT int32_t SystemNative_GetEstimatedTcpConnectionCount(void);
+PALEXPORT int32_t SystemNative_GetEstimatedTcpConnectionCount(void);
 
-DLLEXPORT int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount);
+PALEXPORT int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount);
 
-DLLEXPORT int32_t SystemNative_GetEstimatedUdpListenerCount(void);
+PALEXPORT int32_t SystemNative_GetEstimatedUdpListenerCount(void);
 
-DLLEXPORT int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount);
+PALEXPORT int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount);
 
-DLLEXPORT int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats);
+PALEXPORT int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats);
 
-DLLEXPORT int32_t SystemNative_GetNumRoutes(void);
+PALEXPORT int32_t SystemNative_GetNumRoutes(void);

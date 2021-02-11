@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -22,7 +21,7 @@ namespace System.Collections.Generic
             return new ComparisonComparer<T>(comparison);
         }
 
-        public abstract int Compare([AllowNull] T x, [AllowNull] T y);
+        public abstract int Compare(T? x, T? y);
 
         int IComparer.Compare(object? x, object? y)
         {
@@ -43,10 +42,7 @@ namespace System.Collections.Generic
             _comparison = comparison;
         }
 
-        public override int Compare(T x, T y)
-        {
-            return _comparison(x, y);
-        }
+        public override int Compare(T? x, T? y) => _comparison(x!, y!);
     }
 
     // Note: although there is a lot of shared code in the following
@@ -59,7 +55,7 @@ namespace System.Collections.Generic
     // Needs to be public to support binary serialization compatibility
     public sealed partial class GenericComparer<T> : Comparer<T> where T : IComparable<T>
     {
-        public override int Compare([AllowNull] T x, [AllowNull] T y)
+        public override int Compare(T? x, T? y)
         {
             if (x != null)
             {
@@ -71,7 +67,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
@@ -95,7 +91,7 @@ namespace System.Collections.Generic
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
@@ -107,13 +103,13 @@ namespace System.Collections.Generic
     // Needs to be public to support binary serialization compatibility
     public sealed partial class ObjectComparer<T> : Comparer<T>
     {
-        public override int Compare([AllowNull] T x, [AllowNull] T y)
+        public override int Compare(T? x, T? y)
         {
             return System.Collections.Comparer.Default.Compare(x, y);
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
@@ -131,7 +127,7 @@ namespace System.Collections.Generic
         // public override int Compare(T x, T y) is runtime-specific
 
         // Equals method for the comparer itself.
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj != null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,7 +34,7 @@ namespace System.Linq.Expressions.Interpreter
             return this;
         }
 
-        public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IReadOnlyList<object> objects)
+        public override string ToDebugString(int instructionIndex, object? cookie, Func<int, int> labelIndexer, IReadOnlyList<object>? objects)
         {
             return ToString() + (_offset != Unknown ? " -> " + (instructionIndex + _offset) : "");
         }
@@ -48,7 +47,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class BranchFalseInstruction : OffsetInstruction
     {
-        private static Instruction[] s_cache;
+        private static Instruction[]? s_cache;
 
         public override Instruction[] Cache
         {
@@ -69,7 +68,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             Debug.Assert(_offset != Unknown);
 
-            if (!(bool)frame.Pop())
+            if (!(bool)frame.Pop()!)
             {
                 return _offset;
             }
@@ -80,7 +79,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class BranchTrueInstruction : OffsetInstruction
     {
-        private static Instruction[] s_cache;
+        private static Instruction[]? s_cache;
 
         public override Instruction[] Cache
         {
@@ -101,7 +100,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             Debug.Assert(_offset != Unknown);
 
-            if ((bool)frame.Pop())
+            if ((bool)frame.Pop()!)
             {
                 return _offset;
             }
@@ -112,7 +111,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class CoalescingBranchInstruction : OffsetInstruction
     {
-        private static Instruction[] s_cache;
+        private static Instruction[]? s_cache;
 
         public override Instruction[] Cache
         {
@@ -145,7 +144,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal class BranchInstruction : OffsetInstruction
     {
-        private static Instruction[][][] s_caches;
+        private static Instruction[][][]? s_caches;
 
         public override Instruction[] Cache
         {
@@ -201,7 +200,7 @@ namespace System.Linq.Expressions.Interpreter
             return frame.Interpreter._labels[_labelIndex];
         }
 
-        public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IReadOnlyList<object> objects)
+        public override string ToDebugString(int instructionIndex, object? cookie, Func<int, int> labelIndexer, IReadOnlyList<object>? objects)
         {
             Debug.Assert(_labelIndex != UnknownInstrIndex);
             int targetIndex = labelIndexer(_labelIndex);
@@ -286,15 +285,15 @@ namespace System.Linq.Expressions.Interpreter
 #endif
 
             // goto the target label or the current finally continuation:
-            object value = _hasValue ? frame.Pop() : Interpreter.NoValue;
+            object? value = _hasValue ? frame.Pop() : Interpreter.NoValue;
             return frame.Goto(_labelIndex, _labelTargetGetsValue ? value : Interpreter.NoValue, gotoExceptionHandler: false);
         }
     }
 
     internal sealed class EnterTryCatchFinallyInstruction : IndexedBranchInstruction
     {
-        private readonly bool _hasFinally = false;
-        private TryCatchFinallyHandler _tryHandler;
+        private readonly bool _hasFinally;
+        private TryCatchFinallyHandler? _tryHandler;
 
         internal void SetTryHandler(TryCatchFinallyHandler tryHandler)
         {
@@ -302,7 +301,7 @@ namespace System.Linq.Expressions.Interpreter
             _tryHandler = tryHandler;
         }
 
-        internal TryCatchFinallyHandler Handler => _tryHandler;
+        internal TryCatchFinallyHandler? Handler => _tryHandler;
 
         public override int ProducedContinuations => _hasFinally ? 1 : 0;
 
@@ -336,8 +335,6 @@ namespace System.Linq.Expressions.Interpreter
 
             // Start to run the try/catch/finally blocks
             Instruction[] instructions = frame.Interpreter.Instructions.Instructions;
-            ExceptionHandler exHandler;
-            object unwrappedException;
             try
             {
                 // run the try block
@@ -356,7 +353,7 @@ namespace System.Linq.Expressions.Interpreter
                     frame.InstructionIndex += instructions[index].Run(frame);
                 }
             }
-            catch (Exception exception) when (_tryHandler.HasHandler(frame, exception, out exHandler, out unwrappedException))
+            catch (Exception exception) when (_tryHandler.HasHandler(frame, exception, out ExceptionHandler? exHandler, out object? unwrappedException))
             {
                 Debug.Assert(!(unwrappedException is RethrowException));
                 frame.InstructionIndex += frame.Goto(exHandler.LabelIndex, unwrappedException, gotoExceptionHandler: true);
@@ -434,7 +431,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class EnterTryFaultInstruction : IndexedBranchInstruction
     {
-        private TryFaultHandler _tryHandler;
+        private TryFaultHandler? _tryHandler;
 
         internal EnterTryFaultInstruction(int targetIndex)
             : base(targetIndex)
@@ -444,7 +441,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string InstructionName => "EnterTryFault";
         public override int ProducedContinuations => 1;
 
-        internal TryFaultHandler Handler => _tryHandler;
+        internal TryFaultHandler? Handler => _tryHandler;
 
         internal void SetTryHandler(TryFaultHandler tryHandler)
         {
@@ -642,7 +639,7 @@ namespace System.Linq.Expressions.Interpreter
         // The exception is pushed onto the stack in the filter runner.
         public override int ProducedStack => 1;
 
-        [ExcludeFromCodeCoverage] // Known to be a no-op, this instruction is skipped on execution.
+        [ExcludeFromCodeCoverage(Justification = "Known to be a no-op, this instruction is skipped on execution")]
         public override int Run(InterpretedFrame frame) => 1;
     }
 
@@ -658,7 +655,7 @@ namespace System.Linq.Expressions.Interpreter
         // The exception and the boolean result are popped from the stack in the filter runner.
         public override int ConsumedStack => 2;
 
-        [ExcludeFromCodeCoverage] // Known to be a no-op, this instruction is skipped on execution.
+        [ExcludeFromCodeCoverage(Justification = "Known to be a no-op, this instruction is skipped on execution")]
         public override int Run(InterpretedFrame frame) => 1;
     }
 
@@ -689,7 +686,7 @@ namespace System.Linq.Expressions.Interpreter
         // Catch handlers: The value is immediately popped and stored into a local.
         public override int ProducedStack => 1;
 
-        [ExcludeFromCodeCoverage] // Known to be a no-op, this instruction is skipped on execution.
+        [ExcludeFromCodeCoverage(Justification = "Known to be a no-op, this instruction is skipped on execution")]
         public override int Run(InterpretedFrame frame)
         {
             // nop (the exception value is pushed by the interpreter in HandleCatch)
@@ -759,20 +756,20 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            Exception ex = WrapThrownObject(frame.Pop());
+            Exception? ex = WrapThrownObject(frame.Pop());
             if (_rethrow)
             {
                 throw new RethrowException();
             }
 
-            throw ex;
+            throw ex!;
         }
 
-        private static Exception WrapThrownObject(object thrown) =>
+        private static Exception? WrapThrownObject(object? thrown) =>
             thrown == null ? null : (thrown as Exception ?? new RuntimeWrappedException(thrown));
     }
 
-    internal sealed class IntSwitchInstruction<T> : Instruction
+    internal sealed class IntSwitchInstruction<T> : Instruction where T : notnull
     {
         private readonly Dictionary<T, int> _cases;
 
@@ -788,7 +785,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             int target;
-            return _cases.TryGetValue((T)frame.Pop(), out target) ? target : 1;
+            return _cases.TryGetValue((T)frame.Pop()!, out target) ? target : 1;
         }
     }
 
@@ -810,7 +807,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object value = frame.Pop();
+            object? value = frame.Pop();
 
             if (value == null)
             {

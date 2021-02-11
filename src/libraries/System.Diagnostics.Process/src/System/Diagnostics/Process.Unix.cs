@@ -1,27 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        private static readonly UTF8Encoding s_utf8NoBom =
-            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-        private static volatile bool s_initialized = false;
+        private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
-        private static readonly Interop.Sys.SigChldCallback s_sigChildHandler = OnSigChild;
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
         private static int s_childrenUsingTerminalCount;
 
@@ -44,12 +39,14 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
         public static Process Start(string fileName, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
         }
 
         [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
         public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
@@ -86,14 +83,14 @@ namespace System.Diagnostics
         private bool GetHasExited(bool refresh)
             => GetWaitState().GetExited(out _, refresh);
 
-        private IEnumerable<Exception> KillTree()
+        private List<Exception>? KillTree()
         {
-            List<Exception> exceptions = null;
+            List<Exception>? exceptions = null;
             KillTree(ref exceptions);
-            return exceptions ?? Enumerable.Empty<Exception>();
+            return exceptions;
         }
 
-        private void KillTree(ref List<Exception> exceptions)
+        private void KillTree(ref List<Exception>? exceptions)
         {
             // If the process has exited, we can no longer determine its children.
             // If we know the process has exited, stop already.
@@ -111,7 +108,7 @@ namespace System.Diagnostics
                 // Ignore 'process no longer exists' error.
                 if (error != Interop.Error.ESRCH)
                 {
-                    AddException(ref exceptions, new Win32Exception());
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
                 }
                 return;
             }
@@ -125,7 +122,7 @@ namespace System.Diagnostics
                 // Ignore 'process no longer exists' error.
                 if (error != Interop.Error.ESRCH)
                 {
-                    AddException(ref exceptions, new Win32Exception());
+                    (exceptions ??= new List<Exception>()).Add(new Win32Exception());
                 }
             }
 
@@ -133,15 +130,6 @@ namespace System.Diagnostics
             {
                 childProcess.KillTree(ref exceptions);
                 childProcess.Dispose();
-            }
-
-            void AddException(ref List<Exception> list, Exception e)
-            {
-                if (list == null)
-                {
-                    list = new List<Exception>();
-                }
-                list.Add(e);
             }
         }
 
@@ -216,11 +204,11 @@ namespace System.Diagnostics
             {
                 if (_output != null)
                 {
-                    _output.WaitUtilEOF();
+                    _output.WaitUntilEOF();
                 }
                 if (_error != null)
                 {
-                    _error.WaitUtilEOF();
+                    _error.WaitUntilEOF();
                 }
             }
 
@@ -228,7 +216,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the main module for the associated process.</summary>
-        public ProcessModule MainModule
+        public ProcessModule? MainModule
         {
             get
             {
@@ -317,12 +305,6 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets the ID of the current process.</summary>
-        private static int GetCurrentProcessId()
-        {
-            return Interop.Sys.GetPid();
-        }
-
         /// <summary>Checks whether the argument is a direct child of this process.</summary>
         private bool IsParentOf(Process possibleChildProcess) =>
             Id == possibleChildProcess.ParentProcessId;
@@ -354,7 +336,7 @@ namespace System.Diagnostics
             {
                 ThrowIfExited(refresh: true);
 
-                return _processHandle;
+                return _processHandle!;
             }
 
             EnsureState(State.HaveNonExitedId | State.IsLocal);
@@ -370,7 +352,7 @@ namespace System.Diagnostics
         {
             EnsureInitialized();
 
-            string filename;
+            string? filename;
             string[] argv;
 
             if (startInfo.UseShellExecute)
@@ -383,12 +365,12 @@ namespace System.Diagnostics
 
             int stdinFd = -1, stdoutFd = -1, stderrFd = -1;
             string[] envp = CreateEnvp(startInfo);
-            string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
+            string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
             uint userId = 0;
             uint groupId = 0;
-            uint[] groups = null;
+            uint[]? groups = null;
             if (setCredentials)
             {
                 (userId, groupId, groups) = GetUserAndGroupIds(startInfo);
@@ -464,29 +446,29 @@ namespace System.Diagnostics
             {
                 Debug.Assert(stdinFd >= 0);
                 _standardInput = new StreamWriter(OpenStream(stdinFd, FileAccess.Write),
-                    startInfo.StandardInputEncoding ?? s_utf8NoBom, StreamBufferSize)
+                    startInfo.StandardInputEncoding ?? Encoding.Default, StreamBufferSize)
                 { AutoFlush = true };
             }
             if (startInfo.RedirectStandardOutput)
             {
                 Debug.Assert(stdoutFd >= 0);
                 _standardOutput = new StreamReader(OpenStream(stdoutFd, FileAccess.Read),
-                    startInfo.StandardOutputEncoding ?? s_utf8NoBom, true, StreamBufferSize);
+                    startInfo.StandardOutputEncoding ?? Encoding.Default, true, StreamBufferSize);
             }
             if (startInfo.RedirectStandardError)
             {
                 Debug.Assert(stderrFd >= 0);
                 _standardError = new StreamReader(OpenStream(stderrFd, FileAccess.Read),
-                    startInfo.StandardErrorEncoding ?? s_utf8NoBom, true, StreamBufferSize);
+                    startInfo.StandardErrorEncoding ?? Encoding.Default, true, StreamBufferSize);
             }
 
             return true;
         }
 
         private bool ForkAndExecProcess(
-            string filename, string[] argv, string[] envp, string cwd,
+            string? filename, string[] argv, string[] envp, string? cwd,
             bool redirectStdin, bool redirectStdout, bool redirectStderr,
-            bool setCredentials, uint userId, uint groupId, uint[] groups,
+            bool setCredentials, uint userId, uint groupId, uint[]? groups,
             out int stdinFd, out int stdoutFd, out int stderrFd,
             bool usesTerminal, bool throwOnNoExec = true)
         {
@@ -557,12 +539,8 @@ namespace System.Diagnostics
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
-        private ProcessWaitState.Holder _waitStateHolder;
+        private ProcessWaitState.Holder? _waitStateHolder;
 
         /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
         private const int StreamBufferSize = 4096;
@@ -572,10 +550,10 @@ namespace System.Diagnostics
         /// <param name="resolvedExe">Resolved executable to open ProcessStartInfo.FileName</param>
         /// <param name="ignoreArguments">Don't pass ProcessStartInfo.Arguments</param>
         /// <returns>The argv array.</returns>
-        private static string[] ParseArgv(ProcessStartInfo psi, string resolvedExe = null, bool ignoreArguments = false)
+        private static string[] ParseArgv(ProcessStartInfo psi, string? resolvedExe = null, bool ignoreArguments = false)
         {
             if (string.IsNullOrEmpty(resolvedExe) &&
-                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && psi.ArgumentList.Count == 0)))
+                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && !psi.HasArgumentList)))
             {
                 return new string[] { psi.FileName };
             }
@@ -598,7 +576,7 @@ namespace System.Diagnostics
                 {
                     ParseArgumentsIntoList(psi.Arguments, argvList);
                 }
-                else
+                else if (psi.HasArgumentList)
                 {
                     argvList.AddRange(psi.ArgumentList);
                 }
@@ -620,12 +598,12 @@ namespace System.Diagnostics
             return envp;
         }
 
-        private static string ResolveExecutableForShellExecute(string filename, string workingDirectory)
+        private static string? ResolveExecutableForShellExecute(string filename, string? workingDirectory)
         {
             // Determine if filename points to an executable file.
             // filename may be an absolute path, a relative path or a uri.
 
-            string resolvedFilename = null;
+            string? resolvedFilename = null;
             // filename is an absolute path
             if (Path.IsPathRooted(filename))
             {
@@ -635,7 +613,7 @@ namespace System.Diagnostics
                 }
             }
             // filename is a uri
-            else if (Uri.TryCreate(filename, UriKind.Absolute, out Uri uri))
+            else if (Uri.TryCreate(filename, UriKind.Absolute, out Uri? uri))
             {
                 if (uri.IsFile && uri.Host == "" && File.Exists(uri.LocalPath))
                 {
@@ -680,7 +658,7 @@ namespace System.Diagnostics
         /// <summary>Resolves a path to the filename passed to ProcessStartInfo. </summary>
         /// <param name="filename">The filename.</param>
         /// <returns>The resolved path. It can return null in case of URLs.</returns>
-        private static string ResolvePath(string filename)
+        private static string? ResolvePath(string filename)
         {
             // Follow the same resolution that Windows uses with CreateProcess:
             // 1. First try the exact path provided
@@ -699,12 +677,12 @@ namespace System.Diagnostics
             }
 
             // Then check the executable's directory
-            string path = GetExePath();
+            string? path = Environment.ProcessPath;
             if (path != null)
             {
                 try
                 {
-                    path = Path.Combine(Path.GetDirectoryName(path), filename);
+                    path = Path.Combine(Path.GetDirectoryName(path)!, filename);
                     if (File.Exists(path))
                     {
                         return path;
@@ -729,10 +707,10 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="program"></param>
         /// <returns></returns>
-        private static string FindProgramInPath(string program)
+        private static string? FindProgramInPath(string program)
         {
             string path;
-            string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar != null)
             {
                 var pathParser = new StringParser(pathEnvVar, ':', skipEmpty: true);
@@ -912,7 +890,7 @@ namespace System.Diagnostics
                 throw new Win32Exception(SR.Format(SR.UserDoesNotExist, startInfo.UserName));
             }
 
-            uint[] groups = Interop.Sys.GetGroupList(startInfo.UserName, groupId.Value);
+            uint[]? groups = Interop.Sys.GetGroupList(startInfo.UserName, groupId!.Value);
             if (groups == null)
             {
                 throw new Win32Exception(SR.Format(SR.UserGroupsCannotBeDetermined, startInfo.UserName));
@@ -1004,7 +982,7 @@ namespace System.Diagnostics
 
         private bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnkownError);
 
-        private static void EnsureInitialized()
+        private static unsafe void EnsureInitialized()
         {
             if (s_initialized)
             {
@@ -1021,20 +999,21 @@ namespace System.Diagnostics
                     }
 
                     // Register our callback.
-                    Interop.Sys.RegisterForSigChld(s_sigChildHandler);
+                    Interop.Sys.RegisterForSigChld(&OnSigChild);
 
                     s_initialized = true;
                 }
             }
         }
 
-        private static void OnSigChild(bool reapAll)
+        [UnmanagedCallersOnly]
+        private static void OnSigChild(int reapAll)
         {
             // Lock to avoid races with Process.Start
             s_processStartLock.EnterWriteLock();
             try
             {
-                ProcessWaitState.CheckChildren(reapAll);
+                ProcessWaitState.CheckChildren(reapAll != 0);
             }
             finally
             {

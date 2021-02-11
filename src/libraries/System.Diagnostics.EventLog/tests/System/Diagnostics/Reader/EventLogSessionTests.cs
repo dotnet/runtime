@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Eventing.Reader;
 using System.Globalization;
@@ -94,7 +93,7 @@ namespace System.Diagnostics.Tests
                     using (EventLog eventLog = new EventLog())
                     {
                         eventLog.Source = source;
-                        eventLog.WriteEntry("Writing to event log.");
+                        Helpers.Retry(() => eventLog.WriteEntry("Writing to event log."));
                         Assert.NotEqual(0, Helpers.Retry((() => eventLog.Entries.Count)));
                         session.ClearLog(logName: log);
                         Assert.Equal(0,  Helpers.Retry((() => eventLog.Entries.Count)));

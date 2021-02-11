@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -214,7 +213,7 @@ namespace System.Xml
             }
         }
 
-        public override async Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public override async Task<object> ReadContentAsAsync(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             try
             {
@@ -272,6 +271,8 @@ namespace System.Xml
                                 {
                                     return 0;
                                 }
+
+                                Debug.Assert(_binDecoder != null);
                                 _binDecoder.SetNextOutputBuffer(buffer, index, count);
                                 _nsIncReadOffset += _binDecoder.Decode(_curNode.value, _nsIncReadOffset, _curNode.value.Length - _nsIncReadOffset);
                                 return _binDecoder.DecodedCount;
@@ -408,6 +409,8 @@ namespace System.Xml
                                 {
                                     return 0;
                                 }
+
+                                Debug.Assert(_binDecoder != null);
                                 _binDecoder.SetNextOutputBuffer(buffer, index, count);
                                 _nsIncReadOffset += _binDecoder.Decode(_curNode.value, _nsIncReadOffset, _curNode.value.Length - _nsIncReadOffset);
                                 return _binDecoder.DecodedCount;

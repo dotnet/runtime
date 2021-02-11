@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System.Collections.Generic;
@@ -505,12 +504,12 @@ namespace System
         {
             { new string[] { "1", null, "2" }, new string[] { "1", null, "2" }, 0},
             { new string[] { "1", null, "2" }, new string[] { null }, 1},
-            { new string[] { "1", null, "2" }, (string[])null, 0},
+            { new string[] { "1", null, "2" }, (string[])null, 3},
 
             { new string[] { "1", "3", "1" }, new string[] { "1", null, "2" }, -1},
             { new string[] { "1", "3", "1" }, new string[] { "1" }, 2},
             { new string[] { "1", "3", "1" }, new string[] { null }, -1},
-            { new string[] { "1", "3", "1" }, (string[])null, 0},
+            { new string[] { "1", "3", "1" }, (string[])null, 3},
 
             { null, new string[] { "1", null, "2" }, -1},
 

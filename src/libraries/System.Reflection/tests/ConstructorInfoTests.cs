@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +34,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(ConstructorInfo constructorInfo1, ConstructorInfo constructorInfo2, bool expected)
+        public void EqualsTest(ConstructorInfo constructorInfo1, ConstructorInfo constructorInfo2, bool expected)
         {
             Assert.Equal(expected, constructorInfo1.Equals(constructorInfo2));
             Assert.NotEqual(expected, constructorInfo1 != constructorInfo2);
@@ -70,6 +69,28 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40351", TestRuntimes.Mono)]
+        public void Invoke_StaticConstructorMultipleTimes()
+        {
+            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection));
+            Assert.Equal(1, constructors.Length);
+            // The first time the static cctor is called, it should run the cctor twice
+            // Once to initialize run the cctor as a cctor
+            // The second to run it as a method which is invoked.
+            Assert.Equal(0, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
+            object obj = constructors[0].Invoke(null, new object[] { });
+            Assert.Null(obj);
+            Assert.Equal(1, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
+
+            // Subsequent invocations of the static cctor should not run the cctor at all, as it has already executed
+            // and running multiple times opens up the possibility of modifying read only static data
+            obj = constructors[0].Invoke(null, new object[] { });
+            Assert.Null(obj);
+            Assert.Equal(1, ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection.VisibleStatics.s_cctorCallCount);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15024", TestRuntimes.Mono)]
         public void Invoke_StaticConstructor_ThrowsMemberAccessException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructor));
@@ -156,6 +177,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15026", TestRuntimes.Mono)]
         public void Invoke_AbstractClass_ThrowsMemberAccessException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ConstructorInfoAbstractBase));
@@ -233,6 +255,20 @@ namespace System.Reflection.Tests
     public static class ClassWithStaticConstructor
     {
         static ClassWithStaticConstructor() { }
+    }
+
+    // Use this class only from the Invoke_StaticConstructorMultipleTimes method
+    public static class ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection
+    {
+        public static class VisibleStatics
+        {
+            public static int s_cctorCallCount;
+        }
+
+        static ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection()
+        {
+            VisibleStatics.s_cctorCallCount++;
+        }
     }
 
     public struct StructWith1Constructor

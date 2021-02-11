@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -48,14 +47,14 @@ namespace System.Diagnostics
                 if (instanceName.Length == 0)
                     instanceName = PerformanceCounterLib.SingleInstanceName;
 
-                string objectName = instanceName.ToLower(CultureInfo.InvariantCulture);
+                string objectName = instanceName.ToLowerInvariant();
                 return (InstanceData)Dictionary[objectName];
             }
         }
 
         internal void Add(string instanceName, InstanceData value)
         {
-            string objectName = instanceName.ToLower(CultureInfo.InvariantCulture);
+            string objectName = instanceName.ToLowerInvariant();
             Dictionary.Add(objectName, value);
         }
 
@@ -64,7 +63,7 @@ namespace System.Diagnostics
             if (instanceName == null)
                 throw new ArgumentNullException(nameof(instanceName));
 
-            string objectName = instanceName.ToLower(CultureInfo.InvariantCulture);
+            string objectName = instanceName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
         }
 

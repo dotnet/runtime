@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,7 +23,6 @@ namespace System.Linq.Expressions.Compiler
     /// contain multiple lambdas, the Compiler class is responsible for compiling the whole tree, individual
     /// lambdas are then compiled by the LambdaCompiler.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     internal sealed partial class LambdaCompiler : ILocalCache
     {
         private static int s_lambdaMethodIndex;
@@ -288,7 +286,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(_method is DynamicMethod);
 #endif
             {
-                return Expression.Field(Expression.Constant(new StrongBox<T>(default(T))), "Value");
+                return Utils.GetStrongBoxValueField(Expression.Constant(new StrongBox<T>()));
             }
 #if FEATURE_COMPILE_TO_METHODBUILDER
             else

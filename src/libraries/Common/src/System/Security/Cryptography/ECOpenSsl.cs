@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
@@ -9,7 +8,7 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class ECOpenSsl : IDisposable
     {
-        private Lazy<SafeEcKeyHandle> _key;
+        private Lazy<SafeEcKeyHandle> _key = null!; // Always initialized
 
         public ECOpenSsl(ECCurve curve)
         {
@@ -86,12 +85,11 @@ namespace System.Security.Cryptography
 
             if (curve.IsNamed)
             {
-                string oid = null;
                 // Use oid Value first if present, otherwise FriendlyName because Oid maintains a hard-coded
                 // cache that may have different casing for FriendlyNames than OpenSsl
-                oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName;
+                string oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName!;
 
-                SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByOid(oid);
+                SafeEcKeyHandle? key = Interop.Crypto.EcKeyCreateByOid(oid);
 
                 if (key == null || key.IsInvalid)
                 {
@@ -132,7 +130,7 @@ namespace System.Security.Cryptography
                     _key.Value?.Dispose();
                 }
 
-                _key = null;
+                _key = null!;
             }
         }
     }

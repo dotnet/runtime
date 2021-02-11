@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -131,6 +130,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/14912", TestRuntimes.Mono)]
         [PerCompilationType(nameof(TestData))]
         public static void NewArrayBounds(Type arrayType, object size, Type sizeType, object defaultValue, bool useInterpreter)
         {
@@ -287,6 +287,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14933", TestRuntimes.Mono)]
         public static void SingleNegativeBoundErrorMessage(bool useInterpreter)
         {
             string localizedMessage = null;
@@ -307,6 +308,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14934", TestRuntimes.Mono)]
         public static void MultipleNegativeBoundErrorMessage(bool useInterpreter)
         {
             string localizedMessage = null;

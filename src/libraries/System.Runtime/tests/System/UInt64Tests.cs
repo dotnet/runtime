@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -69,7 +68,7 @@ namespace System.Tests
         [InlineData((ulong)789, null, false)]
         [InlineData((ulong)789, "789", false)]
         [InlineData((ulong)789, 789, false)]
-        public static void Equals(ulong i1, object obj, bool expected)
+        public static void EqualsTest(ulong i1, object obj, bool expected)
         {
             if (obj is ulong i2)
             {
@@ -102,7 +101,18 @@ namespace System.Tests
 
                 yield return new object[] { (ulong)0x2468, "x", defaultFormat, "2468" };
                 yield return new object[] { (ulong)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
+
+
             }
+
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+            yield return new object[] { (ulong)32, "C100", invariantFormat, "¤32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (ulong)32, "P100", invariantFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { (ulong)32, "D100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032" };
+            yield return new object[] { (ulong)32, "E100", invariantFormat, "3.2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { (ulong)32, "F100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (ulong)32, "N100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (ulong)32, "X100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
 
             var customFormat = new NumberFormatInfo()
             {
@@ -120,11 +130,12 @@ namespace System.Tests
             yield return new object[] { (ulong)123, "E", customFormat, "1~230000E&002" };
             yield return new object[] { (ulong)123, "F", customFormat, "123~00" };
             yield return new object[] { (ulong)123, "P", customFormat, "12,300.00000 @" };
+            yield return new object[] { ulong.MaxValue, "n5", customFormat, "18*446*744*073*709*551*615~00000" };
         }
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(ulong i, string format, IFormatProvider provider, string expected)
+        public static void ToStringTest(ulong i, string format, IFormatProvider provider, string expected)
         {
             // Format is case insensitive
             string upperFormat = format.ToUpperInvariant();

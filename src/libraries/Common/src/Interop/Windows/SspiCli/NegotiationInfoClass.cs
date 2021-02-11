@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -10,11 +9,11 @@ namespace System.Net
     // Kerberos are used in the context of a Negotiate handshake
     internal static partial class NegotiationInfoClass
     {
-        internal static string GetAuthenticationPackageName(SafeHandle safeHandle, int negotiationState)
+        internal static string? GetAuthenticationPackageName(SafeHandle safeHandle, int negotiationState)
         {
             if (safeHandle.IsInvalid)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Invalid handle:{safeHandle}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Invalid handle:{safeHandle}");
                 return null;
             }
 
@@ -23,18 +22,18 @@ namespace System.Net
             {
                 safeHandle.DangerousAddRef(ref gotRef);
                 IntPtr packageInfo = safeHandle.DangerousGetHandle();
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x}");
 
                 if (negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_COMPLETE ||
                     negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_OPTIMISTIC)
                 {
-                    string name;
+                    string? name;
                     unsafe
                     {
                         name = Marshal.PtrToStringUni(((SecurityPackageInfo*)packageInfo)->Name);
                     }
 
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x} name:{name}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x} name:{name}");
 
                     // An optimization for future string comparisons.
                     return

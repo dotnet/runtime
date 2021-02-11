@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections;
@@ -265,35 +264,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void SendTo_NullBuffer_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().SendTo(null, 0, 0, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, 1)));
-        }
-
-        [Fact]
-        public void SendTo_NullEndPoint_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().SendTo(s_buffer, 0, 0, SocketFlags.None, null));
-        }
-
-        [Fact]
-        public void SendTo_InvalidOffset_Throws_ArgumentOutOfRange()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().SendTo(s_buffer, -1, s_buffer.Length, SocketFlags.None, endpoint));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().SendTo(s_buffer, s_buffer.Length + 1, s_buffer.Length, SocketFlags.None, endpoint));
-        }
-
-        [Fact]
-        public void SendTo_InvalidSize_Throws_ArgumentOutOfRange()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().SendTo(s_buffer, 0, -1, SocketFlags.None, endpoint));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().SendTo(s_buffer, 0, s_buffer.Length + 1, SocketFlags.None, endpoint));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().SendTo(s_buffer, s_buffer.Length, 1, SocketFlags.None, endpoint));
-        }
-
-        [Fact]
         public void Receive_Buffer_NullBuffer_Throws_ArgumentNull()
         {
             SocketError errorCode;
@@ -332,114 +302,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void ReceiveFrom_NullBuffer_Throws_ArgumentNull()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveFrom(null, 0, 0, SocketFlags.None, ref endpoint));
-        }
-
-        [Fact]
-        public void ReceiveFrom_NullEndPoint_Throws_ArgumentNull()
-        {
-            EndPoint endpoint = null;
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveFrom(s_buffer, 0, 0, SocketFlags.None, ref endpoint));
-        }
-
-        [Fact]
-        public void ReceiveFrom_AddressFamily_Throws_Argument()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.IPv6Loopback, 1);
-            AssertExtensions.Throws<ArgumentException>("remoteEP", () => GetSocket(AddressFamily.InterNetwork).ReceiveFrom(s_buffer, 0, 0, SocketFlags.None, ref endpoint));
-        }
-
-        [Fact]
-        public void ReceiveFrom_InvalidOffset_Throws_ArgumentOutOfRange()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().ReceiveFrom(s_buffer, -1, s_buffer.Length, SocketFlags.None, ref endpoint));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().ReceiveFrom(s_buffer, s_buffer.Length + 1, s_buffer.Length, SocketFlags.None, ref endpoint));
-        }
-
-        [Fact]
-        public void ReceiveFrom_InvalidSize_Throws_ArgumentOutOfRange()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().ReceiveFrom(s_buffer, 0, -1, SocketFlags.None, ref endpoint));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().ReceiveFrom(s_buffer, 0, s_buffer.Length + 1, SocketFlags.None, ref endpoint));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().ReceiveFrom(s_buffer, s_buffer.Length, 1, SocketFlags.None, ref endpoint));
-        }
-
-        [Fact]
-        public void ReceiveFrom_NotBound_Throws_InvalidOperation()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<InvalidOperationException>(() => GetSocket().ReceiveFrom(s_buffer, 0, 0, SocketFlags.None, ref endpoint));
-        }
-
-        [Fact]
-        public void ReceiveMessageFrom_NullBuffer_Throws_ArgumentNull()
-        {
-            SocketFlags flags = SocketFlags.None;
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-            IPPacketInformation packetInfo;
-
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveMessageFrom(null, 0, 0, ref flags, ref remote, out packetInfo));
-        }
-
-        [Fact]
-        public void ReceiveMessageFrom_NullEndPoint_Throws_ArgumentNull()
-        {
-            SocketFlags flags = SocketFlags.None;
-            EndPoint remote = null;
-            IPPacketInformation packetInfo;
-
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveMessageFrom(s_buffer, 0, 0, ref flags, ref remote, out packetInfo));
-        }
-
-        [Fact]
-        public void ReceiveMessageFrom_AddressFamily_Throws_Argument()
-        {
-            SocketFlags flags = SocketFlags.None;
-            EndPoint remote = new IPEndPoint(IPAddress.IPv6Loopback, 1);
-            IPPacketInformation packetInfo;
-
-            AssertExtensions.Throws<ArgumentException>("remoteEP", () => GetSocket(AddressFamily.InterNetwork).ReceiveMessageFrom(s_buffer, 0, 0, ref flags, ref remote, out packetInfo));
-        }
-
-        [Fact]
-        public void ReceiveMessageFrom_InvalidOffset_Throws_ArgumentOutOfRange()
-        {
-            SocketFlags flags = SocketFlags.None;
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-            IPPacketInformation packetInfo;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().ReceiveMessageFrom(s_buffer, -1, s_buffer.Length, ref flags, ref remote, out packetInfo));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().ReceiveMessageFrom(s_buffer, s_buffer.Length + 1, s_buffer.Length, ref flags, ref remote, out packetInfo));
-        }
-
-        [Fact]
-        public void ReceiveMessageFrom_InvalidSize_Throws_ArgumentOutOfRange()
-        {
-            SocketFlags flags = SocketFlags.None;
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-            IPPacketInformation packetInfo;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().ReceiveMessageFrom(s_buffer, 0, -1, ref flags, ref remote, out packetInfo));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().ReceiveMessageFrom(s_buffer, 0, s_buffer.Length + 1, ref flags, ref remote, out packetInfo));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().ReceiveMessageFrom(s_buffer, s_buffer.Length, 1, ref flags, ref remote, out packetInfo));
-        }
-
-        [Fact]
-        public void ReceiveMessageFrom_NotBound_Throws_InvalidOperation()
-        {
-            SocketFlags flags = SocketFlags.None;
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-            IPPacketInformation packetInfo;
-
-            Assert.Throws<InvalidOperationException>(() => GetSocket().ReceiveMessageFrom(s_buffer, 0, 0, ref flags, ref remote, out packetInfo));
-        }
-
-        [Fact]
         public void SetSocketOption_Object_ObjectNull_Throws_ArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, (object)null));
@@ -454,8 +316,8 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void SetSocketOption_Linger_InvalidLingerTime_Throws_Argument()
         {
-            AssertExtensions.Throws<ArgumentException>("optionValue.LingerTime", () => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, -1)));
-            AssertExtensions.Throws<ArgumentException>("optionValue.LingerTime", () => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, (int)ushort.MaxValue + 1)));
+            AssertExtensions.Throws<ArgumentException>("optionValue", () => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, -1)));
+            AssertExtensions.Throws<ArgumentException>("optionValue", () => GetSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, (int)ushort.MaxValue + 1)));
         }
 
         [Fact]
@@ -506,7 +368,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void AcceptAsync_NullAsyncEventArgs_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().AcceptAsync(null));
+            Assert.Throws<ArgumentNullException>(() => GetSocket().AcceptAsync((SocketAsyncEventArgs)null));
         }
 
         [Fact]
@@ -516,7 +378,7 @@ namespace System.Net.Sockets.Tests
                 BufferList = s_buffers
             };
 
-            AssertExtensions.Throws<ArgumentException>("BufferList", () => GetSocket().AcceptAsync(eventArgs));
+            AssertExtensions.Throws<ArgumentException>("e", () => GetSocket().AcceptAsync(eventArgs));
         }
 
         [Fact]
@@ -538,7 +400,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectAsync_NullAsyncEventArgs_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ConnectAsync(null));
+            Assert.Throws<ArgumentNullException>(() => GetSocket().ConnectAsync((SocketAsyncEventArgs)null));
         }
 
         [Fact]
@@ -598,63 +460,19 @@ namespace System.Net.Sockets.Tests
                 BufferList = s_buffers
             };
 
-            AssertExtensions.Throws<ArgumentException>("BufferList", () => Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, eventArgs));
+            AssertExtensions.Throws<ArgumentException>("e", () => Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, eventArgs));
         }
 
         [Fact]
-        public void ConnectAsync_Static_NullRemoteEndPoint_Throws_ArgumentNull()
+        public void ConnectAsync_Static_NullRemoteEndPoint_Throws_ArgumentException()
         {
-            Assert.Throws<ArgumentNullException>(() => Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, s_eventArgs));
+            Assert.Throws<ArgumentException>("e", () => Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, s_eventArgs));
         }
 
         [Fact]
         public void ReceiveAsync_NullAsyncEventArgs_Throws_ArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveAsync(null));
-        }
-
-        [Fact]
-        public void ReceiveFromAsync_NullAsyncEventArgs_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveFromAsync(null));
-        }
-
-        [Fact]
-        public void ReceiveFromAsync_NullRemoteEndPoint_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveFromAsync(s_eventArgs));
-        }
-
-        [Fact]
-        public void ReceiveFromAsync_AddressFamily_Throws_Argument()
-        {
-            var eventArgs = new SocketAsyncEventArgs {
-                RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, 1)
-            };
-
-            AssertExtensions.Throws<ArgumentException>("RemoteEndPoint", () => GetSocket(AddressFamily.InterNetwork).ReceiveFromAsync(eventArgs));
-        }
-
-        [Fact]
-        public void ReceiveMessageFromAsync_NullAsyncEventArgs_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveMessageFromAsync(null));
-        }
-
-        [Fact]
-        public void ReceiveMessageFromAsync_NullRemoteEndPoint_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveMessageFromAsync(s_eventArgs));
-        }
-
-        [Fact]
-        public void ReceiveMessageFromAsync_AddressFamily_Throws_Argument()
-        {
-            var eventArgs = new SocketAsyncEventArgs {
-                RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, 1)
-            };
-
-            AssertExtensions.Throws<ArgumentException>("RemoteEndPoint", () => GetSocket(AddressFamily.InterNetwork).ReceiveMessageFromAsync(eventArgs));
         }
 
         [Fact]
@@ -670,9 +488,9 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void SendPacketsAsync_NullSendPacketsElements_Throws_ArgumentNull()
+        public void SendPacketsAsync_NullSendPacketsElements_Throws_ArgumentException()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().SendPacketsAsync(s_eventArgs));
+            Assert.Throws<ArgumentException>("e", () => GetSocket().SendPacketsAsync(s_eventArgs));
         }
 
         [Fact]
@@ -683,18 +501,6 @@ namespace System.Net.Sockets.Tests
             };
 
             Assert.Throws<NotSupportedException>(() => GetSocket().SendPacketsAsync(eventArgs));
-        }
-
-        [Fact]
-        public void SendToAsync_NullAsyncEventArgs_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().SendToAsync(null));
-        }
-
-        [Fact]
-        public void SendToAsync_NullRemoteEndPoint_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().SendToAsync(s_eventArgs));
         }
 
         [Theory]
@@ -1025,7 +831,7 @@ namespace System.Net.Sockets.Tests
         public void BeginConnect_EndPoint_AddressFamily_Throws_NotSupported()
         {
             // Unlike other tests that reuse a static Socket instance, this test avoids doing so
-            // to work around a behavior of .NET 4.7.2. See https://github.com/dotnet/corefx/issues/29481
+            // to work around a behavior of .NET 4.7.2. See https://github.com/dotnet/runtime/issues/26062
             // for more details.
 
             using (var s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -1114,7 +920,14 @@ namespace System.Net.Sockets.Tests
         public void BeginConnect_IPAddresses_InvalidPort_Throws_ArgumentOutOfRange(int port)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginConnect(new[] { IPAddress.Loopback }, port, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => { GetSocket().ConnectAsync(new[] { IPAddress.Loopback }, port); });
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(65536)]
+        public async Task ConnectAsync_IPAddresses_InvalidPort_Throws_ArgumentOutOfRange(int port)
+        {
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => GetSocket().ConnectAsync(new[] { IPAddress.Loopback }, port));
         }
 
         [Fact]
@@ -1126,12 +939,16 @@ namespace System.Net.Sockets.Tests
                 socket.Listen(1);
                 Assert.Throws<InvalidOperationException>(() => socket.BeginConnect(new[] { IPAddress.Loopback }, 1, TheAsyncCallback, null));
             }
+        }
 
+        [Fact]
+        public async Task ConnectAsync_IPAddresses_ListeningSocket_Throws_InvalidOperation()
+        {
             using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                 socket.Listen(1);
-                Assert.Throws<InvalidOperationException>(() => { socket.ConnectAsync(new[] { IPAddress.Loopback }, 1); });
+                await Assert.ThrowsAsync<InvalidOperationException>(() => socket.ConnectAsync(new[] { IPAddress.Loopback }, 1));
             }
         }
 
@@ -1203,58 +1020,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void BeginSendTo_NullBuffer_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().BeginSendTo(null, 0, 0, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, 1), TheAsyncCallback, null));
-            Assert.Throws<ArgumentNullException>(() => { GetSocket().SendToAsync(new ArraySegment<byte>(null, 0, 0), SocketFlags.None, new IPEndPoint(IPAddress.Loopback, 1)); });
-        }
-
-        [Fact]
-        public void BeginSendTo_NullEndPoint_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().BeginSendTo(s_buffer, 0, 0, SocketFlags.None, null, TheAsyncCallback, null));
-            Assert.Throws<ArgumentNullException>(() => { GetSocket().SendToAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, null); });
-        }
-
-        [Fact]
-        public void BeginSendTo_InvalidOffset_Throws_ArgumentOutOfRange()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginSendTo(s_buffer, -1, s_buffer.Length, SocketFlags.None, endpoint, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginSendTo(s_buffer, s_buffer.Length + 1, s_buffer.Length, SocketFlags.None, endpoint, TheAsyncCallback, null));
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { GetSocket().SendToAsync(new ArraySegment<byte>(s_buffer, -1, s_buffer.Length), SocketFlags.None, endpoint); });
-            Assert.ThrowsAny<ArgumentException>(() => { GetSocket().SendToAsync(new ArraySegment<byte>(s_buffer, s_buffer.Length + 1, s_buffer.Length), SocketFlags.None, endpoint); });
-        }
-
-        [Fact]
-        public void BeginSendTo_InvalidSize_Throws_ArgumentOutOfRange()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginSendTo(s_buffer, 0, -1, SocketFlags.None, endpoint, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginSendTo(s_buffer, 0, s_buffer.Length + 1, SocketFlags.None, endpoint, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginSendTo(s_buffer, s_buffer.Length, 1, SocketFlags.None, endpoint, TheAsyncCallback, null));
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { GetSocket().SendToAsync(new ArraySegment<byte>(s_buffer, 0, -1), SocketFlags.None, endpoint); });
-            Assert.ThrowsAny<ArgumentException>(() => { GetSocket().SendToAsync(new ArraySegment<byte>(s_buffer, 0, s_buffer.Length + 1), SocketFlags.None, endpoint); });
-            Assert.ThrowsAny<ArgumentException>(() => { GetSocket().SendToAsync(new ArraySegment<byte>(s_buffer, s_buffer.Length, 1), SocketFlags.None, endpoint); });
-        }
-
-        [Fact]
-        public void EndSendTo_NullAsyncResult_Throws_ArgumentNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().EndSendTo(null));
-        }
-
-        [Fact]
-        public void EndSendto_UnrelatedAsyncResult_Throws_Argument()
-        {
-            AssertExtensions.Throws<ArgumentException>("asyncResult", () => GetSocket().EndSendTo(Task.CompletedTask));
-        }
-
-        [Fact]
         public void BeginReceive_Buffer_NullBuffer_Throws_ArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() => GetSocket().BeginReceive(null, 0, 0, SocketFlags.None, TheAsyncCallback, null));
@@ -1301,163 +1066,6 @@ namespace System.Net.Sockets.Tests
         public void EndReceive_NullAsyncResult_Throws_ArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() => GetSocket().EndReceive(null));
-        }
-
-        [Fact]
-        public void BeginReceiveFrom_NullBuffer_Throws_ArgumentNull()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ArgumentNullException>(() => GetSocket().BeginReceiveFrom(null, 0, 0, SocketFlags.None, ref endpoint, TheAsyncCallback, null));
-            Assert.Throws<ArgumentNullException>(() => { GetSocket().ReceiveFromAsync(new ArraySegment<byte>(null, 0, 0), SocketFlags.None, endpoint); });
-        }
-
-        [Fact]
-        public void BeginReceiveFrom_NullEndPoint_Throws_ArgumentNull()
-        {
-            EndPoint endpoint = null;
-            Assert.Throws<ArgumentNullException>(() => GetSocket().BeginReceiveFrom(s_buffer, 0, 0, SocketFlags.None, ref endpoint, TheAsyncCallback, null));
-            Assert.Throws<ArgumentNullException>(() => { GetSocket().ReceiveFromAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, endpoint); });
-        }
-
-        [Fact]
-        public void BeginReceiveFrom_AddressFamily_Throws_Argument()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.IPv6Loopback, 1);
-            AssertExtensions.Throws<ArgumentException>("remoteEP", () => GetSocket(AddressFamily.InterNetwork).BeginReceiveFrom(s_buffer, 0, 0, SocketFlags.None, ref endpoint, TheAsyncCallback, null));
-            AssertExtensions.Throws<ArgumentException>("remoteEP", () => { GetSocket(AddressFamily.InterNetwork).ReceiveFromAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, endpoint); });
-        }
-
-        [Fact]
-        public void BeginReceiveFrom_InvalidOffset_Throws_ArgumentOutOfRange()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceiveFrom(s_buffer, -1, s_buffer.Length, SocketFlags.None, ref endpoint, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceiveFrom(s_buffer, s_buffer.Length + 1, s_buffer.Length, SocketFlags.None, ref endpoint, TheAsyncCallback, null));
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { GetSocket().ReceiveFromAsync(new ArraySegment<byte>(s_buffer, -1, s_buffer.Length), SocketFlags.None, endpoint); });
-            Assert.ThrowsAny<ArgumentException>(() => { GetSocket().ReceiveFromAsync(new ArraySegment<byte>(s_buffer, s_buffer.Length + 1, s_buffer.Length), SocketFlags.None, endpoint); });
-        }
-
-        [Fact]
-        public void BeginReceiveFrom_InvalidSize_Throws_ArgumentOutOfRange()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceiveFrom(s_buffer, 0, -1, SocketFlags.None, ref endpoint, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceiveFrom(s_buffer, 0, s_buffer.Length + 1, SocketFlags.None, ref endpoint, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceiveFrom(s_buffer, s_buffer.Length, 1, SocketFlags.None, ref endpoint, TheAsyncCallback, null));
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { GetSocket().ReceiveFromAsync(new ArraySegment<byte>(s_buffer, 0, -1), SocketFlags.None, endpoint); });
-            Assert.ThrowsAny<ArgumentException>(() => { GetSocket().ReceiveFromAsync(new ArraySegment<byte>(s_buffer, 0, s_buffer.Length + 1), SocketFlags.None, endpoint); });
-            Assert.ThrowsAny<ArgumentException>(() => { GetSocket().ReceiveFromAsync(new ArraySegment<byte>(s_buffer, s_buffer.Length, 1), SocketFlags.None, endpoint); });
-        }
-
-        [Fact]
-        public void BeginReceiveFrom_NotBound_Throws_InvalidOperation()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<InvalidOperationException>(() => GetSocket().BeginReceiveFrom(s_buffer, 0, 0, SocketFlags.None, ref endpoint, TheAsyncCallback, null));
-            Assert.Throws<InvalidOperationException>(() => { GetSocket().ReceiveFromAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, endpoint); });
-        }
-
-        [Fact]
-        public void EndReceiveFrom_NullAsyncResult_Throws_ArgumentNull()
-        {
-            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ArgumentNullException>(() => GetSocket().EndReceiveFrom(null, ref endpoint));
-        }
-
-        [Fact]
-        public void BeginReceiveMessageFrom_NullBuffer_Throws_ArgumentNull()
-        {
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-
-            Assert.Throws<ArgumentNullException>(() => GetSocket().BeginReceiveMessageFrom(null, 0, 0, SocketFlags.None, ref remote, TheAsyncCallback, null));
-            Assert.Throws<ArgumentNullException>(() => { GetSocket().ReceiveMessageFromAsync(new ArraySegment<byte>(null, 0, 0), SocketFlags.None, remote); });
-        }
-
-        [Fact]
-        public void BeginReceiveMessageFrom_NullEndPoint_Throws_ArgumentNull()
-        {
-            EndPoint remote = null;
-
-            Assert.Throws<ArgumentNullException>(() => GetSocket().BeginReceiveMessageFrom(s_buffer, 0, 0, SocketFlags.None, ref remote, TheAsyncCallback, null));
-            Assert.Throws<ArgumentNullException>(() => { GetSocket().ReceiveMessageFromAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, remote); });
-        }
-
-        [Fact]
-        public void BeginReceiveMessageFrom_AddressFamily_Throws_Argument()
-        {
-            EndPoint remote = new IPEndPoint(IPAddress.IPv6Loopback, 1);
-
-            AssertExtensions.Throws<ArgumentException>("remoteEP", () => GetSocket(AddressFamily.InterNetwork).BeginReceiveMessageFrom(s_buffer, 0, 0, SocketFlags.None, ref remote, TheAsyncCallback, null));
-            AssertExtensions.Throws<ArgumentException>("remoteEP", () => { GetSocket(AddressFamily.InterNetwork).ReceiveMessageFromAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, remote); });
-        }
-
-        [Fact]
-        public void BeginReceiveMessageFrom_InvalidOffset_Throws_ArgumentOutOfRange()
-        {
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceiveMessageFrom(s_buffer, -1, s_buffer.Length, SocketFlags.None, ref remote, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceiveMessageFrom(s_buffer, s_buffer.Length + 1, s_buffer.Length, SocketFlags.None, ref remote, TheAsyncCallback, null));
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { GetSocket().ReceiveMessageFromAsync(new ArraySegment<byte>(s_buffer, -1, s_buffer.Length), SocketFlags.None, remote); });
-            Assert.ThrowsAny<ArgumentException>(() => { GetSocket().ReceiveMessageFromAsync(new ArraySegment<byte>(s_buffer, s_buffer.Length + 1, s_buffer.Length), SocketFlags.None, remote); });
-        }
-
-        [Fact]
-        public void BeginReceiveMessageFrom_InvalidSize_Throws_ArgumentOutOfRange()
-        {
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceiveMessageFrom(s_buffer, 0, -1, SocketFlags.None, ref remote, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceiveMessageFrom(s_buffer, 0, s_buffer.Length + 1, SocketFlags.None, ref remote, TheAsyncCallback, null));
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceiveMessageFrom(s_buffer, s_buffer.Length, 1, SocketFlags.None, ref remote, TheAsyncCallback, null));
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => { GetSocket().ReceiveMessageFromAsync(new ArraySegment<byte>(s_buffer, 0, -1), SocketFlags.None, remote); });
-            Assert.ThrowsAny<ArgumentException>(() => { GetSocket().ReceiveMessageFromAsync(new ArraySegment<byte>(s_buffer, 0, s_buffer.Length + 1), SocketFlags.None, remote); });
-            Assert.ThrowsAny<ArgumentException>(() => { GetSocket().ReceiveMessageFromAsync(new ArraySegment<byte>(s_buffer, s_buffer.Length, 1), SocketFlags.None, remote); });
-        }
-
-        [Fact]
-        public void BeginReceiveMessageFrom_NotBound_Throws_InvalidOperation()
-        {
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-
-            Assert.Throws<InvalidOperationException>(() => GetSocket().BeginReceiveMessageFrom(s_buffer, 0, 0, SocketFlags.None, ref remote, TheAsyncCallback, null));
-            Assert.Throws<InvalidOperationException>(() => { GetSocket().ReceiveMessageFromAsync(new ArraySegment<byte>(s_buffer, 0, 0), SocketFlags.None, remote); });
-        }
-
-        [Fact]
-        public void EndReceiveMessageFrom_NullEndPoint_Throws_ArgumentNull()
-        {
-            SocketFlags flags = SocketFlags.None;
-            EndPoint remote = null;
-            IPPacketInformation packetInfo;
-
-            Assert.Throws<ArgumentNullException>(() => GetSocket().EndReceiveMessageFrom(null, ref flags, ref remote, out packetInfo));
-        }
-
-        [Fact]
-        public void EndReceiveMessageFrom_AddressFamily_Throws_Argument()
-        {
-            SocketFlags flags = SocketFlags.None;
-            EndPoint remote = new IPEndPoint(IPAddress.IPv6Loopback, 1);
-            IPPacketInformation packetInfo;
-
-            AssertExtensions.Throws<ArgumentException>("endPoint", () => GetSocket(AddressFamily.InterNetwork).EndReceiveMessageFrom(null, ref flags, ref remote, out packetInfo));
-        }
-
-        [Fact]
-        public void EndReceiveMessageFrom_NullAsyncResult_Throws_ArgumentNull()
-        {
-            SocketFlags flags = SocketFlags.None;
-            EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-            IPPacketInformation packetInfo;
-
-            Assert.Throws<ArgumentNullException>(() => GetSocket().EndReceiveMessageFrom(null, ref flags, ref remote, out packetInfo));
         }
 
         [Fact]

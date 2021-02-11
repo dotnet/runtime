@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ namespace System.IO.Pipes
 {
     public sealed partial class NamedPipeServerStream : PipeStream
     {
-        private SharedServer _instance;
+        private SharedServer? _instance;
         private PipeDirection _direction;
         private PipeOptions _options;
         private int _inBufferSize;
@@ -62,7 +61,7 @@ namespace System.IO.Pipes
 
             // Use and block on AcceptAsync() rather than using Accept() in order to provide
             // behavior more akin to Windows if the Stream is closed while a connection is pending.
-            Socket accepted = _instance.ListeningSocket.AcceptAsync().GetAwaiter().GetResult();
+            Socket accepted = _instance!.ListeningSocket.AcceptAsync().GetAwaiter().GetResult();
             HandleAcceptedSocket(accepted);
         }
 
@@ -79,7 +78,7 @@ namespace System.IO.Pipes
                 WaitForConnectionAsyncCore();
 
             async Task WaitForConnectionAsyncCore() =>
-               HandleAcceptedSocket(await _instance.ListeningSocket.AcceptAsync().ConfigureAwait(false));
+               HandleAcceptedSocket(await _instance!.ListeningSocket.AcceptAsync().ConfigureAwait(false));
         }
 
         private void HandleAcceptedSocket(Socket acceptedSocket)
@@ -124,7 +123,7 @@ namespace System.IO.Pipes
         {
             CheckDisconnectOperations();
             State = PipeState.Disconnected;
-            InternalHandle.Dispose();
+            InternalHandle!.Dispose();
             InitializeHandle(null, false, false);
         }
 
@@ -135,7 +134,7 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
 
-            SafeHandle handle = InternalHandle?.NamedPipeSocketHandle;
+            SafeHandle? handle = InternalHandle?.NamedPipeSocketHandle;
             if (handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
@@ -170,15 +169,11 @@ namespace System.IO.Pipes
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         // This method calls a delegate while impersonating the client.
         public void RunAsClient(PipeStreamImpersonationWorker impersonationWorker)
         {
             CheckWriteOperations();
-            SafeHandle handle = InternalHandle?.NamedPipeSocketHandle;
+            SafeHandle? handle = InternalHandle?.NamedPipeSocketHandle;
             if (handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
@@ -233,7 +228,7 @@ namespace System.IO.Pipes
 
                 lock (s_servers)
                 {
-                    SharedServer server;
+                    SharedServer? server;
                     if (s_servers.TryGetValue(path, out server))
                     {
                         // On Windows, if a subsequent server stream is created for the same pipe and with a different

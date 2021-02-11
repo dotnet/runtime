@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Threading;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Threading;
 
 namespace System.Runtime.Serialization.Formatters.Binary
 {
@@ -16,19 +16,20 @@ namespace System.Runtime.Serialization.Formatters.Binary
     {
         internal int _objectInfoId;
         internal object? _obj;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         internal Type? _objectType;
 
-        internal bool _isSi = false;
-        internal bool _isNamed = false;
-        internal bool _isArray = false;
+        internal bool _isSi;
+        internal bool _isNamed;
+        internal bool _isArray;
 
-        internal SerializationInfo? _si = null;
+        internal SerializationInfo? _si;
         internal SerObjectInfoCache _cache = null!; // Initiated before use
 
-        internal object?[]? _memberData = null;
-        internal ISerializationSurrogate? _serializationSurrogate = null;
+        internal object?[]? _memberData;
+        internal ISerializationSurrogate? _serializationSurrogate;
         internal StreamingContext _context;
-        internal SerObjectInfoInit? _serObjectInfoInit = null;
+        internal SerObjectInfoInit? _serObjectInfoInit;
 
         // Writing and Parsing information
         internal long _objectId;
@@ -66,6 +67,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _binderAssemblyString = null;
         }
 
+        [RequiresUnreferencedCode("It isn't possible to statically get the Type of object")]
         internal static WriteObjectInfo Serialize(object obj, ISurrogateSelector? surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, ObjectWriter objectWriter, SerializationBinder? binder)
         {
             WriteObjectInfo woi = GetObjectInfo(serObjectInfoInit);
@@ -74,6 +76,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Write constructor
+        [RequiresUnreferencedCode("It isn't possible to statically get the Type of object")]
         internal void InitSerialize(object obj, ISurrogateSelector? surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, ObjectWriter objectWriter, SerializationBinder? binder)
         {
             _context = context;
@@ -119,7 +122,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        internal static WriteObjectInfo Serialize(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, SerializationBinder? binder)
+        internal static WriteObjectInfo Serialize(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType,
+            ISurrogateSelector? surrogateSelector,
+            StreamingContext context,
+            SerObjectInfoInit serObjectInfoInit,
+            IFormatterConverter converter,
+            SerializationBinder? binder)
         {
             WriteObjectInfo woi = GetObjectInfo(serObjectInfoInit);
             woi.InitSerialize(objectType, surrogateSelector, context, serObjectInfoInit, converter, binder);
@@ -127,7 +136,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Write Constructor used for array types or null members
-        internal void InitSerialize(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context, SerObjectInfoInit serObjectInfoInit, IFormatterConverter converter, SerializationBinder? binder)
+        internal void InitSerialize(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType,
+            ISurrogateSelector? surrogateSelector,
+            StreamingContext context,
+            SerObjectInfoInit serObjectInfoInit,
+            IFormatterConverter converter,
+            SerializationBinder? binder)
         {
             _objectType = objectType;
             _context = context;
@@ -269,8 +284,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal string GetAssemblyString() => _binderAssemblyString ?? _cache._assemblyString;
 
-        private void InvokeSerializationBinder(SerializationBinder? binder) =>
+        private void InvokeSerializationBinder(SerializationBinder? binder)
+        {
+            BinaryFormatterEventSource.Log.SerializingObject(_objectType!);
             binder?.BindToName(_objectType!, out _binderAssemblyString, out _binderTypeName);
+        }
 
         internal void GetMemberInfo(out string[]? outMemberNames, out Type[]? outMemberTypes, out object?[]? outMemberData)
         {
@@ -311,30 +329,31 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal int _objectInfoId;
         internal static int _readObjectInfoCounter;
 
-        internal Type? _objectType = null;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        internal Type? _objectType;
 
         internal ObjectManager? _objectManager;
 
         internal int _count;
 
-        internal bool _isSi = false;
-        internal bool _isTyped = false;
-        internal bool _isSimpleAssembly = false;
+        internal bool _isSi;
+        internal bool _isTyped;
+        internal bool _isSimpleAssembly;
 
         internal SerObjectInfoCache? _cache;
 
         internal string[]? _wireMemberNames;
         internal Type[]? _wireMemberTypes;
 
-        private int _lastPosition = 0;
+        private int _lastPosition;
 
-        internal ISerializationSurrogate? _serializationSurrogate = null;
+        internal ISerializationSurrogate? _serializationSurrogate;
         internal StreamingContext _context;
 
         // Si Read
         internal List<Type>? _memberTypesList;
-        internal SerObjectInfoInit? _serObjectInfoInit = null;
-        internal IFormatterConverter? _formatterConverter = null;
+        internal SerObjectInfoInit? _serObjectInfoInit;
+        internal IFormatterConverter? _formatterConverter;
 
         internal ReadObjectInfo() { }
 
@@ -345,14 +364,28 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _lastPosition = 0;
         }
 
-        internal static ReadObjectInfo Create(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context, ObjectManager? objectManager, SerObjectInfoInit? serObjectInfoInit, IFormatterConverter? converter, bool bSimpleAssembly)
+        internal static ReadObjectInfo Create(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType,
+            ISurrogateSelector? surrogateSelector,
+            StreamingContext context,
+            ObjectManager? objectManager,
+            SerObjectInfoInit? serObjectInfoInit,
+            IFormatterConverter? converter,
+            bool bSimpleAssembly)
         {
             ReadObjectInfo roi = GetObjectInfo(serObjectInfoInit);
             roi.Init(objectType, surrogateSelector, context, objectManager, serObjectInfoInit, converter, bSimpleAssembly);
             return roi;
         }
 
-        internal void Init(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context, ObjectManager? objectManager, SerObjectInfoInit? serObjectInfoInit, IFormatterConverter? converter, bool bSimpleAssembly)
+        internal void Init(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType,
+            ISurrogateSelector? surrogateSelector,
+            StreamingContext context,
+            ObjectManager? objectManager,
+            SerObjectInfoInit? serObjectInfoInit,
+            IFormatterConverter? converter,
+            bool bSimpleAssembly)
         {
             _objectType = objectType;
             _objectManager = objectManager;
@@ -364,14 +397,32 @@ namespace System.Runtime.Serialization.Formatters.Binary
             InitReadConstructor(objectType, surrogateSelector, context);
         }
 
-        internal static ReadObjectInfo Create(Type? objectType, string[] memberNames, Type[]? memberTypes, ISurrogateSelector? surrogateSelector, StreamingContext context, ObjectManager? objectManager, SerObjectInfoInit? serObjectInfoInit, IFormatterConverter? converter, bool bSimpleAssembly)
+        internal static ReadObjectInfo Create(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? objectType,
+            string[] memberNames,
+            Type[]? memberTypes,
+            ISurrogateSelector? surrogateSelector,
+            StreamingContext context,
+            ObjectManager? objectManager,
+            SerObjectInfoInit? serObjectInfoInit,
+            IFormatterConverter? converter,
+            bool bSimpleAssembly)
         {
             ReadObjectInfo roi = GetObjectInfo(serObjectInfoInit);
             roi.Init(objectType, memberNames, memberTypes, surrogateSelector, context, objectManager, serObjectInfoInit, converter, bSimpleAssembly);
             return roi;
         }
 
-        internal void Init(Type? objectType, string[] memberNames, Type[]? memberTypes, ISurrogateSelector? surrogateSelector, StreamingContext context, ObjectManager? objectManager, SerObjectInfoInit? serObjectInfoInit, IFormatterConverter? converter, bool bSimpleAssembly)
+        internal void Init(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? objectType,
+            string[] memberNames,
+            Type[]? memberTypes,
+            ISurrogateSelector? surrogateSelector,
+            StreamingContext context,
+            ObjectManager? objectManager,
+            SerObjectInfoInit? serObjectInfoInit,
+            IFormatterConverter? converter,
+            bool bSimpleAssembly)
         {
             _objectType = objectType;
             _objectManager = objectManager;
@@ -393,6 +444,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void InitReadConstructor(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context)
         {
+            BinaryFormatterEventSource.Log.DeserializingObject(objectType);
+
             if (objectType.IsArray)
             {
                 InitNoMembers();

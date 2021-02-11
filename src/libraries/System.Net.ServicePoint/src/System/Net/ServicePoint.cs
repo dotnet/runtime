@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
@@ -22,7 +21,7 @@ namespace System.Net
             ConnectionName = address.Scheme;
         }
 
-        public BindIPEndPoint BindIPEndPointDelegate { get; set; }
+        public BindIPEndPoint? BindIPEndPointDelegate { get; set; }
 
         public int ConnectionLeaseTimeout
         {
@@ -92,9 +91,9 @@ namespace System.Net
 
         public int CurrentConnections => 0;
 
-        public X509Certificate Certificate { get; internal set; }
+        public X509Certificate? Certificate { get; internal set; }
 
-        public X509Certificate ClientCertificate { get; internal set; }
+        public X509Certificate? ClientCertificate { get; internal set; }
 
         public bool SupportsPipelining { get; internal set; } = true;
 

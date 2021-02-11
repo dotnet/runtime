@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -145,7 +144,7 @@ namespace System.Linq.Parallel
                         while (source.MoveNext(ref elem, ref keyUnused))
                         {
                             if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                                CancellationState.ThrowIfCanceled(_cancellationToken);
+                                _cancellationToken.ThrowIfCancellationRequested();;
 
                             if (elem == null) continue;
                             if (currentElement == null || elem < currentElement || double.IsNaN(elem.GetValueOrDefault()))
@@ -160,7 +159,7 @@ namespace System.Linq.Parallel
                         while (source.MoveNext(ref elem, ref keyUnused))
                         {
                             if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                                CancellationState.ThrowIfCanceled(_cancellationToken);
+                                _cancellationToken.ThrowIfCancellationRequested();;
 
                             if (elem == null) continue;
                             if (currentElement == null || elem > currentElement || double.IsNaN(currentElement.GetValueOrDefault()))

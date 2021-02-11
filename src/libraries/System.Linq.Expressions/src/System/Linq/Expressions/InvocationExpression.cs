@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -54,9 +53,9 @@ namespace System.Linq.Expressions
         /// <param name="expression">The <see cref="Expression"/> property of the result.</param>
         /// <param name="arguments">The <see cref="Arguments"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public InvocationExpression Update(Expression expression, IEnumerable<Expression> arguments)
+        public InvocationExpression Update(Expression expression, IEnumerable<Expression>? arguments)
         {
-            if (expression == Expression & arguments != null)
+            if (expression == Expression && arguments != null)
             {
                 if (ExpressionUtils.SameElements(ref arguments, Arguments))
                 {
@@ -67,7 +66,7 @@ namespace System.Linq.Expressions
             return Invoke(expression, arguments);
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             throw ContractUtils.Unreachable;
@@ -78,7 +77,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="index">The index of the argument expression to get.</param>
         /// <returns>The expression representing the argument at the specified <paramref name="index"/>.</returns>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual Expression GetArgument(int index)
         {
             throw ContractUtils.Unreachable;
@@ -87,7 +86,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the number of argument expressions of the node.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public virtual int ArgumentCount
         {
             get
@@ -104,13 +103,13 @@ namespace System.Linq.Expressions
             return visitor.VisitInvocation(this);
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
-        internal virtual InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
+        internal virtual InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
             throw ContractUtils.Unreachable;
         }
 
-        internal LambdaExpression LambdaOperand
+        internal LambdaExpression? LambdaOperand
         {
             get
             {
@@ -142,7 +141,7 @@ namespace System.Linq.Expressions
 
         public override int ArgumentCount => _arguments.Count;
 
-        internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
+        internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
             Debug.Assert(lambda != null);
             Debug.Assert(arguments == null || arguments.Length == _arguments.Count);
@@ -170,7 +169,7 @@ namespace System.Linq.Expressions
 
         public override int ArgumentCount => 0;
 
-        internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
+        internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
             Debug.Assert(lambda != null);
             Debug.Assert(arguments == null || arguments.Length == 0);
@@ -203,7 +202,7 @@ namespace System.Linq.Expressions
 
         public override int ArgumentCount => 1;
 
-        internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
+        internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
             Debug.Assert(lambda != null);
             Debug.Assert(arguments == null || arguments.Length == 1);
@@ -243,7 +242,7 @@ namespace System.Linq.Expressions
 
         public override int ArgumentCount => 2;
 
-        internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
+        internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
             Debug.Assert(lambda != null);
             Debug.Assert(arguments == null || arguments.Length == 2);
@@ -286,7 +285,7 @@ namespace System.Linq.Expressions
 
         public override int ArgumentCount => 3;
 
-        internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
+        internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
             Debug.Assert(lambda != null);
             Debug.Assert(arguments == null || arguments.Length == 3);
@@ -332,7 +331,7 @@ namespace System.Linq.Expressions
 
         public override int ArgumentCount => 4;
 
-        internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
+        internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
             Debug.Assert(lambda != null);
             Debug.Assert(arguments == null || arguments.Length == 4);
@@ -381,7 +380,7 @@ namespace System.Linq.Expressions
 
         public override int ArgumentCount => 5;
 
-        internal override InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
+        internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
             Debug.Assert(lambda != null);
             Debug.Assert(arguments == null || arguments.Length == 5);
@@ -682,9 +681,9 @@ namespace System.Linq.Expressions
         /// <paramref name="expression"/>.Type does not represent a delegate type or an <see cref="Expression{TDelegate}"/>.-or-The <see cref="Expression.Type"/> property of an element of <paramref name="arguments"/> is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression"/>.</exception>
         /// <exception cref="InvalidOperationException">
         /// <paramref name="arguments"/> does not contain the same number of elements as the list of parameters for the delegate represented by <paramref name="expression"/>.</exception>
-        public static InvocationExpression Invoke(Expression expression, params Expression[] arguments)
+        public static InvocationExpression Invoke(Expression expression, params Expression[]? arguments)
         {
-            return Invoke(expression, (IEnumerable<Expression>)arguments);
+            return Invoke(expression, (IEnumerable<Expression>?)arguments);
         }
 
         /// <summary>
@@ -709,7 +708,7 @@ namespace System.Linq.Expressions
         /// <paramref name="expression"/>.Type does not represent a delegate type or an <see cref="Expression{TDelegate}"/>.-or-The <see cref="Expression.Type"/> property of an element of <paramref name="arguments"/> is not assignable to the type of the corresponding parameter of the delegate represented by <paramref name="expression"/>.</exception>
         /// <exception cref="InvalidOperationException">
         /// <paramref name="arguments"/> does not contain the same number of elements as the list of parameters for the delegate represented by <paramref name="expression"/>.</exception>
-        public static InvocationExpression Invoke(Expression expression, IEnumerable<Expression> arguments)
+        public static InvocationExpression Invoke(Expression expression, IEnumerable<Expression>? arguments)
         {
             IReadOnlyList<Expression> argumentList = arguments as IReadOnlyList<Expression> ?? arguments.ToReadOnly();
 
@@ -746,7 +745,7 @@ namespace System.Linq.Expressions
             Type delegateType = expression.Type;
             if (!expression.Type.IsSubclassOf(typeof(MulticastDelegate)))
             {
-                Type exprType = TypeUtils.FindGenericType(typeof(Expression<>), expression.Type);
+                Type? exprType = TypeUtils.FindGenericType(typeof(Expression<>), expression.Type);
                 if (exprType == null)
                 {
                     throw Error.ExpressionTypeNotInvocable(expression.Type, nameof(expression));

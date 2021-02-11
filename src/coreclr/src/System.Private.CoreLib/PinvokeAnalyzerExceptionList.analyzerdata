@@ -1,3 +1,0 @@
-<!-- Not a bug, these APIs are in the allowed list but under kernel32 and we need it under normaliz.dll -->
-normaliz.dll!IsNormalizedString
-normaliz.dll!NormalizeString

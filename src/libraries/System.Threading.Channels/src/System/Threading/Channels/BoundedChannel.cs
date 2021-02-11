@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +16,7 @@ namespace System.Threading.Channels
         /// <summary>The mode used when the channel hits its bound.</summary>
         private readonly BoundedChannelFullMode _mode;
         /// <summary>Task signaled when the channel has completed.</summary>
-        private readonly TaskCompletionSource<VoidResult> _completion;
+        private readonly TaskCompletionSource _completion;
         /// <summary>The maximum capacity of the channel.</summary>
         private readonly int _bufferedCapacity;
         /// <summary>Items currently stored in the channel waiting to be read.</summary>
@@ -47,7 +46,7 @@ namespace System.Threading.Channels
             _bufferedCapacity = bufferedCapacity;
             _mode = mode;
             _runContinuationsAsynchronously = runContinuationsAsynchronously;
-            _completion = new TaskCompletionSource<VoidResult>(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
+            _completion = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
             Reader = new BoundedChannelReader(this);
             Writer = new BoundedChannelWriter(this);
         }
@@ -106,7 +105,7 @@ namespace System.Threading.Channels
                     }
                 }
 
-                item = default!;
+                item = default;
                 return false;
             }
 
@@ -146,8 +145,15 @@ namespace System.Threading.Channels
                         }
                     }
 
-                    // Otherwise, queue the reader.
-                    var reader = new AsyncOperation<T>(parent._runContinuationsAsynchronously, cancellationToken);
+                    // Otherwise, queue a reader.  Note that in addition to checking whether synchronous continuations were requested,
+                    // we also check whether the supplied cancellation token can be canceled.  The writer calls UnregisterCancellation
+                    // while holding the lock, and if a callback needs to be unregistered and is currently running, it needs to wait
+                    // for that callback to complete so that the subsequent code knows it won't be contending with another thread
+                    // trying to complete the operation.  However, if we allowed a synchronous continuation from this operation, that
+                    // cancellation callback could end up running arbitrary code, including code that called back into the reader or
+                    // writer and tried to take the same lock held by the thread running UnregisterCancellation... deadlock.  As such,
+                    // we only allow synchronous continuations here if both a) the caller requested it and the token isn't cancelable.
+                    var reader = new AsyncOperation<T>(parent._runContinuationsAsynchronously | cancellationToken.CanBeCanceled, cancellationToken);
                     parent._blockedReaders.EnqueueTail(reader);
                     return reader.ValueTaskOfT;
                 }
@@ -193,8 +199,15 @@ namespace System.Threading.Channels
                         }
                     }
 
-                    // Otherwise, queue a reader.
-                    var waiter = new AsyncOperation<bool>(parent._runContinuationsAsynchronously, cancellationToken);
+                    // Otherwise, queue a reader.  Note that in addition to checking whether synchronous continuations were requested,
+                    // we also check whether the supplied cancellation token can be canceled.  The writer calls UnregisterCancellation
+                    // while holding the lock, and if a callback needs to be unregistered and is currently running, it needs to wait
+                    // for that callback to complete so that the subsequent code knows it won't be contending with another thread
+                    // trying to complete the operation.  However, if we allowed a synchronous continuation from this operation, that
+                    // cancellation callback could end up running arbitrary code, including code that called back into the reader or
+                    // writer and tried to take the same lock held by the thread running UnregisterCancellation... deadlock.  As such,
+                    // we only allow synchronous continuations here if both a) the caller requested it and the token isn't cancelable.
+                    var waiter = new AsyncOperation<bool>(parent._runContinuationsAsynchronously | cancellationToken.CanBeCanceled, cancellationToken);
                     ChannelUtilities.QueueWaiter(ref _parent._waitingReadersTail, waiter);
                     return waiter.ValueTaskOfT;
                 }
@@ -342,8 +355,7 @@ namespace System.Threading.Channels
                         while (!parent._blockedReaders.IsEmpty)
                         {
                             AsyncOperation<T> r = parent._blockedReaders.DequeueHead();
-                            r.UnregisterCancellation(); // ensure that once we grab it, we own its completion
-                            if (!r.IsCompleted)
+                            if (r.UnregisterCancellation()) // ensure that once we grab it, we own its completion
                             {
                                 blockedReader = r;
                                 break;
@@ -503,8 +515,7 @@ namespace System.Threading.Channels
                         while (!parent._blockedReaders.IsEmpty)
                         {
                             AsyncOperation<T> r = parent._blockedReaders.DequeueHead();
-                            r.UnregisterCancellation(); // ensure that once we grab it, we own its completion
-                            if (!r.IsCompleted)
+                            if (r.UnregisterCancellation()) // ensure that once we grab it, we own its completion
                             {
                                 blockedReader = r;
                                 break;

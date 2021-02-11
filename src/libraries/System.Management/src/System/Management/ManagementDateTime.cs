@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 
@@ -195,7 +194,7 @@ namespace System.Management
             }
 
 
-            // Construct a new System.DateTime object, netfx uses date kind unspecified so use the same
+            // Construct a new System.DateTime object, .NET Framework uses date kind unspecified so use the same
             var datetime = new DateTime(year, month, day, hour, minute, second, 0, DateTimeKind.Unspecified);
             // Then add the ticks calculated from the microseconds
             datetime = datetime.AddTicks(ticks);
@@ -236,7 +235,7 @@ namespace System.Management
         {
             string UtcString = string.Empty;
             // Fill up the UTC field in the DMTF date with the current
-            // zones UTC value. If date kind is UTC use offset of zero to match netfx (i.e.: TimeZone.GetUtcOffset)
+            // zones UTC value. If date kind is UTC use offset of zero to match .NET Framework (i.e.: TimeZone.GetUtcOffset)
             TimeSpan tickOffset = date.Kind == DateTimeKind.Utc ? TimeSpan.Zero : TimeZoneInfo.Local.GetUtcOffset(date);
             long OffsetMins = (tickOffset.Ticks / System.TimeSpan.TicksPerMinute);
             IFormatProvider frmInt32 = (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int));
@@ -415,7 +414,7 @@ namespace System.Management
             // and also negative timespan cannot be represented in DMTF
             if (timespan.Days > MAXDATE_INTIMESPAN || timespan < TimeSpan.Zero)
             {
-                throw new System.ArgumentOutOfRangeException();
+                throw new System.ArgumentOutOfRangeException(nameof(timespan));
             }
 
             dmtftimespan = (dmtftimespan + timespan.Hours.ToString(frmInt32).PadLeft(2, '0'));

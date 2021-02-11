@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using Test.Cryptography;
@@ -78,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("SHA384", true)]
         [InlineData("SHA512", false)]
         [InlineData("SHA512", true)]
-        public static void TestThumbprint(string hashAlgName, bool viaSpan)
+        public static void TestThumbprint_ByHashAlgorithm(string hashAlgName, bool viaSpan)
         {
             string expectedThumbprintHex;
 
@@ -212,7 +211,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2910, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/15073", TestPlatforms.AnyUnix)]
         public static void TestLoadSignedFile()
         {
             // X509Certificate2 can also extract the certificate from a signed file.

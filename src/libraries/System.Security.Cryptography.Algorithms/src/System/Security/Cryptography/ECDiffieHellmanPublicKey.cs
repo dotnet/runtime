@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Security.Cryptography
 {
@@ -23,7 +22,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(keyBlob));
             }
 
-            _keyBlob = keyBlob.Clone() as byte[];
+            _keyBlob = (byte[])keyBlob.Clone();
         }
 
         public void Dispose()
@@ -35,7 +34,7 @@ namespace System.Security.Cryptography
 
         public virtual byte[] ToByteArray()
         {
-            return _keyBlob.Clone() as byte[];
+            return (byte[])_keyBlob.Clone();
         }
 
         // This method must be implemented by derived classes. In order to conform to the contract, it cannot be abstract.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -20,7 +19,7 @@ namespace System.Security.Cryptography
     {
         public sealed partial class RSACng : RSA
         {
-            private SafeNCryptKeyHandle _keyHandle;
+            private SafeNCryptKeyHandle? _keyHandle;
             private int _lastKeySize;
             private bool _disposed;
 
@@ -51,7 +50,7 @@ namespace System.Security.Cryptography
                     _lastKeySize = keySize;
                 }
 
-                return new DuplicateSafeNCryptKeyHandle(_keyHandle);
+                return new DuplicateSafeNCryptKeyHandle(_keyHandle!);
             }
 
             private byte[] ExportKeyBlob(bool includePrivateParameters)
@@ -142,7 +141,7 @@ namespace System.Security.Cryptography
                 if (disposing)
                 {
                     _keyHandle?.Dispose();
-                    _keyHandle = null;
+                    _keyHandle = null!;
                     _disposed = true;
                 }
 

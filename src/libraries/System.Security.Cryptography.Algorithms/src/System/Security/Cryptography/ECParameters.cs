@@ -1,9 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
@@ -11,6 +11,7 @@ namespace System.Security.Cryptography
     /// <summary>
     /// Represents the public and private key of the specified elliptic curve.
     /// </summary>
+    [UnsupportedOSPlatform("browser")]
     public struct ECParameters
     {
         /// <summary>
@@ -21,7 +22,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Private Key. Not always present.
         /// </summary>
-        public byte[] D;
+        public byte[]? D;
 
         /// <summary>
         /// The Curve.
@@ -36,25 +37,24 @@ namespace System.Security.Cryptography
         /// </exception>
         public void Validate()
         {
-            bool hasErrors = false;
+            bool hasErrors = true;
 
-            if (Q.X == null ||
-                Q.Y == null ||
-                Q.X.Length != Q.Y.Length)
-            {
-                hasErrors = true;
-            }
+            if (D != null && Q.Y is null && Q.X is null)
+                hasErrors = false;
+            if (Q.Y != null && Q.X != null && Q.Y.Length == Q.X.Length)
+                hasErrors = false;
 
             if (!hasErrors)
             {
                 if (Curve.IsExplicit)
                 {
                     // Explicit curves require D length to match Curve.Order
-                    hasErrors = (D != null && (D.Length != Curve.Order.Length));
+                    hasErrors = (D != null && (D.Length != Curve.Order!.Length));
                 }
-                else if (Curve.IsNamed)
+                else if (Curve.IsNamed && Q.X != null)
                 {
-                    // Named curves require D length to match Q.X and Q.Y
+                    // Named curves require D length to match Q.X and Q.Y if Q
+                    // is present.
                     hasErrors = (D != null && (D.Length != Q.X.Length));
                 }
             }

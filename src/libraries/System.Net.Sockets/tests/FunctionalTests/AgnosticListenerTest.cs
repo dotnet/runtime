@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Test.Common;
 using System.Threading.Tasks;
@@ -19,7 +18,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(Capability.IPv4Support() && Capability.IPv6Support());
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Create_Success()
         {
@@ -31,7 +30,7 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task ConnectWithV4_Success()
         {
@@ -48,7 +47,7 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task ConnectWithV6_Success()
         {
@@ -65,7 +64,7 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task ConnectWithV4AndV6_Success()
         {
@@ -117,7 +116,7 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms do not support TcpListener.AllowNatTraversal
         [InlineData(true, IPProtectionLevel.Unrestricted)]
@@ -129,7 +128,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal((int)resultLevel, (int)l.Server.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.IPProtectionLevel));
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix platforms do not support TcpListener.AllowNatTraversal
         [InlineData(true)]

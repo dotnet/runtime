@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.Asn1;
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
 
@@ -26,7 +24,7 @@ namespace System.Security.Cryptography
         private const int BitsPerByte = 8;
 
         // 65537 (0x10001) in big-endian form
-        private static readonly byte[] s_defaultExponent = { 0x01, 0x00, 0x01 };
+        private static ReadOnlySpan<byte> DefaultExponent => new byte[] { 0x01, 0x00, 0x01 };
 
         private Lazy<SafeRsaHandle> _key;
 
@@ -88,11 +86,11 @@ namespace System.Security.Cryptography
             if (padding == null)
                 throw new ArgumentNullException(nameof(padding));
 
-            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor oaepProcessor);
+            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
             SafeRsaHandle key = GetKey();
 
             int rsaSize = Interop.Crypto.RsaSize(key);
-            byte[] buf = null;
+            byte[]? buf = null;
             Span<byte> destination = default;
 
             try
@@ -111,7 +109,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(destination);
-                CryptoPool.Return(buf, clearSize: 0);
+                CryptoPool.Return(buf!, clearSize: 0);
             }
         }
 
@@ -126,7 +124,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(padding));
             }
 
-            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor oaepProcessor);
+            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
             SafeRsaHandle key = GetKey();
 
             int keySizeBytes = Interop.Crypto.RsaSize(key);
@@ -136,7 +134,7 @@ namespace System.Security.Cryptography
             if (destination.Length < keySizeBytes)
             {
                 Span<byte> tmp = stackalloc byte[0];
-                byte[] rent = null;
+                byte[]? rent = null;
 
                 // RSA up through 4096 stackalloc
                 if (keySizeBytes <= 512)
@@ -185,7 +183,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> data,
             Span<byte> destination,
             Interop.Crypto.RsaPadding rsaPadding,
-            RsaPaddingProcessor rsaPaddingProcessor,
+            RsaPaddingProcessor? rsaPaddingProcessor,
             out int bytesWritten)
         {
             // If rsaPadding is PKCS1 or OAEP-SHA1 then no depadding method should be present.
@@ -211,7 +209,7 @@ namespace System.Security.Cryptography
             }
 
             Span<byte> decryptBuf = destination;
-            byte[] paddingBuf = null;
+            byte[]? paddingBuf = null;
 
             if (rsaPaddingProcessor != null)
             {
@@ -259,7 +257,7 @@ namespace System.Security.Cryptography
             if (padding == null)
                 throw new ArgumentNullException(nameof(padding));
 
-            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor oaepProcessor);
+            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
             SafeRsaHandle key = GetKey();
 
             byte[] buf = new byte[Interop.Crypto.RsaSize(key)];
@@ -288,7 +286,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(padding));
             }
 
-            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor oaepProcessor);
+            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
             SafeRsaHandle key = GetKey();
 
             return TryEncrypt(key, data, destination, rsaPadding, oaepProcessor, out bytesWritten);
@@ -299,7 +297,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> data,
             Span<byte> destination,
             Interop.Crypto.RsaPadding rsaPadding,
-            RsaPaddingProcessor rsaPaddingProcessor,
+            RsaPaddingProcessor? rsaPaddingProcessor,
             out int bytesWritten)
         {
             int rsaSize = Interop.Crypto.RsaSize(key);
@@ -346,7 +344,7 @@ namespace System.Security.Cryptography
 
         private static Interop.Crypto.RsaPadding GetInteropPadding(
             RSAEncryptionPadding padding,
-            out RsaPaddingProcessor rsaPaddingProcessor)
+            out RsaPaddingProcessor? rsaPaddingProcessor)
         {
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
@@ -437,31 +435,38 @@ namespace System.Security.Cryptography
             ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
         }
 
-        public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
+        public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
             ThrowIfDisposed();
 
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            int read;
+
+            try
             {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
-                    ReadOnlyMemory<byte> firstElement = reader.PeekEncodedValue();
-
-                    SafeRsaHandle key = Interop.Crypto.DecodeRsaPublicKey(firstElement.Span);
-
-                    Interop.Crypto.CheckValidOpenSslHandle(key);
-
-                    FreeKey();
-                    _key = new Lazy<SafeRsaHandle>(key);
-
-                    // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-                    // with the already loaded key.
-                    ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
-
-                    bytesRead = firstElement.Length;
-                }
+                AsnDecoder.ReadEncodedValue(
+                    source,
+                    AsnEncodingRules.BER,
+                    out _,
+                    out _,
+                    out read);
             }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            SafeRsaHandle key = Interop.Crypto.DecodeRsaPublicKey(source.Slice(0, read));
+
+            Interop.Crypto.CheckValidOpenSslHandle(key);
+
+            FreeKey();
+            _key = new Lazy<SafeRsaHandle>(key);
+
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
+
+            bytesRead = read;
         }
 
         public override void ImportEncryptedPkcs8PrivateKey(
@@ -487,7 +492,7 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 FreeKey();
-                _key = null;
+                _key = null!;
             }
 
             base.Dispose(disposing);
@@ -592,7 +597,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                using (SafeBignumHandle exponent = Interop.Crypto.CreateBignum(s_defaultExponent))
+                using (SafeBignumHandle exponent = Interop.Crypto.CreateBignum(DefaultExponent))
                 {
                     // The documentation for RSA_generate_key_ex does not say that it returns only
                     // 0 or 1, so the call marshals it back as a full Int32 and checks for a value
@@ -641,7 +646,7 @@ namespace System.Security.Cryptography
                 hashAlgorithm, padding,
                 true,
                 out int bytesWritten,
-                out byte[] signature))
+                out byte[]? signature))
             {
                 Debug.Fail("TrySignHash should not return false in allocation mode");
                 throw new CryptographicException();
@@ -674,7 +679,7 @@ namespace System.Security.Cryptography
                 padding,
                 false,
                 out bytesWritten,
-                out byte[] alloced);
+                out byte[]? alloced);
 
             Debug.Assert(alloced == null);
             return ret;
@@ -687,7 +692,7 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding,
             bool allocateSignature,
             out int bytesWritten,
-            out byte[] signature)
+            out byte[]? signature)
         {
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
             Debug.Assert(padding != null);
@@ -851,7 +856,7 @@ namespace System.Security.Cryptography
         {
             // All of the current HashAlgorithmName values correspond to the SN values in OpenSSL 0.9.8.
             // If there's ever a new one that doesn't, translate it here.
-            string sn = hashAlgorithmName.Name;
+            string sn = hashAlgorithmName.Name!;
 
             int nid = Interop.Crypto.ObjSn2Nid(sn);
 

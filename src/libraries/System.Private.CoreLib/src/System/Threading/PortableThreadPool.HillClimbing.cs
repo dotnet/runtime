@@ -1,9 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Globalization;
+using System.Diagnostics.Tracing;
 
 namespace System.Threading
 {
@@ -14,32 +13,16 @@ namespace System.Threading
         /// </summary>
         private partial class HillClimbing
         {
-            private static readonly Lazy<HillClimbing> s_threadPoolHillClimber = new Lazy<HillClimbing>(CreateHillClimber, true);
-            public static HillClimbing ThreadPoolHillClimber => s_threadPoolHillClimber.Value;
-
+            private const int LogCapacity = 200;
             private const int DefaultSampleIntervalMsLow = 10;
             private const int DefaultSampleIntervalMsHigh = 200;
 
-            private static HillClimbing CreateHillClimber()
-            {
-                // Default values pulled from CoreCLR
-                return new HillClimbing(wavePeriod: AppContextConfigHelper.GetInt32Config("HillClimbing_WavePeriod", 4, false),
-                    maxWaveMagnitude: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxWaveMagnitude", 20, false),
-                    waveMagnitudeMultiplier: AppContextConfigHelper.GetInt32Config("HillClimbing_WaveMagnitudeMultiplier", 100, false) / 100.0,
-                    waveHistorySize: AppContextConfigHelper.GetInt32Config("HillClimbing_WaveHistorySize", 8, false),
-                    targetThroughputRatio: AppContextConfigHelper.GetInt32Config("HillClimbing_Bias", 15, false) / 100.0,
-                    targetSignalToNoiseRatio: AppContextConfigHelper.GetInt32Config("HillClimbing_TargetSignalToNoiseRatio", 300, false) / 100.0,
-                    maxChangePerSecond: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxChangePerSecond", 4, false),
-                    maxChangePerSample: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxChangePerSample", 20, false),
-                    sampleIntervalMsLow: AppContextConfigHelper.GetInt32Config("HillClimbing_SampleIntervalLow", DefaultSampleIntervalMsLow, false),
-                    sampleIntervalMsHigh: AppContextConfigHelper.GetInt32Config("HillClimbing_SampleIntervalHigh", DefaultSampleIntervalMsHigh, false),
-                    errorSmoothingFactor: AppContextConfigHelper.GetInt32Config("HillClimbing_ErrorSmoothingFactor", 1, false) / 100.0,
-                    gainExponent: AppContextConfigHelper.GetInt32Config("HillClimbing_GainExponent", 200, false) / 100.0,
-                    maxSampleError: AppContextConfigHelper.GetInt32Config("HillClimbing_MaxSampleErrorPercent", 15, false) / 100.0
-                );
-            }
-            private const int LogCapacity = 200;
+            public static readonly bool IsDisabled = AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.HillClimbing.Disable", false);
 
+            // SOS's ThreadPool command depends on this name
+            public static readonly HillClimbing ThreadPoolHillClimber = new HillClimbing();
+
+            // SOS's ThreadPool command depends on the enum values
             public enum StateOrTransition
             {
                 Warmup,
@@ -48,17 +31,18 @@ namespace System.Threading
                 ClimbingMove,
                 ChangePoint,
                 Stabilizing,
-                Starvation, // Used as a message from the thread pool for a forced transition
-                ThreadTimedOut, // Usage as a message from the thread pool for a forced transition
+                Starvation,
+                ThreadTimedOut,
             }
 
+            // SOS's ThreadPool command depends on the names of all fields
             private struct LogEntry
             {
                 public int tickCount;
                 public StateOrTransition stateOrTransition;
                 public int newControlSetting;
                 public int lastHistoryCount;
-                public double lastHistoryMean;
+                public float lastHistoryMean;
             }
 
             private readonly int _wavePeriod;
@@ -83,28 +67,28 @@ namespace System.Threading
             private double _completionsSinceLastChange;
             private int _accumulatedCompletionCount;
             private double _accumulatedSampleDurationSeconds;
-            private double[] _samples;
-            private double[] _threadCounts;
+            private readonly double[] _samples;
+            private readonly double[] _threadCounts;
             private int _currentSampleMs;
 
-            private Random _randomIntervalGenerator = new Random();
+            private readonly Random _randomIntervalGenerator = new Random();
 
-            private LogEntry[] _log = new LogEntry[LogCapacity];
-            private int _logStart = 0;
-            private int _logSize = 0;
+            private readonly LogEntry[] _log = new LogEntry[LogCapacity]; // SOS's ThreadPool command depends on this name
+            private int _logStart; // SOS's ThreadPool command depends on this name
+            private int _logSize; // SOS's ThreadPool command depends on this name
 
-            public HillClimbing(int wavePeriod, int maxWaveMagnitude, double waveMagnitudeMultiplier, int waveHistorySize, double targetThroughputRatio,
-                double targetSignalToNoiseRatio, double maxChangePerSecond, double maxChangePerSample, int sampleIntervalMsLow, int sampleIntervalMsHigh,
-                double errorSmoothingFactor, double gainExponent, double maxSampleError)
+            public HillClimbing()
             {
-                _wavePeriod = wavePeriod;
-                _maxThreadWaveMagnitude = maxWaveMagnitude;
-                _threadMagnitudeMultiplier = waveMagnitudeMultiplier;
-                _samplesToMeasure = wavePeriod * waveHistorySize;
-                _targetThroughputRatio = targetThroughputRatio;
-                _targetSignalToNoiseRatio = targetSignalToNoiseRatio;
-                _maxChangePerSecond = maxChangePerSecond;
-                _maxChangePerSample = maxChangePerSample;
+                _wavePeriod = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.WavePeriod", 4, false);
+                _maxThreadWaveMagnitude = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.MaxWaveMagnitude", 20, false);
+                _threadMagnitudeMultiplier = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.WaveMagnitudeMultiplier", 100, false) / 100.0;
+                _samplesToMeasure = _wavePeriod * AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.WaveHistorySize", 8, false);
+                _targetThroughputRatio = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.Bias", 15, false) / 100.0;
+                _targetSignalToNoiseRatio = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.TargetSignalToNoiseRatio", 300, false) / 100.0;
+                _maxChangePerSecond = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.MaxChangePerSecond", 4, false);
+                _maxChangePerSample = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.MaxChangePerSample", 20, false);
+                int sampleIntervalMsLow = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.SampleIntervalLow", DefaultSampleIntervalMsLow, false);
+                int sampleIntervalMsHigh = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.SampleIntervalHigh", DefaultSampleIntervalMsHigh, false);
                 if (sampleIntervalMsLow <= sampleIntervalMsHigh)
                 {
                     _sampleIntervalMsLow = sampleIntervalMsLow;
@@ -115,9 +99,9 @@ namespace System.Threading
                     _sampleIntervalMsLow = DefaultSampleIntervalMsLow;
                     _sampleIntervalMsHigh = DefaultSampleIntervalMsHigh;
                 }
-                _throughputErrorSmoothingFactor = errorSmoothingFactor;
-                _gainExponent = gainExponent;
-                _maxSampleError = maxSampleError;
+                _throughputErrorSmoothingFactor = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.ErrorSmoothingFactor", 1, false) / 100.0;
+                _gainExponent = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.GainExponent", 200, false) / 100.0;
+                _maxSampleError = AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.HillClimbing.MaxSampleErrorPercent", 15, false) / 100.0;
 
                 _samples = new double[_samplesToMeasure];
                 _threadCounts = new double[_samplesToMeasure];
@@ -186,8 +170,10 @@ namespace System.Threading
                 // Add the current thread count and throughput sample to our history
                 //
                 double throughput = numCompletions / sampleDurationSeconds;
-
-                PortableThreadPoolEventSource.Log.WorkerThreadAdjustmentSample(throughput);
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                {
+                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadAdjustmentSample(throughput);
+                }
 
                 int sampleIndex = (int)(_totalSamples % _samplesToMeasure);
                 _samples[sampleIndex] = throughput;
@@ -197,10 +183,10 @@ namespace System.Threading
                 //
                 // Set up defaults for our metrics
                 //
-                Complex threadWaveComponent = default(Complex);
-                Complex throughputWaveComponent = default(Complex);
+                Complex threadWaveComponent = default;
+                Complex throughputWaveComponent = default;
                 double throughputErrorEstimate = 0;
-                Complex ratio = default(Complex);
+                Complex ratio = default;
                 double confidence = 0;
 
                 StateOrTransition state = StateOrTransition.Warmup;
@@ -295,7 +281,7 @@ namespace System.Threading
                 // is exactly in phase with the thread signal, this will be the same as taking the magnitude of
                 // the complex move and moving that far up.  If they're 180 degrees out of phase, we'll move
                 // backward (because this indicates that our changes are having the opposite of the intended effect).
-                // If they're 90 degrees out of phase, we won't move at all, because we can't tell wether we're
+                // If they're 90 degrees out of phase, we won't move at all, because we can't tell whether we're
                 // having a negative or positive effect on throughput.
                 //
                 double move = Math.Min(1.0, Math.Max(-1.0, ratio.Real));
@@ -317,7 +303,8 @@ namespace System.Threading
                 //
                 // If the result was positive, and CPU is > 95%, refuse the move.
                 //
-                if (move > 0.0 && ThreadPoolInstance._cpuUtilization > CpuUtilizationHigh)
+                PortableThreadPool threadPoolInstance = ThreadPoolInstance;
+                if (move > 0.0 && threadPoolInstance._cpuUtilization > CpuUtilizationHigh)
                     move = 0.0;
 
                 //
@@ -336,8 +323,8 @@ namespace System.Threading
                 //
                 // Make sure our control setting is within the ThreadPool's limits
                 //
-                int maxThreads = ThreadPoolInstance._maxThreads;
-                int minThreads = ThreadPoolInstance._minThreads;
+                int maxThreads = threadPoolInstance._maxThreads;
+                int minThreads = threadPoolInstance._minThreads;
 
                 _currentControlSetting = Math.Min(maxThreads - newThreadWaveMagnitude, _currentControlSetting);
                 _currentControlSetting = Math.Max(minThreads, _currentControlSetting);
@@ -357,8 +344,11 @@ namespace System.Threading
                 // Record these numbers for posterity
                 //
 
-                PortableThreadPoolEventSource.Log.WorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
-                    throughputErrorEstimate, _averageThroughputNoise, ratio.Real, confidence, _currentControlSetting, (ushort)newThreadWaveMagnitude);
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                {
+                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
+                        throughputErrorEstimate, _averageThroughputNoise, ratio.Real, confidence, _currentControlSetting, (ushort)newThreadWaveMagnitude);
+                }
 
 
                 //
@@ -377,7 +367,7 @@ namespace System.Threading
                 //
                 int newSampleInterval;
                 if (ratio.Real < 0.0 && newThreadCount == minThreads)
-                    newSampleInterval = (int)(0.5 + _currentSampleMs * (10.0 * Math.Max(-ratio.Real, 1.0)));
+                    newSampleInterval = (int)(0.5 + _currentSampleMs * (10.0 * Math.Min(-ratio.Real, 1.0)));
                 else
                     newSampleInterval = _currentSampleMs;
 
@@ -399,7 +389,7 @@ namespace System.Threading
                 // Use the _log array as a circular array for log entries
                 int index = (_logStart + _logSize) % LogCapacity;
 
-                if(_logSize == LogCapacity)
+                if (_logSize == LogCapacity)
                 {
                     _logStart = (_logStart + 1) % LogCapacity;
                     _logSize--; // hide this slot while we update it
@@ -410,17 +400,23 @@ namespace System.Threading
                 entry.tickCount = Environment.TickCount;
                 entry.stateOrTransition = stateOrTransition;
                 entry.newControlSetting = newThreadCount;
-                entry.lastHistoryCount = ((int)Math.Min(_totalSamples, _samplesToMeasure) / _wavePeriod) * _wavePeriod;
-                entry.lastHistoryMean = throughput;
+                entry.lastHistoryCount = (int)(Math.Min(_totalSamples, _samplesToMeasure) / _wavePeriod) * _wavePeriod;
+                entry.lastHistoryMean = (float)throughput;
 
                 _logSize++;
 
-                PortableThreadPoolEventSource.Log.WorkerThreadAdjustmentAdjustment(throughput, newThreadCount, (int)stateOrTransition);
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                {
+                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadAdjustmentAdjustment(
+                        throughput,
+                        (uint)newThreadCount,
+                        (NativeRuntimeEventSource.ThreadAdjustmentReasonMap)stateOrTransition);
+                }
             }
 
             public void ForceChange(int newThreadCount, StateOrTransition state)
             {
-                if(_lastThreadCount != newThreadCount)
+                if (_lastThreadCount != newThreadCount)
                 {
                     _currentControlSetting += newThreadCount - _lastThreadCount;
                     ChangeThreadCount(newThreadCount, state);
@@ -442,7 +438,7 @@ namespace System.Threading
                 double cos = Math.Cos(w);
                 double coeff = 2 * cos;
                 double q0 = 0, q1 = 0, q2 = 0;
-                for(int i = 0; i < numSamples; ++i)
+                for (int i = 0; i < numSamples; ++i)
                 {
                     q0 = coeff * q1 - q2 + samples[(_totalSamples - numSamples + i) % _samplesToMeasure];
                     q2 = q1;

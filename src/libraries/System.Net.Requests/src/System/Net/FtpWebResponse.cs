@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 
@@ -11,21 +10,19 @@ namespace System.Net
     /// </summary>
     public class FtpWebResponse : WebResponse, IDisposable
     {
-        internal Stream _responseStream;
+        internal Stream? _responseStream;
         private readonly long _contentLength;
         private readonly Uri _responseUri;
         private FtpStatusCode _statusCode;
-        private string _statusLine;
-        private WebHeaderCollection _ftpRequestHeaders;
+        private string? _statusLine;
+        private WebHeaderCollection? _ftpRequestHeaders;
         private readonly DateTime _lastModified;
-        private readonly string _bannerMessage;
-        private readonly string _welcomeMessage;
-        private string _exitMessage;
+        private readonly string? _bannerMessage;
+        private readonly string? _welcomeMessage;
+        private string? _exitMessage;
 
-        internal FtpWebResponse(Stream responseStream, long contentLength, Uri responseUri, FtpStatusCode statusCode, string statusLine, DateTime lastModified, string bannerMessage, string welcomeMessage, string exitMessage)
+        internal FtpWebResponse(Stream? responseStream, long contentLength, Uri responseUri, FtpStatusCode statusCode, string? statusLine, DateTime lastModified, string? bannerMessage, string? welcomeMessage, string? exitMessage)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, contentLength, statusLine);
-
             _responseStream = responseStream;
             if (responseStream == null && contentLength < 0)
             {
@@ -41,7 +38,7 @@ namespace System.Net
             _exitMessage = exitMessage;
         }
 
-        internal void UpdateStatus(FtpStatusCode statusCode, string statusLine, string exitMessage)
+        internal void UpdateStatus(FtpStatusCode statusCode, string? statusLine, string? exitMessage)
         {
             _statusCode = statusCode;
             _statusLine = statusLine;
@@ -50,7 +47,7 @@ namespace System.Net
 
         public override Stream GetResponseStream()
         {
-            Stream responseStream = null;
+            Stream? responseStream = null;
 
             if (_responseStream != null)
             {
@@ -70,7 +67,7 @@ namespace System.Net
             }
         }
 
-        internal void SetResponseStream(Stream stream)
+        internal void SetResponseStream(Stream? stream)
         {
             if (stream == null || stream == Stream.Null || stream is EmptyStream)
                 return;
@@ -82,9 +79,7 @@ namespace System.Net
         /// </summary>
         public override void Close()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _responseStream?.Close();
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         /// <summary>
@@ -149,7 +144,7 @@ namespace System.Net
         /// <summary>
         /// <para>Last status line retrieved</para>
         /// </summary>
-        public string StatusDescription
+        public string? StatusDescription
         {
             get
             {
@@ -171,7 +166,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Returns the server message sent before user credentials are sent</para>
         /// </summary>
-        public string BannerMessage
+        public string? BannerMessage
         {
             get
             {
@@ -182,7 +177,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Returns the server message sent after user credentials are sent</para>
         /// </summary>
-        public string WelcomeMessage
+        public string? WelcomeMessage
         {
             get
             {
@@ -193,7 +188,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Returns the exit sent message on shutdown</para>
         /// </summary>
-        public string ExitMessage
+        public string? ExitMessage
         {
             get
             {

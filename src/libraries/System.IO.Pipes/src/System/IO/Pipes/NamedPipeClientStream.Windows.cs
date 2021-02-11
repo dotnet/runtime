@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.Versioning;
 
 namespace System.IO.Pipes
 {
@@ -108,9 +108,9 @@ namespace System.IO.Pipes
             return true;
         }
 
+        [SupportedOSPlatform("windows")]
         public unsafe int NumberOfServerInstances
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 CheckPipePropertyOperations();
@@ -121,7 +121,7 @@ namespace System.IO.Pipes
                 // access request before calling NTCreateFile, so all NamedPipeClientStreams can read
                 // this if they are created (on WinXP SP2 at least)]
                 uint numInstances;
-                if (!Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle, null, &numInstances, null, null, null, 0))
+                if (!Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle!, null, &numInstances, null, null, null, 0))
                 {
                     throw WinIOError(Marshal.GetLastWin32Error());
                 }
@@ -136,10 +136,10 @@ namespace System.IO.Pipes
                 return;
 
             PipeSecurity accessControl = this.GetAccessControl();
-            IdentityReference remoteOwnerSid = accessControl.GetOwner(typeof(SecurityIdentifier));
+            IdentityReference? remoteOwnerSid = accessControl.GetOwner(typeof(SecurityIdentifier));
             using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
             {
-                SecurityIdentifier currentUserSid = currentIdentity.Owner;
+                SecurityIdentifier? currentUserSid = currentIdentity.Owner;
                 if (remoteOwnerSid != currentUserSid)
                 {
                     State = PipeState.Closed;

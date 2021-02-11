@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -25,7 +24,7 @@ namespace System.Xml
         // and not Mixed Content (http://www.w3.org/TR/1998/REC-xml-19980210#sec-mixed-content)
         // according to the XML 1.0 definitions of these terms.
         Indented,
-    };
+    }
 
     // Represents a writer that provides fast non-cached forward-only way of generating XML streams
     // containing XML documents that conform to the W3CExtensible Markup Language (XML) 1.0 specification
@@ -47,12 +46,12 @@ namespace System.Xml
 
         private struct TagInfo
         {
-            internal string name;
-            internal string prefix;
+            internal string? name;
+            internal string? prefix;
             internal string defaultNs;
             internal NamespaceState defaultNsState;
             internal XmlSpace xmlSpace;
-            internal string xmlLang;
+            internal string? xmlLang;
             internal int prevNsTop;
             internal int prefixCount;
             internal bool mixed; // whether to pretty print the contents of this element.
@@ -131,9 +130,9 @@ namespace System.Xml
         // Fields
         //
         // output
-        private readonly TextWriter _textWriter;
-        private readonly XmlTextEncoder _xmlEncoder;
-        private readonly Encoding _encoding;
+        private readonly TextWriter _textWriter = null!;
+        private readonly XmlTextEncoder _xmlEncoder = null!;
+        private readonly Encoding? _encoding;
 
         // formatting
         private Formatting _formatting;
@@ -142,10 +141,11 @@ namespace System.Xml
         private char[] _indentChars;
         private static readonly char[] s_defaultIndentChars = CreateDefaultIndentChars();
 
-        // This method is needed as the native code compiler fails when this initialization is inline
         private static char[] CreateDefaultIndentChars()
         {
-            return new string(DefaultIndentChar, IndentArrayLength).ToCharArray();
+            var result = new char[IndentArrayLength];
+            result.AsSpan().Fill(DefaultIndentChar);
+            return result;
         }
 
         // element stack
@@ -158,24 +158,21 @@ namespace System.Xml
         private Token _lastToken;
 
         // Base64 content
-        private XmlTextWriterBase64Encoder _base64Encoder;
+        private XmlTextWriterBase64Encoder? _base64Encoder;
 
         // misc
         private char _quoteChar;
         private char _curQuoteChar;
         private bool _namespaces;
         private SpecialAttr _specialAttr;
-        private string _prefixForXmlNs;
+        private string? _prefixForXmlNs;
         private bool _flush;
 
         // namespaces
         private Namespace[] _nsStack;
         private int _nsTop;
-        private Dictionary<string, int> _nsHashtable;
+        private Dictionary<string, int>? _nsHashtable;
         private bool _useNsHashtable;
-
-        // char types
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
 
         //
         // Constants and constant tables
@@ -258,7 +255,7 @@ namespace System.Xml
         //
         // Constructors
         //
-        internal XmlTextWriter()
+        private XmlTextWriter()
         {
             _namespaces = true;
             _formatting = Formatting.None;
@@ -280,7 +277,7 @@ namespace System.Xml
         }
 
         // Creates an instance of the XmlTextWriter class using the specified stream.
-        public XmlTextWriter(Stream w, Encoding encoding) : this()
+        public XmlTextWriter(Stream w, Encoding? encoding) : this()
         {
             _encoding = encoding;
             if (encoding != null)
@@ -292,7 +289,7 @@ namespace System.Xml
         }
 
         // Creates an instance of the XmlTextWriter class using the specified file.
-        public XmlTextWriter(string filename, Encoding encoding)
+        public XmlTextWriter(string filename, Encoding? encoding)
         : this(new FileStream(filename, FileMode.Create,
                               FileAccess.Write, FileShare.Read), encoding)
         {
@@ -312,12 +309,18 @@ namespace System.Xml
         // XmlTextWriter properties
         //
         // Gets the XmlTextWriter base stream.
-        public Stream BaseStream
+        public Stream? BaseStream
         {
             get
             {
-                StreamWriter streamWriter = _textWriter as StreamWriter;
-                return (streamWriter == null ? null : streamWriter.BaseStream);
+                if (_textWriter is StreamWriter streamWriter)
+                {
+                    return streamWriter.BaseStream;
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
 
@@ -436,7 +439,7 @@ namespace System.Xml
         }
 
         // Writes out the DOCTYPE declaration with the specified name and optional attributes.
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             try
             {
@@ -475,7 +478,7 @@ namespace System.Xml
         }
 
         // Writes out the specified start tag and associates it with the given namespace and prefix.
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             try
             {
@@ -502,7 +505,7 @@ namespace System.Xml
                     {
                         if (prefix == null)
                         {
-                            string definedPrefix = FindPrefix(ns);
+                            string? definedPrefix = FindPrefix(ns);
                             if (definedPrefix != null)
                             {
                                 prefix = definedPrefix;
@@ -522,6 +525,7 @@ namespace System.Xml
                             {
                                 prefix = null;
                             }
+
                             VerifyPrefixXml(prefix, ns);
                             PushNamespace(prefix, ns, false); // define
                         }
@@ -564,7 +568,7 @@ namespace System.Xml
         }
 
         // Writes the start of an attribute.
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             try
             {
@@ -606,6 +610,7 @@ namespace System.Xml
                         {
                             throw new ArgumentException(SR.Xml_XmlnsBelongsToReservedNs);
                         }
+
                         if (localName == null || localName.Length == 0)
                         {
                             localName = prefix;
@@ -616,6 +621,7 @@ namespace System.Xml
                         {
                             _prefixForXmlNs = localName;
                         }
+
                         _specialAttr = SpecialAttr.XmlNs;
                     }
                     else if (prefix == null && localName == "xmlns")
@@ -625,6 +631,7 @@ namespace System.Xml
                             // add the below line back in when DOM is fixed
                             throw new ArgumentException(SR.Xml_XmlnsBelongsToReservedNs);
                         }
+
                         _specialAttr = SpecialAttr.XmlNs;
                         _prefixForXmlNs = null;
                     }
@@ -650,8 +657,9 @@ namespace System.Xml
                             {
                                 prefix = null;
                             }
+
                             // Now verify prefix validity
-                            string definedPrefix = FindPrefix(ns);
+                            string? definedPrefix = FindPrefix(ns);
                             if (definedPrefix != null && (prefix == null || prefix == definedPrefix))
                             {
                                 prefix = definedPrefix;
@@ -666,6 +674,7 @@ namespace System.Xml
                             }
                         }
                     }
+
                     if (prefix != null && prefix.Length != 0)
                     {
                         _textWriter.Write(prefix);
@@ -678,15 +687,18 @@ namespace System.Xml
                     {
                         throw new ArgumentException(SR.Xml_NoNamespaces);
                     }
+
                     if (localName == "xml:lang")
                     {
                         _specialAttr = SpecialAttr.XmlLang;
                     }
+
                     else if (localName == "xml:space")
                     {
                         _specialAttr = SpecialAttr.XmlSpace;
                     }
                 }
+
                 _xmlEncoder.StartAttribute(_specialAttr != SpecialAttr.None);
 
                 _textWriter.Write(localName);
@@ -720,21 +732,23 @@ namespace System.Xml
         }
 
         // Writes out a &lt;![CDATA[...]]&gt; block containing the specified text.
-        public override void WriteCData(string text)
+        public override void WriteCData(string? text)
         {
             try
             {
                 AutoComplete(Token.CData);
-                if (null != text && text.IndexOf("]]>", StringComparison.Ordinal) >= 0)
+                if (null != text && text.Contains("]]>"))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCDataChars);
                 }
+
                 _textWriter.Write("<![CDATA[");
 
                 if (null != text)
                 {
                     _xmlEncoder.WriteRawWithSurrogateChecking(text);
                 }
+
                 _textWriter.Write("]]>");
             }
             catch
@@ -745,11 +759,11 @@ namespace System.Xml
         }
 
         // Writes out a comment <!--...--> containing the specified text.
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             try
             {
-                if (null != text && (text.IndexOf("--", StringComparison.Ordinal) >= 0 || (text.Length != 0 && text[text.Length - 1] == '-')))
+                if (null != text && (text.Contains("--") || (text.Length != 0 && text[text.Length - 1] == '-')))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }
@@ -769,18 +783,20 @@ namespace System.Xml
         }
 
         // Writes out a processing instruction with a space between the name and text as follows: <?name text?>
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             try
             {
-                if (null != text && text.IndexOf("?>", StringComparison.Ordinal) >= 0)
+                if (null != text && text.Contains("?>"))
                 {
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
+
                 if (0 == string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
                 {
                     throw new ArgumentException(SR.Xml_DupXmlDecl);
                 }
+
                 AutoComplete(Token.PI);
                 InternalWriteProcessingInstruction(name, text);
             }
@@ -823,7 +839,7 @@ namespace System.Xml
         }
 
         // Writes out the given whitespace.
-        public override void WriteWhitespace(string ws)
+        public override void WriteWhitespace(string? ws)
         {
             try
             {
@@ -832,7 +848,7 @@ namespace System.Xml
                     ws = string.Empty;
                 }
 
-                if (!_xmlCharType.IsOnlyWhitespace(ws))
+                if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
                 }
@@ -847,7 +863,7 @@ namespace System.Xml
         }
 
         // Writes out the specified text content.
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             try
             {
@@ -1039,7 +1055,7 @@ namespace System.Xml
         }
 
         // Writes out the specified namespace-qualified name by looking up the prefix that is in scope for the given namespace.
-        public override void WriteQualifiedName(string localName, string ns)
+        public override void WriteQualifiedName(string localName, string? ns)
         {
             try
             {
@@ -1048,16 +1064,18 @@ namespace System.Xml
                 {
                     if (ns != null && ns.Length != 0 && ns != _stack[_top].defaultNs)
                     {
-                        string prefix = FindPrefix(ns);
+                        string? prefix = FindPrefix(ns);
                         if (prefix == null)
                         {
                             if (_currentState != State.Attribute)
                             {
                                 throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
                             }
-                            prefix = GeneratePrefix(); // need a prefix if
+
+                            prefix = GeneratePrefix();
                             PushNamespace(prefix, ns, false);
                         }
+
                         if (prefix.Length != 0)
                         {
                             InternalWriteName(prefix, true);
@@ -1069,6 +1087,7 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Xml_NoNamespaces);
                 }
+
                 InternalWriteName(localName, true);
             }
             catch
@@ -1079,17 +1098,19 @@ namespace System.Xml
         }
 
         // Returns the closest prefix defined in the current namespace scope for the specified namespace URI.
-        public override string LookupPrefix(string ns)
+        public override string? LookupPrefix(string ns)
         {
             if (ns == null || ns.Length == 0)
             {
                 throw new ArgumentException(SR.Xml_EmptyName);
             }
-            string s = FindPrefix(ns);
+
+            string? s = FindPrefix(ns);
             if (s == null && ns == _stack[_top].defaultNs)
             {
                 s = string.Empty;
             }
+
             return s;
         }
 
@@ -1109,16 +1130,18 @@ namespace System.Xml
         }
 
         // Gets the current xml:lang scope.
-        public override string XmlLang
+        public override string? XmlLang
         {
             get
             {
                 for (int i = _top; i > 0; i--)
                 {
-                    string xlang = _stack[i].xmlLang;
+                    string? xlang = _stack[i].xmlLang;
+
                     if (xlang != null)
                         return xlang;
                 }
+
                 return null;
             }
         }
@@ -1443,7 +1466,7 @@ namespace System.Xml
 
         // pushes new namespace scope, and returns generated prefix, if one
         // was needed to resolve conflicts.
-        private void PushNamespace(string prefix, string ns, bool declared)
+        private void PushNamespace(string? prefix, string ns, bool declared)
         {
             if (XmlReservedNs.NsXmlNs == ns)
             {
@@ -1468,6 +1491,7 @@ namespace System.Xml
                         Debug.Fail("Should have never come here");
                         return;
                 }
+
                 _stack[_top].defaultNsState = (declared ? NamespaceState.DeclaredAndWrittenOut : NamespaceState.DeclaredButNotWrittenOut);
             }
             else
@@ -1496,6 +1520,7 @@ namespace System.Xml
                             _nsStack[existingNsIndex].declared = true; // old one is silenced now
                         }
                     }
+
                     AddNamespace(prefix, ns, declared);
                 }
             }
@@ -1519,29 +1544,37 @@ namespace System.Xml
             else if (nsIndex == MaxNamespacesWalkCount)
             {
                 // add all
-                _nsHashtable = new Dictionary<string, int>(new SecureStringHasher());
+                _nsHashtable = new Dictionary<string, int>();
+                _useNsHashtable = true;
+
                 for (int i = 0; i <= nsIndex; i++)
                 {
                     AddToNamespaceHashtable(i);
                 }
-                _useNsHashtable = true;
             }
         }
 
         private void AddToNamespaceHashtable(int namespaceIndex)
         {
+            Debug.Assert(_useNsHashtable);
+            Debug.Assert(_nsHashtable != null);
+
             string prefix = _nsStack[namespaceIndex].prefix;
             int existingNsIndex;
+
             if (_nsHashtable.TryGetValue(prefix, out existingNsIndex))
             {
                 _nsStack[namespaceIndex].prevNsIndex = existingNsIndex;
             }
+
             _nsHashtable[prefix] = namespaceIndex;
         }
 
         private void PopNamespaces(int indexFrom, int indexTo)
         {
             Debug.Assert(_useNsHashtable);
+            Debug.Assert(_nsHashtable != null);
+
             for (int i = indexTo; i >= indexFrom; i--)
             {
                 Debug.Assert(_nsHashtable.ContainsKey(_nsStack[i].prefix));
@@ -1563,16 +1596,18 @@ namespace System.Xml
                 + "p" + temp.ToString("d", CultureInfo.InvariantCulture);
         }
 
-        private void InternalWriteProcessingInstruction(string name, string text)
+        private void InternalWriteProcessingInstruction(string name, string? text)
         {
             _textWriter.Write("<?");
             ValidateName(name, false);
             _textWriter.Write(name);
             _textWriter.Write(' ');
+
             if (null != text)
             {
                 _xmlEncoder.WriteRawWithSurrogateChecking(text);
             }
+
             _textWriter.Write("?>");
         }
 
@@ -1580,6 +1615,7 @@ namespace System.Xml
         {
             if (_useNsHashtable)
             {
+                Debug.Assert(_nsHashtable != null);
                 int nsIndex;
                 if (_nsHashtable.TryGetValue(prefix, out nsIndex))
                 {
@@ -1596,6 +1632,7 @@ namespace System.Xml
                     }
                 }
             }
+
             return -1;
         }
 
@@ -1603,7 +1640,9 @@ namespace System.Xml
         {
             if (_useNsHashtable)
             {
+                Debug.Assert(_nsHashtable != null);
                 int nsIndex;
+
                 if (_nsHashtable.TryGetValue(prefix, out nsIndex))
                 {
                     if (nsIndex > _stack[_top].prevNsTop)
@@ -1625,7 +1664,7 @@ namespace System.Xml
             return -1;
         }
 
-        private string FindPrefix(string ns)
+        private string? FindPrefix(string ns)
         {
             for (int i = _nsTop; i >= 0; i--)
             {
@@ -1637,6 +1676,7 @@ namespace System.Xml
                     }
                 }
             }
+
             return null;
         }
 
@@ -1655,7 +1695,7 @@ namespace System.Xml
         // Unfortunatelly the names of elements and attributes are not validated by the XmlTextWriter.
         // Also this method does not check wheather the character after ':' is a valid start name character. It accepts
         // all valid name characters at that position. This can't be changed because of backwards compatibility.
-        private unsafe void ValidateName(string name, bool isNCName)
+        private void ValidateName(string name, bool isNCName)
         {
             if (name == null || name.Length == 0)
             {
@@ -1744,7 +1784,7 @@ namespace System.Xml
         }
 
 
-        private void VerifyPrefixXml(string prefix, string ns)
+        private void VerifyPrefixXml(string? prefix, string ns)
         {
             if (prefix != null && prefix.Length == 3)
             {

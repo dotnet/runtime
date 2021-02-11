@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text.Encodings.Web;
 using Newtonsoft.Json;
@@ -20,18 +19,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonConvert.SerializeObject(inputString), actual);
             Assert.Equal(expected, actual);
             Assert.NotEqual(expected, JsonSerializer.Serialize(inputString));
-        }
-
-        // https://github.com/dotnet/corefx/issues/40979
-        [Fact]
-        public static void EscapingShouldntStackOverflow_40979()
-        {
-            var test = new { Name = "\u6D4B\u8A6611" };
-
-            var options = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            string result = JsonSerializer.Serialize(test, options);
-
-            Assert.Equal("{\"name\":\"\u6D4B\u8A6611\"}", result);
         }
 
         [Fact]
@@ -108,6 +95,21 @@ namespace System.Text.Json.Serialization.Tests
                 // https://coding.abel.nu/2014/10/beware-of-uri-tostring/
                 Uri uri = new Uri("http://localhost?p1=Value&p2=A%20B%26p3%3DFooled!");
                 Assert.Equal(@"""http://localhost?p1=Value\u0026p2=A%20B%26p3%3DFooled!""", JsonSerializer.Serialize(uri));
+            }
+
+            {
+                Version version = new Version(1, 2);
+                Assert.Equal(@"""1.2""", JsonSerializer.Serialize(version));
+            }
+
+            {
+                Version version = new Version(1, 2, 3);
+                Assert.Equal(@"""1.2.3""", JsonSerializer.Serialize(version));
+            }
+
+            {
+                Version version = new Version(1, 2, 3, 4);
+                Assert.Equal(@"""1.2.3.4""", JsonSerializer.Serialize(version));
             }
         }
     }

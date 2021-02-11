@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Configuration;
 using Xunit;
@@ -15,7 +14,7 @@ namespace System.ConfigurationTests
             ["SettingsKey"] = "SettingsKeyFoo"
         };
 
-        [ActiveIssue(37364)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29429")]
         [Fact]
         public void GetPropertyValues_NotStoredProperty_ValueEqualsNull()
         {
@@ -31,7 +30,7 @@ namespace System.ConfigurationTests
             Assert.Null(propertyValues["PropertyName"].PropertyValue);
         }
 
-        [ActiveIssue(37364)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29429")]
         [Fact]
         public void GetPropertyValues_NotStoredConnectionStringProperty_ValueEqualsEmptyString()
         {

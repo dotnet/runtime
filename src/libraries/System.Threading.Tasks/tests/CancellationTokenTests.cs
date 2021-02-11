@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -16,12 +15,18 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void CancellationTokenRegister_Exceptions()
         {
-            CancellationToken token = new CancellationToken();
-            Assert.Throws<ArgumentNullException>(() => token.Register(null));
+            CancellationToken token = default;
 
-            Assert.Throws<ArgumentNullException>(() => token.Register(null, false));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.Register(null));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.Register(null, false));
 
-            Assert.Throws<ArgumentNullException>(() => token.Register(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.Register((Action<object>)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.Register((Action<object>)null, null, false));
+            AssertExtensions.Throws<ArgumentNullException>(() => token.Register((Action<object>)null, null, true));
+            AssertExtensions.Throws<ArgumentNullException>(() => token.Register((Action<object, CancellationToken>)null, null));
+
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.UnsafeRegister((Action<object>)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => token.UnsafeRegister((Action<object, CancellationToken>)null, null));
         }
 
         [Fact]
@@ -323,7 +328,7 @@ namespace System.Threading.Tasks.Tests
         /// The signal occurs on a separate thread, and should happen after the wait begins.
         /// </summary>
         /// <returns></returns>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationTokenWaitHandle_SignalAfterWait()
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -380,6 +385,37 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        public static void CreateLinkedTokenSource_OneToken()
+        {
+            CancellationTokenSource original;
+
+            original = new CancellationTokenSource();
+            using (CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(original.Token))
+            {
+                Assert.False(linked.Token.IsCancellationRequested);
+                original.Cancel();
+                Assert.True(linked.Token.IsCancellationRequested);
+            }
+
+            original = new CancellationTokenSource();
+            using (CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(original.Token))
+            {
+                Assert.False(linked.Token.IsCancellationRequested);
+                linked.Cancel();
+                Assert.True(linked.Token.IsCancellationRequested);
+                Assert.False(original.IsCancellationRequested);
+            }
+
+            original = new CancellationTokenSource();
+            using (CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(original.Token))
+            {
+                Assert.False(linked.Token.IsCancellationRequested);
+                original.Dispose();
+                Assert.False(linked.Token.IsCancellationRequested);
+            }
+        }
+
+        [Fact]
         public static void CreateLinkedTokenSource_Simple_TwoToken()
         {
             CancellationTokenSource signal1 = new CancellationTokenSource();
@@ -413,7 +449,20 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        public static void CreateLinkedToken_SourceTokenAlreadySignalled()
+        public static void CreateLinkedToken_SourceTokenAlreadySignalled_OneToken()
+        {
+            //creating a combined token, when a source token is already signaled.
+            CancellationTokenSource signal = new CancellationTokenSource();
+
+            signal.Cancel(); //early signal.
+
+            CancellationTokenSource combined = CancellationTokenSource.CreateLinkedTokenSource(signal.Token);
+            Assert.True(combined.IsCancellationRequested,
+                "CreateLinkedToken_SourceTokenAlreadySignalled:  The combined token should immediately be in the signalled state.");
+        }
+
+        [Fact]
+        public static void CreateLinkedToken_SourceTokenAlreadySignalled_TwoTokens()
         {
             //creating a combined token, when a source token is already signalled.
             CancellationTokenSource signal1 = new CancellationTokenSource();
@@ -481,7 +530,7 @@ namespace System.Threading.Tasks.Tests
         /// This test from donnya. Thanks Donny.
         /// </summary>
         /// <returns></returns>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WaitAll()
         {
             Debug.WriteLine("WaitAll:  Testing CancellationTokenTests.WaitAll, If Join does not work, then a deadlock will occur.");
@@ -517,7 +566,7 @@ namespace System.Threading.Tasks.Tests
             tokenSource.Cancel();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Cancel_ThrowOnFirstException()
         {
             ManualResetEvent mre_CancelHasBeenEnacted = new ManualResetEvent(false);
@@ -559,7 +608,7 @@ namespace System.Threading.Tasks.Tests
             Assert.NotNull(caughtException);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Cancel_DontThrowOnFirstException()
         {
             ManualResetEvent mre_CancelHasBeenEnacted = new ManualResetEvent(false);
@@ -824,7 +873,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Several tests for deriving custom user types from CancellationTokenSource
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void DerivedCancellationTokenSource()
         {
             // Verify that a derived CTS is functional
@@ -942,7 +991,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationTokenSourceWithTimer()
         {
             TimeSpan bigTimeSpan = new TimeSpan(2000, 0, 0, 0, 0);
@@ -1003,30 +1052,31 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void CancellationTokenSourceWithTimer_Negative()
         {
-            TimeSpan bigTimeSpan = new TimeSpan(2000, 0, 0, 0, 0);
+            TimeSpan bigTimeSpan = TimeSpan.FromMilliseconds(uint.MaxValue);
             TimeSpan reasonableTimeSpan = new TimeSpan(0, 0, 1);
-            //
-            // Test exception logic
-            //
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { new CancellationTokenSource(-2); });
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { new CancellationTokenSource(bigTimeSpan); });
 
-            CancellationTokenSource cts = new CancellationTokenSource();
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { cts.CancelAfter(-2); });
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => { cts.CancelAfter(bigTimeSpan); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new CancellationTokenSource(-2); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new CancellationTokenSource(bigTimeSpan); });
+
+            var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(uint.MaxValue - 1));
+            Assert.False(cts.IsCancellationRequested);
+            cts.Dispose();
+
+            cts = new CancellationTokenSource();
+            Assert.Throws<ArgumentOutOfRangeException>(() => { cts.CancelAfter(-2); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { cts.CancelAfter(bigTimeSpan); });
+
+            cts = new CancellationTokenSource();
+            cts.CancelAfter(TimeSpan.FromMilliseconds(uint.MaxValue - 1));
+            Assert.False(cts.IsCancellationRequested);
+            cts.Dispose();
 
             cts.Dispose();
-            Assert.Throws<ObjectDisposedException>(
-               () => { cts.CancelAfter(1); });
-            Assert.Throws<ObjectDisposedException>(
-               () => { cts.CancelAfter(reasonableTimeSpan); });
+            Assert.Throws<ObjectDisposedException>(() => { cts.CancelAfter(1); });
+            Assert.Throws<ObjectDisposedException>(() => { cts.CancelAfter(reasonableTimeSpan); });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void EnlistWithSyncContext_BeforeCancel()
         {
             ManualResetEvent mre_CancelHasBeenEnacted = new ManualResetEvent(false); //synchronization helper
@@ -1062,7 +1112,7 @@ namespace System.Threading.Tasks.Tests
             SetSynchronizationContext(prevailingSyncCtx);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void EnlistWithSyncContext_BeforeCancel_ThrowingExceptionInSyncContextDelegate()
         {
             ManualResetEvent mre_CancelHasBeenEnacted = new ManualResetEvent(false); //synchronization helper
@@ -1109,7 +1159,7 @@ namespace System.Threading.Tasks.Tests
             //Cleanup.
             SetSynchronizationContext(prevailingSyncCtx);
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void EnlistWithSyncContext_BeforeCancel_ThrowingExceptionInSyncContextDelegate_ThrowOnFirst()
         {
             ManualResetEvent mre_CancelHasBeenEnacted = new ManualResetEvent(false); //synchronization helper
@@ -1156,7 +1206,7 @@ namespace System.Threading.Tasks.Tests
 
         // Test that we marshal exceptions back if we run callbacks on a sync context.
         // (This assumes that a syncContext.Send() may not be doing the marshalling itself).
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void SyncContextWithExceptionThrowingCallback()
         {
             Exception caughtEx1 = null;
@@ -1202,7 +1252,7 @@ namespace System.Threading.Tasks.Tests
             SetSynchronizationContext(prevailingSyncCtx);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Bug720327_DeregisterFromWithinACallbackIsSafe_SyncContextTest()
         {
             Debug.WriteLine("* CancellationTokenTests.Bug720327_DeregisterFromWithinACallbackIsSafe_SyncContextTest()");
@@ -1233,7 +1283,7 @@ namespace System.Threading.Tasks.Tests
             SetSynchronizationContext(prevailingSyncCtx);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationTokenRegistration_DisposeDuringCancellation_SuccessfullyRemovedIfNotYetInvoked()
         {
             var ctr0running = new ManualResetEventSlim();
@@ -1313,7 +1363,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(invoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationTokenRegistration_UnregisterWhileCallbackRunning_UnregisterDoesntWaitForCallbackToComplete()
         {
             using (var barrier = new Barrier(2))
@@ -1335,7 +1385,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationTokenRegistration_UnregisterDuringCancellation_SuccessfullyRemovedIfNotYetInvoked()
         {
             var ctr0running = new ManualResetEventSlim();
@@ -1370,7 +1420,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(ctr1Invoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task CancellationTokenRegistration_ConcurrentUnregisterWithCancel_ReturnsFalseOrCallbackInvoked()
         {
             using (Barrier barrier = new Barrier(2))
@@ -1419,7 +1469,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [OuterLoop("Runs for several seconds")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Unregister_ConcurrentUse_ThreadSafe()
         {
             CancellationTokenRegistration reg = default;
@@ -1462,8 +1512,10 @@ namespace System.Threading.Tasks.Tests
             // Validating that no exception is thrown.
         }
 
-        [Fact]
-        public static void Register_ExecutionContextFlowsIfExpected()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Register_ExecutionContextFlowsIfExpected(bool callbackWithToken)
         {
             var cts = new CancellationTokenSource();
 
@@ -1483,9 +1535,25 @@ namespace System.Threading.Tasks.Tests
                 };
 
                 CancellationToken ct = cts.Token;
-                if (flowExecutionContext)
+                if (flowExecutionContext && callbackWithToken)
+                {
+                    ct.Register((s, t) =>
+                    {
+                        Assert.Equal(ct, t);
+                        callback(s);
+                    }, i);
+                }
+                else if (flowExecutionContext)
                 {
                     ct.Register(callback, i);
+                }
+                else if (callbackWithToken)
+                {
+                    ct.UnsafeRegister((s, t) =>
+                    {
+                        Assert.Equal(ct, t);
+                        callback(s);
+                    }, i);
                 }
                 else
                 {
@@ -1515,7 +1583,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(invoked);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task CancellationTokenRegistration_DisposeAsyncWhileCallbackRunning_WaitsForCallbackToComplete()
         {
             using (var barrier = new Barrier(2))
@@ -1539,7 +1607,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static async Task CancellationTokenRegistration_DisposeAsyncDuringCancellation_SuccessfullyRemovedIfNotYetInvoked()
         {
             var ctr0running = new ManualResetEventSlim();
@@ -1648,8 +1716,6 @@ namespace System.Threading.Tasks.Tests
                 Task t = new Task(
                     (passedInState) =>
                     {
-                        //Debug.WriteLine(" threadCrossingSyncContext..running callback delegate on threadID = " + Thread.CurrentThread.ManagedThreadId);
-
                         try
                         {
                             d(passedInState);
@@ -1662,9 +1728,6 @@ namespace System.Threading.Tasks.Tests
 
                 t.Start();
                 t.Wait();
-
-                //t.Start(state);
-                //t.Join();
 
                 if (marshalledException != null)
                     throw new AggregateException("DUMMY: ThreadCrossingSynchronizationContext.Send captured and propogated an exception",

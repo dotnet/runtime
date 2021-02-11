@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters;
@@ -16,7 +16,11 @@ namespace System.Runtime.Serialization
     {
         private static readonly ConcurrentDictionary<MemberHolder, MemberInfo[]> s_memberInfoTable = new ConcurrentDictionary<MemberHolder, MemberInfo[]>();
 
-        private static FieldInfo[] InternalGetSerializableMembers(Type type)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "The Type is annotated with All, which will preserve base type fields.")]
+        private static FieldInfo[] InternalGetSerializableMembers(
+            // currently the only way to preserve base, non-public fields is to use All
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             Debug.Assert(type != null);
 
@@ -79,7 +83,8 @@ namespace System.Runtime.Serialization
             return typeMembers;
         }
 
-        private static FieldInfo[] GetSerializableFields(Type type)
+        private static FieldInfo[] GetSerializableFields(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] Type type)
         {
             // Get the list of all fields
             FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -156,12 +161,15 @@ namespace System.Runtime.Serialization
             return unique;
         }
 
-        public static MemberInfo[] GetSerializableMembers(Type type)
+        public static MemberInfo[] GetSerializableMembers(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             return GetSerializableMembers(type, new StreamingContext(StreamingContextStates.All));
         }
 
-        public static MemberInfo[] GetSerializableMembers(Type type, StreamingContext context)
+        public static MemberInfo[] GetSerializableMembers(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            StreamingContext context)
         {
             if (type == null)
             {
@@ -180,9 +188,18 @@ namespace System.Runtime.Serialization
             // nop
         }
 
-        public static object GetUninitializedObject(Type type) => RuntimeHelpers.GetUninitializedObject(type);
+        public static object GetUninitializedObject(
+            // This API doesn't call any constructors, but the type needs to be seen as constructed.
+            // A type is seen as constructed if a constructor is kept.
+            // This obviously won't cover a type with no constructor. Reference types with no
+            // constructor are an academic problem. Valuetypes with no constructors are a problem,
+            // but IL Linker currently treats them as always implicitly boxed.
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type) => RuntimeHelpers.GetUninitializedObject(type);
 
-        public static object GetSafeUninitializedObject(Type type) => RuntimeHelpers.GetUninitializedObject(type);
+        public static object GetSafeUninitializedObject(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type) => RuntimeHelpers.GetUninitializedObject(type);
 
         internal static void SerializationSetValue(MemberInfo fi, object? target, object? value)
         {
@@ -287,6 +304,7 @@ namespace System.Runtime.Serialization
             return new SurrogateForCyclicalReference(innerSurrogate);
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         public static Type? GetTypeFromAssembly(Assembly assem, string name)
         {
             if (assem == null)
@@ -359,17 +377,17 @@ namespace System.Runtime.Serialization
                 return type.FullName!;
             }
 
-            var builder = new StringBuilder(type.GetGenericTypeDefinition().FullName).Append("[");
+            var builder = new StringBuilder(type.GetGenericTypeDefinition().FullName).Append('[');
 
             bool hasTypeForwardedFrom;
             foreach (Type genericArgument in type.GetGenericArguments())
             {
-                builder.Append("[").Append(GetClrTypeFullName(genericArgument)).Append(", ");
+                builder.Append('[').Append(GetClrTypeFullName(genericArgument)).Append(", ");
                 builder.Append(GetClrAssemblyName(genericArgument, out hasTypeForwardedFrom)).Append("],");
             }
 
             //remove the last comma and close typename for generic with a close bracket
-            return builder.Remove(builder.Length - 1, 1).Append("]").ToString();
+            return builder.Remove(builder.Length - 1, 1).Append(']').ToString();
         }
     }
 

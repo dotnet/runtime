@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -26,7 +25,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("target", null, () => Environment.GetEnvironmentVariable("test", (EnvironmentVariableTarget)42));
             AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("target", null, () => Environment.SetEnvironmentVariable("test", "test", (EnvironmentVariableTarget)(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("target", null, () => Environment.GetEnvironmentVariables((EnvironmentVariableTarget)(3)));
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && System.Tests.SetEnvironmentVariable.IsSupportedTarget(EnvironmentVariableTarget.User))
+            if (OperatingSystem.IsWindows() && System.Tests.SetEnvironmentVariable.IsSupportedTarget(EnvironmentVariableTarget.User))
             {
                 AssertExtensions.Throws<ArgumentException>("variable", null, () => Environment.SetEnvironmentVariable(new string('s', 256), "value", EnvironmentVariableTarget.User));
             }
@@ -85,7 +84,7 @@ namespace System.Tests
 
                 Assert.Equal(value, Environment.GetEnvironmentVariable("ThisIsATestEnvironmentVariable"));
 
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     value = null;
                 }
@@ -192,7 +191,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
-        public void EnvironmentVariablesAreHashtable(EnvironmentVariableTarget target)
+        public void EnvironmentVariablesAreHashtable_SpecificTarget(EnvironmentVariableTarget target)
         {
             // On NetFX, the type returned was always Hashtable
             Assert.IsType<Hashtable>(Environment.GetEnvironmentVariables(target));
@@ -200,7 +199,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
-        public void EnumerateYieldsDictionaryEntryFromIEnumerable(EnvironmentVariableTarget target)
+        public void EnumerateYieldsDictionaryEntryFromIEnumerable_SpecificTarget(EnvironmentVariableTarget target)
         {
             // GetEnvironmentVariables has always yielded DictionaryEntry from IEnumerable
             IDictionary vars = Environment.GetEnvironmentVariables(target);
@@ -220,8 +219,8 @@ namespace System.Tests
         public void EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
         {
             bool lookForSetValue = (target == EnvironmentVariableTarget.Process) || PlatformDetection.IsWindowsAndElevated;
-            
-            // [ActiveIssue(40226)]
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/30566")]
             if (PlatformDetection.IsWindowsNanoServer && target == EnvironmentVariableTarget.User)
             {
                 lookForSetValue = false;

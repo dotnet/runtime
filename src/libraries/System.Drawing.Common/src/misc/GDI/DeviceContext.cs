@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -15,7 +14,7 @@ namespace System.Drawing.Internal
     /// This class is divided into two files separating the code that needs to be compiled into retail builds and
     /// debugging code.
     /// </summary>
-    internal sealed partial class DeviceContext : MarshalByRefObject, IDeviceContext, IDisposable
+    internal sealed partial class DeviceContext : MarshalByRefObject, IDisposable
     {
         /// <summary>
         /// This class is a wrapper to a Win32 device context, and the Hdc property is the way to get a
@@ -60,13 +59,9 @@ namespace System.Drawing.Internal
         private IntPtr _hDC;
         private readonly DeviceContextType _dcType;
 
-        public event EventHandler Disposing;
+        public event EventHandler? Disposing;
 
         private bool _disposed;
-
-        // We cache the hWnd when creating the dc from one, to provide support forIDeviceContext.GetHdc/ReleaseHdc.
-        // This hWnd could be null, in such case it is referring to the screen.
-        private readonly IntPtr _hWnd = (IntPtr)(-1); // Unlikely to be a valid hWnd.
 
         private IntPtr _hInitialPen;
         private IntPtr _hInitialBrush;
@@ -78,7 +73,7 @@ namespace System.Drawing.Internal
         private IntPtr _hCurrentBmp;
         private IntPtr _hCurrentFont;
 
-        private Stack _contextStack;
+        private Stack? _contextStack;
 
 #if GDI_FINALIZATION_WATCH
         private string AllocationSite = DbgUtil.StackTrace;
@@ -89,34 +84,7 @@ namespace System.Drawing.Internal
         /// This object's hdc.  If this property is called, then the object will be used as an HDC wrapper, so the hdc
         /// is cached and calls to GetHdc/ReleaseHdc won't PInvoke into GDI. Call Dispose to properly release the hdc.
         /// </summary>
-        public IntPtr Hdc
-        {
-            get
-            {
-                if (_hDC == IntPtr.Zero)
-                {
-                    if (_dcType == DeviceContextType.Display)
-                    {
-                        Debug.Assert(!_disposed, "Accessing a disposed DC, forcing recreation of HDC - this will generate a Handle leak!");
-
-                        // Note: ReleaseDC must be called from the same thread. This applies only to HDC obtained
-                        // from calling GetDC. This means Display DeviceContext objects should never be finalized.
-                        _hDC = ((IDeviceContext)this).GetHdc();  // _hDC will be released on call to Dispose.
-                        CacheInitialState();
-                    }
-#if GDI_FINALIZATION_WATCH
-                    else
-                    {
-                        try { Debug.WriteLine($"Allocation stack:\r\n{AllocationSite}\r\nDeallocation stack:\r\n{DeAllocationSite}"); } catch  {}
-                    }
-#endif
-                }
-
-                Debug.Assert(_hDC != IntPtr.Zero, "Attempt to use deleted HDC - DC type: " + _dcType);
-
-                return _hDC;
-            }
-        }
+        public IntPtr Hdc => _hDC;
 
         // Due to a problem with calling DeleteObject() on currently selected GDI objects, we now track the initial set
         // of objects when a DeviceContext is created. Then, we also track which objects are currently selected in the
@@ -130,24 +98,6 @@ namespace System.Drawing.Internal
             _hCurrentFont = _hInitialFont = Interop.Gdi32.GetCurrentObject(new HandleRef(this, _hDC), Interop.Gdi32.ObjectType.OBJ_FONT);
         }
 
-
-        /// <summary>
-        /// Constructor to construct a DeviceContext object from an window handle.
-        /// </summary>
-        private DeviceContext(IntPtr hWnd)
-        {
-            _hWnd = hWnd;
-            _dcType = DeviceContextType.Display;
-
-            DeviceContexts.AddDeviceContext(this);
-
-            // the hDc will be created on demand.
-
-#if TRACK_HDC
-            Debug.WriteLine( DbgUtil.StackTraceToStr(string.Format( "DeviceContext( hWnd=0x{0:x8} )", unchecked((int) hWnd))));
-#endif
-        }
-
         /// <summary>
         /// Constructor to construct a DeviceContext object from an existing Win32 device context handle.
         /// </summary>
@@ -159,10 +109,6 @@ namespace System.Drawing.Internal
             CacheInitialState();
             DeviceContexts.AddDeviceContext(this);
 
-            if (dcType == DeviceContextType.Display)
-            {
-                _hWnd = Interop.User32.WindowFromDC(new HandleRef(this, _hDC));
-            }
 #if TRACK_HDC
             Debug.WriteLine(DbgUtil.StackTraceToStr($"DeviceContext(hDC=0x{(int)hDC:X8}, Type={dcType})"));
 #endif
@@ -171,7 +117,7 @@ namespace System.Drawing.Internal
         /// <summary>
         /// CreateDC creates a DeviceContext object wrapping an hdc created with the Win32 CreateDC function.
         /// </summary>
-        public static DeviceContext CreateDC(string driverName, string deviceName, string fileName, IntPtr devMode)
+        public static DeviceContext CreateDC(string driverName, string deviceName, string? fileName, IntPtr devMode)
         {
             // Note: All input params can be null but not at the same time.  See MSDN for information.
             IntPtr hdc = Interop.Gdi32.CreateDCW(driverName, deviceName, fileName, devMode);
@@ -181,25 +127,12 @@ namespace System.Drawing.Internal
         /// <summary>
         /// CreateIC creates a DeviceContext object wrapping an hdc created with the Win32 CreateIC function.
         /// </summary>
-        public static DeviceContext CreateIC(string driverName, string deviceName, string fileName, IntPtr devMode)
+        public static DeviceContext CreateIC(string driverName, string deviceName, string? fileName, IntPtr devMode)
         {
             // Note: All input params can be null but not at the same time.  See MSDN for information.
 
             IntPtr hdc = Interop.Gdi32.CreateICW(driverName, deviceName, fileName, devMode);
             return new DeviceContext(hdc, DeviceContextType.Information);
-        }
-
-        /// <summary>
-        /// Creates a DeviceContext object wrapping a memory DC compatible with the specified device.
-        /// </summary>
-        public static DeviceContext FromCompatibleDC(IntPtr hdc)
-        {
-            // If hdc is null, the function creates a memory DC compatible with the application's current screen.
-            // Win2K+: (See CreateCompatibleDC in the MSDN).
-            // In this case the thread that calls CreateCompatibleDC owns the HDC that is created. When this thread is destroyed,
-            // the HDC is no longer valid.
-            IntPtr compatibleDc = Interop.Gdi32.CreateCompatibleDC(hdc);
-            return new DeviceContext(compatibleDc, DeviceContextType.Memory);
         }
 
         /// <summary>
@@ -211,11 +144,6 @@ namespace System.Drawing.Internal
             Debug.Assert(hdc != IntPtr.Zero, "hdc == 0");
             return new DeviceContext(hdc, DeviceContextType.Unknown);
         }
-
-        /// <summary>
-        /// When hwnd is null, we are getting the screen DC.
-        /// </summary>
-        public static DeviceContext FromHwnd(IntPtr hwnd) => new DeviceContext(hwnd);
 
         ~DeviceContext() => Dispose(false);
 
@@ -238,10 +166,6 @@ namespace System.Drawing.Internal
 
             switch (_dcType)
             {
-                case DeviceContextType.Display:
-                    Debug.Assert(disposing, "WARNING: Finalizing a Display DeviceContext.\r\nReleaseDC may fail when not called from the same thread GetDC was called from.");
-                    ((IDeviceContext)this).ReleaseHdc();
-                    break;
                 case DeviceContextType.Information:
                 case DeviceContextType.NamedDevice:
                     Interop.Gdi32.DeleteDC(new HandleRef(this, _hDC));
@@ -260,48 +184,6 @@ namespace System.Drawing.Internal
             }
 
             DbgUtil.AssertFinalization(this, disposing);
-        }
-
-        /// <summary>
-        /// Explicit interface method implementation to hide them a bit for usability reasons so the object is seen as
-        /// a wrapper around an hdc that is always available, and for performance reasons since it caches the hdc if
-        /// used in this way.
-        /// </summary>
-        IntPtr IDeviceContext.GetHdc()
-        {
-            if (_hDC == IntPtr.Zero)
-            {
-                Debug.Assert(_dcType == DeviceContextType.Display, "Calling GetDC from a non display/window device.");
-
-                // Note: for common DCs, GetDC assigns default attributes to the DC each time it is retrieved.
-                // For example, the default font is System.
-                _hDC = Interop.User32.GetDC(new HandleRef(this, _hWnd));
-#if TRACK_HDC
-                Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("hdc[0x{0:x8}]=DC.GetHdc(hWnd=0x{1:x8})", unchecked((int) _hDC), unchecked((int) _hWnd))));
-#endif
-            }
-
-            return _hDC;
-        }
-
-
-        ///<summary>
-        /// If the object was created from a DC, this object doesn't 'own' the dc so we just ignore this call.
-        ///</summary>
-        void IDeviceContext.ReleaseHdc()
-        {
-            if (_hDC != IntPtr.Zero && _dcType == DeviceContextType.Display)
-            {
-#if TRACK_HDC
-                int retVal =
-#endif
-                Interop.User32.ReleaseDC(new HandleRef(this, _hWnd), new HandleRef(this, _hDC));
-                // Note: retVal == 0 means it was not released but doesn't necessarily means an error; class or private DCs are never released.
-#if TRACK_HDC
-                Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("[ret={0}]=DC.ReleaseDC(hDc=0x{1:x8}, hWnd=0x{2:x8})", retVal, unchecked((int) _hDC), unchecked((int) _hWnd))));
-#endif
-                _hDC = IntPtr.Zero;
-            }
         }
 
         /// <summary>
@@ -330,7 +212,7 @@ namespace System.Drawing.Internal
 
             if (_contextStack != null)
             {
-                GraphicsState g = (GraphicsState)_contextStack.Pop();
+                GraphicsState g = (GraphicsState)_contextStack.Pop()!;
 
                 _hCurrentBmp = g.hBitmap;
                 _hCurrentBrush = g.hBrush;
@@ -437,9 +319,9 @@ namespace System.Drawing.Internal
 
         /// <summary>
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            DeviceContext other = obj as DeviceContext;
+            DeviceContext? other = obj as DeviceContext;
 
             if (other == this)
             {

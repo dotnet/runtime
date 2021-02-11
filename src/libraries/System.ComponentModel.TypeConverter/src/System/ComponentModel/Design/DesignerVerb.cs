@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
@@ -15,7 +14,6 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.Design.DesignerVerb'/> class.
         /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public DesignerVerb(string text, EventHandler handler) : base(handler, StandardCommands.VerbFirst)
         {
             Properties["Text"] = text == null ? null : Regex.Replace(text, @"\(\&.\)", "");
@@ -25,7 +23,6 @@ namespace System.ComponentModel.Design
         /// Initializes a new instance of the <see cref='System.ComponentModel.Design.DesignerVerb'/>
         /// class.
         /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public DesignerVerb(string text, EventHandler handler, CommandID startCommandID) : base(handler, startCommandID)
         {
             Properties["Text"] = text == null ? null : Regex.Replace(text, @"\(\&.\)", "");

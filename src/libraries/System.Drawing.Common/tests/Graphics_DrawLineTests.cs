@@ -1,5 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
 
@@ -7,7 +7,7 @@ namespace System.Drawing.Tests
 {
     public class Graphics_DrawLineTests : DrawingTest
     {
-        [ActiveIssue(30683, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26624", TargetFrameworkMonikers.Netcoreapp)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_Points()
         {
@@ -23,7 +23,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(30683, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26624", TargetFrameworkMonikers.Netcoreapp)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_PointFs()
         {
@@ -68,7 +68,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLine_Busy_ThrowsInvalidOperationException()
         {
@@ -76,7 +76,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawLine(pen, Point.Empty, Point.Empty));
@@ -158,7 +158,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_Busy_ThrowsInvalidOperationException()
         {
@@ -166,7 +166,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             using (var pen = new Pen(Color.Red))
             {
-                IntPtr hdc = graphics.GetHdc();
+                graphics.GetHdc();
                 try
                 {
                     Assert.Throws<InvalidOperationException>(() => graphics.DrawLines(pen, new Point[2]));

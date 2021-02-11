@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -24,19 +23,23 @@ TypeAttr(typeof(object), name = "TypeAttrSimple")]
 [assembly: CompilationRelaxations(8)]
 [assembly: Debuggable((DebuggableAttribute.DebuggingModes)263)]
 [assembly: CLSCompliant(false)]
+[assembly: TypeForwardedTo(typeof(string))]
+[assembly: TypeForwardedTo(typeof(TypeInForwardedAssembly))]
 
 namespace System.Reflection.Tests
 {
     public class AssemblyTests : FileCleanupTestBase
     {
-        private string SourceTestAssemblyPath { get; } = Path.Combine(Environment.CurrentDirectory, "TestAssembly.dll");
+        private const string s_sourceTestAssemblyName = "TestAssembly.dll";
+
+        private string SourceTestAssemblyPath { get; } = Path.Combine(Environment.CurrentDirectory, s_sourceTestAssemblyName);
         private string DestTestAssemblyPath { get; }
         private string LoadFromTestPath { get; }
 
         public AssemblyTests()
         {
             // Assembly.Location does not return the file path for single-file deployment targets.
-            DestTestAssemblyPath = Path.Combine(base.TestDirectory, "TestAssembly.dll");
+            DestTestAssemblyPath = Path.Combine(base.TestDirectory, s_sourceTestAssemblyName);
             LoadFromTestPath = Path.Combine(base.TestDirectory, "System.Reflection.Tests.dll");
             File.Copy(SourceTestAssemblyPath, DestTestAssemblyPath);
             string currAssemblyPath = Path.Combine(Environment.CurrentDirectory, "System.Reflection.Tests.dll");
@@ -120,7 +123,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(Assembly assembly1, Assembly assembly2, bool expected)
+        public void EqualsTest(Assembly assembly1, Assembly assembly2, bool expected)
         {
             Assert.Equal(expected, assembly1.Equals(assembly2));
         }
@@ -141,6 +144,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // entry assembly won't be xunit.console on browser
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
@@ -152,19 +156,62 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetFile()
         {
-            Assert.Throws<ArgumentNullException>(() => typeof(AssemblyTests).Assembly.GetFile(null));
-            AssertExtensions.Throws<ArgumentException>(null, () => typeof(AssemblyTests).Assembly.GetFile(""));
-            Assert.Null(typeof(AssemblyTests).Assembly.GetFile("NonExistentfile.dll"));
-            Assert.NotNull(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll"));
-            Assert.Equal(typeof(AssemblyTests).Assembly.GetFile("System.Reflection.Tests.dll").Name, typeof(AssemblyTests).Assembly.Location);
+            var asm = typeof(AssemblyTests).Assembly;
+            if (asm.Location.Length > 0)
+            {
+                Assert.Throws<ArgumentNullException>(() => asm.GetFile(null));
+                AssertExtensions.Throws<ArgumentException>(null, () => asm.GetFile(""));
+                Assert.Null(asm.GetFile("NonExistentfile.dll"));
+                Assert.NotNull(asm.GetFile("System.Reflection.Tests.dll"));
+
+                string name = AssemblyPathHelper.GetAssemblyLocation(asm);
+                Assert.Equal(asm.GetFile("System.Reflection.Tests.dll").Name, name);
+            }
+            else
+            {
+                Assert.Throws<FileNotFoundException>(() => asm.GetFile("System.Reflection.Tests.dll"));
+            }
+        }
+
+        [Fact]
+        public void GetFile_InMemory()
+        {
+            var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
+            var asm = Assembly.Load(inMemBlob);
+            Assert.ThrowsAny<Exception>(() => asm.GetFile(null));
+            Assert.Throws<FileNotFoundException>(() => asm.GetFile(s_sourceTestAssemblyName));
+            Assert.Throws<FileNotFoundException>(() => asm.GetFiles());
+            Assert.Throws<FileNotFoundException>(() => asm.GetFiles(getResourceModules: true));
+            Assert.Throws<FileNotFoundException>(() => asm.GetFiles(getResourceModules: false));
+        }
+
+        [Fact]
+        public void CodeBaseInMemory()
+        {
+            var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
+            var asm = Assembly.Load(inMemBlob);
+            // Should not throw
+            #pragma warning disable SYSLIB0012
+            _ = asm.CodeBase;
+            #pragma warning restore SYSLIB0012
         }
 
         [Fact]
         public void GetFiles()
         {
-            Assert.NotNull(typeof(AssemblyTests).Assembly.GetFiles());
-            Assert.Equal(1, typeof(AssemblyTests).Assembly.GetFiles().Length);
-            Assert.Equal(typeof(AssemblyTests).Assembly.GetFiles()[0].Name, typeof(AssemblyTests).Assembly.Location);
+            var asm = typeof(AssemblyTests).Assembly;
+            if (asm.Location.Length > 0)
+            {
+                Assert.NotNull(asm.GetFiles());
+                Assert.Equal(1, asm.GetFiles().Length);
+
+                string name = AssemblyPathHelper.GetAssemblyLocation(asm);
+                Assert.Equal(asm.GetFiles()[0].Name, name);
+            }
+            else
+            {
+                Assert.Throws<FileNotFoundException>(() => asm.GetFiles());
+            }
         }
 
         public static IEnumerable<object[]> GetHashCode_TestData()
@@ -177,7 +224,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCode_TestData))]
-        public void GetHashCode(Assembly assembly)
+        public void GetHashCodeTest(Assembly assembly)
         {
             int hashCode = assembly.GetHashCode();
             Assert.NotEqual(-1, hashCode);
@@ -191,7 +238,7 @@ namespace System.Reflection.Tests
         [InlineData("System.Reflection.Tests.PublicStruct", true)]
         [InlineData("AssemblyPublicClass", false)]
         [InlineData("NoSuchType", false)]
-        public void GetType(string name, bool exists)
+        public void GetTypeTest(string name, bool exists)
         {
             Type type = Helpers.ExecutingAssembly.GetType(name);
             if (exists)
@@ -228,11 +275,13 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(G<G<int>>), t);
         }
 
+#pragma warning disable SYSLIB0005 // Obsolete: GAC
         [Fact]
         public void GlobalAssemblyCache()
         {
             Assert.False(typeof(AssemblyTests).Assembly.GlobalAssemblyCache);
         }
+#pragma warning restore SYSLIB0005 // Obsolete: GAC
 
         [Fact]
         public void HostContext()
@@ -267,7 +316,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void SecurityRuleSet_Netcore()
+        public void SecurityRuleSetTest()
         {
             Assert.Equal(SecurityRuleSet.None, typeof(AssemblyTests).Assembly.SecurityRuleSet);
         }
@@ -296,14 +345,12 @@ namespace System.Reflection.Tests
             var loadedAssembly1 = Assembly.LoadFile(fullRuntimeTestsPath);
             Assert.NotEqual(currentAssembly, loadedAssembly1);
 
-#if NETCOREAPP
             System.Runtime.Loader.AssemblyLoadContext alc = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(loadedAssembly1);
             string expectedName = string.Format("Assembly.LoadFile({0})", fullRuntimeTestsPath);
             Assert.Equal(expectedName, alc.Name);
             Assert.Contains(fullRuntimeTestsPath, alc.Name);
             Assert.Contains(expectedName, alc.ToString());
             Assert.Contains("System.Runtime.Loader.IndividualAssemblyLoadContext", alc.ToString());
-#endif
 
             string dir = Path.GetDirectoryName(fullRuntimeTestsPath);
             fullRuntimeTestsPath = Path.Combine(dir, ".", RuntimeTestsDll);
@@ -313,7 +360,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void LoadFile_NullPath_Netcore_ThrowsArgumentNullException()
+        public void LoadFile_NullPath_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => Assembly.LoadFile(null));
         }
@@ -352,7 +399,7 @@ namespace System.Reflection.Tests
         [InlineData(50)]
         [InlineData(100)]
         // Higher numbers hit some codepaths that currently don't include the path in the exception message
-        public void LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath(int seek)
+        public void LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath_ByInitialSeek(int seek)
         {
             ReadOnlySpan<byte> garbage = Encoding.UTF8.GetBytes(new string('X', 500));
             string path = GetTestFilePath();
@@ -367,7 +414,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void LoadFromUsingHashValue_Netcore()
+        public void LoadFromUsingHashValue()
         {
             Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom("abc", null, System.Configuration.Assemblies.AssemblyHashAlgorithm.SHA1));
         }
@@ -383,7 +430,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies()
         {
-            Assembly assembly1 = Assembly.LoadFrom(typeof(AssemblyTests).Assembly.Location);
+            Assembly assembly1 = Assembly.LoadFrom(AssemblyPathHelper.GetAssemblyLocation(typeof(AssemblyTests).Assembly));
             Assert.Equal(assembly1, typeof(AssemblyTests).Assembly);
 
             Assembly assembly2 = Assembly.LoadFrom(LoadFromTestPath);
@@ -421,13 +468,13 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void LoadFrom_WithHashValue_NetCoreCore_ThrowsNotSupportedException()
+        public void LoadFrom_WithHashValue_ThrowsNotSupportedException()
         {
             Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom(DestTestAssemblyPath, new byte[0], Configuration.Assemblies.AssemblyHashAlgorithm.None));
         }
 
         [Fact]
-        public void LoadModule_Netcore()
+        public void LoadModule()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
             Assert.Throws<NotImplementedException>(() => assembly.LoadModule("abc", null));
@@ -460,11 +507,13 @@ namespace System.Reflection.Tests
             Assert.NotNull(Helpers.ExecutingAssembly.Location);
         }
 
+#pragma warning disable SYSLIB0012
         [Fact]
         public void CodeBase()
         {
             Assert.NotEmpty(Helpers.ExecutingAssembly.CodeBase);
         }
+#pragma warning restore SYSLIB0012
 
         [Fact]
         public void ImageRuntimeVersion()
@@ -653,7 +702,7 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromBytes()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
-            byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
+            byte[] aBytes = System.IO.File.ReadAllBytes(AssemblyPathHelper.GetAssemblyLocation(assembly));
 
             Assembly loadedAssembly = Assembly.Load(aBytes);
             Assert.NotNull(loadedAssembly);
@@ -671,8 +720,8 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromBytesWithSymbols()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
-            byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
-            byte[] symbols = System.IO.File.ReadAllBytes((System.IO.Path.ChangeExtension(assembly.Location, ".pdb")));
+            byte[] aBytes = System.IO.File.ReadAllBytes(AssemblyPathHelper.GetAssemblyLocation(assembly));
+            byte[] symbols = System.IO.File.ReadAllBytes((System.IO.Path.ChangeExtension(AssemblyPathHelper.GetAssemblyLocation(assembly), ".pdb")));
 
             Assembly loadedAssembly = Assembly.Load(aBytes, symbols);
             Assert.NotNull(loadedAssembly);
@@ -690,7 +739,7 @@ namespace System.Reflection.Tests
         public void AssemblyReflectionOnlyLoadFromBytes()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
-            byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
+            byte[] aBytes = System.IO.File.ReadAllBytes(AssemblyPathHelper.GetAssemblyLocation(assembly));
             Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad(aBytes));
         }
 
@@ -748,6 +797,46 @@ namespace System.Reflection.Tests
         {
             IEnumerable<CustomAttributeData> customAttributesData = typeof(AssemblyTests).Assembly.GetCustomAttributesData().Where(cad => cad.AttributeType == attrType);
             Assert.True(customAttributesData.Count() > 0, $"Did not find custom attribute of type {attrType}");
+        }
+
+        [Fact]
+        public static void AssemblyGetForwardedTypes()
+        {
+            Assembly a = typeof(AssemblyTests).Assembly;
+            Type[] forwardedTypes = a.GetForwardedTypes();
+
+            forwardedTypes = forwardedTypes.OrderBy(t => t.FullName).ToArray();
+
+            Type[] expected = { typeof(string), typeof(TypeInForwardedAssembly), typeof(TypeInForwardedAssembly.PublicInner), typeof(TypeInForwardedAssembly.PublicInner.PublicInnerInner) };
+            expected = expected.OrderBy(t => t.FullName).ToArray();
+
+            Assert.Equal<Type>(expected, forwardedTypes);
+        }
+
+        [Fact]
+        public static void AssemblyGetForwardedTypesLoadFailure()
+        {
+            Assembly a = typeof(TypeInForwardedAssembly).Assembly;
+            ReflectionTypeLoadException rle = Assert.Throws<ReflectionTypeLoadException>(() => a.GetForwardedTypes());
+            Assert.Equal(2, rle.Types.Length);
+            Assert.Equal(2, rle.LoaderExceptions.Length);
+
+            bool foundSystemObject = false;
+            bool foundBifException = false;
+            for (int i = 0; i < rle.Types.Length; i++)
+            {
+                Type type = rle.Types[i];
+                Exception exception = rle.LoaderExceptions[i];
+
+                if (type == typeof(object) && exception == null)
+                    foundSystemObject = true;
+
+                if (type == null && exception is BadImageFormatException)
+                    foundBifException = true;
+            }
+
+            Assert.True(foundSystemObject);
+            Assert.True(foundBifException);
         }
 
         private static Assembly LoadSystemCollectionsAssembly()

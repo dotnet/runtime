@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Pkcs
 {
@@ -23,9 +23,9 @@ namespace System.Security.Cryptography.Pkcs
         private class DSACmsSignature : CmsSignature
         {
             private readonly HashAlgorithmName _expectedDigest;
-            private readonly string _signatureAlgorithm;
+            private readonly string? _signatureAlgorithm;
 
-            internal DSACmsSignature(string signatureAlgorithm, HashAlgorithmName expectedDigest)
+            internal DSACmsSignature(string? signatureAlgorithm, HashAlgorithmName expectedDigest)
             {
                 _signatureAlgorithm = signatureAlgorithm;
                 _expectedDigest = expectedDigest;
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Pkcs
                             _signatureAlgorithm));
                 }
 
-                DSA dsa = certificate.GetDSAPublicKey();
+                DSA? dsa = certificate.GetDSAPublicKey();
 
                 if (dsa == null)
                 {
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 DSAParameters dsaParameters = dsa.ExportParameters(false);
-                int bufSize = 2 * dsaParameters.Q.Length;
+                int bufSize = 2 * dsaParameters.Q!.Length;
 
 #if NETCOREAPP || NETSTANDARD2_1
                 byte[] rented = CryptoPool.Rent(bufSize);
@@ -100,13 +100,13 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm key,
+                AsymmetricAlgorithm? key,
                 bool silent,
-                out Oid signatureAlgorithm,
-                out byte[] signatureValue)
+                [NotNullWhen(true)] out string? signatureAlgorithm,
+                [NotNullWhen(true)] out byte[]? signatureValue)
             {
                 // If there's no private key, fall back to the public key for a "no private key" exception.
-                DSA dsa = key as DSA ??
+                DSA? dsa = key as DSA ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<DSA>(certificate, silent) ??
                     certificate.GetDSAPublicKey();
 
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                string oidValue =
+                string? oidValue =
                     hashAlgorithmName == HashAlgorithmName.SHA1 ? Oids.DsaWithSha1 :
                     hashAlgorithmName == HashAlgorithmName.SHA256 ? Oids.DsaWithSha256 :
                     hashAlgorithmName == HashAlgorithmName.SHA384 ? Oids.DsaWithSha384 :
@@ -131,7 +131,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                signatureAlgorithm = new Oid(oidValue, oidValue);
+                signatureAlgorithm = oidValue;
 
 #if NETCOREAPP || NETSTANDARD2_1
                 // The Q size cannot be bigger than the KeySize.
@@ -144,7 +144,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         var signature = new ReadOnlySpan<byte>(rented, 0, bytesWritten);
 
-                        if (key != null && !certificate.GetDSAPublicKey().VerifySignature(dataHash, signature))
+                        if (key != null && !certificate.GetDSAPublicKey()!.VerifySignature(dataHash, signature))
                         {
                             // key did not match certificate
                             signatureValue = null;

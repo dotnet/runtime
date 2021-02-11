@@ -1,6 +1,5 @@
 ﻿' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 Option Strict On
 Option Explicit On
 
@@ -14,7 +13,7 @@ Imports System.Security
 Imports System.Text
 
 Imports Microsoft.VisualBasic.CompilerServices
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
 Imports Microsoft.VisualBasic.CompilerServices.NativeMethods
 Imports Microsoft.VisualBasic.CompilerServices.NativeTypes
 #End If
@@ -741,7 +740,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
             ' Cannot call through IO.File.WriteAllBytes (since they don't support append)
             ' so only check for trailing separator
-            CheckFilePathTrailingSeparator(file, "file")
+            CheckFilePathTrailingSeparator(file, NameOf(file))
 
             Dim FileStream As IO.FileStream = Nothing
             Try
@@ -788,7 +787,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
             'Cannot call through IO.File.WriteAllText (since they don't support: append, prefer current encoding than specified one)
             ' so only check for trailing separator.
-            CheckFilePathTrailingSeparator(file, "file")
+            CheckFilePathTrailingSeparator(file, NameOf(file))
 
             Dim StreamWriter As IO.StreamWriter = Nothing
             Try
@@ -993,7 +992,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
             ' Throw the final exception if there were exceptions during copy / move.
             If Exceptions.Count > 0 Then
-                Dim IOException As New IO.IOException(Utils.GetResourceString(SR.IO_CopyMoveRecursive))
+                Dim IOException As New IO.IOException(SR.IO_CopyMoveRecursive)
                 For Each Entry As DictionaryEntry In Exceptions
                     IOException.Data.Add(Entry.Key, Entry.Value)
                 Next
@@ -1141,7 +1140,7 @@ Namespace Microsoft.VisualBasic.FileIO
                     ' but have write permission / ACL thus cannot see but can delete / overwrite destination.
 
                     If Environment.OSVersion.Platform = PlatformID.Win32NT Then ' Platforms supporting MoveFileEx.
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
                         Try
                             Dim succeed As Boolean = NativeMethods.MoveFileEx(
                                     sourceFileFullPath, destinationFileFullPath, m_MOVEFILEEX_FLAGS)
@@ -1606,7 +1605,7 @@ Namespace Microsoft.VisualBasic.FileIO
             Debug.Assert(FullTargetPath <> "" And IO.Path.IsPathRooted(FullTargetPath), "Invalid FullTargetPath")
             Debug.Assert(ShowUI <> UIOptionInternal.NoUI, "Why call ShellDelete if ShowUI is NoUI???")
 
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             ' Set operation type.
             Dim OperationType As SHFileOperationType
             If Operation = CopyOrMove.Copy Then
@@ -1670,7 +1669,7 @@ Namespace Microsoft.VisualBasic.FileIO
             Debug.Assert(FullPath <> "" And IO.Path.IsPathRooted(FullPath), "FullPath must be a full path")
             Debug.Assert(ShowUI <> UIOptionInternal.NoUI, "Why call ShellDelete if ShowUI is NoUI???")
 
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             ' Set fFlags to control the operation details.
             Dim OperationFlags As ShFileOperationFlags = GetOperationFlags(ShowUI)
             If (recycle = RecycleOption.SendToRecycleBin) Then
@@ -1683,7 +1682,7 @@ Namespace Microsoft.VisualBasic.FileIO
 #End If
         End Sub
 
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
         ''' <summary>
         ''' Calls NativeMethods.SHFileOperation with the given SHFILEOPSTRUCT, notifies the shell of change,
         ''' and throw exceptions if needed.
@@ -1855,7 +1854,7 @@ Namespace Microsoft.VisualBasic.FileIO
             End If
         End Sub
 
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
         ''' <summary>
         ''' Given an error code from winerror.h, throw the appropriate exception.
         ''' </summary>
@@ -1965,7 +1964,7 @@ Namespace Microsoft.VisualBasic.FileIO
             Throw New InvalidEnumArgumentException(argName, argValue, GetType(UICancelOption))
         End Sub
 
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
         ' Base operation flags used in shell IO operation.
         ' - DON'T move connected files as a group.
         ' - DON'T confirm directory creation - our silent copy / move do not.
@@ -2196,7 +2195,7 @@ Namespace Microsoft.VisualBasic.FileIO
             Private m_SearchText As String ' The text to search.
             Private m_IgnoreCase As Boolean ' Should we ignore case?
             Private m_Decoder As Text.Decoder ' The Decoder to use.
-            Private m_PreviousCharBuffer() As Char = {} ' The cached character array from previous call to IsTextExist.
+            Private m_PreviousCharBuffer() As Char = Array.Empty(Of Char)() ' The cached character array from previous call to IsTextExist.
             Private m_CheckPreamble As Boolean = True ' True to check for preamble. False otherwise.
             Private m_Preamble() As Byte ' The byte order mark we need to consider.
         End Class 'Private Class TextSearchHelper

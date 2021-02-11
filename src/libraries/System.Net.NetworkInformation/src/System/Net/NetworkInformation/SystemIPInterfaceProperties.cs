@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
 
@@ -13,21 +12,21 @@ namespace System.Net.NetworkInformation
     internal class SystemIPInterfaceProperties : IPInterfaceProperties
     {
         // These are valid for all interfaces.
-        private readonly bool _dnsEnabled = false;
-        private readonly bool _dynamicDnsEnabled = false;
-        private readonly InternalIPAddressCollection _dnsAddresses = null;
-        private readonly UnicastIPAddressInformationCollection _unicastAddresses = null;
-        private readonly MulticastIPAddressInformationCollection _multicastAddresses = null;
-        private readonly IPAddressInformationCollection _anycastAddresses = null;
+        private readonly bool _dnsEnabled;
+        private readonly bool _dynamicDnsEnabled;
+        private readonly InternalIPAddressCollection _dnsAddresses;
+        private readonly UnicastIPAddressInformationCollection _unicastAddresses;
+        private readonly MulticastIPAddressInformationCollection _multicastAddresses;
+        private readonly IPAddressInformationCollection _anycastAddresses;
         private readonly Interop.IpHlpApi.AdapterFlags _adapterFlags;
         private readonly string _dnsSuffix;
-        private readonly SystemIPv4InterfaceProperties _ipv4Properties;
-        private readonly SystemIPv6InterfaceProperties _ipv6Properties;
+        private readonly SystemIPv4InterfaceProperties? _ipv4Properties;
+        private readonly SystemIPv6InterfaceProperties? _ipv6Properties;
         private readonly InternalIPAddressCollection _winsServersAddresses;
         private readonly GatewayIPAddressInformationCollection _gatewayAddresses;
         private readonly InternalIPAddressCollection _dhcpServers;
 
-        internal SystemIPInterfaceProperties(Interop.IpHlpApi.FIXED_INFO fixedInfo, Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
+        internal SystemIPInterfaceProperties(in Interop.IpHlpApi.FIXED_INFO fixedInfo, in Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
         {
             _adapterFlags = ipAdapterAddresses.flags;
             _dnsSuffix = ipAdapterAddresses.dnsSuffix;
@@ -75,7 +74,7 @@ namespace System.Net.NetworkInformation
 
         public override IPv4InterfaceProperties GetIPv4Properties()
         {
-            if ((_adapterFlags & Interop.IpHlpApi.AdapterFlags.IPv4Enabled) == 0)
+            if (_ipv4Properties is null)
             {
                 throw new NetworkInformationException(SocketError.ProtocolNotSupported);
             }
@@ -85,7 +84,7 @@ namespace System.Net.NetworkInformation
 
         public override IPv6InterfaceProperties GetIPv6Properties()
         {
-            if ((_adapterFlags & Interop.IpHlpApi.AdapterFlags.IPv6Enabled) == 0)
+            if (_ipv6Properties is null)
             {
                 throw new NetworkInformationException(SocketError.ProtocolNotSupported);
             }

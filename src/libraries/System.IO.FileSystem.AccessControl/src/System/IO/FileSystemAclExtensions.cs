@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -222,6 +221,41 @@ namespace System.IO
             }
         }
 
+        /// <summary>
+        /// Creates a directory and returns it, ensuring it is created with the specified directory security. If the directory already exists, the existing directory is returned.
+        /// </summary>
+        /// <param name="directorySecurity">An object that determines the access control and audit security for the directory.</param>
+        /// <param name="path">The path of the directory to create.</param>
+        /// <returns>A directory information object representing either a created directory with the provided security properties, or the existing directory.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="directorySecurity" /> or <paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path" /> is empty.</exception>
+        /// <exception cref="DirectoryNotFoundException">Could not find a part of the path.</exception>
+        /// <exception cref="UnauthorizedAccessException">Access to the path is denied.</exception>
+        /// <remarks>This extension method was added to .NET Core to bring the functionality that was provided by the `System.IO.Directory.CreateDirectory(System.String,System.Security.AccessControl.DirectorySecurity)` .NET Framework method.</remarks>
+        public static DirectoryInfo CreateDirectory(this DirectorySecurity directorySecurity, string path)
+        {
+            if (directorySecurity == null)
+            {
+                throw new ArgumentNullException(nameof(directorySecurity));
+            }
+
+            if (path == null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            if (path.Length == 0)
+            {
+                throw new ArgumentException(SR.Arg_PathEmpty);
+            }
+
+            DirectoryInfo dirInfo = new DirectoryInfo(path);
+
+            Create(dirInfo, directorySecurity);
+
+            return dirInfo;
+        }
+
         // In the context of a FileStream, the only ACCESS_MASK ACE rights we care about are reading/writing data and the generic read/write rights.
         // See: https://docs.microsoft.com/en-us/windows/win32/secauthz/access-mask
         private static FileAccess GetFileStreamFileAccess(FileSystemRights rights)
@@ -268,7 +302,7 @@ namespace System.IO
 
                 using (DisableMediaInsertionPrompt.Create())
                 {
-                    handle = Interop.Kernel32.CreateFile(fullPath, (int)rights, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+                    handle = Interop.Kernel32.CreateFile(fullPath, (int)rights, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
                     ValidateFileHandle(handle, fullPath);
                 }
             }
@@ -287,7 +321,7 @@ namespace System.IO
                 // probably be consistent w/ every other directory.
                 int errorCode = Marshal.GetLastWin32Error();
 
-                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath.Length == Path.GetPathRoot(fullPath).Length)
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath.Length == Path.GetPathRoot(fullPath)!.Length)
                 {
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
                 }

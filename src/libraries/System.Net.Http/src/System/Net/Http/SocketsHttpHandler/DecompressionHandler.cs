@@ -1,30 +1,30 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed class DecompressionHandler : HttpMessageHandler
+    internal sealed class DecompressionHandler : HttpMessageHandlerStage
     {
-        private readonly HttpMessageHandler _innerHandler;
+        private readonly HttpMessageHandlerStage _innerHandler;
         private readonly DecompressionMethods _decompressionMethods;
 
-        private const string s_gzip = "gzip";
-        private const string s_deflate = "deflate";
-        private const string s_brotli = "br";
-        private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue(s_gzip);
-        private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue(s_deflate);
-        private static readonly StringWithQualityHeaderValue s_brotliHeaderValue = new StringWithQualityHeaderValue(s_brotli);
+        private const string Gzip = "gzip";
+        private const string Deflate = "deflate";
+        private const string Brotli = "br";
+        private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue(Gzip);
+        private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue(Deflate);
+        private static readonly StringWithQualityHeaderValue s_brotliHeaderValue = new StringWithQualityHeaderValue(Brotli);
 
-        public DecompressionHandler(DecompressionMethods decompressionMethods, HttpMessageHandler innerHandler)
+        public DecompressionHandler(DecompressionMethods decompressionMethods, HttpMessageHandlerStage innerHandler)
         {
             Debug.Assert(decompressionMethods != DecompressionMethods.None);
             Debug.Assert(innerHandler != null);
@@ -37,43 +37,57 @@ namespace System.Net.Http
         internal bool DeflateEnabled => (_decompressionMethods & DecompressionMethods.Deflate) != 0;
         internal bool BrotliEnabled => (_decompressionMethods & DecompressionMethods.Brotli) != 0;
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        private static bool EncodingExists(HttpHeaderValueCollection<StringWithQualityHeaderValue> acceptEncodingHeader, string encoding)
         {
-            if (GZipEnabled && !request.Headers.AcceptEncoding.Contains(s_gzipHeaderValue))
+            foreach (StringWithQualityHeaderValue existingEncoding in acceptEncodingHeader)
+            {
+                if (string.Equals(existingEncoding.Value, encoding, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal override async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        {
+            if (GZipEnabled && !EncodingExists(request.Headers.AcceptEncoding, Gzip))
             {
                 request.Headers.AcceptEncoding.Add(s_gzipHeaderValue);
             }
 
-            if (DeflateEnabled && !request.Headers.AcceptEncoding.Contains(s_deflateHeaderValue))
+            if (DeflateEnabled && !EncodingExists(request.Headers.AcceptEncoding, Deflate))
             {
                 request.Headers.AcceptEncoding.Add(s_deflateHeaderValue);
             }
 
-            if (BrotliEnabled && !request.Headers.AcceptEncoding.Contains(s_brotliHeaderValue))
+            if (BrotliEnabled && !EncodingExists(request.Headers.AcceptEncoding, Brotli))
             {
                 request.Headers.AcceptEncoding.Add(s_brotliHeaderValue);
             }
 
-            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage response = await _innerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
 
+            Debug.Assert(response.Content != null);
             ICollection<string> contentEncodings = response.Content.Headers.ContentEncoding;
             if (contentEncodings.Count > 0)
             {
-                string last = null;
+                string? last = null;
                 foreach (string encoding in contentEncodings)
                 {
                     last = encoding;
                 }
 
-                if (GZipEnabled && last == s_gzip)
+                if (GZipEnabled && last == Gzip)
                 {
                     response.Content = new GZipDecompressedContent(response.Content);
                 }
-                else if (DeflateEnabled && last == s_deflate)
+                else if (DeflateEnabled && last == Deflate)
                 {
                     response.Content = new DeflateDecompressedContent(response.Content);
                 }
-                else if (BrotliEnabled && last == s_brotli)
+                else if (BrotliEnabled && last == Brotli)
                 {
                     response.Content = new BrotliDecompressedContent(response.Content);
                 }
@@ -108,7 +122,7 @@ namespace System.Net.Http
                 Headers.AddHeaders(originalContent.Headers);
                 Headers.ContentLength = null;
                 Headers.ContentEncoding.Clear();
-                string prevEncoding = null;
+                string? prevEncoding = null;
                 foreach (string encoding in originalContent.Headers.ContentEncoding)
                 {
                     if (prevEncoding != null)
@@ -121,18 +135,34 @@ namespace System.Net.Http
 
             protected abstract Stream GetDecompressedStream(Stream originalStream);
 
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+            protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+            {
+                using Stream decompressedStream = CreateContentReadStream(cancellationToken);
+                decompressedStream.CopyTo(stream);
+            }
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
                 SerializeToStreamAsync(stream, context, CancellationToken.None);
 
-            internal override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
-                using (Stream decompressedStream = await CreateContentReadStreamAsync().ConfigureAwait(false))
+                using (Stream decompressedStream = TryCreateContentReadStream() ?? await CreateContentReadStreamAsync(cancellationToken).ConfigureAwait(false))
                 {
                     await decompressedStream.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
                 }
             }
 
-            protected override async Task<Stream> CreateContentReadStreamAsync()
+            protected override Stream CreateContentReadStream(CancellationToken cancellationToken)
+            {
+                ValueTask<Stream> task = CreateContentReadStreamAsyncCore(async: false, cancellationToken);
+                Debug.Assert(task.IsCompleted);
+                return task.GetAwaiter().GetResult();
+            }
+
+            protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
+                CreateContentReadStreamAsyncCore(async: true, cancellationToken).AsTask();
+
+            private async ValueTask<Stream> CreateContentReadStreamAsyncCore(bool async, CancellationToken cancellationToken)
             {
                 if (_contentConsumed)
                 {
@@ -141,8 +171,22 @@ namespace System.Net.Http
 
                 _contentConsumed = true;
 
-                Stream originalStream = _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync().ConfigureAwait(false);
+                Stream originalStream;
+                if (async)
+                {
+                    originalStream = _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    originalStream = _originalContent.ReadAsStream(cancellationToken);
+                }
                 return GetDecompressedStream(originalStream);
+            }
+
+            internal override Stream? TryCreateContentReadStream()
+            {
+                Stream? originalStream = _originalContent.TryReadAsStream();
+                return originalStream is null ? null : GetDecompressedStream(originalStream);
             }
 
             protected internal override bool TryComputeLength(out long length)
@@ -180,15 +224,19 @@ namespace System.Net.Http
             { }
 
             protected override Stream GetDecompressedStream(Stream originalStream) =>
-                new DeflateStream(originalStream, CompressionMode.Decompress);
+                // As described in RFC 2616, the deflate content-coding is actually
+                // the "zlib" format (RFC 1950) in combination with the "deflate"
+                // compression algrithm (RFC 1951).  So while potentially
+                // counterintuitive based on naming, this needs to use ZLibStream
+                // rather than DeflateStream.
+                new ZLibStream(originalStream, CompressionMode.Decompress);
         }
 
         private sealed class BrotliDecompressedContent : DecompressedContent
         {
             public BrotliDecompressedContent(HttpContent originalContent) :
                 base(originalContent)
-            {
-            }
+            { }
 
             protected override Stream GetDecompressedStream(Stream originalStream) =>
                 new BrotliStream(originalStream, CompressionMode.Decompress);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -517,7 +516,7 @@ namespace System.Linq.Expressions.Tests
         {
             if (isInterpreted)
             {
-                // See https://github.com/dotnet/corefx/issues/11097 for the difference between
+                // See https://github.com/dotnet/runtime/issues/18278 for the difference between
                 // runtime expression quoting in the compiler and the interpreter.
 
                 Assert.Equal(ExpressionType.Convert, expression.NodeType);

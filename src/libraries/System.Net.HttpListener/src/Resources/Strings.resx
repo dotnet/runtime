@@ -389,4 +389,7 @@
   <data name="net_WebSockets_InvalidState" xml:space="preserve">
     <value>The WebSocket is in an invalid state ('{0}') for this operation. Valid states are: '{1}'</value>
   </data>
+  <data name="SystemNetHttpListener_PlatformNotSupported" xml:space="preserve">
+    <value>System.Net.HttpListener is not supported on this platform.</value>
+  </data>
 </root>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Immutable;
@@ -27,7 +26,7 @@ namespace System.Reflection
 
         public static ImmutableArray<byte> ReadImmutableBytes(byte* buffer, int byteCount)
         {
-            byte[] bytes = ReadBytes(buffer, byteCount);
+            byte[]? bytes = ReadBytes(buffer, byteCount);
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
         }
 
@@ -170,7 +169,6 @@ namespace System.Reflection
             }
         }
 
-        // TODO: Use UTF8Encoding https://github.com/dotnet/corefx/issues/2217
         public static void WriteUTF8(this byte[] buffer, int start, char* charPtr, int charCount, int byteCount, bool allowUnpairedSurrogates)
         {
             Debug.Assert(byteCount >= charCount);

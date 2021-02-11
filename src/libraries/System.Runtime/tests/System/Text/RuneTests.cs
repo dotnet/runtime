@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Globalization;
-using System.Text.Unicode.Tests;
+using System.Text.Unicode;
 using Xunit;
 using Xunit.Sdk;
 
@@ -12,7 +11,7 @@ namespace System.Text.Tests
 {
     public static partial class RuneTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater))] // the localization tables used by our test data only exist on Win8+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater), nameof(PlatformDetection.IsNlsGlobalization))] // the localization tables used by our test data only exist on Win8+
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData('0', '0', '0', "en-US")]
         [InlineData('a', 'A', 'a', "en-US")]
@@ -38,7 +37,7 @@ namespace System.Text.Tests
         }
 
         // Invariant ToUpper / ToLower doesn't modify Turkish I or majuscule Eszett
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater))] // the localization tables used by our test data only exist on Win8+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows8xOrLater), nameof(PlatformDetection.IsNlsGlobalization))] // the localization tables used by our test data only exist on Win8+
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData('0', '0', '0')]
         [InlineData('a', 'A', 'a')]
@@ -51,9 +50,27 @@ namespace System.Text.Tests
         [InlineData('\u0130', '\u0130', '\u0130')] // U+0130 LATIN CAPITAL LETTER I WITH DOT ABOVE
         [InlineData('\u0131', '\u0131', '\u0131')] // U+0131 LATIN SMALL LETTER DOTLESS I
         [InlineData('\u1E9E', '\u1E9E', '\u1E9E')] // U+1E9E LATIN CAPITAL LETTER SHARP S
+        public static void Casing_Invariant(int original, int upper, int lower)
+        {
+            var rune = new Rune(original);
+            Assert.Equal(new Rune(upper), Rune.ToUpperInvariant(rune));
+            Assert.Equal(new Rune(lower), Rune.ToLowerInvariant(rune));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [InlineData('0', '0', '0')]
+        [InlineData('a', 'A', 'a')]
+        [InlineData('i', 'I', 'i')]
+        [InlineData('z', 'Z', 'z')]
+        [InlineData('A', 'A', 'a')]
+        [InlineData('I', 'I', 'i')]
+        [InlineData('Z', 'Z', 'z')]
+        [InlineData('\u00DF', '\u00DF', '\u00DF')] // U+00DF LATIN SMALL LETTER SHARP S
+        [InlineData('\u0130', '\u0130', '\u0130')] // U+0130 LATIN CAPITAL LETTER I WITH DOT ABOVE
+        [InlineData('\u0131', '\u0131', '\u0131')] // U+0131 LATIN SMALL LETTER DOTLESS I
         [InlineData(0x10400, 0x10400, 0x10428)] // U+10400 DESERET CAPITAL LETTER LONG I
         [InlineData(0x10428, 0x10400, 0x10428)] // U+10428 DESERET SMALL LETTER LONG I
-        public static void Casing_Invariant(int original, int upper, int lower)
+        public static void ICU_Casing_Invariant(int original, int upper, int lower)
         {
             var rune = new Rune(original);
             Assert.Equal(new Rune(upper), Rune.ToUpperInvariant(rune));
@@ -139,7 +156,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(SurrogatePairTestData_InvalidOnly))]
-        public static void Ctor_SurrogatePair_Valid(char highSurrogate, char lowSurrogate)
+        public static void Ctor_SurrogatePair_Invalid(char highSurrogate, char lowSurrogate)
         {
             string expectedParamName = !char.IsHighSurrogate(highSurrogate) ? nameof(highSurrogate) : nameof(lowSurrogate);
             Assert.Throws<ArgumentOutOfRangeException>(expectedParamName, () => new Rune(highSurrogate, lowSurrogate));
@@ -158,6 +175,7 @@ namespace System.Text.Tests
             Rune b = new Rune(other);
 
             Assert.Equal(expectedSign, Math.Sign(a.CompareTo(b)));
+            Assert.Equal(expectedSign, Math.Sign(((IComparable)a).CompareTo(b)));
             Assert.Equal(expectedSign < 0, a < b);
             Assert.Equal(expectedSign <= 0, a <= b);
             Assert.Equal(expectedSign > 0, a > b);
@@ -350,11 +368,11 @@ namespace System.Text.Tests
 
             foreach (Rune rune in AllRunes())
             {
-                if (UnicodeData.GetUnicodeCategory((uint)rune.Value) != Rune.GetUnicodeCategory(rune))
+                if (UnicodeData.GetUnicodeCategory(rune.Value) != Rune.GetUnicodeCategory(rune))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw new AssertActualExpectedException(
-                        expected: UnicodeData.GetUnicodeCategory((uint)rune.Value),
+                        expected: UnicodeData.GetUnicodeCategory(rune.Value),
                         actual: Rune.GetUnicodeCategory(rune),
                         userMessage: FormattableString.Invariant($@"Rune.GetUnicodeCategory(U+{rune.Value:X4}) returned wrong value."));
                 }
@@ -455,7 +473,7 @@ namespace System.Text.Tests
 
             foreach (Rune rune in AllRunes())
             {
-                Assert.Equal(UnicodeData.IsWhiteSpace((uint)rune.Value), Rune.IsWhiteSpace(rune));
+                Assert.Equal(UnicodeData.IsWhiteSpace(rune.Value), Rune.IsWhiteSpace(rune));
             }
         }
 
@@ -475,7 +493,24 @@ namespace System.Text.Tests
             Assert.Equal(scalarValueLeft <= scalarValueRight, left <= right);
             Assert.Equal(scalarValueLeft > scalarValueRight, left > right);
             Assert.Equal(scalarValueLeft >= scalarValueRight, left >= right);
-            Assert.Equal(scalarValueLeft.CompareTo(scalarValueRight), left.CompareTo(right));
+            Assert.Equal(Math.Sign(scalarValueLeft.CompareTo(scalarValueRight)), Math.Sign(left.CompareTo(right)));
+            Assert.Equal(Math.Sign(((IComparable)scalarValueLeft).CompareTo(scalarValueRight)), Math.Sign(((IComparable)left).CompareTo(right)));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(0x10FFFF)]
+        public static void NonGenericCompareTo_NonNullAlwaysGreaterThanNull(uint scalarValue)
+        {
+            Assert.Equal(1, Math.Sign(((IComparable)new Rune(scalarValue)).CompareTo(null)));
+        }
+
+        [Fact]
+        public static void NonGenericCompareTo_GivenNonRuneArgument_ThrowsArgumentException()
+        {
+            IComparable rune = new Rune(0);
+
+            Assert.Throws<ArgumentException>(() => rune.CompareTo(0 /* int32 */));
         }
 
         [Fact]

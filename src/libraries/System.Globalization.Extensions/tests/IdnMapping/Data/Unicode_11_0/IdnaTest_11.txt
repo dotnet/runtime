@@ -2111,7 +2111,7 @@ xn--6-gsc039eqq6k.xn--0gb6bxkx18g; ڇ6Ⴔ辘.صيڇ‌; [B2, B3, C1, V6]; xn--6-
 ꡽≯.򻲀򒳄; ꡽≯.򻲀򒳄; [P1, V6]; xn--hdh8193c.xn--5z40cp629b; ; ;  # ≯.
 xn--hdh8193c.xn--5z40cp629b; ꡽≯.򻲀򒳄; [V6]; xn--hdh8193c.xn--5z40cp629b; ; ;  # ≯.
 ςოٻ.ςܔ; ; [B5, B6]; xn--3xa80l26n.xn--3xa41o; ; xn--4xa60l26n.xn--4xa21o;  # ςოٻ.ςܔ
-ΣᲝٻ.Σܔ; σᲝٻ.σܔ; [B5, B6, P1, V6]; xn--4xa60lw94a.xn--4xa21o; ; ;  # σᲝٻ.σܔ
+#ΣᲝٻ.Σܔ; σᲝٻ.σܔ; [B5, B6, P1, V6]; xn--4xa60lw94a.xn--4xa21o; ; ;  # WITH THE FLAGS WE USE IT DOESN'T RETURN ERRORS
 σოٻ.σܔ; ; [B5, B6]; xn--4xa60l26n.xn--4xa21o; ; ;  # σოٻ.σܔ
 Σოٻ.σܔ; σოٻ.σܔ; [B5, B6]; xn--4xa60l26n.xn--4xa21o; ; ;  # σოٻ.σܔ
 xn--4xa60l26n.xn--4xa21o; σოٻ.σܔ; [B5, B6]; xn--4xa60l26n.xn--4xa21o; ; ;  # σოٻ.σܔ

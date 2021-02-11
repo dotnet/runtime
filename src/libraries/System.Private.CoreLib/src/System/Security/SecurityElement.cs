@@ -1,16 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.s
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Security
 {
     public sealed class SecurityElement
     {
-        internal string _tag = null!;
+        internal string _tag;
         internal string? _text;
         private ArrayList? _children;
         internal ArrayList? _attributes;
@@ -34,10 +34,6 @@ namespace System.Security
 
         //-------------------------- Constructors ---------------------------
 
-        internal SecurityElement()
-        {
-        }
-
         public SecurityElement(string tag)
         {
             if (tag == null)
@@ -47,7 +43,6 @@ namespace System.Security
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidElementTag, tag));
 
             _tag = tag;
-            _text = null;
         }
 
         public SecurityElement(string tag, string? text)
@@ -226,7 +221,7 @@ namespace System.Security
             _children.Add(child);
         }
 
-        public bool Equal(SecurityElement? other)
+        public bool Equal([NotNullWhen(true)] SecurityElement? other)
         {
             if (other == null)
                 return false;
@@ -303,7 +298,7 @@ namespace System.Security
             return element;
         }
 
-        public static bool IsValidTag(string? tag)
+        public static bool IsValidTag([NotNullWhen(true)] string? tag)
         {
             if (tag == null)
                 return false;
@@ -311,7 +306,7 @@ namespace System.Security
             return tag.IndexOfAny(s_tagIllegalCharacters) == -1;
         }
 
-        public static bool IsValidText(string? text)
+        public static bool IsValidText([NotNullWhen(true)] string? text)
         {
             if (text == null)
                 return false;
@@ -319,12 +314,12 @@ namespace System.Security
             return text.IndexOfAny(s_textIllegalCharacters) == -1;
         }
 
-        public static bool IsValidAttributeName(string? name)
+        public static bool IsValidAttributeName([NotNullWhen(true)] string? name)
         {
             return IsValidTag(name);
         }
 
-        public static bool IsValidAttributeValue(string? value)
+        public static bool IsValidAttributeValue([NotNullWhen(true)] string? value)
         {
             if (value == null)
                 return false;

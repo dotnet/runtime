@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -65,7 +64,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(16, x);
         }
 
-        [Fact, ActiveIssue(13458)]
+        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/19286")]
         public void CreateByRefAliasingInterpreted()
         {
             CreateByRefAliasing(useInterpreter: true);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -27,7 +26,7 @@ typedef void (*MountPointFound)(const char* name);
 /**
  * Gets the space information for the given mount point and populates the input struct with the data.
  */
-DLLEXPORT int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi);
+PALEXPORT int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi);
 
 /**
  * Gets the format information about the given mount point.
@@ -38,7 +37,7 @@ DLLEXPORT int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, Mount
  * Since C# is much better at enum and string handling, pass either the char buffer or the long type
  * back, depending on what the platform gives us, and let C# reason on it in an easy way.
  */
-DLLEXPORT int32_t SystemNative_GetFormatInfoForMountPoint(
+PALEXPORT int32_t SystemNative_GetFormatInfoForMountPoint(
     const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType);
 
 /**
@@ -46,4 +45,4 @@ DLLEXPORT int32_t SystemNative_GetFormatInfoForMountPoint(
  * function pointer once-per-mount-point to prevent heap allocs
  * as much as possible.
  */
-DLLEXPORT int32_t SystemNative_GetAllMountPoints(MountPointFound onFound);
+PALEXPORT int32_t SystemNative_GetAllMountPoints(MountPointFound onFound);

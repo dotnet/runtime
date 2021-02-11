@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.MemoryMappedFiles.Tests
@@ -614,6 +613,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test exceptional behavior when trying to create a map for a non-shared file that's currently in use.
         /// </summary>
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // the emscripten implementation ignores FileShare.None
         public void FileInUse_CreateFromFile_FailsWithExistingNoShareFile()
         {
             // Already opened with a FileStream
@@ -696,13 +696,13 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
         {
             WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
-                            (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0));
+                            PlatformDetection.IsSuperUser);
         }
 
         [Fact]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
-            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0));
+            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsSuperUser);
         }
 
         /// <summary>
@@ -768,6 +768,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to validate we can create multiple maps from the same FileStream.
         /// </summary>
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // the emscripten implementation doesn't share data
         public void MultipleMapsForTheSameFileStream()
         {
             const int Capacity = 4096;
@@ -868,5 +869,81 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
         }
 
+        private void ValidateDeviceAccess(MemoryMappedFile memMap, long viewCapacity, MemoryMappedFileAccess access)
+        {
+            using (MemoryMappedViewAccessor view = memMap.CreateViewAccessor(0, viewCapacity, access))
+            {
+                if (access != MemoryMappedFileAccess.Write)
+                {
+                    byte b = view.ReadByte(0);
+                    // /dev/zero return zeroes.
+                    Assert.Equal(0, b);
+                }
+
+                if (access != MemoryMappedFileAccess.Read)
+                {
+                    view.Write(0, (byte)1);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Test that we can map special character devices on Unix using FileStream.
+        /// </summary>
+        [ConditionalTheory]
+        [InlineData(MemoryMappedFileAccess.Read)]
+        [InlineData(MemoryMappedFileAccess.ReadWrite)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void OpenCharacterDeviceAsStream(MemoryMappedFileAccess access)
+        {
+            const string device = "/dev/zero";
+            if (!File.Exists(device))
+            {
+                throw new SkipTestException($"'{device}' is not available.");
+            }
+
+            long viewCapacity = 0xFF;
+
+            try
+            {
+                using (FileStream fs = new FileStream(device, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+                using (MemoryMappedFile memMap = MemoryMappedFile.CreateFromFile(fs, null, viewCapacity, access, HandleInheritability.None, false))
+                {
+                    ValidateDeviceAccess(memMap, viewCapacity, access);
+                }
+            }
+            catch (UnauthorizedAccessException) { }
+            // ENODEV Operation not supported by device.
+            catch (IOException ex) when (ex.HResult == 19) { };
+        }
+
+        /// <summary>
+        /// Test that we can map special character devices on Unix using file name.
+        /// </summary>
+        [ConditionalTheory]
+        [InlineData(MemoryMappedFileAccess.Read)]
+        [InlineData(MemoryMappedFileAccess.ReadWrite)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void OpenCharacterDeviceAsFile(MemoryMappedFileAccess access)
+        {
+            const string device = "/dev/zero";
+            if (!File.Exists(device))
+            {
+                throw new SkipTestException($"'{device}' is not available.");
+            }
+
+            long viewCapacity = 0xFF;
+
+            try
+            {
+                using (MemoryMappedFile memMap = MemoryMappedFile.CreateFromFile(device, FileMode.Open, null, viewCapacity, access))
+                {
+                    ValidateDeviceAccess(memMap, viewCapacity, access);
+                }
+            }
+            catch (UnauthorizedAccessException) { }
+            // ENODEV Operation not supported by device.
+            catch (IOException ex) when (ex.HResult == 19) { };
+        }
     }
 }

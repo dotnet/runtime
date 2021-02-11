@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -200,17 +199,17 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Sets a color adjust matrix for image colors and a separate gray scale adjust matrix for gray scale values.
         /// </summary>
-        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix grayMatrix)
+        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix? grayMatrix)
         {
             SetColorMatrices(newColorMatrix, grayMatrix, ColorMatrixFlag.Default, ColorAdjustType.Default);
         }
 
-        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix grayMatrix, ColorMatrixFlag flags)
+        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix? grayMatrix, ColorMatrixFlag flags)
         {
             SetColorMatrices(newColorMatrix, grayMatrix, flags, ColorAdjustType.Default);
         }
 
-        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix grayMatrix, ColorMatrixFlag mode,
+        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix? grayMatrix, ColorMatrixFlag mode,
                                      ColorAdjustType type)
         {
             int status = Gdip.GdipSetImageAttributesColorMatrix(
@@ -407,7 +406,7 @@ namespace System.Drawing.Imaging
         public void SetOutputChannelColorProfile(string colorProfileFilename,
                                                  ColorAdjustType type)
         {
-            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(colorProfileFilename);
 
             int status = Gdip.GdipSetImageAttributesOutputChannelColorProfile(

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -22,7 +21,7 @@ namespace Microsoft.Internal
         }
 
         [DebuggerStepThrough]
-        public static void NullOrNotNullElements<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> values, string parameterName)
+        public static void NullOrNotNullElements<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>>? values, string parameterName)
             where TKey : class
             where TValue : class
         {
@@ -30,14 +29,14 @@ namespace Microsoft.Internal
         }
 
         [DebuggerStepThrough]
-        public static void NullOrNotNullElements<T>(IEnumerable<T> values, string parameterName)
+        public static void NullOrNotNullElements<T>(IEnumerable<T>? values, string parameterName)
             where T : class
         {
             NotNullElements(values, parameterName);
         }
 
         [DebuggerStepThrough]
-        private static void NotNullElements<T>(IEnumerable<T> values, string parameterName)
+        private static void NotNullElements<T>(IEnumerable<T>? values, string parameterName)
             where T : class
         {
             if (values != null)
@@ -53,14 +52,14 @@ namespace Microsoft.Internal
         }
 
         [DebuggerStepThrough]
-        public static void NullOrNotNullElements<T>(T[] values, string parameterName)
+        public static void NullOrNotNullElements<T>(T[]? values, string parameterName)
             where T : class
         {
             NotNullElements(values, parameterName);
         }
 
         [DebuggerStepThrough]
-        private static void NotNullElements<T>(T[] values, string parameterName)
+        private static void NotNullElements<T>(T[]? values, string parameterName)
             where T : class
         {
             if (values != null)
@@ -76,7 +75,7 @@ namespace Microsoft.Internal
         }
 
         [DebuggerStepThrough]
-        private static void NotNullElements<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> values, string parameterName)
+        private static void NotNullElements<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>>? values, string parameterName)
             where TKey : class
             where TValue : class
         {

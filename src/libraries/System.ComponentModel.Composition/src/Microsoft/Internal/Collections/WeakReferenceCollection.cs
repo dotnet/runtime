@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -68,9 +67,7 @@ namespace Microsoft.Internal.Collections
 
             foreach (var weakItem in _items)
             {
-                T item = weakItem.Target as T;
-
-                if (item != null)
+                if (weakItem.Target is T item)
                 {
                     aliveItems.Add(item);
                 }

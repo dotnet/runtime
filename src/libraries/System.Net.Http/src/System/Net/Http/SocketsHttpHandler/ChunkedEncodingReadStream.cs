@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Text;
 using System.Diagnostics;
@@ -100,7 +99,7 @@ namespace System.Net.Http
                 if (cancellationToken.IsCancellationRequested)
                 {
                     // Cancellation requested.
-                    return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                    return ValueTask.FromCanceled<int>(cancellationToken);
                 }
 
                 if (_connection == null || buffer.Length == 0)
@@ -169,7 +168,7 @@ namespace System.Net.Http
                         }
 
                         // We're only here if we need more data to make forward progress.
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
 
                         // Now that we have more, see if we can get any response data, and if
                         // we can we're done.
@@ -192,7 +191,7 @@ namespace System.Net.Http
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                ValidateCopyToArgs(this, destination, bufferSize);
+                ValidateCopyToArguments(destination, bufferSize);
 
                 return
                     cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
@@ -202,7 +201,7 @@ namespace System.Net.Http
 
             private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
             {
-                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                CancellationTokenRegistration ctr = _connection!.RegisterCancellation(cancellationToken);
                 try
                 {
                     while (true)
@@ -223,7 +222,7 @@ namespace System.Net.Http
                             return;
                         }
 
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
                     }
                 }
                 catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
@@ -257,7 +256,7 @@ namespace System.Net.Http
 
             private ReadOnlyMemory<byte> ReadChunkFromConnectionBuffer(int maxBytesToRead, CancellationTokenRegistration cancellationRegistration)
             {
-                Debug.Assert(maxBytesToRead > 0);
+                Debug.Assert(maxBytesToRead > 0 && _connection != null);
 
                 try
                 {
@@ -344,7 +343,6 @@ namespace System.Net.Http
 
                             while (true)
                             {
-                                // TODO: Consider adding folded trailing header support #35769.
                                 _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
                                 if (!_connection.TryReadNextLine(out currentLine))
                                 {
@@ -383,7 +381,7 @@ namespace System.Net.Http
                         default:
                         case ParsingState.Done: // shouldn't be called once we're done
                             Debug.Fail($"Unexpected state: {_state}");
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                             {
                                 NetEventSource.Error(this, $"Unexpected state: {_state}");
                             }
@@ -394,7 +392,7 @@ namespace System.Net.Http
                 catch (Exception)
                 {
                     // Ensure we don't try to read from the connection again (in particular, for draining)
-                    _connection.Dispose();
+                    _connection!.Dispose();
                     _connection = null;
                     throw;
                 }
@@ -433,7 +431,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(_connection != null);
 
-                CancellationTokenSource cts = null;
+                CancellationTokenSource? cts = null;
                 CancellationTokenRegistration ctr = default;
                 try
                 {
@@ -465,14 +463,20 @@ namespace System.Net.Http
                         if (cts == null) // only create the drain timer if we have to go async
                         {
                             TimeSpan drainTime = _connection._pool.Settings._maxResponseDrainTime;
+
+                            if (drainTime == TimeSpan.Zero)
+                            {
+                                return false;
+                            }
+
                             if (drainTime != Timeout.InfiniteTimeSpan)
                             {
                                 cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
-                                ctr = cts.Token.Register(s => ((HttpConnection)s).Dispose(), _connection);
+                                ctr = cts.Token.Register(static s => ((HttpConnection)s!).Dispose(), _connection);
                             }
                         }
 
-                        await _connection.FillAsync().ConfigureAwait(false);
+                        await _connection.FillAsync(async: true).ConfigureAwait(false);
                     }
                 }
                 finally

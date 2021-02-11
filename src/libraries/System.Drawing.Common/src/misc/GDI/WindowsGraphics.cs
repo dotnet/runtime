@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // THIS PARTIAL CLASS CONTAINS THE BASE METHODS FOR CREATING AND DISPOSING A WINDOWSGRAPHICS AS WELL
 // GETTING, DISPOSING AND WORKING WITH A DC.
@@ -25,7 +24,7 @@ namespace System.Drawing.Internal
         // Note: this dc is only disposed when owned (created) by the WindowsGraphics.
         private DeviceContext _dc;
         private bool _disposeDc;
-        private Graphics _graphics; // cached when initialized FromGraphics to be able to call g.ReleaseHdc from Dispose.
+        private Graphics? _graphics; // cached when initialized FromGraphics to be able to call g.ReleaseHdc from Dispose.
 
 #if GDI_FINALIZATION_WATCH
         private string AllocationSite = DbgUtil.StackTrace;
@@ -54,11 +53,12 @@ namespace System.Drawing.Internal
         {
             Debug.Assert(g != null, "null Graphics object.");
 
-            WindowsRegion wr = null;
-            float[] elements = null;
+            WindowsRegion? wr = null;
 
-            Region clipRgn = null;
-            Matrix worldTransf = null;
+            PointF offset = default;
+
+            Region? clipRgn = null;
+            Matrix? worldTransf = null;
 
             if ((properties & ApplyGraphicsProperties.TranslateTransform) != 0 || (properties & ApplyGraphicsProperties.Clipping) != 0)
             {
@@ -72,7 +72,7 @@ namespace System.Drawing.Internal
                 {
                     if ((properties & ApplyGraphicsProperties.TranslateTransform) != 0)
                     {
-                        elements = worldTransf.Elements;
+                        offset = worldTransf.Offset;
                     }
 
                     worldTransf.Dispose();
@@ -111,10 +111,10 @@ namespace System.Drawing.Internal
                 }
             }
 
-            if (elements != null)
+            if (offset != default)
             {
                 // elements (XFORM) = [eM11, eM12, eM21, eM22, eDx, eDy], eDx/eDy specify the translation offset.
-                wg.DeviceContext.TranslateTransform((int)elements[4], (int)elements[5]);
+                wg.DeviceContext.TranslateTransform((int)offset.X, (int)offset.Y);
             }
 
             return wg;
@@ -162,7 +162,7 @@ namespace System.Drawing.Internal
                 }
                 finally
                 {
-                    _dc = null;
+                    _dc = null!;
                 }
             }
         }

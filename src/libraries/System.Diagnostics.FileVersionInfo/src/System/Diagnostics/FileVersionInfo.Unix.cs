@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -11,8 +10,6 @@ namespace System.Diagnostics
 {
     public sealed partial class FileVersionInfo
     {
-        private static readonly char[] s_versionSeparators = new char[] { '.' };
-
         private FileVersionInfo(string fileName)
         {
             _fileName = fileName;
@@ -35,17 +32,13 @@ namespace System.Diagnostics
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         /// <summary>Attempt to load our fields from the metadata of the file, if it's a managed assembly.</summary>
         /// <returns>true if the file is a managed assembly; otherwise, false.</returns>
         private bool TryLoadManagedAssemblyMetadata()
         {
             // First make sure it's a file we can actually read from.  Only regular files are relevant,
             // and attempting to open and read from a file such as a named pipe file could cause us to
-            // hang (waiting for someone else to open and write to the file).
+            // stop responding (waiting for someone else to open and write to the file).
             Interop.Sys.FileStatus fileStatus;
             if (Interop.Sys.Stat(_fileName, out fileStatus) != 0 ||
                 (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFREG)
@@ -191,7 +184,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Parses the version into its constituent parts.</summary>
-        private static void ParseVersion(string versionString, out int major, out int minor, out int build, out int priv)
+        private static void ParseVersion(string? versionString, out int major, out int minor, out int build, out int priv)
         {
             // Relatively-forgiving parsing of a version:
             // - If there are more than four parts (separated by periods), all results are deemed 0
@@ -200,14 +193,14 @@ namespace System.Diagnostics
             // - Whitespace is treated like any other non-digit character and thus isn't ignored.
             // - Each component is parsed as a ushort, allowing for overflow.
 
-            string[] parts = versionString.Split(s_versionSeparators);
             major = minor = build = priv = 0;
-            if (parts.Length <= 4)
+
+            if (versionString != null)
             {
-                bool endedEarly;
-                if (parts.Length > 0)
+                string[] parts = versionString.Split('.');
+                if (parts.Length <= 4 && parts.Length > 0)
                 {
-                    major = ParseUInt16UntilNonDigit(parts[0], out endedEarly);
+                    major = ParseUInt16UntilNonDigit(parts[0], out bool endedEarly);
                     if (!endedEarly && parts.Length > 1)
                     {
                         minor = ParseUInt16UntilNonDigit(parts[1], out endedEarly);
@@ -216,7 +209,7 @@ namespace System.Diagnostics
                             build = ParseUInt16UntilNonDigit(parts[2], out endedEarly);
                             if (!endedEarly && parts.Length > 3)
                             {
-                                priv = ParseUInt16UntilNonDigit(parts[3], out endedEarly);
+                                priv = ParseUInt16UntilNonDigit(parts[3], out _);
                             }
                         }
                     }
@@ -226,6 +219,7 @@ namespace System.Diagnostics
 
         /// <summary>Parses a string as a UInt16 until it hits a non-digit.</summary>
         /// <param name="s">The string to parse.</param>
+        /// <param name="endedEarly">Whether parsing ended prior to reaching the end of the input.</param>
         /// <returns>The parsed value.</returns>
         private static ushort ParseUInt16UntilNonDigit(string s, out bool endedEarly)
         {
@@ -286,7 +280,7 @@ namespace System.Diagnostics
         /// <param name="reader">The metadata reader.</param>
         /// <param name="attr">The attribute.</param>
         /// <param name="value">The value parsed from the attribute, if it could be retrieved; otherwise, the value is left unmodified.</param>
-        private static void GetStringAttributeArgumentValue(MetadataReader reader, CustomAttribute attr, ref string value)
+        private static void GetStringAttributeArgumentValue(MetadataReader reader, CustomAttribute attr, ref string? value)
         {
             EntityHandle ctorHandle = attr.Constructor;
             BlobHandle signature;

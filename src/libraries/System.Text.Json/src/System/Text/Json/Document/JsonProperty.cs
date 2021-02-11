@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -17,9 +16,9 @@ namespace System.Text.Json
         ///   The value of this property.
         /// </summary>
         public JsonElement Value { get; }
-        private string _name { get; }
+        private string? _name { get; }
 
-        internal JsonProperty(JsonElement value, string name = null)
+        internal JsonProperty(JsonElement value, string? name = null)
         {
             Value = value;
             _name = name;
@@ -45,7 +44,7 @@ namespace System.Text.Json
         ///   This method is functionally equal to doing an ordinal comparison of <paramref name="text" /> and
         ///   <see cref="Name" />, but can avoid creating the string instance.
         /// </remarks>
-        public bool NameEquals(string text)
+        public bool NameEquals(string? text)
         {
             return NameEquals(text.AsSpan());
         }
@@ -67,7 +66,7 @@ namespace System.Text.Json
         /// </remarks>
         public bool NameEquals(ReadOnlySpan<byte> utf8Text)
         {
-            return Value.TextEqualsHelper(utf8Text, isPropertyName: true);
+            return Value.TextEqualsHelper(utf8Text, isPropertyName: true, shouldUnescape: true);
         }
 
         /// <summary>
@@ -88,6 +87,11 @@ namespace System.Text.Json
         public bool NameEquals(ReadOnlySpan<char> text)
         {
             return Value.TextEqualsHelper(text, isPropertyName: true);
+        }
+
+        internal bool EscapedNameEquals(ReadOnlySpan<byte> utf8Text)
+        {
+            return Value.TextEqualsHelper(utf8Text, isPropertyName: true, shouldUnescape: false);
         }
 
         /// <summary>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Drawing.Printing
 {
@@ -15,7 +14,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// When overridden in a derived class, begins the control sequence of when and how to print a page in a document.
         /// </summary>
-        public virtual Graphics OnStartPage(PrintDocument document, PrintPageEventArgs e)
+        public virtual Graphics? OnStartPage(PrintDocument document, PrintPageEventArgs e)
         {
             return null;
         }

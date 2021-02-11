@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.IO;
@@ -42,7 +41,7 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class from the specified handle to a device context.
         /// </summary>
-        public Metafile(IntPtr referenceHdc, EmfType emfType, string description)
+        public Metafile(IntPtr referenceHdc, EmfType emfType, string? description)
         {
             Gdip.CheckStatus(Gdip.GdipRecordMetafile(
                 referenceHdc,
@@ -59,7 +58,7 @@ namespace System.Drawing.Imaging
         /// Initializes a new instance of the <see cref='Metafile'/> class from the specified device context, bounded
         /// by the specified rectangle.
         /// </summary>
-        public Metafile(IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string desc)
+        public Metafile(IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string? desc)
         {
             IntPtr metafile = IntPtr.Zero;
 
@@ -90,9 +89,9 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
         /// </summary>
-        public Metafile(string fileName, IntPtr referenceHdc, EmfType type, string description)
+        public Metafile(string fileName, IntPtr referenceHdc, EmfType type, string? description)
         {
-            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(fileName);
 
             Gdip.CheckStatus(Gdip.GdipRecordMetafileFileName(
@@ -110,9 +109,9 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
         /// </summary>
-        public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string description)
+        public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string? description)
         {
-            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(fileName);
 
             IntPtr metafile = IntPtr.Zero;
@@ -146,7 +145,7 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class from the specified data stream.
         /// </summary>
-        public Metafile(Stream stream, IntPtr referenceHdc, EmfType type, string description)
+        public Metafile(Stream stream, IntPtr referenceHdc, EmfType type, string? description)
         {
             Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
                 new GPStream(stream),
@@ -163,7 +162,7 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
         /// </summary>
-        public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type, string description)
+        public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type, string? description)
         {
             Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
                 new GPStream(stream),
@@ -180,7 +179,7 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
         /// </summary>
-        public Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string description)
+        public Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string? description)
         {
             IntPtr metafile = IntPtr.Zero;
 
@@ -243,7 +242,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         public static MetafileHeader GetMetafileHeader(string fileName)
         {
-            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(fileName);
 
             MetafileHeader header = new MetafileHeader();
@@ -264,14 +263,14 @@ namespace System.Drawing.Imaging
                     metafileType == MetafileType.WmfPlaceable)
                 {
                     // WMF header
-                    header.wmf = (MetafileHeaderWmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderWmf));
+                    header.wmf = (MetafileHeaderWmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderWmf))!;
                     header.emf = null;
                 }
                 else
                 {
                     // EMF header
                     header.wmf = null;
-                    header.emf = (MetafileHeaderEmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderEmf));
+                    header.emf = (MetafileHeaderEmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderEmf))!;
                 }
             }
             finally
@@ -307,14 +306,14 @@ namespace System.Drawing.Imaging
                     metafileType == MetafileType.WmfPlaceable)
                 {
                     // WMF header
-                    header.wmf = (MetafileHeaderWmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderWmf));
+                    header.wmf = (MetafileHeaderWmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderWmf))!;
                     header.emf = null;
                 }
                 else
                 {
                     // EMF header
                     header.wmf = null;
-                    header.emf = (MetafileHeaderEmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderEmf));
+                    header.emf = (MetafileHeaderEmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderEmf))!;
                 }
             }
             finally
@@ -350,14 +349,14 @@ namespace System.Drawing.Imaging
                     metafileType == MetafileType.WmfPlaceable)
                 {
                     // WMF header
-                    header.wmf = (MetafileHeaderWmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderWmf));
+                    header.wmf = (MetafileHeaderWmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderWmf))!;
                     header.emf = null;
                 }
                 else
                 {
                     // EMF header
                     header.wmf = null;
-                    header.emf = (MetafileHeaderEmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderEmf));
+                    header.emf = (MetafileHeaderEmf)Marshal.PtrToStructure(memory, typeof(MetafileHeaderEmf))!;
                 }
             }
             finally

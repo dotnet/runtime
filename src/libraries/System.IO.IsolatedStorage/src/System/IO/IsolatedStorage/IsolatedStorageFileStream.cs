@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.IO.IsolatedStorage
 {
@@ -23,7 +23,7 @@ namespace System.IO.IsolatedStorage
         {
         }
 
-        public IsolatedStorageFileStream(string path, FileMode mode, IsolatedStorageFile isf)
+        public IsolatedStorageFileStream(string path, FileMode mode, IsolatedStorageFile? isf)
             : this(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None, isf)
         {
         }
@@ -33,7 +33,7 @@ namespace System.IO.IsolatedStorage
         {
         }
 
-        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, IsolatedStorageFile isf)
+        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, IsolatedStorageFile? isf)
             : this(path, mode, access, access == FileAccess.Read ? FileShare.Read : FileShare.None, DefaultBufferSize, isf)
         {
         }
@@ -43,7 +43,7 @@ namespace System.IO.IsolatedStorage
         {
         }
 
-        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, IsolatedStorageFile isf)
+        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, IsolatedStorageFile? isf)
             : this(path, mode, access, share, DefaultBufferSize, isf)
         {
         }
@@ -53,13 +53,13 @@ namespace System.IO.IsolatedStorage
         {
         }
 
-        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile isf)
+        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile? isf)
             : this(path, mode, access, share, bufferSize, InitializeFileStream(path, mode, access, share, bufferSize, isf))
         {
         }
 
-        // On NetFX FileStream has an internal no arg constructor that we utilize to provide the facade. We don't have access
-        // to internals in CoreFX so we'll do the next best thing and contort ourselves into the SafeFileHandle constructor.
+        // On .NET Framework FileStream has an internal no arg constructor that we utilize to provide the facade. We don't have access
+        // to internals in .NET Core so we'll do the next best thing and contort ourselves into the SafeFileHandle constructor.
         // (A path constructor would try and create the requested file and give us two open handles.)
         //
         // We only expose our own nested FileStream so the base class having a handle doesn't matter. Passing a new SafeFileHandle
@@ -81,7 +81,7 @@ namespace System.IO.IsolatedStorage
         }
 
         // If IsolatedStorageFile is null, then we default to using a file that is scoped by user, appdomain, and assembly.
-        private static InitialiationData InitializeFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile isf)
+        private static InitialiationData InitializeFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile? isf)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -138,7 +138,7 @@ namespace System.IO.IsolatedStorage
                 {
                 }
 
-                // Exception message might leak the IsolatedStorage path. The desktop prevented this by calling an
+                // Exception message might leak the IsolatedStorage path. The .NET Framework prevented this by calling an
                 // internal API which made sure that the exception message was scrubbed. However since the innerException
                 // is never returned to the user(GetIsolatedStorageException() does not populate the innerexception
                 // in retail bits we leak the path only under the debugger via IsolatedStorageException._underlyingException which
@@ -237,7 +237,7 @@ namespace System.IO.IsolatedStorage
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            return _fs.FlushAsync();
+            return _fs.FlushAsync(cancellationToken);
         }
 
         public override void SetLength(long value)
@@ -302,12 +302,12 @@ namespace System.IO.IsolatedStorage
             _fs.WriteByte(value);
         }
 
-        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback? userCallback, object? stateObject)
         {
             return _fs.BeginRead(array, offset, numBytes, userCallback, stateObject);
         }
 
-        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback? userCallback, object? stateObject)
         {
             return _fs.BeginWrite(array, offset, numBytes, userCallback, stateObject);
         }
@@ -328,11 +328,13 @@ namespace System.IO.IsolatedStorage
             get { return _fs.Handle; }
         }
 
+        [UnsupportedOSPlatform("macos")]
         public override void Unlock(long position, long length)
         {
             _fs.Unlock(position, length);
         }
 
+        [UnsupportedOSPlatform("macos")]
         public override void Lock(long position, long length)
         {
             _fs.Lock(position, length);

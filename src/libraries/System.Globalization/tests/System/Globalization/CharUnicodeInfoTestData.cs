@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -13,10 +12,8 @@ namespace System.Globalization.Tests
         private static readonly Lazy<List<CharUnicodeInfoTestCase>> s_testCases = new Lazy<List<CharUnicodeInfoTestCase>>(() =>
         {
             List<CharUnicodeInfoTestCase> testCases = new List<CharUnicodeInfoTestCase>();
-            string fileName =
-                CharUnicodeInfo.GetUnicodeCategory('\u10D0') == UnicodeCategory.LowercaseLetter  ? "UnicodeData.11.0.txt" :
-                CharUnicodeInfo.GetUnicodeCategory('\u037f') == UnicodeCategory.OtherNotAssigned ? "UnicodeData6.3.txt"   : "UnicodeData.8.0.txt";
-            Stream stream = typeof(CharUnicodeInfoGetUnicodeCategoryTests).GetTypeInfo().Assembly.GetManifestResourceStream(fileName);
+            string fileName = "UnicodeData.txt";
+            Stream stream = typeof(CharUnicodeInfoTestData).GetTypeInfo().Assembly.GetManifestResourceStream(fileName);
             using (StreamReader reader = new StreamReader(stream))
             {
                 while (!reader.EndOfStream)

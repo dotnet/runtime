@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 
 #if MS_IO_REDIST
@@ -50,7 +50,7 @@ namespace System.IO
         }
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
-        public static bool Exists(string? path)
+        public static bool Exists([NotNullWhen(true)] string? path)
         {
             try
             {
@@ -262,29 +262,30 @@ namespace System.IO
             string fulldestDirName = Path.GetFullPath(destDirName);
             string destPath = PathInternal.EnsureTrailingSeparator(fulldestDirName);
 
-            string sourceDirNameFromFullPath = Path.GetFileName(fullsourceDirName);
-            string destDirNameFromFullPath = Path.GetFileName(fulldestDirName);
+            ReadOnlySpan<char> sourceDirNameFromFullPath = Path.GetFileName(fullsourceDirName.AsSpan());
+            ReadOnlySpan<char> destDirNameFromFullPath = Path.GetFileName(fulldestDirName.AsSpan());
 
             StringComparison fileSystemSensitivity = PathInternal.StringComparison;
-            bool directoriesAreCaseVariants = !string.Equals(sourceDirNameFromFullPath, destDirNameFromFullPath, StringComparison.Ordinal)
-                && string.Equals(sourceDirNameFromFullPath, destDirNameFromFullPath, StringComparison.OrdinalIgnoreCase);
-            bool sameDirectoryDifferentCase = directoriesAreCaseVariants
-                                                && string.Equals(destDirNameFromFullPath, sourceDirNameFromFullPath, fileSystemSensitivity);
+            bool directoriesAreCaseVariants =
+                !sourceDirNameFromFullPath.SequenceEqual(destDirNameFromFullPath) &&
+                sourceDirNameFromFullPath.Equals(destDirNameFromFullPath, StringComparison.OrdinalIgnoreCase);
+            bool sameDirectoryDifferentCase =
+                directoriesAreCaseVariants &&
+                destDirNameFromFullPath.Equals(sourceDirNameFromFullPath, fileSystemSensitivity);
 
             // If the destination directories are the exact same name
-            if (!sameDirectoryDifferentCase
-                && string.Equals(sourcePath, destPath, fileSystemSensitivity))
+            if (!sameDirectoryDifferentCase && string.Equals(sourcePath, destPath, fileSystemSensitivity))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
-            string? sourceRoot = Path.GetPathRoot(sourcePath);
-            string? destinationRoot = Path.GetPathRoot(destPath);
+            ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourcePath.AsSpan());
+            ReadOnlySpan<char> destinationRoot = Path.GetPathRoot(destPath.AsSpan());
 
             // Compare paths for the same, skip this step if we already know the paths are identical.
-            if (!string.Equals(sourceRoot, destinationRoot, StringComparison.OrdinalIgnoreCase))
+            if (!sourceRoot.Equals(destinationRoot, StringComparison.OrdinalIgnoreCase))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
             // Windows will throw if the source file/directory doesn't exist, we preemptively check
-            // to make sure our cross platform behavior matches NetFX behavior.
+            // to make sure our cross platform behavior matches .NET Framework behavior.
             if (!FileSystem.DirectoryExists(fullsourceDirName) && !FileSystem.FileExists(fullsourceDirName))
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, fullsourceDirName));
 

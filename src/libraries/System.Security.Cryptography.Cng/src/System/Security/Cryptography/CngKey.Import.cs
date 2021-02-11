@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -29,7 +28,7 @@ namespace System.Security.Cryptography
             return Import(keyBlob, format, provider: CngProvider.MicrosoftSoftwareKeyStorageProvider);
         }
 
-        internal static CngKey Import(byte[] keyBlob, string curveName, CngKeyBlobFormat format)
+        internal static CngKey Import(byte[] keyBlob, string? curveName, CngKeyBlobFormat format)
         {
             return Import(keyBlob, curveName, format, provider: CngProvider.MicrosoftSoftwareKeyStorageProvider);
         }
@@ -101,7 +100,7 @@ namespace System.Security.Cryptography
 
         internal static CngKey Import(
             byte[] keyBlob,
-            string curveName,
+            string? curveName,
             CngKeyBlobFormat format,
             CngProvider provider)
         {
@@ -113,7 +112,7 @@ namespace System.Security.Cryptography
 
         internal static CngKey Import(
             ReadOnlySpan<byte> keyBlob,
-            string curveName,
+            string? curveName,
             CngKeyBlobFormat format,
             CngProvider provider)
         {
@@ -123,7 +122,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(provider));
 
             SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider();
-            SafeNCryptKeyHandle keyHandle = null;
+            SafeNCryptKeyHandle? keyHandle = null;
             ErrorCode errorCode;
 
             if (curveName == null)

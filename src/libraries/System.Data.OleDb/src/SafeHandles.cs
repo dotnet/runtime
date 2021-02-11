@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Data.ProviderBase;
@@ -8,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using static System.Data.Common.UnsafeNativeMethods;
 
 namespace System.Data.OleDb
 {
@@ -15,13 +15,13 @@ namespace System.Data.OleDb
     {
         private IntPtr handle2;   // this must be protected so derived classes can use out params.
 
-        private DualCoTaskMem() : base(IntPtr.Zero, true)
+        public DualCoTaskMem() : base(IntPtr.Zero, true)
         {
             this.handle2 = IntPtr.Zero;
         }
 
         // IDBInfo.GetLiteralInfo
-        internal DualCoTaskMem(UnsafeNativeMethods.IDBInfo dbInfo, int[] literals, out int literalCount, out IntPtr literalInfo, out OleDbHResult hr) : this()
+        internal DualCoTaskMem(UnsafeNativeMethods.IDBInfo dbInfo, int[]? literals, out int literalCount, out IntPtr literalInfo, out OleDbHResult hr) : this()
         {
             int count = (null != literals) ? literals.Length : 0;
             hr = dbInfo.GetLiteralInfo(count, literals, out literalCount, out base.handle, out this.handle2);
@@ -93,7 +93,7 @@ namespace System.Data.OleDb
 
     internal sealed class StringMemHandle : DbBuffer
     {
-        internal StringMemHandle(string value) : base((null != value) ? checked(2 + 2 * value.Length) : 0)
+        internal StringMemHandle(string? value) : base((null != value) ? checked(2 + 2 * value.Length) : 0)
         {
             if (null != value)
             {
@@ -128,7 +128,7 @@ namespace System.Data.OleDb
         }
 
         // from ADODBRecordSetConstruction we do not want to release the initial chapter handle
-        private ChapterHandle(IntPtr chapter) : base((object)null)
+        private ChapterHandle(IntPtr chapter) : base((object?)null)
         {
             _chapterHandle = chapter;
         }
@@ -164,75 +164,6 @@ namespace System.Data.OleDb
             }
             return base.ReleaseHandle();
         }
-    }
-
-    [Guid("0fb15084-af41-11ce-bd2b-204c4f4f5020")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    [ComImport]
-    internal interface ITransaction
-    {
-        [PreserveSig]
-        int Commit
-            (
-            [In] bool fRetaining,
-            [In] uint grfTC,
-            [In] uint grfRM
-            );
-
-        [PreserveSig]
-        int Abort
-            (
-            [In] IntPtr pboidReason,
-            [In]         bool fRetaining,
-            [In]         bool fAsync
-            );
-
-        [PreserveSig]
-        int GetTransactionInfo
-            (
-            [Out] IntPtr pinfo
-            );
-    }
-
-    [Guid("0c733a93-2a1c-11ce-ade5-00aa0044773d")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    [ComImport]
-    internal unsafe interface ITransactionLocal : ITransaction
-    {
-        [PreserveSig]
-        new int Commit
-            (
-            [In] bool fRetaining,
-            [In] uint grfTC,
-            [In] uint grfRM
-            );
-
-        [PreserveSig]
-        new int Abort
-            (
-            [In] IntPtr pboidReason,
-            [In]         bool fRetaining,
-            [In]         bool fAsync
-            );
-
-        [PreserveSig]
-        new int GetTransactionInfo
-            (
-            [Out] IntPtr pinfo
-            );
-
-        [PreserveSig]
-        int GetOptionsObject(
-            [Out, Optional] IntPtr ppOptions
-        );
-
-        [PreserveSig]
-        int StartTransaction(
-            [In] int isoLevel,
-            [In] uint isoFlags,
-            [In, Optional] IntPtr pOtherOptions,
-            [Out, Optional] uint* pulTransactionLevel
-        );
     }
 
     internal enum XACTTC
@@ -734,7 +665,7 @@ namespace System.Data.OleDb
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
             IntPtr hchapter = chapter;
-            System.Data.Common.UnsafeNativeMethods.IChapteredRowset chapteredRowset = null;
+            System.Data.Common.UnsafeNativeMethods.IChapteredRowset? chapteredRowset = null;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
@@ -746,6 +677,7 @@ namespace System.Data.OleDb
                 {
                     chapteredRowset = (System.Data.Common.UnsafeNativeMethods.IChapteredRowset)Marshal.GetObjectForIUnknown(pChapteredRowset);
                     hr = (OleDbHResult)chapteredRowset.ReleaseChapter(hchapter, out var refcount);
+                    Marshal.ReleaseComObject(chapteredRowset);
                     Marshal.Release(pChapteredRowset);
                 }
             }
@@ -755,7 +687,7 @@ namespace System.Data.OleDb
         internal static unsafe OleDbHResult ITransactionAbort(System.IntPtr ptr)
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
-            ITransactionLocal transactionLocal = null;
+            ITransactionLocal? transactionLocal = null;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
@@ -767,6 +699,7 @@ namespace System.Data.OleDb
                 {
                     transactionLocal = (ITransactionLocal)Marshal.GetObjectForIUnknown(pTransaction);
                     hr = (OleDbHResult)transactionLocal.Abort(IntPtr.Zero, false, false);
+                    Marshal.ReleaseComObject(transactionLocal);
                     Marshal.Release(pTransaction);
                 }
             }
@@ -776,7 +709,7 @@ namespace System.Data.OleDb
         internal static unsafe OleDbHResult ITransactionCommit(System.IntPtr ptr)
         {
             OleDbHResult hr = OleDbHResult.E_UNEXPECTED;
-            ITransactionLocal transactionLocal = null;
+            ITransactionLocal? transactionLocal = null;
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
@@ -788,6 +721,7 @@ namespace System.Data.OleDb
                 {
                     transactionLocal = (ITransactionLocal)Marshal.GetObjectForIUnknown(pTransaction);
                     hr = (OleDbHResult)transactionLocal.Commit(false, (uint)XACTTC.XACTTC_SYNC_PHASETWO, 0);
+                    Marshal.ReleaseComObject(transactionLocal);
                     Marshal.Release(pTransaction);
                 }
             }

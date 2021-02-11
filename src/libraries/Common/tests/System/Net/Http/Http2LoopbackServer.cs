@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -35,7 +34,7 @@ namespace System.Net.Test.Common
 
         public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
-        public Uri Address
+        public override Uri Address
         {
             get
             {
@@ -75,7 +74,12 @@ namespace System.Net.Test.Common
             _connections.RemoveAll((c) => c.IsInvalid);
         }
 
-        public async Task<Http2LoopbackConnection> AcceptConnectionAsync()
+        public Task<Http2LoopbackConnection> AcceptConnectionAsync()
+        {
+            return AcceptConnectionAsync(null);
+        }
+
+        public async Task<Http2LoopbackConnection> AcceptConnectionAsync(TimeSpan? timeout)
         {
             RemoveInvalidConnections();
 
@@ -86,46 +90,40 @@ namespace System.Net.Test.Common
 
             Socket connectionSocket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
 
-            Http2LoopbackConnection connection = new Http2LoopbackConnection(connectionSocket, _options);
+            var stream = new NetworkStream(connectionSocket, ownsSocket: true);
+            Http2LoopbackConnection connection =
+                timeout != null ? await Http2LoopbackConnection.CreateAsync(connectionSocket, stream, _options, timeout.Value).ConfigureAwait(false) :
+                await Http2LoopbackConnection.CreateAsync(connectionSocket, stream, _options).ConfigureAwait(false);
             _connections.Add(connection);
 
             return connection;
         }
 
-        public async Task<Http2LoopbackConnection> EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
+        public override async Task<GenericLoopbackConnection> EstablishGenericConnectionAsync()
         {
-            (Http2LoopbackConnection connection, _) = await EstablishConnectionGetSettingsAsync().ConfigureAwait(false);
+            return await EstablishConnectionAsync();
+        }
+
+        public Task<Http2LoopbackConnection> EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
+        {
+            return EstablishConnectionAsync(timeout: null, ackTimeout: null, settingsEntries);
+        }
+
+        public async Task<Http2LoopbackConnection> EstablishConnectionAsync(TimeSpan? timeout, TimeSpan? ackTimeout, params SettingsEntry[] settingsEntries)
+        {
+            (Http2LoopbackConnection connection, _) = await EstablishConnectionGetSettingsAsync(timeout, ackTimeout, settingsEntries).ConfigureAwait(false);
             return connection;
         }
 
-        public async Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(params SettingsEntry[] settingsEntries)
+        public Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(params SettingsEntry[] settingsEntries)
         {
-            Http2LoopbackConnection connection = await AcceptConnectionAsync().ConfigureAwait(false);
+            return EstablishConnectionGetSettingsAsync(timeout: null, ackTimeout: null, settingsEntries);
+        }
 
-            // Receive the initial client settings frame.
-            Frame receivedFrame = await connection.ReadFrameAsync(Timeout).ConfigureAwait(false);
-            Assert.Equal(FrameType.Settings, receivedFrame.Type);
-            Assert.Equal(FrameFlags.None, receivedFrame.Flags);
-            Assert.Equal(0, receivedFrame.StreamId);
-
-            var clientSettingsFrame = (SettingsFrame)receivedFrame;
-
-            // Receive the initial client window update frame.
-            receivedFrame = await connection.ReadFrameAsync(Timeout).ConfigureAwait(false);
-            Assert.Equal(FrameType.WindowUpdate, receivedFrame.Type);
-            Assert.Equal(FrameFlags.None, receivedFrame.Flags);
-            Assert.Equal(0, receivedFrame.StreamId);
-
-            // Send the initial server settings frame.
-            SettingsFrame settingsFrame = new SettingsFrame(settingsEntries);
-            await connection.WriteFrameAsync(settingsFrame).ConfigureAwait(false);
-
-            // Send the client settings frame ACK.
-            Frame settingsAck = new Frame(0, FrameType.Settings, FrameFlags.Ack, 0);
-            await connection.WriteFrameAsync(settingsAck).ConfigureAwait(false);
-
-            // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
-            await connection.ExpectSettingsAckAsync();
+        public async Task<(Http2LoopbackConnection, SettingsFrame)> EstablishConnectionGetSettingsAsync(TimeSpan? timeout, TimeSpan? ackTimeout, params SettingsEntry[] settingsEntries)
+        {
+            Http2LoopbackConnection connection = await AcceptConnectionAsync(timeout).ConfigureAwait(false);
+            SettingsFrame clientSettingsFrame = await connection.ReadAndSendSettingsAsync(ackTimeout, settingsEntries).ConfigureAwait(false);
 
             return (connection, clientSettingsFrame);
         }
@@ -145,27 +143,10 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false);
-
-            (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
-
-            // We are about to close the connection, after we send the response.
-            // So, send a GOAWAY frame now so the client won't inadvertantly try to reuse the connection.
-            await connection.SendGoAway(streamId).ConfigureAwait(false);
-
-            if (string.IsNullOrEmpty(content))
+            using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
-                await connection.SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
-            }
-            else
-            {
-                await connection.SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
-                await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(content)).ConfigureAwait(false);
-            }
-
-            await connection.WaitForConnectionShutdownAsync().ConfigureAwait(false);
-
-            return requestData;
+                return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
+			}
         }
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
@@ -176,9 +157,14 @@ namespace System.Net.Test.Common
             }
         }
 
-        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, int timeout = 60_000)
+        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, int timeout = 60_000)
         {
-            using (var server = Http2LoopbackServer.CreateServer())
+            return CreateClientAndServerAsync(clientFunc, serverFunc, null, timeout);
+        }
+
+        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, Http2Options http2Options, int timeout = 60_000)
+        {
+            using (var server = Http2LoopbackServer.CreateServer(http2Options ?? new Http2Options()))
             {
                 Task clientTask = clientFunc(server.Address);
                 Task serverTask = serverFunc(server);
@@ -190,9 +176,12 @@ namespace System.Net.Test.Common
 
     public class Http2Options : GenericLoopbackOptions
     {
-        public int ListenBacklog { get; set; } = 1;
-        public bool UseSsl { get; set; } = PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback();
-        public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls12;
+        public bool ClientCertificateRequired { get; set; }
+
+        public Http2Options()
+        {
+            SslProtocols = SslProtocols.Tls12;
+        }
     }
 
     public sealed class Http2LoopbackServerFactory : LoopbackServerFactory
@@ -207,22 +196,38 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
+        {
+            return Http2LoopbackServer.CreateServer(CreateOptions(options));
+        }
+
+        public override async Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        {
+            return await Http2LoopbackConnection.CreateAsync(socket, stream, CreateOptions(options)).ConfigureAwait(false);
+        }
+
+        private static Http2Options CreateOptions(GenericLoopbackOptions options)
         {
             Http2Options http2Options = new Http2Options();
             if (options != null)
             {
                 http2Options.Address = options.Address;
+                http2Options.UseSsl = options.UseSsl;
+                http2Options.SslProtocols = options.SslProtocols;
+                http2Options.ListenBacklog = options.ListenBacklog;
             }
+            return http2Options;
+        }
 
-            using (var server = Http2LoopbackServer.CreateServer(http2Options))
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        {
+            using (var server = CreateServer(options))
             {
                 await funcAsync(server, server.Address).TimeoutAfter(millisecondsTimeout).ConfigureAwait(false);
             }
         }
 
-        public override bool IsHttp11 => false;
-        public override bool IsHttp2 => true;
+        public override Version Version => HttpVersion20.Value;
     }
 
     public enum ProtocolErrors
@@ -241,5 +246,10 @@ namespace System.Net.Test.Common
         ENHANCE_YOUR_CALM = 0xb,
         INADEQUATE_SECURITY = 0xc,
         HTTP_1_1_REQUIRED = 0xd
+    }
+
+    public static class HttpVersion20
+    {
+        public static readonly Version Value = new Version(2, 0);
     }
 }

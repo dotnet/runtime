@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.Net.Http;
 
 namespace System.Net
@@ -11,8 +9,6 @@ namespace System.Net
     {
         internal static WebExceptionStatus GetStatusFromException(HttpRequestException ex)
         {
-            // Issue 2384: update WebException.GetStatusFromException after System.Net.Http API changes
-            //
             // For now, we use the .HResult of the exception to help us map to a suitable
             // WebExceptionStatus enum value.  The .HResult is set into this exception by
             // the underlying .NET Core and .NET Native versions of the System.Net.Http stack.

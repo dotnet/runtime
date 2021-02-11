@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
@@ -15,12 +14,12 @@ namespace System.ComponentModel.Composition.AttributedModel
         private readonly AttributedPartCreationInfo _partCreationInfo;
         private readonly MemberInfo _member;
         private readonly ExportAttribute _exportAttribute;
-        private readonly Type _typeIdentityType;
+        private readonly Type? _typeIdentityType;
 
-        private IDictionary<string, object> _metadata;
+        private IDictionary<string, object?>? _metadata;
 
-        public AttributedExportDefinition(AttributedPartCreationInfo partCreationInfo, MemberInfo member, ExportAttribute exportAttribute, Type typeIdentityType, string contractName)
-            : base(contractName, (IDictionary<string, object>)null)
+        public AttributedExportDefinition(AttributedPartCreationInfo partCreationInfo, MemberInfo member, ExportAttribute exportAttribute, Type? typeIdentityType, string contractName)
+            : base(contractName, (IDictionary<string, object?>?)null)
         {
             if (partCreationInfo == null)
             {
@@ -43,14 +42,13 @@ namespace System.ComponentModel.Composition.AttributedModel
             _typeIdentityType = typeIdentityType;
         }
 
-        public override IDictionary<string, object> Metadata
+        public override IDictionary<string, object?> Metadata
         {
             get
             {
                 if (_metadata == null)
                 {
-                    IDictionary<string, object> metadata;
-                    _member.TryExportMetadataForMember(out metadata);
+                    _member.TryExportMetadataForMember(out IDictionary<string, object?> metadata);
 
                     string typeIdentity = _exportAttribute.IsContractNameSameAsTypeIdentity() ?
                         ContractName :

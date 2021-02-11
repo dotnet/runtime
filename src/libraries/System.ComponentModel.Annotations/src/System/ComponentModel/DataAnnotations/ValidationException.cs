@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization;
 
@@ -13,7 +12,7 @@ namespace System.ComponentModel.DataAnnotations
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.ComponentModel.DataAnnotations, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class ValidationException : Exception
     {
-        private ValidationResult _validationResult;
+        private ValidationResult? _validationResult;
 
         /// <summary>
         ///     Constructor that accepts a structured <see cref="ValidationResult" /> describing the problem.
@@ -21,8 +20,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationResult">The value describing the validation error</param>
         /// <param name="validatingAttribute">The attribute that triggered this exception</param>
         /// <param name="value">The value that caused the validating attribute to trigger the exception</param>
-        public ValidationException(ValidationResult validationResult, ValidationAttribute validatingAttribute,
-            object value)
+        public ValidationException(ValidationResult validationResult, ValidationAttribute? validatingAttribute,
+            object? value)
             : this(validationResult.ErrorMessage, validatingAttribute, value)
         {
             _validationResult = validationResult;
@@ -34,7 +33,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="errorMessage">The localized error message</param>
         /// <param name="validatingAttribute">The attribute that triggered this exception</param>
         /// <param name="value">The value that caused the validating attribute to trigger the exception</param>
-        public ValidationException(string errorMessage, ValidationAttribute validatingAttribute, object value)
+        public ValidationException(string? errorMessage, ValidationAttribute? validatingAttribute, object? value)
             : base(errorMessage)
         {
             Value = value;
@@ -54,7 +53,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <remarks>The long form of this constructor is preferred because it gives better error reporting.</remarks>
         /// <param name="message">The localized message</param>
-        public ValidationException(string message)
+        public ValidationException(string? message)
             : base(message)
         {
         }
@@ -65,7 +64,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <remarks>The long form of this constructor is preferred because it gives better error reporting</remarks>
         /// <param name="message">The localized error message</param>
         /// <param name="innerException">inner exception</param>
-        public ValidationException(string message, Exception innerException)
+        public ValidationException(string? message, Exception? innerException)
             : base(message, innerException)
         {
         }
@@ -83,7 +82,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the <see>ValidationAttribute</see> instance that triggered this exception.
         /// </summary>
-        public ValidationAttribute ValidationAttribute { get; }
+        public ValidationAttribute? ValidationAttribute { get; }
 
         /// <summary>
         ///     Gets the <see cref="ValidationResult" /> instance that describes the validation error.
@@ -97,6 +96,6 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the value that caused the validating attribute to trigger the exception
         /// </summary>
-        public object Value { get; }
+        public object? Value { get; }
     }
 }

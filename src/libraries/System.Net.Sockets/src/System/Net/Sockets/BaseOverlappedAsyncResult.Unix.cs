@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -17,10 +16,10 @@ namespace System.Net.Sockets
     // BeginReceive, BeginReceiveFrom, BeginSendFile, and BeginAccept calls.
     internal partial class BaseOverlappedAsyncResult : ContextAwareResult
     {
-        public BaseOverlappedAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback)
+        public BaseOverlappedAsyncResult(Socket socket, object? asyncState, AsyncCallback? asyncCallback)
             : base(socket, asyncState, asyncCallback)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, socket);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, socket);
         }
 
         protected void CompletionCallback(int numBytes, SocketError errorCode)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Collections;
@@ -26,10 +25,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class ActiveDirectorySchema : ActiveDirectoryPartition
     {
-        private bool _disposed = false;
-        private DirectoryEntry _schemaEntry = null;
-        private DirectoryEntry _abstractSchemaEntry = null;
-        private DirectoryServer _cachedSchemaRoleOwner = null;
+        private bool _disposed;
+        private DirectoryEntry _schemaEntry;
+        private DirectoryEntry _abstractSchemaEntry;
+        private DirectoryServer _cachedSchemaRoleOwner;
 
         #region constructors
         internal ActiveDirectorySchema(DirectoryContext context, string distinguishedName)
@@ -358,21 +357,21 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (((int)type & (int)PropertyTypes.Indexed) != 0)
             {
-                str.Append("(");
+                str.Append('(');
                 str.Append(PropertyManager.SearchFlags);
                 str.Append(":1.2.840.113556.1.4.804:=");
                 str.Append((int)SearchFlags.IsIndexed);
-                str.Append(")");
+                str.Append(')');
             }
 
             if (((int)type & (int)PropertyTypes.InGlobalCatalog) != 0)
             {
-                str.Append("(");
+                str.Append('(');
                 str.Append(PropertyManager.IsMemberOfPartialAttributeSet);
                 str.Append("=TRUE)");
             }
 
-            str.Append(")"); // end filter
+            str.Append(')'); // end filter
             return GetAllProperties(context, _schemaEntry, str.ToString());
         }
 

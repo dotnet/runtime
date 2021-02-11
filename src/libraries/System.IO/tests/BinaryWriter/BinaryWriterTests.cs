@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -362,6 +361,7 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write('a'));
             Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(new char[] { 'a', 'b' }));
             Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(5.3));
+            Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((Half)5.3));
             Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((short)3));
             Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write(33));
             Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((long)42));

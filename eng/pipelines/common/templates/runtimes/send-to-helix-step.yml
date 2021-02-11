@@ -1,0 +1,63 @@
+parameters:
+  displayName: ''
+  condition: true
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  buildConfig: ''
+  creator: ''
+  publishTestResults: ''
+  helixAccessToken: ''
+  helixBuild: ''
+  helixSource: ''
+  helixQueues: ''
+  helixType: ''
+  scenarios: ''
+  timeoutPerTestCollectionInMinutes: ''
+  timeoutPerTestInMinutes: ''
+  runCrossGen: ''
+  runCrossGen2: ''
+  runPALTestsDir: ''
+  compositeBuildMode: false
+  helixProjectArguments: ''
+  runInUnloadableContext: ''
+  longRunningGcTests: ''
+  gcSimulatorTests: ''
+  runtimeFlavorDisplayName: 'CoreCLR'
+  runtimeVariant: ''
+  shouldContinueOnError: false
+
+
+steps:
+- template: send-to-helix-inner-step.yml
+  parameters:
+    osGroup: ${{ parameters.osGroup }}
+    restoreParams: /p:DotNetPublishToBlobFeed=true -restore -projects $(Build.SourcesDirectory)$(dir)eng$(dir)empty.csproj
+    sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }}
+    condition: and(succeeded(), ${{ parameters.condition }})
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    displayName: ${{ parameters.displayName }}
+    environment:
+      _Creator: ${{ parameters.creator }}
+      _PublishTestResults: ${{ parameters.publishTestResults }}
+      _HelixAccessToken: ${{ parameters.helixAccessToken }}
+      _HelixBuild: ${{ parameters.helixBuild }}
+      _HelixSource: ${{ parameters.helixSource }}
+      _HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
+      _HelixType: ${{ parameters.helixType }}
+      _RunCrossGen: ${{ parameters.runCrossGen }}
+      _RunCrossGen2: ${{ parameters.runCrossGen2 }}
+      _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
+      _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+      _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
+      _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
+      _Scenarios: ${{ join(',', parameters.scenarios) }}
+      _PALTestsDir: ${{ parameters.runPALTestsDir }}
+      _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
+      _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
+      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      _RuntimeVariant: ${{ parameters.runtimeVariant }}
+      ${{ if eq(parameters.publishTestResults, 'true') }}:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
+      NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages

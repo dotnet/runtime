@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // RegexTree is just a wrapper for a node tree with some
 // global information attached.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -18,8 +18,9 @@ namespace System.Text.RegularExpressions
         public readonly Hashtable CapNames;
         public readonly string[] CapsList;
         public readonly RegexOptions Options;
+        public readonly int MinRequiredLength;
 
-        internal RegexTree(RegexNode root, Hashtable caps, int[] capNumList, int capTop, Hashtable capNames, string[] capsList, RegexOptions options)
+        internal RegexTree(RegexNode root, Hashtable caps, int[] capNumList, int capTop, Hashtable capNames, string[] capsList, RegexOptions options, int minRequiredLength)
         {
             Root = root;
             Caps = caps;
@@ -28,21 +29,18 @@ namespace System.Text.RegularExpressions
             CapNames = capNames;
             CapsList = capsList;
             Options = options;
+            MinRequiredLength = minRequiredLength;
         }
 
 #if DEBUG
-        public void Dump()
-        {
-            Root.Dump();
-        }
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        public void Dump() => Root.Dump();
 
-        public bool Debug
-        {
-            get
-            {
-                return (Options & RegexOptions.Debug) != 0;
-            }
-        }
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        public override string ToString() => Root.ToString();
+
+        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        public bool Debug => (Options & RegexOptions.Debug) != 0;
 #endif
     }
 }

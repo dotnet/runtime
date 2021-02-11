@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
@@ -57,16 +56,11 @@ namespace System.Drawing.Imaging
             int size = Marshal.SizeOf(typeof(EncoderParameter));
 
             int length = _param.Length;
-            IntPtr memory = Marshal.AllocHGlobal(checked(length * size + Marshal.SizeOf(typeof(IntPtr))));
-
-            if (memory == IntPtr.Zero)
-            {
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-            }
+            IntPtr memory = Marshal.AllocHGlobal(checked(length * size + IntPtr.Size));
 
             Marshal.WriteIntPtr(memory, (IntPtr)length);
 
-            long arrayOffset = checked((long)memory + Marshal.SizeOf(typeof(IntPtr)));
+            long arrayOffset = checked((long)memory + IntPtr.Size);
 
             for (int i = 0; i < length; i++)
             {
@@ -91,11 +85,11 @@ namespace System.Drawing.Imaging
 
             EncoderParameters p = new EncoderParameters(count);
             int size = Marshal.SizeOf(typeof(EncoderParameter));
-            long arrayOffset = (long)memory + Marshal.SizeOf(typeof(IntPtr));
+            long arrayOffset = (long)memory + IntPtr.Size;
 
             for (int i = 0; i < count; i++)
             {
-                Guid guid = (Guid)Marshal.PtrToStructure((IntPtr)(i * size + arrayOffset), typeof(Guid));
+                Guid guid = (Guid)Marshal.PtrToStructure((IntPtr)(i * size + arrayOffset), typeof(Guid))!;
                 int numberOfValues = Marshal.ReadInt32((IntPtr)(i * size + arrayOffset + 16));
                 EncoderParameterValueType type = (EncoderParameterValueType)Marshal.ReadInt32((IntPtr)(i * size + arrayOffset + 20));
                 IntPtr value = Marshal.ReadIntPtr((IntPtr)(i * size + arrayOffset + 24));
@@ -115,7 +109,7 @@ namespace System.Drawing.Imaging
                     p.Dispose();
                 }
             }
-            _param = null;
+            _param = null!;
         }
     }
 }

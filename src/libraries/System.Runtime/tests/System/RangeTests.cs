@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Xunit;
@@ -128,7 +127,7 @@ namespace System.Tests
             public CustomRangeTester(int [] data) => _data = data;
             public int Length => _data.Length;
             public int this[int index] => _data[index];
-            public CustomRangeTester Slice(int start, int length) => new CustomRangeTester(_data.AsSpan().Slice(start, length).ToArray());
+            public CustomRangeTester Slice(int start, int length) => new CustomRangeTester(_data.AsSpan(start, length).ToArray());
 
             public int [] Data => _data;
 

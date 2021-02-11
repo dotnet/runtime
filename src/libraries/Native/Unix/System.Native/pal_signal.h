@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -22,7 +21,7 @@ int32_t InitializeSignalHandlingCore(void);
  *
  * Should only be called when a callback is not currently registered.
  */
-DLLEXPORT void SystemNative_RegisterForCtrl(CtrlCallback callback);
+PALEXPORT void SystemNative_RegisterForCtrl(CtrlCallback callback);
 
 /**
  * Unregisters the previously registered ctrlCCallback.
@@ -34,7 +33,7 @@ DLLEXPORT void SystemNative_RegisterForCtrl(CtrlCallback callback);
  * previously registered must remain valid until all ctrl handling activity
  * has quiesced.
  */
-DLLEXPORT void SystemNative_UnregisterForCtrl(void);
+PALEXPORT void SystemNative_UnregisterForCtrl(void);
 
 typedef void (*SigChldCallback)(int reapAll);
 
@@ -43,7 +42,7 @@ typedef void (*SigChldCallback)(int reapAll);
  *
  * Should only be called when a callback is not currently registered.
  */
-DLLEXPORT void SystemNative_RegisterForSigChld(SigChldCallback callback);
+PALEXPORT void SystemNative_RegisterForSigChld(SigChldCallback callback);
 
 /**
  * Remove our handler and reissue the signal to be picked up by the previously registered handler.
@@ -51,7 +50,7 @@ DLLEXPORT void SystemNative_RegisterForSigChld(SigChldCallback callback);
  * In the most common case, this will be the default handler, causing the process to be torn down.
  * It could also be a custom handler registered by other code before us.
  */
-DLLEXPORT void SystemNative_RestoreAndHandleCtrl(CtrlCode ctrlCode);
+PALEXPORT void SystemNative_RestoreAndHandleCtrl(CtrlCode ctrlCode);
 
 typedef void (*TerminalInvalidationCallback)(void);
 
@@ -59,4 +58,15 @@ typedef void (*TerminalInvalidationCallback)(void);
  * Hooks up the specified callback for notifications when SIGCHLD, SIGCONT, SIGWINCH are received.
   *
  */
-DLLEXPORT void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback);
+PALEXPORT void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback);
+
+#ifndef HAS_CONSOLE_SIGNALS
+
+/**
+ * Initializes signal handling and terminal for use by System.Console and System.Diagnostics.Process.
+ *
+ * Returns 1 on success; otherwise returns 0 and sets errno.
+ */
+PALEXPORT int32_t SystemNative_InitializeTerminalAndSignalHandling(void);
+
+#endif

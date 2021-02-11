@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -329,7 +328,7 @@ namespace System.Security.Cryptography.Xml
             if (idref.StartsWith("xpointer(id(", StringComparison.Ordinal))
             {
                 int startId = idref.IndexOf("id(", StringComparison.Ordinal);
-                int endId = idref.IndexOf(")", StringComparison.Ordinal);
+                int endId = idref.IndexOf(')');
                 if (endId < 0 || endId < startId + 3)
                     throw new CryptographicException(SR.Cryptography_Xml_InvalidReference);
                 idref = idref.Substring(startId + 3, endId - startId - 3);
@@ -348,7 +347,7 @@ namespace System.Security.Cryptography.Xml
             if (idref.StartsWith("xpointer(id(", StringComparison.Ordinal))
             {
                 int startId = idref.IndexOf("id(", StringComparison.Ordinal);
-                int endId = idref.IndexOf(")", StringComparison.Ordinal);
+                int endId = idref.IndexOf(')');
                 if (endId < 0 || endId < startId + 3)
                     throw new CryptographicException(SR.Cryptography_Xml_InvalidReference);
                 idref = idref.Substring(startId + 3, endId - startId - 3);
@@ -721,29 +720,9 @@ namespace System.Security.Cryptography.Xml
             return collection;
         }
 
-        private static readonly char[] s_hexValues = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
         internal static string EncodeHexString(byte[] sArray)
         {
-            return EncodeHexString(sArray, 0, (uint)sArray.Length);
-        }
-
-        internal static string EncodeHexString(byte[] sArray, uint start, uint end)
-        {
-            string result = null;
-            if (sArray != null)
-            {
-                char[] hexOrder = new char[(end - start) * 2];
-                uint digit;
-                for (uint i = start, j = 0; i < end; i++)
-                {
-                    digit = (uint)((sArray[i] & 0xf0) >> 4);
-                    hexOrder[j++] = s_hexValues[digit];
-                    digit = (uint)(sArray[i] & 0x0f);
-                    hexOrder[j++] = s_hexValues[digit];
-                }
-                result = new string(hexOrder);
-            }
-            return result;
+            return HexConverter.ToString(sArray);
         }
 
         internal static byte[] DecodeHexString(string s)
@@ -754,22 +733,10 @@ namespace System.Security.Cryptography.Xml
             int i = 0;
             for (int index = 0; index < cbHex; index++)
             {
-                hex[index] = (byte)((HexToByte(hexString[i]) << 4) | HexToByte(hexString[i + 1]));
+                hex[index] = (byte)((HexConverter.FromChar(hexString[i]) << 4) | HexConverter.FromChar(hexString[i + 1]));
                 i += 2;
             }
             return hex;
-        }
-
-        internal static byte HexToByte(char val)
-        {
-            if (val <= '9' && val >= '0')
-                return (byte)(val - '0');
-            else if (val >= 'a' && val <= 'f')
-                return (byte)((val - 'a') + 10);
-            else if (val >= 'A' && val <= 'F')
-                return (byte)((val - 'A') + 10);
-            else
-                return 0xFF;
         }
 
         internal static bool IsSelfSigned(X509Chain chain)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -45,23 +44,17 @@ namespace System.Buffers.Text.Tests
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         };
 
-        public static readonly byte s_encodingPad = (byte)'=';              // '=', for padding
-
-        public static readonly sbyte s_invalidByte = -1;                    // Designating -1 for invalid bytes in the decoding map
+        public const byte EncodingPad = (byte)'=';      // '=', for padding
+        public const sbyte InvalidByte = -1;            // Designating -1 for invalid bytes in the decoding map
 
         public static byte[] InvalidBytes
         {
             get
             {
-                int[] indices = s_decodingMap.FindAllIndexOf(s_invalidByte);
-                // Workaroudn for indices.Cast<byte>().ToArray() since it throws
+                int[] indices = s_decodingMap.FindAllIndexOf(InvalidByte);
+                // Workaround for indices.Cast<byte>().ToArray() since it throws
                 // InvalidCastException: Unable to cast object of type 'System.Int32' to type 'System.Byte'
-                byte[] bytes = new byte[indices.Length];
-                for (int i = 0; i < indices.Length; i++)
-                {
-                    bytes[i] = (byte)indices[i];
-                }
-                return bytes;
+                return indices.Select(i => (byte)i).ToArray();
             }
         }
 
@@ -101,7 +94,7 @@ namespace System.Buffers.Text.Tests
             sbyte[] data = new sbyte[256]; // 0 to byte.MaxValue (255)
             for (int i = 0; i < data.Length; i++)
             {
-                data[i] = s_invalidByte;
+                data[i] = InvalidByte;
             }
             for (int i = 0; i < s_characters.Length; i++)
             {

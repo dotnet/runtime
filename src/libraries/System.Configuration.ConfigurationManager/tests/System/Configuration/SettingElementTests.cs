@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -53,7 +52,7 @@ namespace System.Configuration.Tests
             Assert.True(ElementOne.Equals(ElementTwo));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have the fix for #27875")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have the fix for https://github.com/dotnet/runtime/issues/25369")]
         [Fact]
         public void DefaultConstructorEqualHashCodes()
         {
@@ -74,6 +73,9 @@ namespace System.Configuration.Tests
                     }
                 }
             };
+
+            // Validate the getting the hash code doesn't throw
+            _ = Element.GetHashCode();
         }
     }
 }

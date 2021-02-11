@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -106,7 +105,11 @@ namespace Legacy.Support
                 portName2 = openablePortNames.FirstOrDefault(name => name != portName1);
             }
 
-            // See Github issues #15961, #16033, #20764 - hardware tests are currently insufficiently stable on master CI
+            // See Github issues:
+            // https://github.com/dotnet/runtime/issues/20149
+            // https://github.com/dotnet/runtime/issues/20174
+            // https://github.com/dotnet/runtime/issues/22159
+            // hardware tests are currently insufficiently stable on master CI
             if (loopbackPortName == null && !nullModemPresent)
             {
                 // We don't have any supporting hardware - disable all the tests which would use just an open port

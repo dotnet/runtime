@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using Xunit.Abstractions;
 
+using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
 using System.Diagnostics;
@@ -97,7 +97,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ObjectDisposedException>(() => tcpClient.GetStream());
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Ctor_StringInt_ConnectsSuccessfully()
         {
@@ -112,7 +112,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -120,6 +120,11 @@ namespace System.Net.Sockets.Tests
         [InlineData(3)]
         [InlineData(4)]
         [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
         public async Task ConnectAsync_DnsEndPoint_Success(int mode)
         {
             using (var client = new DerivedTcpClient())
@@ -156,6 +161,26 @@ namespace System.Net.Sockets.Tests
                         addresses = await Dns.GetHostAddressesAsync(host);
                         await Task.Factory.FromAsync(client.BeginConnect, client.EndConnect, addresses, port, null);
                         break;
+
+                    case 6:
+                        await client.ConnectAsync(host, port, CancellationToken.None);
+                        break;
+                    case 7:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(addresses[0], port, CancellationToken.None);
+                        break;
+                    case 8:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(new IPEndPoint(addresses[0], port));
+                        break;
+                    case 9:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(new IPEndPoint(addresses[0], port), CancellationToken.None);
+                        break;
+                    case 10:
+                        addresses = await Dns.GetHostAddressesAsync(host);
+                        await client.ConnectAsync(addresses, port, CancellationToken.None);
+                        break;
                 }
 
                 Assert.True(client.Active);
@@ -172,7 +197,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -222,7 +247,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void ConnectedAvailable_InitialValues_Default()
         {
@@ -233,7 +258,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void ConnectedAvailable_NullClient()
         {
@@ -246,7 +271,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void ExclusiveAddressUse_NullClient()
         {
@@ -258,7 +283,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_True()
         {
             using (TcpClient client = new TcpClient())
@@ -268,7 +293,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_False()
         {
             using (TcpClient client = new TcpClient())
@@ -278,7 +303,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Roundtrip_LingerOption_GetEqualsSet()
         {
@@ -298,7 +323,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Roundtrip_NoDelay_GetEqualsSet()
         {
@@ -326,7 +351,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Roundtrip_ReceiveBufferSize_GetEqualsSet()
         {
@@ -339,7 +364,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Roundtrip_SendBufferSize_GetEqualsSet()
         {
@@ -352,7 +377,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Roundtrip_ReceiveTimeout_GetEqualsSet()
         {
@@ -365,7 +390,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Roundtrip_SendTimeout_GetEqualsSet()
         {
@@ -378,7 +403,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task Properties_PersistAfterConnect()
         {
@@ -404,7 +429,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -429,12 +454,12 @@ namespace System.Net.Sockets.Tests
 
                 // There is a race condition here.  If the connection succeeds before the
                 // disposal, then the task will complete successfully.  Otherwise, it should
-                // fail with an ObjectDisposedException.
+                // fail with an exception.
                 try
                 {
                     await connectTask;
                 }
-                catch (ObjectDisposedException) { }
+                catch (SocketException e) when (e.SocketErrorCode == SocketError.OperationAborted) { }
                 sw.Stop();
 
                 Assert.Null(client.Client); // should be nulled out after Dispose
@@ -464,6 +489,34 @@ namespace System.Net.Sockets.Tests
                     {
                         client.Connect(endpoint);
                     }
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false, "::ffff:127.0.0.1")]
+        [InlineData(false, "127.0.0.1")]
+        [InlineData(false, "localhost")]
+        [InlineData(true, "::1")]
+        public void CtorConnect_Success(bool useIPv6, string connectString)
+        {
+            if (!Socket.OSSupportsIPv6)
+            {
+                return;
+            }
+
+            IPAddress serverAddress = useIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
+
+            using (var server = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+            {
+                // Set up a server socket to which to connect
+                server.Bind(new IPEndPoint(serverAddress, 0));
+                server.Listen(1);
+                var endpoint = (IPEndPoint)server.LocalEndPoint;
+
+                using (TcpClient client = new TcpClient(connectString, endpoint.Port))
+                {
+                    Assert.True(client.Connected);
                 }
             }
         }

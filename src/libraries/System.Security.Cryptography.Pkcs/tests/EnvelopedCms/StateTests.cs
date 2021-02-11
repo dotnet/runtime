@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Linq;
@@ -313,7 +312,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                     ecms.Decrypt(r[0], extraStore);
                 }
 
-                // Desktop compat: Calling Encode() at this point should have thrown an InvalidOperationException. Instead, it returns
+                // .NET Framework compat: Calling Encode() at this point should have thrown an InvalidOperationException. Instead, it returns
                 // the decrypted inner content (same as ecms.ContentInfo.Content). This is easy for someone to take a reliance on
                 // so for compat sake, we'd better keep it.
                 byte[] encoded = ecms.Encode();
@@ -457,7 +456,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 return;
 
             if (actual.Length > expected.Length && actual.Take(expected.Length).SequenceEqual(expected))
-                throw new Exception("Returned content had extra bytes padded. If you're running this test on the desktop framework, this is a known bug.");
+                throw new Exception("Returned content had extra bytes padded. If you're running this test on the .NET Framework, this is a known bug.");
 
             Assert.Equal<byte>(expected, actual);
         }

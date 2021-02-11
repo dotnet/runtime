@@ -1,16 +1,58 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
     public partial class Socket
     {
+        [SupportedOSPlatform("windows")]
+        public Socket(SocketInformation socketInformation)
+        {
+            // This constructor works in conjunction with DuplicateAndClose, which is not supported on Unix.
+            // See comments in DuplicateAndClose.
+            throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
+        }
+
+        [SupportedOSPlatform("windows")]
+        public SocketInformation DuplicateAndClose(int targetProcessId)
+        {
+            // DuplicateAndClose is not supported on Unix, since passing file descriptors between processes
+            // requires Unix Domain Sockets. The programming model is fundamentally different,
+            // and incompatible with the design of SocketInformation-related methods.
+            throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
+        }
+
+        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
+        }
+
+        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
+        }
+
+        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
+        }
+
+        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
+        {
+            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
+        }
+
+        internal bool PreferInlineCompletions
+        {
+            get => _handle.PreferInlineCompletions;
+            set => _handle.PreferInlineCompletions = value;
+        }
+
         partial void ValidateForMultiConnect(bool isMultiEndpoint)
         {
             // ValidateForMultiConnect is called before any {Begin}Connect{Async} call,
@@ -30,6 +72,36 @@ namespace System.Net.Sockets
             // with a fresh one, copying over all of the state we've tracked.
             ReplaceHandleIfNecessaryAfterFailedConnect();
             Debug.Assert(!_handle.LastConnectFailed);
+        }
+
+        private static unsafe void LoadSocketTypeFromHandle(
+            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening)
+        {
+            // Validate that the supplied handle is indeed a socket.
+            if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus stat) == -1 ||
+                (stat.Mode & Interop.Sys.FileTypes.S_IFSOCK) != Interop.Sys.FileTypes.S_IFSOCK)
+            {
+                throw new SocketException((int)SocketError.NotSocket);
+            }
+
+            // On Linux, GetSocketType will be able to query SO_DOMAIN, SO_TYPE, and SO_PROTOCOL to get the
+            // address family, socket type, and protocol type, respectively.  On macOS, this will only succeed
+            // in getting the socket type, and the others will be unknown.  Subsequently the Socket ctor
+            // can use getsockname to retrieve the address family as part of trying to get the local end point.
+            Interop.Error e = Interop.Sys.GetSocketType(handle, out addressFamily, out socketType, out protocolType, out isListening);
+            Debug.Assert(e == Interop.Error.SUCCESS, e.ToString());
+
+            // Get whether the socket is in non-blocking mode.  On Unix, we automatically put the underlying
+            // Socket into non-blocking mode whenever an async method is first invoked on the instance, but we
+            // maintain a shadow bool that maintains the Socket.Blocking value set by the developer.  Because
+            // we're querying the underlying socket here, and don't have access to the original Socket instance
+            // (if there even was one... the Socket(SafeSocketHandle) ctor is likely being used because there
+            // wasn't one, Socket.Blocking will end up reflecting the actual state of the socket even if the
+            // developer didn't set Blocking = false.
+            bool nonBlocking;
+            int rv = Interop.Sys.Fcntl.GetIsNonBlocking(handle, out nonBlocking);
+            blocking = !nonBlocking;
+            Debug.Assert(rv == 0 || blocking, e.ToString()); // ignore failures
         }
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect()
@@ -58,7 +130,7 @@ namespace System.Net.Sockets
             bool broadcast = false, dontFragment = false, noDelay = false;
             int receiveSize = -1, receiveTimeout = -1, sendSize = -1, sendTimeout = -1;
             short ttl = -1;
-            LingerOption linger = null;
+            LingerOption? linger = null;
             if (_handle.IsTrackedOption(TrackedSocketOptions.DontFragment)) dontFragment = DontFragment;
             if (_handle.IsTrackedOption(TrackedSocketOptions.EnableBroadcast)) broadcast = EnableBroadcast;
             if (_handle.IsTrackedOption(TrackedSocketOptions.LingerState)) linger = LingerState;
@@ -85,7 +157,7 @@ namespace System.Net.Sockets
             if (_handle.IsTrackedOption(TrackedSocketOptions.DualMode)) DualMode = _handle.DualMode;
             if (_handle.IsTrackedOption(TrackedSocketOptions.DontFragment)) DontFragment = dontFragment;
             if (_handle.IsTrackedOption(TrackedSocketOptions.EnableBroadcast)) EnableBroadcast = broadcast;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.LingerState)) LingerState = linger;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.LingerState)) LingerState = linger!;
             if (_handle.IsTrackedOption(TrackedSocketOptions.NoDelay)) NoDelay = noDelay;
             if (_handle.IsTrackedOption(TrackedSocketOptions.ReceiveBufferSize)) ReceiveBufferSize = receiveSize;
             if (_handle.IsTrackedOption(TrackedSocketOptions.ReceiveTimeout)) ReceiveTimeout = receiveTimeout;
@@ -101,7 +173,7 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
         }
 
-        private Socket GetOrCreateAcceptSocket(Socket acceptSocket, bool unused, string propertyName, out SafeSocketHandle handle)
+        private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool unused, string propertyName, out SafeSocketHandle? handle)
         {
             // AcceptSocket is not supported on Unix.
             if (acceptSocket != null)
@@ -123,20 +195,20 @@ namespace System.Net.Sockets
             }
         }
 
-        private void SendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        private void SendFileInternal(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
             CheckTransmitFileOptions(flags);
 
             // Open the file, if any
             // Open it before we send the preBuffer so that any exception happens first
-            FileStream fileStream = OpenFile(fileName);
+            FileStream? fileStream = OpenFile(fileName);
 
             SocketError errorCode = SocketError.Success;
             using (fileStream)
             {
                 // Send the preBuffer, if any
                 // This will throw on error
-                if (preBuffer != null && preBuffer.Length > 0)
+                if (!preBuffer.IsEmpty)
                 {
                     Send(preBuffer);
                 }
@@ -158,13 +230,13 @@ namespace System.Net.Sockets
 
             // Send the postBuffer, if any
             // This will throw on error
-            if (postBuffer != null && postBuffer.Length > 0)
+            if (!postBuffer.IsEmpty)
             {
                 Send(postBuffer);
             }
         }
 
-        private async Task SendFileInternalAsync(FileStream fileStream, byte[] preBuffer, byte[] postBuffer)
+        private async Task SendFileInternalAsync(FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer)
         {
             SocketError errorCode = SocketError.Success;
             using (fileStream)
@@ -204,13 +276,13 @@ namespace System.Net.Sockets
             }
         }
 
-        private IAsyncResult BeginSendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
+        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
             CheckTransmitFileOptions(flags);
 
             // Open the file, if any
             // Open it before we send the preBuffer so that any exception happens first
-            FileStream fileStream = OpenFile(fileName);
+            FileStream? fileStream = OpenFile(fileName);
 
             return TaskToApm.Begin(SendFileInternalAsync(fileStream, preBuffer, postBuffer), callback, state);
         }

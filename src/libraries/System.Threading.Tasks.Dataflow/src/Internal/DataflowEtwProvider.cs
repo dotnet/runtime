@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -125,7 +124,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
     #region Block Completion
         /// <summary>Trace an event for a block completing.</summary>
         /// <param name="block">The block that's completing.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [NonEvent]
         internal void DataflowBlockCompleted(IDataflowBlock block)
         {

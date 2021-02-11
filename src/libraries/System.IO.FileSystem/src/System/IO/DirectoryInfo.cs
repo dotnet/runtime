@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -217,7 +216,7 @@ namespace System.IO
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
             // Windows will throw if the source file/directory doesn't exist, we preemptively check
-            // to make sure our cross platform behavior matches NetFX behavior.
+            // to make sure our cross platform behavior matches .NET Framework behavior.
             if (!Exists && !FileSystem.FileExists(FullPath))
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullPath));
 
@@ -235,8 +234,12 @@ namespace System.IO
             Invalidate();
         }
 
-        public override void Delete() => FileSystem.RemoveDirectory(FullPath, recursive: false);
+        public override void Delete() => Delete(recursive: false);
 
-        public void Delete(bool recursive) => FileSystem.RemoveDirectory(FullPath, recursive);
+        public void Delete(bool recursive)
+        {
+            FileSystem.RemoveDirectory(FullPath, recursive);
+            Invalidate();
+        }
     }
 }

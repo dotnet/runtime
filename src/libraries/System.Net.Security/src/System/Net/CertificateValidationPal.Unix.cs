@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
@@ -12,12 +11,12 @@ namespace System.Net
     internal static partial class CertificateValidationPal
     {
         internal static SslPolicyErrors VerifyCertificateProperties(
-            SafeDeleteContext securityContext,
+            SafeDeleteContext? securityContext,
             X509Chain chain,
             X509Certificate2 remoteCertificate,
             bool checkCertName,
             bool isServer,
-            string hostName)
+            string? hostName)
         {
             return CertificateValidation.BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, hostName);
         }
@@ -25,14 +24,14 @@ namespace System.Net
         //
         // Extracts a remote certificate upon request.
         //
-        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext)
+        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext securityContext)
         {
             return GetRemoteCertificate(securityContext, null);
         }
 
-        internal static X509Certificate2 GetRemoteCertificate(
-            SafeDeleteContext securityContext,
-            out X509Certificate2Collection remoteCertificateStore)
+        internal static X509Certificate2? GetRemoteCertificate(
+            SafeDeleteContext? securityContext,
+            out X509Certificate2Collection? remoteCertificateStore)
         {
             if (securityContext == null)
             {
@@ -44,7 +43,7 @@ namespace System.Net
             return GetRemoteCertificate(securityContext, remoteCertificateStore);
         }
 
-        private static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, X509Certificate2Collection remoteCertificateStore)
+        private static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext, X509Certificate2Collection? remoteCertificateStore)
         {
             bool gotReference = false;
 
@@ -53,13 +52,11 @@ namespace System.Net
                 return null;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(securityContext);
-
-            X509Certificate2 result = null;
-            SafeFreeCertContext remoteContext = null;
+            X509Certificate2? result = null;
+            SafeFreeCertContext? remoteContext = null;
             try
             {
-                int errorCode = QueryContextRemoteCertificate(securityContext, out remoteContext);
+                QueryContextRemoteCertificate(securityContext, out remoteContext);
 
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
@@ -109,11 +106,7 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Log.RemoteCertificate(result);
-                NetEventSource.Exit(securityContext, result);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
             return result;
         }
 
@@ -156,7 +149,7 @@ namespace System.Net
             // There's not currently a LocalMachine\My store on Unix, so don't bother trying
             // and having to deal with the exception.
             //
-            // https://github.com/dotnet/corefx/issues/3690 tracks the lack of this store.
+            // https://github.com/dotnet/runtime/issues/15377 tracks the lack of this store.
             if (storeLocation == StoreLocation.LocalMachine)
                 hasSupport = false;
         }
@@ -171,7 +164,7 @@ namespace System.Net
             return store;
         }
 
-        private static int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext remoteCertContext)
+        private static int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext? remoteCertContext)
         {
             remoteCertContext = null;
             try

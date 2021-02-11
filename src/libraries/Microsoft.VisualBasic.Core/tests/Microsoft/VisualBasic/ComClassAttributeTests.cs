@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -48,7 +47,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(null, null, null)]
         [InlineData("", "", "")]
         [InlineData("classID", "interfaceID", "eventID")]
-        public void Ctor_String_String(string classID, string interfaceID, string eventID)
+        public void Ctor_String_String_String(string classID, string interfaceID, string eventID)
         {
             var attribute = new ComClassAttribute(classID, interfaceID, eventID);
             Assert.Equal(classID, attribute.ClassID);

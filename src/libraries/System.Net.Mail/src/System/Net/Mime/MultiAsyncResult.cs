@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 
@@ -11,7 +10,7 @@ namespace System.Net.Mime
         private readonly object _context;
         private int _outstanding;
 
-        internal MultiAsyncResult(object context, AsyncCallback callback, object state) : base(context, state, callback)
+        internal MultiAsyncResult(object context, AsyncCallback? callback, object? state) : base(context, state, callback)
         {
             _context = context;
         }
@@ -40,7 +39,7 @@ namespace System.Net.Mime
 
         internal void CompleteSequence() => Decrement();
 
-        internal static object End(IAsyncResult result)
+        internal static object? End(IAsyncResult result)
         {
             MultiAsyncResult thisPtr = (MultiAsyncResult)result;
             thisPtr.InternalWaitForCompletion();

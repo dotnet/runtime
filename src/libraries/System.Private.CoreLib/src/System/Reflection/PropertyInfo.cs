@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -34,8 +33,8 @@ namespace System.Reflection
         public MethodInfo? GetSetMethod() => GetSetMethod(nonPublic: false);
         public abstract MethodInfo? GetSetMethod(bool nonPublic);
 
-        public virtual Type[] GetOptionalCustomModifiers() => Array.Empty<Type>();
-        public virtual Type[] GetRequiredCustomModifiers() => Array.Empty<Type>();
+        public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
+        public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;
 
         [DebuggerHidden]
         [DebuggerStepThrough]
@@ -66,7 +65,7 @@ namespace System.Reflection
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
                 return (left is null) ? true : false;
             }
 

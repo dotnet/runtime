@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 internal partial class Interop
 {
@@ -10,6 +9,8 @@ internal partial class Interop
         {
             internal const int MEM_COMMIT = 0x1000;
             internal const int MEM_RESERVE = 0x2000;
+            internal const int MEM_RELEASE = 0x8000;
+            internal const int MEM_FREE = 0x10000;
         }
 
         internal const int INVALID_FILE_SIZE = -1;

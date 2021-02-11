@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -75,7 +74,7 @@ namespace System.Linq
         /// <remarks>
         /// The <see cref="Execute"/> method executes queries that return a single value (instead of an enumerable sequence of values). Expression trees that represent queries that return enumerable results are executed when their associated <see cref="IQueryable"/> object is enumerated.
         /// </remarks>
-        object Execute(Expression expression);
+        object? Execute(Expression expression);
 
         /// <summary>
         /// Executes the strongly-typed query represented by a specified expression tree.

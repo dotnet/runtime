@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -41,6 +40,10 @@ namespace System.Tests
         [InlineData(float.NaN, float.NaN, 0)]
         [InlineData(float.NaN, 0.0f, -1)]
         [InlineData(234.0f, null, 1)]
+        [InlineData(float.MinValue, float.NegativeInfinity, 1)]
+        [InlineData(float.NegativeInfinity, float.MinValue, -1)]
+        [InlineData(-0f, float.NegativeInfinity, 1)]
+        [InlineData(float.NegativeInfinity, -0f, -1)]
         public static void CompareTo_Other_ReturnsExpected(float f1, object value, int expected)
         {
             if (value is float f2)
@@ -113,7 +116,7 @@ namespace System.Tests
         [InlineData(float.NaN, -float.NaN, true)]
         [InlineData(789.0f, 789.0, false)]
         [InlineData(789.0f, "789", false)]
-        public static void Equals(float f1, object value, bool expected)
+        public static void EqualsTest(float f1, object value, bool expected)
         {
             if (value is float f2)
             {
@@ -220,7 +223,7 @@ namespace System.Tests
         public static void MaxValue()
         {
             Assert.Equal(3.40282347E+38f, float.MaxValue);
-            Assert.Equal(0x7F7FFFFFu,  SingleToUInt32Bits(float.MaxValue));
+            Assert.Equal(0x7F7FFFFFu, SingleToUInt32Bits(float.MaxValue));
         }
 
         [Fact]
@@ -440,6 +443,7 @@ namespace System.Tests
                 yield return testData;
             }
 
+
             yield return new object[] { float.MinValue, "G", null, "-3.4028235E+38" };
             yield return new object[] { float.MaxValue, "G", null, "3.4028235E+38" };
 
@@ -447,6 +451,11 @@ namespace System.Tests
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { float.Epsilon, "G", invariantFormat, "1E-45" };
+            yield return new object[] { 32.5f, "C100", invariantFormat, "¤32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "P100", invariantFormat, "3,250.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { 32.5f, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { 32.5f, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
         }
 
         [Fact]
@@ -456,12 +465,12 @@ namespace System.Tests
             {
                 foreach (object[] testdata in ToString_TestData_NotNetFramework())
                 {
-                    ToString((float)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                    ToStringTest((float)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
                 }
             }
         }
 
-        private static void ToString(float f, string format, IFormatProvider provider, string expected)
+        private static void ToStringTest(float f, string format, IFormatProvider provider, string expected)
         {
             bool isDefaultProvider = provider == null;
             if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
@@ -490,6 +499,9 @@ namespace System.Tests
             float f = 123.0f;
             Assert.Throws<FormatException>(() => f.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => f.ToString("Y", null)); // Invalid format
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => f.ToString("E" + intMaxPlus1String));
         }
 
         [Theory]

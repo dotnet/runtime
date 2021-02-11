@@ -1,18 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
     /// <content>
     /// Contains the inner Builder class.
     /// </content>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableList<T>
     {
         /// <summary>
@@ -29,8 +26,6 @@ namespace System.Collections.Immutable
         /// Instance members of this class are <em>not</em> thread-safe.
         /// </para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
-        [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableListBuilderDebuggerProxy<>))]
         public sealed class Builder : IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IReadOnlyList<T>
@@ -130,7 +125,6 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="index">The index of the desired element.</param>
             /// <returns>The value at the specified index.</returns>
-            [SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow", MessageId = "index+1", Justification = "There is no chance of this overflowing")]
             public T this[int index]
             {
                 get
@@ -401,8 +395,7 @@ namespace System.Collections.Immutable
             /// The first element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type T.
             /// </returns>
-            [return: MaybeNull]
-            public T Find(Predicate<T> match) => _root.Find(match);
+            public T? Find(Predicate<T> match) => _root.Find(match);
 
             /// <summary>
             /// Retrieves all the elements that match the conditions defined by the specified
@@ -475,8 +468,7 @@ namespace System.Collections.Immutable
             /// The last element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type T.
             /// </returns>
-            [return: MaybeNull]
-            public T FindLast(Predicate<T> match) => _root.FindLast(match);
+            public T? FindLast(Predicate<T> match) => _root.FindLast(match);
 
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified
@@ -544,7 +536,6 @@ namespace System.Collections.Immutable
             /// elements in the ImmutableList&lt;T&gt; that extends from index
             /// to the last element, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int IndexOf(T item, int index) =>
                 _root.IndexOf(item, index, this.Count - index, EqualityComparer<T>.Default);
 
@@ -569,7 +560,6 @@ namespace System.Collections.Immutable
             /// elements in the ImmutableList&lt;T&gt; that starts at index and
             /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int IndexOf(T item, int index, int count) =>
                 _root.IndexOf(item, index, count, EqualityComparer<T>.Default);
 
@@ -598,7 +588,6 @@ namespace System.Collections.Immutable
             /// elements in the ImmutableList&lt;T&gt; that starts at index and
             /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) =>
                 _root.IndexOf(item, index, count, equalityComparer);
 
@@ -617,7 +606,6 @@ namespace System.Collections.Immutable
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int LastIndexOf(T item)
             {
                 if (this.Count == 0)
@@ -644,7 +632,6 @@ namespace System.Collections.Immutable
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int LastIndexOf(T item, int startIndex)
             {
                 if (this.Count == 0 && startIndex == 0)
@@ -672,7 +659,6 @@ namespace System.Collections.Immutable
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int LastIndexOf(T item, int startIndex, int count) =>
                 _root.LastIndexOf(item, startIndex, count, EqualityComparer<T>.Default);
 
@@ -694,7 +680,6 @@ namespace System.Collections.Immutable
             /// in the ImmutableList&lt;T&gt; that contains count number of elements
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
-            [Pure]
             public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer) =>
                 _root.LastIndexOf(item, startIndex, count, equalityComparer);
 

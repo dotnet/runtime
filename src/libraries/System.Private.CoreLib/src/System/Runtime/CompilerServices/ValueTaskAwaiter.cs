@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
-#if !NETSTANDARD2_0
 using Internal.Runtime.CompilerServices;
-#endif
 
 namespace System.Runtime.CompilerServices
 {
@@ -17,7 +14,7 @@ namespace System.Runtime.CompilerServices
     public readonly struct ValueTaskAwaiter : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
     {
         /// <summary>Shim used to invoke an <see cref="Action"/> passed as the state argument to a <see cref="Action{Object}"/>.</summary>
-        internal static readonly Action<object?> s_invokeActionDelegate = state =>
+        internal static readonly Action<object?> s_invokeActionDelegate = static state =>
         {
             if (!(state is Action action))
             {
@@ -62,7 +59,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                ValueTask.CompletedTask.GetAwaiter().OnCompleted(continuation);
+                Task.CompletedTask.GetAwaiter().OnCompleted(continuation);
             }
         }
 
@@ -82,7 +79,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                ValueTask.CompletedTask.GetAwaiter().UnsafeOnCompleted(continuation);
+                Task.CompletedTask.GetAwaiter().UnsafeOnCompleted(continuation);
             }
         }
 
@@ -97,7 +94,7 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPoolGlobals.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
+                Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
             {
@@ -144,7 +141,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                ValueTask.CompletedTask.GetAwaiter().OnCompleted(continuation);
+                Task.CompletedTask.GetAwaiter().OnCompleted(continuation);
             }
         }
 
@@ -164,7 +161,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                ValueTask.CompletedTask.GetAwaiter().UnsafeOnCompleted(continuation);
+                Task.CompletedTask.GetAwaiter().UnsafeOnCompleted(continuation);
             }
         }
 
@@ -179,7 +176,7 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPoolGlobals.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
+                Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
             {

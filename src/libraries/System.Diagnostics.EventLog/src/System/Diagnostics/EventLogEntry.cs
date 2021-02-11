@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Globalization;
@@ -141,6 +140,8 @@ namespace System.Diagnostics
         /// <summary>
         /// The text of the message for this entry.
         /// </summary>
+        [Editor("System.ComponentModel.Design.BinaryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string Message
         {
             get
@@ -158,9 +159,9 @@ namespace System.Diagnostics
                         {
                             if (i != 0)
                                 msgBuf.Append(", ");
-                            msgBuf.Append("'");
+                            msgBuf.Append('\'');
                             msgBuf.Append(strings[i]);
-                            msgBuf.Append("'");
+                            msgBuf.Append('\'');
                         }
 
                         msg = msgBuf.ToString();
@@ -217,7 +218,7 @@ namespace System.Diagnostics
                     {
                         strings[i] = buf.ToString();
                         i++;
-                        buf = new StringBuilder();
+                        buf.Clear();
                     }
 
                     bufpos += 2;
@@ -418,9 +419,9 @@ namespace System.Diagnostics
                     {
                         result.Append(@"\\");
                         result.Append(owner.MachineName);
-                        result.Append(@"\");
+                        result.Append('\\');
                         result.Append(fileNames[i][0]);
-                        result.Append("$");
+                        result.Append('$');
                         result.Append(fileNames[i], 2, fileNames[i].Length - 2);
                         result.Append(';');
                     }

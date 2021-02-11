@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Principal;
@@ -20,17 +20,17 @@ namespace System.Net.Security
     {
         internal static IIdentity GetIdentity(NTAuthentication context)
         {
-            IIdentity result = null;
-            string name = context.IsServer ? context.AssociatedName : context.Spn;
+            IIdentity? result = null;
+            string name = context.IsServer ? context.AssociatedName! : context.Spn!;
             string protocol = context.ProtocolName;
 
             if (context.IsServer)
             {
-                SecurityContextTokenHandle token = null;
+                SecurityContextTokenHandle? token = null;
                 try
                 {
                     SecurityStatusPal status;
-                    SafeDeleteContext securityContext = context.GetContext(out status);
+                    SafeDeleteContext? securityContext = context.GetContext(out status);
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         throw new Win32Exception((int)SecurityStatusAdapterPal.GetInteropFromSecurityStatusPal(status));
@@ -40,7 +40,7 @@ namespace System.Net.Security
                     // This token can be used for impersonation. We use it to create a WindowsIdentity and hand it out to the server app.
                     Interop.SECURITY_STATUS winStatus = (Interop.SECURITY_STATUS)SSPIWrapper.QuerySecurityContextToken(
                         GlobalSSPI.SSPIAuth,
-                        securityContext,
+                        securityContext!,
                         out token);
                     if (winStatus != Interop.SECURITY_STATUS.OK)
                     {
@@ -48,9 +48,8 @@ namespace System.Net.Security
                     }
                     string authtype = context.ProtocolName;
 
-                    // TODO #5241:
                     // The following call was also specifying WindowsAccountType.Normal, true.
-                    // WindowsIdentity.IsAuthenticated is no longer supported in CoreFX.
+                    // WindowsIdentity.IsAuthenticated is no longer supported in .NET Core
                     result = new WindowsIdentity(token.DangerousGetHandle(), authtype);
                     return result;
                 }
@@ -69,7 +68,7 @@ namespace System.Net.Security
             return result;
         }
 
-        internal static string QueryContextAssociatedName(SafeDeleteContext securityContext)
+        internal static string? QueryContextAssociatedName(SafeDeleteContext securityContext)
         {
             return SSPIWrapper.QueryStringContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES);
         }
@@ -86,48 +85,37 @@ namespace System.Net.Security
 
         internal static int Encrypt(
             SafeDeleteContext securityContext,
-            byte[] buffer,
-            int offset,
-            int count,
+            ReadOnlySpan<byte> buffer,
             bool isConfidential,
             bool isNtlm,
-            ref byte[] output,
+            [NotNull] ref byte[]? output,
             uint sequenceNumber)
         {
             SecPkgContext_Sizes sizes = default;
             bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
             Debug.Assert(success);
 
-            try
+            int maxCount = checked(int.MaxValue - 4 - sizes.cbBlockSize - sizes.cbSecurityTrailer);
+            if (buffer.Length > maxCount)
             {
-                int maxCount = checked(int.MaxValue - 4 - sizes.cbBlockSize - sizes.cbSecurityTrailer);
-
-                if (count > maxCount || count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.net_io_out_range, maxCount));
-                }
-            }
-            catch (Exception e) when (!ExceptionCheck.IsFatal(e))
-            {
-                NetEventSource.Fail(null, "Arguments out of range.");
-                throw;
+                throw new ArgumentOutOfRangeException(nameof(buffer.Length), SR.Format(SR.net_io_out_range, maxCount));
             }
 
-            int resultSize = count + sizes.cbSecurityTrailer + sizes.cbBlockSize;
+            int resultSize = buffer.Length + sizes.cbSecurityTrailer + sizes.cbBlockSize;
             if (output == null || output.Length < resultSize + 4)
             {
                 output = new byte[resultSize + 4];
             }
 
             // Make a copy of user data for in-place encryption.
-            Buffer.BlockCopy(buffer, offset, output, 4 + sizes.cbSecurityTrailer, count);
+            buffer.CopyTo(output.AsSpan(4 + sizes.cbSecurityTrailer));
 
             // Prepare buffers TOKEN(signature), DATA and Padding.
             ThreeSecurityBuffers buffers = default;
             var securityBuffer = MemoryMarshal.CreateSpan(ref buffers._item0, 3);
             securityBuffer[0] = new SecurityBuffer(output, 4, sizes.cbSecurityTrailer, SecurityBufferType.SECBUFFER_TOKEN);
-            securityBuffer[1] = new SecurityBuffer(output, 4 + sizes.cbSecurityTrailer, count, SecurityBufferType.SECBUFFER_DATA);
-            securityBuffer[2] = new SecurityBuffer(output, 4 + sizes.cbSecurityTrailer + count, sizes.cbBlockSize, SecurityBufferType.SECBUFFER_PADDING);
+            securityBuffer[1] = new SecurityBuffer(output, 4 + sizes.cbSecurityTrailer, buffer.Length, SecurityBufferType.SECBUFFER_DATA);
+            securityBuffer[2] = new SecurityBuffer(output, 4 + sizes.cbSecurityTrailer + buffer.Length, sizes.cbBlockSize, SecurityBufferType.SECBUFFER_PADDING);
 
             int errorCode;
             if (isConfidential)
@@ -147,7 +135,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                 throw e;
             }
 
@@ -161,7 +149,7 @@ namespace System.Net.Security
             }
 
             resultSize += securityBuffer[1].size;
-            if (securityBuffer[2].size != 0 && (forceCopy || resultSize != (count + sizes.cbSecurityTrailer)))
+            if (securityBuffer[2].size != 0 && (forceCopy || resultSize != (buffer.Length + sizes.cbSecurityTrailer)))
             {
                 Buffer.BlockCopy(output, securityBuffer[2].offset, output, 4 + resultSize, securityBuffer[2].size);
             }
@@ -180,7 +168,7 @@ namespace System.Net.Security
 
         internal static int Decrypt(
             SafeDeleteContext securityContext,
-            byte[] buffer,
+            byte[]? buffer,
             int offset,
             int count,
             bool isConfidential,
@@ -190,13 +178,13 @@ namespace System.Net.Security
         {
             if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
             {
-                NetEventSource.Fail(null, "Argument 'offset' out of range.");
+                Debug.Fail("Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
             {
-                NetEventSource.Fail(null, "Argument 'count' out of range.");
+                Debug.Fail("Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
@@ -226,7 +214,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                 throw e;
             }
 
@@ -241,7 +229,7 @@ namespace System.Net.Security
 
         private static int DecryptNtlm(
             SafeDeleteContext securityContext,
-            byte[] buffer,
+            byte[]? buffer,
             int offset,
             int count,
             bool isConfidential,
@@ -252,7 +240,7 @@ namespace System.Net.Security
             // For the most part the arguments are verified in Decrypt().
             if (count < ntlmSignatureLength)
             {
-                NetEventSource.Fail(null, "Argument 'count' out of range.");
+                Debug.Fail("Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
@@ -278,7 +266,7 @@ namespace System.Net.Security
             if (errorCode != 0)
             {
                 Exception e = new Win32Exception(errorCode);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
                 throw new Win32Exception(errorCode);
             }
 

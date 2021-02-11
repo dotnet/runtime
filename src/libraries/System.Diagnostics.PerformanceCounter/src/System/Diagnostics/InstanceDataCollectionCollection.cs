@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Globalization;
@@ -26,7 +25,7 @@ namespace System.Diagnostics
                 if (counterName == null)
                     throw new ArgumentNullException(nameof(counterName));
 
-                object objectName = counterName.ToLower(CultureInfo.InvariantCulture);
+                object objectName = counterName.ToLowerInvariant();
                 return (InstanceDataCollection)Dictionary[objectName];
             }
         }
@@ -46,7 +45,7 @@ namespace System.Diagnostics
 
         internal void Add(string counterName, InstanceDataCollection value)
         {
-            object objectName = counterName.ToLower(CultureInfo.InvariantCulture);
+            object objectName = counterName.ToLowerInvariant();
             Dictionary.Add(objectName, value);
         }
 
@@ -55,7 +54,7 @@ namespace System.Diagnostics
             if (counterName == null)
                 throw new ArgumentNullException(nameof(counterName));
 
-            object objectName = counterName.ToLower(CultureInfo.InvariantCulture);
+            object objectName = counterName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
         }
 

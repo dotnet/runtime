@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -12,12 +13,12 @@ namespace System.Net.Http
         private const HttpStatusCode defaultStatusCode = HttpStatusCode.OK;
 
         private HttpStatusCode _statusCode;
-        private HttpResponseHeaders _headers;
-        private HttpResponseHeaders _trailingHeaders;
-        private string _reasonPhrase;
-        private HttpRequestMessage _requestMessage;
+        private HttpResponseHeaders? _headers;
+        private HttpResponseHeaders? _trailingHeaders;
+        private string? _reasonPhrase;
+        private HttpRequestMessage? _requestMessage;
         private Version _version;
-        private HttpContent _content;
+        private HttpContent? _content;
         private bool _disposed;
 
         public Version Version
@@ -39,14 +40,15 @@ namespace System.Net.Http
 
         internal void SetVersionWithoutValidation(Version value) => _version = value;
 
+        [AllowNull]
         public HttpContent Content
         {
-            get { return _content; }
+            get { return _content ??= new EmptyContent(); }
             set
             {
                 CheckDisposed();
 
-                if (NetEventSource.IsEnabled)
+                if (NetEventSource.Log.IsEnabled())
                 {
                     if (value == null)
                     {
@@ -79,7 +81,7 @@ namespace System.Net.Http
 
         internal void SetStatusCodeWithoutValidation(HttpStatusCode value) => _statusCode = value;
 
-        public string ReasonPhrase
+        public string? ReasonPhrase
         {
             get
             {
@@ -104,32 +106,32 @@ namespace System.Net.Http
 
         internal void SetReasonPhraseWithoutValidation(string value) => _reasonPhrase = value;
 
-        public HttpResponseHeaders Headers
+        public HttpResponseHeaders Headers => _headers ??= new HttpResponseHeaders();
+
+        public HttpResponseHeaders TrailingHeaders => _trailingHeaders ??= new HttpResponseHeaders(containsTrailingHeaders: true);
+
+        /// <summary>Stores the supplied trailing headers into this instance.</summary>
+        /// <remarks>
+        /// In the common/desired case where response.TrailingHeaders isn't accessed until after the whole payload has been
+        /// received, <see cref="_trailingHeaders" /> will still be null, and we can simply store the supplied instance into
+        /// <see cref="_trailingHeaders" /> and assume ownership of the instance.  In the uncommon case where it was accessed,
+        /// we add all of the headers to the existing instance.
+        /// </remarks>
+        internal void StoreReceivedTrailingHeaders(HttpResponseHeaders headers)
         {
-            get
+            Debug.Assert(headers.ContainsTrailingHeaders);
+
+            if (_trailingHeaders is null)
             {
-                if (_headers == null)
-                {
-                    _headers = new HttpResponseHeaders();
-                }
-                return _headers;
+                _trailingHeaders = headers;
+            }
+            else
+            {
+                _trailingHeaders.AddHeaders(headers);
             }
         }
 
-        public HttpResponseHeaders TrailingHeaders
-        {
-            get
-            {
-                if (_trailingHeaders == null)
-                {
-                    _trailingHeaders = new HttpResponseHeaders(containsTrailingHeaders: true);
-                }
-
-                return _trailingHeaders;
-            }
-        }
-
-        public HttpRequestMessage RequestMessage
+        public HttpRequestMessage? RequestMessage
         {
             get { return _requestMessage; }
             set
@@ -152,8 +154,6 @@ namespace System.Net.Http
 
         public HttpResponseMessage(HttpStatusCode statusCode)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, statusCode);
-
             if (((int)statusCode < 0) || ((int)statusCode > 999))
             {
                 throw new ArgumentOutOfRangeException(nameof(statusCode));
@@ -161,19 +161,20 @@ namespace System.Net.Http
 
             _statusCode = statusCode;
             _version = HttpUtilities.DefaultResponseVersion;
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public HttpResponseMessage EnsureSuccessStatusCode()
         {
             if (!IsSuccessStatusCode)
             {
-                throw new HttpRequestException(SR.Format(
-                    System.Globalization.CultureInfo.InvariantCulture,
-                    SR.net_http_message_not_success_statuscode,
-                    (int)_statusCode,
-                    ReasonPhrase));
+                throw new HttpRequestException(
+                    SR.Format(
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        SR.net_http_message_not_success_statuscode,
+                        (int)_statusCode,
+                        ReasonPhrase),
+                    inner: null,
+                    _statusCode);
             }
 
             return this;

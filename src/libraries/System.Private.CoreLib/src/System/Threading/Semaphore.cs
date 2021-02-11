@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -33,10 +33,10 @@ namespace System.Threading
             CreateSemaphoreCore(initialCount, maximumCount, name, out createdNew);
         }
 
+        [SupportedOSPlatform("windows")]
         public static Semaphore OpenExisting(string name)
         {
-            Semaphore? result;
-            switch (OpenExistingWorker(name, out result))
+            switch (OpenExistingWorker(name, out Semaphore? result))
             {
                 case OpenExistingResult.NameNotFound:
                     throw new WaitHandleCannotBeOpenedException();
@@ -50,8 +50,9 @@ namespace System.Threading
             }
         }
 
+        [SupportedOSPlatform("windows")]
         public static bool TryOpenExisting(string name, [NotNullWhen(true)] out Semaphore? result) =>
-            OpenExistingWorker(name, out result) == OpenExistingResult.Success;
+            OpenExistingWorker(name, out result!) == OpenExistingResult.Success;
 
         public int Release() => ReleaseCore(1);
 

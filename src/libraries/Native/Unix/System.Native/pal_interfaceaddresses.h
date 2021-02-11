@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -37,8 +36,8 @@ typedef struct
 typedef struct
 {
     char Name[16];              // OS Interface name.
+    int64_t Speed;              // Link speed for physical interfaces.
     uint32_t InterfaceIndex;    // Interface index.
-    int32_t Speed;              // Link speed for physical interfaces.
     int32_t Mtu;                // Interface MTU.
     uint16_t HardwareType;      // Interface mapped from L2 to NetworkInterfaceType.
     uint8_t OperationalState;   // Operational status.
@@ -53,10 +52,8 @@ typedef void (*IPv6AddressFound)(const char* interfaceName, IpAddressInfo* info,
 typedef void (*LinkLayerAddressFound)(const char* interfaceName, LinkLayerAddressInfo* llAddress);
 typedef void (*GatewayAddressFound)(IpAddressInfo* addressInfo);
 
-DLLEXPORT  int32_t SystemNative_EnumerateInterfaceAddresses(
+PALEXPORT  int32_t SystemNative_EnumerateInterfaceAddresses(
     IPv4AddressFound onIpv4Found, IPv6AddressFound onIpv6Found, LinkLayerAddressFound onLinkLayerFound);
-DLLEXPORT int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo** interfaces, int32_t * addressCount, IpAddressInfo **addressList);
+PALEXPORT int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo** interfaces, int32_t * addressCount, IpAddressInfo **addressList);
 
-#if HAVE_RT_MSGHDR
-DLLEXPORT int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound);
-#endif
+PALEXPORT int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound);

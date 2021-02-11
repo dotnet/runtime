@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if ES_BUILD_STANDALONE
 using System;
@@ -135,17 +134,11 @@ namespace System.Diagnostics.Tracing
         /// Refer to TraceLoggingTypeInfo.WriteObjectData for information about this
         /// method.
         /// </summary>
-        /// <param name="collector">
-        /// Refer to TraceLoggingTypeInfo.WriteObjectData for information about this
-        /// method.
-        /// </param>
         /// <param name="value">
         /// Refer to TraceLoggingTypeInfo.WriteObjectData for information about this
         /// method.
         /// </param>
-        public abstract void WriteData(
-            TraceLoggingDataCollector collector,
-            PropertyValue value);
+        public abstract void WriteData(PropertyValue value);
 
         /// <summary>
         /// Fetches the event parameter data for internal serialization.
@@ -164,8 +157,7 @@ namespace System.Diagnostics.Tracing
         {
             Dictionary<Type, TraceLoggingTypeInfo> cache = threadCache ??= new Dictionary<Type, TraceLoggingTypeInfo>();
 
-            TraceLoggingTypeInfo? instance;
-            if (!cache.TryGetValue(type, out instance))
+            if (!cache.TryGetValue(type, out TraceLoggingTypeInfo? instance))
             {
                 recursionCheck ??= new List<Type>();
                 int recursionCheckCount = recursionCheck.Count;

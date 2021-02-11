@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -17,10 +16,8 @@ namespace System.Text.Json
         /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStringValue(JsonEncodedText value)
-            => WriteStringValueHelper(value.EncodedUtf8Bytes);
-
-        private void WriteStringValueHelper(ReadOnlySpan<byte> utf8Value)
         {
+            ReadOnlySpan<byte> utf8Value = value.EncodedUtf8Bytes;
             Debug.Assert(utf8Value.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             WriteStringByOptions(utf8Value);
@@ -47,7 +44,7 @@ namespace System.Text.Json
         /// as if <see cref="WriteNullValue"/> was called.
         /// </para>
         /// </remarks>
-        public void WriteStringValue(string value)
+        public void WriteStringValue(string? value)
         {
             if (value == null)
             {
@@ -100,7 +97,11 @@ namespace System.Text.Json
 
         private void WriteStringByOptions(ReadOnlySpan<char> value)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteStringIndented(value);
@@ -111,7 +112,7 @@ namespace System.Text.Json
             }
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringMinimized(ReadOnlySpan<char> escapedValue)
         {
             Debug.Assert(escapedValue.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - 3);
@@ -138,7 +139,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringIndented(ReadOnlySpan<char> escapedValue)
         {
             int indent = Indentation;
@@ -184,7 +185,7 @@ namespace System.Text.Json
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < value.Length);
 
-            char[] valueArray = null;
+            char[]? valueArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(value.Length, firstEscapeIndexVal);
 
@@ -243,7 +244,11 @@ namespace System.Text.Json
 
         private void WriteStringByOptions(ReadOnlySpan<byte> utf8Value)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
+
             if (_options.Indented)
             {
                 WriteStringIndented(utf8Value);
@@ -254,7 +259,7 @@ namespace System.Text.Json
             }
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringMinimized(ReadOnlySpan<byte> escapedValue)
         {
             Debug.Assert(escapedValue.Length < int.MaxValue - 3);
@@ -281,7 +286,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringIndented(ReadOnlySpan<byte> escapedValue)
         {
             int indent = Indentation;
@@ -327,7 +332,7 @@ namespace System.Text.Json
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
 
-            byte[] valueArray = null;
+            byte[]? valueArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8Value.Length, firstEscapeIndexVal);
 
@@ -343,6 +348,20 @@ namespace System.Text.Json
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }
+        }
+
+        /// <summary>
+        /// Writes a number as a JSON string. The string value is not escaped.
+        /// </summary>
+        /// <param name="utf8Value"></param>
+        internal void WriteNumberValueAsStringUnescaped(ReadOnlySpan<byte> utf8Value)
+        {
+            // The value has been validated prior to calling this method.
+
+            WriteStringByOptions(utf8Value);
+
+            SetFlagToAddListSeparatorBeforeNextItem();
+            _tokenType = JsonTokenType.String;
         }
     }
 }

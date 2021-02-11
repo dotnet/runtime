@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
-using System.Net;
-using System.Net.Http;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http.Functional.Tests;
 using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,7 +23,6 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
     // to separately Dispose (or have a 'using' statement) for the handler.
     public class WinHttpHandlerTest
     {
-        // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
         private const string SlowServer = "http://httpbin.org/drip?numbytes=1&duration=1&delay=40&code=200";
 
         private readonly ITestOutputHelper _output;
@@ -32,14 +32,13 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             _output = output;
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void SendAsync_SimpleGet_Success()
         {
             var handler = new WinHttpHandler();
             using (var client = new HttpClient(handler))
             {
-                // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
                 var response = client.GetAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer).Result;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 var responseContent = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
@@ -47,7 +46,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(CookieUsePolicy.UseInternalCookieStoreOnly, "cookieName1", "cookieValue1")]
         [InlineData(CookieUsePolicy.UseSpecifiedCookieContainer, "cookieName2", "cookieValue2")]
@@ -79,7 +78,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [OuterLoop]
         public async Task SendAsync_SlowServerAndCancel_ThrowsTaskCanceledException()
@@ -98,8 +97,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ActiveIssue(17234)]
-        [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20675")]
+        [OuterLoop]
         [Fact]
         [OuterLoop]
         public void SendAsync_SlowServerRespondsAfterDefaultReceiveTimeout_ThrowsHttpRequestException()
@@ -133,11 +132,153 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
+        public async Task GetAsync_SetCookieContainerMultipleCookies_CookiesSent()
+        {
+            var cookies = new Cookie[]
+            {
+                new Cookie("hello", "world"),
+                new Cookie("foo", "bar"),
+                new Cookie("ABC", "123")
+            };
+
+            WinHttpHandler handler = new WinHttpHandler();
+            var cookieContainer = new CookieContainer();
+
+            foreach (Cookie c in cookies)
+            {
+                cookieContainer.Add(Configuration.Http.Http2RemoteEchoServer, c);
+            }
+
+            handler.CookieContainer = cookieContainer;
+            handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+            handler.ServerCertificateValidationCallback = (m, cert, chain, err) => true;
+            string payload = "Cookie Test";
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
+            request.Content = new StringContent(payload);
+            using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.SendAsync(request))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal(HttpVersion20.Value, response.Version);
+                string responsePayload = await response.Content.ReadAsStringAsync();
+                var responseContent = Newtonsoft.Json.JsonConvert
+                    .DeserializeAnonymousType(responsePayload, new { Method = "_", BodyContent = "_", Cookies = new Dictionary<string, string>() });
+                Assert.Equal("POST", responseContent.Method);
+                Assert.Equal(payload, responseContent.BodyContent);
+                Assert.Equal(cookies.ToDictionary(c => c.Name, c => c.Value), responseContent.Cookies);
+            };
+        }
+
+        [OuterLoop("Uses delays")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
+        public async Task SendAsync_MultipleHttp2ConnectionsEnabled_CreateAdditionalConnections()
+        {
+            // Warm up thread pool because the full .NET Framework calls synchronous Stream.Read() and we need to delay those calls thus threads will get blocked.
+            ThreadPool.GetMinThreads(out _, out int completionPortThreads);
+            ThreadPool.SetMinThreads(401, completionPortThreads);
+            using var handler = new WinHttpHandler();
+            handler.EnableMultipleHttp2Connections = true;
+            handler.ServerCertificateValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            const int maxActiveStreamsLimit = 100 * 3;
+            const string payloadText = "Multiple HTTP/2 connections test.";
+            TaskCompletionSource<bool> delaySource = new TaskCompletionSource<bool>();
+            using var client = new HttpClient(handler);
+            List<(Task<HttpResponseMessage> task, DelayedStream stream)> requests = new List<(Task<HttpResponseMessage> task, DelayedStream stream)>();
+            for (int i = 0; i < maxActiveStreamsLimit; i++)
+            {
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
+                byte[] payloadBytes = Encoding.UTF8.GetBytes(payloadText);
+                DelayedStream content = new DelayedStream(payloadBytes, delaySource.Task);
+                request.Content = new StreamContent(content);
+                requests.Add((client.SendAsync(request, HttpCompletionOption.ResponseContentRead), content));
+            }
+
+            HttpRequestMessage aboveLimitRequest = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.Http2RemoteEchoServer) { Version = HttpVersion20.Value };
+            aboveLimitRequest.Content = new StringContent($"{payloadText}-{maxActiveStreamsLimit + 1}");
+            Task<HttpResponseMessage> aboveLimitResponseTask = client.SendAsync(aboveLimitRequest, HttpCompletionOption.ResponseContentRead);
+
+            await aboveLimitResponseTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+            await VerifyResponse(aboveLimitResponseTask, $"{payloadText}-{maxActiveStreamsLimit + 1}");
+
+            delaySource.SetResult(true);
+
+            await Task.WhenAll(requests.Select(r => r.task).ToArray()).TimeoutAfter(15000);
+
+            foreach ((Task<HttpResponseMessage> task, DelayedStream stream) in requests)
+            {
+                Assert.True(task.IsCompleted);
+                HttpResponseMessage response = task.Result;
+                Assert.True(response.IsSuccessStatusCode);
+                Assert.Equal(HttpVersion20.Value, response.Version);
+                string responsePayload = await response.Content.ReadAsStringAsync().TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+                Assert.Contains(payloadText, responsePayload);
+            }
+        }
+
+        [OuterLoop("Uses external service")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version2004OrGreater))]
+        public async Task SendAsync_UseTcpKeepAliveOptions()
+        {
+            using var handler = new WinHttpHandler()
+            {
+                TcpKeepAliveEnabled = true,
+                TcpKeepAliveTime = TimeSpan.FromSeconds(1),
+                TcpKeepAliveInterval = TimeSpan.FromMilliseconds(500)
+            };
+
+            using var client = new HttpClient(handler);
+
+            var response = client.GetAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer).Result;
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            string responseContent = await response.Content.ReadAsStringAsync();
+            _output.WriteLine(responseContent);
+
+            // Uncomment this to observe an exchange of "TCP Keep-Alive" and "TCP Keep-Alive ACK" packets:
+            // await Task.Delay(5000); 
+        }
+
+        private async Task VerifyResponse(Task<HttpResponseMessage> task, string payloadText)
+        {
+            Assert.True(task.IsCompleted);
+            HttpResponseMessage response = task.Result;
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.Equal(HttpVersion20.Value, response.Version);
+            string responsePayload = await response.Content.ReadAsStringAsync().TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+            Assert.Contains(payloadText, responsePayload);
+        }
+
         public static bool JsonMessageContainsKeyValue(string message, string key, string value)
         {
-            // TODO: Merge with System.Net.Http TestHelper class as part of GitHub Issue #4989.
             string pattern = string.Format(@"""{0}"": ""{1}""", key, value);
             return message.Contains(pattern);
+        }
+
+        private sealed class DelayedStream : MemoryStream
+        {
+            private readonly Task _delayTask;
+            private readonly TaskCompletionSource<bool> _waitReadSource = new TaskCompletionSource<bool>();
+            private bool _delayed;
+
+            public Task WaitRead => _waitReadSource.Task;
+
+            public DelayedStream(byte[] buffer, Task delayTask)
+                : base(buffer)
+            {
+                _delayTask = delayTask;
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                if (!_delayed)
+                {
+                    _waitReadSource.SetResult(true);
+                    _delayTask.Wait();
+                    _delayed = true;
+                }
+                return base.Read(buffer, offset, count);
+            }
         }
     }
 }

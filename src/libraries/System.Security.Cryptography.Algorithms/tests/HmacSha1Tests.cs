@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class HmacSha1Tests : Rfc2202HmacTests
     {
         private static readonly byte[][] s_testKeys2202 =
@@ -58,6 +58,12 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                     Assert.Equal(h1.Key, h2.Key);
                 }
             }
+        }
+
+        [Fact]
+        public void HmacSha1_ThrowsArgumentNullForNullConstructorKey()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACSHA1(null));
         }
 
         [Fact]

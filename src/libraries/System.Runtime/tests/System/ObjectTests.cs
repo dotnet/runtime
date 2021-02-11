@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -25,7 +24,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(object obj1, object obj2, bool expected)
+        public static void EqualsTest(object obj1, object obj2, bool expected)
         {
             if (obj1 != null)
             {
@@ -41,7 +40,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ReferenceEquals()
+        public static void ReferenceEqualsTest()
         {
             var e1 = new EOverrider(7);
             var e2 = new EOverrider(8);
@@ -82,7 +81,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetType_TestData))]
-        public static void GetType(object obj, Type expected)
+        public static void GetTypeTest(object obj, Type expected)
         {
             Assert.Equal(expected, obj.GetType());
         }

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
 using Microsoft.Internal.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
@@ -18,17 +18,17 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private readonly Type _type;
         private readonly bool _isAssignableCollectionType;
         private Type _contractType;
-        private Func<Export, object> _castSingleValue;
-        private readonly bool _isOpenGeneric = false;
+        private Func<Export, object>? _castSingleValue;
+        private readonly bool _isOpenGeneric;
 
         [ThreadStatic]
-        internal static Dictionary<Type, Func<Export, object>> _castSingleValueCache;
+        internal static Dictionary<Type, Func<Export, object>?>? _castSingleValueCache;
 
-        private static Dictionary<Type, Func<Export, object>> CastSingleValueCache
+        private static Dictionary<Type, Func<Export, object>?> CastSingleValueCache
         {
             get
             {
-                return _castSingleValueCache = _castSingleValueCache ?? new Dictionary<Type, Func<Export, object>>();
+                return _castSingleValueCache = _castSingleValueCache ?? new Dictionary<Type, Func<Export, object>?>();
             }
         }
 
@@ -58,7 +58,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _isAssignableCollectionType; }
         }
 
-        public Type ElementType { get; private set; }
+        public Type? ElementType { get; private set; }
 
         public Type ActualType
         {
@@ -69,7 +69,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public Type ContractType { get { return _contractType; } }
 
-        public Func<Export, object> CastExport
+        public Func<Export, object>? CastExport
         {
             get
             {
@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        public Type MetadataViewType { get; private set; }
+        public Type? MetadataViewType { get; private set; }
 
         private Type CheckForCollection(Type type)
         {
@@ -93,7 +93,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return type;
         }
 
-        private static bool IsGenericDescendentOf(Type type, Type baseGenericTypeDefinition)
+        private static bool IsGenericDescendentOf(Type? type, Type baseGenericTypeDefinition)
         {
             if (type == typeof(object) || type == null)
             {
@@ -128,6 +128,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return IsGenericDescendentOf(type, baseType.GetGenericTypeDefinition());
         }
 
+        [MemberNotNull(nameof(_contractType))]
         private void Initialize(Type type)
         {
             if (!type.IsGenericType)
@@ -169,7 +170,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return (genericType == LazyOfTType) || (genericType == LazyOfTMType);
         }
 
-        private static bool TryGetCastFunction(Type genericType, bool isOpenGeneric, Type[] arguments, out Func<Export, object> castFunction)
+        private static bool TryGetCastFunction(Type genericType, bool isOpenGeneric, Type[] arguments, out Func<Export, object>? castFunction)
         {
             castFunction = null;
 
@@ -211,7 +212,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 }
                 else
                 {
-                    throw ExceptionBuilder.ExportFactory_TooManyGenericParameters(genericType.FullName);
+                    throw ExceptionBuilder.ExportFactory_TooManyGenericParameters(genericType.FullName!);
                 }
             }
 

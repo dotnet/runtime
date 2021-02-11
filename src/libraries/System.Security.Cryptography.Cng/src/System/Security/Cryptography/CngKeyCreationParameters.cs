@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
@@ -65,8 +65,8 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Settings for UI shown on access to the key
         /// </summary>
-        public CngUIPolicy UIPolicy { get; set; }
+        public CngUIPolicy? UIPolicy { get; set; }
 
-        private CngProvider _provider;
+        private CngProvider _provider = null!; // will be initialized via property setter called by ctor
     }
 }

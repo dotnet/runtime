@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -18,35 +17,41 @@ namespace System
     // Error indicates if the compiler should treat usage of such a method as an
     //   error. (this would be used if the actual implementation of the obsolete
     //   method's implementation had changed).
+    // DiagnosticId. Represents the ID the compiler will use when reporting a use of the API.
+    // UrlFormat.The URL that should be used by an IDE for navigating to corresponding documentation. Instead of taking the URL directly,
+    //   the API takes a format string. This allows having a generic URL that includes the diagnostic ID.
     //
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum |
         AttributeTargets.Interface | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Delegate,
         Inherited = false)]
-    public sealed class ObsoleteAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class ObsoleteAttribute : Attribute
     {
-        private readonly string? _message;
-        private readonly bool _error;
-
         public ObsoleteAttribute()
         {
-            _message = null;
-            _error = false;
         }
 
         public ObsoleteAttribute(string? message)
         {
-            _message = message;
-            _error = false;
+            Message = message;
         }
 
         public ObsoleteAttribute(string? message, bool error)
         {
-            _message = message;
-            _error = error;
+            Message = message;
+            IsError = error;
         }
 
-        public string? Message => _message;
+        public string? Message { get; }
 
-        public bool IsError => _error;
+        public bool IsError { get; }
+
+        public string? DiagnosticId { get; set; }
+
+        public string? UrlFormat { get; set; }
     }
 }

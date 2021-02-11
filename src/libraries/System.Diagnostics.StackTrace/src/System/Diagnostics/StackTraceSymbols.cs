@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Reflection;
@@ -128,7 +127,7 @@ namespace System.Diagnostics
             {
                 return (inMemoryPdbAddress != IntPtr.Zero) ?
                             TryOpenReaderForInMemoryPdb(inMemoryPdbAddress, inMemoryPdbSize) :
-                            TryOpenReaderFromAssemblyFile(assemblyPath, loadedPeAddress, loadedPeSize);
+                            TryOpenReaderFromAssemblyFile(assemblyPath!, loadedPeAddress, loadedPeSize);
             });
 
             // The reader has already been open, so this doesn't throw.
@@ -161,9 +160,9 @@ namespace System.Diagnostics
             }
         }
 
-        private static unsafe PEReader? TryGetPEReader(string? assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
+        private static unsafe PEReader? TryGetPEReader(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
         {
-            // TODO: https://github.com/dotnet/corefx/issues/11406
+            // TODO: https://github.com/dotnet/runtime/issues/18423
             //if (loadedPeAddress != IntPtr.Zero && loadedPeSize > 0)
             //{
             //    return new PEReader((byte*)loadedPeAddress, loadedPeSize, isLoadedImage: true);
@@ -178,7 +177,7 @@ namespace System.Diagnostics
             return null;
         }
 
-        private static MetadataReaderProvider? TryOpenReaderFromAssemblyFile(string? assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
+        private static MetadataReaderProvider? TryOpenReaderFromAssemblyFile(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
         {
             using (var peReader = TryGetPEReader(assemblyPath, loadedPeAddress, loadedPeSize))
             {
@@ -187,8 +186,8 @@ namespace System.Diagnostics
                     return null;
                 }
 
-                string pdbPath;
-                MetadataReaderProvider provider;
+                string? pdbPath;
+                MetadataReaderProvider? provider;
                 if (peReader.TryOpenAssociatedPortablePdb(assemblyPath, TryOpenFile, out provider, out pdbPath))
                 {
                     // TODO:
@@ -201,7 +200,7 @@ namespace System.Diagnostics
             return null;
         }
 
-        private static Stream? TryOpenFile(string? path)
+        private static Stream? TryOpenFile(string path)
         {
             if (!File.Exists(path))
             {

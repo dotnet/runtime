@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -9,7 +8,7 @@ namespace System.Drawing
 {
     internal class NativeMethods
     {
-        internal static HandleRef NullHandleRef = new HandleRef(null, IntPtr.Zero);
+        internal static HandleRef NullHandleRef => new HandleRef(null, IntPtr.Zero);
 
         public const int MAX_PATH = 260;
         internal const int SM_REMOTESESSION = 0x1000;
@@ -20,9 +19,9 @@ namespace System.Drawing
         internal const int BITMAPINFO_MAX_COLORSIZE = 256;
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct BITMAPINFO_FLAT
+        internal unsafe struct BITMAPINFO_FLAT
         {
-            public int bmiHeader_biSize; // = Marshal.SizeOf(typeof(BITMAPINFOHEADER));
+            public int bmiHeader_biSize; // = sizeof(BITMAPINFOHEADER)
             public int bmiHeader_biWidth;
             public int bmiHeader_biHeight;
             public short bmiHeader_biPlanes;
@@ -34,14 +33,13 @@ namespace System.Drawing
             public int bmiHeader_biClrUsed;
             public int bmiHeader_biClrImportant;
 
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = BITMAPINFO_MAX_COLORSIZE * 4)]
-            public byte[] bmiColors; // RGBQUAD structs... Blue-Green-Red-Reserved, repeat...
+            public fixed byte bmiColors[BITMAPINFO_MAX_COLORSIZE * 4]; // RGBQUAD structs... Blue-Green-Red-Reserved, repeat...
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class BITMAPINFOHEADER
+        internal struct BITMAPINFOHEADER
         {
-            public int biSize = 40;
+            public int biSize;
             public int biWidth;
             public int biHeight;
             public short biPlanes;

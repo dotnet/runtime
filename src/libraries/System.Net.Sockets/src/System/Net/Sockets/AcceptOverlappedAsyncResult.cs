@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net.Sockets
 {
@@ -8,15 +7,15 @@ namespace System.Net.Sockets
     internal sealed partial class AcceptOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         private readonly Socket _listenSocket;
-        private byte[] _buffer;
+        private byte[]? _buffer;
 
-        internal AcceptOverlappedAsyncResult(Socket listenSocket, object asyncState, AsyncCallback asyncCallback) :
+        internal AcceptOverlappedAsyncResult(Socket listenSocket, object? asyncState, AsyncCallback? asyncCallback) :
             base(listenSocket, asyncState, asyncCallback)
         {
             _listenSocket = listenSocket;
         }
 
-        internal byte[] Buffer
+        internal byte[]? Buffer
         {
             get
             {

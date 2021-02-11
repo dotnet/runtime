@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -19,7 +19,7 @@ namespace System.Linq.Expressions
     {
         private IReadOnlyList<Expression> _arguments;
 
-        internal NewExpression(ConstructorInfo constructor, IReadOnlyList<Expression> arguments, ReadOnlyCollection<MemberInfo> members)
+        internal NewExpression(ConstructorInfo? constructor, IReadOnlyList<Expression> arguments, ReadOnlyCollection<MemberInfo>? members)
         {
             Constructor = constructor;
             _arguments = arguments;
@@ -30,7 +30,7 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression"/> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public override Type Type => Constructor.DeclaringType;
+        public override Type Type => Constructor!.DeclaringType!;
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression"/>. (Inherited from <see cref="Expression"/>.)
@@ -41,7 +41,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the called constructor.
         /// </summary>
-        public ConstructorInfo Constructor { get; }
+        public ConstructorInfo? Constructor { get; }
 
         /// <summary>
         /// Gets the arguments to the constructor.
@@ -63,7 +63,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Gets the members that can retrieve the values of the fields that were initialized with constructor arguments.
         /// </summary>
-        public ReadOnlyCollection<MemberInfo> Members { get; }
+        public ReadOnlyCollection<MemberInfo>? Members { get; }
 
         /// <summary>
         /// Dispatches to the specific visit method for this node type.
@@ -80,20 +80,22 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="arguments">The <see cref="NewExpression.Arguments"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public NewExpression Update(IEnumerable<Expression> arguments)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "A NewExpression has already been created. The original creator will get a warning that it is not trim compatible.")]
+        public NewExpression Update(IEnumerable<Expression>? arguments)
         {
             if (ExpressionUtils.SameElements(ref arguments, Arguments))
             {
                 return this;
             }
 
-            return Members != null ? New(Constructor, arguments, Members) : New(Constructor, arguments);
+            return Members != null ? New(Constructor!, arguments, Members) : New(Constructor!, arguments);
         }
     }
 
     internal sealed class NewValueTypeExpression : NewExpression
     {
-        internal NewValueTypeExpression(Type type, ReadOnlyCollection<Expression> arguments, ReadOnlyCollection<MemberInfo> members)
+        internal NewValueTypeExpression(Type type, ReadOnlyCollection<Expression> arguments, ReadOnlyCollection<MemberInfo>? members)
             : base(null, arguments, members)
         {
             Type = type;
@@ -111,7 +113,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> property set to the specified value.</returns>
         public static NewExpression New(ConstructorInfo constructor)
         {
-            return New(constructor, (IEnumerable<Expression>)null);
+            return New(constructor, (IEnumerable<Expression>?)null);
         }
 
         /// <summary>
@@ -120,9 +122,9 @@ namespace System.Linq.Expressions
         /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="NewExpression.Constructor"/> property equal to.</param>
         /// <param name="arguments">An array of <see cref="Expression"/> objects to use to populate the Arguments collection.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> and <see cref="NewExpression.Arguments"/> properties set to the specified value.</returns>
-        public static NewExpression New(ConstructorInfo constructor, params Expression[] arguments)
+        public static NewExpression New(ConstructorInfo constructor, params Expression[]? arguments)
         {
-            return New(constructor, (IEnumerable<Expression>)arguments);
+            return New(constructor, (IEnumerable<Expression>?)arguments);
         }
 
         /// <summary>
@@ -131,11 +133,11 @@ namespace System.Linq.Expressions
         /// <param name="constructor">The <see cref="ConstructorInfo"/> to set the <see cref="NewExpression.Constructor"/> property equal to.</param>
         /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the <see cref="NewExpression.Arguments"/> collection.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> and <see cref="NewExpression.Arguments"/> properties set to the specified value.</returns>
-        public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments)
+        public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression>? arguments)
         {
             ContractUtils.RequiresNotNull(constructor, nameof(constructor));
-            ContractUtils.RequiresNotNull(constructor.DeclaringType, nameof(constructor) + "." + nameof(constructor.DeclaringType));
-            TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor), allowByRef: true, allowPointer: true);
+            ContractUtils.RequiresNotNull(constructor.DeclaringType!, nameof(constructor) + "." + nameof(constructor.DeclaringType));
+            TypeUtils.ValidateType(constructor.DeclaringType!, nameof(constructor), allowByRef: true, allowPointer: true);
             ValidateConstructor(constructor, nameof(constructor));
             ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
             ValidateArgumentTypes(constructor, ExpressionType.New, ref argList, nameof(constructor));
@@ -150,11 +152,12 @@ namespace System.Linq.Expressions
         /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the <see cref="NewExpression.Arguments"/> collection.</param>
         /// <param name="members">An <see cref="IEnumerable{T}"/> of <see cref="MemberInfo"/> objects to use to populate the <see cref="NewExpression.Members"/> collection.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/>, <see cref="NewExpression.Arguments"/> and <see cref="NewExpression.Members"/> properties set to the specified value.</returns>
-        public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments, IEnumerable<MemberInfo> members)
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
+        public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression>? arguments, IEnumerable<MemberInfo>? members)
         {
             ContractUtils.RequiresNotNull(constructor, nameof(constructor));
-            ContractUtils.RequiresNotNull(constructor.DeclaringType, nameof(constructor) + "." + nameof(constructor.DeclaringType));
-            TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor), allowByRef: true, allowPointer: true);
+            ContractUtils.RequiresNotNull(constructor.DeclaringType!, nameof(constructor) + "." + nameof(constructor.DeclaringType));
+            TypeUtils.ValidateType(constructor.DeclaringType!, nameof(constructor), allowByRef: true, allowPointer: true);
             ValidateConstructor(constructor, nameof(constructor));
             ReadOnlyCollection<MemberInfo> memberList = members.ToReadOnly();
             ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
@@ -169,9 +172,10 @@ namespace System.Linq.Expressions
         /// <param name="arguments">An <see cref="IEnumerable{T}"/> of <see cref="Expression"/> objects to use to populate the <see cref="NewExpression.Arguments"/> collection.</param>
         /// <param name="members">An Array of <see cref="MemberInfo"/> objects to use to populate the <see cref="NewExpression.Members"/> collection.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/>, <see cref="NewExpression.Arguments"/> and <see cref="NewExpression.Members"/> properties set to the specified value.</returns>
-        public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments, params MemberInfo[] members)
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
+        public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression>? arguments, params MemberInfo[]? members)
         {
-            return New(constructor, arguments, (IEnumerable<MemberInfo>)members);
+            return New(constructor, arguments, (IEnumerable<MemberInfo>?)members);
         }
 
         /// <summary>
@@ -179,7 +183,8 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="type">A <see cref="Type"/> that has a constructor that takes no arguments.</param>
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> property set to the <see cref="ConstructorInfo"/> that represents the parameterless constructor of the specified type.</returns>
-        public static NewExpression New(Type type)
+        public static NewExpression New(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             if (type == typeof(void))
@@ -190,7 +195,7 @@ namespace System.Linq.Expressions
 
             if (!type.IsValueType)
             {
-                ConstructorInfo ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParametersCached().Length == 0);
+                ConstructorInfo? ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParametersCached().Length == 0);
                 if (ci == null)
                 {
                     throw Error.TypeMissingDefaultConstructor(type, nameof(type));
@@ -200,7 +205,7 @@ namespace System.Linq.Expressions
             return new NewValueTypeExpression(type, EmptyReadOnlyCollection<Expression>.Instance, null);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         private static void ValidateNewArgs(ConstructorInfo constructor, ref ReadOnlyCollection<Expression> arguments, ref ReadOnlyCollection<MemberInfo> members)
         {
             ParameterInfo[] pis;
@@ -214,8 +219,8 @@ namespace System.Linq.Expressions
                 {
                     throw Error.IncorrectNumberOfArgumentsForMembers();
                 }
-                Expression[] newArguments = null;
-                MemberInfo[] newMembers = null;
+                Expression[]? newArguments = null;
+                MemberInfo[]? newMembers = null;
                 for (int i = 0, n = arguments.Count; i < n; i++)
                 {
                     Expression arg = arguments[i];
@@ -224,7 +229,7 @@ namespace System.Linq.Expressions
                     ContractUtils.RequiresNotNull(member, nameof(members), i);
                     if (!TypeUtils.AreEquivalent(member.DeclaringType, constructor.DeclaringType))
                     {
-                        throw Error.ArgumentMemberNotDeclOnType(member.Name, constructor.DeclaringType.Name, nameof(members), i);
+                        throw Error.ArgumentMemberNotDeclOnType(member.Name, constructor.DeclaringType!.Name, nameof(members), i);
                     }
                     Type memberType;
                     ValidateAnonymousTypeMember(ref member, out memberType, nameof(members), i);
@@ -239,7 +244,7 @@ namespace System.Linq.Expressions
                     Type pType = pi.ParameterType;
                     if (pType.IsByRef)
                     {
-                        pType = pType.GetElementType();
+                        pType = pType.GetElementType()!;
                     }
                     if (!TypeUtils.AreReferenceAssignable(pType, arg.Type))
                     {
@@ -293,10 +298,10 @@ namespace System.Linq.Expressions
             }
         }
 
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         private static void ValidateAnonymousTypeMember(ref MemberInfo member, out Type memberType, string paramName, int index)
         {
-            FieldInfo field = member as FieldInfo;
-            if (field != null)
+            if (member is FieldInfo field)
             {
                 if (field.IsStatic)
                 {
@@ -306,14 +311,13 @@ namespace System.Linq.Expressions
                 return;
             }
 
-            PropertyInfo pi = member as PropertyInfo;
-            if (pi != null)
+            if (member is PropertyInfo pi)
             {
                 if (!pi.CanRead)
                 {
                     throw Error.PropertyDoesNotHaveGetter(pi, paramName, index);
                 }
-                if (pi.GetGetMethod().IsStatic)
+                if (pi.GetGetMethod()!.IsStatic)
                 {
                     throw Error.ArgumentMustBeInstanceMember(paramName, index);
                 }
@@ -321,8 +325,7 @@ namespace System.Linq.Expressions
                 return;
             }
 
-            MethodInfo method = member as MethodInfo;
-            if (method != null)
+            if (member is MethodInfo method)
             {
                 if (method.IsStatic)
                 {

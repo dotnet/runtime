@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information
-//
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // XmlDsigExcC14NTransformTest.cs - Test Cases for XmlDsigExcC14NTransform
 //
 // Author:
@@ -13,9 +13,6 @@
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // (C) 2003 Aleksey Sanin (aleksey@aleksey.com)
 // (C) 2004 Novell (http://www.novell.com)
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 
 using System.IO;
@@ -239,7 +236,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(c14xml3, output);
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         // see LoadInputAsXmlNodeList2 description
         public void LoadInputAsXmlNodeList()
         {
@@ -251,7 +249,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal("<Test></Test>", output);
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         // MS has a bug that those namespace declaration nodes in
         // the node-set are written to output. Related spec section is:
         // http://www.w3.org/TR/2001/REC-xml-c14n-20010315#ProcessingModel

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -223,7 +222,7 @@ namespace System.IO
             // into them. Surrogates should just be detached.
             //
             // See
-            // https://github.com/dotnet/corefx/issues/24250
+            // https://github.com/dotnet/runtime/issues/23646
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365511.aspx
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365197.aspx
 
@@ -325,7 +324,7 @@ namespace System.IO
 
             // As we successfully removed all of the files we shouldn't care about the directory itself
             // not being empty. As file deletion is just a marker to remove the file when all handles
-            // are closed we could still have contents hanging around.
+            // are closed we could still have undeleted contents.
             RemoveDirectoryInternal(fullPath, topLevel: topLevel, allowDirectoryNotEmpty: true);
         }
 
@@ -369,42 +368,44 @@ namespace System.IO
             }
         }
 
-        public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
+        // Default values indicate "no change".  Use defaults so that we don't force callsites to be aware of the default values
+        private static unsafe void SetFileTime(
+            string fullPath,
+            bool asDirectory,
+            long creationTime = -1,
+            long lastAccessTime = -1,
+            long lastWriteTime = -1,
+            long changeTime = -1,
+            uint fileAttributes = 0)
         {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
-                if (!Interop.Kernel32.SetFileTime(handle, creationTime: time.ToFileTime()))
+                var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO()
+                {
+                    CreationTime = creationTime,
+                    LastAccessTime = lastAccessTime,
+                    LastWriteTime = lastWriteTime,
+                    ChangeTime = changeTime,
+                    FileAttributes = fileAttributes
+                };
+
+                if (!Interop.Kernel32.SetFileInformationByHandle(handle, Interop.Kernel32.FileBasicInfo, &basicInfo, (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
                 }
             }
         }
+
+        public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
+           => SetFileTime(fullPath, asDirectory, creationTime: time.ToFileTime());
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
-            {
-                if (!Interop.Kernel32.SetFileTime(handle, lastAccessTime: time.ToFileTime()))
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
-                }
-            }
-        }
+           => SetFileTime(fullPath, asDirectory, lastAccessTime: time.ToFileTime());
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
-            {
-                if (!Interop.Kernel32.SetFileTime(handle, lastWriteTime: time.ToFileTime()))
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
-                }
-            }
-        }
+           => SetFileTime(fullPath, asDirectory, lastWriteTime: time.ToFileTime());
 
         public static string[] GetLogicalDrives()
-        {
-            return DriveInfoInternal.GetLogicalDrives();
-        }
+            => DriveInfoInternal.GetLogicalDrives();
     }
 }

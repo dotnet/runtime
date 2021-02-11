@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
@@ -12,15 +11,15 @@ namespace System.Drawing.Imaging
     {
         private Guid _clsid;
         private Guid _formatID;
-        private string _codecName;
-        private string _dllName;
-        private string _formatDescription;
-        private string _filenameExtension;
-        private string _mimeType;
+        private string? _codecName;
+        private string? _dllName;
+        private string? _formatDescription;
+        private string? _filenameExtension;
+        private string? _mimeType;
         private ImageCodecFlags _flags;
         private int _version;
-        private byte[][] _signaturePatterns;
-        private byte[][] _signatureMasks;
+        private byte[][]? _signaturePatterns;
+        private byte[][]? _signatureMasks;
 
         internal ImageCodecInfo()
         {
@@ -38,13 +37,13 @@ namespace System.Drawing.Imaging
             set { _formatID = value; }
         }
 
-        public string CodecName
+        public string? CodecName
         {
             get { return _codecName; }
             set { _codecName = value; }
         }
 
-        public string DllName
+        public string? DllName
         {
             get
             {
@@ -56,19 +55,19 @@ namespace System.Drawing.Imaging
             }
         }
 
-        public string FormatDescription
+        public string? FormatDescription
         {
             get { return _formatDescription; }
             set { _formatDescription = value; }
         }
 
-        public string FilenameExtension
+        public string? FilenameExtension
         {
             get { return _filenameExtension; }
             set { _filenameExtension = value; }
         }
 
-        public string MimeType
+        public string? MimeType
         {
             get { return _mimeType; }
             set { _mimeType = value; }
@@ -87,14 +86,14 @@ namespace System.Drawing.Imaging
         }
 
         [CLSCompliant(false)]
-        public byte[][] SignaturePatterns
+        public byte[][]? SignaturePatterns
         {
             get { return _signaturePatterns; }
             set { _signaturePatterns = value; }
         }
 
         [CLSCompliant(false)]
-        public byte[][] SignatureMasks
+        public byte[][]? SignatureMasks
         {
             get { return _signatureMasks; }
             set { _signatureMasks = value; }
@@ -199,11 +198,11 @@ namespace System.Drawing.Imaging
 
                 for (int j = 0; j < codecp.SigCount; j++)
                 {
-                    codecs[index].SignaturePatterns[j] = new byte[codecp.SigSize];
-                    codecs[index].SignatureMasks[j] = new byte[codecp.SigSize];
+                    codecs[index].SignaturePatterns![j] = new byte[codecp.SigSize];
+                    codecs[index].SignatureMasks![j] = new byte[codecp.SigSize];
 
-                    Marshal.Copy((IntPtr)((long)codecp.SigMask + j * codecp.SigSize), codecs[index].SignatureMasks[j], 0, codecp.SigSize);
-                    Marshal.Copy((IntPtr)((long)codecp.SigPattern + j * codecp.SigSize), codecs[index].SignaturePatterns[j], 0, codecp.SigSize);
+                    Marshal.Copy((IntPtr)((long)codecp.SigMask + j * codecp.SigSize), codecs[index].SignatureMasks![j], 0, codecp.SigSize);
+                    Marshal.Copy((IntPtr)((long)codecp.SigPattern + j * codecp.SigSize), codecs[index].SignaturePatterns![j], 0, codecp.SigSize);
                 }
             }
 

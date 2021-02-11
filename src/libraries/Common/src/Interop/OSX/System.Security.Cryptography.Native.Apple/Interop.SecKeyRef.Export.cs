@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -13,24 +12,22 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        private static readonly SafeCreateHandle s_nullExportString = new SafeCreateHandle();
-
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SecKeyExport(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyRefHandle? key,
             int exportPrivate,
-            SafeCreateHandle cfExportPassphrase,
+            SafeCreateHandle? cfExportPassphrase,
             out SafeCFDataHandle cfDataOut,
             out int pOSStatus);
 
         internal static SafeCFDataHandle SecKeyExportData(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyRefHandle? key,
             bool exportPrivate,
             ReadOnlySpan<char> password)
         {
-            SafeCreateHandle exportPassword = exportPrivate
+            SafeCreateHandle? exportPassword = exportPrivate
                 ? CoreFoundation.CFStringCreateFromSpan(password)
-                : s_nullExportString;
+                : null;
 
             int ret;
             SafeCFDataHandle cfData;
@@ -47,10 +44,7 @@ internal static partial class Interop
             }
             finally
             {
-                if (exportPassword != s_nullExportString)
-                {
-                    exportPassword.Dispose();
-                }
+                exportPassword?.Dispose();
             }
 
             if (ret == 1)
@@ -70,7 +64,7 @@ internal static partial class Interop
         }
 
         internal static byte[] SecKeyExport(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyRefHandle? key,
             bool exportPrivate,
             string password)
         {

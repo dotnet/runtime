@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+#
+
+PACKAGE=$1
+INSTALL_DESTINATION=$2
+
+# A temporary fix for the permissions issue(s)
+chmod 755 $INSTALL_DESTINATION/dotnet
+
+# Add the installation directory to the system-wide paths
+echo $INSTALL_DESTINATION | tee /etc/paths.d/dotnet
+
+exit 0

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -35,7 +34,7 @@ namespace System.Linq.Parallel
     {
         private readonly int _count; // The number of elements to take or skip.
         private readonly bool _take; // Whether to take (true) or skip (false).
-        private bool _prematureMerge = false; // Whether to prematurely merge the input of this operator.
+        private bool _prematureMerge; // Whether to prematurely merge the input of this operator.
 
         //---------------------------------------------------------------------------------------
         // Initializes a new take-while operator.
@@ -188,7 +187,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TResult currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TResult currentElement, [AllowNull] ref TKey currentKey)
             {
                 Debug.Assert(_sharedIndices != null);
 
@@ -206,7 +205,7 @@ namespace System.Linq.Parallel
                     while (buffer.Count < _count && _source.MoveNext(ref current!, ref index))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         // Add the current element to our buffer.
                         buffer.Add(new Pair<TResult, TKey>(current, index));

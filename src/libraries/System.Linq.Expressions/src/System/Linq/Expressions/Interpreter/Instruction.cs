@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
@@ -24,16 +23,16 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string ToString() => InstructionName + "()";
 
-        public virtual string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IReadOnlyList<object> objects) => ToString();
+        public virtual string ToDebugString(int instructionIndex, object? cookie, Func<int, int> labelIndexer, IReadOnlyList<object>? objects) => ToString();
 
-        public virtual object GetDebugCookie(LightCompiler compiler) => null;
+        public virtual object? GetDebugCookie(LightCompiler compiler) => null;
 
         // throws NRE when o is null
-        protected static void NullCheck(object o)
+        protected static void NullCheck(object? o)
         {
             if (o == null)
             {
-                o.GetType();
+                o!.GetType();
             }
         }
     }

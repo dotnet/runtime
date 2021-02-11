@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System;
@@ -11,7 +10,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
     {
         #region Test Methods
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait1()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, string.Empty, true);
@@ -24,7 +23,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait2()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "AttachedToParent");
@@ -39,7 +38,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait3()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, AttachedToParent");
@@ -60,7 +59,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait4()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "AttachedToParent");
@@ -73,7 +72,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait5()
         {
@@ -85,7 +84,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait6()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "RespectParentCancellation");
@@ -107,7 +106,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait7()
         {
@@ -131,7 +130,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait8()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning, RespectParentCancellation");
@@ -157,7 +156,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait9()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "None");
@@ -171,7 +170,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait10()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "RespectParentCancellation");
@@ -187,7 +186,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait11()
         {
@@ -211,7 +210,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait12()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "AttachedToParent");
@@ -227,7 +226,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait13()
         {
@@ -253,7 +252,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait14()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryLight, "AttachedToParent");
@@ -263,7 +262,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait15()
         {
@@ -285,7 +284,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait16()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning, AttachedToParent");
@@ -295,7 +294,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait17()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "LongRunning, AttachedToParent");
@@ -317,7 +316,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait18()
         {
@@ -343,7 +342,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait19()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning, AttachedToParent");
@@ -354,7 +353,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait20()
         {
@@ -376,7 +375,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait21()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "LongRunning");
@@ -401,7 +400,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait22()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Light, "RespectParentCancellation");
@@ -415,7 +414,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait23()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.VeryHeavy, "LongRunning, RespectParentCancellation");
@@ -428,7 +427,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait24()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Medium, "LongRunning");
@@ -443,7 +442,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             TaskCancelWaitTest test = new TaskCancelWaitTest(parameters);
             test.RealRun();
         }
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCancelWait25()
         {
             TaskInfo node = new TaskInfo(null, "node", WorkloadType.Heavy, "RespectParentCancellation");
@@ -466,7 +465,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait26()
         {
@@ -481,7 +480,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait27()
         {
@@ -504,7 +503,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait28()
         {
@@ -531,7 +530,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait29()
         {
@@ -548,7 +547,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait30()
         {
@@ -572,7 +571,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait31()
         {
@@ -584,7 +583,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait32()
         {
@@ -596,7 +595,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait33()
         {
@@ -619,7 +618,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait34()
         {
@@ -643,7 +642,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait35()
         {
@@ -658,7 +657,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait36()
         {
@@ -685,7 +684,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait37()
         {
@@ -702,7 +701,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait38()
         {
@@ -714,7 +713,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait39()
         {
@@ -731,7 +730,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait40()
         {
@@ -755,7 +754,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait41()
         {
@@ -782,7 +781,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait42()
         {
@@ -797,7 +796,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait43()
         {
@@ -820,7 +819,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait44()
         {
@@ -832,7 +831,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait45()
         {
@@ -856,7 +855,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait46()
         {
@@ -871,7 +870,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait47()
         {
@@ -894,7 +893,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait48()
         {
@@ -917,7 +916,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait49()
         {
@@ -929,7 +928,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait50()
         {
@@ -953,7 +952,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait51()
         {
@@ -968,7 +967,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait52()
         {
@@ -995,7 +994,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait53()
         {
@@ -1010,7 +1009,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait54()
         {
@@ -1037,7 +1036,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait55()
         {
@@ -1049,7 +1048,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait56()
         {
@@ -1066,7 +1065,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait57()
         {
@@ -1081,7 +1080,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait58()
         {
@@ -1108,7 +1107,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait59()
         {
@@ -1125,7 +1124,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait60()
         {
@@ -1142,7 +1141,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait61()
         {
@@ -1166,7 +1165,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait62()
         {
@@ -1183,7 +1182,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait63()
         {
@@ -1210,7 +1209,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait64()
         {
@@ -1234,7 +1233,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait65()
         {
@@ -1257,7 +1256,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait66()
         {
@@ -1280,7 +1279,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait67()
         {
@@ -1292,7 +1291,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait68()
         {
@@ -1315,7 +1314,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait69()
         {
@@ -1330,7 +1329,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait70()
         {
@@ -1357,7 +1356,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait71()
         {
@@ -1380,7 +1379,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait72()
         {
@@ -1404,7 +1403,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait73()
         {
@@ -1431,7 +1430,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait74()
         {
@@ -1448,7 +1447,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait75()
         {
@@ -1465,7 +1464,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait76()
         {
@@ -1477,7 +1476,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait77()
         {
@@ -1501,7 +1500,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait78()
         {
@@ -1524,7 +1523,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait79()
         {
@@ -1548,7 +1547,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait80()
         {
@@ -1560,7 +1559,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait81()
         {
@@ -1584,7 +1583,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait82()
         {
@@ -1607,7 +1606,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait83()
         {
@@ -1624,7 +1623,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait84()
         {
@@ -1636,7 +1635,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait85()
         {
@@ -1651,7 +1650,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait86()
         {
@@ -1678,7 +1677,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait87()
         {
@@ -1690,7 +1689,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait88()
         {
@@ -1705,7 +1704,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait89()
         {
@@ -1720,7 +1719,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait90()
         {
@@ -1747,7 +1746,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait91()
         {
@@ -1764,7 +1763,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait92()
         {
@@ -1781,7 +1780,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait93()
         {
@@ -1798,7 +1797,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait94()
         {
@@ -1815,7 +1814,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait95()
         {
@@ -1827,7 +1826,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait96()
         {
@@ -1851,7 +1850,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait97()
         {
@@ -1878,7 +1877,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait98()
         {
@@ -1890,7 +1889,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait99()
         {
@@ -1905,7 +1904,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait100()
         {
@@ -1928,7 +1927,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait101()
         {
@@ -1945,7 +1944,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait102()
         {
@@ -1969,7 +1968,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait103()
         {
@@ -1992,7 +1991,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait104()
         {
@@ -2007,7 +2006,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait105()
         {
@@ -2019,7 +2018,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait106()
         {
@@ -2042,7 +2041,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait107()
         {
@@ -2066,7 +2065,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait108()
         {
@@ -2093,7 +2092,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait109()
         {
@@ -2120,7 +2119,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait110()
         {
@@ -2135,7 +2134,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait111()
         {
@@ -2158,7 +2157,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait112()
         {
@@ -2181,7 +2180,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait113()
         {
@@ -2196,7 +2195,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait114()
         {
@@ -2213,7 +2212,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait115()
         {
@@ -2225,7 +2224,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait116()
         {
@@ -2249,7 +2248,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait117()
         {
@@ -2276,7 +2275,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait118()
         {
@@ -2300,7 +2299,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait119()
         {
@@ -2327,7 +2326,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait120()
         {
@@ -2339,7 +2338,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait121()
         {
@@ -2356,7 +2355,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait122()
         {
@@ -2371,7 +2370,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait123()
         {
@@ -2388,7 +2387,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait124()
         {
@@ -2400,7 +2399,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait125()
         {
@@ -2415,7 +2414,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait126()
         {
@@ -2432,7 +2431,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait127()
         {
@@ -2455,7 +2454,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait128()
         {
@@ -2478,7 +2477,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait129()
         {
@@ -2505,7 +2504,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait130()
         {
@@ -2532,7 +2531,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait131()
         {
@@ -2555,7 +2554,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait132()
         {
@@ -2570,7 +2569,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait133()
         {
@@ -2597,7 +2596,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait134()
         {
@@ -2609,7 +2608,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait135()
         {
@@ -2633,7 +2632,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait136()
         {
@@ -2657,7 +2656,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait137()
         {
@@ -2674,7 +2673,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait138()
         {
@@ -2697,7 +2696,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait139()
         {
@@ -2721,7 +2720,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait140()
         {
@@ -2736,7 +2735,7 @@ namespace System.Threading.Tasks.Tests.CancelWait
             test.RealRun();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void TaskCancelWait141()
         {

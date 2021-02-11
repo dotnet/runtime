@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Globalization
@@ -26,7 +25,7 @@ Namespace Global.Microsoft.VisualBasic
             If service Is GetType(NumberFormatInfo) Then
                 Return nfi
             End If
-            Throw New ArgumentException(GetResourceString(SR.InternalError_VisualBasicRuntime))
+            Throw New ArgumentException(SR.InternalError_VisualBasicRuntime)
         End Function
 
     End Class
@@ -113,7 +112,7 @@ Namespace Global.Microsoft.VisualBasic
                 SyncLock m_SyncObject
                     If Not m_LastUsedYesNoCulture Is ci Then
                         m_LastUsedYesNoCulture = ci
-                        m_CachedYesNoFormatStyle = GetResourceString(SR.YesNoFormatStyle)
+                        m_CachedYesNoFormatStyle = SR.YesNoFormatStyle
                     End If
                     Return m_CachedYesNoFormatStyle
                 End SyncLock
@@ -128,7 +127,7 @@ Namespace Global.Microsoft.VisualBasic
                 SyncLock m_SyncObject
                     If Not m_LastUsedOnOffCulture Is ci Then
                         m_LastUsedOnOffCulture = ci
-                        m_CachedOnOffFormatStyle = GetResourceString(SR.OnOffFormatStyle)
+                        m_CachedOnOffFormatStyle = SR.OnOffFormatStyle
                     End If
                     Return m_CachedOnOffFormatStyle
                 End SyncLock
@@ -143,7 +142,7 @@ Namespace Global.Microsoft.VisualBasic
                 SyncLock m_SyncObject
                     If Not m_LastUsedTrueFalseCulture Is ci Then
                         m_LastUsedTrueFalseCulture = ci
-                        m_CachedTrueFalseFormatStyle = GetResourceString(SR.TrueFalseFormatStyle)
+                        m_CachedTrueFalseFormatStyle = SR.TrueFalseFormatStyle
                     End If
                     Return m_CachedTrueFalseFormatStyle
                 End SyncLock
@@ -303,8 +302,6 @@ Namespace Global.Microsoft.VisualBasic
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValueType2, NameOf(Source), "String"), NameOf(Source))
@@ -489,10 +486,8 @@ EmptyMatchString:
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValueType2, "SourceArray", "String"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValueType2, "SourceArray", "String"))
             End Try
 
             Return Join(StringSource, Delimiter)
@@ -506,7 +501,7 @@ EmptyMatchString:
                 End If
 
                 If SourceArray.Rank <> 1 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_RankEQOne1))
+                    Throw New ArgumentException(SR.Format(SR.Argument_RankEQOne1))
                 End If
 
                 Return System.String.Join(Delimiter, SourceArray)
@@ -666,11 +661,11 @@ EmptyMatchString:
             Try
                 'Validate Parameters
                 If Count < -1 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_GEMinusOne1, "Count"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_GEMinusOne1, "Count"))
                 End If
 
                 If Start <= 0 Then
-                    Throw New ArgumentException(GetResourceString("Argument_GTZero1", "Start"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_GTZero1, "Start"))
                 End If
 
                 If (Expression Is Nothing) OrElse (Start > Expression.Length) Then
@@ -766,7 +761,7 @@ EmptyFindString:
                 Return New String(ChrW(32), Number)
             End If
 
-            Throw New ArgumentException(GetResourceString(SR.Argument_GEZero1, "Number"))
+            Throw New ArgumentException(SR.Format(SR.Argument_GEZero1, "Number"))
 
         End Function
 
@@ -953,18 +948,18 @@ RedimAndExit:
             Dim SingleChar As Char
 
             If Number < 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Number"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Number"))
             End If
 
             If Character Is Nothing Then
-                Throw New ArgumentNullException(GetResourceString(SR.Argument_InvalidNullValue1, "Character"))
+                Throw New ArgumentNullException(SR.Format(SR.Argument_InvalidNullValue1, "Character"))
             End If
 
             s = TryCast(Character, String)
 
             If s IsNot Nothing Then
                 If s.Length = 0 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_LengthGTZero1, "Character"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_LengthGTZero1, "Character"))
                 End If
                 SingleChar = s.Chars(0)
             Else
@@ -974,10 +969,8 @@ RedimAndExit:
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Character"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Character"))
                 End Try
             End If
 
@@ -986,7 +979,7 @@ RedimAndExit:
 
         Public Function StrDup(ByVal Number As Integer, ByVal Character As Char) As String
             If Number < 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_GEZero1, "Number"))
+                Throw New ArgumentException(SR.Format(SR.Argument_GEZero1, "Number"))
             End If
 
             Return New String(Character, Number)
@@ -994,11 +987,11 @@ RedimAndExit:
 
         Public Function StrDup(ByVal Number As Integer, ByVal Character As String) As String
             If Number < 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_GEZero1, "Number"))
+                Throw New ArgumentException(SR.Format(SR.Argument_GEZero1, "Number"))
             End If
 
             If Character Is Nothing OrElse Character.Length = 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_LengthGTZero1, "Character"))
+                Throw New ArgumentException(SR.Format(SR.Argument_LengthGTZero1, "Character"))
             End If
 
             Return New String(Character.Chars(0), Number)
@@ -1008,90 +1001,35 @@ RedimAndExit:
 
             If (Expression Is Nothing) Then
                 Return ""
+            ElseIf Expression.Length <= 1 Then
+                Return Expression
             End If
 
-            Dim chars As Char()
-            Dim uc As UnicodeCategory
-            Dim ch As Char
-            Dim SrcIndex, Length As Integer
+            'Use TextElementEnumerator to iterate through the grapheme clusters, then
+            'add them to the destination array in reverse order. A grapheme cluster
+            'is a text element that displays as a single character; it might consist
+            'of multiple chars.
+            Dim TextEnum As TextElementEnumerator = StringInfo.GetTextElementEnumerator(Expression)
+            Dim Output(Expression.Length - 1) As Char
+            Dim LastSrcIndex As Integer
 
-            Length = Expression.Length
-            If Length = 0 Then
-                Return ""
-            End If
-
-            'Detect if there are any graphemes that need special handling
-            For SrcIndex = 0 To Length - 1
-                ch = Expression.Chars(SrcIndex)
-                uc = Char.GetUnicodeCategory(ch)
-                If uc = UnicodeCategory.Surrogate OrElse
-                    uc = UnicodeCategory.NonSpacingMark OrElse
-                    uc = UnicodeCategory.SpacingCombiningMark OrElse
-                    uc = UnicodeCategory.EnclosingMark Then
-                    'Need to use special handling
-                    Return InternalStrReverse(Expression, SrcIndex, Length)
-                End If
-            Next SrcIndex
-
-            chars = Expression.ToCharArray()
-            System.Array.Reverse(chars)
-            Return New String(chars)
-
-        End Function
-
-        'This routine handles reversing Strings containing graphemes
-        ' GRAPHEME: a text element that is displayed as a single character
-        '
-        Private Function InternalStrReverse(ByVal Expression As String, ByVal SrcIndex As Integer, ByVal Length As Integer) As String
-
-            Dim TextEnum As TextElementEnumerator
-            Dim DestIndex, LastSrcIndex, NextSrcIndex As Integer
-            Dim sb As StringBuilder
-
-            'This code can only be hit one time
-            sb = New StringBuilder(Length)
-            sb.Length = Length
-
-            TextEnum = StringInfo.GetTextElementEnumerator(Expression, SrcIndex)
-
-            'Init enumerator position
-            If Not TextEnum.MoveNext() Then
-                Return ""
-            End If
-
+            'Initialize the enumerator
+            TextEnum.MoveNext()
             LastSrcIndex = 0
-            DestIndex = Length - 1
 
-            'Copy up the first surrogate found
-            Do While LastSrcIndex < SrcIndex
-                sb.Chars(DestIndex) = Expression.Chars(LastSrcIndex)
-                DestIndex -= 1
-                LastSrcIndex += 1
+            'Iterate through the enumerator, performing a forward-copy of the source
+            'expression to the end of the StringBuilder.
+            ' Example: input = [ (ABC) (D) (EFGH) (IJ) (K) ]
+            '         output = [ (K) (IJ) (EFGH) (D) (ABC) ]
+            Do While TextEnum.MoveNext()
+                Expression.CopyTo(LastSrcIndex, Output, Output.Length - TextEnum.ElementIndex, TextEnum.ElementIndex - LastSrcIndex)
+                LastSrcIndex = TextEnum.ElementIndex
             Loop
 
-            'Now iterate through the text elements and copy them to the reversed string
-            NextSrcIndex = TextEnum.ElementIndex
+            'The above loop won't hit the last element - we need to copy the remaining data manually
+            Expression.CopyTo(LastSrcIndex, Output, 0, Expression.Length - LastSrcIndex)
 
-            Do While DestIndex >= 0
-                SrcIndex = NextSrcIndex
-
-                'Move to next element
-                If (TextEnum.MoveNext()) Then
-                    NextSrcIndex = TextEnum.ElementIndex
-                Else
-                    'Point NextSrcIndex to end of string
-                    NextSrcIndex = Length
-                End If
-                LastSrcIndex = NextSrcIndex - 1
-
-                Do While LastSrcIndex >= SrcIndex
-                    sb.Chars(DestIndex) = Expression.Chars(LastSrcIndex)
-                    DestIndex -= 1
-                    LastSrcIndex -= 1
-                Loop
-            Loop
-
-            Return sb.ToString()
+            Return New String(Output)
 
         End Function
 
@@ -1321,8 +1259,6 @@ RedimAndExit:
                         Throw ex
                     Catch ex As OutOfMemoryException
                         Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
-                        Throw ex
                     Catch
                         'Object could not be converted to required type
                         'so just return the string
@@ -1335,7 +1271,7 @@ RedimAndExit:
                 If iformat Is Nothing Then
                     tc = System.Convert.GetTypeCode(Expression)
                     If tc <> TypeCode.String AndAlso tc <> TypeCode.Boolean Then
-                        Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Expression"))
+                        Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Expression"))
                     End If
                 End If
 
@@ -1416,7 +1352,7 @@ RedimAndExit:
                 ValidateTriState(GroupDigits)
 
                 If NumDigitsAfterDecimal > 99 Then  'Was 255 in VB6, but System.Globalization.NumberFormatInfo.CurrencyDecimalDigits limits this to 99.
-                    Throw New ArgumentException(GetResourceString(SR.Argument_Range0to99_1, "NumDigitsAfterDecimal"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_Range0to99_1, "NumDigitsAfterDecimal"))
                 End If
 
                 If Expression Is Nothing Then
@@ -1428,7 +1364,7 @@ RedimAndExit:
                 If typ Is GetType(System.String) Then
                     Expression = CDbl(Expression)
                 ElseIf Not Symbols.IsNumericType(typ) Then
-                    Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(typ), "Currency"))
+                    Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(typ), "Currency"))
                 End If
 
                 ifmt = CType(Expression, IFormattable)
@@ -1511,7 +1447,7 @@ RedimAndExit:
                         Expression = 0.0
                     End If
                 ElseIf Not Symbols.IsNumericType(typ) Then
-                    Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(typ), "Currency"))
+                    Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(typ), "Currency"))
                 End If
 
                 ifmt = CType(Expression, IFormattable)
@@ -1627,7 +1563,7 @@ RedimAndExit:
                 sTmp = sb.ToString()
                 sb.Append(";(")
                 sb.Append(sTmp)
-                sb.Append(")")
+                sb.Append(")"c)
             End If
 
             Return sb.ToString()
@@ -1766,7 +1702,7 @@ RedimAndExit:
             If NumDigitsAfterDecimal = -1 Then
                 NumDigitsAfterDecimal = nfi.NumberDecimalDigits
             ElseIf (NumDigitsAfterDecimal > 99) OrElse (NumDigitsAfterDecimal < -1) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_Range0to99_1, "NumDigitsAfterDecimal"))
+                Throw New ArgumentException(SR.Format(SR.Argument_Range0to99_1, "NumDigitsAfterDecimal"))
             End If
 
             If GroupDigits = TriState.UseDefault Then
@@ -1867,7 +1803,7 @@ RedimAndExit:
             If typ Is GetType(System.String) Then
                 Expression = CDbl(Expression)
             ElseIf Not Symbols.IsNumericType(typ) Then
-                Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(typ), "numeric"))
+                Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(typ), "numeric"))
             End If
 
             ifmt = CType(Expression, IFormattable)
@@ -1881,11 +1817,11 @@ RedimAndExit:
         '============================================================================
         Public Function GetChar(ByVal [str] As String, ByVal Index As Integer) As Char
             If [str] Is Nothing Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_LengthGTZero1, "String"))
+                Throw New ArgumentException(SR.Format(SR.Argument_LengthGTZero1, "String"))
             ElseIf (Index < 1) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_GEOne1, "Index"))
+                Throw New ArgumentException(SR.Format(SR.Argument_GEOne1, "Index"))
             ElseIf (Index > [str].Length) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_IndexLELength2, "Index", "String"))
+                Throw New ArgumentException(SR.Format(SR.Argument_IndexLELength2, "Index", "String"))
             Else
                 Return [str].Chars(Index - 1)
             End If
@@ -2038,7 +1974,7 @@ RedimAndExit:
                 ElseIf ([Compare] = CompareMethod.Text) Then
                     Return Operators.CompareString(String1, String2, True)
                 Else
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Compare"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Compare"))
                 End If
             Catch ex As Exception
                 Throw ex
@@ -2056,14 +1992,13 @@ RedimAndExit:
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
             End Try
         End Function
 
+        <SupportedOSPlatform("windows")>
         Public Function StrConv(ByVal [str] As String, ByVal Conversion As VbStrConv, Optional ByVal LocaleID As Integer = 0) As String
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Try
                 Const LANG_CHINESE As Integer = &H4I
                 Const LANG_JAPANESE As Integer = &H11I
@@ -2082,10 +2017,8 @@ RedimAndExit:
                         Throw ex
                     Catch ex As OutOfMemoryException
                         Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
-                        Throw ex
                     Catch
-                        Throw New ArgumentException(GetResourceString(SR.Argument_LCIDNotSupported1, CStr(LocaleID)))
+                        Throw New ArgumentException(SR.Format(SR.Argument_LCIDNotSupported1, CStr(LocaleID)))
                     End Try
                 End If
 
@@ -2095,7 +2028,7 @@ RedimAndExit:
                 If (Conversion And Not (VbStrConv.Uppercase Or VbStrConv.Lowercase Or VbStrConv.Wide Or VbStrConv.Narrow _
                     Or VbStrConv.Katakana Or VbStrConv.Hiragana Or VbStrConv.SimplifiedChinese Or VbStrConv.TraditionalChinese _
                     Or VbStrConv.LinguisticCasing)) <> 0 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidVbStrConv))
+                    Throw New ArgumentException(SR.Argument_InvalidVbStrConv)
                 End If
 
                 '*** VbStrConv.SimplifiedChinese/VbStrConv.TraditionalChinese handling
@@ -2104,18 +2037,18 @@ RedimAndExit:
                     Case 0
                         'Flags not used
                     Case (VbStrConv.SimplifiedChinese + VbStrConv.TraditionalChinese)
-                        Throw New ArgumentException(GetResourceString(SR.Argument_StrConvSCandTC))
+                        Throw New ArgumentException(SR.Argument_StrConvSCandTC)
                     Case VbStrConv.SimplifiedChinese
                         If IsValidCodePage(CODEPAGE_SIMPLIFIED_CHINESE) AndAlso IsValidCodePage(CODEPAGE_TRADITIONAL_CHINESE) Then
                             dwMapFlags = dwMapFlags Or NativeTypes.LCMAP_SIMPLIFIED_CHINESE
                         Else
-                            Throw New ArgumentException(GetResourceString(SR.Argument_SCNotSupported))
+                            Throw New ArgumentException(SR.Argument_SCNotSupported)
                         End If
                     Case VbStrConv.TraditionalChinese
                         If IsValidCodePage(CODEPAGE_SIMPLIFIED_CHINESE) AndAlso IsValidCodePage(CODEPAGE_TRADITIONAL_CHINESE) Then
                             dwMapFlags = dwMapFlags Or NativeTypes.LCMAP_TRADITIONAL_CHINESE
                         Else
-                            Throw New ArgumentException(GetResourceString(SR.Argument_TCNotSupported))
+                            Throw New ArgumentException(SR.Argument_TCNotSupported)
                         End If
                 End Select
 
@@ -2124,7 +2057,7 @@ RedimAndExit:
                     Case VbStrConv.None
                         'No conversion
                         If (Conversion And VbStrConv.LinguisticCasing) <> 0 Then
-                            Throw New ArgumentException(GetResourceString(SR.LinguisticRequirements))
+                            Throw New ArgumentException(SR.LinguisticRequirements)
                         End If
 
                     Case (VbStrConv.Uppercase Or VbStrConv.Lowercase)       '  VbStrConv.ProperCase is special: see below    
@@ -2146,7 +2079,7 @@ RedimAndExit:
 
                 If ((Conversion And (VbStrConv.Katakana + VbStrConv.Hiragana)) <> 0) Then
                     If (langid <> LANG_JAPANESE) OrElse (Not ValidLCID(LocaleID)) Then
-                        Throw New ArgumentException(GetResourceString(SR.Argument_JPNNotSupported))
+                        Throw New ArgumentException(SR.Argument_JPNNotSupported)
                     Else
                         'Locale is ok
                     End If
@@ -2157,10 +2090,10 @@ RedimAndExit:
                        (langid = LANG_KOREAN) OrElse
                        (langid = LANG_CHINESE) Then
                         If Not ValidLCID(LocaleID) Then
-                            Throw New ArgumentException(GetResourceString(SR.Argument_LocalNotSupported))
+                            Throw New ArgumentException(SR.Argument_LocalNotSupported)
                         End If
                     Else
-                        Throw New ArgumentException(GetResourceString(SR.Argument_WideNarrowNotApplicable))
+                        Throw New ArgumentException(SR.Argument_WideNarrowNotApplicable)
                     End If
                 End If
 
@@ -2168,7 +2101,7 @@ RedimAndExit:
                 Select Case (Conversion And (VbStrConv.Wide Or VbStrConv.Narrow))
                     Case VbStrConv.None
                     Case VbStrConv.Wide Or VbStrConv.Narrow  '  VbStrConv.Wide+VbStrConv.Narrow is reserved
-                        Throw New ArgumentException(GetResourceString(SR.Argument_IllegalWideNarrow))
+                        Throw New ArgumentException(SR.Argument_IllegalWideNarrow)
                     Case VbStrConv.Wide             '  VbStrConv.Wide
                         dwMapFlags = dwMapFlags Or NativeTypes.LCMAP_FULLWIDTH
                     Case VbStrConv.Narrow           '  VbStrConv.Narrow
@@ -2179,7 +2112,7 @@ RedimAndExit:
                 Select Case (Conversion And (VbStrConv.Katakana Or VbStrConv.Hiragana))
                     Case VbStrConv.None
                     Case (VbStrConv.Katakana Or VbStrConv.Hiragana)  '  VbStrConv.Katakana+VbStrConv.Hiragana is reserved
-                        Throw New ArgumentException(GetResourceString(SR.Argument_IllegalKataHira))
+                        Throw New ArgumentException(SR.Argument_IllegalKataHira)
                     Case VbStrConv.Katakana '  VbStrConv.Katakana
                         dwMapFlags = dwMapFlags Or NativeTypes.LCMAP_KATAKANA
                     Case VbStrConv.Hiragana '  VbStrConv.Hiragana
@@ -2202,7 +2135,7 @@ RedimAndExit:
 #End If
         End Function
 
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
         Friend Function ValidLCID(ByVal LocaleID As Integer) As Boolean
             Try
                 Dim loc As CultureInfo = New CultureInfo(LocaleID)
@@ -2210,8 +2143,6 @@ RedimAndExit:
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch
                 ValidLCID = False

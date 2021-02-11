@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 
@@ -25,10 +25,10 @@ namespace System.Security.Cryptography.Pkcs
 
         private abstract class RSACmsSignature : CmsSignature
         {
-            private readonly string _signatureAlgorithm;
+            private readonly string? _signatureAlgorithm;
             private readonly HashAlgorithmName? _expectedDigest;
 
-            protected RSACmsSignature(string signatureAlgorithm, HashAlgorithmName? expectedDigest)
+            protected RSACmsSignature(string? signatureAlgorithm, HashAlgorithmName? expectedDigest)
             {
                 _signatureAlgorithm = signatureAlgorithm;
                 _expectedDigest = expectedDigest;
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Pkcs
                     digestAlgorithmName,
                     valueHash.Length);
 
-                RSA publicKey = certificate.GetRSAPublicKey();
+                RSA? publicKey = certificate.GetRSAPublicKey();
 
                 if (publicKey == null)
                 {
@@ -87,21 +87,21 @@ namespace System.Security.Cryptography.Pkcs
 
             protected abstract RSASignaturePadding GetSignaturePadding(
                 ReadOnlyMemory<byte>? signatureParameters,
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength);
         }
 
         private sealed class RSAPkcs1CmsSignature : RSACmsSignature
         {
-            public RSAPkcs1CmsSignature(string signatureAlgorithm, HashAlgorithmName? expectedDigest)
+            public RSAPkcs1CmsSignature(string? signatureAlgorithm, HashAlgorithmName? expectedDigest)
                 : base(signatureAlgorithm, expectedDigest)
             {
             }
 
             protected override RSASignaturePadding GetSignaturePadding(
                 ReadOnlyMemory<byte>? signatureParameters,
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength)
             {
@@ -130,15 +130,15 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm key,
+                AsymmetricAlgorithm? key,
                 bool silent,
-                out Oid signatureAlgorithm,
-                out byte[] signatureValue)
+                [NotNullWhen(true)] out string? signatureAlgorithm,
+                [NotNullWhen(true)] out byte[]? signatureValue)
             {
-                RSA certPublicKey = certificate.GetRSAPublicKey();
+                RSA certPublicKey = certificate.GetRSAPublicKey()!;
 
                 // If there's no private key, fall back to the public key for a "no private key" exception.
-                RSA privateKey = key as RSA ??
+                RSA? privateKey = key as RSA ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<RSA>(certificate, silent) ??
                     certPublicKey;
 
@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                signatureAlgorithm = new Oid(Oids.Rsa, Oids.Rsa);
+                signatureAlgorithm = Oids.Rsa;
 
 #if NETCOREAPP || NETSTANDARD2_1
                 byte[] signature = new byte[privateKey.KeySize / 8];
@@ -203,7 +203,7 @@ namespace System.Security.Cryptography.Pkcs
 
             protected override RSASignaturePadding GetSignaturePadding(
                 ReadOnlyMemory<byte>? signatureParameters,
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength)
             {
@@ -214,12 +214,12 @@ namespace System.Security.Cryptography.Pkcs
 
                 PssParamsAsn pssParams = PssParamsAsn.Decode(signatureParameters.Value, AsnEncodingRules.DER);
 
-                if (pssParams.HashAlgorithm.Algorithm.Value != digestAlgorithmOid)
+                if (pssParams.HashAlgorithm.Algorithm != digestAlgorithmOid)
                 {
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_Pkcs_PssParametersHashMismatch,
-                            pssParams.HashAlgorithm.Algorithm.Value,
+                            pssParams.HashAlgorithm.Algorithm,
                             digestAlgorithmOid));
                 }
 
@@ -237,11 +237,11 @@ namespace System.Security.Cryptography.Pkcs
                             digestAlgorithmName.Name));
                 }
 
-                if (pssParams.MaskGenAlgorithm.Algorithm.Value != Oids.Mgf1)
+                if (pssParams.MaskGenAlgorithm.Algorithm != Oids.Mgf1)
                 {
                     throw new CryptographicException(
                         SR.Cryptography_Pkcs_PssParametersMgfNotSupported,
-                        pssParams.MaskGenAlgorithm.Algorithm.Value);
+                        pssParams.MaskGenAlgorithm.Algorithm);
                 }
 
                 if (pssParams.MaskGenAlgorithm.Parameters == null)
@@ -253,12 +253,12 @@ namespace System.Security.Cryptography.Pkcs
                     pssParams.MaskGenAlgorithm.Parameters.Value,
                     AsnEncodingRules.DER);
 
-                if (mgfParams.Algorithm.Value != digestAlgorithmOid)
+                if (mgfParams.Algorithm != digestAlgorithmOid)
                 {
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_Pkcs_PssParametersMgfHashMismatch,
-                            mgfParams.Algorithm.Value,
+                            mgfParams.Algorithm,
                             digestAlgorithmOid));
                 }
 
@@ -274,9 +274,9 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm key,
+                AsymmetricAlgorithm? key,
                 bool silent,
-                out Oid signatureAlgorithm,
+                out string signatureAlgorithm,
                 out byte[] signatureValue)
             {
                 Debug.Fail("RSA-PSS requires building parameters, which has no API.");

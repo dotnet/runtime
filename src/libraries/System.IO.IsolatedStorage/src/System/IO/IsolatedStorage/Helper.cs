@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.IO.IsolatedStorage
 {
@@ -8,9 +7,9 @@ namespace System.IO.IsolatedStorage
     {
         private const string IsolatedStorageDirectoryName = "IsolatedStorage";
 
-        private static string s_machineRootDirectory;
-        private static string s_roamingUserRootDirectory;
-        private static string s_userRootDirectory;
+        private static string? s_machineRootDirectory;
+        private static string? s_roamingUserRootDirectory;
+        private static string? s_userRootDirectory;
 
         /// <summary>
         /// The full root directory is the relevant special folder from Environment.GetFolderPath() plus "IsolatedStorage"

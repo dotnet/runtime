@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -12,10 +11,25 @@ namespace System.Globalization.Tests
         [InlineData("en-US", "en")]
         [InlineData("en", "")]
         [InlineData("", "")]
+        [InlineData("zh-CN", "zh-Hans")]
+        [InlineData("zh-SG", "zh-Hans")]
+        [InlineData("zh-HK", "zh-Hant")]
+        [InlineData("zh-MO", "zh-Hant")]
+        [InlineData("zh-TW", "zh-Hant")]
+        [InlineData("zh-Hans-CN", "zh-Hans")]
+        [InlineData("zh-Hant-TW", "zh-Hant")]
         public void Parent(string name, string expectedParentName)
         {
-            CultureInfo culture = new CultureInfo(name);
-            Assert.Equal(new CultureInfo(expectedParentName), culture.Parent);
+            try
+            {
+                CultureInfo culture = new CultureInfo(name);
+                Assert.Equal(new CultureInfo(expectedParentName), culture.Parent);
+            }
+            catch (CultureNotFoundException)
+            {
+                // on downlevel Windows versions, some cultures are not supported e.g. zh-Hans-CN
+                // Ignore that and pass the test
+            }
         }
 
         [Fact]

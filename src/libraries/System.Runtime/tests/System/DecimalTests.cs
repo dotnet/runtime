@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -140,6 +139,13 @@ namespace System.Tests
             Assert.Equal(expected, new decimal(value));
         }
 
+        [Theory]
+        [MemberData(nameof(Ctor_IntArray_TestData))]
+        public void Ctor_IntSpan(int[] value, decimal expected)
+        {
+            Assert.Equal(expected, new decimal(value.AsSpan()));
+        }
+
         [Fact]
         public void Ctor_NullBits_ThrowsArgumentNullException()
         {
@@ -155,6 +161,7 @@ namespace System.Tests
         public void Ctor_InvalidBits_ThrowsArgumentException(int[] bits)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new decimal(bits));
+            AssertExtensions.Throws<ArgumentException>(null, () => new decimal(bits.AsSpan()));
         }
 
         [Theory]
@@ -527,7 +534,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(object obj1, object obj2, bool expected)
+        public static void EqualsTest(object obj1, object obj2, bool expected)
         {
             if (obj1 is decimal d1)
             {
@@ -617,6 +624,54 @@ namespace System.Tests
             decimal newValue = new decimal(bits[0], bits[1], bits[2], sign, scale);
 
             Assert.Equal(input, newValue);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBits_TestData))]
+        public static void GetBitsSpan(decimal input, int[] expected)
+        {
+            Span<int> bits = new int[4];
+            int bitsWritten = decimal.GetBits(input, bits);
+
+            Assert.Equal(4, bitsWritten);
+            Assert.Equal(expected, bits.ToArray());
+
+            bool sign = (bits[3] & 0x80000000) != 0;
+            byte scale = (byte)((bits[3] >> 16) & 0x7F);
+            decimal newValue = new decimal(bits[0], bits[1], bits[2], sign, scale);
+
+            Assert.Equal(input, newValue);
+        }
+
+        [Fact]
+        public static void GetBitsSpan_TooShort_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>("destination", () => decimal.GetBits(123, new int[3]));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBits_TestData))]
+        public static void TryGetBits(decimal input, int[] expected)
+        {
+            Span<int> bits;
+            int valuesWritten;
+
+            bits = new int[3] { 42, 43, 44 };
+            Assert.False(decimal.TryGetBits(input, bits, out valuesWritten));
+            Assert.Equal(0, valuesWritten);
+            Assert.Equal(new int[3] { 42, 43, 44 }, bits.ToArray());
+
+            bits = new int[4];
+            Assert.True(decimal.TryGetBits(input, bits, out valuesWritten));
+            Assert.Equal(4, valuesWritten);
+            Assert.Equal(expected, bits.ToArray());
+
+            bits = new int[5];
+            bits[4] = 42;
+            Assert.True(decimal.TryGetBits(input, bits, out valuesWritten));
+            Assert.Equal(4, valuesWritten);
+            Assert.Equal(expected, bits.Slice(0, 4).ToArray());
+            Assert.Equal(42, bits[4]);
         }
 
         [Fact]
@@ -1352,7 +1407,15 @@ namespace System.Tests
                 yield return new object[] { (decimal)2468, "N", defaultFormat, "2,468.00" };
 
                 yield return new object[] { (decimal)2467, "[#-##-#]", defaultFormat, "[2-46-7]" };
+
             }
+
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+            yield return new object[] { 32.5m, "C100", invariantFormat, "¤32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5m, "P100", invariantFormat, "3,250.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { 32.5m, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { 32.5m, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5m, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
 
             // Changing the negative pattern doesn't do anything without also passing in a format string
             var customFormat1 = new NumberFormatInfo();
@@ -1430,6 +1493,9 @@ namespace System.Tests
             decimal f = 123;
             Assert.Throws<FormatException>(() => f.ToString("Y"));
             Assert.Throws<FormatException>(() => f.ToString("Y", null));
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => f.ToString("E" + intMaxPlus1String));
         }
 
         public static IEnumerable<object[]> Truncate_TestData()
@@ -1802,7 +1868,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static new void GetHashCode()
+        public static void GetHashCodeTest()
         {
             var dict = new Dictionary<string, (int hash, string value)>();
             foreach (decimal d in GetRandomData(out _, hash: true))

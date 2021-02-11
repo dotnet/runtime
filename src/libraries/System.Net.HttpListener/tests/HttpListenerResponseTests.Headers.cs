@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Text;
@@ -9,6 +8,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerResponseHeadersTests : HttpListenerResponseTestBase
     {
@@ -35,7 +35,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(22057, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22696", TargetFrameworkMonikers.Netcoreapp)]
         public async Task AddHeader_LongName_ThrowsArgumentOutOfRangeException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -78,7 +78,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(22057, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22696", TargetFrameworkMonikers.Netcoreapp)]
         public async Task AppendHeader_LongName_ThrowsArgumentOutOfRangeException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -435,7 +435,7 @@ namespace System.Net.Tests
         {
             using (HttpListenerResponse response = await GetResponse())
             {
-                AssertExtensions.Throws<ArgumentException>("name", () => response.StatusDescription = statusDescription);
+                AssertExtensions.Throws<ArgumentException>("value", () => response.StatusDescription = statusDescription);
                 Assert.Equal("OK", response.StatusDescription);
             }
         }
@@ -838,7 +838,7 @@ namespace System.Net.Tests
 
         [Theory]
         [InlineData("Transfer-Encoding")]
-        [ActiveIssue(22057, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22696", TargetFrameworkMonikers.Netcoreapp)]
         public async Task Headers_SetRestricted_ThrowsArgumentException(string name)
         {
             HttpListenerResponse response = await GetResponse();
@@ -859,7 +859,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(22057, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22696", TargetFrameworkMonikers.Netcoreapp)]
         public async Task Headers_SetLongName_ThrowsArgumentOutOfRangeException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -871,7 +871,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(22057, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22696", TargetFrameworkMonikers.Netcoreapp)]
         public async Task Headers_SetRequestHeader_ThrowsInvalidOperationException()
         {
             HttpListenerResponse response = await GetResponse();

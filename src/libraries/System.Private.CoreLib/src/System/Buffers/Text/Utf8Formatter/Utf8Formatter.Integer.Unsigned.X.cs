@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Buffers.Text
 {
@@ -23,7 +22,6 @@ namespace System.Buffers.Text
             }
 
             bytesWritten = computedOutputLength;
-            string hexTable = (useLower) ? FormattingHelpers.HexTableLower : FormattingHelpers.HexTableUpper;
 
             // Writing the output backward in this manner allows the JIT to elide
             // bounds checking on the output buffer. The JIT won't elide the bounds
@@ -35,11 +33,23 @@ namespace System.Buffers.Text
             // casing output lengths of 2, 4, 8, and 16 and running them down optimized
             // code paths.
 
-            while ((uint)(--computedOutputLength) < (uint)destination.Length)
+            if (useLower)
             {
-                destination[computedOutputLength] = (byte)hexTable[(int)value & 0xf];
-                value >>= 4;
+                while ((uint)(--computedOutputLength) < (uint)destination.Length)
+                {
+                    destination[computedOutputLength] = (byte)HexConverter.ToCharLower((int)value);
+                    value >>= 4;
+                }
             }
+            else
+            {
+                while ((uint)(--computedOutputLength) < (uint)destination.Length)
+                {
+                    destination[computedOutputLength] = (byte)HexConverter.ToCharUpper((int)value);
+                    value >>= 4;
+                }
+            }
+
             return true;
         }
     }

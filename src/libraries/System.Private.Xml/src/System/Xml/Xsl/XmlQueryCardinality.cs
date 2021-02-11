@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace System.Xml.Xsl
@@ -120,12 +120,13 @@ namespace System.Xml.Xsl
         /// <summary>
         /// True if "other" is an XmlQueryCardinality, and this type is the exact same static type.
         /// </summary>
-        public override bool Equals(object other)
+        public override bool Equals([NotNullWhen(true)] object? other)
         {
             if (other is XmlQueryCardinality)
             {
                 return Equals((XmlQueryCardinality)other);
             }
+
             return false;
         }
 

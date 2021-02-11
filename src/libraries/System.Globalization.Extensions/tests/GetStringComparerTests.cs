@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -10,8 +9,6 @@ namespace System.Globalization.Tests
 {
     public class GetStringComparerTests
     {
-        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-
         [Fact]
         public void GetStringComparer_Invalid()
         {
@@ -35,9 +32,9 @@ namespace System.Globalization.Tests
         [InlineData("abc", "ABC", "en-US", CompareOptions.OrdinalIgnoreCase, 0, 0)]
         [InlineData("Cot\u00E9", "cot\u00E9", "fr-FR", CompareOptions.IgnoreCase, 0, 0)]
         [InlineData("cot\u00E9", "c\u00F4te", "fr-FR", CompareOptions.None, 1, -1)]
-        public static void Compare(string x, string y, string cultureName, CompareOptions options, int expectedWindows, int expectedICU)
+        public static void Compare(string x, string y, string cultureName, CompareOptions options, int expectedNls, int expectedICU)
         {
-            int expected = s_isWindows ? expectedWindows : expectedICU;
+            int expected = PlatformDetection.IsNlsGlobalization ? expectedNls : expectedICU;
             StringComparer comparer = new CultureInfo(cultureName).CompareInfo.GetStringComparer(options);
 
             Assert.Equal(expected, Math.Sign(comparer.Compare(x, y)));
@@ -60,7 +57,7 @@ namespace System.Globalization.Tests
         [InlineData("en-US", CompareOptions.IgnoreCase, "en-US", CompareOptions.IgnoreSymbols, false)]
         [InlineData("en-US", CompareOptions.IgnoreCase, "fr-FR", CompareOptions.IgnoreCase, false)]
         [InlineData("en-US", CompareOptions.IgnoreCase, "fr-FR", CompareOptions.Ordinal, false)]
-        public void Equals(string cultureName1, CompareOptions options1, string cultureName2, CompareOptions options2, bool expected)
+        public void EqualsTest(string cultureName1, CompareOptions options1, string cultureName2, CompareOptions options2, bool expected)
         {
             StringComparer comparer1 = new CultureInfo(cultureName1).CompareInfo.GetStringComparer(options1);
             StringComparer comparer2 = new CultureInfo(cultureName2).CompareInfo.GetStringComparer(options2);

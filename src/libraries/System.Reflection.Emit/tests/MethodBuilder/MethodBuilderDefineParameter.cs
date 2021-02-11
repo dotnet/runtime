@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using Xunit;
@@ -38,6 +37,11 @@ namespace System.Reflection.Emit.Tests
             // Invoke the method to verify it works correctly
             MethodInfo resultMethod = resultType.GetMethod("TestMethod");
             Assert.Equal(expectedReturn, resultMethod.Invoke(null, new object[] { "hello", new object() }));
+
+            // Verify MetadataToken
+            Assert.Equal(method.MetadataToken, resultMethod.MetadataToken);
+            MethodInfo methodFromToken = (MethodInfo)type.Module.ResolveMethod(method.MetadataToken);
+            Assert.Equal(resultMethod, methodFromToken);
         }
 
         [Fact]

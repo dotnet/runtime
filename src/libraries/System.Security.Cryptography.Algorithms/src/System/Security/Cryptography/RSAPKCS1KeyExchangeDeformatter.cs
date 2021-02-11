@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class RSAPKCS1KeyExchangeDeformatter : AsymmetricKeyExchangeDeformatter
     {
-        private RSA _rsaKey;
-        private RandomNumberGenerator RngValue;
+        private RSA? _rsaKey;
+        private RandomNumberGenerator? RngValue;
 
         public RSAPKCS1KeyExchangeDeformatter() { }
 
@@ -19,13 +21,13 @@ namespace System.Security.Cryptography
             _rsaKey = (RSA)key;
         }
 
-        public RandomNumberGenerator RNG
+        public RandomNumberGenerator? RNG
         {
             get { return RngValue; }
             set { RngValue = value; }
         }
 
-        public override string Parameters
+        public override string? Parameters
         {
             get { return null; }
             set { }

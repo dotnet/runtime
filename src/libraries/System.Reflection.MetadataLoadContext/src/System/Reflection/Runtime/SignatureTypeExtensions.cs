@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection.TypeLoading;
@@ -37,19 +36,19 @@ namespace System.Reflection
 
             if (pattern.IsSZArray())
             {
-                return actual.IsSZArray() && pattern.GetElementType().MatchesExactly(actual.GetElementType());
+                return actual.IsSZArray() && pattern.GetElementType()!.MatchesExactly(actual.GetElementType()!);
             }
             else if (pattern.IsVariableBoundArray())
             {
-                return actual.IsVariableBoundArray() && pattern.GetArrayRank() == actual.GetArrayRank() && pattern.GetElementType().MatchesExactly(actual.GetElementType());
+                return actual.IsVariableBoundArray() && pattern.GetArrayRank() == actual.GetArrayRank() && pattern.GetElementType()!.MatchesExactly(actual.GetElementType()!);
             }
             else if (pattern.IsByRef)
             {
-                return actual.IsByRef && pattern.GetElementType().MatchesExactly(actual.GetElementType());
+                return actual.IsByRef && pattern.GetElementType()!.MatchesExactly(actual.GetElementType()!);
             }
             else if (pattern.IsPointer)
             {
-                return actual.IsPointer && pattern.GetElementType().MatchesExactly(actual.GetElementType());
+                return actual.IsPointer && pattern.GetElementType()!.MatchesExactly(actual.GetElementType()!);
             }
             else if (pattern.IsConstructedGenericType)
             {
@@ -103,37 +102,37 @@ namespace System.Reflection
         /// the method we're looking for, we return null rather than let the TypeLoadException bubble up. The DefaultBinder will catch
         /// the null and continue its search for a better candidate.
         /// </summary>
-        internal static Type TryResolveAgainstGenericMethod(this Type signatureType, MethodInfo genericMethod)
+        internal static Type? TryResolveAgainstGenericMethod(this Type signatureType, MethodInfo genericMethod)
         {
             Debug.Assert(signatureType.IsSignatureType());
             return signatureType.TryResolve(genericMethod.GetGenericArguments());
         }
 
-        private static Type TryResolve(this Type signatureType, Type[] genericMethodParameters)
+        private static Type? TryResolve(this Type signatureType, Type[] genericMethodParameters)
         {
             Debug.Assert(signatureType.IsSignatureType());
 
             if (signatureType.IsSZArray())
             {
-                return signatureType.GetElementType().TryResolve(genericMethodParameters)?.TryMakeArrayType();
+                return signatureType.GetElementType()!.TryResolve(genericMethodParameters)?.TryMakeArrayType();
             }
             else if (signatureType.IsVariableBoundArray())
             {
-                return signatureType.GetElementType().TryResolve(genericMethodParameters)?.TryMakeArrayType(signatureType.GetArrayRank());
+                return signatureType.GetElementType()!.TryResolve(genericMethodParameters)?.TryMakeArrayType(signatureType.GetArrayRank());
             }
             else if (signatureType.IsByRef)
             {
-                return signatureType.GetElementType().TryResolve(genericMethodParameters)?.TryMakeByRefType();
+                return signatureType.GetElementType()!.TryResolve(genericMethodParameters)?.TryMakeByRefType();
             }
             else if (signatureType.IsPointer)
             {
-                return signatureType.GetElementType().TryResolve(genericMethodParameters)?.TryMakePointerType();
+                return signatureType.GetElementType()!.TryResolve(genericMethodParameters)?.TryMakePointerType();
             }
             else if (signatureType.IsConstructedGenericType)
             {
                 Type[] genericTypeArguments = signatureType.GenericTypeArguments;
                 int count = genericTypeArguments.Length;
-                Type[] newGenericTypeArguments = new Type[count];
+                Type?[] newGenericTypeArguments = new Type[count];
                 for (int i = 0; i < count; i++)
                 {
                     Type genericTypeArgument = genericTypeArguments[i];
@@ -148,7 +147,7 @@ namespace System.Reflection
                         newGenericTypeArguments[i] = genericTypeArgument;
                     }
                 }
-                return signatureType.GetGenericTypeDefinition().TryMakeGenericType(newGenericTypeArguments);
+                return signatureType.GetGenericTypeDefinition().TryMakeGenericType(newGenericTypeArguments!);
             }
             else if (signatureType.IsGenericMethodParameter())
             {
@@ -163,7 +162,7 @@ namespace System.Reflection
             }
         }
 
-        private static Type TryMakeArrayType(this Type type)
+        private static Type? TryMakeArrayType(this Type type)
         {
             try
             {
@@ -175,7 +174,7 @@ namespace System.Reflection
             }
         }
 
-        private static Type TryMakeArrayType(this Type type, int rank)
+        private static Type? TryMakeArrayType(this Type type, int rank)
         {
             try
             {
@@ -187,7 +186,7 @@ namespace System.Reflection
             }
         }
 
-        private static Type TryMakeByRefType(this Type type)
+        private static Type? TryMakeByRefType(this Type type)
         {
             try
             {
@@ -199,7 +198,7 @@ namespace System.Reflection
             }
         }
 
-        private static Type TryMakePointerType(this Type type)
+        private static Type? TryMakePointerType(this Type type)
         {
             try
             {
@@ -211,7 +210,7 @@ namespace System.Reflection
             }
         }
 
-        private static Type TryMakeGenericType(this Type type, Type[] instantiation)
+        private static Type? TryMakeGenericType(this Type type, Type[] instantiation)
         {
             try
             {

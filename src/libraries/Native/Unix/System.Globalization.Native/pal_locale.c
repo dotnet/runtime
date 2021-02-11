@@ -1,21 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <locale.h>
 
+#include "pal_locale_internal.h"
 #include "pal_locale.h"
 
 int32_t UErrorCodeToBool(UErrorCode status)
 {
     if (U_SUCCESS(status))
     {
-        return TRUE;
+        return true;
     }
 
     // assert errors that should never occur
@@ -24,7 +25,7 @@ int32_t UErrorCodeToBool(UErrorCode status)
 
     // add possible SetLastError support here
 
-    return FALSE;
+    return false;
 }
 
 int32_t GetLocale(const UChar* localeName,
@@ -46,7 +47,11 @@ int32_t GetLocale(const UChar* localeName,
     {
         UChar c = localeName[i];
 
-        if (c > (UChar)0x7F)
+        // Some versions of ICU have a bug where '/' in name can cause infinite loop, so we preemptively
+        // detect this case for CultureNotFoundException (as '/' is anyway illegal in locale name and we
+        // expected ICU to return this error).
+
+        if (c > (UChar)0x7F || c == (UChar)'/')
         {
             *err = U_ILLEGAL_ARGUMENT_ERROR;
             return ULOC_FULLNAME_CAPACITY;
@@ -193,7 +198,7 @@ int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value,
     UErrorCode status = U_ZERO_ERROR;
 
     char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, TRUE, &status);
+    GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, true, &status);
     u_charsToUChars_safe(localeNameBuffer, value, valueLength, &status);
 
     if (U_SUCCESS(status))
@@ -232,4 +237,25 @@ int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLeng
     }
 
     return UErrorCodeToBool(status);
+}
+
+// GlobalizationNative_IsPredefinedLocale returns TRUE if ICU has a real data for the locale.
+// Otherwise it returns FALSE;
+
+int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName)
+{
+    UErrorCode err = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+
+    if (U_FAILURE(err))
+        return false;
+
+    // ures_open returns err = U_ZERO_ERROR when ICU has data for localeName.
+    // If it is fake locale, it will return err = U_USING_FALLBACK_WARNING || err = U_USING_DEFAULT_WARNING.
+    // Other err values would be just a failure.
+    UResourceBundle* uresb = ures_open(NULL, locale, &err);
+    ures_close(uresb);
+
+    return err == U_ZERO_ERROR;
 }

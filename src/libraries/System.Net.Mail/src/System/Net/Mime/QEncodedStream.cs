@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -16,10 +15,8 @@ namespace System.Net.Mime
     /// </summary>
     internal class QEncodedStream : DelegatedStream, IEncodableStream
     {
-        //folding takes up 3 characters "\r\n "
-        private const int SizeOfFoldingCRLF = 3;
 
-        private static readonly byte[] s_hexDecodeMap = new byte[]
+        private static ReadOnlySpan<byte> HexDecodeMap => new byte[] // rely on C# compiler optimization to eliminate allocation
         {
             // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0
@@ -40,35 +37,23 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         };
 
-        //bytes that correspond to the hex char representations in ASCII (0-9, A-F)
-        private static readonly byte[] s_hexEncodeMap = new byte[] { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };
-
-        private ReadStateInfo _readState;
+        private ReadStateInfo? _readState;
         private readonly WriteStateInfoBase _writeState;
+        private readonly IByteEncoder _encoder;
 
         internal QEncodedStream(WriteStateInfoBase wsi) : base(new MemoryStream())
         {
             _writeState = wsi;
+            _encoder = new QEncoder(_writeState);
         }
 
         private ReadStateInfo ReadState => _readState ?? (_readState = new ReadStateInfo());
 
         internal WriteStateInfoBase WriteState => _writeState;
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             WriteAsyncResult result = new WriteAsyncResult(this, buffer, offset, count, callback, state);
             result.Write();
@@ -110,8 +95,8 @@ namespace System.Net.Mime
                         // '=\r\n' means a soft (aka. invisible) CRLF sequence...
                         if (source[0] != '\r' || source[1] != '\n')
                         {
-                            byte b1 = s_hexDecodeMap[source[0]];
-                            byte b2 = s_hexDecodeMap[source[1]];
+                            byte b1 = HexDecodeMap[source[0]];
+                            byte b2 = HexDecodeMap[source[1]];
                             if (b1 == 255)
                                 throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
                             if (b2 == 255)
@@ -127,8 +112,8 @@ namespace System.Net.Mime
                         // '=\r\n' means a soft (aka. invisible) CRLF sequence...
                         if (ReadState.Byte != '\r' || *source != '\n')
                         {
-                            byte b1 = s_hexDecodeMap[ReadState.Byte];
-                            byte b2 = s_hexDecodeMap[*source];
+                            byte b1 = HexDecodeMap[ReadState.Byte];
+                            byte b2 = HexDecodeMap[*source];
                             if (b1 == 255)
                                 throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
                             if (b2 == 255)
@@ -180,8 +165,8 @@ namespace System.Net.Mime
                             default:
                                 if (source[1] != '\r' || source[2] != '\n')
                                 {
-                                    byte b1 = s_hexDecodeMap[source[1]];
-                                    byte b2 = s_hexDecodeMap[source[2]];
+                                    byte b1 = HexDecodeMap[source[1]];
+                                    byte b2 = HexDecodeMap[source[2]];
                                     if (b1 == 255)
                                         throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
                                     if (b2 == 255)
@@ -199,71 +184,11 @@ namespace System.Net.Mime
             }
         }
 
-        public int EncodeBytes(byte[] buffer, int offset, int count)
-        {
-            // Add Encoding header, if any. e.g. =?encoding?b?
-            _writeState.AppendHeader();
+        public int EncodeBytes(byte[] buffer, int offset, int count) =>_encoder.EncodeBytes(buffer, offset, count, true, true);
 
-            // Scan one character at a time looking for chars that need to be encoded.
-            int cur = offset;
-            for (; cur < count + offset; cur++)
-            {
-                if ( // Fold if we're before a whitespace and encoding another character would be too long
-                    ((WriteState.CurrentLineLength + SizeOfFoldingCRLF + WriteState.FooterLength >= WriteState.MaxLineLength)
-                        && (buffer[cur] == ' ' || buffer[cur] == '\t' || buffer[cur] == '\r' || buffer[cur] == '\n'))
-                    // Or just adding the footer would be too long.
-                    || (WriteState.CurrentLineLength + _writeState.FooterLength >= WriteState.MaxLineLength)
-                   )
-                {
-                    WriteState.AppendCRLF(true);
-                }
+        public int EncodeString(string value, Encoding encoding) => _encoder.EncodeString(value, encoding);
 
-                // We don't need to worry about RFC 2821 4.5.2 (encoding first dot on a line),
-                // it is done by the underlying 7BitStream
-
-                //always encode CRLF
-                if (buffer[cur] == '\r' && cur + 1 < count + offset && buffer[cur + 1] == '\n')
-                {
-                    cur++;
-
-                    //the encoding for CRLF is =0D=0A
-                    WriteState.Append((byte)'=', (byte)'0', (byte)'D', (byte)'=', (byte)'0', (byte)'A');
-                }
-                else if (buffer[cur] == ' ')
-                {
-                    //spaces should be escaped as either '_' or '=20' and
-                    //we have chosen '_' for parity with other email client
-                    //behavior
-                    WriteState.Append((byte)'_');
-                }
-                // RFC 2047 Section 5 part 3 also allows for !*+-/ but these arn't required in headers.
-                // Conservatively encode anything but letters or digits.
-                else if (IsAsciiLetterOrDigit((char)buffer[cur]))
-                {
-                    // Just a regular printable ascii char.
-                    WriteState.Append(buffer[cur]);
-                }
-                else
-                {
-                    //append an = to indicate an encoded character
-                    WriteState.Append((byte)'=');
-                    //shift 4 to get the first four bytes only and look up the hex digit
-                    WriteState.Append(s_hexEncodeMap[buffer[cur] >> 4]);
-                    //clear the first four bytes to get the last four and look up the hex digit
-                    WriteState.Append(s_hexEncodeMap[buffer[cur] & 0xF]);
-                }
-            }
-            WriteState.AppendFooter();
-            return cur - offset;
-        }
-
-        private static bool IsAsciiLetterOrDigit(char character) =>
-            IsAsciiLetter(character) || (character >= '0' && character <= '9');
-
-        private static bool IsAsciiLetter(char character) =>
-            (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z');
-
-        public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
+        public string GetEncodedString() => _encoder.GetEncodedString();
 
         public override void EndWrite(IAsyncResult asyncResult) => WriteAsyncResult.End(asyncResult);
 
@@ -284,18 +209,7 @@ namespace System.Net.Mime
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (offset + count > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ValidateBufferArguments(buffer, offset, count);
 
             int written = 0;
             while (true)
@@ -329,7 +243,7 @@ namespace System.Net.Mime
 
             private int _written;
 
-            internal WriteAsyncResult(QEncodedStream parent, byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+            internal WriteAsyncResult(QEncodedStream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
                 : base(null, state, callback)
             {
                 _parent = parent;
@@ -355,7 +269,7 @@ namespace System.Net.Mime
             {
                 if (!result.CompletedSynchronously)
                 {
-                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState;
+                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState!;
                     try
                     {
                         thisPtr.CompleteWrite(result);

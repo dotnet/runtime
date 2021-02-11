@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -54,7 +53,6 @@ namespace System.Linq.Expressions.Compiler
         /// to detect misuse of the <see cref="Mark"/> and <see cref="Free"/> methods.
         /// </summary>
         [Conditional("DEBUG")]
-        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private void VerifyTemps() => _tm.VerifyTemps();
 
         /// <summary>
@@ -87,12 +85,12 @@ namespace System.Linq.Expressions.Compiler
             /// <summary>
             /// List of free temporary variables. These can be recycled for new temporary variables.
             /// </summary>
-            private List<ParameterExpression> _freeTemps;
+            private List<ParameterExpression>? _freeTemps;
 
             /// <summary>
             /// Stack of temporary variables that are currently in use.
             /// </summary>
-            private Stack<ParameterExpression> _usedTemps;
+            private Stack<ParameterExpression>? _usedTemps;
 
             /// <summary>
             /// List of all temporary variables created by the stack spiller instance.
@@ -214,7 +212,6 @@ namespace System.Linq.Expressions.Compiler
             /// to detect misuse of the <see cref="Mark"/> and <see cref="Free"/> methods.
             /// </summary>
             [Conditional("DEBUG")]
-            [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
             internal void VerifyTemps()
             {
                 Debug.Assert(_usedTemps == null || _usedTemps.Count == 0);

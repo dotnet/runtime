@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Configuration.Internal;
 using System.Diagnostics;
@@ -834,22 +833,22 @@ namespace System.Configuration
 
             // Start with element tag name
             StringBuilder element = new StringBuilder(64);
-            element.Append("<");
+            element.Append('<');
             element.Append(Reader.Name);
 
             // Add attributes
             while (Reader.MoveToNextAttribute())
             {
-                element.Append(" ");
+                element.Append(' ');
                 element.Append(Reader.Name);
-                element.Append("=");
+                element.Append('=');
                 element.Append('\"');
                 element.Append(Reader.Value);
                 element.Append('\"');
             }
 
             // Now close the element tag
-            element.Append(">");
+            element.Append('>');
 
             return element.ToString();
         }

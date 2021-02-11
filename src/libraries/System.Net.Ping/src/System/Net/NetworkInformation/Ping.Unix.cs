@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -18,10 +18,12 @@ namespace System.Net.NetworkInformation
         private const int IcmpHeaderLengthInBytes = 8;
         private const int MinIpHeaderLengthInBytes = 20;
         private const int MaxIpHeaderLengthInBytes = 60;
+        private static bool SendIpHeader => OperatingSystem.IsMacOS();
+        private static bool NeedsConnect => OperatingSystem.IsLinux();
         [ThreadStatic]
-        private static Random t_idGenerator;
+        private static Random? t_idGenerator;
 
-        private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             PingReply reply = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
                     SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options) :
@@ -29,7 +31,7 @@ namespace System.Net.NetworkInformation
             return reply;
         }
 
-        private async Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private async Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             Task<PingReply> t = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
                     SendIcmpEchoRequestOverRawSocketAsync(address, buffer, timeout, options) :
@@ -45,43 +47,55 @@ namespace System.Net.NetworkInformation
             return reply;
         }
 
-        private SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private unsafe SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            SocketConfig config = new SocketConfig();
-            config.EndPoint = new IPEndPoint(address, 0);
-            config.Timeout = timeout;
-            config.Options = options;
-
-            config.IsIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
-            config.ProtocolType = config.IsIpv4 ? ProtocolType.Icmp : ProtocolType.IcmpV6;
-
             // Use a random value as the identifier. This doesn't need to be perfectly random
             // or very unpredictable, rather just good enough to avoid unexpected conflicts.
-            Random rand = t_idGenerator ?? (t_idGenerator = new Random());
-            config.Identifier = (ushort)rand.Next((int)ushort.MaxValue + 1);
+            Random rand = t_idGenerator ??= new Random();
+            ushort id = (ushort)rand.Next(ushort.MaxValue + 1);
+            IpHeader iph = default;
 
-            IcmpHeader header = new IcmpHeader()
-            {
-                Type = config.IsIpv4 ? (byte)IcmpV4MessageType.EchoRequest : (byte)IcmpV6MessageType.EchoRequest,
-                Code = 0,
-                HeaderChecksum = 0,
-                Identifier = config.Identifier,
-                SequenceNumber = 0,
-            };
+            bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;
+            bool sendIpHeader = ipv4 && options != null && SendIpHeader;
 
-            config.SendBuffer = CreateSendMessageBuffer(header, buffer);
-            return config;
+             if (sendIpHeader)
+             {
+                iph.VersionAndLength = 0x45;
+                // On OSX this strangely must be host byte order.
+                iph.TotalLength = (ushort)(sizeof(IpHeader) + checked(sizeof(IcmpHeader) +  buffer.Length));
+                iph.Protocol = 1; // ICMP
+                iph.Ttl = (byte)options!.Ttl;
+                iph.Flags = (ushort)(options.DontFragment ? 0x4000 : 0);
+#pragma warning disable 618
+                iph.DestinationAddress = (uint)address.Address;
+#pragma warning restore 618
+                // No need to fill in SourceAddress or checksum.
+                // If left blank, kernel will fill it in - at least on OSX.
+             }
+
+            return new SocketConfig(
+                new IPEndPoint(address, 0), timeout, options,
+                ipv4, ipv4 ? ProtocolType.Icmp : ProtocolType.IcmpV6, id,
+                CreateSendMessageBuffer(iph, new IcmpHeader()
+                {
+                    Type = ipv4 ? (byte)IcmpV4MessageType.EchoRequest : (byte)IcmpV6MessageType.EchoRequest,
+                    Identifier = id,
+                }, buffer));
         }
 
         private Socket GetRawSocket(SocketConfig socketConfig)
         {
             IPEndPoint ep = (IPEndPoint)socketConfig.EndPoint;
-
-            // Setting Socket.DontFragment and .Ttl is not supported on Unix, so socketConfig.Options is ignored.
             AddressFamily addrFamily = ep.Address.AddressFamily;
+
             Socket socket = new Socket(addrFamily, SocketType.Raw, socketConfig.ProtocolType);
             socket.ReceiveTimeout = socketConfig.Timeout;
             socket.SendTimeout = socketConfig.Timeout;
+            if (addrFamily == AddressFamily.InterNetworkV6 && OperatingSystem.IsMacOS())
+            {
+                socket.DualMode = false;
+            }
+
             if (socketConfig.Options != null && socketConfig.Options.Ttl > 0)
             {
                 socket.Ttl = (short)socketConfig.Options.Ttl;
@@ -89,13 +103,21 @@ namespace System.Net.NetworkInformation
 
             if (socketConfig.Options != null && addrFamily == AddressFamily.InterNetwork)
             {
-                socket.DontFragment = socketConfig.Options.DontFragment;
+                if (SendIpHeader)
+                {
+                    // some platforms like OSX don't support DontFragment so we construct IP header instead.
+                    socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, 1);
+                }
+                else
+                {
+                    socket.DontFragment = socketConfig.Options.DontFragment;
+                }
             }
 
 #pragma warning disable 618
             // Disable warning about obsolete property. We could use GetAddressBytes but that allocates.
             // IPv4 multicast address starts with 1110 bits so mask rest and test if we get correct value e.g. 0xe0.
-            if (!ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
+            if (NeedsConnect && !ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
             {
                 // If it is not multicast, use Connect to scope responses only to the target address.
                 socket.Connect(socketConfig.EndPoint);
@@ -105,7 +127,9 @@ namespace System.Net.NetworkInformation
             return socket;
         }
 
-        private bool TryGetPingReply(SocketConfig socketConfig, byte[] receiveBuffer, int bytesReceived, Stopwatch sw, ref int ipHeaderLength, out PingReply reply)
+        private bool TryGetPingReply(
+            SocketConfig socketConfig, byte[] receiveBuffer, int bytesReceived, Stopwatch sw, ref int ipHeaderLength,
+            [NotNullWhen(true)] out PingReply? reply)
         {
             byte type, code;
             reply = null;
@@ -151,7 +175,7 @@ namespace System.Net.NetworkInformation
             return true;
         }
 
-        private PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using (Socket socket = GetRawSocket(socketConfig))
@@ -190,7 +214,7 @@ namespace System.Net.NetworkInformation
                         continue; // Not enough bytes to reconstruct IP header + ICMP header.
                     }
 
-                    if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply reply))
+                    if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply? reply))
                     {
                         return reply;
                     }
@@ -201,7 +225,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using (Socket socket = GetRawSocket(socketConfig))
@@ -242,7 +266,7 @@ namespace System.Net.NetworkInformation
                         continue; // Not enough bytes to reconstruct IP header + ICMP header.
                     }
 
-                    if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply reply))
+                    if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply? reply))
                     {
                         return reply;
                     }
@@ -253,10 +277,10 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private Process GetPingProcess(IPAddress address, byte[] buffer, PingOptions options)
+        private Process GetPingProcess(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             bool isIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
-            string pingExecutable = isIpv4 ? UnixCommandLinePing.Ping4UtilityPath : UnixCommandLinePing.Ping6UtilityPath;
+            string? pingExecutable = isIpv4 ? UnixCommandLinePing.Ping4UtilityPath : UnixCommandLinePing.Ping6UtilityPath;
             if (pingExecutable == null)
             {
                 throw new PlatformNotSupportedException(SR.net_ping_utility_not_found);
@@ -268,7 +292,7 @@ namespace System.Net.NetworkInformation
                 fragmentOption = options.DontFragment ? UnixCommandLinePing.PingFragmentOptions.Do : UnixCommandLinePing.PingFragmentOptions.Dont;
             }
 
-            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, address.ToString(), isIpv4, options?.Ttl ?? 0, fragmentOption);
+            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, timeout, address.ToString(), isIpv4, options?.Ttl ?? 0, fragmentOption);
 
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;
@@ -276,9 +300,9 @@ namespace System.Net.NetworkInformation
             return new Process() { StartInfo = psi };
         }
 
-        private PingReply SendWithPingUtility(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private PingReply SendWithPingUtility(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            using (Process p = GetPingProcess(address, buffer, options))
+            using (Process p = GetPingProcess(address, buffer, timeout, options))
             {
                 p.Start();
                 if (!p.WaitForExit(timeout) || p.ExitCode == 1 || p.ExitCode == 2)
@@ -299,13 +323,13 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private async Task<PingReply> SendWithPingUtilityAsync(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private async Task<PingReply> SendWithPingUtilityAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            using (Process p = GetPingProcess(address, buffer, options))
+            using (Process p = GetPingProcess(address, buffer, timeout, options))
             {
-                var processCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var processCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 p.EnableRaisingEvents = true;
-                p.Exited += (s, e) => processCompletion.SetResult(true);
+                p.Exited += (s, e) => processCompletion.SetResult();
                 p.Start();
 
                 var cts = new CancellationTokenSource();
@@ -365,6 +389,24 @@ namespace System.Net.NetworkInformation
         }
 #endif
 
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct IpHeader
+        {
+            internal byte VersionAndLength;
+            internal byte Tos;
+            internal ushort TotalLength;
+
+            internal ushort Identifier;
+            internal ushort Flags;
+
+            internal byte Ttl;
+            internal byte Protocol;
+            internal ushort HeaderChecksum;
+
+            internal uint SourceAddress;
+            internal uint DestinationAddress;
+        };
+
         // Must be 8 bytes total.
         [StructLayout(LayoutKind.Sequential)]
         internal struct IcmpHeader
@@ -381,30 +423,54 @@ namespace System.Net.NetworkInformation
         // and no validation is performed.
         private class SocketConfig
         {
+            public SocketConfig(EndPoint endPoint, int timeout, PingOptions? options, bool isIPv4, ProtocolType protocolType, ushort id, byte[] sendBuffer)
+            {
+                EndPoint = endPoint;
+                Timeout = timeout;
+                Options = options;
+                IsIpv4 = isIPv4;
+                ProtocolType = protocolType;
+                Identifier = id;
+                SendBuffer = sendBuffer;
+            }
+
             public EndPoint EndPoint;
-            public PingOptions Options;
-            public ushort Identifier;
-            public bool IsIpv4;
-            public ProtocolType ProtocolType;
-            public int Timeout;
-            public byte[] SendBuffer;
+            public readonly int Timeout;
+            public readonly PingOptions? Options;
+            public readonly ushort Identifier;
+            public readonly bool IsIpv4;
+            public readonly ProtocolType ProtocolType;
+            public readonly byte[] SendBuffer;
         }
 
-        private static unsafe byte[] CreateSendMessageBuffer(IcmpHeader header, byte[] payload)
+        private static unsafe byte[] CreateSendMessageBuffer(IpHeader ipHeader, IcmpHeader icmpHeader, byte[] payload)
         {
-            int headerSize = sizeof(IcmpHeader);
-            byte[] result = new byte[headerSize + payload.Length];
-            Marshal.Copy(new IntPtr(&header), result, 0, headerSize);
-            payload.CopyTo(result, headerSize);
-            ushort checksum = ComputeBufferChecksum(result);
+            int icmpHeaderSize = sizeof(IcmpHeader);
+            int offset = 0;
+            int packetSize = ipHeader.TotalLength != 0 ? ipHeader.TotalLength : checked(icmpHeaderSize + payload.Length);
+            byte[] result = new byte[packetSize];
+
+            if (ipHeader.TotalLength != 0)
+            {
+                int ipHeaderSize = sizeof(IpHeader);
+                new Span<byte>(&ipHeader, sizeof(IpHeader)).CopyTo(result);
+                offset = ipHeaderSize;
+            }
+
+            //byte[] result = new byte[headerSize + payload.Length];
+            Marshal.Copy(new IntPtr(&icmpHeader), result, offset, icmpHeaderSize);
+            payload.CopyTo(result, offset + icmpHeaderSize);
+
+            // offset now still points to beginning of ICMP header.
+            ushort checksum = ComputeBufferChecksum(result.AsSpan(offset));
             // Jam the checksum into the buffer.
-            result[2] = (byte)(checksum >> 8);
-            result[3] = (byte)(checksum & (0xFF));
+            result[offset + 2] = (byte)(checksum >> 8);
+            result[offset + 3] = (byte)(checksum & (0xFF));
 
             return result;
         }
 
-        private static ushort ComputeBufferChecksum(byte[] buffer)
+        private static ushort ComputeBufferChecksum(ReadOnlySpan<byte> buffer)
         {
             // This is using the "deferred carries" approach outlined in RFC 1071.
             uint sum = 0;

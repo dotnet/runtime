@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
@@ -99,7 +98,7 @@ namespace System.Security.Cryptography
 
         private CngKey GetKey()
         {
-            CngKey key = null;
+            CngKey key;
 
             if (_core.IsKeyGeneratedNamedCurve())
             {
@@ -108,7 +107,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                CngAlgorithm algorithm = null;
+                CngAlgorithm algorithm;
                 int keySize = 0;
 
                 // Map the current key size to a CNG algorithm name

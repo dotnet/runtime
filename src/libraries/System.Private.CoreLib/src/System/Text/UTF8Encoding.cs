@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // The worker functions in this file was optimized for performance. If you make changes
 // you should use care to consider all of the interesting cases.
@@ -12,6 +11,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
@@ -65,18 +65,19 @@ namespace System.Text
 
         // Yes, the idea of emitting U+FEFF as a UTF-8 identifier has made it into
         // the standard.
-        private readonly bool _emitUTF8Identifier = false;
+        private readonly bool _emitUTF8Identifier;
 
-        private readonly bool _isThrowException = false;
+        private readonly bool _isThrowException;
 
 
-        public UTF8Encoding() : this(false)
+        public UTF8Encoding() :
+            base(UTF8_CODEPAGE)
         {
         }
 
 
         public UTF8Encoding(bool encoderShouldEmitUTF8Identifier) :
-            base(UTF8_CODEPAGE)
+            this()
         {
             _emitUTF8Identifier = encoderShouldEmitUTF8Identifier;
         }
@@ -836,7 +837,7 @@ namespace System.Text
             _emitUTF8Identifier ? PreambleSpan :
             default;
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is UTF8Encoding that)
             {

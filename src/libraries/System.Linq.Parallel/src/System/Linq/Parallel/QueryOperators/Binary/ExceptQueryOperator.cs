@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -187,7 +186,7 @@ namespace System.Linq.Parallel
                     while (_rightSource.MoveNext(ref rightElement, ref rightKeyUnused))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         _hashLookup.Add(rightElement.First);
                     }
@@ -201,7 +200,7 @@ namespace System.Linq.Parallel
                 while (_leftSource.MoveNext(ref leftElement, ref leftKeyUnused))
                 {
                     if ((_outputLoopCount.Value++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
+                        _cancellationToken.ThrowIfCancellationRequested();;
 
                     if (_hashLookup.Add(leftElement.First))
                     {
@@ -258,7 +257,7 @@ namespace System.Linq.Parallel
             // Walks the two data sources, left and then right, to produce the distinct set
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, ref TLeftKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, [AllowNull] ref TLeftKey currentKey)
             {
                 Debug.Assert(_leftSource != null);
                 Debug.Assert(_rightSource != null);
@@ -274,7 +273,7 @@ namespace System.Linq.Parallel
                     while (_rightSource.MoveNext(ref rightElement, ref rightKeyUnused))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         rightLookup.Add(rightElement.First);
                     }
@@ -288,7 +287,7 @@ namespace System.Linq.Parallel
                     while (_leftSource.MoveNext(ref leftElement, ref leftKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         if (rightLookup.Contains(leftElement.First))
                         {

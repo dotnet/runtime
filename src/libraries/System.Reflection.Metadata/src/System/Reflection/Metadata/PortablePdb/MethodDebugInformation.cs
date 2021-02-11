@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -10,7 +9,7 @@ namespace System.Reflection.Metadata
     /// Debug information associated with a method definition. Stored in debug metadata.
     /// </summary>
     /// <remarks>
-    /// See https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#methoddebuginformation-table-0x31.
+    /// See https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#methoddebuginformation-table-0x31.
     /// </remarks>
     public readonly struct MethodDebugInformation
     {
@@ -22,7 +21,6 @@ namespace System.Reflection.Metadata
         internal MethodDebugInformation(MetadataReader reader, MethodDebugInformationHandle handle)
         {
             Debug.Assert(reader != null);
-            Debug.Assert(!handle.IsNil);
 
             _reader = reader;
             _rowId = handle.RowId;

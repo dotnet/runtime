@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -73,16 +72,14 @@ namespace System.Runtime.InteropServices
 {
     public abstract unsafe class SafeBuffer : SafeHandleZeroOrMinusOneIsInvalid
     {
-        // Steal UIntPtr.MaxValue as our uninitialized value.
-        private static readonly UIntPtr Uninitialized = (UIntPtr.Size == 4) ?
-            ((UIntPtr)uint.MaxValue) : ((UIntPtr)ulong.MaxValue);
-
-        private UIntPtr _numBytes;
+        private nuint _numBytes;
 
         protected SafeBuffer(bool ownsHandle) : base(ownsHandle)
         {
             _numBytes = Uninitialized;
         }
+
+        private static nuint Uninitialized => nuint.MaxValue;
 
         /// <summary>
         /// Specifies the size of the region of memory, in bytes.  Must be
@@ -98,7 +95,7 @@ namespace System.Runtime.InteropServices
             if (numBytes >= (ulong)Uninitialized)
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_UIntPtrMax);
 
-            _numBytes = (UIntPtr)numBytes;
+            _numBytes = (nuint)numBytes;
         }
 
         /// <summary>
@@ -196,8 +193,7 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref value))
-                    Buffer.Memmove(pStructure, ptr, sizeofT);
+                Buffer.Memmove(ref Unsafe.As<T, byte>(ref value), ref *ptr, sizeofT);
             }
             finally
             {
@@ -220,27 +216,28 @@ namespace System.Runtime.InteropServices
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
+            ReadSpan(byteOffset, new Span<T>(array, index, count));
+        }
+
+        [CLSCompliant(false)]
+        public void ReadSpan<T>(ulong byteOffset, Span<T> buffer)
+            where T : struct
+        {
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
-            uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
-            SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
+            SpaceCheck(ptr, checked((nuint)(alignedSizeofT * buffer.Length)));
 
             bool mustCallRelease = false;
             try
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                if (count > 0)
-                {
-                    fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
-                    {
-                        for (int i = 0; i < count; i++)
-                            Buffer.Memmove(pStructure + sizeofT * i, ptr + alignedSizeofT * i, sizeofT);
-                    }
-                }
+                ref T structure = ref MemoryMarshal.GetReference(buffer);
+                for (int i = 0; i < buffer.Length; i++)
+                    Buffer.Memmove(ref Unsafe.Add(ref structure, i), ref Unsafe.AsRef<T>(ptr + alignedSizeofT * i), 1);
             }
             finally
             {
@@ -273,8 +270,7 @@ namespace System.Runtime.InteropServices
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                fixed (byte* pStructure = &Unsafe.As<T, byte>(ref value))
-                    Buffer.Memmove(ptr, pStructure, sizeofT);
+                Buffer.Memmove(ref *ptr, ref Unsafe.As<T, byte>(ref value), sizeofT);
             }
             finally
             {
@@ -296,29 +292,28 @@ namespace System.Runtime.InteropServices
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
+            WriteSpan(byteOffset, new ReadOnlySpan<T>(array, index, count));
+        }
+
+        [CLSCompliant(false)]
+        public void WriteSpan<T>(ulong byteOffset, ReadOnlySpan<T> data)
+            where T : struct
+        {
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
-            uint sizeofT = SizeOf<T>();
             uint alignedSizeofT = AlignedSizeOf<T>();
             byte* ptr = (byte*)handle + byteOffset;
-            SpaceCheck(ptr, checked((ulong)(alignedSizeofT * count)));
+            SpaceCheck(ptr, checked((nuint)(alignedSizeofT * data.Length)));
 
             bool mustCallRelease = false;
             try
             {
                 DangerousAddRef(ref mustCallRelease);
 
-                if (count > 0)
-                {
-                    {
-                        fixed (byte* pStructure = &Unsafe.As<T, byte>(ref array[index]))
-                        {
-                            for (int i = 0; i < count; i++)
-                                Buffer.Memmove(ptr + alignedSizeofT * i, pStructure + sizeofT * i, sizeofT);
-                        }
-                    }
-                }
+                ref T structure = ref MemoryMarshal.GetReference(data);
+                for (int i = 0; i < data.Length; i++)
+                    Buffer.Memmove(ref Unsafe.AsRef<T>(ptr + alignedSizeofT * i), ref Unsafe.Add(ref structure, i), 1);
             }
             finally
             {
@@ -338,18 +333,18 @@ namespace System.Runtime.InteropServices
                 if (_numBytes == Uninitialized)
                     throw NotInitialized();
 
-                return (ulong)_numBytes;
+                return _numBytes;
             }
         }
 
         /* No indexer.  The perf would be misleadingly bad.  People should use
          * AcquirePointer and ReleasePointer instead.  */
 
-        private void SpaceCheck(byte* ptr, ulong sizeInBytes)
+        private void SpaceCheck(byte* ptr, nuint sizeInBytes)
         {
-            if ((ulong)_numBytes < sizeInBytes)
+            if (_numBytes < sizeInBytes)
                 NotEnoughRoom();
-            if ((ulong)(ptr - (byte*)handle) > ((ulong)_numBytes) - sizeInBytes)
+            if ((ulong)(ptr - (byte*)handle) > (_numBytes - sizeInBytes))
                 NotEnoughRoom();
         }
 

@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -16,7 +14,7 @@ namespace System.Diagnostics
     {
         private bool _haveMainWindow;
         private IntPtr _mainWindowHandle;
-        private string _mainWindowTitle;
+        private string? _mainWindowTitle;
 
         private bool _haveResponding;
         private bool _responding;
@@ -48,17 +46,7 @@ namespace System.Diagnostics
             if (startInfo._environmentVariables != null)
                 throw new InvalidOperationException(SR.CantUseEnvVars);
 
-            string arguments;
-            if (startInfo.ArgumentList.Count > 0)
-            {
-                StringBuilder sb = new StringBuilder();
-                Process.AppendArguments(sb, startInfo.ArgumentList);
-                arguments = sb.ToString();
-            }
-            else
-            {
-                arguments = startInfo.Arguments;
-            }
+            string arguments = startInfo.BuildArguments();
 
             fixed (char* fileName = startInfo.FileName.Length > 0 ? startInfo.FileName : null)
             fixed (char* verb = startInfo.Verb.Length > 0 ? startInfo.Verb : null)
@@ -177,7 +165,11 @@ namespace System.Diagnostics
                 if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                 {
                     ThreadStart threadStart = new ThreadStart(ShellExecuteFunction);
-                    Thread executionThread = new Thread(threadStart) { IsBackground = true };
+                    Thread executionThread = new Thread(threadStart)
+                    {
+                        IsBackground = true,
+                        Name = ".NET Process STA"
+                    };
                     executionThread.SetApartmentState(ApartmentState.STA);
                     executionThread.Start();
                     executionThread.Join();
@@ -243,7 +235,7 @@ namespace System.Diagnostics
                     EnsureState(State.IsLocal | State.HaveId);
                     _mainWindowHandle = ProcessManager.GetMainWindowHandle(_processId);
 
-                    _haveMainWindow = true;
+                    _haveMainWindow = _mainWindowHandle != IntPtr.Zero;
                 }
                 return _mainWindowHandle;
             }
@@ -315,23 +307,18 @@ namespace System.Diagnostics
 
         private bool WaitForInputIdleCore(int milliseconds)
         {
-            const int WAIT_OBJECT_0 = 0x00000000;
-            const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
-            const int WAIT_TIMEOUT = 0x00000102;
-
             bool idle;
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.SYNCHRONIZE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION))
             {
                 int ret = Interop.User32.WaitForInputIdle(handle, milliseconds);
                 switch (ret)
                 {
-                    case WAIT_OBJECT_0:
+                    case Interop.Kernel32.WAIT_OBJECT_0:
                         idle = true;
                         break;
-                    case WAIT_TIMEOUT:
+                    case Interop.Kernel32.WAIT_TIMEOUT:
                         idle = false;
                         break;
-                    case WAIT_FAILED:
                     default:
                         throw new InvalidOperationException(SR.InputIdleUnkownError);
                 }
@@ -354,11 +341,11 @@ namespace System.Diagnostics
         {
             get
             {
-                Interop.NtDll.PROCESS_BASIC_INFORMATION info = default;
-
                 using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION))
                 {
-                    if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.PROCESSINFOCLASS.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
+                    Interop.NtDll.PROCESS_BASIC_INFORMATION info;
+
+                    if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
                         throw new Win32Exception(SR.ProcessInformationUnavailable);
 
                     return (int)info.InheritedFromUniqueProcessId;
@@ -370,7 +357,7 @@ namespace System.Diagnostics
             Id == process.Id
             && StartTime == process.StartTime;
 
-        private IEnumerable<Exception> KillTree()
+        private List<Exception>? KillTree()
         {
             // The process's structures will be preserved as long as a handle is held pointing to them, even if the process exits or
             // is terminated. A handle is held here to ensure a stable reference to the process during execution.
@@ -378,17 +365,17 @@ namespace System.Diagnostics
             {
                 // If the process has exited, the handle is invalid.
                 if (handle.IsInvalid)
-                    return Enumerable.Empty<Exception>();
+                    return null;
 
                 return KillTree(handle);
             }
         }
 
-        private IEnumerable<Exception> KillTree(SafeProcessHandle handle)
+        private List<Exception>? KillTree(SafeProcessHandle handle)
         {
             Debug.Assert(!handle.IsInvalid);
 
-            List<Exception> exceptions = new List<Exception>();
+            List<Exception>? exceptions = null;
 
             try
             {
@@ -399,16 +386,19 @@ namespace System.Diagnostics
             }
             catch (Win32Exception e)
             {
-                exceptions.Add(e);
+                (exceptions ??= new List<Exception>()).Add(e);
             }
 
-            IReadOnlyList<(Process Process, SafeProcessHandle Handle)> children = GetProcessHandlePairs(p => SafePredicateTest(() => IsParentOf(p)));
+            List<(Process Process, SafeProcessHandle Handle)> children = GetProcessHandlePairs(p => SafePredicateTest(() => IsParentOf(p)));
             try
             {
                 foreach ((Process Process, SafeProcessHandle Handle) child in children)
                 {
-                    IEnumerable<Exception> exceptionsFromChild = child.Process.KillTree(child.Handle);
-                    exceptions.AddRange(exceptionsFromChild);
+                    List<Exception>? exceptionsFromChild = child.Process.KillTree(child.Handle);
+                    if (exceptionsFromChild != null)
+                    {
+                        (exceptions ??= new List<Exception>()).AddRange(exceptionsFromChild);
+                    }
                 }
             }
             finally
@@ -423,12 +413,28 @@ namespace System.Diagnostics
             return exceptions;
         }
 
-        private IReadOnlyList<(Process Process, SafeProcessHandle Handle)> GetProcessHandlePairs(Func<Process, bool> predicate)
+        private List<(Process Process, SafeProcessHandle Handle)> GetProcessHandlePairs(Func<Process, bool> predicate)
         {
-            return GetProcesses()
-                .Select(p => (Process: p, Handle: SafeGetHandle(p)))
-                .Where(p => !p.Handle.IsInvalid && predicate(p.Process))
-                .ToList();
+            var results = new List<(Process Process, SafeProcessHandle Handle)>();
+
+            foreach (Process p in GetProcesses())
+            {
+                SafeProcessHandle h = SafeGetHandle(p);
+                if (!h.IsInvalid)
+                {
+                    if (predicate(p))
+                    {
+                        results.Add((p, h));
+                    }
+                    else
+                    {
+                        p.Dispose();
+                        h.Dispose();
+                    }
+                }
+            }
+
+            return results;
 
             static SafeProcessHandle SafeGetHandle(Process process)
             {

@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
-
-using Internal.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -16,7 +14,7 @@ namespace System.Runtime.InteropServices
     /// Provides a collection of methods for interoperating with <see cref="Memory{T}"/>, <see cref="ReadOnlyMemory{T}"/>,
     /// <see cref="Span{T}"/>, and <see cref="ReadOnlySpan{T}"/>.
     /// </summary>
-    public static class MemoryMarshal
+    public static partial class MemoryMarshal
     {
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
@@ -213,26 +211,48 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Create a new span over a portion of a regular managed object. This can be useful
+        /// Creates a new span over a portion of a regular managed object. This can be useful
         /// if part of a managed object represents a "fixed array." This is dangerous because the
         /// <paramref name="length"/> is not checked.
         /// </summary>
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
-        /// <returns>The lifetime of the returned span will not be validated for safety by span-aware languages.</returns>
+        /// <returns>A span representing the specified reference and length.</returns>
+        /// <remarks>The lifetime of the returned span will not be validated for safety by span-aware languages.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> CreateSpan<T>(ref T reference, int length) => new Span<T>(ref reference, length);
 
         /// <summary>
-        /// Create a new read-only span over a portion of a regular managed object. This can be useful
+        /// Creates a new read-only span over a portion of a regular managed object. This can be useful
         /// if part of a managed object represents a "fixed array." This is dangerous because the
         /// <paramref name="length"/> is not checked.
         /// </summary>
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
-        /// <returns>The lifetime of the returned span will not be validated for safety by span-aware languages.</returns>
+        /// <returns>A read-only span representing the specified reference and length.</returns>
+        /// <remarks>The lifetime of the returned span will not be validated for safety by span-aware languages.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length) => new ReadOnlySpan<T>(ref reference, length);
+
+        /// <summary>Creates a new read-only span for a null-terminated string.</summary>
+        /// <param name="value">The pointer to the null-terminated string of characters.</param>
+        /// <returns>A read-only span representing the specified null-terminated string, or an empty span if the pointer is null.</returns>
+        /// <remarks>The returned span does not include the null terminator.</remarks>
+        /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
+        [CLSCompliant(false)]
+        public static unsafe ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) =>
+            value != null ? new ReadOnlySpan<char>(value, string.wcslen(value)) :
+            default;
+
+        /// <summary>Creates a new read-only span for a null-terminated UTF8 string.</summary>
+        /// <param name="value">The pointer to the null-terminated string of bytes.</param>
+        /// <returns>A read-only span representing the specified null-terminated string, or an empty span if the pointer is null.</returns>
+        /// <remarks>The returned span does not include the null terminator, nor does it validate the well-formedness of the UTF8 data.</remarks>
+        /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
+        [CLSCompliant(false)]
+        public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) =>
+            value != null ? new ReadOnlySpan<byte>(value, string.strlen(value)) :
+            default;
 
         /// <summary>
         /// Get an array segment from the underlying memory.
@@ -247,9 +267,6 @@ namespace System.Runtime.InteropServices
 
             if (obj != null && !(
                 (typeof(T) == typeof(char) && obj.GetType() == typeof(string))
-#if FEATURE_UTF8STRING
-                || ((typeof(T) == typeof(byte) || typeof(T) == typeof(Char8)) && obj.GetType() == typeof(Utf8String))
-#endif // FEATURE_UTF8STRING
                 ))
             {
                 if (RuntimeHelpers.ObjectHasComponentSize(obj))
@@ -308,7 +325,9 @@ namespace System.Runtime.InteropServices
         {
             TManager? localManager; // Use register for null comparison rather than byref
             manager = localManager = memory.GetObjectStartLength(out _, out _) as TManager;
+#pragma warning disable 8762 // "Parameter 'manager' may not have a null value when exiting with 'true'."
             return localManager != null;
+#pragma warning restore 8762
         }
 
         /// <summary>
@@ -336,7 +355,9 @@ namespace System.Runtime.InteropServices
                 length = default;
                 return false;
             }
+#pragma warning disable 8762 // "Parameter 'manager' may not have a null value when exiting with 'true'."
             return true;
+#pragma warning restore 8762
         }
 
         /// <summary>
@@ -523,7 +544,7 @@ namespace System.Runtime.InteropServices
                     ThrowHelper.ThrowArgumentOutOfRangeException();
                 return default;
             }
-            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();

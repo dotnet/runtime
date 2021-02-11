@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Pkcs
 
         // Similar to _heldContent, the Windows CMS API held this separate internally,
         // and thus we need to be reslilient against modification.
-        private string _contentType;
+        private string? _contentType;
 
         public int Version { get; private set; }
         public ContentInfo ContentInfo { get; private set; }
@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs
             if (contentInfo == null)
                 throw new ArgumentNullException(nameof(contentInfo));
             if (contentInfo.Content == null)
-                throw new ArgumentNullException("contentInfo.Content");
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "contentInfo.Content"), nameof(contentInfo));
 
             // Normalize the subject identifier type the same way as .NET Framework.
             // This value is only used in the zero-argument ComputeSignature overload,
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Pkcs
                     return coll;
                 }
 
-                CertificateChoiceAsn[] certChoices = _signedData.CertificateSet;
+                CertificateChoiceAsn[]? certChoices = _signedData.CertificateSet;
 
                 if (certChoices == null)
                 {
@@ -89,6 +89,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 foreach (CertificateChoiceAsn choice in certChoices)
                 {
+                    Debug.Assert(choice.Certificate.HasValue);
                     coll.Add(new X509Certificate2(choice.Certificate.Value.ToArray()));
                 }
 
@@ -118,11 +119,9 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    _signedData.Encode(writer);
-                    return PkcsHelpers.EncodeContentInfo(writer.Encode(), Oids.Pkcs7Signed);
-                }
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                _signedData.Encode(writer);
+                return PkcsHelpers.EncodeContentInfo(writer.Encode(), Oids.Pkcs7Signed);
             }
             catch (CryptographicException) when (!Detached)
             {
@@ -139,19 +138,15 @@ namespace System.Security.Cryptography.Pkcs
                 copy.EncapContentInfo.Content = null;
                 Debug.Assert(_signedData.EncapContentInfo.Content != null);
 
-                using (AsnWriter detachedWriter = new AsnWriter(AsnEncodingRules.DER))
-                {
-                    copy.Encode(detachedWriter);
-                    copy = SignedDataAsn.Decode(detachedWriter.Encode(), AsnEncodingRules.BER);
-                }
+                AsnWriter detachedWriter = new AsnWriter(AsnEncodingRules.DER);
+                copy.Encode(detachedWriter);
+                copy = SignedDataAsn.Decode(detachedWriter.Encode(), AsnEncodingRules.BER);
 
                 copy.EncapContentInfo.Content = _signedData.EncapContentInfo.Content;
 
-                using (AsnWriter attachedWriter = new AsnWriter(AsnEncodingRules.BER))
-                {
-                    copy.Encode(attachedWriter);
-                    return PkcsHelpers.EncodeContentInfo(attachedWriter.Encode(), Oids.Pkcs7Signed);
-                }
+                AsnWriter attachedWriter = new AsnWriter(AsnEncodingRules.BER);
+                copy.Encode(attachedWriter);
+                return PkcsHelpers.EncodeContentInfo(attachedWriter.Encode(), Oids.Pkcs7Signed);
             }
         }
 
@@ -160,24 +155,13 @@ namespace System.Security.Cryptography.Pkcs
             if (encodedMessage == null)
                 throw new ArgumentNullException(nameof(encodedMessage));
 
-            Decode(new ReadOnlyMemory<byte>(encodedMessage));
+            Decode(new ReadOnlySpan<byte>(encodedMessage));
         }
 
-        internal void Decode(ReadOnlyMemory<byte> encodedMessage)
+        public void Decode(ReadOnlySpan<byte> encodedMessage)
         {
-            // Windows (and thus NetFx) reads the leading data and ignores extra.
-            // So use the Decode overload which doesn't throw on extra data.
-            ContentInfoAsn.Decode(
-                new AsnReader(encodedMessage, AsnEncodingRules.BER),
-                out ContentInfoAsn contentInfo);
-
-            if (contentInfo.ContentType != Oids.Pkcs7Signed)
-            {
-                throw new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);
-            }
-
             // Hold a copy of the SignedData memory so we are protected against memory reuse by the caller.
-            _heldData = contentInfo.Content.ToArray();
+            _heldData = CopyContent(encodedMessage);
             _signedData = SignedDataAsn.Decode(_heldData, AsnEncodingRules.BER);
             _contentType = _signedData.EncapContentInfo.ContentType;
             _hasPkcs7Content = false;
@@ -216,6 +200,34 @@ namespace System.Security.Cryptography.Pkcs
 
             Version = _signedData.Version;
             _hasData = true;
+
+            static byte[] CopyContent(ReadOnlySpan<byte> encodedMessage)
+            {
+                unsafe
+                {
+                    fixed (byte* pin = encodedMessage)
+                    {
+                        using (var manager = new PointerMemoryManager<byte>(pin, encodedMessage.Length))
+                        {
+                            AsnValueReader reader = new AsnValueReader(encodedMessage, AsnEncodingRules.BER);
+
+                            // Windows (and thus NetFx) reads the leading data and ignores extra.
+                            // So use the Decode overload which doesn't throw on extra data.
+                            ContentInfoAsn.Decode(
+                                ref reader,
+                                manager.Memory,
+                                out ContentInfoAsn contentInfo);
+
+                            if (contentInfo.ContentType != Oids.Pkcs7Signed)
+                            {
+                                throw new CryptographicException(SR.Cryptography_Cms_InvalidMessageType);
+                            }
+
+                            return contentInfo.Content.ToArray();
+                        }
+                    }
+                }
+            }
         }
 
         internal static ReadOnlyMemory<byte> GetContent(
@@ -233,20 +245,20 @@ namespace System.Security.Cryptography.Pkcs
             // dynamic adapter.
             //
             // See https://tools.ietf.org/html/rfc5652#section-5.2.1
-            byte[] rented = null;
+            byte[]? rented = null;
             int bytesWritten = 0;
             try
             {
                 AsnReader reader = new AsnReader(wrappedContent, AsnEncodingRules.BER);
 
-                if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> inner))
+                if (reader.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> inner))
                 {
                     return inner;
                 }
 
                 rented = CryptoPool.Rent(wrappedContent.Length);
 
-                if (!reader.TryCopyOctetStringBytes(rented, out bytesWritten))
+                if (!reader.TryReadOctetString(rented, out bytesWritten))
                 {
                     Debug.Fail($"TryCopyOctetStringBytes failed with an array larger than the encoded value");
                     throw new CryptographicException();
@@ -256,6 +268,10 @@ namespace System.Security.Cryptography.Pkcs
             }
             catch (Exception) when (contentType != Oids.Pkcs7Data)
             {
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
             finally
             {
@@ -294,7 +310,7 @@ namespace System.Security.Cryptography.Pkcs
                 // Even if all signers have been removed, throw if doing a NoSignature signature
                 // on a loaded (from file, or from first signature) document.
                 //
-                // This matches the NetFX behavior.
+                // This matches the .NET Framework behavior.
                 throw new CryptographicException(SR.Cryptography_Cms_Sign_No_Signature_First_Signer);
             }
 
@@ -302,7 +318,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 if (silent)
                 {
-                    // NetFX compatibility, silent disallows prompting, so throws InvalidOperationException
+                    // .NET Framework compatibility, silent disallows prompting, so throws InvalidOperationException
                     // in this state.
                     //
                     // The message is different than on NetFX, because the resource string was for
@@ -339,12 +355,10 @@ namespace System.Security.Cryptography.Pkcs
                 // the copy of _heldContent or _contentType here if we're attached.
                 if (!Detached)
                 {
-                    using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                    {
-                        writer.WriteOctetString(content.Span);
+                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                    writer.WriteOctetString(content.Span);
 
-                        _signedData.EncapContentInfo.Content = writer.Encode();
-                    }
+                    _signedData.EncapContentInfo.Content = writer.Encode();
                 }
 
                 _hasData = true;
@@ -402,23 +416,37 @@ namespace System.Security.Cryptography.Pkcs
 
         internal ReadOnlySpan<byte> GetHashableContentSpan()
         {
+            Debug.Assert(_heldContent.HasValue);
             ReadOnlyMemory<byte> content = _heldContent.Value;
+            ReadOnlySpan<byte> contentSpan = content.Span;
 
             if (!_hasPkcs7Content)
             {
-                return content.Span;
+                return contentSpan;
             }
 
             // In PKCS#7 compat, only return the contents within the outermost tag.
             // See https://tools.ietf.org/html/rfc5652#section-5.2.1
-            AsnReader reader = new AsnReader(content, AsnEncodingRules.BER);
-            // This span is safe to return because it's still bound under _heldContent.
-            return reader.PeekContentBytes().Span;
+            try
+            {
+                AsnDecoder.ReadEncodedValue(
+                    contentSpan,
+                    AsnEncodingRules.BER,
+                    out int contentOffset,
+                    out int contentLength,
+                    out _);
+
+                return contentSpan.Slice(contentOffset, contentLength);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         internal void Reencode()
         {
-            // When NetFx re-encodes it just resets the CMS handle, the ContentInfo property
+            // When .NET Framework re-encodes it just resets the CMS handle, the ContentInfo property
             // does not get changed.
             // See ReopenToDecode
             ContentInfo save = ContentInfo;
@@ -639,9 +667,9 @@ namespace System.Security.Cryptography.Pkcs
 
             if (existingLength > 0)
             {
-                foreach (CertificateChoiceAsn cert in _signedData.CertificateSet)
+                foreach (CertificateChoiceAsn cert in _signedData.CertificateSet!)
                 {
-                    if (cert.Certificate.Value.Span.SequenceEqual(rawData))
+                    if (cert.Certificate!.Value.Span.SequenceEqual(rawData))
                     {
                         throw new CryptographicException(SR.Cryptography_Cms_CertificateAlreadyInCollection);
                     }
@@ -674,9 +702,9 @@ namespace System.Security.Cryptography.Pkcs
                 int idx = 0;
                 byte[] rawData = certificate.RawData;
 
-                foreach (CertificateChoiceAsn cert in _signedData.CertificateSet)
+                foreach (CertificateChoiceAsn cert in _signedData.CertificateSet!)
                 {
-                    if (cert.Certificate.Value.Span.SequenceEqual(rawData))
+                    if (cert.Certificate!.Value.Span.SequenceEqual(rawData))
                     {
                         PkcsHelpers.RemoveAt(ref _signedData.CertificateSet, idx);
                         Reencode();

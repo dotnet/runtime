@@ -1,9 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using System.Reflection;
-using System.Text;
 
 using Xunit;
 
@@ -12,7 +8,7 @@ namespace System.PrivateUri.Tests
     public class IriEncodingDecodingTest
     {
         // This array contains potentially problematic URI data strings and their canonical encoding.
-        private static string[,] RFC3986CompliantDecoding =
+        private static readonly string[,] RFC3986CompliantDecoding =
         {
             { "%3B%2F%3F%3A%40%26%3D%2B%24%2C", "%3B%2F%3F%3A%40%26%3D%2B%24%2C" }, // Encoded RFC 2396 Reserved Marks.
             { @"-_.~", @"-_.~" }, // RFC3986 Unreserved Marks.
@@ -29,12 +25,11 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void AbsoluteUri_DangerousPathSymbols_RFC3986CompliantAbsoluteUri()
         {
-            Uri uri;
             string baseUri = "http://a/%C3%88/";
             for (int i = 0; i < RFC3986CompliantDecoding.GetLength(0); i++)
             {
                 string sourceStr = baseUri + RFC3986CompliantDecoding[i, 0];
-                uri = new Uri(sourceStr);
+                Uri uri = new Uri(sourceStr);
                 Assert.Equal(baseUri + RFC3986CompliantDecoding[i, 1], uri.AbsoluteUri);
             }
         }
@@ -42,13 +37,12 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void AbsolutePath_DangerousPathSymbols_RFC3986CompliantAbsolutePath()
         {
-            Uri uri;
             string host = "http://a";
             string path = "/%C3%88/";
             for (int i = 0; i < RFC3986CompliantDecoding.GetLength(0); i++)
             {
                 string sourceStr = host + path + RFC3986CompliantDecoding[i, 0];
-                uri = new Uri(sourceStr);
+                Uri uri = new Uri(sourceStr);
                 Assert.Equal(path + RFC3986CompliantDecoding[i, 1], uri.AbsolutePath);
             }
         }
@@ -56,13 +50,12 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Segments_DangerousPathSymbols_RFC3986CompliantPathSegments()
         {
-            Uri uri;
             string host = "http://a";
             string path = "/%C3%88/";
             for (int i = 0; i < RFC3986CompliantDecoding.GetLength(0); i++)
             {
                 string sourceStr = host + path + RFC3986CompliantDecoding[i, 0];
-                uri = new Uri(sourceStr);
+                Uri uri = new Uri(sourceStr);
                 Assert.Equal(path + RFC3986CompliantDecoding[i, 1], string.Join(string.Empty, uri.Segments));
             }
         }
@@ -82,13 +75,12 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void PathAndQuery_DangerousQuerySymbols_RFC3986CompliantPathAndQuery()
         {
-            Uri uri;
             string host = "http://a";
             string path = "/%C3%88/";
             for (int i = 0; i < RFC3986CompliantDecoding.GetLength(0); i++)
             {
                 string sourceStr = host + path + "?" + RFC3986CompliantDecoding[i, 0];
-                uri = new Uri(sourceStr);
+                Uri uri = new Uri(sourceStr);
                 Assert.Equal(path + "?" + RFC3986CompliantDecoding[i, 1], uri.PathAndQuery);
             }
         }
@@ -96,12 +88,11 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Query_DangerousQuerySymbols_RFC3986CompliantQuery()
         {
-            Uri uri;
             string baseUri = "http://a/%C3%88/";
             for (int i = 0; i < RFC3986CompliantDecoding.GetLength(0); i++)
             {
                 string sourceStr = baseUri + "?" + RFC3986CompliantDecoding[i, 0];
-                uri = new Uri(sourceStr);
+                Uri uri = new Uri(sourceStr);
                 Assert.Equal("?" + RFC3986CompliantDecoding[i, 1], uri.Query);
             }
         }
@@ -121,12 +112,11 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Fragment_DangerousFragmentSymbols_RFC3986CompliantFragment()
         {
-            Uri uri;
             string baseUri = "http://a/%C3%88/";
             for (int i = 0; i < RFC3986CompliantDecoding.GetLength(0); i++)
             {
                 string sourceStr = baseUri + "#" + RFC3986CompliantDecoding[i, 0];
-                uri = new Uri(sourceStr);
+                Uri uri = new Uri(sourceStr);
                 Assert.Equal("#" + RFC3986CompliantDecoding[i, 1], uri.Fragment);
             }
         }
@@ -134,14 +124,13 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UserInfo_DangerousUserInfoSymbols_RFC3986CompliantUserInfo()
         {
-            Uri uri;
             string baseUri = "http://";
             string host = "a";
             string path = "/%C3%88/";
             for (int i = 0; i < RFC3986CompliantDecoding.GetLength(0); i++)
             {
                 string sourceStr = baseUri + RFC3986CompliantDecoding[i, 0] + "@" + host + path;
-                uri = new Uri(sourceStr);
+                Uri uri = new Uri(sourceStr);
                 Assert.Equal(RFC3986CompliantDecoding[i, 1], uri.UserInfo);
             }
         }

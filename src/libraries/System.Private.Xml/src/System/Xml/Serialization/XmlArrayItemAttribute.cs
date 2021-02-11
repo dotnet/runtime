@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Schema;
-
 
 namespace System.Xml.Serialization
 {
@@ -14,12 +13,12 @@ namespace System.Xml.Serialization
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = true)]
     public class XmlArrayItemAttribute : System.Attribute
     {
-        private string _elementName;
-        private Type _type;
-        private string _ns;
-        private string _dataType;
+        private string? _elementName;
+        private Type? _type;
+        private string? _ns;
+        private string? _dataType;
         private bool _nullable;
-        private bool _nullableSpecified = false;
+        private bool _nullableSpecified;
         private XmlSchemaForm _form = XmlSchemaForm.None;
         private int _nestingLevel;
 
@@ -33,7 +32,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlArrayItemAttribute(string elementName)
+        public XmlArrayItemAttribute(string? elementName)
         {
             _elementName = elementName;
         }
@@ -41,7 +40,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlArrayItemAttribute(Type type)
+        public XmlArrayItemAttribute(Type? type)
         {
             _type = type;
         }
@@ -49,7 +48,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlArrayItemAttribute(string elementName, Type type)
+        public XmlArrayItemAttribute(string? elementName, Type? type)
         {
             _elementName = elementName;
             _type = type;
@@ -58,7 +57,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public Type Type
+        public Type? Type
         {
             get { return _type; }
             set { _type = value; }
@@ -67,6 +66,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [AllowNull]
         public string ElementName
         {
             get { return _elementName == null ? string.Empty : _elementName; }
@@ -76,7 +76,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Namespace
+        public string? Namespace
         {
             get { return _ns; }
             set { _ns = value; }
@@ -91,6 +91,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [AllowNull]
         public string DataType
         {
             get { return _dataType == null ? string.Empty : _dataType; }

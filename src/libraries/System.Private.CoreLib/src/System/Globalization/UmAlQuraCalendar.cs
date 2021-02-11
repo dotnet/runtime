@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -282,7 +281,7 @@ namespace System.Globalization
             }
 
             dt = dt.AddDays(nDays);
-            dt.GetDatePart(out yg, out mg, out dg);
+            dt.GetDate(out yg, out mg, out dg);
         }
 
         private static long GetAbsoluteDateUmAlQura(int year, int month, int day)
@@ -331,7 +330,7 @@ namespace System.Globalization
             CheckYearRange(year, era);
             if (month < 1 || month > 12)
             {
-                throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
+                ThrowHelper.ThrowArgumentOutOfRange_Month(month);
             }
         }
 
@@ -380,7 +379,7 @@ namespace System.Globalization
         /// In order to get the exact UmAlQura year, we compare the exact absolute date for UmAlQuraYear and (UmAlQuraYear + 1).
         /// From here, we can get the correct UmAlQura year.
         /// </summary>
-        private int GetDatePart(DateTime time, int part)
+        private static int GetDatePart(DateTime time, int part)
         {
             long ticks = time.Ticks;
             CheckTicksRange(ticks);

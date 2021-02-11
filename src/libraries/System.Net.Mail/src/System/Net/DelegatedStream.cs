@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Sockets;
@@ -12,7 +11,6 @@ namespace System.Net
     internal class DelegatedStream : Stream
     {
         private readonly Stream _stream;
-        private readonly NetworkStream _netStream;
 
         protected DelegatedStream(Stream stream)
         {
@@ -20,7 +18,6 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(stream));
 
             _stream = stream;
-            _netStream = stream as NetworkStream;
         }
 
         protected Stream BaseStream
@@ -84,40 +81,20 @@ namespace System.Net
             }
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (!CanRead)
                 throw new NotSupportedException(SR.ReadNotSupported);
 
-            IAsyncResult result = null;
-
-            if (_netStream != null)
-            {
-                result = _netStream.BeginRead(buffer, offset, count, callback, state);
-            }
-            else
-            {
-                result = _stream.BeginRead(buffer, offset, count, callback, state);
-            }
-            return result;
+            return _stream.BeginRead(buffer, offset, count, callback, state);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (!CanWrite)
                 throw new NotSupportedException(SR.WriteNotSupported);
 
-            IAsyncResult result = null;
-
-            if (_netStream != null)
-            {
-                result = _netStream.BeginWrite(buffer, offset, count, callback, state);
-            }
-            else
-            {
-                result = _stream.BeginWrite(buffer, offset, count, callback, state);
-            }
-            return result;
+            return _stream.BeginWrite(buffer, offset, count, callback, state);
         }
 
         //This calls close on the inner stream

@@ -1,0 +1,14 @@
+# This file has exclusions to the Clang address sanitizer to suppress error reports
+# When Clang 3.8 is available, convert these to suppression list instead as that is preferred for internal code
+
+# CMiniMdBase::UsesAllocatedMemory - suppress stack-buffer-underflow (code backs up pointer by -1 to check allocation ownership)
+fun:_ZN11CMiniMdBase19UsesAllocatedMemoryEP11CMiniColDef
+
+# JIT_InitPInvokeFrame - suppress unknown sanitizer issue causing SEGV on unknown address 0x000000000000
+# 0 0x4e8a0c in __ubsan::checkDynamicType(void*, void*, unsigned long)
+# 1 0x4e807f in HandleDynamicTypeCacheMiss(__ubsan::DynamicTypeCacheMissData*, unsigned long, unsigned long, __ubsan::ReportOptions)
+# 2 0x4e8051 in __ubsan_handle_dynamic_type_cache_miss
+# 3 0x7f02ce676cd8 in JIT_InitPInvokeFrame(InlinedCallFrame*, void*) /home/steveharter/git/dotnet_coreclr/vm/jithelpers.cpp:6491:9
+# 4 0x7f0252bbceb2  (<unknown module>)
+fun:_Z20JIT_InitPInvokeFrameP16InlinedCallFramePv
+

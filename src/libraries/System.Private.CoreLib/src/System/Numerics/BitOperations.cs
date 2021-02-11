@@ -1,9 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
@@ -40,6 +41,36 @@ namespace System.Numerics
         };
 
         /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPow2(int value) => (value & (value - 1)) == 0 && value > 0;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static bool IsPow2(uint value) => (value & (value - 1)) == 0 && value != 0 ;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPow2(long value) => (value & (value - 1)) == 0 && value > 0;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static bool IsPow2(ulong value) => (value & (value - 1)) == 0 && value != 0;
+
+        /// <summary>
         /// Count the number of leading zero bits in a mask.
         /// Similar in behavior to the x86 instruction LZCNT.
         /// </summary>
@@ -54,13 +85,26 @@ namespace System.Numerics
                 return (int)Lzcnt.LeadingZeroCount(value);
             }
 
-            // Unguarded fallback contract is 0->31
+            if (ArmBase.IsSupported)
+            {
+                return ArmBase.LeadingZeroCount(value);
+            }
+
+            // Unguarded fallback contract is 0->31, BSR contract is 0->undefined
             if (value == 0)
             {
                 return 32;
             }
 
-            return 31 - Log2SoftwareFallback(value);
+            if (X86Base.IsSupported)
+            {
+                // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
+                // 31 ^ BSR here is equivalent to 31 - BSR since the BSR result is always between 0 and 31.
+                // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
+                return 31 ^ (int)X86Base.BitScanReverse(value);
+            }
+
+            return 31 ^ Log2SoftwareFallback(value);
         }
 
         /// <summary>
@@ -78,6 +122,17 @@ namespace System.Numerics
                 return (int)Lzcnt.X64.LeadingZeroCount(value);
             }
 
+            if (ArmBase.Arm64.IsSupported)
+            {
+                return ArmBase.Arm64.LeadingZeroCount(value);
+            }
+
+            if (X86Base.X64.IsSupported)
+            {
+                // BSR contract is 0->undefined
+                return value == 0 ? 64 : 63 ^ (int)X86Base.X64.BitScanReverse(value);
+            }
+
             uint hi = (uint)(value >> 32);
 
             if (hi == 0)
@@ -90,15 +145,18 @@ namespace System.Numerics
 
         /// <summary>
         /// Returns the integer (floor) log of the specified value, base 2.
-        /// Note that by convention, input value 0 returns 0 since Log(0) is undefined.
+        /// Note that by convention, input value 0 returns 0 since log(0) is undefined.
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int Log2(uint value)
         {
+            // The 0->0 contract is fulfilled by setting the LSB to 1.
+            // Log(1) is 0, and setting the LSB for values > 1 does not change the log2 result.
+            value |= 1;
+
             // value    lzcnt   actual  expected
-            // ..0000   32      0        0 (by convention, guard clause)
             // ..0001   31      31-31    0
             // ..0010   30      31-30    1
             // 0010..    2      31-2    29
@@ -106,14 +164,19 @@ namespace System.Numerics
             // 1000..    0      31-0    31
             if (Lzcnt.IsSupported)
             {
-                // Enforce conventional contract 0->0 (Log(0) is undefined)
-                if (value == 0)
-                {
-                    return 0;
-                }
+                return 31 ^ (int)Lzcnt.LeadingZeroCount(value);
+            }
 
-                // LZCNT contract is 0->32
-                return 31 - (int)Lzcnt.LeadingZeroCount(value);
+            if (ArmBase.IsSupported)
+            {
+                return 31 ^ ArmBase.LeadingZeroCount(value);
+            }
+
+            // BSR returns the log2 result directly. However BSR is slower than LZCNT
+            // on AMD processors, so we leave it as a fallback only.
+            if (X86Base.IsSupported)
+            {
+                return (int)X86Base.BitScanReverse(value);
             }
 
             // Fallback contract is 0->0
@@ -122,23 +185,28 @@ namespace System.Numerics
 
         /// <summary>
         /// Returns the integer (floor) log of the specified value, base 2.
-        /// Note that by convention, input value 0 returns 0 since Log(0) is undefined.
+        /// Note that by convention, input value 0 returns 0 since log(0) is undefined.
         /// </summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int Log2(ulong value)
         {
+            value |= 1;
+
             if (Lzcnt.X64.IsSupported)
             {
-                // Enforce conventional contract 0->0 (Log(0) is undefined)
-                if (value == 0)
-                {
-                    return 0;
-                }
+                return 63 ^ (int)Lzcnt.X64.LeadingZeroCount(value);
+            }
 
-                // LZCNT contract is 0->64
-                return 63 - (int)Lzcnt.X64.LeadingZeroCount(value);
+            if (ArmBase.Arm64.IsSupported)
+            {
+                return 63 ^ ArmBase.Arm64.LeadingZeroCount(value);
+            }
+
+            if (X86Base.X64.IsSupported)
+            {
+                return (int)X86Base.X64.BitScanReverse(value);
             }
 
             uint hi = (uint)(value >> 32);
@@ -177,11 +245,38 @@ namespace System.Numerics
                 (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
         }
 
+        /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int Log2Ceiling(uint value)
+        {
+            int result = Log2(value);
+            if (PopCount(value) != 1)
+            {
+                result++;
+            }
+            return result;
+        }
+
+        /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int Log2Ceiling(ulong value)
+        {
+            int result = Log2(value);
+            if (PopCount(value) != 1)
+            {
+                result++;
+            }
+            return result;
+        }
+
         /// <summary>
         /// Returns the population count (number of bits set) of a mask.
         /// Similar in behavior to the x86 instruction POPCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int PopCount(uint value)
@@ -189,6 +284,15 @@ namespace System.Numerics
             if (Popcnt.IsSupported)
             {
                 return (int)Popcnt.PopCount(value);
+            }
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // PopCount works on vector so convert input value to vector first.
+
+                Vector64<uint> input = Vector64.CreateScalar(value);
+                Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
+                return aggregated.ToScalar();
             }
 
             return SoftwareFallback(value);
@@ -213,6 +317,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction POPCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int PopCount(ulong value)
@@ -222,7 +327,15 @@ namespace System.Numerics
                 return (int)Popcnt.X64.PopCount(value);
             }
 
-#if BIT32
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // PopCount works on vector so convert input value to vector first.
+                Vector64<ulong> input = Vector64.Create(value);
+                Vector64<byte> aggregated = AdvSimd.Arm64.AddAcross(AdvSimd.PopCount(input.AsByte()));
+                return aggregated.ToScalar();
+            }
+
+#if TARGET_32BIT
             return PopCount((uint)value) // lo
                 + PopCount((uint)(value >> 32)); // hi
 #else
@@ -268,10 +381,20 @@ namespace System.Numerics
                 return (int)Bmi1.TrailingZeroCount(value);
             }
 
-            // Unguarded fallback contract is 0->0
+            if (ArmBase.IsSupported)
+            {
+                return ArmBase.LeadingZeroCount(ArmBase.ReverseElementBits(value));
+            }
+
+            // Unguarded fallback contract is 0->0, BSF contract is 0->undefined
             if (value == 0)
             {
                 return 32;
+            }
+
+            if (X86Base.IsSupported)
+            {
+                return (int)X86Base.BitScanForward(value);
             }
 
             // uint.MaxValue >> 27 is always in range [0 - 31] so we use Unsafe.AddByteOffset to avoid bounds check
@@ -304,6 +427,17 @@ namespace System.Numerics
             {
                 // TZCNT contract is 0->64
                 return (int)Bmi1.X64.TrailingZeroCount(value);
+            }
+
+            if (ArmBase.Arm64.IsSupported)
+            {
+                return ArmBase.Arm64.LeadingZeroCount(ArmBase.Arm64.ReverseElementBits(value));
+            }
+
+            if (X86Base.X64.IsSupported)
+            {
+                // BSF contract is 0->undefined
+                return value == 0 ? 64 : (int)X86Base.X64.BitScanForward(value);
             }
 
             uint lo = (uint)value;

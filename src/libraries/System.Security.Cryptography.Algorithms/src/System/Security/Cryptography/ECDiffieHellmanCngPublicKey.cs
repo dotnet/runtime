@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -11,11 +10,11 @@ namespace System.Security.Cryptography
         public sealed partial class ECDiffieHellmanCngPublicKey : ECDiffieHellmanPublicKey
         {
             private byte[] _keyBlob;
-            internal string _curveName;
+            internal string? _curveName;
 
             protected override void Dispose(bool disposing)
             {
-                _keyBlob = null;
+                _keyBlob = null!;
                 base.Dispose(disposing);
             }
 
@@ -29,7 +28,7 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException();
             }
 
-            internal ECDiffieHellmanCngPublicKey(byte[] keyBlob, string curveName) : base(keyBlob)
+            internal ECDiffieHellmanCngPublicKey(byte[] keyBlob, string? curveName) : base(keyBlob)
             {
                 Debug.Assert(keyBlob != null);
 

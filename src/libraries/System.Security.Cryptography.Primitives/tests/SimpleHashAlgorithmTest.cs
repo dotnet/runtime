@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using Test.IO.Streams;
@@ -51,20 +50,20 @@ namespace System.Security.Cryptography.Hashing.Tests
         [Fact]
         public void EmptyStreamHash()
         {
-            StreamHash(0);
+            StreamHashHelper(0);
         }
 
         [Fact]
         public void StreamHash()
         {
             // This value is a completely arbitrary non-power-of-two.
-            StreamHash(82);
+            StreamHashHelper(82);
         }
 
         [Fact]
         public void LargeStreamHash()
         {
-            StreamHash(1048576);
+            StreamHashHelper(1048576);
         }
 
         [Fact]
@@ -186,7 +185,7 @@ namespace System.Security.Cryptography.Hashing.Tests
             AssertCorrectAnswer((uint)count, result);
         }
 
-        private void StreamHash(int byteCount)
+        private void StreamHashHelper(int byteCount)
         {
             byte[] result;
 

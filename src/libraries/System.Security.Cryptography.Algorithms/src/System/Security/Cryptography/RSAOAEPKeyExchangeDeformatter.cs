@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class RSAOAEPKeyExchangeDeformatter : AsymmetricKeyExchangeDeformatter
     {
-        private RSA _rsaKey;
+        private RSA? _rsaKey;
 
         public RSAOAEPKeyExchangeDeformatter() { }
         public RSAOAEPKeyExchangeDeformatter(AsymmetricAlgorithm key)
@@ -17,7 +19,7 @@ namespace System.Security.Cryptography
             _rsaKey = (RSA)key;
         }
 
-        public override string Parameters
+        public override string? Parameters
         {
             get { return null; }
             set { }

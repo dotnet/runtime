@@ -14,15 +14,10 @@ Getting Started
 - [Installing the .NET SDK](https://dotnet.microsoft.com/download)
 - [Official .NET Docs](https://docs.microsoft.com/dotnet/core/)
 
-Software requirements
+Workflow (Building, testing, benchmarking, profiling, etc.)
 ===============
 
-- [Windows Requirements](workflow/windows-requirements.md)
-- [Linux Requirements](workflow/linux-requirements.md)
-- [MacOS Requirements](workflow/macos-requirements.md)
-
-Workflow (Building, testing, etc.)
-===============
+If you want to contribute a code change to this repo, start here.
 
 - [Workflow Instructions](workflow/README.md)
 
@@ -63,7 +58,6 @@ Coding Guidelines
 - [Breaking Change Rules](coding-guidelines/breaking-change-rules.md)
 - [Project Guidelines](coding-guidelines/project-guidelines.md)
 - [Adding APIs Guidelines](coding-guidelines/adding-api-guidelines.md)
-- [Legal Native calls](coding-guidelines/pinvoke-checker.md)
 
 Project Docs
 =================
@@ -75,8 +69,8 @@ Other Information
 
 - [.NET Glossary](project/glossary.md)
 - [.NET Filename Encyclopedia](project/dotnet-filenames.md)
-- [Porting to .NET Core](project/support-dotnet-core-instructions.md)
+- [Porting to .NET Core](https://docs.microsoft.com/en-us/dotnet/standard/analyzers/portability-analyzer)
 - [.NET Standards (Ecma)](project/dotnet-standards.md)
-- [CLR Configuration Knobs](../src/coreclr/src/inc/clrconfigvalues.h)
+- [CLR Configuration Knobs](../src/coreclr/inc/clrconfigvalues.h)
 - [CLR overview](https://docs.microsoft.com/dotnet/standard/clr)
 - [Wikipedia Entry for the CLR](https://en.wikipedia.org/wiki/Common_Language_Runtime)

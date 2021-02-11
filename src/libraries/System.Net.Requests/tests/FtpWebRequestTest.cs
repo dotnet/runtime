@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -56,16 +55,16 @@ namespace System.Net.Tests
             Assert.True(request.UsePassive);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void GetResponse_ServerNameNotInDns_ThrowsWebException()
         {
             string serverUrl = string.Format("ftp://www.{0}.com/", Guid.NewGuid().ToString());
             FtpWebRequest request = (FtpWebRequest)WebRequest.Create(serverUrl);
-            WebException ex = Assert.Throws<WebException>(() => request.GetResponse());
+            Assert.Throws<WebException>(() => request.GetResponse());
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void GetResponse_ConnectFailure_ThrowsWebException()
         {

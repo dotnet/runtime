@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -193,7 +192,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.True(IPAddress.IsLoopback(ip));
 
             ip = new IPAddress(IPAddress.Loopback.MapToIPv6().GetAddressBytes()); // IPv4 loopback mapped to IPv6
-            Assert.Equal(!PlatformDetection.IsFullFramework, IPAddress.IsLoopback(ip)); // https://github.com/dotnet/corefx/issues/35454
+            Assert.Equal(!PlatformDetection.IsNetFramework, IPAddress.IsLoopback(ip)); // https://github.com/dotnet/runtime/issues/28740
         }
 
         [Fact]

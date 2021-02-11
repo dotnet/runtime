@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 
@@ -14,7 +13,6 @@ namespace System.ComponentModel.Composition
     ///     construct an attributed part. Use this attribute to indicate that a specific constructor
     ///     should be used.
     /// </remarks>
-    [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
     public class ImportingConstructorAttribute : Attribute
     {

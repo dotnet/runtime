@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SerializationTypes;
 using System;
@@ -741,9 +740,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 </TypeWithByteProperty>");
             writer.Flush();
             stream.Position = 0;
-            Assert.Throws<InvalidOperationException>(() => {
-                var deserializedObj = (TypeWithByteProperty)serializer.Deserialize(stream);
-            });
+            Assert.Throws<InvalidOperationException>(() => (TypeWithByteProperty)serializer.Deserialize(stream));
         }
     }
 
@@ -818,7 +815,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     [Fact]
     public static void Xml_SimpleType()
     {
-        var serializer = new XmlSerializer(typeof(SimpleType));
         var obj = new SimpleType { P1 = "foo", P2 = 1 };
         var deserializedObj = SerializeAndDeserialize(obj,
 @"<?xml version=""1.0"" encoding=""utf-16""?>
@@ -1669,22 +1665,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 </DefaultValuesSetToNegativeInfinity>");
         Assert.NotNull(actual);
         Assert.Equal(value, actual);
-    }
-
-    [ActiveIssue(28321)]
-    [Fact]
-    public static void SerializeWithDefaultValueSetToNaNTest()
-    {
-        var value = new DefaultValuesSetToNaN();
-        value.DoubleField = double.NaN;
-        value.SingleField = float.NaN;
-        value.FloatProp = float.NaN;
-        value.DoubleProp = double.NaN;
-
-        bool result=SerializeWithDefaultValue(value,
-@"<?xml version=""1.0""?>
-<DefaultValuesSetToNaN xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" />");
-        Assert.True(result);
     }
 
     [Fact]

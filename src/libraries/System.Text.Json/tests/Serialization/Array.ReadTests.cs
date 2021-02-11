@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -94,9 +93,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DeserializeObjectArray_36167()
+        public static void DeserializeObjectArray()
         {
-            // https://github.com/dotnet/corefx/issues/36167
+            // https://github.com/dotnet/runtime/issues/29019
             object[] data = JsonSerializer.Deserialize<object[]>("[1]");
             Assert.Equal(1, data.Length);
             Assert.IsType<JsonElement>(data[0]);
@@ -617,8 +616,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, obj.MyImmutableList.Count);
             TestRoundTrip(obj);
 
-            // Skip ImmutableArray due to https://github.com/dotnet/corefx/issues/42399.
-            const string inputJsonWithNullCollections =
+            string inputJsonWithNullCollections =
                 @"{
                     ""Array"":null,
                     ""List"":null,
@@ -628,6 +626,50 @@ namespace System.Text.Json.Serialization.Tests
 
             obj = JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithNullCollections);
             TestRoundTrip(obj);
+
+            // ImmutableArray<T> is a struct and cannot be null.
+            inputJsonWithNullCollections = @"{""MyImmutableArray"":null}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithNullCollections));
+        }
+
+        [Fact]
+        public static void DoNotDependOnPropertyGetterWhenDeserializingCollections()
+        {
+            Dealer dealer = new Dealer { NetworkCodeList = new List<string> { "Network1", "Network2" } };
+
+            string serialized = JsonSerializer.Serialize(dealer);
+            Assert.Equal(@"{""NetworkCodeList"":[""Network1"",""Network2""]}", serialized);
+
+            dealer = JsonSerializer.Deserialize<Dealer>(serialized);
+
+            List<string> expected = new List<string> { "Network1", "Network2" };
+            int i = 0;
+
+            foreach (string str in dealer.NetworkCodeList)
+            {
+                Assert.Equal(expected[i], str);
+                i++;
+            }
+
+            Assert.Equal("Network1,Network2", dealer.Networks);
+        }
+
+        class Dealer
+        {
+            private string _networks;
+
+            [JsonIgnore]
+            public string Networks
+            {
+                get => _networks;
+                set => _networks = value ?? string.Empty;
+            }
+
+            public IEnumerable<string> NetworkCodeList
+            {
+                get => !string.IsNullOrEmpty(Networks) ? Networks?.Split(',') : new string[0];
+                set => Networks = (value != null) ? string.Join(",", value) : string.Empty;
+            }
         }
     }
 }

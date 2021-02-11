@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -21,60 +21,32 @@ namespace System.Net.WebSockets
         private const string WSServerGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
         /// <summary>Shared, lazily-initialized handler for when using default options.</summary>
-        private static SocketsHttpHandler s_defaultHandler;
+        private static SocketsHttpHandler? s_defaultHandler;
 
         private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
         private WebSocketState _state = WebSocketState.Connecting;
-        private WebSocket _webSocket;
 
-        public static WebSocketHandle Create() => new WebSocketHandle();
+        public WebSocket? WebSocket { get; private set; }
+        public WebSocketState State => WebSocket?.State ?? _state;
 
-        public static bool IsValid(WebSocketHandle handle) => handle != null;
-
-        public WebSocketCloseStatus? CloseStatus => _webSocket?.CloseStatus;
-
-        public string CloseStatusDescription => _webSocket?.CloseStatusDescription;
-
-        public WebSocketState State => _webSocket?.State ?? _state;
-
-        public string SubProtocol => _webSocket?.SubProtocol;
-
-        public static void CheckPlatformSupport() { /* nop */ }
+        public static ClientWebSocketOptions CreateDefaultOptions() => new ClientWebSocketOptions() { Proxy = DefaultWebProxy.Instance };
 
         public void Dispose()
         {
             _state = WebSocketState.Closed;
-            _webSocket?.Dispose();
+            WebSocket?.Dispose();
         }
 
         public void Abort()
         {
             _abortSource.Cancel();
-            _webSocket?.Abort();
+            WebSocket?.Abort();
         }
 
-        public Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
-            _webSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
-
-        public ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
-            _webSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
-
-        public Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken) =>
-            _webSocket.ReceiveAsync(buffer, cancellationToken);
-
-        public ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
-            _webSocket.ReceiveAsync(buffer, cancellationToken);
-
-        public Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken) =>
-            _webSocket.CloseAsync(closeStatus, statusDescription, cancellationToken);
-
-        public Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken) =>
-            _webSocket.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
-
-        public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
+        public async Task ConnectAsync(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
-            HttpResponseMessage response = null;
-            SocketsHttpHandler handler = null;
+            HttpResponseMessage? response = null;
+            SocketsHttpHandler? handler = null;
             bool disposeHandler = true;
             try
             {
@@ -139,7 +111,7 @@ namespace System.Net.WebSockets
                     {
                         handler.UseProxy = false;
                     }
-                    else if (options.Proxy != ClientWebSocket.DefaultWebProxy.Instance)
+                    else if (options.Proxy != DefaultWebProxy.Instance)
                     {
                         handler.Proxy = options.Proxy;
                     }
@@ -153,7 +125,8 @@ namespace System.Net.WebSockets
                 }
 
                 // Issue the request.  The response must be status code 101.
-                CancellationTokenSource linkedCancellation, externalAndAbortCancellation;
+                CancellationTokenSource? linkedCancellation;
+                CancellationTokenSource externalAndAbortCancellation;
                 if (cancellationToken.CanBeCanceled) // avoid allocating linked source if external token is not cancelable
                 {
                     linkedCancellation =
@@ -185,9 +158,8 @@ namespace System.Net.WebSockets
                 // The SecWebSocketProtocol header is optional.  We should only get it with a non-empty value if we requested subprotocols,
                 // and then it must only be one of the ones we requested.  If we got a subprotocol other than one we requested (or if we
                 // already got one in a previous header), fail. Otherwise, track which one we got.
-                string subprotocol = null;
-                IEnumerable<string> subprotocolEnumerableValues;
-                if (response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketProtocol, out subprotocolEnumerableValues))
+                string? subprotocol = null;
+                if (response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketProtocol, out IEnumerable<string>? subprotocolEnumerableValues))
                 {
                     Debug.Assert(subprotocolEnumerableValues is string[]);
                     string[] subprotocolArray = (string[])subprotocolEnumerableValues;
@@ -203,11 +175,16 @@ namespace System.Net.WebSockets
                     }
                 }
 
+                if (response.Content is null)
+                {
+                    throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
+                }
+
                 // Get the response stream and wrap it in a web socket.
-                Stream connectedStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                Stream connectedStream = response.Content.ReadAsStream();
                 Debug.Assert(connectedStream.CanWrite);
                 Debug.Assert(connectedStream.CanRead);
-                _webSocket = WebSocket.CreateFromStream(
+                WebSocket = WebSocket.CreateFromStream(
                     connectedStream,
                     isServer: false,
                     subprotocol,
@@ -241,7 +218,10 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>Adds the necessary headers for the web socket request.</summary>
+        /// <param name="request">The request to which the headers should be added.</param>
         /// <param name="secKey">The generated security key to send in the Sec-WebSocket-Key header.</param>
+        /// <param name="options">The options controlling the request.</param>
         private static void AddWebSocketHeaders(HttpRequestMessage request, string secKey, ClientWebSocketOptions options)
         {
             request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
@@ -259,21 +239,18 @@ namespace System.Net.WebSockets
         /// the associated response we expect to receive as the Sec-WebSocket-Accept header value.
         /// </summary>
         /// <returns>A key-value pair of the request header security key and expected response header value.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "Required by RFC6455")]
+        [SuppressMessage("Microsoft.Security", "CA5350", Justification = "Required by RFC6455")]
         private static KeyValuePair<string, string> CreateSecKeyAndSecWebSocketAccept()
         {
             string secKey = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-            using (SHA1 sha = SHA1.Create())
-            {
-                return new KeyValuePair<string, string>(
-                    secKey,
-                    Convert.ToBase64String(sha.ComputeHash(Encoding.ASCII.GetBytes(secKey + WSServerGuid))));
-            }
+            return new KeyValuePair<string, string>(
+                secKey,
+                Convert.ToBase64String(SHA1.HashData(Encoding.ASCII.GetBytes(secKey + WSServerGuid))));
         }
 
         private static void ValidateHeader(HttpHeaders headers, string name, string expectedValue)
         {
-            if (!headers.TryGetValues(name, out IEnumerable<string> values))
+            if (!headers.TryGetValues(name, out IEnumerable<string>? values))
             {
                 throw new WebSocketException(WebSocketError.Faulted, SR.Format(SR.net_WebSockets_MissingResponseHeader, name));
             }
@@ -284,6 +261,15 @@ namespace System.Net.WebSockets
             {
                 throw new WebSocketException(WebSocketError.HeaderError, SR.Format(SR.net_WebSockets_InvalidResponseHeader, name, string.Join(", ", array)));
             }
+        }
+
+        /// <summary>Used as a sentinel to indicate that ClientWebSocket should use the system's default proxy.</summary>
+        private sealed class DefaultWebProxy : IWebProxy
+        {
+            public static DefaultWebProxy Instance { get; } = new DefaultWebProxy();
+            public ICredentials? Credentials { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public Uri? GetProxy(Uri destination) => throw new NotSupportedException();
+            public bool IsBypassed(Uri host) => throw new NotSupportedException();
         }
     }
 }

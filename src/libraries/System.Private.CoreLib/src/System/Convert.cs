@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -163,7 +162,7 @@ namespace System
 
         // Returns true if the given object is a database null. This operation
         // corresponds to "value.GetTypeCode() == TypeCode.DBNull".
-        public static bool IsDBNull(object? value)
+        public static bool IsDBNull([NotNullWhen(true)] object? value)
         {
             if (value == System.DBNull.Value) return true;
             return value is IConvertible convertible ? convertible.GetTypeCode() == TypeCode.DBNull : false;
@@ -379,12 +378,12 @@ namespace System
         private static void ThrowUInt64OverflowException() { throw new OverflowException(SR.Overflow_UInt64); }
 
         // Conversions to Boolean
-        public static bool ToBoolean(object? value)
+        public static bool ToBoolean([NotNullWhen(true)] object? value)
         {
             return value == null ? false : ((IConvertible)value).ToBoolean(null);
         }
 
-        public static bool ToBoolean(object? value, IFormatProvider? provider)
+        public static bool ToBoolean([NotNullWhen(true)] object? value, IFormatProvider? provider)
         {
             return value == null ? false : ((IConvertible)value).ToBoolean(provider);
         }
@@ -445,14 +444,14 @@ namespace System
             return value != 0;
         }
 
-        public static bool ToBoolean(string? value)
+        public static bool ToBoolean([NotNullWhen(true)] string? value)
         {
             if (value == null)
                 return false;
             return bool.Parse(value);
         }
 
-        public static bool ToBoolean(string? value, IFormatProvider? provider)
+        public static bool ToBoolean([NotNullWhen(true)] string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return false;
@@ -528,11 +527,7 @@ namespace System
             return (char)value;
         }
 
-        public static char ToChar(int value)
-        {
-            if (value < 0 || value > char.MaxValue) ThrowCharOverflowException();
-            return (char)value;
-        }
+        public static char ToChar(int value) => ToChar((uint)value);
 
         [CLSCompliant(false)]
         public static char ToChar(uint value)
@@ -541,11 +536,7 @@ namespace System
             return (char)value;
         }
 
-        public static char ToChar(long value)
-        {
-            if (value < 0 || value > char.MaxValue) ThrowCharOverflowException();
-            return (char)value;
-        }
+        public static char ToChar(long value) => ToChar((ulong)value);
 
         [CLSCompliant(false)]
         public static char ToChar(ulong value)
@@ -667,7 +658,7 @@ namespace System
         [CLSCompliant(false)]
         public static sbyte ToSByte(uint value)
         {
-            if (value > sbyte.MaxValue) ThrowSByteOverflowException();
+            if (value > (uint)sbyte.MaxValue) ThrowSByteOverflowException();
             return (sbyte)value;
         }
 
@@ -708,13 +699,13 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return sbyte.Parse(value, CultureInfo.CurrentCulture);
+            return sbyte.Parse(value);
         }
 
         [CLSCompliant(false)]
         public static sbyte ToSByte(string value, IFormatProvider? provider)
         {
-            return sbyte.Parse(value, NumberStyles.Integer, provider);
+            return sbyte.Parse(value, provider);
         }
 
         [CLSCompliant(false)]
@@ -757,13 +748,13 @@ namespace System
         [CLSCompliant(false)]
         public static byte ToByte(sbyte value)
         {
-            if (value < byte.MinValue) ThrowByteOverflowException();
+            if (value < 0) ThrowByteOverflowException();
             return (byte)value;
         }
 
         public static byte ToByte(short value)
         {
-            if (value < byte.MinValue || value > byte.MaxValue) ThrowByteOverflowException();
+            if ((uint)value > byte.MaxValue) ThrowByteOverflowException();
             return (byte)value;
         }
 
@@ -774,11 +765,7 @@ namespace System
             return (byte)value;
         }
 
-        public static byte ToByte(int value)
-        {
-            if (value < byte.MinValue || value > byte.MaxValue) ThrowByteOverflowException();
-            return (byte)value;
-        }
+        public static byte ToByte(int value) => ToByte((uint)value);
 
         [CLSCompliant(false)]
         public static byte ToByte(uint value)
@@ -787,11 +774,7 @@ namespace System
             return (byte)value;
         }
 
-        public static byte ToByte(long value)
-        {
-            if (value < byte.MinValue || value > byte.MaxValue) ThrowByteOverflowException();
-            return (byte)value;
-        }
+        public static byte ToByte(long value) => ToByte((ulong)value);
 
         [CLSCompliant(false)]
         public static byte ToByte(ulong value)
@@ -819,14 +802,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return byte.Parse(value, CultureInfo.CurrentCulture);
+            return byte.Parse(value);
         }
 
         public static byte ToByte(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return byte.Parse(value, NumberStyles.Integer, provider);
+            return byte.Parse(value, provider);
         }
 
         public static byte ToByte(DateTime value)
@@ -887,7 +870,7 @@ namespace System
         [CLSCompliant(false)]
         public static short ToInt16(uint value)
         {
-            if (value > short.MaxValue) ThrowInt16OverflowException();
+            if (value > (uint)short.MaxValue) ThrowInt16OverflowException();
             return (short)value;
         }
 
@@ -928,14 +911,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return short.Parse(value, CultureInfo.CurrentCulture);
+            return short.Parse(value);
         }
 
         public static short ToInt16(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return short.Parse(value, NumberStyles.Integer, provider);
+            return short.Parse(value, provider);
         }
 
         public static short ToInt16(DateTime value)
@@ -993,11 +976,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static ushort ToUInt16(int value)
-        {
-            if (value < 0 || value > ushort.MaxValue) ThrowUInt16OverflowException();
-            return (ushort)value;
-        }
+        public static ushort ToUInt16(int value) => ToUInt16((uint)value);
 
         [CLSCompliant(false)]
         public static ushort ToUInt16(ushort value)
@@ -1013,11 +992,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static ushort ToUInt16(long value)
-        {
-            if (value < 0 || value > ushort.MaxValue) ThrowUInt16OverflowException();
-            return (ushort)value;
-        }
+        public static ushort ToUInt16(long value) => ToUInt16((ulong)value);
 
         [CLSCompliant(false)]
         public static ushort ToUInt16(ulong value)
@@ -1049,7 +1024,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return ushort.Parse(value, CultureInfo.CurrentCulture);
+            return ushort.Parse(value);
         }
 
         [CLSCompliant(false)]
@@ -1057,7 +1032,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return ushort.Parse(value, NumberStyles.Integer, provider);
+            return ushort.Parse(value, provider);
         }
 
         [CLSCompliant(false)]
@@ -1116,7 +1091,7 @@ namespace System
         [CLSCompliant(false)]
         public static int ToInt32(uint value)
         {
-            if (value > int.MaxValue) ThrowInt32OverflowException();
+            if ((int)value < 0) ThrowInt32OverflowException();
             return (int)value;
         }
 
@@ -1177,14 +1152,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return int.Parse(value, CultureInfo.CurrentCulture);
+            return int.Parse(value);
         }
 
         public static int ToInt32(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return int.Parse(value, NumberStyles.Integer, provider);
+            return int.Parse(value, provider);
         }
 
         public static int ToInt32(DateTime value)
@@ -1261,11 +1236,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static uint ToUInt32(long value)
-        {
-            if (value < 0 || value > uint.MaxValue) ThrowUInt32OverflowException();
-            return (uint)value;
-        }
+        public static uint ToUInt32(long value) => ToUInt32((ulong)value);
 
         [CLSCompliant(false)]
         public static uint ToUInt32(ulong value)
@@ -1304,7 +1275,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return uint.Parse(value, CultureInfo.CurrentCulture);
+            return uint.Parse(value);
         }
 
         [CLSCompliant(false)]
@@ -1312,7 +1283,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return uint.Parse(value, NumberStyles.Integer, provider);
+            return uint.Parse(value, provider);
         }
 
         [CLSCompliant(false)]
@@ -1382,7 +1353,7 @@ namespace System
         [CLSCompliant(false)]
         public static long ToInt64(ulong value)
         {
-            if (value > long.MaxValue) ThrowInt64OverflowException();
+            if ((long)value < 0) ThrowInt64OverflowException();
             return (long)value;
         }
 
@@ -1410,14 +1381,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return long.Parse(value, CultureInfo.CurrentCulture);
+            return long.Parse(value);
         }
 
         public static long ToInt64(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return long.Parse(value, NumberStyles.Integer, provider);
+            return long.Parse(value, provider);
         }
 
         public static long ToInt64(DateTime value)
@@ -1529,7 +1500,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return ulong.Parse(value, CultureInfo.CurrentCulture);
+            return ulong.Parse(value);
         }
 
         [CLSCompliant(false)]
@@ -1537,7 +1508,7 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return ulong.Parse(value, NumberStyles.Integer, provider);
+            return ulong.Parse(value, provider);
         }
 
         [CLSCompliant(false)]
@@ -1629,14 +1600,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return float.Parse(value, CultureInfo.CurrentCulture);
+            return float.Parse(value);
         }
 
         public static float ToSingle(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return float.Parse(value, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+            return float.Parse(value, provider);
         }
 
         public static float ToSingle(bool value)
@@ -1732,14 +1703,14 @@ namespace System
         {
             if (value == null)
                 return 0;
-            return double.Parse(value, CultureInfo.CurrentCulture);
+            return double.Parse(value);
         }
 
         public static double ToDouble(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0;
-            return double.Parse(value, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+            return double.Parse(value, provider);
         }
 
         public static double ToDouble(bool value)
@@ -1830,14 +1801,14 @@ namespace System
         {
             if (value == null)
                 return 0m;
-            return decimal.Parse(value, CultureInfo.CurrentCulture);
+            return decimal.Parse(value);
         }
 
         public static decimal ToDecimal(string? value, IFormatProvider? provider)
         {
             if (value == null)
                 return 0m;
-            return decimal.Parse(value, NumberStyles.Number, provider);
+            return decimal.Parse(value, provider);
         }
 
         public static decimal ToDecimal(decimal value)
@@ -1879,7 +1850,7 @@ namespace System
         {
             if (value == null)
                 return new DateTime(0);
-            return DateTime.Parse(value, CultureInfo.CurrentCulture);
+            return DateTime.Parse(value);
         }
 
         public static DateTime ToDateTime(string? value, IFormatProvider? provider)
@@ -2000,7 +1971,7 @@ namespace System
         [CLSCompliant(false)]
         public static string ToString(sbyte value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         [CLSCompliant(false)]
@@ -2011,7 +1982,7 @@ namespace System
 
         public static string ToString(byte value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(byte value, IFormatProvider? provider)
@@ -2021,7 +1992,7 @@ namespace System
 
         public static string ToString(short value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(short value, IFormatProvider? provider)
@@ -2032,7 +2003,7 @@ namespace System
         [CLSCompliant(false)]
         public static string ToString(ushort value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         [CLSCompliant(false)]
@@ -2043,7 +2014,7 @@ namespace System
 
         public static string ToString(int value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(int value, IFormatProvider? provider)
@@ -2054,7 +2025,7 @@ namespace System
         [CLSCompliant(false)]
         public static string ToString(uint value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         [CLSCompliant(false)]
@@ -2065,7 +2036,7 @@ namespace System
 
         public static string ToString(long value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(long value, IFormatProvider? provider)
@@ -2076,7 +2047,7 @@ namespace System
         [CLSCompliant(false)]
         public static string ToString(ulong value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         [CLSCompliant(false)]
@@ -2087,7 +2058,7 @@ namespace System
 
         public static string ToString(float value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(float value, IFormatProvider? provider)
@@ -2097,7 +2068,7 @@ namespace System
 
         public static string ToString(double value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(double value, IFormatProvider? provider)
@@ -2107,7 +2078,7 @@ namespace System
 
         public static string ToString(decimal value)
         {
-            return value.ToString(CultureInfo.CurrentCulture);
+            return value.ToString();
         }
 
         public static string ToString(decimal value, IFormatProvider? provider)
@@ -2157,7 +2128,7 @@ namespace System
             }
 
             int r = ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
-            if (r < byte.MinValue || r > byte.MaxValue)
+            if ((uint)r > byte.MaxValue)
                 ThrowByteOverflowException();
             return (byte)r;
         }
@@ -2231,7 +2202,7 @@ namespace System
             }
 
             int r = ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
-            if (r < ushort.MinValue || r > ushort.MaxValue)
+            if ((uint)r > ushort.MaxValue)
                 ThrowUInt16OverflowException();
             return (ushort)r;
         }
@@ -2590,7 +2561,9 @@ namespace System
             // "s" is an unfortunate parameter name, but we need to keep it for backward compat.
 
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
 
             unsafe
             {
@@ -2605,7 +2578,7 @@ namespace System
         {
             if (s == null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return TryFromBase64Chars(s.AsSpan(), bytes, out bytesWritten);
@@ -2865,6 +2838,103 @@ namespace System
 
             // Done:
             return (usefulInputLength / 4) * 3 + padding;
+        }
+
+        /// <summary>
+        /// Converts the specified string, which encodes binary data as hex characters, to an equivalent 8-bit unsigned integer array.
+        /// </summary>
+        /// <param name="s">The string to convert.</param>
+        /// <returns>An array of 8-bit unsigned integers that is equivalent to <paramref name="s"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="s"/> is <code>null</code>.</exception>
+        /// <exception cref="FormatException">The length of <paramref name="s"/>, is not zero or a multiple of 2.</exception>
+        /// <exception cref="FormatException">The format of <paramref name="s"/> is invalid. <paramref name="s"/> contains a non-hex character.</exception>
+        public static byte[] FromHexString(string s)
+        {
+            if (s == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+
+            return FromHexString(s.AsSpan());
+        }
+
+        /// <summary>
+        /// Converts the span, which encodes binary data as hex characters, to an equivalent 8-bit unsigned integer array.
+        /// </summary>
+        /// <param name="chars">The span to convert.</param>
+        /// <returns>An array of 8-bit unsigned integers that is equivalent to <paramref name="chars"/>.</returns>
+        /// <exception cref="FormatException">The length of <paramref name="chars"/>, is not zero or a multiple of 2.</exception>
+        /// <exception cref="FormatException">The format of <paramref name="chars"/> is invalid. <paramref name="chars"/> contains a non-hex character.</exception>
+        public static byte[] FromHexString(ReadOnlySpan<char> chars)
+        {
+            if (chars.Length == 0)
+                return Array.Empty<byte>();
+            if ((uint)chars.Length % 2 != 0)
+                throw new FormatException(SR.Format_BadHexLength);
+
+            byte[] result = GC.AllocateUninitializedArray<byte>(chars.Length >> 1);
+
+            if (!HexConverter.TryDecodeFromUtf16(chars, result))
+                throw new FormatException(SR.Format_BadHexChar);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Converts an array of 8-bit unsigned integers to its equivalent string representation that is encoded with uppercase hex characters.
+        /// </summary>
+        /// <param name="inArray">An array of 8-bit unsigned integers.</param>
+        /// <returns>The string representation in hex of the elements in <paramref name="inArray"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="inArray"/> is <code>null</code>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inArray"/> is too large to be encoded.</exception>
+        public static string ToHexString(byte[] inArray)
+        {
+            if (inArray == null)
+                throw new ArgumentNullException(nameof(inArray));
+
+            return ToHexString(new ReadOnlySpan<byte>(inArray));
+        }
+
+        /// <summary>
+        /// Converts a subset of an array of 8-bit unsigned integers to its equivalent string representation that is encoded with uppercase hex characters.
+        /// Parameters specify the subset as an offset in the input array and the number of elements in the array to convert.
+        /// </summary>
+        /// <param name="inArray">An array of 8-bit unsigned integers.</param>
+        /// <param name="offset">An offset in <paramref name="inArray"/>.</param>
+        /// <param name="length">The number of elements of <paramref name="inArray"/> to convert.</param>
+        /// <returns>The string representation in hex of <paramref name="length"/> elements of <paramref name="inArray"/>, starting at position <paramref name="offset"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="inArray"/> is <code>null</code>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> plus <paramref name="length"/> is greater than the length of <paramref name="inArray"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inArray"/> is too large to be encoded.</exception>
+        public static string ToHexString(byte[] inArray, int offset, int length)
+        {
+            if (inArray == null)
+                throw new ArgumentNullException(nameof(inArray));
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
+            if (offset > (inArray.Length - length))
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
+
+            return ToHexString(new ReadOnlySpan<byte>(inArray, offset, length));
+        }
+
+        /// <summary>
+        /// Converts a span of 8-bit unsigned integers to its equivalent string representation that is encoded with uppercase hex characters.
+        /// </summary>
+        /// <param name="bytes">A span of 8-bit unsigned integers.</param>
+        /// <returns>The string representation in hex of the elements in <paramref name="bytes"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="bytes"/> is too large to be encoded.</exception>
+        public static string ToHexString(ReadOnlySpan<byte> bytes)
+        {
+            if (bytes.Length == 0)
+                return string.Empty;
+            if (bytes.Length > int.MaxValue / 2)
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_InputTooLarge);
+
+            return HexConverter.ToString(bytes, HexConverter.Casing.Upper);
         }
     }  // class Convert
 }  // namespace

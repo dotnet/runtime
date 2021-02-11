@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
@@ -14,8 +13,8 @@ namespace System.Xml.Schema
     {
         internal XmlQualifiedName name = XmlQualifiedName.Empty;
         private readonly ConstraintRole _role;
-        private readonly Asttree _selector;
-        private readonly Asttree[] _fields;
+        private readonly Asttree _selector = null!;
+        private readonly Asttree[] _fields = null!;
         internal XmlQualifiedName refer = XmlQualifiedName.Empty;
 
         public enum ConstraintRole
@@ -51,11 +50,11 @@ namespace System.Xml.Schema
             //public Asttree (string xPath, bool isField, XmlNamespaceManager nsmgr)
             try
             {
-                _selector = new Asttree(constraint.Selector.XPath, false, nsmgr);
+                _selector = new Asttree(constraint.Selector!.XPath!, false, nsmgr);
             }
             catch (XmlSchemaException e)
             {
-                e.SetSource(constraint.Selector);
+                e.SetSource(constraint.Selector!);
                 throw;
             }
             XmlSchemaObjectCollection fields = constraint.Fields;
@@ -65,7 +64,7 @@ namespace System.Xml.Schema
             {
                 try
                 {
-                    _fields[idxField] = new Asttree(((XmlSchemaXPath)fields[idxField]).XPath, true, nsmgr);
+                    _fields[idxField] = new Asttree(((XmlSchemaXPath)fields[idxField]).XPath!, true, nsmgr);
                 }
                 catch (XmlSchemaException e)
                 {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -9,8 +8,8 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ReplicationFailureCollection : ReadOnlyCollectionBase
     {
-        private readonly DirectoryServer _server = null;
-        private readonly Hashtable _nameTable = null;
+        private readonly DirectoryServer _server;
+        private readonly Hashtable _nameTable;
 
         internal ReplicationFailureCollection(DirectoryServer server)
         {
@@ -53,7 +52,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < count; i++)
             {
-                addr = IntPtr.Add(info, Marshal.SizeOf(typeof(int)) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_KCC_DSA_FAILURE)));
+                addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_KCC_DSA_FAILURE)));
 
                 ReplicationFailure managedFailure = new ReplicationFailure(addr, _server, _nameTable);
 

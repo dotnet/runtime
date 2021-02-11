@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -11,7 +10,7 @@ namespace System.Net
 {
     internal class BufferedReadStream : DelegatedStream
     {
-        private byte[] _storedBuffer;
+        private byte[]? _storedBuffer;
         private int _storedLength;
         private int _storedOffset;
         private readonly bool _readMore;
@@ -41,7 +40,7 @@ namespace System.Net
             }
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ReadAsyncResult result = new ReadAsyncResult(this, callback, state);
             result.Read(buffer, offset, count);
@@ -60,7 +59,7 @@ namespace System.Net
             if (_storedOffset < _storedLength)
             {
                 read = Math.Min(count, _storedLength - _storedOffset);
-                Buffer.BlockCopy(_storedBuffer, _storedOffset, buffer, offset, read);
+                Buffer.BlockCopy(_storedBuffer!, _storedOffset, buffer, offset, read);
                 _storedOffset += read;
                 if (read == count || !_readMore)
                 {
@@ -82,7 +81,7 @@ namespace System.Net
             }
 
             read = Math.Min(count, _storedLength - _storedOffset);
-            Buffer.BlockCopy(_storedBuffer, _storedOffset, buffer, offset, read);
+            Buffer.BlockCopy(_storedBuffer!, _storedOffset, buffer, offset, read);
             _storedOffset += read;
             if (read == count || !_readMore)
             {
@@ -97,7 +96,7 @@ namespace System.Net
 
         private async Task<int> ReadMoreAsync(int bytesAlreadyRead, byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            int returnValue = await base.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+            int returnValue = await base.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
             return bytesAlreadyRead + returnValue;
         }
 
@@ -105,7 +104,7 @@ namespace System.Net
         {
             if (_storedOffset < _storedLength)
             {
-                return (int)_storedBuffer[_storedOffset++];
+                return _storedBuffer![_storedOffset++];
             }
             else
             {
@@ -139,7 +138,7 @@ namespace System.Net
                     _storedOffset -= count;
                 }
                 // if there's room in the buffer but need to shift things over
-                else if (count <= _storedBuffer.Length - _storedLength + _storedOffset)
+                else if (count <= _storedBuffer!.Length - _storedLength + _storedOffset)
                 {
                     Buffer.BlockCopy(_storedBuffer, _storedOffset, _storedBuffer, count, _storedLength - _storedOffset);
                     _storedLength += count - _storedOffset;
@@ -155,7 +154,7 @@ namespace System.Net
                 }
             }
 
-            Buffer.BlockCopy(buffer, offset, _storedBuffer, _storedOffset, count);
+            Buffer.BlockCopy(buffer, offset, _storedBuffer!, _storedOffset, count);
         }
 
         private class ReadAsyncResult : LazyAsyncResult
@@ -164,7 +163,7 @@ namespace System.Net
             private int _read;
             private static readonly AsyncCallback s_onRead = new AsyncCallback(OnRead);
 
-            internal ReadAsyncResult(BufferedReadStream parent, AsyncCallback callback, object state) : base(null, state, callback)
+            internal ReadAsyncResult(BufferedReadStream parent, AsyncCallback? callback, object? state) : base(null, state, callback)
             {
                 _parent = parent;
             }
@@ -174,7 +173,7 @@ namespace System.Net
                 if (_parent._storedOffset < _parent._storedLength)
                 {
                     _read = Math.Min(count, _parent._storedLength - _parent._storedOffset);
-                    Buffer.BlockCopy(_parent._storedBuffer, _parent._storedOffset, buffer, offset, _read);
+                    Buffer.BlockCopy(_parent._storedBuffer!, _parent._storedOffset, buffer, offset, _read);
                     _parent._storedOffset += _read;
                     if (_read == count || !_parent._readMore)
                     {
@@ -204,7 +203,7 @@ namespace System.Net
             {
                 if (!result.CompletedSynchronously)
                 {
-                    ReadAsyncResult thisPtr = (ReadAsyncResult)result.AsyncState;
+                    ReadAsyncResult thisPtr = (ReadAsyncResult)result.AsyncState!;
                     try
                     {
                         thisPtr._read += thisPtr._parent.BaseStream.EndRead(result);

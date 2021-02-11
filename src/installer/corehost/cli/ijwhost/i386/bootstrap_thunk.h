@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef IJW_BOOTSTRAP_THUNK_H
 #define IJW_BOOTSTRAP_THUNK_H
 
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
 #error "This file should only be included on x86 builds."
 #endif
 

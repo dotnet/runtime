@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,7 +12,7 @@ namespace System.Diagnostics
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
         /// </summary>
-        public static Process[] GetProcessesByName(string processName, string machineName)
+        public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             if (processName == null)
             {
@@ -41,7 +40,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>
-        private unsafe IntPtr ProcessorAffinityCore
+        private IntPtr ProcessorAffinityCore
         {
             get
             {
@@ -60,7 +59,7 @@ namespace System.Diagnostics
         private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
             // We can only do this for the current process on OS X
-            if (_processId != Interop.Sys.GetPid())
+            if (_processId != Environment.ProcessId)
                 throw new PlatformNotSupportedException(SR.OsxExternalProcessWorkingSetNotSupported);
 
             // Minimum working set (or resident set, as it is called on *nix) doesn't exist so set to 0
@@ -89,7 +88,7 @@ namespace System.Diagnostics
         private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
             // We can only do this for the current process on OS X
-            if (_processId != Interop.Sys.GetPid())
+            if (_processId != Environment.ProcessId)
                 throw new PlatformNotSupportedException(SR.OsxExternalProcessWorkingSetNotSupported);
 
             // There isn't a way to set the minimum working set, so throw an exception here

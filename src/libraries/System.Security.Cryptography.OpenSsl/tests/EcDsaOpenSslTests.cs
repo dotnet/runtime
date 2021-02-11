@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -303,7 +302,7 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
 
 internal static partial class Interop
 {
-    internal static class Crypto
+    internal static partial class Crypto
     {
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid")]
         internal static extern IntPtr EcKeyCreateByOid(string oid);

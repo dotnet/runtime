@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System.Diagnostics
 {
@@ -54,10 +52,6 @@ namespace System.Diagnostics
             }
         }
 
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
         // Some dlls might not contain correct codepage information,
         // in which case the lookup will fail. Explorer will take
         // a few shots in dark. We'll simulate similar behavior by
@@ -106,7 +100,7 @@ namespace System.Diagnostics
             {
                 if (memRef != IntPtr.Zero)
                 {
-                    return Marshal.PtrToStringUni(memRef);
+                    return Marshal.PtrToStringUni(memRef)!;
                 }
             }
 

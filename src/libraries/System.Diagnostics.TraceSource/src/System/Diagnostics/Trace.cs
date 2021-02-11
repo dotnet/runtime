@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #define TRACE
 using System;
@@ -19,7 +18,7 @@ namespace System.Diagnostics
         {
         }
 
-        private static CorrelationManager s_correlationManager = null;
+        private static CorrelationManager? s_correlationManager;
         public static CorrelationManager CorrelationManager
         {
             get
@@ -132,7 +131,7 @@ namespace System.Diagnostics
         ///    <see langword='false'/>. </para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Assert(bool condition, string message)
+        public static void Assert(bool condition, string? message)
         {
             TraceInternal.Assert(condition, message);
         }
@@ -142,7 +141,7 @@ namespace System.Diagnostics
         ///       is <see langword='false'/>. </para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Assert(bool condition, string message, string detailMessage)
+        public static void Assert(bool condition, string? message, string? detailMessage)
         {
             TraceInternal.Assert(condition, message, detailMessage);
         }
@@ -151,7 +150,7 @@ namespace System.Diagnostics
         ///    <para>Emits or displays a message for an assertion that always fails.</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Fail(string message)
+        public static void Fail(string? message)
         {
             TraceInternal.Fail(message);
         }
@@ -160,7 +159,7 @@ namespace System.Diagnostics
         ///    <para>Emits or displays both messages for an assertion that always fails.</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Fail(string message, string detailMessage)
+        public static void Fail(string? message, string? detailMessage)
         {
             TraceInternal.Fail(message, detailMessage);
         }
@@ -173,37 +172,37 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceInformation(string message)
+        public static void TraceInformation(string? message)
         {
             TraceInternal.TraceEvent(TraceEventType.Information, 0, message, null);
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceInformation(string format, params object[] args)
+        public static void TraceInformation(string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Information, 0, format, args);
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceWarning(string message)
+        public static void TraceWarning(string? message)
         {
             TraceInternal.TraceEvent(TraceEventType.Warning, 0, message, null);
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceWarning(string format, params object[] args)
+        public static void TraceWarning(string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Warning, 0, format, args);
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceError(string message)
+        public static void TraceError(string? message)
         {
             TraceInternal.TraceEvent(TraceEventType.Error, 0, message, null);
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceError(string format, params object[] args)
+        public static void TraceError(string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Error, 0, format, args);
         }
@@ -213,7 +212,7 @@ namespace System.Diagnostics
         /// collection.</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Write(string message)
+        public static void Write(string? message)
         {
             TraceInternal.Write(message);
         }
@@ -223,7 +222,7 @@ namespace System.Diagnostics
         /// parameter to the trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection.</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Write(object value)
+        public static void Write(object? value)
         {
             TraceInternal.Write(value);
         }
@@ -233,7 +232,7 @@ namespace System.Diagnostics
         ///       in the <see cref='System.Diagnostics.Trace.Listeners'/> collection.</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Write(string message, string category)
+        public static void Write(string? message, string? category)
         {
             TraceInternal.Write(message, category);
         }
@@ -243,7 +242,7 @@ namespace System.Diagnostics
         ///       in the <see cref='System.Diagnostics.Trace.Listeners'/> collection.</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Write(object value, string category)
+        public static void Write(object? value, string? category)
         {
             TraceInternal.Write(value, category);
         }
@@ -254,7 +253,7 @@ namespace System.Diagnostics
         ///       The default line terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteLine(string message)
+        public static void WriteLine(string? message)
         {
             TraceInternal.WriteLine(message);
         }
@@ -264,7 +263,7 @@ namespace System.Diagnostics
         ///    terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteLine(object value)
+        public static void WriteLine(object? value)
         {
             TraceInternal.WriteLine(value);
         }
@@ -276,7 +275,7 @@ namespace System.Diagnostics
         ///       feed (\r\n).</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteLine(string message, string category)
+        public static void WriteLine(string? message, string? category)
         {
             TraceInternal.WriteLine(message, category);
         }
@@ -287,7 +286,7 @@ namespace System.Diagnostics
         ///    terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteLine(object value, string category)
+        public static void WriteLine(object? value, string? category)
         {
             TraceInternal.WriteLine(value, category);
         }
@@ -297,7 +296,7 @@ namespace System.Diagnostics
         ///    if a condition is <see langword='true'/>.</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteIf(bool condition, string message)
+        public static void WriteIf(bool condition, string? message)
         {
             TraceInternal.WriteIf(condition, message);
         }
@@ -308,7 +307,7 @@ namespace System.Diagnostics
         /// <see langword='true'/>. </para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteIf(bool condition, object value)
+        public static void WriteIf(bool condition, object? value)
         {
             TraceInternal.WriteIf(condition, value);
         }
@@ -318,7 +317,7 @@ namespace System.Diagnostics
         /// collection if a condition is <see langword='true'/>. </para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteIf(bool condition, string message, string category)
+        public static void WriteIf(bool condition, string? message, string? category)
         {
             TraceInternal.WriteIf(condition, message, category);
         }
@@ -329,7 +328,7 @@ namespace System.Diagnostics
         ///    if a condition is <see langword='true'/>. </para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteIf(bool condition, object value, string category)
+        public static void WriteIf(bool condition, object? value, string? category)
         {
             TraceInternal.WriteIf(condition, value, category);
         }
@@ -341,7 +340,7 @@ namespace System.Diagnostics
         ///       by a line feed (\r\n).</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteLineIf(bool condition, string message)
+        public static void WriteLineIf(bool condition, string? message)
         {
             TraceInternal.WriteLineIf(condition, message);
         }
@@ -354,7 +353,7 @@ namespace System.Diagnostics
         ///    terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteLineIf(bool condition, object value)
+        public static void WriteLineIf(bool condition, object? value)
         {
             TraceInternal.WriteLineIf(condition, value);
         }
@@ -365,7 +364,7 @@ namespace System.Diagnostics
         ///    <see langword='true'/>. The default line terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteLineIf(bool condition, string message, string category)
+        public static void WriteLineIf(bool condition, string? message, string? category)
         {
             TraceInternal.WriteLineIf(condition, message, category);
         }
@@ -377,7 +376,7 @@ namespace System.Diagnostics
         ///    default line terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void WriteLineIf(bool condition, object value, string category)
+        public static void WriteLineIf(bool condition, object? value, string? category)
         {
             TraceInternal.WriteLineIf(condition, value, category);
         }

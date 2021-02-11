@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Option Strict Off
 
@@ -174,11 +173,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Const DISP_E_NOTACOLLECTION As Integer = &H80020011I
 
         Friend Shared Function VbMakeIllegalForException() As System.Exception
-            Return VbMakeExceptionEx(vbErrors.IllegalFor, GetResourceString(SR.ID92)) ' 92 - IllegaFor
+            Return VbMakeExceptionEx(vbErrors.IllegalFor, SR.Format(SR.ID92)) ' 92 - IllegaFor
         End Function
 
         Friend Shared Function VbMakeObjNotSetException() As System.Exception
-            Return VbMakeExceptionEx(vbErrors.ObjNotSet, GetResourceString(SR.ID91)) ' 91 - ObjNotSet
+            Return VbMakeExceptionEx(vbErrors.ObjNotSet, SR.Format(SR.ID91)) ' 91 - ObjNotSet
         End Function
 
         Friend Shared Function VbMakeException(ByVal hr As Integer) As System.Exception
@@ -215,15 +214,15 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 Case vbErrors.None
 
-                Case vbErrors.ReturnWOGoSub, _
-                    vbErrors.ResumeWOErr, _
-                    vbErrors.CantUseNull, _
+                Case vbErrors.ReturnWOGoSub,
+                    vbErrors.ResumeWOErr,
+                    vbErrors.CantUseNull,
                     vbErrors.DoesntImplementICollection
                     Return New InvalidOperationException(Description)
 
-                Case vbErrors.IllegalFuncCall, _
-                    vbErrors.NamedParamNotFound, _
-                    vbErrors.NamedArgsNotSupported, _
+                Case vbErrors.IllegalFuncCall,
+                    vbErrors.NamedParamNotFound,
+                    vbErrors.NamedArgsNotSupported,
                     vbErrors.ParameterNotOptional
                     Return New ArgumentException(Description)
 
@@ -257,23 +256,23 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Case vbErrors.EndOfFile
                     Return New IO.EndOfStreamException(Description)
 
-                Case vbErrors.IOError, _
-                    vbErrors.BadFileNameOrNumber, _
-                    vbErrors.BadFileMode, _
-                    vbErrors.FileAlreadyOpen, _
-                    vbErrors.FileAlreadyExists, _
-                    vbErrors.BadRecordLen, _
-                    vbErrors.DiskFull, _
-                    vbErrors.BadRecordNum, _
-                    vbErrors.TooManyFiles, _
-                    vbErrors.DevUnavailable, _
-                    vbErrors.PermissionDenied, _
-                    vbErrors.DiskNotReady, _
-                    vbErrors.DifferentDrive, _
+                Case vbErrors.IOError,
+                    vbErrors.BadFileNameOrNumber,
+                    vbErrors.BadFileMode,
+                    vbErrors.FileAlreadyOpen,
+                    vbErrors.FileAlreadyExists,
+                    vbErrors.BadRecordLen,
+                    vbErrors.DiskFull,
+                    vbErrors.BadRecordNum,
+                    vbErrors.TooManyFiles,
+                    vbErrors.DevUnavailable,
+                    vbErrors.PermissionDenied,
+                    vbErrors.DiskNotReady,
+                    vbErrors.DifferentDrive,
                     vbErrors.PathFileAccess
                     Return New IO.IOException(Description)
 
-                Case vbErrors.PathNotFound, _
+                Case vbErrors.PathNotFound,
                     vbErrors.OLEFileNotFound
                     Return New IO.FileNotFoundException(Description)
 
@@ -283,7 +282,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Case vbErrors.PropertyNotFound
                     Return New MissingFieldException(Description)
 
-                Case vbErrors.CantCreateObject, _
+                Case vbErrors.CantCreateObject,
                     vbErrors.ServerNotFound
                     Return New Exception(Description)
 
@@ -298,7 +297,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             VBDefinedError = False
             Return New Exception(Description)
-        
+
         End Function
 
         ''' <summary>
@@ -312,7 +311,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Shared Function GetArgumentExceptionWithArgName(ByVal ArgumentName As String,
             ByVal ResourceID As String, ByVal ParamArray PlaceHolders() As String) As ArgumentException
 
-            Return New ArgumentException(GetResourceString(ResourceID, PlaceHolders), ArgumentName)
+            Return New ArgumentException(SR.Format(ResourceID, PlaceHolders), ArgumentName)
         End Function
 
         ''' <summary>
@@ -322,7 +321,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' <returns>A new instance of ArgumentNullException.</returns>
         Friend Shared Function GetArgumentNullException(ByVal ArgumentName As String) As ArgumentNullException
 
-            Return New ArgumentNullException(ArgumentName, GetResourceString(SR.General_ArgumentNullException))
+            Return New ArgumentNullException(ArgumentName, SR.General_ArgumentNullException)
         End Function
 
         ''' <summary>
@@ -335,7 +334,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Shared Function GetArgumentNullException(ByVal ArgumentName As String,
             ByVal ResourceID As String, ByVal ParamArray PlaceHolders() As String) As ArgumentNullException
 
-            Return New ArgumentNullException(ArgumentName, GetResourceString(ResourceID, PlaceHolders))
+            Return New ArgumentNullException(ArgumentName, SR.Format(ResourceID, PlaceHolders))
         End Function
 
         ''' <summary>
@@ -347,7 +346,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Shared Function GetDirectoryNotFoundException(
             ByVal ResourceID As String, ByVal ParamArray PlaceHolders() As String) As IO.DirectoryNotFoundException
 
-            Return New IO.DirectoryNotFoundException(GetResourceString(ResourceID, PlaceHolders))
+            Return New IO.DirectoryNotFoundException(SR.Format(ResourceID, PlaceHolders))
         End Function
 
         ''' <summary>
@@ -360,7 +359,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Shared Function GetFileNotFoundException(ByVal FileName As String,
             ByVal ResourceID As String, ByVal ParamArray PlaceHolders() As String) As IO.FileNotFoundException
 
-            Return New IO.FileNotFoundException(GetResourceString(ResourceID, PlaceHolders), FileName)
+            Return New IO.FileNotFoundException(SR.Format(ResourceID, PlaceHolders), FileName)
         End Function
 
         ''' <summary>
@@ -372,7 +371,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Shared Function GetInvalidOperationException(
             ByVal ResourceID As String, ByVal ParamArray PlaceHolders() As String) As InvalidOperationException
 
-            Return New InvalidOperationException(GetResourceString(ResourceID, PlaceHolders))
+            Return New InvalidOperationException(SR.Format(ResourceID, PlaceHolders))
         End Function
 
         ''' <summary>
@@ -383,7 +382,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' <returns>A new instance of IO.IOException.</returns>
         Friend Shared Function GetIOException(ByVal ResourceID As String, ByVal ParamArray PlaceHolders() As String) As IO.IOException
 
-            Return New IO.IOException(GetResourceString(ResourceID, PlaceHolders))
+            Return New IO.IOException(SR.Format(ResourceID, PlaceHolders))
         End Function
 
         ''' <summary>
@@ -397,7 +396,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Shared Function GetWin32Exception(
             ByVal ResourceID As String, ByVal ParamArray PlaceHolders() As String) As ComponentModel.Win32Exception
 
-            Return New ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastWin32Error(), GetResourceString(ResourceID, PlaceHolders))
+            Return New ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastWin32Error(), SR.Format(ResourceID, PlaceHolders))
         End Function
 
     End Class
@@ -415,7 +414,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         ' default constructor
         Public Sub New()
-            MyBase.New(GetResourceString(SR.InternalError_VisualBasicRuntime))
+            MyBase.New(SR.InternalError_VisualBasicRuntime)
         End Sub
 
     End Class

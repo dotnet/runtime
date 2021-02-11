@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __HOSTPOLICY_RESOLVER_H__
 #define __HOSTPOLICY_RESOLVER_H__
@@ -20,6 +19,10 @@ struct hostpolicy_contract_t
     // 3.0+ contracts
     corehost_set_error_writer_fn set_error_writer;
     corehost_initialize_fn initialize;
+
+    // 5.0+ contracts
+    corehost_main_fn corehost_main;
+    corehost_main_with_output_buffer_fn corehost_main_with_output_buffer;
 };
 
 namespace hostpolicy_resolver

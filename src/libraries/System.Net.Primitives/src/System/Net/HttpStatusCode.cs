@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net
 {
@@ -61,7 +60,7 @@ namespace System.Net
         UnsupportedMediaType = 415,
         RequestedRangeNotSatisfiable = 416,
         ExpectationFailed = 417,
-        // From the discussion thread on #4382:
+        // From https://github.com/dotnet/runtime/issues/15650:
         // "It would be a mistake to add it to .NET now. See golang/go#21326,
         // nodejs/node#14644, requests/requests#4238 and aspnet/HttpAbstractions#915".
         // ImATeapot = 418

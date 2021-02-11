@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
     public sealed class DataColumnMappingCollection : MarshalByRefObject, IColumnMappingCollection
     {
-        private List<DataColumnMapping> _items; // delay creation until AddWithoutEvents, Insert, CopyTo, GetEnumerator
+        private List<DataColumnMapping>? _items; // delay creation until AddWithoutEvents, Insert, CopyTo, GetEnumerator
 
         public DataColumnMappingCollection()
         {
@@ -36,7 +36,7 @@ namespace System.Data.Common
         {
             get { return false; }
         }
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get
             {
@@ -62,7 +62,7 @@ namespace System.Data.Common
                 this[index] = (DataColumnMapping)value;
             }
         }
-        IColumnMapping IColumnMappingCollection.Add(string sourceColumnName, string dataSetColumnName)
+        IColumnMapping IColumnMappingCollection.Add(string? sourceColumnName, string? dataSetColumnName)
         {
             return Add(sourceColumnName, dataSetColumnName);
         }
@@ -93,7 +93,7 @@ namespace System.Data.Common
             get
             {
                 RangeCheck(index);
-                return _items[index];
+                return _items![index];
             }
             set
             {
@@ -109,7 +109,7 @@ namespace System.Data.Common
             get
             {
                 int index = RangeCheck(sourceColumn);
-                return _items[index];
+                return _items![index];
             }
             set
             {
@@ -118,7 +118,7 @@ namespace System.Data.Common
             }
         }
 
-        public int Add(object value)
+        public int Add(object? value)
         {
             ValidateType(value);
             Add((DataColumnMapping)value);
@@ -131,7 +131,7 @@ namespace System.Data.Common
             return value;
         }
 
-        public DataColumnMapping Add(string sourceColumn, string dataSetColumn)
+        public DataColumnMapping Add(string? sourceColumn, string? dataSetColumn)
         {
             return Add(new DataColumnMapping(sourceColumn, dataSetColumn));
         }
@@ -177,7 +177,7 @@ namespace System.Data.Common
             }
         }
 
-        private void AddWithoutEvents(DataColumnMapping value)
+        private void AddWithoutEvents([NotNull] DataColumnMapping? value)
         {
             Validate(-1, value);
             value.Parent = this;
@@ -215,12 +215,12 @@ namespace System.Data.Common
             }
         }
 
-        public bool Contains(string value)
+        public bool Contains(string? value)
         {
             return (-1 != IndexOf(value));
         }
 
-        public bool Contains(object value)
+        public bool Contains(object? value)
         {
             return (-1 != IndexOf(value));
         }
@@ -242,7 +242,7 @@ namespace System.Data.Common
             {
                 throw ADP.ColumnsDataSetColumn(value);
             }
-            return _items[index];
+            return _items![index];
         }
 
         public IEnumerator GetEnumerator()
@@ -250,14 +250,14 @@ namespace System.Data.Common
             return ArrayList().GetEnumerator();
         }
 
-        public int IndexOf(object value)
+        public int IndexOf(object? value)
         {
             if (null != value)
             {
                 ValidateType(value);
                 for (int i = 0; i < Count; ++i)
                 {
-                    if (_items[i] == value)
+                    if (_items![i] == value)
                     {
                         return i;
                     }
@@ -266,14 +266,14 @@ namespace System.Data.Common
             return -1;
         }
 
-        public int IndexOf(string sourceColumn)
+        public int IndexOf(string? sourceColumn)
         {
             if (!string.IsNullOrEmpty(sourceColumn))
             {
                 int count = Count;
                 for (int i = 0; i < count; ++i)
                 {
-                    if (0 == ADP.SrcCompare(sourceColumn, _items[i].SourceColumn))
+                    if (0 == ADP.SrcCompare(sourceColumn, _items![i].SourceColumn))
                     {
                         return i;
                     }
@@ -282,14 +282,14 @@ namespace System.Data.Common
             return -1;
         }
 
-        public int IndexOfDataSetColumn(string dataSetColumn)
+        public int IndexOfDataSetColumn(string? dataSetColumn)
         {
             if (!string.IsNullOrEmpty(dataSetColumn))
             {
                 int count = Count;
                 for (int i = 0; i < count; ++i)
                 {
-                    if (0 == ADP.DstCompare(dataSetColumn, _items[i].DataSetColumn))
+                    if (0 == ADP.DstCompare(dataSetColumn, _items![i].DataSetColumn))
                     {
                         return i;
                     }
@@ -298,7 +298,7 @@ namespace System.Data.Common
             return -1;
         }
 
-        public void Insert(int index, object value)
+        public void Insert(int index, object? value)
         {
             ValidateType(value);
             Insert(index, (DataColumnMapping)value);
@@ -352,7 +352,7 @@ namespace System.Data.Common
             _items.RemoveAt(index);
         }
 
-        public void Remove(object value)
+        public void Remove(object? value)
         {
             ValidateType(value);
             Remove((DataColumnMapping)value);
@@ -385,7 +385,7 @@ namespace System.Data.Common
             _items[index] = newValue;
         }
 
-        private void ValidateType(object value)
+        private void ValidateType([NotNull] object? value)
         {
             if (null == value)
             {
@@ -397,7 +397,7 @@ namespace System.Data.Common
             }
         }
 
-        private void Validate(int index, DataColumnMapping value)
+        private void Validate(int index, [NotNull] DataColumnMapping? value)
         {
             if (null == value)
             {
@@ -432,7 +432,7 @@ namespace System.Data.Common
             }
         }
 
-        internal void ValidateSourceColumn(int index, string value)
+        internal void ValidateSourceColumn(int index, string? value)
         {
             int pindex = IndexOf(value);
             if ((-1 != pindex) && (index != pindex))
@@ -442,14 +442,14 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static DataColumn GetDataColumn(DataColumnMappingCollection columnMappings, string sourceColumn, Type dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
+        public static DataColumn? GetDataColumn(DataColumnMappingCollection? columnMappings, string sourceColumn, Type? dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
         {
             if (null != columnMappings)
             {
                 int index = columnMappings.IndexOf(sourceColumn);
                 if (-1 != index)
                 {
-                    return columnMappings._items[index].GetDataColumnBySchemaAction(dataTable, dataType, schemaAction);
+                    return columnMappings._items![index].GetDataColumnBySchemaAction(dataTable, dataType, schemaAction);
                 }
             }
             if (string.IsNullOrEmpty(sourceColumn))
@@ -471,14 +471,14 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static DataColumnMapping GetColumnMappingBySchemaAction(DataColumnMappingCollection columnMappings, string sourceColumn, MissingMappingAction mappingAction)
+        public static DataColumnMapping? GetColumnMappingBySchemaAction(DataColumnMappingCollection? columnMappings, string sourceColumn, MissingMappingAction mappingAction)
         {
             if (null != columnMappings)
             {
                 int index = columnMappings.IndexOf(sourceColumn);
                 if (-1 != index)
                 {
-                    return columnMappings._items[index];
+                    return columnMappings._items![index];
                 }
             }
             if (string.IsNullOrEmpty(sourceColumn))

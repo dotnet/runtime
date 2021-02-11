@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -44,7 +43,7 @@ namespace Internal.Cryptography.Pal.Native
     /// </summary>
     internal class SafeCertContextHandle : SafePointerHandle<SafeCertContextHandle>
     {
-        private SafeCertContextHandle _parent;
+        private SafeCertContextHandle? _parent;
 
         public SafeCertContextHandle() { }
 
@@ -62,6 +61,8 @@ namespace Internal.Cryptography.Pal.Native
 
             SetHandle(_parent.handle);
         }
+
+        internal new void SetHandle(IntPtr handle) => base.SetHandle(handle);
 
         protected override bool ReleaseHandle()
         {
@@ -165,8 +166,8 @@ namespace Internal.Cryptography.Pal.Native
                         // dwProvType being 0 indicates that the key is stored in CNG.
                         // dwProvType being non-zero indicates that the key is stored in CAPI.
 
-                        string providerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszProvName));
-                        string keyContainerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszContainerName));
+                        string providerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszProvName))!;
+                        string keyContainerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszContainerName))!;
 
                         try
                         {

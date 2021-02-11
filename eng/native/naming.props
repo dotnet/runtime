@@ -1,0 +1,54 @@
+<Project>
+  <PropertyGroup>
+    <StaticLibPrefix>lib</StaticLibPrefix>
+  </PropertyGroup>
+
+  <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
+  <Choose>
+    <When Condition="$(PackageRID.StartsWith('win'))">
+      <PropertyGroup>
+        <ExeSuffix>.exe</ExeSuffix>
+        <LibSuffix>.dll</LibSuffix>
+        <StaticLibSuffix>.lib</StaticLibSuffix>
+        <SymbolsSuffix>.pdb</SymbolsSuffix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(PackageRID.StartsWith('osx'))">
+      <PropertyGroup>
+        <LibPrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibPrefix>
+        <LibSuffix>.dylib</LibSuffix>
+        <StaticLibSuffix>.a</StaticLibSuffix>
+        <SymbolsSuffix>.dwarf</SymbolsSuffix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(PackageRID.StartsWith('android'))">
+      <PropertyGroup>
+        <LibPrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibPrefix>
+        <LibSuffix>.so</LibSuffix>
+        <StaticLibSuffix>.a</StaticLibSuffix>
+        <!--symbols included in .so, like Linux, but can be generated externally and if so, uses .debug ext-->
+        <SymbolsSuffix>.debug</SymbolsSuffix>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <LibPrefix Condition=" '$(SkipLibraryPrefixFromUnix)' == '' ">lib</LibPrefix>
+        <LibSuffix>.so</LibSuffix>
+        <StaticLibSuffix>.a</StaticLibSuffix>
+        <SymbolsSuffix>.dbg</SymbolsSuffix>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <AdditionalLibPackageExcludes Condition="'$(SymbolsSuffix)' != ''" Include="%2A%2A\%2A$(SymbolsSuffix)" />
+    <AdditionalSymbolPackageExcludes Condition="'$(LibSuffix)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibSuffix)" />
+  </ItemGroup>
+
+  <!-- arcade is using long name for this property; 'SymbolFileExtension'.
+       remove this property group when arcade is updated with short name (SymbolsSuffix). -->
+  <PropertyGroup>
+    <SymbolFileExtension>$(SymbolsSuffix)</SymbolFileExtension>
+  </PropertyGroup>
+
+</Project>

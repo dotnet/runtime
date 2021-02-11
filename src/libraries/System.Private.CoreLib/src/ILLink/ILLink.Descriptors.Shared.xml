@@ -1,0 +1,60 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="Interop/Globalization">
+      <!-- Internal API used by tests only. -->
+      <method name="GetICUVersion" />
+    </type>
+    <type fullname="System.Threading.ThreadPoolBoundHandle">
+      <!-- Workaround to keep .interfaceimpl even though this type
+             is not instantiated on unix:
+             https://github.com/mono/linker/pull/649 -->
+      <method name=".ctor" />
+    </type>
+  </assembly>
+  
+  <!-- Properties and methods used by a debugger. -->
+  <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="true" featuredefault="true">
+    <type fullname="System.Threading.Tasks.Task">
+      <property name="ParentForDebugger" />
+      <property name="StateFlagsForDebugger" />
+      <method name="GetDelegateContinuationsForDebugger" />
+      <method name="SetNotificationForWaitCompletion" />
+    </type>
+    <type fullname="System.Threading.ThreadPool">
+      <method name="GetQueuedWorkItemsForDebugger" />
+      <method name="GetGloballyQueuedWorkItemsForDebugger" />
+      <method name="GetLocallyQueuedWorkItemsForDebugger" />
+    </type>
+    <type fullname="System.Threading.Tasks.TaskScheduler">
+      <method name="GetScheduledTasksForDebugger" />
+      <method name="GetTaskSchedulersForDebugger" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncMethodBuilderCore">
+      <method name="TryGetStateMachineForDebugger" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncIteratorMethodBuilder">
+      <property name="ObjectIdForDebugger" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncVoidMethodBuilder">
+      <property name="ObjectIdForDebugger" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncTaskMethodBuilder">
+      <property name="ObjectIdForDebugger" />
+      <method name="SetNotificationForWaitCompletion" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1">
+      <property name="ObjectIdForDebugger" />
+      <method name="SetNotificationForWaitCompletion" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder">
+      <property name="ObjectIdForDebugger" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder`1">
+      <property name="ObjectIdForDebugger" />
+    </type>
+    <type fullname="System.Threading.Tasks.Task">
+      <!-- Methods is used by VS Tasks Window. -->
+      <method name="GetActiveTaskFromId" />
+    </type>
+  </assembly>
+</linker>

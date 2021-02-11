@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Reflection.Internal;
@@ -44,7 +43,7 @@ namespace System.Reflection.Metadata.Tests
         [Fact]
         public unsafe void EncodingLightUpHasSucceededAndTestsStillPassWithPortableFallbackAsWell()
         {
-            Assert.True(EncodingHelper.TestOnly_LightUpEnabled); // tests run on desktop only right now.
+            Assert.True(EncodingHelper.TestOnly_LightUpEnabled); // tests run on .NET Framework only right now.
 
             try
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Reflection
 {
@@ -226,7 +225,7 @@ namespace System.Reflection
 
     internal static class TypeAttributesExtensions
     {
-        // This flag will be added to the BCL (Bug #1041207), but we still
+        // This flag will be added to the BCL (Bug VS#1041207), but we still
         // need to define a copy here for downlevel portability.
         private const TypeAttributes Forwarder = (TypeAttributes)0x00200000;
 

@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350")] // We are providing the implementation for 3DES not consuming it
+    [SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for TripleDES, not consuming it.")]
+    [UnsupportedOSPlatform("browser")]
     public abstract class TripleDES : SymmetricAlgorithm
     {
         protected TripleDES()
@@ -25,9 +26,10 @@ namespace System.Security.Cryptography
             return new TripleDesImplementation();
         }
 
-        public static new TripleDES Create(string str)
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
+        public static new TripleDES? Create(string str)
         {
-            return (TripleDES)CryptoConfig.CreateFromName(str);
+            return (TripleDES?)CryptoConfig.CreateFromName(str);
         }
 
         public override byte[] Key
@@ -61,7 +63,7 @@ namespace System.Security.Cryptography
         public static bool IsWeakKey(byte[] rgbKey)
         {
             if (rgbKey == null)
-                throw new CryptographicException(SR.Cryptography_InvalidKeySize);  // Desktop compat: Strange exception for a null value, but this is what we threw in classic CLR.
+                throw new CryptographicException(SR.Cryptography_InvalidKeySize);  // .NET Framework compat: Strange exception for a null value, but this is what we threw in classic CLR.
 
             if (!(rgbKey.Length * 8).IsLegalSize(s_legalKeySizes))
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);

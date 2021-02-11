@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+#nullable disable
 using System.Globalization;
 
 namespace System.Xml.Xsl.Runtime
@@ -19,7 +19,8 @@ namespace System.Xml.Xsl.Runtime
             if (UpperFirst)
             {
                 // TODO: Support upper case first on Linux
-                // Issues #13926, #13236
+                // https://github.com/dotnet/runtime/issues/19462
+                // https://github.com/dotnet/runtime/issues/19170
                 throw new PlatformNotSupportedException(SR.Xslt_UpperCaseFirstNotSupported);
             }
 

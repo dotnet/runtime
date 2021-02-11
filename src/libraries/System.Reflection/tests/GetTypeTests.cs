@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -87,7 +87,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(GetType_TestData))]
-        public void GetType(string typeName, Type expectedResult)
+        public void GetTypeTest(string typeName, Type expectedResult)
         {
             Assembly a = typeof(GetTypeTests).GetTypeInfo().Assembly;
             Module m = a.ManifestModule;
@@ -155,7 +155,7 @@ namespace System.Reflection.Tests
 
                 // When called with "ignoreCase: true", GetType() may have a choice of matching items. The one that is chosen
                 // is an implementation detail (and on the CLR, *very* implementation-dependent as it's influenced by the internal
-                // layout of private hash tables.) As a result, we do not expect the same result across desktop and Project N
+                // layout of private hash tables.) As a result, we do not expect the same result across .NET Framework and Project N
                 // and so the best we can do is compare the names.
                 string expectedName = expectedResult.AssemblyQualifiedName;
 
@@ -209,7 +209,7 @@ namespace System.Reflection.Tests
 
                 // When called with "ignoreCase: true", GetType() may have a choice of matching items. The one that is chosen
                 // is an implementation detail (and on the CLR, *very* implementation-dependent as it's influenced by the internal
-                // layout of private hash tables.) As a result, we do not expect the same result across desktop and Project N
+                // layout of private hash tables.) As a result, we do not expect the same result across .NET Framework and Project N
                 // and so the best we can do is compare the names.
                 string expectedName = expectedResult.AssemblyQualifiedName;
 
@@ -260,6 +260,15 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(int), Type.GetType("System.Int32", throwOnError: true));
             Assert.Equal(typeof(int), Type.GetType("system.int32", throwOnError: true, ignoreCase: true));
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37871", TestRuntimes.Mono)]
+        public void GetType_GenericTypeArgumentList()
+        {
+            Assert.NotNull(Type.GetType("System.Reflection.Tests.GenericClass`1", throwOnError: true));
+            Assert.Equal(typeof(System.Reflection.Tests.GenericClass<System.String>), Type.GetType("System.Reflection.Tests.GenericClass`1[[System.String, System.Private.CoreLib]]", throwOnError: true));
+            Assert.Throws<FileNotFoundException>(() => Type.GetType("System.Reflection.Tests.GenericClass`1[[Bogus, BogusAssembly]]", throwOnError: true));
+        }
     }
 
     namespace MyNamespace1
@@ -307,4 +316,6 @@ namespace System.Reflection.Tests
     }
 
     public class MyClass1 { }
+
+    public class GenericClass<T> { }
 }

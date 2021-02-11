@@ -57,7 +57,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Argument_AddingDuplicate_OldAndNewKeys " xml:space="preserve">
+  <data name="Argument_AddingDuplicate_OldAndNewKeys" xml:space="preserve">
     <value>Item has already been added. Key in dictionary: '{0}'  Key being added: '{1}'</value>
   </data>
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">

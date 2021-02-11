@@ -1,10 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Data.Common</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Common.TypeForwards.cs" />
@@ -125,6 +123,10 @@
     <Compile Include="System\Data\KeyRestrictionBehavior.cs" />
     <Compile Include="System\Data\LinqDataView.cs" />
     <Compile Include="System\Data\LoadOption.cs" />
+    <Compile Include="System\Data\LocalAppContextSwitches.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
     <Compile Include="System\Data\MappingType.cs" />
     <Compile Include="System\Data\MergeFailedEvent.cs" />
     <Compile Include="System\Data\MergeFailedEventHandler.cs" />
@@ -158,13 +160,13 @@
     <Compile Include="System\Data\StrongTypingException.cs" />
     <Compile Include="System\Data\TypedTableBase.cs" />
     <Compile Include="System\Data\TypedTableBaseExtensions.cs" />
+    <Compile Include="System\Data\TypeLimiter.cs" />
     <Compile Include="System\Data\UniqueConstraint.cs" />
     <Compile Include="System\Data\UpdateRowSource.cs" />
     <Compile Include="System\Data\Common\UInt64Storage.cs" />
     <Compile Include="System\Data\Common\AdapterUtil.Common.cs" />
-    <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.cs">
-      <Link>System\Data\Common\AdapterUtil.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Data\Common\AdapterUtil.cs"
+             Link="System\Data\Common\AdapterUtil.cs" />
     <Compile Include="System\Data\Common\BigIntegerStorage.cs" />
     <Compile Include="System\Data\Common\BooleanStorage.cs" />
     <Compile Include="System\Data\Common\ByteStorage.cs" />
@@ -192,12 +194,10 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="System\Data\Common\DbConnectionOptions.cs" />
-    <Compile Include="$(CommonPath)System\Data\Common\DbConnectionOptions.Common.cs">
-      <Link>System\Data\Common\DbConnectionOptions.Common.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Data\Common\DbConnectionPoolKey.cs">
-      <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Data\Common\DbConnectionOptions.Common.cs"
+             Link="System\Data\Common\DbConnectionOptions.Common.cs" />
+    <Compile Include="$(CommonPath)System\Data\Common\DbConnectionPoolKey.cs"
+             Link="System\Data\Common\DbConnectionPoolKey.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringBuilder.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringBuilderDescriptor.cs" />
@@ -229,12 +229,10 @@
     <Compile Include="System\Data\Common\Int16Storage.cs" />
     <Compile Include="System\Data\Common\Int32Storage.cs" />
     <Compile Include="System\Data\Common\Int64Storage.cs" />
-    <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs">
-      <Link>System\Data\Common\MultipartIdentifier.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Data\Common\NameValuePair.cs">
-      <Link>System\Data\Common\NameValuePair.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs"
+             Link="System\Data\Common\MultipartIdentifier.cs" />
+    <Compile Include="$(CommonPath)System\Data\Common\NameValuePair.cs"
+             Link="System\Data\Common\NameValuePair.cs" />
     <Compile Include="System\Data\Common\ObjectStorage.cs" />
     <Compile Include="System\Data\Common\RowUpdatedEventArgs.cs" />
     <Compile Include="System\Data\Common\RowUpdatingEventArgs.cs" />
@@ -287,9 +285,8 @@
     <Compile Include="System\Data\SQLTypes\SQLInt32.cs" />
     <Compile Include="System\Data\SQLTypes\SQLInt64.cs" />
     <Compile Include="System\Data\SQLTypes\SQLMoney.cs" />
-    <Compile Include="$(CommonPath)System\Data\Common\SQLResource.cs">
-      <Link>System\Data\SQLTypes\SQLResource.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)System\Data\Common\SQLResource.cs"
+             Link="System\Data\SQLTypes\SQLResource.cs" />
     <Compile Include="System\Data\SQLTypes\SQLSingle.cs" />
     <Compile Include="System\Data\SQLTypes\SQLString.cs" />
     <Compile Include="System\Data\SQLTypes\SQLUtility.cs" />
@@ -301,33 +298,25 @@
     <Compile Include="System\Data\SQLTypes\SQLBytes.cs" />
     <Compile Include="System\Data\ProviderBase\DataReaderContainer.cs" />
     <Compile Include="System\Data\ProviderBase\SchemaMapping.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
-      <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Collections" />
+    <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="..\..\System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="..\..\System.ComponentModel.TypeConverter\src\System.ComponentModel.TypeConverter.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Drawing.Primitives" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
-    <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Transactions.Local" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />

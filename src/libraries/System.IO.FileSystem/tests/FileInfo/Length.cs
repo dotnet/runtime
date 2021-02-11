@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -47,7 +45,7 @@ namespace System.IO.Tests
         // DirectoryNotFound exceptions, but in this particular case we ignored the actual
         // result and always gave FileNotFound.
         //
-        // https://github.com/dotnet/corefx/issues/19850
+        // https://github.com/dotnet/runtime/issues/21745
 
         [Theory, MemberData(nameof(TrailingCharacters))]
         public void Length_MissingFile_ThrowsFileNotFound(char trailingChar)
@@ -80,7 +78,7 @@ namespace System.IO.Tests
                 Assert.Equal(FileSize, info.Length);
 
                 var linkInfo = new FileInfo(linkPath);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     // On Windows, symlinks have length 0.
                     Assert.Equal(0, linkInfo.Length);

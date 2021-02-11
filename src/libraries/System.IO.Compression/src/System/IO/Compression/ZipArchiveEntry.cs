@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +9,6 @@ using System.Text;
 namespace System.IO.Compression
 {
     // The disposable fields that this class owns get disposed when the ZipArchive it belongs to gets disposed
-    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     public partial class ZipArchiveEntry
     {
         // The maximum index of our buffers, from the maximum index of a byte array
@@ -37,8 +35,8 @@ namespace System.IO.Compression
         private bool _everOpenedForWrite;
         private Stream? _outstandingWriteStream;
         private uint _externalFileAttr;
-        private string _storedEntryName = null!;  // indirectly set in constructor using FullName property
-        private byte[] _storedEntryNameBytes = null!;
+        private string _storedEntryName;
+        private byte[] _storedEntryNameBytes;
         // only apply to update mode
         private List<ZipGenericExtraField>? _cdUnknownExtraFields;
         private List<ZipGenericExtraField>? _lhUnknownExtraFields;
@@ -186,6 +184,8 @@ namespace System.IO.Compression
                 return _storedEntryName;
             }
 
+            [MemberNotNull(nameof(_storedEntryNameBytes))]
+            [MemberNotNull(nameof(_storedEntryName))]
             private set
             {
                 if (value == null)
@@ -750,21 +750,10 @@ namespace System.IO.Compression
                 }
                 Debug.Assert(_archive.ArchiveReader != null);
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                if (needToUncompress && !needToLoadIntoMemory)
+                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
                 {
-                    if (!ZipLocalFileHeader.TryValidateBlock(_archive.ArchiveReader, this))
-                    {
-                        message = SR.LocalFileHeaderCorrupt;
-                        return false;
-                    }
-                }
-                else
-                {
-                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
-                    {
-                        message = SR.LocalFileHeaderCorrupt;
-                        return false;
-                    }
+                    message = SR.LocalFileHeaderCorrupt;
+                    return false;
                 }
                 // when this property gets called, some duplicated work
                 if (OffsetOfCompressedData + _compressedSize > _archive.ArchiveStream.Length)
@@ -1195,15 +1184,7 @@ namespace System.IO.Compression
             // they must set _everWritten, etc.
             public override void Write(byte[] buffer, int offset, int count)
             {
-                //we can't pass the argument checking down a level
-                if (buffer == null)
-                    throw new ArgumentNullException(nameof(buffer));
-                if (offset < 0)
-                    throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentNeedNonNegative);
-                if (count < 0)
-                    throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentNeedNonNegative);
-                if ((buffer.Length - offset) < count)
-                    throw new ArgumentException(SR.OffsetLengthInvalid);
+                ValidateBufferArguments(buffer, offset, count);
 
                 ThrowIfDisposed();
                 Debug.Assert(CanWrite);

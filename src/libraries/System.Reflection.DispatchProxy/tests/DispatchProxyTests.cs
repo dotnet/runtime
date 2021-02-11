@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -48,6 +47,21 @@ namespace DispatchProxyTests
         {
             TestType_InternalInterfaceService proxy = DispatchProxy.Create<TestType_PublicInterfaceService_Implements_Internal, TestDispatchProxy>();
             Assert.NotNull(proxy);
+
+            // ensure we emit a valid attribute definition
+            Type iactAttributeType = proxy.GetType().Assembly.GetType("System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute");
+            Assert.NotNull(iactAttributeType);
+            ConstructorInfo constructor = iactAttributeType.GetConstructor(new[] { typeof(string) });
+            Assert.NotNull(constructor);
+            PropertyInfo propertyInfo = iactAttributeType.GetProperty("AssemblyName");
+            Assert.NotNull(propertyInfo);
+            Assert.NotNull(propertyInfo.GetMethod);
+
+            string name = "anAssemblyName";
+            object attributeInstance = constructor.Invoke(new object[] { name });
+            Assert.NotNull(attributeInstance);
+            object actualName = propertyInfo.GetMethod.Invoke(attributeInstance, null);
+            Assert.Equal(name, actualName);
         }
 
         [Fact]
@@ -120,6 +134,66 @@ namespace DispatchProxyTests
         public static void Create_Using_BaseType_Without_Default_Ctor_Throws_ArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, NoDefaultCtor_TestDispatchProxy>());
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/47989")]
+        public static void Create_Using_PrivateProxy()
+        {
+            Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_IHelloService>());
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/47989")]
+        public static void Create_Using_PrivateProxyAndInternalService()
+        {
+            Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_InternalInterfaceService>());
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/47989")]
+        public static void Create_Using_PrivateProxyAndInternalServiceWithExternalGenericArgument()
+        {
+            Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_InternalInterfaceWithNonPublicExternalGenericArgument>());
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/47989")]
+        public static void Create_Using_InternalProxy()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_InternalInterfaceService, InternalInvokeProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_ExternalNonPublicService()
+        {
+            Assert.NotNull(DispatchProxy.Create<DispatchProxyTestDependency.TestType_IExternalNonPublicHiService, TestDispatchProxy>());
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/47989")]
+        public static void Create_Using_InternalProxyWithExternalNonPublicBaseType()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_IHelloService, TestType_InternalProxyInternalBaseType>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalServiceImplementingNonPublicExternalService()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_InternalInterfaceImplementsNonPublicExternalType, TestDispatchProxy>());
+        }
+
+        [Fact]
+        public static void Create_Using_InternalServiceWithGenericArgumentBeingNonPublicExternalService()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_InternalInterfaceWithNonPublicExternalGenericArgument, TestDispatchProxy>());
+        }
+
+        [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/47989")]
+        public static void Create_Using_InternalProxyWithBaseTypeImplementingServiceWithgenericArgumentBeingNonPublicExternalService()
+        {
+            Assert.NotNull(DispatchProxy.Create<TestType_IHelloService, TestType_InternalProxyImplementingInterfaceWithGenericArgumentBeingNonPublicExternalType>());
         }
 
         [Fact]
@@ -414,7 +488,7 @@ namespace DispatchProxyTests
             List<MethodInfo> invokedMethods = new List<MethodInfo>();
             object proxy =
                 typeof(DispatchProxy)
-                .GetRuntimeMethod("Create", Array.Empty<Type>()).MakeGenericMethod(ieventServiceTypeInfo.AsType(), typeof(TestDispatchProxy))
+                .GetRuntimeMethod("Create", Type.EmptyTypes).MakeGenericMethod(ieventServiceTypeInfo.AsType(), typeof(TestDispatchProxy))
                 .Invoke(null, null);
             ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
             {

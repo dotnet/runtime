@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -33,7 +32,6 @@ namespace System.Text.Json
             _bytePositionInLine = state._bytePositionInLine;
             _inObject = state._inObject;
             _isNotPrimitive = state._isNotPrimitive;
-            _numberFormat = state._numberFormat;
             _stringHasEscaping = state._stringHasEscaping;
             _trailingCommaBeforeComment = state._trailingCommaBeforeComment;
             _tokenType = state._tokenType;
@@ -1120,10 +1118,8 @@ namespace System.Text.Json
         // https://tools.ietf.org/html/rfc7159#section-6
         private bool TryGetNumberMultiSegment(ReadOnlySpan<byte> data, out int consumed)
         {
-            // TODO: https://github.com/dotnet/corefx/issues/33294
+            // TODO: https://github.com/dotnet/runtime/issues/27837
             Debug.Assert(data.Length > 0);
-
-            _numberFormat = default;
 
             PartialStateForRollback rollBackState = CaptureState();
 
@@ -1208,7 +1204,6 @@ namespace System.Text.Json
 
             Debug.Assert(nextByte == 'E' || nextByte == 'e');
             i++;
-            _numberFormat = JsonConstants.ScientificNotationFormat;
             _bytePositionInLine++;
 
             signResult = ConsumeSignMultiSegment(ref data, ref i, rollBackState);

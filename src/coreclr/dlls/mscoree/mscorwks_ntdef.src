@@ -1,0 +1,29 @@
+; Licensed to the .NET Foundation under one or more agreements.
+; The .NET Foundation licenses this file to you under the MIT license.
+
+EXPORTS
+;
+;   Common exports
+;
+
+
+
+        GetCLRRuntimeHost
+
+        ; dbgshim.dll depends on g_CLREngineMetrics having an ordinal of 2.
+        ; This cannot change, or else CoreCLR debugging will not work.
+        ; See clr\src\DLLS\dbgshim\dbgshim.cpp.
+        g_CLREngineMetrics                                  @2 data
+
+        ; VS depends on CLRJitAttachState having a ordinal of 3. This cannot change.
+        CLRJitAttachState                                   @3 data
+
+        ; Unix hosting API
+        coreclr_create_delegate
+        coreclr_execute_assembly
+        coreclr_initialize
+        coreclr_shutdown
+        coreclr_shutdown_2
+
+        ; Used by profilers
+        MetaDataGetDispenser

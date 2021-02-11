@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -31,7 +30,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCode_TestData))]
-        public void GetHashCode(MethodBuilder method1, MethodBuilder method2, bool expected)
+        public void GetHashCodeTest(MethodBuilder method1, MethodBuilder method2, bool expected)
         {
             Assert.Equal(expected, method1.GetHashCode().Equals(method2.GetHashCode()));
         }

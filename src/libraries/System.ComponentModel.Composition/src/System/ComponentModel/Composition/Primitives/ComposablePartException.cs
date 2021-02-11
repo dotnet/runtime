@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.Serialization;
@@ -16,13 +15,13 @@ namespace System.ComponentModel.Composition.Primitives
     [Serializable]
     public class ComposablePartException : Exception
     {
-        private readonly ICompositionElement _element;
+        private readonly ICompositionElement? _element;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ComposablePartException"/> class.
         /// </summary>
         public ComposablePartException()
-            : this((string)null, (ICompositionElement)null, (Exception)null)
+            : this((string?)null, (ICompositionElement?)null, (Exception?)null)
         {
         }
 
@@ -49,7 +48,7 @@ namespace System.ComponentModel.Composition.Primitives
         /// </exception>
         protected ComposablePartException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _element = (ICompositionElement)info.GetValue("Element", typeof(ICompositionElement));
+            _element = (ICompositionElement?)info.GetValue("Element", typeof(ICompositionElement));
         }
 
         /// <summary>
@@ -61,8 +60,8 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <see cref="ComposablePartException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
-        public ComposablePartException(string message)
-            : this(message, (ICompositionElement)null, (Exception)null)
+        public ComposablePartException(string? message)
+            : this(message, (ICompositionElement?)null, (Exception?)null)
         {
         }
 
@@ -82,8 +81,8 @@ namespace System.ComponentModel.Composition.Primitives
         ///     the <see cref="ComposablePartException.Element"/> property to
         ///     <see langword="null"/>.
         /// </param>
-        public ComposablePartException(string message, ICompositionElement element)
-            : this(message, element, (Exception)null)
+        public ComposablePartException(string? message, ICompositionElement? element)
+            : this(message, element, (Exception?)null)
         {
         }
 
@@ -102,8 +101,8 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <see cref="ComposablePartException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.InnerException"/> property to <see langword="null"/>.
         /// </param>
-        public ComposablePartException(string message, Exception innerException)
-            : this(message, (ICompositionElement)null, innerException)
+        public ComposablePartException(string? message, Exception? innerException)
+            : this(message, (ICompositionElement?)null, innerException)
         {
         }
 
@@ -128,7 +127,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <see cref="ComposablePartException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.InnerException"/> property to <see langword="null"/>.
         /// </param>
-        public ComposablePartException(string message, ICompositionElement element, Exception innerException)
+        public ComposablePartException(string? message, ICompositionElement? element, Exception? innerException)
             : base(message, innerException)
         {
             _element = element;
@@ -141,7 +140,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     The <see cref="ICompositionElement"/> that is the cause of the
         ///     <see cref="ComposablePartException"/>. The default is <see langword="null"/>.
         /// </value>
-        public ICompositionElement Element
+        public ICompositionElement? Element
         {
             get { return _element; }
         }

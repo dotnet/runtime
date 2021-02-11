@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //
 //
@@ -41,6 +41,7 @@ using MonoTests.Common;
 
 namespace MonoTests.System.Runtime.Caching
 {
+    [SkipOnMono("HostFileChangeMonitor is not supported on Browser", TestPlatforms.Browser)]
     public class HostFileChangeMonitorTest
     {
         [Fact]
@@ -83,6 +84,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34497", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void Constructor_MissingFiles_Handler()
         {
             HostFileChangeMonitor monitor;
@@ -130,6 +132,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34497", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Constructor_Duplicates()
         {
             HostFileChangeMonitor monitor;
@@ -197,74 +200,8 @@ namespace MonoTests.System.Runtime.Caching
             }
         }
 
-
         [Fact]
-        [ActiveIssue(25168)]
-        private static void Constructor_Calls_StartMonitoring_Handler()
-        {
-            Tuple<string, string, string, IList<string>> setup = null;
-            try
-            {
-                var tns = new TestNotificationSystem();
-                ObjectCache.Host = tns;
-                setup = SetupMonitoring();
-                var monitor = new HostFileChangeMonitor(setup.Item4);
-
-                Assert.True(tns.StartMonitoringCalled);
-                Assert.Equal(2U, tns.StartMonitoringCallCount);
-            }
-            finally
-            {
-                CleanupMonitoring(setup);
-            }
-        }
-
-        [Fact]
-        [ActiveIssue(25168)]
-        private static void Dispose_Calls_StopMonitoring_Handler()
-        {
-            Tuple<string, string, string, IList<string>> setup = null;
-            try
-            {
-                var tns = new TestNotificationSystem();
-                ObjectCache.Host = tns;
-                setup = SetupMonitoring();
-                var monitor = new HostFileChangeMonitor(setup.Item4);
-                tns.FakeChanged(setup.Item2);
-
-                Assert.True(tns.StopMonitoringCalled);
-                Assert.Equal(2U, tns.StopMonitoringCallCount);
-            }
-            finally
-            {
-                CleanupMonitoring(setup);
-            }
-        }
-
-        [Fact]
-        [ActiveIssue(25168)]
-        private static void Dispose_NullState_NoStopMonitoring_Handler()
-        {
-            Tuple<string, string, string, IList<string>> setup = null;
-            try
-            {
-                var tns = new TestNotificationSystem();
-                tns.UseNullState = true;
-                ObjectCache.Host = tns;
-                setup = SetupMonitoring();
-                var monitor = new HostFileChangeMonitor(setup.Item4);
-                tns.FakeChanged(setup.Item2);
-
-                Assert.False(tns.StopMonitoringCalled);
-                Assert.Equal(0U, tns.StopMonitoringCallCount);
-            }
-            finally
-            {
-                CleanupMonitoring(setup);
-            }
-        }
-
-        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34497", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void UniqueId()
         {
             Tuple<string, string, string, IList<string>> setup = null;

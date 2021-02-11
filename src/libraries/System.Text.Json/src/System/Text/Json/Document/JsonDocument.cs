@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -25,8 +23,8 @@ namespace System.Text.Json
     {
         private ReadOnlyMemory<byte> _utf8Json;
         private MetadataDb _parsedData;
-        private byte[] _extraRentedBytes;
-        private (int, string) _lastIndexAndString = (-1, null);
+        private byte[]? _extraRentedBytes;
+        private (int, string?) _lastIndexAndString = (-1, null);
 
         internal bool IsDisposable { get; }
 
@@ -38,7 +36,7 @@ namespace System.Text.Json
         private JsonDocument(
             ReadOnlyMemory<byte> utf8Json,
             MetadataDb parsedData,
-            byte[] extraRentedBytes,
+            byte[]? extraRentedBytes,
             bool isDisposable = true)
         {
             Debug.Assert(!utf8Json.IsEmpty);
@@ -67,7 +65,7 @@ namespace System.Text.Json
 
             // When "extra rented bytes exist" they contain the document,
             // and thus need to be cleared before being returned.
-            byte[] extraRentedBytes = Interlocked.Exchange(ref _extraRentedBytes, null);
+            byte[]? extraRentedBytes = Interlocked.Exchange(ref _extraRentedBytes, null);
 
             if (extraRentedBytes != null)
             {
@@ -243,14 +241,15 @@ namespace System.Text.Json
             return _utf8Json.Slice(start, end - start);
         }
 
-        internal string GetString(int index, JsonTokenType expectedType)
+        internal string? GetString(int index, JsonTokenType expectedType)
         {
             CheckNotDisposed();
 
-            (int lastIdx, string lastString) = _lastIndexAndString;
+            (int lastIdx, string? lastString) = _lastIndexAndString;
 
             if (lastIdx == index)
             {
+                Debug.Assert(lastString != null);
                 return lastString;
             }
 
@@ -278,6 +277,7 @@ namespace System.Text.Json
                 lastString = JsonReaderHelper.TranscodeHelper(segment);
             }
 
+            Debug.Assert(lastString != null);
             _lastIndexAndString = (index, lastString);
             return lastString;
         }
@@ -288,14 +288,14 @@ namespace System.Text.Json
 
             int matchIndex = isPropertyName ? index - DbRow.Size : index;
 
-            (int lastIdx, string lastString) = _lastIndexAndString;
+            (int lastIdx, string? lastString) = _lastIndexAndString;
 
             if (lastIdx == matchIndex)
             {
                 return otherText.SequenceEqual(lastString.AsSpan());
             }
 
-            byte[] otherUtf8TextArray = null;
+            byte[]? otherUtf8TextArray = null;
 
             int length = checked(otherText.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
             Span<byte> otherUtf8Text = length <= JsonConstants.StackallocThreshold ?
@@ -315,7 +315,7 @@ namespace System.Text.Json
                 Debug.Assert(status == OperationStatus.Done);
                 Debug.Assert(consumed == utf16Text.Length);
 
-                result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName);
+                result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName, shouldUnescape: true);
             }
 
             if (otherUtf8TextArray != null)
@@ -327,7 +327,7 @@ namespace System.Text.Json
             return result;
         }
 
-        internal bool TextEquals(int index, ReadOnlySpan<byte> otherUtf8Text, bool isPropertyName)
+        internal bool TextEquals(int index, ReadOnlySpan<byte> otherUtf8Text, bool isPropertyName, bool shouldUnescape)
         {
             CheckNotDisposed();
 
@@ -342,12 +342,12 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (otherUtf8Text.Length > segment.Length)
+            if (otherUtf8Text.Length > segment.Length || (!shouldUnescape && otherUtf8Text.Length != segment.Length))
             {
                 return false;
             }
 
-            if (row.HasComplexChildren)
+            if (row.HasComplexChildren && shouldUnescape)
             {
                 if (otherUtf8Text.Length < segment.Length / JsonConstants.MaxExpansionFactorWhileEscaping)
                 {
@@ -371,10 +371,10 @@ namespace System.Text.Json
         internal string GetNameOfPropertyValue(int index)
         {
             // The property name is one row before the property value
-            return GetString(index - DbRow.Size, JsonTokenType.PropertyName);
+            return GetString(index - DbRow.Size, JsonTokenType.PropertyName)!;
         }
 
-        internal bool TryGetValue(int index, out byte[] value)
+        internal bool TryGetValue(int index, [NotNullWhen(true)] out byte[]? value)
         {
             CheckNotDisposed();
 
@@ -584,9 +584,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            char standardFormat = row.HasComplexChildren ? JsonConstants.ScientificNotationFormat : default;
-
-            if (Utf8Parser.TryParse(segment, out double tmp, out int bytesConsumed, standardFormat) &&
+            if (Utf8Parser.TryParse(segment, out double tmp, out int bytesConsumed) &&
                 segment.Length == bytesConsumed)
             {
                 value = tmp;
@@ -608,9 +606,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            char standardFormat = row.HasComplexChildren ? JsonConstants.ScientificNotationFormat : default;
-
-            if (Utf8Parser.TryParse(segment, out float tmp, out int bytesConsumed, standardFormat) &&
+            if (Utf8Parser.TryParse(segment, out float tmp, out int bytesConsumed) &&
                 segment.Length == bytesConsumed)
             {
                 value = tmp;
@@ -632,9 +628,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            char standardFormat = row.HasComplexChildren ? JsonConstants.ScientificNotationFormat : default;
-
-            if (Utf8Parser.TryParse(segment, out decimal tmp, out int bytesConsumed, standardFormat) &&
+            if (Utf8Parser.TryParse(segment, out decimal tmp, out int bytesConsumed) &&
                 segment.Length == bytesConsumed)
             {
                 value = tmp;
@@ -1065,21 +1059,6 @@ namespace System.Text.Json
                     else
                     {
                         database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
-
-                        if (tokenType == JsonTokenType.Number)
-                        {
-                            switch (reader._numberFormat)
-                            {
-                                case JsonConstants.ScientificNotationFormat:
-                                    database.SetHasComplexChildren(database.Length - DbRow.Size);
-                                    break;
-                                default:
-                                    Debug.Assert(
-                                        reader._numberFormat == default,
-                                        $"Unhandled numeric format {reader._numberFormat}");
-                                    break;
-                            }
-                        }
                     }
                 }
 
@@ -1087,7 +1066,7 @@ namespace System.Text.Json
             }
 
             Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
-            database.TrimExcess();
+            database.CompleteAllocations();
         }
 
         private void CheckNotDisposed()

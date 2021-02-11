@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.Serialization;
@@ -39,6 +38,18 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));
             return ((Pointer)ptr)._ptr;
         }
+
+        public override unsafe bool Equals(object? obj)
+        {
+            if (obj is Pointer pointer)
+            {
+                return _ptr == pointer._ptr;
+            }
+
+            return false;
+        }
+
+        public override unsafe int GetHashCode() => ((nuint)_ptr).GetHashCode();
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {

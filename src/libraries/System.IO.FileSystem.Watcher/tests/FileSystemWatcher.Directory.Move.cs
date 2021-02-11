@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -10,6 +9,7 @@ using System.Threading;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class Directory_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -31,7 +31,6 @@ namespace System.IO.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
-        [ActiveIssue(42507, TestPlatforms.OSX)]
         public void Directory_Move_Multiple_From_Watched_To_Unwatched_Mac(int filesCount)
         {
             // On Mac, the FSStream aggregate old events caused by the test setup.

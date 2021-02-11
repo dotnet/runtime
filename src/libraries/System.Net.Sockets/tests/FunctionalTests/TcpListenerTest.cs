@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -23,7 +22,7 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("port", () => TcpListener.Create(66000));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -42,6 +41,36 @@ namespace System.Net.Sockets.Tests
             bool ignored = listener.ExclusiveAddressUse; // we can get it while active, just not set it
             listener.Stop();
             Assert.False(listener.Active);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void AllowNatTraversal_NotStarted_SetSuccessfully()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.AllowNatTraversal(true);
+            listener.Start();
+            listener.Stop();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void AllowNatTraversal_Started_ThrowsException()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            Assert.Throws<InvalidOperationException>(() => listener.AllowNatTraversal(true));
+            listener.Stop();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void AllowNatTraversal_StartedAndStopped_SetSuccessfully()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            listener.Stop();
+            listener.AllowNatTraversal(true);
         }
 
         [Fact]
@@ -95,8 +124,11 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentException>("asyncResult", () => listener.EndAcceptTcpClient(Task.CompletedTask));
         }
 
-        [Fact]
-        public async Task Accept_AcceptsPendingSocketOrClient()
+        [Theory]
+        [InlineData(0)] // Sync
+        [InlineData(1)] // Async
+        [InlineData(2)] // APM
+        public async Task Accept_AcceptsPendingSocketOrClient(int mode)
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
             listener.Start();
@@ -104,7 +136,12 @@ namespace System.Net.Sockets.Tests
             using (var client = new TcpClient())
             {
                 Task connectTask = client.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndpoint).Port);
-                using (Socket s = listener.AcceptSocket())
+                using (Socket s = mode switch
+                {
+                    0 => listener.AcceptSocket(),
+                    1 => await listener.AcceptSocketAsync(),
+                    _ => await Task.Factory.FromAsync(listener.BeginAcceptSocket, listener.EndAcceptSocket, null),
+                })
                 {
                     Assert.False(listener.Pending());
                 }
@@ -114,7 +151,12 @@ namespace System.Net.Sockets.Tests
             using (var client = new TcpClient())
             {
                 Task connectTask = client.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndpoint).Port);
-                using (TcpClient c = listener.AcceptTcpClient())
+                using (TcpClient c = mode switch
+                {
+                    0 => listener.AcceptTcpClient(),
+                    1 => await listener.AcceptTcpClientAsync(),
+                    _ => await Task.Factory.FromAsync(listener.BeginAcceptTcpClient, listener.EndAcceptTcpClient, null),
+                })
                 {
                     Assert.False(listener.Pending());
                 }
@@ -208,6 +250,36 @@ namespace System.Net.Sockets.Tests
             listener.Stop();
 
             Assert.True(listener.ExclusiveAddressUse);
+        }
+
+        [Fact]
+        public void EndAcceptSocket_WhenStopped_ThrowsObjectDisposedException()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+
+            IAsyncResult iar = listener.BeginAcceptSocket(callback: null, state: null);
+
+            // Give some time for the underlying OS operation to start:
+            Thread.Sleep(50);
+            listener.Stop();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.EndAcceptSocket(iar));
+        }
+
+        [Fact]
+        public void EndAcceptTcpClient_WhenStopped_ThrowsObjectDisposedException()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+
+            IAsyncResult iar = listener.BeginAcceptTcpClient(callback: null, state: null);
+
+            // Give some time for the underlying OS operation to start:
+            Thread.Sleep(50);
+            listener.Stop();
+
+            Assert.Throws<ObjectDisposedException>(() => listener.EndAcceptTcpClient(iar));
         }
 
         private sealed class DerivedTcpListener : TcpListener

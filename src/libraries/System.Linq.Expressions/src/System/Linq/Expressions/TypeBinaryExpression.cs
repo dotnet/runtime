@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -138,9 +137,9 @@ namespace System.Linq.Expressions
 
         private Expression ReduceConstantTypeEqual()
         {
-            ConstantExpression ce = Expression as ConstantExpression;
+            ConstantExpression? ce = Expression as ConstantExpression;
             //TypeEqual(null, T) always returns false.
-            if (ce.Value == null)
+            if (ce!.Value == null)
             {
                 return Utils.Constant(value: false);
             }

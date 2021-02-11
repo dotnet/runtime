@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "deps_entry.h"
 #include "deps_format.h"
 #include "utils.h"
 #include "trace.h"
+#include "bundle/info.h"
 #include <tuple>
 #include <array>
 #include <iterator>
@@ -16,36 +16,29 @@ const std::array<const pal::char_t*, deps_entry_t::asset_types::count> deps_entr
     _X("runtime"), _X("resources"), _X("native")
 }};
 
-const deps_entry_t& deps_json_t::try_ni(const deps_entry_t& entry) const
+namespace
 {
-    if (m_ni_entries.count(entry.asset.name))
+    pal::string_t get_optional_property(
+        const json_parser_t::value_t& properties,
+        const pal::string_t& key)
     {
-        int index = m_ni_entries.at(entry.asset.name);
-        return m_deps_entries[deps_entry_t::asset_types::runtime][index];
-    }
-    return entry;
-}
-
-pal::string_t deps_json_t::get_optional_property(
-    const json_parser_t::value_t& properties,
-    const pal::string_t& key) const
-{
-    const auto& prop = properties.FindMember(key.c_str());
-    return (prop != properties.MemberEnd() && prop->value.IsString()) ? prop->value.GetString() : _X("");
-}
-
-pal::string_t deps_json_t::get_optional_path(
-    const json_parser_t::value_t& properties,
-    const pal::string_t& key) const
-{
-    pal::string_t path = get_optional_property(properties, key);
-
-    if (path.length() > 0 && _X('/') != DIR_SEPARATOR)
-    {
-        replace_char(&path, _X('/'), DIR_SEPARATOR);
+        const auto& prop = properties.FindMember(key.c_str());
+        return (prop != properties.MemberEnd() && prop->value.IsString()) ? prop->value.GetString() : _X("");
     }
 
-    return path;
+    pal::string_t get_optional_path(
+        const json_parser_t::value_t& properties,
+        const pal::string_t& key)
+    {
+        pal::string_t path = get_optional_property(properties, key);
+
+        if (path.length() > 0 && _X('/') != DIR_SEPARATOR)
+        {
+            replace_char(&path, _X('/'), DIR_SEPARATOR);
+        }
+
+        return path;
+    }
 }
 
 void deps_json_t::reconcile_libraries_with_targets(
@@ -79,11 +72,9 @@ void deps_json_t::reconcile_libraries_with_targets(
             bool rid_specific = false;
             for (const auto& asset : get_assets_fn(library.name.GetString(), i, &rid_specific))
             {
-                bool ni_dll = false;
                 auto asset_name = asset.name;
                 if (ends_with(asset_name, _X(".ni"), false))
                 {
-                    ni_dll = true;
                     asset_name = strip_file_ext(asset_name);
                 }
 
@@ -105,22 +96,19 @@ void deps_json_t::reconcile_libraries_with_targets(
 
                 m_deps_entries[i].push_back(entry);
 
-                if (ni_dll)
+                if (trace::is_enabled())
                 {
-                    m_ni_entries[entry.asset.name] = m_deps_entries
-                        [deps_entry_t::asset_types::runtime].size() - 1;
+                    trace::info(_X("Parsed %s deps entry %d for asset name: %s from %s: %s, library version: %s, relpath: %s, assemblyVersion %s, fileVersion %s"),
+                        deps_entry_t::s_known_asset_types[i],
+                        m_deps_entries[i].size() - 1,
+                        entry.asset.name.c_str(),
+                        entry.library_type.c_str(),
+                        entry.library_name.c_str(),
+                        entry.library_version.c_str(),
+                        entry.asset.relative_path.c_str(),
+                        entry.asset.assembly_version.as_str().c_str(),
+                        entry.asset.file_version.as_str().c_str());
                 }
-
-                trace::info(_X("Parsed %s deps entry %d for asset name: %s from %s: %s, library version: %s, relpath: %s, assemblyVersion %s, fileVersion %s"),
-                    deps_entry_t::s_known_asset_types[i],
-                    m_deps_entries[i].size() - 1,
-                    entry.asset.name.c_str(),
-                    entry.library_type.c_str(),
-                    entry.library_name.c_str(),
-                    entry.library_version.c_str(),
-                    entry.asset.relative_path.c_str(),
-                    entry.asset.assembly_version.as_str().c_str(),
-                    entry.asset.file_version.as_str().c_str());
             }
         }
     }
@@ -438,16 +426,16 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
 {
     m_deps_file = deps_path;
-    m_file_exists = pal::file_exists(deps_path);
+    m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::file_exists(deps_path);
 
-    // If file doesn't exist, then assume parsed.
+    json_parser_t json;
     if (!m_file_exists)
     {
+        // If file doesn't exist, then assume parsed.
         trace::verbose(_X("Could not locate the dependencies manifest file [%s]. Some libraries may fail to resolve."), deps_path.c_str());
         return true;
     }
 
-    json_parser_t json;
     if (!json.parse_file(deps_path))
     {
         return false;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -332,8 +331,7 @@ namespace System
             private DateTime GetNextDateTimeValue(string format)
             {
                 string token = GetNextStringValue();
-                DateTime time;
-                if (!DateTime.TryParseExact(token, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.None, out time))
+                if (!DateTime.TryParseExact(token, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.None, out DateTime time))
                 {
                     throw new SerializationException(SR.Serialization_InvalidData);
                 }
@@ -362,8 +360,7 @@ namespace System
             private int GetNextInt32Value()
             {
                 string token = GetNextStringValue();
-                int value;
-                if (!int.TryParse(token, NumberStyles.AllowLeadingSign /* "[sign]digits" */, CultureInfo.InvariantCulture, out value))
+                if (!int.TryParse(token, NumberStyles.AllowLeadingSign /* "[sign]digits" */, CultureInfo.InvariantCulture, out int value))
                 {
                     throw new SerializationException(SR.Serialization_InvalidData);
                 }

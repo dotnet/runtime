@@ -21,7 +21,7 @@
     HashAlgorithm ::= AlgorithmIdentifier {{ HashFunctions }}
     ECPoint ::= OCTET STRING
   -->
-  <asn:Integer name="Version" backingType="byte" />
+  <asn:Integer name="Version" backingType="int" />
   <asn:AsnType name="FieldID" typeName="System.Security.Cryptography.Asn1.FieldID" />
   <asn:AsnType name="Curve" typeName="System.Security.Cryptography.Asn1.CurveAsn" />
   <asn:OctetString name="Base" />    

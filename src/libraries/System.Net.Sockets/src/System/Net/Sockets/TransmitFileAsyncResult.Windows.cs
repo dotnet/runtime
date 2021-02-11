@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 
@@ -8,15 +7,15 @@ namespace System.Net.Sockets
 {
     internal sealed class TransmitFileAsyncResult : BaseOverlappedAsyncResult
     {
-        private FileStream _fileStream;
+        private FileStream? _fileStream;
         private bool _doDisconnect;
 
-        internal TransmitFileAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback) :
+        internal TransmitFileAsyncResult(Socket socket, object? asyncState, AsyncCallback? asyncCallback) :
             base(socket, asyncState, asyncCallback)
         {
         }
 
-        internal void SetUnmanagedStructures(FileStream fileStream, byte[] preBuffer, byte[] postBuffer, bool doDisconnect)
+        internal void SetUnmanagedStructures(FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer, bool doDisconnect)
         {
             _fileStream = fileStream;
             _doDisconnect = doDisconnect;
@@ -29,7 +28,7 @@ namespace System.Net.Sockets
             if (postBuffer != null && postBuffer.Length > 0)
                 ++buffsNumber;
 
-            object[] objectsToPin = null;
+            object[]? objectsToPin = null;
             if (buffsNumber != 0)
             {
                 objectsToPin = new object[buffsNumber];

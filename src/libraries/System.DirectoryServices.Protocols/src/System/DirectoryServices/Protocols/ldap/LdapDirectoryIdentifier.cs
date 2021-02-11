@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.DirectoryServices.Protocols
 {
     public class LdapDirectoryIdentifier : DirectoryIdentifier
     {
-        private readonly string[] _servers = null;
+        private readonly string[] _servers;
 
         public LdapDirectoryIdentifier(string server) : this(server != null ? new string[] { server } : null, false, false)
         {
@@ -35,7 +34,7 @@ namespace System.DirectoryServices.Protocols
                     if (servers[i] != null)
                     {
                         string trimmedName = servers[i].Trim();
-                        string[] result = trimmedName.Split(new char[] { ' ' });
+                        string[] result = trimmedName.Split(' ');
                         if (result.Length > 1)
                         {
                             throw new ArgumentException(SR.WhiteSpaceServerName);

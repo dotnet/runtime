@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Diagnostics
@@ -21,7 +20,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
         <Diagnostics.DebuggerHiddenAttribute()>
         Friend Shared Sub SetTime(ByVal dtTime As DateTime)
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Dim systime As New NativeTypes.SystemTime
 
             SafeNativeMethods.GetLocalTime(systime)
@@ -33,9 +32,9 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
             If UnsafeNativeMethods.SetLocalTime(systime) = 0 Then
                 If Marshal.GetLastWin32Error() = ERROR_INVALID_PARAMETER Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                    Throw New ArgumentException(SR.Argument_InvalidValue)
                 Else
-                    Throw New SecurityException(GetResourceString(SR.SetLocalTimeFailure))
+                    Throw New SecurityException(SR.SetLocalTimeFailure)
                 End If
             End If
 #Else
@@ -45,7 +44,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
         <Diagnostics.DebuggerHiddenAttribute()>
         Friend Shared Sub SetDate(ByVal vDate As DateTime)
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Dim systime As New NativeTypes.SystemTime
 
             SafeNativeMethods.GetLocalTime(systime)
@@ -56,9 +55,9 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
             If UnsafeNativeMethods.SetLocalTime(systime) = 0 Then
                 If Marshal.GetLastWin32Error() = ERROR_INVALID_PARAMETER Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                    Throw New ArgumentException(SR.Argument_InvalidValue)
                 Else
-                    Throw New SecurityException(GetResourceString(SR.SetLocalDateFailure))
+                    Throw New SecurityException(SR.SetLocalDateFailure)
                 End If
             End If
 #Else

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Sockets
 {
@@ -69,15 +70,8 @@ namespace System.Net.Sockets
         /// </summary>
         /// <param name="obj">The object to compare with this instance</param>
         /// <returns>true if obj is an instance of <see cref="UdpReceiveResult"/> and equals the value of the instance; otherwise, false</returns>
-        public override bool Equals(object obj)
-        {
-            if (!(obj is UdpReceiveResult))
-            {
-                return false;
-            }
-
-            return Equals((UdpReceiveResult)obj);
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is UdpReceiveResult other && Equals(other);
 
         /// <summary>
         /// Returns a value that indicates whether this instance is equal to a specified object

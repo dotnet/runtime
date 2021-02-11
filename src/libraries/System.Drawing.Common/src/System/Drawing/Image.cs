@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -15,12 +14,12 @@ namespace System.Drawing
     /// <summary>
     /// An abstract base class that provides functionality for 'Bitmap', 'Icon', 'Cursor', and 'Metafile' descended classes.
     /// </summary>
+    [Editor("System.Drawing.Design.ImageEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [ImmutableObject(true)]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-#if NETCOREAPP
-    [TypeConverter("System.Drawing.ImageConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [TypeConverter(typeof(ImageConverter))]
     public abstract partial class Image : MarshalByRefObject, IDisposable, ICloneable, ISerializable
     {
         // The signature of this delegate is incorrect. The signature of the corresponding
@@ -36,14 +35,14 @@ namespace System.Drawing
 
         internal IntPtr nativeImage;
 
-        private object _userData;
+        private object? _userData;
 
         // used to work around lack of animated gif encoder... rarely set...
-        private byte[] _rawData;
+        private byte[]? _rawData;
 
         [Localizable(false)]
         [DefaultValue(null)]
-        public object Tag
+        public object? Tag
         {
             get => _userData;
             set => _userData = value;
@@ -55,7 +54,7 @@ namespace System.Drawing
         private protected Image(SerializationInfo info, StreamingContext context)
 #pragma warning restore CA2229
         {
-            byte[] dat = (byte[])info.GetValue("Data", typeof(byte[])); // Do not rename (binary serialization)
+            byte[] dat = (byte[])info.GetValue("Data", typeof(byte[]))!; // Do not rename (binary serialization)
 
             try
             {
@@ -152,6 +151,15 @@ namespace System.Drawing
         /// Saves this <see cref='Image'/> to the specified file.
         /// </summary>
         public void Save(string filename) => Save(filename, RawFormat);
+
+        private static void ThrowIfDirectoryDoesntExist(string filename)
+        {
+            var directoryPart = System.IO.Path.GetDirectoryName(filename);
+            if (!string.IsNullOrEmpty(directoryPart) && !System.IO.Directory.Exists(directoryPart))
+            {
+                throw new DirectoryNotFoundException(SR.Format(SR.TargetDirectoryDoesNotExist, directoryPart, filename));
+            }
+        }
 
         /// <summary>
         /// Gets the width and height of this <see cref='Image'/>.
@@ -328,7 +336,7 @@ namespace System.Drawing
         /// <summary>
         /// Returns information about the codecs used for this <see cref='Image'/>.
         /// </summary>
-        public EncoderParameters GetEncoderParameterList(Guid encoder)
+        public EncoderParameters? GetEncoderParameterList(Guid encoder)
         {
             EncoderParameters p;
 
@@ -460,7 +468,7 @@ namespace System.Drawing
             }
         }
 
-        internal static unsafe void EnsureSave(Image image, string filename, Stream dataStream)
+        internal static unsafe void EnsureSave(Image image, string? filename, Stream? dataStream)
         {
             if (image.RawFormat.Equals(ImageFormat.Gif))
             {
@@ -495,7 +503,7 @@ namespace System.Drawing
                 {
                     try
                     {
-                        Stream created = null;
+                        Stream? created = null;
                         long lastPos = 0;
                         if (dataStream != null)
                         {
@@ -507,7 +515,7 @@ namespace System.Drawing
                         {
                             if (dataStream == null)
                             {
-                                created = dataStream = File.OpenRead(filename);
+                                created = dataStream = File.OpenRead(filename!);
                             }
 
                             image._rawData = new byte[(int)dataStream.Length];
@@ -521,7 +529,7 @@ namespace System.Drawing
                             }
                             else
                             {
-                                dataStream.Position = lastPos;
+                                dataStream!.Position = lastPos;
                             }
                         }
                     }

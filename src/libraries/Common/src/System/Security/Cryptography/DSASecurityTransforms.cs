@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
-using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -26,7 +25,7 @@ namespace System.Security.Cryptography
         {
             public sealed partial class DSASecurityTransforms : DSA
             {
-                private SecKeyPair _keys;
+                private SecKeyPair? _keys;
                 private bool _disposed;
 
                 public DSASecurityTransforms()
@@ -144,7 +143,7 @@ namespace System.Security.Cryptography
                     if (parameters.G.Length != keySize || parameters.Y.Length != keySize)
                         throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedPGY);
 
-                    if (hasPrivateKey && parameters.X.Length != parameters.Q.Length)
+                    if (hasPrivateKey && parameters.X!.Length != parameters.Q.Length)
                         throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedQX);
 
                     if (!(8 * parameters.P.Length).IsLegalSize(LegalKeySizes))
@@ -202,6 +201,9 @@ namespace System.Security.Cryptography
 
                 private static SafeSecKeyRefHandle ImportKey(DSAParameters parameters)
                 {
+                    AsnWriter keyWriter;
+                    bool hasPrivateKey;
+
                     if (parameters.X != null)
                     {
                         // DSAPrivateKey ::= SEQUENCE(
@@ -213,25 +215,44 @@ namespace System.Security.Cryptography
                         //   x INTEGER,
                         // )
 
-                        using (AsnWriter privateKeyWriter = new AsnWriter(AsnEncodingRules.DER))
+                        keyWriter = new AsnWriter(AsnEncodingRules.DER);
+
+                        using (keyWriter.PushSequence())
                         {
-                            privateKeyWriter.PushSequence();
-                            privateKeyWriter.WriteInteger(0);
-                            privateKeyWriter.WriteKeyParameterInteger(parameters.P);
-                            privateKeyWriter.WriteKeyParameterInteger(parameters.Q);
-                            privateKeyWriter.WriteKeyParameterInteger(parameters.G);
-                            privateKeyWriter.WriteKeyParameterInteger(parameters.Y);
-                            privateKeyWriter.WriteKeyParameterInteger(parameters.X);
-                            privateKeyWriter.PopSequence();
-                            return Interop.AppleCrypto.ImportEphemeralKey(privateKeyWriter.EncodeAsSpan(), true);
+                            keyWriter.WriteInteger(0);
+                            keyWriter.WriteKeyParameterInteger(parameters.P);
+                            keyWriter.WriteKeyParameterInteger(parameters.Q);
+                            keyWriter.WriteKeyParameterInteger(parameters.G);
+                            keyWriter.WriteKeyParameterInteger(parameters.Y);
+                            keyWriter.WriteKeyParameterInteger(parameters.X);
                         }
+
+                        hasPrivateKey = true;
                     }
                     else
                     {
-                        using (AsnWriter writer = DSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters))
-                        {
-                            return Interop.AppleCrypto.ImportEphemeralKey(writer.EncodeAsSpan(), false);
-                        }
+                        keyWriter = DSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
+                        hasPrivateKey = false;
+                    }
+
+                    byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
+
+                    if (!keyWriter.TryEncode(rented, out int written))
+                    {
+                        Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                        throw new InvalidOperationException();
+                    }
+
+                    // Explicitly clear the inner buffer
+                    keyWriter.Reset();
+
+                    try
+                    {
+                        return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+                    }
+                    finally
+                    {
+                        CryptoPool.Return(rented, written);
                     }
                 }
 
@@ -275,9 +296,7 @@ namespace System.Security.Cryptography
                     // Since the AppleCrypto implementation is limited to FIPS 186-2, signature field sizes
                     // are always 160 bits / 20 bytes (the size of SHA-1, and the only legal length for Q).
                     byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
-                        derFormatSignature,
-                        0,
-                        derFormatSignature.Length,
+                        derFormatSignature.AsSpan(0, derFormatSignature.Length),
                         fieldSizeBits: 160);
 
                     return ieeeFormatSignature;
@@ -353,7 +372,7 @@ namespace System.Security.Cryptography
                 {
                     ThrowIfDisposed();
 
-                    SecKeyPair current = _keys;
+                    SecKeyPair? current = _keys;
 
                     if (current != null)
                     {
@@ -372,7 +391,7 @@ namespace System.Security.Cryptography
                 {
                     ThrowIfDisposed();
 
-                    SecKeyPair current = _keys;
+                    SecKeyPair? current = _keys;
                     _keys = newKeyPair;
                     current?.Dispose();
 

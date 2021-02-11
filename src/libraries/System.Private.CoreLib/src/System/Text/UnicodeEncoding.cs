@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Don't override IsAlwaysNormalized because it is just a Unicode Transformation and could be confused.
@@ -11,6 +10,7 @@
 #define FASTLOOP
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime.CompilerServices;
@@ -24,10 +24,10 @@ namespace System.Text
         internal static readonly UnicodeEncoding s_bigEndianDefault = new UnicodeEncoding(bigEndian: true, byteOrderMark: true);
         internal static readonly UnicodeEncoding s_littleEndianDefault = new UnicodeEncoding(bigEndian: false, byteOrderMark: true);
 
-        private readonly bool isThrowException = false;
+        private readonly bool isThrowException;
 
-        private readonly bool bigEndian = false;
-        private readonly bool byteOrderMark = false;
+        private readonly bool bigEndian;
+        private readonly bool byteOrderMark;
 
         // Unicode version 2.0 character size in bytes
         public const int CharSize = 2;
@@ -113,7 +113,9 @@ namespace System.Text
         {
             // Validate input
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
 
             fixed (char* pChars = s)
                 return GetByteCount(pChars, s.Length, null);
@@ -405,7 +407,7 @@ namespace System.Text
 #if FASTLOOP
                     // If endianess is backwards then each pair of bytes would be backwards.
                     if ((bigEndian ^ BitConverter.IsLittleEndian) &&
-#if BIT64
+#if TARGET_64BIT
                         (unchecked((long)chars) & 7) == 0 &&
 #else
                         (unchecked((int)chars) & 3) == 0 &&
@@ -692,7 +694,7 @@ namespace System.Text
 #if FASTLOOP
                     // If endianess is backwards then each pair of bytes would be backwards.
                     if ((bigEndian ^ BitConverter.IsLittleEndian) &&
-#if BIT64
+#if TARGET_64BIT
                         (unchecked((long)chars) & 7) == 0 &&
 #else
                         (unchecked((int)chars) & 3) == 0 &&
@@ -1044,11 +1046,11 @@ namespace System.Text
                 // That'll hurt if we're unaligned because we'll always test but never be aligned
 #if FASTLOOP
                 if ((bigEndian ^ BitConverter.IsLittleEndian) &&
-#if BIT64
+#if TARGET_64BIT
                     (unchecked((long)bytes) & 7) == 0 &&
 #else
                     (unchecked((int)bytes) & 3) == 0 &&
-#endif // BIT64
+#endif // TARGET_64BIT
                     lastByte == -1 && lastChar == 0)
                 {
                     // Need -1 to check 2 at a time.  If we have an even #, longBytes will go
@@ -1365,7 +1367,7 @@ namespace System.Text
                 // That'll hurt if we're unaligned because we'll always test but never be aligned
 #if FASTLOOP
                 if ((bigEndian ^ BitConverter.IsLittleEndian) &&
-#if BIT64
+#if TARGET_64BIT
                     (unchecked((long)chars) & 7) == 0 &&
 #else
                     (unchecked((int)chars) & 3) == 0 &&
@@ -1828,7 +1830,7 @@ namespace System.Text
             return (int)charCount;
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is UnicodeEncoding that)
             {
@@ -1855,7 +1857,7 @@ namespace System.Text
         private sealed class Decoder : System.Text.DecoderNLS
         {
             internal int lastByte = -1;
-            internal char lastChar = '\0';
+            internal char lastChar;
 
             public Decoder(UnicodeEncoding encoding) : base(encoding)
             {

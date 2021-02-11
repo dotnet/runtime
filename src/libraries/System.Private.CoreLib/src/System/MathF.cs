@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ===================================================================================================
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
@@ -13,7 +12,11 @@
 ===========================================================*/
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System
 {
@@ -23,6 +26,8 @@ namespace System
 
         public const float PI = 3.14159265f;
 
+        public const float Tau = 6.283185307f;
+
         private const int maxRoundingDigits = 6;
 
         // This table is required for the Round function which can specify the number of digits to round to
@@ -31,6 +36,12 @@ namespace System
         };
 
         private const float singleRoundLimit = 1e8f;
+
+        private const float SCALEB_C1 = 1.7014118E+38f; // 0x1p127f
+
+        private const float SCALEB_C2 = 1.1754944E-38f; // 0x1p-126f
+
+        private const float SCALEB_C3 = 16777216f; // 0x1p24f
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
@@ -88,24 +99,34 @@ namespace System
             return BitConverter.Int32BitsToSingle(bits);
         }
 
-        public static unsafe float CopySign(float x, float y)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float CopySign(float x, float y)
         {
-            // This method is required to work for all inputs,
-            // including NaN, so we operate on the raw bits.
-
-            int xbits = BitConverter.SingleToInt32Bits(x);
-            int ybits = BitConverter.SingleToInt32Bits(y);
-
-            // If the sign bits of x and y are not the same,
-            // flip the sign bit of x and return the new value;
-            // otherwise, just return x
-
-            if ((xbits ^ ybits) < 0)
+            if (Sse.IsSupported || AdvSimd.IsSupported)
             {
-                return BitConverter.Int32BitsToSingle(xbits ^ int.MinValue);
+                return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0f), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return SoftwareFallback(x, y);
             }
 
-            return x;
+            static float SoftwareFallback(float x, float y)
+            {
+                const int signMask = 1 << 31;
+
+                // This method is required to work for all inputs,
+                // including NaN, so we operate on the raw bits.
+                int xbits = BitConverter.SingleToInt32Bits(x);
+                int ybits = BitConverter.SingleToInt32Bits(y);
+
+                // Remove the sign from x, and remove everything but the sign from y
+                xbits &= ~signMask;
+                ybits &= signMask;
+
+                // Simply OR them to get the correct sign
+                return BitConverter.Int32BitsToSingle(xbits | ybits);
+            }
         }
 
         public static float IEEERemainder(float x, float y)
@@ -244,6 +265,56 @@ namespace System
             return y;
         }
 
+        /// <summary>Returns an estimate of the reciprocal of a specified number.</summary>
+        /// <param name="x">The number whose reciprocal is to be estimated.</param>
+        /// <returns>An estimate of the reciprocal of <paramref name="x" />.</returns>
+        /// <remarks>
+        ///    <para>On x86/x64 hardware this may use the <c>RCPSS</c> instruction which has a maximum relative error of <c>1.5 * 2^-12</c>.</para>
+        ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On hardware without specialized support, this may just return <c>1.0 / x</c>.</para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ReciprocalEstimate(float x)
+        {
+            if (Sse.IsSupported)
+            {
+                return Sse.ReciprocalScalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalEstimateScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return 1.0f / x;
+            }
+        }
+
+        /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
+        /// <param name="x">The number whose reciprocal square root is to be estimated.</param>
+        /// <returns>An estimate of the reciprocal square root <paramref name="x" />.</returns>
+        /// <remarks>
+        ///    <para>On x86/x64 hardware this may use the <c>RSQRTSS</c> instruction which has a maximum relative error of <c>1.5 * 2^-12</c>.</para>
+        ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(x)</c>.</para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ReciprocalSqrtEstimate(float x)
+        {
+            if (Sse.IsSupported)
+            {
+                return Sse.ReciprocalSqrtScalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalSquareRootEstimateScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return 1.0f / Sqrt(x);
+            }
+        }
+
         [Intrinsic]
         public static float Round(float x)
         {
@@ -329,7 +400,7 @@ namespace System
         {
             if ((digits < 0) || (digits > maxRoundingDigits))
             {
-                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
+                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits_MathF);
             }
 
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.ToPositiveInfinity)
@@ -358,7 +429,7 @@ namespace System
                     {
                         float fraction = ModF(x, &x);
 
-                        if (Abs(fraction) >= 0.5)
+                        if (Abs(fraction) >= 0.5f)
                         {
                             x += Sign(fraction);
                         }
@@ -405,6 +476,48 @@ namespace System
         {
             ModF(x, &x);
             return x;
+        }
+
+        public static float ScaleB(float x, int n)
+        {
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/scalblnf.c
+            //
+            // Performs the calculation x * 2^n efficiently. It constructs a float from 2^n by building
+            // the correct biased exponent. If n is greater than the maximum exponent (127) or less than
+            // the minimum exponent (-126), adjust x and n to compute correct result.
+
+            float y = x;
+            if (n > 127)
+            {
+                y *= SCALEB_C1;
+                n -= 127;
+                if (n > 127)
+                {
+                    y *= SCALEB_C1;
+                    n -= 127;
+                    if (n > 127)
+                    {
+                        n = 127;
+                    }
+                }
+            }
+            else if (n < -126)
+            {
+                y *= SCALEB_C2 * SCALEB_C3;
+                n += 126 - 24;
+                if (n < -126)
+                {
+                    y *= SCALEB_C2 * SCALEB_C3;
+                    n += 126 - 24;
+                    if (n < -126)
+                    {
+                        n = -126;
+                    }
+                }
+            }
+
+            float u = BitConverter.Int32BitsToSingle(((int)(0x7f + n) << 23));
+            return y * u;
         }
     }
 }

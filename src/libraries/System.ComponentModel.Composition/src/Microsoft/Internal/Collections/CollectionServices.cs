@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Microsoft.Internal.Collections
@@ -31,15 +31,14 @@ namespace Microsoft.Internal.Collections
             return false;
         }
 
-        public static Type GetEnumerableElementType(Type type)
+        public static Type? GetEnumerableElementType(Type type)
         {
             if (type.UnderlyingSystemType == StringType || !IEnumerableType.IsAssignableFrom(type))
             {
                 return null;
             }
 
-            Type closedType;
-            if (ReflectionServices.TryGetGenericInterfaceType(type, IEnumerableOfTType, out closedType))
+            if (ReflectionServices.TryGetGenericInterfaceType(type, IEnumerableOfTType, out Type? closedType))
             {
                 return closedType.GetGenericArguments()[0];
             }
@@ -47,10 +46,9 @@ namespace Microsoft.Internal.Collections
             return null;
         }
 
-        public static Type GetCollectionElementType(Type type)
+        public static Type? GetCollectionElementType(Type type)
         {
-            Type closedType;
-            if (ReflectionServices.TryGetGenericInterfaceType(type, ICollectionOfTType, out closedType))
+            if (ReflectionServices.TryGetGenericInterfaceType(type, ICollectionOfTType, out Type? closedType))
             {
                 return closedType.GetGenericArguments()[0];
             }
@@ -68,14 +66,14 @@ namespace Microsoft.Internal.Collections
             return new ReadOnlyCollection<T>(source.AsArray());
         }
 
-        public static IEnumerable<T> ConcatAllowingNull<T>(this IEnumerable<T> source, IEnumerable<T> second)
+        public static IEnumerable<T>? ConcatAllowingNull<T>(this IEnumerable<T>? source, IEnumerable<T>? second)
         {
-            if (second == null || !second.FastAny())
+            if (second == null || !second.Any())
             {
                 return source;
             }
 
-            if (source == null || !source.FastAny())
+            if (source == null || !source.Any())
             {
                 return second;
             }
@@ -83,7 +81,7 @@ namespace Microsoft.Internal.Collections
             return source.Concat(second);
         }
 
-        public static ICollection<T> ConcatAllowingNull<T>(this ICollection<T> source, ICollection<T> second)
+        public static ICollection<T>? ConcatAllowingNull<T>(this ICollection<T>? source, ICollection<T>? second)
         {
             if (second == null || (second.Count == 0))
             {
@@ -101,7 +99,7 @@ namespace Microsoft.Internal.Collections
             return result;
         }
 
-        public static List<T> FastAppendToListAllowNulls<T>(this List<T> source, IEnumerable<T> second)
+        public static List<T>? FastAppendToListAllowNulls<T>(this List<T>? source, IEnumerable<T>? second)
         {
             if (second == null)
             {
@@ -115,8 +113,7 @@ namespace Microsoft.Internal.Collections
             }
 
             // if the second is List<T>, and contains very few elements there's no need for AddRange
-            List<T> secondAsList = second as List<T>;
-            if (secondAsList != null)
+            if (second is List<T> secondAsList)
             {
                 if (secondAsList.Count == 0)
                 {
@@ -135,7 +132,7 @@ namespace Microsoft.Internal.Collections
 
         }
 
-        private static List<T> FastAppendToListAllowNulls<T>(this List<T> source, T value)
+        private static List<T> FastAppendToListAllowNulls<T>(this List<T>? source, T value)
         {
             if (source == null)
             {
@@ -146,12 +143,14 @@ namespace Microsoft.Internal.Collections
             return source;
         }
 
-        public static List<T> FastAppendToListAllowNulls<T>(
-                        this List<T> source, T value,
-                        IEnumerable<T> second)
+        public static List<T>? FastAppendToListAllowNulls<T>(
+                        this List<T>? source, T? value,
+                        IEnumerable<T>? second)
+            where T : class
         {
             if (second == null)
             {
+                Debug.Assert(value != null);
                 source = source.FastAppendToListAllowNulls(value);
             }
             else
@@ -177,8 +176,7 @@ namespace Microsoft.Internal.Collections
             }
 
             // Cast to ICollection instead of ICollection<T> for performance reasons.
-            ICollection collection = source as ICollection;
-            if (collection != null)
+            if (source is ICollection collection)
             {
                 return collection.Count switch
                 {
@@ -204,24 +202,6 @@ namespace Microsoft.Internal.Collections
             }
         }
 
-        public static bool FastAny<T>(this IEnumerable<T> source)
-        {
-            // Enumerable.Any<T> underneath doesn't cast to ICollection,
-            // like it does with many of the other LINQ methods.
-            // Below is significantly (4x) when mainly working with ICollection
-            // sources and a little slower if working with mainly IEnumerable<T>
-            // sources.
-
-            // Cast to ICollection instead of ICollection<T> for performance reasons.
-            ICollection collection = source as ICollection;
-            if (collection != null)
-            {
-                return collection.Count > 0;
-            }
-
-            return source.Any();
-        }
-
         public static Stack<T> Copy<T>(this Stack<T> stack)
         {
             if (stack == null)
@@ -238,9 +218,7 @@ namespace Microsoft.Internal.Collections
 
         public static T[] AsArray<T>(this IEnumerable<T> enumerable)
         {
-            T[] array = enumerable as T[];
-
-            if (array != null)
+            if (enumerable is T[] array)
             {
                 return array;
             }
@@ -250,9 +228,7 @@ namespace Microsoft.Internal.Collections
 
         public static List<T> AsList<T>(this IEnumerable<T> enumerable)
         {
-            List<T> list = enumerable as List<T>;
-
-            if (list != null)
+            if (enumerable is List<T> list)
             {
                 return list;
             }
@@ -269,7 +245,7 @@ namespace Microsoft.Internal.Collections
 
             for (int i = 0; i < thisArray.Length; i++)
             {
-                if (!thisArray[i].Equals(thatArray[i]))
+                if (!thisArray[i]!.Equals(thatArray[i]))
                 {
                     return false;
                 }
@@ -287,7 +263,7 @@ namespace Microsoft.Internal.Collections
 
             for (int i = 0; i < thisList.Count; i++)
             {
-                if (!thisList[i].Equals(thatList[i]))
+                if (!thisList[i]!.Equals(thatList[i]))
                 {
                     return false;
                 }

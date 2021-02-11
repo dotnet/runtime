@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.ComponentModel.Composition;
@@ -44,7 +43,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void APrerequisiteDependsOnBNone_ShouldNotThrow()
         {
             AssertNotCycle(typeof(APrerequisiteDependsOnBNone),
@@ -59,7 +58,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void APostDependsOnBPost_ShouldNotThrow()
         {
             AssertNotCycle(typeof(APostDependsOnBPost),
@@ -67,7 +66,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void APostDependsOnBNone_ShouldNotThrow()
         {
             AssertNotCycle(typeof(APostDependsOnBNone),
@@ -75,7 +74,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void BPrerequisiteDependsOnANone_ShouldNotThrow()
         {
             AssertNotCycle(typeof(ANone),
@@ -83,7 +82,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void BPostDependsOnANone_ShouldNotThrow()
         {
             AssertNotCycle(typeof(ANone),
@@ -91,7 +90,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void ANoneWithBNone_ShouldNotThrow()
         {
             AssertNotCycle(typeof(ANone),
@@ -99,7 +98,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void PartWithHasPrerequisteImportThatIsInAPostCycle_ShouldNotThrow()
         {
             AssertNotCycle(typeof(PartWithHasPrerequisteImportThatIsInAPostCycle)

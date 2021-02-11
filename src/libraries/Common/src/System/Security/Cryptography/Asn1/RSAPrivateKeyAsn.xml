@@ -27,7 +27,7 @@
     
     Since we don't support otherPrimeInfos (Version=1) just don't map it in.
   -->
-  <asn:Integer name="Version" backingType="byte" />
+  <asn:Integer name="Version" backingType="int" />
   <asn:Integer name="Modulus" />
   <asn:Integer name="PublicExponent" />
   <asn:Integer name="PrivateExponent" />

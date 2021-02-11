@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -19,6 +18,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [InlineData(true, 3)]
         [InlineData(false, 2)]
         public void AddArgument_Type_Bool(bool pinned, int expectedLength)
@@ -31,6 +31,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [InlineData(null, null, 2)]
         [InlineData(new Type[] { typeof(int) }, null, 4)]
         [InlineData(null, new Type[] { typeof(Type) }, 4)]
@@ -45,6 +46,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void AddArgument_NullType_ThrowsArgumentNullException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -56,6 +58,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void AddArgument_SignatureFinished_ThrowsArgumentException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -67,6 +70,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void AddArgument_DifferentCountsForCustomModifiers_ThrowsArgumentException()
         {
             ModuleBuilder module = Helpers.DynamicModule();

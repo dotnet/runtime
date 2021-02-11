@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -38,7 +37,7 @@ namespace System.Linq.Expressions.Interpreter
 
         // Offsets of forward branching instructions targeting this label
         // that need to be updated after we emit the label.
-        private List<int> _forwardBranchFixups;
+        private List<int>? _forwardBranchFixups;
 
         internal int LabelIndex { get; set; } = UnknownIndex;
         internal bool HasRuntimeLabel => LabelIndex != UnknownIndex;

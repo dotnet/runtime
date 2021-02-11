@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
@@ -26,12 +25,12 @@ namespace System.ComponentModel.Composition.Hosting
         /// <summary>
         ///     Occurs when the exports in the <see cref="ExportProvider"/> have changed.
         /// </summary>
-        public event EventHandler<ExportsChangeEventArgs> ExportsChanged;
+        public event EventHandler<ExportsChangeEventArgs>? ExportsChanged;
 
         /// <summary>
         ///     Occurs when the exports in the <see cref="ExportProvider"/> are changing.
         /// </summary>
-        public event EventHandler<ExportsChangeEventArgs> ExportsChanging;
+        public event EventHandler<ExportsChangeEventArgs>? ExportsChanging;
 
         /// <summary>
         ///     Returns all exports that match the conditions of the specified import.
@@ -73,6 +72,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The <see cref="ImportDefinition"/> that defines the conditions of the
         ///     <see cref="Export"/> objects to get.
         /// </param>
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <result>
         ///     An <see cref="IEnumerable{T}"/> of <see cref="Export"/> objects that match
         ///     the conditions defined by <see cref="ImportDefinition"/>, if found; otherwise, an
@@ -94,12 +94,11 @@ namespace System.ComponentModel.Composition.Hosting
         ///         objects that match the conditions of the specified <see cref="ImportDefinition"/>.
         ///     </para>
         /// </exception>
-        public IEnumerable<Export> GetExports(ImportDefinition definition, AtomicComposition atomicComposition)
+        public IEnumerable<Export> GetExports(ImportDefinition definition, AtomicComposition? atomicComposition)
         {
             Requires.NotNull(definition, nameof(definition));
 
-            IEnumerable<Export> exports;
-            ExportCardinalityCheckResult result = TryGetExportsCore(definition, atomicComposition, out exports);
+            ExportCardinalityCheckResult result = TryGetExportsCore(definition, atomicComposition, out IEnumerable<Export>? exports);
             switch (result)
             {
                 case ExportCardinalityCheckResult.Match:
@@ -123,6 +122,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The <see cref="ImportDefinition"/> that defines the conditions of the
         ///     <see cref="Export"/> objects to get.
         /// </param>
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <param name="exports">
         ///     When this method returns, contains an <see cref="IEnumerable{T}"/> of <see cref="Export"/>
         ///     objects that match the conditions defined by <see cref="ImportDefinition"/>, if found;
@@ -141,11 +141,10 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="definition"/> is <see langword="null"/>.
         /// </exception>
-        public bool TryGetExports(ImportDefinition definition, AtomicComposition atomicComposition, out IEnumerable<Export> exports)
+        public bool TryGetExports(ImportDefinition definition, AtomicComposition? atomicComposition, out IEnumerable<Export>? exports)
         {
             Requires.NotNull(definition, nameof(definition));
 
-            exports = null;
             ExportCardinalityCheckResult result = TryGetExportsCore(definition, atomicComposition, out exports);
             return (result == ExportCardinalityCheckResult.Match);
         }
@@ -157,6 +156,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     The <see cref="ImportDefinition"/> that defines the conditions of the
         ///     <see cref="Export"/> objects to return.
         /// </param>
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <result>
         ///     An <see cref="IEnumerable{T}"/> of <see cref="Export"/> objects that match
         ///     the conditions defined by <see cref="ImportDefinition"/>, if found; otherwise, an
@@ -171,7 +171,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///         specified <see cref="ImportDefinition"/>, an <see cref="IEnumerable{T}"/> should be returned.
         ///     </note>
         /// </remarks>
-        protected abstract IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition);
+        protected abstract IEnumerable<Export>? GetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition);
 
         /// <summary>
         ///     Raises the <see cref="ExportsChanged"/> event.
@@ -181,7 +181,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </param>
         protected virtual void OnExportsChanged(ExportsChangeEventArgs e)
         {
-            EventHandler<ExportsChangeEventArgs> changedEvent = ExportsChanged;
+            EventHandler<ExportsChangeEventArgs>? changedEvent = ExportsChanged;
             if (changedEvent != null)
             {
                 CompositionResult result = CompositionServices.TryFire(changedEvent, this, e);
@@ -197,7 +197,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </param>
         protected virtual void OnExportsChanging(ExportsChangeEventArgs e)
         {
-            EventHandler<ExportsChangeEventArgs> changingEvent = ExportsChanging;
+            EventHandler<ExportsChangeEventArgs>? changingEvent = ExportsChanging;
             if (changingEvent != null)
             {
                 CompositionResult result = CompositionServices.TryFire(changingEvent, this, e);
@@ -205,7 +205,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private ExportCardinalityCheckResult TryGetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition, out IEnumerable<Export> exports)
+        private ExportCardinalityCheckResult TryGetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition, out IEnumerable<Export>? exports)
         {
             if (definition == null)
             {

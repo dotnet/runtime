@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Net.Sockets;
@@ -32,7 +31,7 @@ namespace System.Net
         {
             get
             {
-                return ((IPEndPoint)Socket.RemoteEndPoint).Address;
+                return ((IPEndPoint)Socket.RemoteEndPoint!).Address;
             }
         }
 
@@ -175,7 +174,7 @@ namespace System.Net
             _client.Dispose();
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             return _networkStream.BeginRead(buffer, offset, size, callback, state);
         }
@@ -190,7 +189,7 @@ namespace System.Net
             return _networkStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             return _networkStream.BeginWrite(buffer, offset, size, callback, state);
         }

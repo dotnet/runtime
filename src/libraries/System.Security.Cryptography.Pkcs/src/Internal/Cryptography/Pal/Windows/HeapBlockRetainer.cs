@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -14,7 +13,7 @@ using Microsoft.Win32.SafeHandles;
 namespace Internal.Cryptography.Pal.Windows
 {
     //
-    // Some CryptoApis take structure parameters that have a huge number of sub blocks hanging off it. This convenience class lets us
+    // Some CryptoApis take structure parameters that have a huge number of sub blocks attached. This convenience class lets us
     // allocate and preserve a collection of heap blocks in one single object.
     //
     internal sealed class HeapBlockRetainer : IDisposable
@@ -76,7 +75,7 @@ namespace Internal.Cryptography.Pal.Windows
                     h.Dispose();
                 }
             }
-            _blocks = null;
+            _blocks = null!;
         }
 
         private readonly List<object> _mustLive;

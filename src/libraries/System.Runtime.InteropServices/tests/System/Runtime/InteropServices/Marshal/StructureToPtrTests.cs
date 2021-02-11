@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices.Tests.Common;
@@ -11,6 +10,7 @@ namespace System.Runtime.InteropServices.Tests
     public class StructureToPtrTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15102", TestRuntimes.Mono)]
         public void StructureToPtr_ByValBoolArray_Success()
         {
             var structure1 = new StructWithBoolArray()
@@ -90,6 +90,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15103", TestRuntimes.Mono)]
         public void StructureToPtr_ByValDateArray_Success()
         {
             var structure = new StructWithDateArray()
@@ -165,6 +166,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15104", TestRuntimes.Mono)]
         public void StructureToPtr_InvalidLengthByValArrayInStruct_ThrowsArgumentException()
         {
             var structure = new StructWithByValArray

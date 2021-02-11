@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
     public class AuthenticationHeaderValue : ICloneable
     {
-        private string _scheme;
-        private string _parameter;
+        private readonly string _scheme;
+        private readonly string? _parameter;
 
         public string Scheme
         {
@@ -25,7 +25,7 @@ namespace System.Net.Http.Headers
         // Due to Base64 encoding we have two final "=". The value is neither a token nor a quoted-string, so it must
         // be an auth-param according to the RFC definition. But that's also incorrect: auth-param means that we
         // consider the value before the first "=" as "name" and the final "=" as "value".
-        public string Parameter
+        public string? Parameter
         {
             get { return _parameter; }
         }
@@ -35,7 +35,7 @@ namespace System.Net.Http.Headers
         {
         }
 
-        public AuthenticationHeaderValue(string scheme, string parameter)
+        public AuthenticationHeaderValue(string scheme, string? parameter)
         {
             HeaderUtilities.CheckValidToken(scheme, nameof(scheme));
             _scheme = scheme;
@@ -50,10 +50,6 @@ namespace System.Net.Http.Headers
             _parameter = source._parameter;
         }
 
-        private AuthenticationHeaderValue()
-        {
-        }
-
         public override string ToString()
         {
             if (string.IsNullOrEmpty(_parameter))
@@ -63,9 +59,9 @@ namespace System.Net.Http.Headers
             return _scheme + " " + _parameter;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            AuthenticationHeaderValue other = obj as AuthenticationHeaderValue;
+            AuthenticationHeaderValue? other = obj as AuthenticationHeaderValue;
 
             if (other == null)
             {
@@ -96,28 +92,27 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static AuthenticationHeaderValue Parse(string input)
+        public static AuthenticationHeaderValue Parse(string? input)
         {
             int index = 0;
             return (AuthenticationHeaderValue)GenericHeaderParser.SingleValueAuthenticationParser.ParseValue(
                 input, null, ref index);
         }
 
-        public static bool TryParse(string input, out AuthenticationHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out AuthenticationHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.SingleValueAuthenticationParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.SingleValueAuthenticationParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (AuthenticationHeaderValue)output;
+                parsedValue = (AuthenticationHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetAuthenticationLength(string input, int startIndex, out object parsedValue)
+        internal static int GetAuthenticationLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -136,8 +131,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            var result = new AuthenticationHeaderValue();
-            string targetScheme = null;
+            string? targetScheme = null;
             switch (schemeLength)
             {
                 // Avoid allocating a scheme string for the most common cases.
@@ -146,7 +140,8 @@ namespace System.Net.Http.Headers
                 case 4: targetScheme = "NTLM"; break;
                 case 9: targetScheme = "Negotiate"; break;
             }
-            result._scheme = targetScheme != null && string.CompareOrdinal(input, startIndex, targetScheme, 0, schemeLength) == 0 ?
+
+            string scheme = targetScheme != null && string.CompareOrdinal(input, startIndex, targetScheme, 0, schemeLength) == 0 ?
                 targetScheme :
                 input.Substring(startIndex, schemeLength);
 
@@ -157,7 +152,7 @@ namespace System.Net.Http.Headers
             if ((current == input.Length) || (input[current] == ','))
             {
                 // If we only have a scheme followed by whitespace, we're done.
-                parsedValue = result;
+                parsedValue = new AuthenticationHeaderValue(scheme);
                 return current - startIndex;
             }
 
@@ -189,8 +184,8 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            result._parameter = input.Substring(parameterStartIndex, parameterEndIndex - parameterStartIndex + 1);
-            parsedValue = result;
+            string parameter = input.Substring(parameterStartIndex, parameterEndIndex - parameterStartIndex + 1);
+            parsedValue = new AuthenticationHeaderValue(scheme, parameter);
             return current - startIndex;
         }
 

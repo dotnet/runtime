@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <AssemblyName Condition="'$(AssemblyNameSuffix)'!=''">$(AssemblyName)_$(AssemblyNameSuffix)</AssemblyName>
+    <CleanFile>$(AssemblyName).FileListAbsolute.txt</CleanFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AssemblyV2)'=='true'">
+    <OutputPath>$(OutputPath)/v2</OutputPath>
+    <IntermediateOutputPath>$(IntermediateOutputPath)/v2</IntermediateOutputPath>
+    <DefineConstants>$(DefineConstants);ASSEMBLY_V2</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyToLoad.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="AssemblyToLoadDependency.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resource.fr-FR.resx" />
+  </ItemGroup>
+</Project>

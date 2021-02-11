@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -135,7 +134,8 @@ internal static partial class Interop
         private static extern int AppleCryptoNative_SslIsHostnameMatch(
             SafeSslHandle handle,
             SafeCreateHandle cfHostname,
-            SafeCFDateHandle cfValidTime);
+            SafeCFDateHandle cfValidTime,
+            out int pOSStatus);
 
         [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslShutdown")]
         internal static extern int SslShutdown(SafeSslHandle sslHandle);
@@ -299,8 +299,8 @@ internal static partial class Interop
 
         internal static unsafe void SslCtxSetAlpnProtos(SafeSslHandle ctx, List<SslApplicationProtocol> protocols)
         {
-            SafeCreateHandle cfProtocolsRefs = null;
-            SafeCreateHandle[] cfProtocolsArrayRef = null;
+            SafeCreateHandle? cfProtocolsRefs = null;
+            SafeCreateHandle[]? cfProtocolsArrayRef = null;
             try
             {
                 if (protocols.Count == 1 && protocols[0] == SslApplicationProtocol.Http2)
@@ -351,7 +351,7 @@ internal static partial class Interop
             }
         }
 
-        internal static byte[] SslGetAlpnSelected(SafeSslHandle ssl)
+        internal static byte[]? SslGetAlpnSelected(SafeSslHandle ssl)
         {
             SafeCFDataHandle protocol;
 
@@ -371,7 +371,7 @@ internal static partial class Interop
             }
         }
 
-        public static bool SslCheckHostnameMatch(SafeSslHandle handle, string hostName, DateTime notBefore)
+        public static bool SslCheckHostnameMatch(SafeSslHandle handle, string hostName, DateTime notBefore, out int osStatus)
         {
             int result;
             // The IdnMapping converts Unicode input into the IDNA punycode sequence.
@@ -383,12 +383,12 @@ internal static partial class Interop
             // this code could be removed.
             //
             // It was verified as supporting case invariant match as of 10.12.1 (Sierra).
-            string matchName = s_idnMapping.GetAscii(hostName);
+            string matchName = string.IsNullOrEmpty(hostName) ? string.Empty : s_idnMapping.GetAscii(hostName);
 
             using (SafeCFDateHandle cfNotBefore = CoreFoundation.CFDateCreate(notBefore))
             using (SafeCreateHandle cfHostname = CoreFoundation.CFStringCreateWithCString(matchName))
             {
-                result = AppleCryptoNative_SslIsHostnameMatch(handle, cfHostname, cfNotBefore);
+                result = AppleCryptoNative_SslIsHostnameMatch(handle, cfHostname, cfNotBefore, out osStatus);
             }
 
             switch (result)
@@ -398,6 +398,8 @@ internal static partial class Interop
                 case 1:
                     return true;
                 default:
+                    if (NetEventSource.Log.IsEnabled())
+                        NetEventSource.Error(null, $"AppleCryptoNative_SslIsHostnameMatch returned '{result}' for '{hostName}'");
                     Debug.Fail($"AppleCryptoNative_SslIsHostnameMatch returned {result}");
                     throw new SslException();
             }
@@ -409,7 +411,7 @@ namespace System.Net
 {
     internal sealed class SafeSslHandle : SafeHandle
     {
-        internal SafeSslHandle()
+        public SafeSslHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

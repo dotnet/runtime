@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CommonScenarios\XsltcTestBasicFunctionality.cs" />
@@ -13,7 +13,7 @@
     <Compile Include="ApiTests\XsltcApiTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\TestFiles\**\*"
+    <Content Include="..\TestFiles\**\*"
           Link="TestFiles\%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
           Visible="false" />

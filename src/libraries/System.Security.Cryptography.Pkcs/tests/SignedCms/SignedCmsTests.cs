@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
@@ -402,7 +401,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
             SignedCms cms = new SignedCms(SubjectIdentifierType.NoSignature, contentInfo, detached);
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<NullReferenceException>(() => cms.ComputeSignature());
             }
@@ -761,7 +760,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                         IncludeOption = X509IncludeOption.None,
                     });
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<NullReferenceException>(sign);
             }
@@ -1156,7 +1155,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             // CheckSignature doesn't read the public mutable data
             contentInfo.Content[0] ^= 0xFF;
+#if !NETCOREAPP
             contentInfo.ContentType.Value = Oids.Pkcs7Hashed;
+#endif
             cms.CheckSignature(true);
 
             using (X509Certificate2 signerCert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
@@ -1275,10 +1276,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
         [Theory]
         [InlineData(Oids.Pkcs7Data, "0102", false)]
-        // NetFX PKCS7: The length exceeds the payload, so this fails.
+        // .NET Framework PKCS7: The length exceeds the payload, so this fails.
         [InlineData("0.0", "0102", true)]
         [InlineData("0.0", "04020102", false)]
-        // NetFX PKCS7: The payload exceeds the length, so this fails.
+        // .NET Framework PKCS7: The payload exceeds the length, so this fails.
         [InlineData("0.0", "0402010203", true)]
         [InlineData("0.0", "010100", false)]
         [InlineData(Oids.Pkcs7Hashed, "010100", false)]
@@ -1297,7 +1298,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 catch (CryptographicException) when (netfxProblem)
                 {
                     // When no signed or unsigned attributes are present and the signer uses
-                    // IssuerAndSerial as the identifier type, NetFx uses an older PKCS7 encoding
+                    // IssuerAndSerial as the identifier type, .NET Framework uses an older PKCS7 encoding
                     // of the current CMS one.  The older encoding fails on these inputs because of a
                     // difference in PKCS7 vs CMS encoding of values using types other than Pkcs7Data.
                     return;

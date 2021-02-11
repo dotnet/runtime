@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -22,7 +21,7 @@ namespace System.Reflection.Metadata
         }
 
         public BlobContentId(ImmutableArray<byte> id)
-            : this(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(id))
+            : this(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(id)!)
         {
         }
 
@@ -50,7 +49,7 @@ namespace System.Reflection.Metadata
 
         public static BlobContentId FromHash(ImmutableArray<byte> hashCode)
         {
-            return FromHash(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(hashCode));
+            return FromHash(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(hashCode)!);
         }
 
         public static unsafe BlobContentId FromHash(byte[] hashCode)
@@ -94,7 +93,7 @@ namespace System.Reflection.Metadata
         }
 
         public bool Equals(BlobContentId other) => Guid == other.Guid && Stamp == other.Stamp;
-        public override bool Equals(object obj) => obj is BlobContentId && Equals((BlobContentId)obj);
+        public override bool Equals(object? obj) => obj is BlobContentId bcid && Equals(bcid);
         public override int GetHashCode() => Hash.Combine(Stamp, Guid.GetHashCode());
         public static bool operator ==(BlobContentId left, BlobContentId right) => left.Equals(right);
         public static bool operator !=(BlobContentId left, BlobContentId right) => !left.Equals(right);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -10,13 +9,15 @@ namespace System.Text
 {
     public sealed class DecoderExceptionFallback : DecoderFallback
     {
+        internal static readonly DecoderExceptionFallback s_default = new DecoderExceptionFallback();
+
         public override DecoderFallbackBuffer CreateFallbackBuffer() =>
             new DecoderExceptionFallbackBuffer();
 
         // Maximum number of characters that this instance of this fallback could return
         public override int MaxCharCount => 0;
 
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is DecoderExceptionFallback;
 
         public override int GetHashCode() => 879;
@@ -40,7 +41,7 @@ namespace System.Text
         public override int Remaining => 0;
 
         [DoesNotReturn]
-        private void Throw(byte[] bytesUnknown, int index)
+        private static void Throw(byte[] bytesUnknown, int index)
         {
             bytesUnknown ??= Array.Empty<byte>();
 
@@ -73,8 +74,8 @@ namespace System.Text
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class DecoderFallbackException : ArgumentException
     {
-        private readonly byte[]? _bytesUnknown = null;
-        private readonly int _index = 0;
+        private readonly byte[]? _bytesUnknown;
+        private readonly int _index;
 
         public DecoderFallbackException()
             : base(SR.Arg_ArgumentException)

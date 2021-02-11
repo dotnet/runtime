@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Reflection;
@@ -29,16 +28,18 @@ namespace Tests.System.Security
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void GetNormalizedStrongNameHash()
         {
-            // Validating that we match the exact hash the desktop IsolatedStorage implementation would create.
+            // Validating that we match the exact hash the .NET Framework IsolatedStorage implementation would create.
             Assert.Equal(@"10nbq10da2m1qfsisndjihnhqmilalwl", IdentityHelper.GetNormalizedStrongNameHash(GetAssemblyNameWithFullKey()));
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void GetNormalizedUrlHash()
         {
-            // Validating that we match the exact hash the desktop IsolatedStorage implementation would create.
+            // Validating that we match the exact hash the .NET Framework IsolatedStorage implementation would create.
             Uri uri = new Uri(@"file://C:/Users/jerem/Documents/Visual Studio 2015/Projects/LongPath/LongPath/bin/Debug/TestAssembly.EXE");
             Assert.Equal(@"qgeirsoc3cznuklvq5xlalurh1m0unxl", IdentityHelper.GetNormalizedUriHash(uri));
         }

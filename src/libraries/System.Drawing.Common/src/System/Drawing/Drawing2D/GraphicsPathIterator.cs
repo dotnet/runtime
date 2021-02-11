@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -11,7 +10,7 @@ namespace System.Drawing.Drawing2D
 {
     public sealed class GraphicsPathIterator : MarshalByRefObject, IDisposable
     {
-        public GraphicsPathIterator(GraphicsPath path)
+        public GraphicsPathIterator(GraphicsPath? path)
         {
             IntPtr nativeIter = IntPtr.Zero;
             int status = Gdip.GdipCreatePathIter(out nativeIter, new HandleRef(path, (path == null) ? IntPtr.Zero : path._nativePath));

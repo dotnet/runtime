@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.Serialization;
@@ -21,7 +20,7 @@ namespace System.ComponentModel.Composition
         ///     Initializes a new instance of the <see cref="ImportCardinalityMismatchException"/> class.
         /// </summary>
         public ImportCardinalityMismatchException()
-            : this((string)null, (Exception)null)
+            : this((string?)null, (Exception?)null)
         {
         }
 
@@ -34,8 +33,8 @@ namespace System.ComponentModel.Composition
         ///     <see cref="ImportCardinalityMismatchException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
-        public ImportCardinalityMismatchException(string message)
-            : this(message, (Exception)null)
+        public ImportCardinalityMismatchException(string? message)
+            : this(message, (Exception?)null)
         {
         }
 
@@ -54,7 +53,7 @@ namespace System.ComponentModel.Composition
         ///     <see cref="ImportCardinalityMismatchException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.InnerException"/> property to <see langword="null"/>.
         /// </param>
-        public ImportCardinalityMismatchException(string message, Exception innerException)
+        public ImportCardinalityMismatchException(string? message, Exception? innerException)
             : base(message, innerException)
         {
         }

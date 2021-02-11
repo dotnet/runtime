@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -81,7 +80,7 @@ namespace System.Tests
         [InlineData(789, null, false)]
         [InlineData(789, "789", false)]
         [InlineData(789, (long)789, false)]
-        public static void Equals(int i1, object obj, bool expected)
+        public static void EqualsTest(int i1, object obj, bool expected)
         {
             if (obj is int)
             {
@@ -119,7 +118,17 @@ namespace System.Tests
                 yield return new object[] { 0x2468, "x", defaultFormat, "2468" };
                 yield return new object[] { -0x2468, "x", defaultFormat, "ffffdb98" };
                 yield return new object[] { 2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
+
             }
+
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+            yield return new object[] { 32, "C100", invariantFormat, "¤32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32, "P100", invariantFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { 32, "D100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032" };
+            yield return new object[] { 32, "E100", invariantFormat, "3.2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { 32, "F100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32, "N100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32, "X100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
 
             var customFormat = new NumberFormatInfo()
             {
@@ -142,7 +151,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(int i, string format, IFormatProvider provider, string expected)
+        public static void ToStringTest(int i, string format, IFormatProvider provider, string expected)
         {
             // Format is case insensitive
             string upperFormat = format.ToUpperInvariant();
@@ -248,7 +257,7 @@ namespace System.Tests
             yield return new object[] { "$1000", NumberStyles.Currency, currencyFormat, 1000 };
             yield return new object[] { "$   1000", NumberStyles.Currency, currencyFormat, 1000 };
             yield return new object[] { "1000", NumberStyles.Currency, currencyFormat, 1000 };
-            yield return new object[] { "$(1000)", NumberStyles.Currency, currencyFormat, -1000};
+            yield return new object[] { "$(1000)", NumberStyles.Currency, currencyFormat, -1000 };
             yield return new object[] { "($1000)", NumberStyles.Currency, currencyFormat, -1000 };
             yield return new object[] { "$-1000", NumberStyles.Currency, currencyFormat, -1000 };
             yield return new object[] { "-$1000", NumberStyles.Currency, currencyFormat, -1000 };
@@ -825,5 +834,37 @@ namespace System.Tests
                 Assert.Equal(expected.ToLowerInvariant(), new string(actual));
             }
         }
+
+        [Fact]
+        public static void TestNegativeNumberParsingWithHyphen()
+        {
+            // CLDR data for Swedish culture has negative sign U+2212. This test ensure parsing with the hyphen with such cultures will succeed.
+            CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
+            Assert.Equal(-158, int.Parse("-158", NumberStyles.Integer, ci));
+        }
+
+        [Fact]
+        public static void TestParseLenientData()
+        {
+            NumberFormatInfo nfi = new CultureInfo("en-US").NumberFormat;
+
+            string [] negativeSigns = new string []
+            {
+                "\u2012", // Figure Dash
+                "\u207B", // Superscript Minus
+                "\u208B", // Subscript Minus
+                "\u2212", // Minus Sign
+                "\u2796", // Heavy Minus Sign
+                "\uFE63", // Small Hyphen-Minus
+            };
+
+            foreach (string negativeSign in negativeSigns)
+            {
+                nfi.NegativeSign = negativeSign;
+                Assert.Equal(negativeSign, nfi.NegativeSign);
+                Assert.Equal(-9670, int.Parse("-9670", NumberStyles.Integer, nfi));
+            }
+        }
+
     }
 }

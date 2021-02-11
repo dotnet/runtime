@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This is used internally to create best fit behavior as per the original windows best fit behavior.
 //
 
 using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Threading;
-using System.Diagnostics;
 
 namespace System.Text
 {
@@ -17,7 +17,7 @@ namespace System.Text
     {
         // Our variables
         internal BaseCodePageEncoding encoding;
-        internal char[]? arrayBestFit = null;
+        internal char[]? arrayBestFit;
         internal char cReplacement = '?';
 
         internal InternalDecoderBestFitFallback(BaseCodePageEncoding _encoding)
@@ -32,7 +32,7 @@ namespace System.Text
         // Maximum number of characters that this instance of this fallback could return
         public override int MaxCharCount => 1;
 
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is InternalDecoderBestFitFallback that && encoding.CodePage == that.encoding.CodePage;
 
         public override int GetHashCode() => encoding.CodePage;
@@ -41,7 +41,7 @@ namespace System.Text
     internal sealed class InternalDecoderBestFitFallbackBuffer : DecoderFallbackBuffer
     {
         // Our variables
-        internal char cBestFit = '\0';
+        internal char cBestFit;
         internal int iCount = -1;
         internal int iSize;
         private readonly InternalDecoderBestFitFallback _oFallback;

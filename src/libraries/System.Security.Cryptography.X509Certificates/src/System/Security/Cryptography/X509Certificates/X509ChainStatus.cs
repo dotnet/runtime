@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public X509ChainStatusFlags Status { get; set; }
 
+        [AllowNull]
         public string StatusInformation
         {
             get
@@ -25,6 +26,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private string _statusInformation;
+        private string? _statusInformation;
     }
 }

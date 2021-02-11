@@ -1,23 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#if ES_BUILD_STANDALONE
-using Microsoft.Win32;
 using System;
 using System.Diagnostics;
-using System.Security.Permissions;
-using BitOperations = Microsoft.Diagnostics.Tracing.Internal.BitOperations;
-#endif
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
-#if CORECLR && PLATFORM_WINDOWS
-using Internal.Win32;
+
+#if ES_BUILD_STANDALONE
+using Microsoft.Win32;
+using System.Security.Permissions;
 #endif
-#if ES_BUILD_AGAINST_DOTNET_V35
-using Microsoft.Internal;       // for Tuple (can't define alias for open generic types so we "use" the whole namespace)
+
+#if !ES_BUILD_STANDALONE && TARGET_WINDOWS
+using Internal.Win32;
 #endif
 
 #if ES_BUILD_STANDALONE
@@ -85,7 +82,7 @@ namespace System.Diagnostics.Tracing
         private byte m_level;                            // Tracing Level
         private long m_anyKeywordMask;                   // Trace Enable Flags
         private long m_allKeywordMask;                   // Match all keyword
-        private List<SessionInfo>? m_liveSessions;       // current live sessions (Tuple<sessionIdBit, etwSessionId>)
+        private List<SessionInfo>? m_liveSessions;       // current live sessions (KeyValuePair<sessionIdBit, etwSessionId>)
         private bool m_enabled;                          // Enabled flag from Trace callback
         private string? m_providerName;                  // Control name
         private Guid m_providerId;                       // Control Guid
@@ -121,7 +118,7 @@ namespace System.Diagnostics.Tracing
         {
             m_eventProvider = providerType switch
             {
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
                 EventProviderType.ETW => new EtwEventProvider(),
 #endif
 #if FEATURE_PERFTRACING
@@ -149,7 +146,7 @@ namespace System.Diagnostics.Tracing
             status = EventRegister(eventSource, m_etwCallback);
             if (status != 0)
             {
-#if PLATFORM_WINDOWS && !ES_BUILD_STANDALONE
+#if TARGET_WINDOWS && !ES_BUILD_STANDALONE
                 throw new ArgumentException(Interop.Kernel32.GetMessage(unchecked((int)status)));
 #else
                 throw new ArgumentException(Convert.ToString(unchecked((int)status)));
@@ -259,7 +256,7 @@ namespace System.Diagnostics.Tracing
                     m_anyKeywordMask = anyKeyword;
                     m_allKeywordMask = allKeyword;
 
-                    List<Tuple<SessionInfo, bool>> sessionsChanged = GetSessions();
+                    List<KeyValuePair<SessionInfo, bool>> sessionsChanged = GetSessions();
 
                     // The GetSessions() logic was here to support the idea that different ETW sessions
                     // could have different user-defined filters.   (I believe it is currently broken but that is another matter.)
@@ -271,13 +268,13 @@ namespace System.Diagnostics.Tracing
                     // All this session based logic should be reviewed and likely removed, but that is a larger
                     // change that needs more careful staging.
                     if (sessionsChanged.Count == 0)
-                        sessionsChanged.Add(new Tuple<SessionInfo, bool>(new SessionInfo(0, 0), true));
+                        sessionsChanged.Add(new KeyValuePair<SessionInfo, bool>(new SessionInfo(0, 0), true));
 
-                    foreach (Tuple<SessionInfo, bool> session in sessionsChanged)
+                    foreach (KeyValuePair<SessionInfo, bool> session in sessionsChanged)
                     {
-                        int sessionChanged = session.Item1.sessionIdBit;
-                        int etwSessionId = session.Item1.etwSessionId;
-                        bool bEnabling = session.Item2;
+                        int sessionChanged = session.Key.sessionIdBit;
+                        int etwSessionId = session.Key.etwSessionId;
+                        bool bEnabling = session.Value;
 
                         skipFinalOnControllerCommand = true;
                         args = null;                                // reinitialize args for every session...
@@ -288,10 +285,8 @@ namespace System.Diagnostics.Tracing
                             filterData = null;
 
                         // read filter data only when a session is being *added*
-                        byte[]? data;
-                        int keyIndex;
                         if (bEnabling &&
-                            GetDataFromController(etwSessionId, filterData, out command, out data, out keyIndex))
+                            GetDataFromController(etwSessionId, filterData, out command, out byte[]? data, out int keyIndex))
                         {
                             args = new Dictionary<string, string?>(4);
                             // data can be null if the filterArgs had a very large size which failed our sanity check
@@ -379,7 +374,7 @@ namespace System.Diagnostics.Tracing
         /// ETW session that was added or remove, and the bool specifies whether the
         /// session was added or whether it was removed from the set.
         /// </summary>
-        private List<Tuple<SessionInfo, bool>> GetSessions()
+        private List<KeyValuePair<SessionInfo, bool>> GetSessions()
         {
             List<SessionInfo>? liveSessionList = null;
 
@@ -388,7 +383,7 @@ namespace System.Diagnostics.Tracing
                     GetSessionInfoCallback(etwSessionId, matchAllKeywords, ref sessionList),
                 ref liveSessionList);
 
-            List<Tuple<SessionInfo, bool>> changedSessionList = new List<Tuple<SessionInfo, bool>>();
+            List<KeyValuePair<SessionInfo, bool>> changedSessionList = new List<KeyValuePair<SessionInfo, bool>>();
 
             // first look for sessions that have gone away (or have changed)
             // (present in the m_liveSessions but not in the new liveSessionList)
@@ -399,7 +394,7 @@ namespace System.Diagnostics.Tracing
                     int idx;
                     if ((idx = IndexOfSessionInList(liveSessionList, s.etwSessionId)) < 0 ||
                         (liveSessionList![idx].sessionIdBit != s.sessionIdBit))
-                        changedSessionList.Add(Tuple.Create(s, false));
+                        changedSessionList.Add(new KeyValuePair<SessionInfo, bool>(s, false));
                 }
             }
             // next look for sessions that were created since the last callback  (or have changed)
@@ -411,7 +406,7 @@ namespace System.Diagnostics.Tracing
                     int idx;
                     if ((idx = IndexOfSessionInList(m_liveSessions, s.etwSessionId)) < 0 ||
                         (m_liveSessions![idx].sessionIdBit != s.sessionIdBit))
-                        changedSessionList.Add(Tuple.Create(s, true));
+                        changedSessionList.Add(new KeyValuePair<SessionInfo, bool>(s, true));
                 }
             }
 
@@ -467,47 +462,64 @@ namespace System.Diagnostics.Tracing
 
             // However the framework version of EventSource DOES have ES_SESSION_INFO defined and thus
             // does not have this issue.
-#if (PLATFORM_WINDOWS && (ES_SESSION_INFO || !ES_BUILD_STANDALONE))
+#if (TARGET_WINDOWS && (ES_SESSION_INFO || !ES_BUILD_STANDALONE))
             int buffSize = 256;     // An initial guess that probably works most of the time.
-            byte* buffer;
-            while (true)
+            byte* stackSpace = stackalloc byte[buffSize];
+            byte* buffer = stackSpace;
+            try
             {
-                byte* space = stackalloc byte[buffSize];
-                buffer = space;
-                int hr = 0;
-
-                fixed (Guid* provider = &m_providerId)
+                while (true)
                 {
-                    hr = Interop.Advapi32.EnumerateTraceGuidsEx(Interop.Advapi32.TRACE_QUERY_INFO_CLASS.TraceGuidQueryInfo,
-                        provider, sizeof(Guid), buffer, buffSize, out buffSize);
+                    int hr = 0;
+
+                    fixed (Guid* provider = &m_providerId)
+                    {
+                        hr = Interop.Advapi32.EnumerateTraceGuidsEx(Interop.Advapi32.TRACE_QUERY_INFO_CLASS.TraceGuidQueryInfo,
+                            provider, sizeof(Guid), buffer, buffSize, out buffSize);
+                    }
+                    if (hr == 0)
+                        break;
+                    if (hr != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                        return;
+
+                    if (buffer != stackSpace)
+                    {
+                        byte* toFree = buffer;
+                        buffer = null;
+                        Marshal.FreeHGlobal((IntPtr)toFree);
+                    }
+                    buffer = (byte*)Marshal.AllocHGlobal(buffSize);
                 }
-                if (hr == 0)
-                    break;
-                if (hr != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
-                    return;
+
+                var providerInfos = (Interop.Advapi32.TRACE_GUID_INFO*)buffer;
+                var providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&providerInfos[1];
+                int processId = unchecked((int)Interop.Kernel32.GetCurrentProcessId());
+                // iterate over the instances of the EventProvider in all processes
+                for (int i = 0; i < providerInfos->InstanceCount; i++)
+                {
+                    if (providerInstance->Pid == processId)
+                    {
+                        var enabledInfos = (Interop.Advapi32.TRACE_ENABLE_INFO*)&providerInstance[1];
+                        // iterate over the list of active ETW sessions "listening" to the current provider
+                        for (int j = 0; j < providerInstance->EnableCount; j++)
+                            action(enabledInfos[j].LoggerId, enabledInfos[j].MatchAllKeyword, ref sessionList);
+                    }
+                    if (providerInstance->NextOffset == 0)
+                        break;
+                    Debug.Assert(0 <= providerInstance->NextOffset && providerInstance->NextOffset < buffSize);
+                    byte* structBase = (byte*)providerInstance;
+                    providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&structBase[providerInstance->NextOffset];
+                }
             }
-
-            var providerInfos = (Interop.Advapi32.TRACE_GUID_INFO*)buffer;
-            var providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&providerInfos[1];
-            int processId = unchecked((int)Interop.Kernel32.GetCurrentProcessId());
-            // iterate over the instances of the EventProvider in all processes
-            for (int i = 0; i < providerInfos->InstanceCount; i++)
+            finally
             {
-                if (providerInstance->Pid == processId)
+                if (buffer != null && buffer != stackSpace)
                 {
-                    var enabledInfos = (Interop.Advapi32.TRACE_ENABLE_INFO*)&providerInstance[1];
-                    // iterate over the list of active ETW sessions "listening" to the current provider
-                    for (int j = 0; j < providerInstance->EnableCount; j++)
-                        action(enabledInfos[j].LoggerId, enabledInfos[j].MatchAllKeyword, ref sessionList);
+                    Marshal.FreeHGlobal((IntPtr)buffer);
                 }
-                if (providerInstance->NextOffset == 0)
-                    break;
-                Debug.Assert(0 <= providerInstance->NextOffset && providerInstance->NextOffset < buffSize);
-                byte* structBase = (byte*)providerInstance;
-                providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&structBase[providerInstance->NextOffset];
             }
 #else
-#if !ES_BUILD_PCL && PLATFORM_WINDOWS  // TODO command arguments don't work on PCL builds...
+#if TARGET_WINDOWS
             // This code is only used in the Nuget Package Version of EventSource.  because
             // the code above is using APIs baned from UWP apps.
             //
@@ -588,14 +600,18 @@ namespace System.Diagnostics.Tracing
         /// returns an array of bytes representing the data, the index into that byte array where the data
         /// starts, and the command being issued associated with that data.
         /// </summary>
-        private unsafe bool GetDataFromController(int etwSessionId,
+        private
+#if !TARGET_WINDOWS
+        static
+#endif
+        unsafe bool GetDataFromController(int etwSessionId,
             Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
         {
             data = null;
             dataStart = 0;
             if (filterData == null)
             {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN && PLATFORM_WINDOWS)
+#if TARGET_WINDOWS
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
                 if (IntPtr.Size == 8)
                     regKey = @"Software\Wow6432Node" + regKey;
@@ -628,7 +644,7 @@ namespace System.Diagnostics.Tracing
                 if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
                 {
                     data = new byte[filterData->Size];
-                    Marshal.Copy((IntPtr)filterData->Ptr, data, 0, data.Length);
+                    Marshal.Copy((IntPtr)(void*)filterData->Ptr, data, 0, data.Length);
                 }
                 command = (ControllerCommand)filterData->Type;
                 return true;
@@ -1214,12 +1230,12 @@ namespace System.Diagnostics.Tracing
         private void EventUnregister(long registrationHandle) =>
             m_eventProvider.EventUnregister(registrationHandle);
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
         private static bool m_setInformationMissing;
 
         internal unsafe int SetInformation(
             Interop.Advapi32.EVENT_INFO_CLASS eventInfoClass,
-            IntPtr data,
+            void* data,
             uint dataSize)
         {
             int status = Interop.Errors.ERROR_NOT_SUPPORTED;
@@ -1231,8 +1247,8 @@ namespace System.Diagnostics.Tracing
                     status = Interop.Advapi32.EventSetInformation(
                         m_regHandle,
                         eventInfoClass,
-                        (void*)data,
-                        (int)dataSize);
+                        data,
+                        dataSize);
                 }
                 catch (TypeLoadException)
                 {
@@ -1245,7 +1261,7 @@ namespace System.Diagnostics.Tracing
 #endif
     }
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
 
     // A wrapper around the ETW-specific API calls.
     internal sealed class EtwEventProvider : IEventProvider
@@ -1310,7 +1326,8 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte* pMetadata, uint metadataLength)
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
+            uint level, byte* pMetadata, uint metadataLength)
         {
             throw new System.NotSupportedException();
         }
@@ -1351,7 +1368,8 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte* pMetadata, uint metadataLength)
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
+            uint level, byte* pMetadata, uint metadataLength)
         {
             return IntPtr.Zero;
         }

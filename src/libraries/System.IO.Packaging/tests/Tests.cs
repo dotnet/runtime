@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -180,6 +179,26 @@ namespace System.IO.Packaging.Tests
             {
                 Assert.Throws<FileFormatException>(() => Package.Open(ms, FileMode.Open, FileAccess.ReadWrite));
             }
+        }
+
+        [Fact]
+        public void PackageOpen_Open_InvalidContent_Throws()
+        {
+            string temp = GetTempFileInfoWithExtension(".docx").FullName;
+
+            using (FileStream fs = File.OpenWrite(temp))
+            {
+                byte[] bytes = File.ReadAllBytes("plain.docx");
+                bytes.AsSpan(500, 500).Clear(); // garble it
+                fs.Write(bytes, 0, bytes.Length);
+            }
+
+            AssertExtensions.ThrowsAny<InvalidDataException, ArgumentOutOfRangeException>(
+                () => Package.Open(temp, FileMode.Open, FileAccess.Read, FileShare.Read));
+
+            // Package should not have held a stream open on the file; if it did, this operation will
+            // throw IOException (unless the finalizer runs first, and it will not do so deterministically)
+            File.Move(temp, GetTestFilePath());
         }
 
         [Fact]
@@ -3752,7 +3771,6 @@ namespace System.IO.Packaging.Tests
             }
         }
 
-        [ActiveIssue(39075)]
         [Fact]
         [OuterLoop]
         public void VeryLargePart()
@@ -3776,8 +3794,8 @@ namespace System.IO.Packaging.Tests
                 const long SizeInMb = 6 * 1024; // 6GB
                 long totalLength = SizeInMb * buffer.Length;
 
-                // issue on desktop we cannot use FileAccess.Write on a ZipArchive
-                using (Package package = Package.Open(stream, FileMode.Create, PlatformDetection.IsFullFramework ? FileAccess.ReadWrite : FileAccess.Write))
+                // issue on .NET Framework we cannot use FileAccess.Write on a ZipArchive
+                using (Package package = Package.Open(stream, FileMode.Create, PlatformDetection.IsNetFramework ? FileAccess.ReadWrite : FileAccess.Write))
                 {
                     PackagePart part = package.CreatePart(partUri,
                                                           System.Net.Mime.MediaTypeNames.Application.Octet,

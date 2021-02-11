@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2006-2007 Novell, Inc (http://www.novell.com)
 //
@@ -63,7 +63,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void NextSubpath_PathFigureNotClosed_ReturnsExpeced()
         {
@@ -87,7 +87,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void NextSubpath_NullPath_ReturnsExpected()
         {
@@ -98,9 +98,9 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void NextSubpath_FigureNotClosed_ReturnsExpeced()
+        public void NextSubpath_FigureNotClosed_ReturnsExpected()
         {
             using (GraphicsPath gp = new GraphicsPath())
             using (GraphicsPathIterator gpi = new GraphicsPathIterator(gp))
@@ -239,7 +239,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Rewind_Success()
         {
@@ -251,7 +251,6 @@ namespace System.Drawing.Drawing2D.Tests
                 gp.StartFigure();
                 gp.AddLine(20, 21, 22, 23);
                 gp.AddBezier(5, 6, 7, 8, 9, 10, 11, 12);
-                byte[] types = new byte[] { 0, 3, 3, 3, 1, 33, 0, 1 };
 
                 using (GraphicsPathIterator gpi = new GraphicsPathIterator(gp))
                 {

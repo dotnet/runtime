@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -24,7 +23,7 @@ namespace System.Reflection.TypeLoading.Ecma
         public sealed override int MaxStackSize => Block.MaxStack;
         public sealed override int LocalSignatureMetadataToken => Block.LocalSignature.GetToken();
 
-        protected sealed override byte[] ComputeIL() => Block.GetILBytes();
+        protected sealed override byte[]? ComputeIL() => Block.GetILBytes();
 
         public sealed override IList<LocalVariableInfo> LocalVariables
         {
@@ -65,7 +64,7 @@ namespace System.Reflection.TypeLoading.Ecma
                 for (int i = 0; i < count; i++)
                 {
                     EntityHandle catchTypeHandle = regions[i].CatchType;
-                    RoType catchType = catchTypeHandle.IsNil ? null : catchTypeHandle.ResolveTypeDefRefOrSpec(GetEcmaModule(), TypeContext);
+                    RoType? catchType = catchTypeHandle.IsNil ? null : catchTypeHandle.ResolveTypeDefRefOrSpec(GetEcmaModule(), TypeContext);
                     clauses[i] = new RoExceptionHandlingClause(
                         catchType: catchType,
                         flags: regions[i].Kind.ToExceptionHandlingClauseOptions(),

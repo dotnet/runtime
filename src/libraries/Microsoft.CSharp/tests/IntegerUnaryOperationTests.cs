@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -104,7 +103,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [MemberData(nameof(Int64TestOnesComplements))]
         [MemberData(nameof(UInt64TestUnaryPluses))]
         [MemberData(nameof(UInt64TestOnesComplements))]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26798", TargetFrameworkMonikers.NetFramework)]
         public void ConstantExpressions(object x, ExpressionType type, object result, bool shouldSucceedChecked)
         {
             var callsite = GetUnaryOperationCallSite(type, false, true);

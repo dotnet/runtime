@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Threading;
 
 namespace System.Net.Sockets.Tests
 {
@@ -35,6 +36,52 @@ namespace System.Net.Sockets.Tests
                 socket.Blocking = false;
                 socket.Blocking = true;
             }
+        }
+
+        public static (Socket client, Socket server) CreateConnectedSocketPair(bool ipv6 = false, bool dualModeClient = false)
+        {
+            IPAddress serverAddress = ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
+
+            using Socket listener = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(serverAddress, 0));
+            listener.Listen(1);
+
+            IPEndPoint connectTo = (IPEndPoint)listener.LocalEndPoint;
+            if (dualModeClient) connectTo = new IPEndPoint(connectTo.Address.MapToIPv6(), connectTo.Port);
+
+            Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            if (dualModeClient) client.DualMode = true;
+            client.Connect(connectTo);
+            Socket server = listener.Accept();
+
+            return (client, server);
+        }
+
+        // Tries to connect within the provided timeout interval
+        // Useful to speed up "can not connect" assertions on Windows
+        public static bool TryConnect(this Socket socket, EndPoint remoteEndpoint, int millisecondsTimeout)
+        {
+            var mre = new ManualResetEventSlim(false);
+            using var sea = new SocketAsyncEventArgs()
+            {
+                RemoteEndPoint = remoteEndpoint,
+                UserToken = mre
+            };
+
+            sea.Completed += (s, e) => ((ManualResetEventSlim)e.UserToken).Set();
+
+            bool pending = socket.ConnectAsync(sea);
+            if (!pending || mre.Wait(millisecondsTimeout))
+            {
+                mre.Dispose();
+                return sea.SocketError == SocketError.Success;
+            }
+
+            Socket.CancelConnectAsync(sea); // this will close the socket!
+
+            // In case of time-out, ManualResetEventSlim is left undisposed to avoid race conditions,
+            // letting SafeHandle's finalizer to do the cleanup.
+            return false;
         }
     }
 }

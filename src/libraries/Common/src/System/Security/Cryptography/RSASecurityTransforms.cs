@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
     {
         public sealed partial class RSASecurityTransforms : RSA
         {
-            private SecKeyPair _keys;
+            private SecKeyPair? _keys;
 
             public RSASecurityTransforms()
                 : this(2048)
@@ -228,18 +228,16 @@ namespace System.Security.Cryptography
                         {
                             Algorithm = new AlgorithmIdentifierAsn
                             {
-                                Algorithm = new Oid(Oids.Rsa),
+                                Algorithm = Oids.Rsa,
                                 Parameters = AlgorithmIdentifierAsn.ExplicitDerNull,
                             },
                             SubjectPublicKey = firstElement,
                         };
 
-                        using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-                        {
-                            spki.Encode(writer);
-                            ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
-                        }
+                        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                        spki.Encode(writer);
 
+                        ImportSubjectPublicKeyInfo(writer.Encode(), out _);
                         bytesRead = firstElement.Length;
                     }
                 }
@@ -326,7 +324,7 @@ namespace System.Security.Cryptography
                         out bytesWritten);
                 }
 
-                RsaPaddingProcessor processor;
+                RsaPaddingProcessor? processor;
 
                 switch (padding.Mode)
                 {
@@ -558,7 +556,7 @@ namespace System.Security.Cryptography
 
                 ThrowIfDisposed();
 
-                RsaPaddingProcessor processor = null;
+                RsaPaddingProcessor? processor = null;
 
                 if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
@@ -774,7 +772,7 @@ namespace System.Security.Cryptography
 
             private void ThrowIfDisposed()
             {
-                SecKeyPair current = _keys;
+                SecKeyPair? current = _keys;
 
                 if (current != null && current.PublicKey == null)
                 {
@@ -785,7 +783,7 @@ namespace System.Security.Cryptography
             internal SecKeyPair GetKeys()
             {
                 ThrowIfDisposed();
-                SecKeyPair current = _keys;
+                SecKeyPair? current = _keys;
 
                 if (current != null)
                 {
@@ -806,7 +804,7 @@ namespace System.Security.Cryptography
             {
                 ThrowIfDisposed();
 
-                SecKeyPair current = _keys;
+                SecKeyPair? current = _keys;
                 _keys = newKeyPair;
                 current?.Dispose();
 
@@ -818,19 +816,38 @@ namespace System.Security.Cryptography
 
             private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
             {
+                AsnWriter keyWriter;
+                bool hasPrivateKey;
+
                 if (parameters.D != null)
                 {
-                    using (AsnWriter pkcs1PrivateKey = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters))
-                    {
-                        return Interop.AppleCrypto.ImportEphemeralKey(pkcs1PrivateKey.EncodeAsSpan(), true);
-                    }
+                    keyWriter = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters);
+                    hasPrivateKey = true;
                 }
                 else
                 {
-                    using (AsnWriter pkcs1PublicKey = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters))
-                    {
-                        return Interop.AppleCrypto.ImportEphemeralKey(pkcs1PublicKey.EncodeAsSpan(), false);
-                    }
+                    keyWriter = RSAKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
+                    hasPrivateKey = false;
+                }
+
+                byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
+
+                if (!keyWriter.TryEncode(rented, out int written))
+                {
+                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                    throw new InvalidOperationException();
+                }
+
+                // Explicitly clear the inner buffer
+                keyWriter.Reset();
+
+                try
+                {
+                    return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, written);
                 }
             }
 

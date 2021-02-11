@@ -1,19 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
 
 namespace System
 {
@@ -77,7 +69,7 @@ namespace System
 
                 // Decrementing by 1 every time and comparing against zero allows the JIT to produce
                 // better codegen compared to a standard 'for' loop with an incrementing counter.
-                // Requires https://github.com/dotnet/coreclr/issues/7566 to be addressed first
+                // Requires https://github.com/dotnet/runtime/issues/6794 to be addressed first
                 // before we can realize the full benefits of this.
 
                 data = ref Unsafe.AddByteOffset(ref data, 8);
@@ -225,6 +217,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Block(ref uint rp0, ref uint rp1)
         {
+            // Intrinsified in mono interpreter
             uint p0 = rp0;
             uint p1 = rp1;
 

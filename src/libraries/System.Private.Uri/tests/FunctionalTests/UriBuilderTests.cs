@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 using Xunit;
@@ -11,7 +9,7 @@ namespace System.PrivateUri.Tests
 {
     public class UriBuilderTests
     {
-        //This test tests a case where the Core implementation of UriBuilder differs from Desktop Framework UriBuilder.
+        //This test tests a case where the .NET Core implementation of UriBuilder differs from .NET Framework UriBuilder.
         //The Query property will not longer prepend a ? character if the string being assigned is already prepended.
         [Fact]
         public static void TestQuery()
@@ -339,7 +337,7 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(UriBuilder uriBuilder1, UriBuilder uriBuilder2, bool expected)
+        public void EqualsTest(UriBuilder uriBuilder1, UriBuilder uriBuilder2, bool expected)
         {
             Assert.Equal(expected, uriBuilder1.Equals(uriBuilder2));
             if (uriBuilder2 != null)
@@ -374,7 +372,7 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public void ToString(UriBuilder uriBuilder, string expected)
+        public void ToStringTest(UriBuilder uriBuilder, string expected)
         {
             Assert.Equal(expected, uriBuilder.ToString());
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
@@ -9,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Net.Sockets;
 using System.Security;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.IO.Pipes
 {
@@ -25,10 +25,10 @@ namespace System.IO.Pipes
             // immediately if it isn't.  The only delay will be between the time the server
             // has called Bind and Listen, with the latter immediately following the former.
             var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-            SafePipeHandle clientHandle = null;
+            SafePipeHandle? clientHandle = null;
             try
             {
-                socket.Connect(new UnixDomainSocketEndPoint(_normalizedPipePath));
+                socket.Connect(new UnixDomainSocketEndPoint(_normalizedPipePath!));
                 clientHandle = new SafePipeHandle(socket);
                 ConfigureSocket(socket, clientHandle, _direction, 0, 0, _inheritability);
             }
@@ -67,9 +67,9 @@ namespace System.IO.Pipes
             return true;
         }
 
+        [SupportedOSPlatform("windows")]
         public int NumberOfServerInstances
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 CheckPipePropertyOperations();
@@ -113,10 +113,5 @@ namespace System.IO.Pipes
                 throw new UnauthorizedAccessException(SR.UnauthorizedAccess_NotOwnedByCurrentUser);
             }
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
     }
 }

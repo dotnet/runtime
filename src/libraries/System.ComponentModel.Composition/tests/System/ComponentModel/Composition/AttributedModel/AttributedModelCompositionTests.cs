@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Factories;
 using System.ComponentModel.Composition.Hosting;
@@ -257,7 +256,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void MemberExports()
         {
             var exporter = PartFactory.CreateAttributed(new ObjectWithMemberExports());
@@ -294,24 +293,6 @@ namespace System.ComponentModel.Composition.AttributedModel
 
             //  Exported value should have been cached and so it shouldn't change
             Assert.Equal("Value1", container.GetExportedValue<string>("Property"));
-        }
-
-        [Fact]
-        [ActiveIssue(739354)]
-        public void TestExportedValueCachesNullValue()
-        {
-            var container = ContainerFactory.Create();
-            var exporter = new ExportsMutableProperty();
-            exporter.Property = null;
-
-            container.ComposeParts(exporter);
-
-            Assert.Null(container.GetExportedValue<string>("Property"));
-
-            exporter.Property = "Value1";
-
-            //  Exported value should have been cached and so it shouldn't change
-            Assert.Null(container.GetExportedValue<string>("Property"));
         }
 
         public class ExportsMutableProperty

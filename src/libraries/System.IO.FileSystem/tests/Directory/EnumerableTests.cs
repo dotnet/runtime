@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Threading;
@@ -12,7 +11,7 @@ namespace System.IO.Tests
     public class EnumerableTests : FileSystemTest
     {
         [Fact]
-        [ActiveIssue(25613, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24295", TestPlatforms.AnyUnix)]
         public void FileEnumeratorIsThreadSafe()
         {
             string directory = Directory.CreateDirectory(GetTestFilePath()).FullName;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
@@ -87,9 +86,9 @@ namespace System.Net.Sockets.Tests
                 using (Socket server = await acceptTask)
                 using (var receiveSaea = new SocketAsyncEventArgs())
                 {
-                    var tcs = new TaskCompletionSource<bool>();
+                    var tcs = new TaskCompletionSource();
                     receiveSaea.SetBuffer(new byte[1], 0, 1);
-                    receiveSaea.Completed += delegate { tcs.SetResult(true); };
+                    receiveSaea.Completed += delegate { tcs.SetResult(); };
 
                     Assert.True(client.ReceiveAsync(receiveSaea));
                     Assert.Throws<InvalidOperationException>(() => client.ReceiveAsync(receiveSaea)); // already in progress
@@ -130,6 +129,58 @@ namespace System.Net.Sockets.Tests
 
                     var local = new AsyncLocal<int>();
                     local.Value = 42;
+                    int threadId = Environment.CurrentManagedThreadId;
+
+                    var mres = new ManualResetEventSlim();
+                    receiveSaea.SetBuffer(new byte[1], 0, 1);
+                    receiveSaea.Completed += delegate
+                    {
+                        Assert.NotEqual(threadId, Environment.CurrentManagedThreadId);
+                        Assert.Equal(suppressed ? 0 : 42, local.Value);
+                        mres.Set();
+                    };
+
+                    Assert.True(client.ReceiveAsync(receiveSaea));
+                    server.Send(new byte[1]);
+                    mres.Wait();
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ExecutionContext_SocketAsyncEventArgs_Ctor_Default_FlowIsNotSuppressed()
+        {
+            await ExecutionContext_SocketAsyncEventArgs_Ctors(() => new SocketAsyncEventArgs(), false);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ExecutionContext_SocketAsyncEventArgs_Ctor_UnsafeSuppressExecutionContextFlow(bool suppressed)
+        {
+            await ExecutionContext_SocketAsyncEventArgs_Ctors(() => new SocketAsyncEventArgs(suppressed), suppressed);
+        }
+
+        private async Task ExecutionContext_SocketAsyncEventArgs_Ctors(Func<SocketAsyncEventArgs> saeaFactory, bool suppressed)
+        {
+            using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listen.Listen(1);
+
+                Task<Socket> acceptTask = listen.AcceptAsync();
+                await Task.WhenAll(
+                    acceptTask,
+                    client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port)));
+
+                using (Socket server = await acceptTask)
+                using (SocketAsyncEventArgs receiveSaea = saeaFactory())
+                {
+                    var local = new AsyncLocal<int>
+                    {
+                        Value = 42
+                    };
                     int threadId = Environment.CurrentManagedThreadId;
 
                     var mres = new ManualResetEventSlim();
@@ -295,16 +346,16 @@ namespace System.Net.Sockets.Tests
                 using (var receiveSaea = new SocketAsyncEventArgs())
                 {
                     receiveSaea.SetBuffer(new byte[1], 0, 1);
-                    TaskCompletionSource<bool> tcs1 = null, tcs2 = null;
+                    TaskCompletionSource tcs1 = null, tcs2 = null;
 
-                    EventHandler<SocketAsyncEventArgs> handler1 = (_, __) => tcs1.SetResult(true);
-                    EventHandler<SocketAsyncEventArgs> handler2 = (_, __) => tcs2.SetResult(true);
+                    EventHandler<SocketAsyncEventArgs> handler1 = (_, __) => tcs1.SetResult();
+                    EventHandler<SocketAsyncEventArgs> handler2 = (_, __) => tcs2.SetResult();
 
                     receiveSaea.Completed += handler2;
                     receiveSaea.Completed += handler1;
 
-                    tcs1 = new TaskCompletionSource<bool>();
-                    tcs2 = new TaskCompletionSource<bool>();
+                    tcs1 = new TaskCompletionSource();
+                    tcs2 = new TaskCompletionSource();
                     Assert.True(client.ReceiveAsync(receiveSaea));
 
                     server.Send(new byte[1]);
@@ -312,8 +363,8 @@ namespace System.Net.Sockets.Tests
 
                     receiveSaea.Completed -= handler2;
 
-                    tcs1 = new TaskCompletionSource<bool>();
-                    tcs2 = new TaskCompletionSource<bool>();
+                    tcs1 = new TaskCompletionSource();
+                    tcs2 = new TaskCompletionSource();
                     Assert.True(client.ReceiveAsync(receiveSaea));
 
                     server.Send(new byte[1]);
@@ -390,15 +441,15 @@ namespace System.Net.Sockets.Tests
 
                 using (Socket server = await acceptTask)
                 {
-                    TaskCompletionSource<bool> tcs = null;
+                    TaskCompletionSource tcs = null;
 
                     var args = new SocketAsyncEventArgs();
                     args.SetBuffer(new byte[1024], 0, 1024);
-                    args.Completed += (_,__) => tcs.SetResult(true);
+                    args.Completed += (_, __) => tcs.SetResult();
 
                     for (int i = 1; i <= 10; i++)
                     {
-                        tcs = new TaskCompletionSource<bool>();
+                        tcs = new TaskCompletionSource();
                         args.Buffer[0] = (byte)i;
                         args.SetBuffer(0, 1);
                         if (server.SendAsync(args))
@@ -407,7 +458,7 @@ namespace System.Net.Sockets.Tests
                         }
 
                         args.Buffer[0] = 0;
-                        tcs = new TaskCompletionSource<bool>();
+                        tcs = new TaskCompletionSource();
                         if (client.ReceiveAsync(args))
                         {
                             await tcs.Task;
@@ -419,7 +470,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task ReuseSocketAsyncEventArgs_MutateBufferList()
         {
@@ -436,25 +487,25 @@ namespace System.Net.Sockets.Tests
 
                 using (Socket server = await acceptTask)
                 {
-                    TaskCompletionSource<bool> tcs = null;
+                    TaskCompletionSource tcs = null;
 
                     var sendBuffer = new byte[64];
                     var sendBufferList = new List<ArraySegment<byte>>();
                     sendBufferList.Add(new ArraySegment<byte>(sendBuffer, 0, 1));
                     var sendArgs = new SocketAsyncEventArgs();
                     sendArgs.BufferList = sendBufferList;
-                    sendArgs.Completed += (_,__) => tcs.SetResult(true);
+                    sendArgs.Completed += (_, __) => tcs.SetResult();
 
                     var recvBuffer = new byte[64];
                     var recvBufferList = new List<ArraySegment<byte>>();
                     recvBufferList.Add(new ArraySegment<byte>(recvBuffer, 0, 1));
                     var recvArgs = new SocketAsyncEventArgs();
                     recvArgs.BufferList = recvBufferList;
-                    recvArgs.Completed += (_,__) => tcs.SetResult(true);
+                    recvArgs.Completed += (_, __) => tcs.SetResult();
 
                     for (int i = 1; i <= 10; i++)
                     {
-                        tcs = new TaskCompletionSource<bool>();
+                        tcs = new TaskCompletionSource();
 
                         sendBuffer[0] = (byte)i;
                         if (server.SendAsync(sendArgs))
@@ -463,7 +514,7 @@ namespace System.Net.Sockets.Tests
                         }
 
                         recvBuffer[0] = 0;
-                        tcs = new TaskCompletionSource<bool>();
+                        tcs = new TaskCompletionSource();
                         if (client.ReceiveAsync(recvArgs))
                         {
                             await tcs.Task;
@@ -491,7 +542,7 @@ namespace System.Net.Sockets.Tests
             handle.Set();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithReceiveBuffer_Success()
@@ -541,7 +592,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithTooSmallReceiveBuffer_Failure()
@@ -562,7 +613,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithReceiveBuffer_Failure()
@@ -607,8 +658,8 @@ namespace System.Net.Sockets.Tests
                 listener.Listen(1);
                 e.RemoteEndPoint = listener.LocalEndPoint;
 
-                var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                e.Completed += delegate { tcs.SetResult(true); };
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                e.Completed += delegate { tcs.SetResult(); };
 
                 Task<Socket> acceptTask = listener.AcceptAsync();
                 if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, e))

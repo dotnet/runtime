@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -31,6 +30,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void MapType_MemberAttributes_Success()
         {
             var customReflectionContext = new TestCustomReflectionContext();
@@ -45,6 +45,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void MapType_ParameterAttributes_Success()
         {
             var customReflectionContext = new TestCustomReflectionContext();
@@ -62,6 +63,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void MapType_Interface_Throws()
         {
             var customReflectionContext = new TestCustomReflectionContext();

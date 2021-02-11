@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Linq;
@@ -12,8 +11,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
     public struct LazyMemberInfo
     {
         private readonly MemberTypes _memberType;
-        private MemberInfo[] _accessors;
-        private readonly Func<MemberInfo[]> _accessorsCreator;
+        private MemberInfo?[]? _accessors;
+        private readonly Func<MemberInfo[]>? _accessorsCreator;
 
         public LazyMemberInfo(MemberInfo member)
         {
@@ -31,11 +30,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
-                    _accessors = new MemberInfo[] { property.GetGetMethod(true), property.GetSetMethod(true) };
+                    _accessors = new MemberInfo?[] { property.GetGetMethod(true), property.GetSetMethod(true) };
                     break;
                 case MemberTypes.Event:
                     EventInfo event_ = (EventInfo)member;
-                    _accessors = new MemberInfo[] { event_.GetRaiseMethod(true), event_.GetAddMethod(true), event_.GetRemoveMethod(true) };
+                    _accessors = new MemberInfo?[] { event_.GetRaiseMethod(true), event_.GetAddMethod(true), event_.GetRemoveMethod(true) };
                     break;
                 default:
                     _accessors = new MemberInfo[] { member };
@@ -89,7 +88,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 _accessors = accessors;
             }
 
-            return _accessors;
+            return _accessors!;
         }
 
         public override int GetHashCode()
@@ -98,19 +97,18 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {
                 return MemberType.GetHashCode() ^ _accessorsCreator.GetHashCode();
             }
-            else
+
+            if (_accessors != null && _accessors[0] is MemberInfo accessor)
             {
-                if (_accessors == null || _accessors[0] == null)
-                {
-                    throw new Exception(SR.Diagnostic_InternalExceptionMessage);
-                }
-                return MemberType.GetHashCode() ^ _accessors[0].GetHashCode();
+                return MemberType.GetHashCode() ^ accessor.GetHashCode();
             }
+
+            throw new Exception(SR.Diagnostic_InternalExceptionMessage);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            LazyMemberInfo that = (LazyMemberInfo)obj;
+            LazyMemberInfo that = (LazyMemberInfo)obj!;
 
             // Difefrent member types mean different members
             if (_memberType != that._memberType)

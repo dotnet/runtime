@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestExecutionArguments>-unittest</CLRTestExecutionArguments>
+    <GenerateRunScript>false</GenerateRunScript>
+    <IsLongRunningGCTest>true</IsLongRunningGCTest>
+    <CLRTestPriority>0</CLRTestPriority>
+    <DefineConstants>$(DefineConstants);PROJECTK_BUILD</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DetourHelpers.cs" />
+    <Compile Include="LoaderClass.cs" />
+    <Compile Include="ReliabilityConfiguration.cs" />
+    <Compile Include="ReliabilityFramework.cs" />
+    <Compile Include="ReliabilityTest.cs" />
+    <Compile Include="ReliabilityTestSet.cs" />
+    <Compile Include="RFLogging.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\testmix_gc.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\testmix_gc_ci.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <StressTests Include="..\Tests\*.csproj" />
+  </ItemGroup>
+  <Target Name="CompileTests" AfterTargets="AfterBuild">
+    <MSBuild Projects="@(StressTests)" Properties="OutputPath=$(OutDir)\Tests;BuildingForReliabilityFramework=true" />
+  </Target>
+</Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using Xunit;
@@ -8,7 +7,7 @@ using Xunit;
 namespace System.Xml.Tests
 {
     /// <summary>
-    /// This class is not completely testing XmlReader Encoding, it has a regression tests for the fix of the issue: https://github.com/dotnet/corefx/issues/35073
+    /// This class is not completely testing XmlReader Encoding, it has a regression tests for the fix of the issue: https://github.com/dotnet/runtime/issues/28615
     /// which reported due to fuzzy testing. Defect happening while encoding byte array, which includes a surrogate char and an invalid char.
     /// </summary>
     public class ReaderEncodingTests

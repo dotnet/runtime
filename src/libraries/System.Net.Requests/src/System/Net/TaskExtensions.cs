@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading;
@@ -12,8 +11,8 @@ namespace System.Net
     {
         public static TaskCompletionSource<TResult> ToApm<TResult>(
             this Task<TResult> task,
-            AsyncCallback callback,
-            object state)
+            AsyncCallback? callback,
+            object? state)
         {
             TaskCompletionSource<TResult> tcs = new TaskCompletionSource<TResult>(state);
 
@@ -23,7 +22,7 @@ namespace System.Net
 
                 if (completedTask.IsFaulted)
                 {
-                    shouldInvokeCallback = tcs.TrySetException(completedTask.Exception.InnerExceptions);
+                    shouldInvokeCallback = tcs.TrySetException(completedTask.Exception!.InnerExceptions);
                 }
                 else if (completedTask.IsCanceled)
                 {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -19,7 +18,7 @@
  * As would have been the case with fork/execve, a return value of 0 is success and -1
  * is failure; if failure, error information is provided in errno.
  */
-DLLEXPORT int32_t SystemNative_ForkAndExecProcess(
+PALEXPORT int32_t SystemNative_ForkAndExecProcess(
                    const char* filename,   // filename argument to execve
                    char* const argv[],     // argv argument to execve
                    char* const envp[],     // envp argument to execve
@@ -36,16 +35,6 @@ DLLEXPORT int32_t SystemNative_ForkAndExecProcess(
                    int32_t* stdinFd,       // [out] if redirectStdin, the parent's fd for the child's stdin
                    int32_t* stdoutFd,      // [out] if redirectStdout, the parent's fd for the child's stdout
                    int32_t* stderrFd);     // [out] if redirectStderr, the parent's fd for the child's stderr
-
-/**
- * Shim for the popen function.
- */
-DLLEXPORT FILE* SystemNative_POpen(const char* command, const char* type);
-
-/**
- * Shim for the pclose function.
- */
-DLLEXPORT int32_t SystemNative_PClose(FILE* stream);
 
 /************
  * The values below in the header are fixed and correct for managed callers to use forever.
@@ -73,7 +62,9 @@ typedef enum
 
 typedef enum
 {
+    PAL_NONE = 0,
     PAL_SIGKILL = 9, /* kill the specified process */
+    PAL_SIGSTOP = 19,
 } Signals;
 
 /**
@@ -95,28 +86,6 @@ typedef enum
     PAL_LOG_NOTICE = 5,  /* normal but significant condition */
     PAL_LOG_INFO = 6,    /* informational */
     PAL_LOG_DEBUG = 7,   /* debug-level messages */
-    // Facilities
-    PAL_LOG_KERN = (0 << 3),      /* kernel messages */
-    PAL_LOG_USER = (1 << 3),      /* random user-level messages */
-    PAL_LOG_MAIL = (2 << 3),      /* mail system */
-    PAL_LOG_DAEMON = (3 << 3),    /* system daemons */
-    PAL_LOG_AUTH = (4 << 3),      /* authorization messages */
-    PAL_LOG_SYSLOG = (5 << 3),    /* messages generated internally by syslogd */
-    PAL_LOG_LPR = (6 << 3),       /* line printer subsystem */
-    PAL_LOG_NEWS = (7 << 3),      /* network news subsystem */
-    PAL_LOG_UUCP = (8 << 3),      /* UUCP subsystem */
-    PAL_LOG_CRON = (9 << 3),      /* clock daemon */
-    PAL_LOG_AUTHPRIV = (10 << 3), /* authorization messages (private) */
-    PAL_LOG_FTP = (11 << 3),      /* ftp daemon */
-    // Between FTP and Local is reserved for system use
-    PAL_LOG_LOCAL0 = (16 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL1 = (17 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL2 = (18 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL3 = (19 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL4 = (20 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL5 = (21 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL6 = (22 << 3), /* reserved for local use */
-    PAL_LOG_LOCAL7 = (23 << 3), /* reserved for local use */
 } SysLogPriority;
 
 /**
@@ -173,40 +142,40 @@ typedef struct
  * Get the current limit for the specified resource of the current process.
  * Returns 0 on success; returns -1 on failure and errno is set to the error reason.
  */
-DLLEXPORT int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits);
+PALEXPORT int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits);
 
 /**
  * Set the soft and hard limits for the specified resource.
  * Only a super-user can increase hard limits for the current process.
  * Returns 0 on success; returns -1 on failure and errno is set to the error reason.
  */
-DLLEXPORT int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits);
+PALEXPORT int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits);
 
 /**
  * Kill the specified process (or process group) identified by the supplied pid; the
  * process or process group will be killed by the specified signal.
  * Returns 0 on success; on failure, -1 is returned and errno is set
  */
-DLLEXPORT int32_t SystemNative_Kill(int32_t pid, int32_t signal);
+PALEXPORT int32_t SystemNative_Kill(int32_t pid, int32_t signal);
 
 /**
  * Returns the Process ID of the current executing process.
  * This call should never fail
  */
-DLLEXPORT int32_t SystemNative_GetPid(void);
+PALEXPORT int32_t SystemNative_GetPid(void);
 
 /**
  * Returns the sessions ID of the specified process; if 0 is passed in, returns the
  * session ID of the current process.
  * Returns a session ID on success; otherwise, returns -1 and sets errno.
  */
-DLLEXPORT int32_t SystemNative_GetSid(int32_t pid);
+PALEXPORT int32_t SystemNative_GetSid(int32_t pid);
 
 /**
  * Write a message to the system logger, which in turn writes the message to the system console, log files, etc.
  * See man 3 syslog for more info
  */
-DLLEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1);
+PALEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1);
 
 /**
  * Returns the pid of a terminated child without reaping it.
@@ -215,7 +184,7 @@ DLLEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message,
  * 2) if no children are terminated, 0 is returned
  * 3) on error, -1 is returned
  */
-DLLEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void);
+PALEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void);
 
 /**
  * Reaps a terminated child.
@@ -225,7 +194,7 @@ DLLEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void);
  * 3) if the child has not yet terminated, 0 is returned
  * 4) on error, -1 is returned.
  */
-DLLEXPORT int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode);
+PALEXPORT int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode);
 
 /**
  * Gets the configurable limit or variable for system path or file descriptor options.
@@ -233,7 +202,7 @@ DLLEXPORT int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCod
  * Returns the requested variable value on success; if the variable does not have a limit, -1 is returned and errno
  * is not set; otherwise, -1 is returned and errno is set.
  */
-DLLEXPORT int64_t SystemNative_PathConf(const char* path, PathConfName name);
+PALEXPORT int64_t SystemNative_PathConf(const char* path, PathConfName name);
 
 /**
  * Gets the priority (nice value) of a certain execution group.
@@ -242,34 +211,36 @@ DLLEXPORT int64_t SystemNative_PathConf(const char* path, PathConfName name);
  * valid nice value, meaning we can't use that value to determine valid output or not. Errno is set on failure so
  * we need to reset errno before a call and check the value if we get -1.
  */
-DLLEXPORT int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who);
+PALEXPORT int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who);
 
 /**
  * Sets the priority (nice value) of a certain execution group.
  *
  * Returns 0 on success; otherwise, -1 and errno is set.
  */
-DLLEXPORT int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice);
+PALEXPORT int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice);
 
 /**
  * Gets the current working directory of the currently executing process.
  */
-DLLEXPORT char* SystemNative_GetCwd(char* buffer, int32_t bufferSize);
+PALEXPORT char* SystemNative_GetCwd(char* buffer, int32_t bufferSize);
 
-#if HAVE_SCHED_SETAFFINITY
 /**
  * Sets the CPU affinity mask for a specified thread (or the current thread if 0).
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set
  */
-DLLEXPORT int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
-#endif
+PALEXPORT int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
 
-#if HAVE_SCHED_GETAFFINITY
 /**
  * Gets the affinity mask of the specified thread (or the current thread if 0).
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set.
  */
-DLLEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
-#endif
+PALEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
+
+/**
+ * Returns the path of the executable that started the currently executing process, 
+ * resolving symbolic links. The caller is responsible for releasing the buffer.
+ */
+PALEXPORT char* SystemNative_GetProcessPath(void);

@@ -1,7 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,66 +11,105 @@ namespace Microsoft.NET.HostModel.Bundle
     /// <summary>
     ///  BundleManifest is a description of the contents of a bundle file.
     ///  This class handles creation and consumption of bundle-manifests.
-    ///  
+    ///
     ///  Here is the description of the Bundle Layout:
     ///  _______________________________________________
-    ///  AppHost 
+    ///  AppHost
     ///
     ///
     /// ------------Embedded Files ---------------------
     /// The embedded files including the app, its
-    /// configuration files, dependencies, and 
+    /// configuration files, dependencies, and
     /// possibly the runtime.
-    /// 
-    /// 
-    /// 
-    /// 
-    /// 
-    /// 
+    ///
+    ///
+    ///
+    ///
+    ///
+    ///
     ///
     /// ------------ Bundle Header -------------
     ///     MajorVersion
     ///     MinorVersion
     ///     NumEmbeddedFiles
     ///     ExtractionID
-    ///     
+    ///     DepsJson Location [Version 2+]
+    ///        Offset
+    ///        Size
+    ///     RuntimeConfigJson Location [Version 2+]
+    ///        Offset
+    ///        Size
+    ///     Flags [Version 2+]
     /// - - - - - - Manifest Entries - - - - - - - - - - -
     ///     Series of FileEntries (for each embedded file)
     ///     [File Type, Name, Offset, Size information]
-    ///     
-    ///     
-    /// 
+    ///
+    ///
+    ///
     /// _________________________________________________
     /// </summary>
     public class Manifest
     {
-        public const uint MajorVersion = 1;
-        public const uint MinorVersion = 0;
+        // NetcoreApp3CompatMode flag is set on a .net5 app,
+        // which chooses to build single-file apps in .netcore3.x compat mode,
+        // by constructing the bundler with BundleAllConent option.
+        // This mode is expected to be deprecated in future versions of .NET.
+        [Flags]
+        private enum HeaderFlags : ulong
+        {
+            None = 0,
+            NetcoreApp3CompatMode = 1
+        }
 
-        // Bundle ID is a string that is used to uniquely 
+        // Bundle ID is a string that is used to uniquely
         // identify this bundle. It is choosen to be compatible
         // with path-names so that the AppHost can use it in
         // extraction path.
         public readonly string BundleID;
 
+        public const uint CurrentMajorVersion = 2;
+        public readonly uint DesiredMajorVersion;
+        // The Minor version is currently unused, and is always zero
+        public const uint MinorVersion = 0;
+
+        public static string CurrentVersion => $"{CurrentMajorVersion}.{MinorVersion}";
+        public string DesiredVersion => $"{DesiredMajorVersion}.{MinorVersion}";
+
+        private FileEntry DepsJsonEntry;
+        private FileEntry RuntimeConfigJsonEntry;
+        private HeaderFlags Flags;
+
         public List<FileEntry> Files;
 
-        public Manifest()
+        public Manifest(uint desiredVersion, bool netcoreapp3CompatMode = false)
         {
+            DesiredMajorVersion = desiredVersion;
             Files = new List<FileEntry>();
             BundleID = Path.GetRandomFileName();
-        }
-
-        public Manifest(string bundleID)
-        {
-            Files = new List<FileEntry>();
-            BundleID = bundleID;
+            Flags = (netcoreapp3CompatMode) ? HeaderFlags.NetcoreApp3CompatMode: HeaderFlags.None;
         }
 
         public FileEntry AddEntry(FileType type, string relativePath, long offset, long size)
         {
             FileEntry entry = new FileEntry(type, relativePath, offset, size);
             Files.Add(entry);
+
+            switch (entry.Type)
+            {
+                case FileType.DepsJson:
+                    DepsJsonEntry = entry;
+                    break;
+                case FileType.RuntimeConfigJson:
+                    RuntimeConfigJsonEntry = entry;
+                    break;
+
+                case FileType.Assembly:
+                    break;
+
+                default:
+                    break;
+            }
+
             return entry;
         }
 
@@ -79,10 +118,21 @@ namespace Microsoft.NET.HostModel.Bundle
             long startOffset = writer.BaseStream.Position;
 
             // Write the bundle header
-            writer.Write(MajorVersion);
+            writer.Write(DesiredMajorVersion);
             writer.Write(MinorVersion);
-            writer.Write(Files.Count());
+            writer.Write(Files.Count);
             writer.Write(BundleID);
+
+            if (DesiredMajorVersion == 2)
+            {
+                writer.Write((DepsJsonEntry != null) ? DepsJsonEntry.Offset : 0);
+                writer.Write((DepsJsonEntry != null) ? DepsJsonEntry.Size : 0);
+
+                writer.Write((RuntimeConfigJsonEntry != null) ? RuntimeConfigJsonEntry.Offset : 0);
+                writer.Write((RuntimeConfigJsonEntry != null) ? RuntimeConfigJsonEntry.Size : 0);
+
+                writer.Write((ulong)Flags);
+            }
 
             // Write the manifest entries
             foreach (FileEntry entry in Files)
@@ -93,38 +143,9 @@ namespace Microsoft.NET.HostModel.Bundle
             return startOffset;
         }
 
-        public static Manifest Read(BinaryReader reader, long headerOffset)
+        public bool Contains(string relativePath)
         {
-            // Read the bundle header
-            reader.BaseStream.Position = headerOffset;
-            uint majorVersion = reader.ReadUInt32();
-            uint minorVersion = reader.ReadUInt32();
-            int fileCount = reader.ReadInt32();
-            string bundleID = reader.ReadString();
-
-            bool isCompatible = 
-                (majorVersion < MajorVersion) ||
-                (majorVersion == MajorVersion && minorVersion <= MinorVersion);
-
-            if (!isCompatible)
-            {
-                throw new BundleException("Extraction failed: Invalid Version");
-            }
-
-            // Read the manifest entries
-            Manifest manifest = new Manifest(bundleID);
-            for (long i = 0; i < fileCount; i++)
-            {
-                manifest.Files.Add(FileEntry.Read(reader));
-            }
-
-            if (manifest.Files.GroupBy(file => file.RelativePath).Where(g => g.Count() > 1).Any())
-            {
-                throw new BundleException("Extraction failed: Found multiple entries with the same bundle-relative-path");
-            }
-
-            return manifest;
+            return Files.Any(entry => relativePath.Equals(entry.RelativePath));
         }
     }
 }
-

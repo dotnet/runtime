@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -198,7 +197,7 @@ namespace System.Collections.Concurrent
         /// <remarks>For <see cref="ConcurrentQueue{T}"/>, this operation will attempt to remove the object
         /// from the beginning of the <see cref="ConcurrentQueue{T}"/>.
         /// </remarks>
-        bool IProducerConsumerCollection<T>.TryTake(out T item) => TryDequeue(out item);
+        bool IProducerConsumerCollection<T>.TryTake([MaybeNullWhen(false)] out T item) => TryDequeue(out item);
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="ConcurrentQueue{T}"/> is empty.
@@ -222,9 +221,7 @@ namespace System.Collections.Concurrent
         public T[] ToArray()
         {
             // Snap the current contents for enumeration.
-            ConcurrentQueueSegment<T> head, tail;
-            int headHead, tailTail;
-            SnapForObservation(out head, out headHead, out tail, out tailTail);
+            SnapForObservation(out ConcurrentQueueSegment<T> head, out int headHead, out ConcurrentQueueSegment<T> tail, out int tailTail);
 
             // Count the number of items in that snapped set, and use it to allocate an
             // array of the right size.
@@ -450,9 +447,7 @@ namespace System.Collections.Concurrent
             }
 
             // Snap for enumeration
-            ConcurrentQueueSegment<T> head, tail;
-            int headHead, tailTail;
-            SnapForObservation(out head, out headHead, out tail, out tailTail);
+            SnapForObservation(out ConcurrentQueueSegment<T> head, out int headHead, out ConcurrentQueueSegment<T> tail, out int tailTail);
 
             // Get the number of items to be enumerated
             long count = GetCount(head, headHead, tail, tailTail);
@@ -484,9 +479,7 @@ namespace System.Collections.Concurrent
         /// </remarks>
         public IEnumerator<T> GetEnumerator()
         {
-            ConcurrentQueueSegment<T> head, tail;
-            int headHead, tailTail;
-            SnapForObservation(out head, out headHead, out tail, out tailTail);
+            SnapForObservation(out ConcurrentQueueSegment<T> head, out int headHead, out ConcurrentQueueSegment<T> tail, out int tailTail);
             return Enumerate(head, headHead, tail, tailTail);
         }
 
@@ -547,7 +540,7 @@ namespace System.Collections.Concurrent
             return segment._slots[i].Item!;
         }
 
-        private IEnumerator<T> Enumerate(ConcurrentQueueSegment<T> head, int headHead, ConcurrentQueueSegment<T> tail, int tailTail)
+        private static IEnumerator<T> Enumerate(ConcurrentQueueSegment<T> head, int headHead, ConcurrentQueueSegment<T> tail, int tailTail)
         {
             Debug.Assert(head._preservedForObservation);
             Debug.Assert(head._frozenForEnqueues);
@@ -673,9 +666,28 @@ namespace System.Collections.Concurrent
         /// true if an element was removed and returned from the beginning of the
         /// <see cref="ConcurrentQueue{T}"/> successfully; otherwise, false.
         /// </returns>
-        public bool TryDequeue([MaybeNullWhen(false)] out T result) =>
-            _head.TryDequeue(out result) || // fast-path that operates just on the head segment
-            TryDequeueSlow(out result); // slow path that needs to fix up segments
+        public bool TryDequeue([MaybeNullWhen(false)] out T result)
+        {
+            // Get the current head
+            ConcurrentQueueSegment<T> head = _head;
+
+            // Try to take.  If we're successful, we're done.
+            if (head.TryDequeue(out result))
+            {
+                return true;
+            }
+
+            // Check to see whether this segment is the last. If it is, we can consider
+            // this to be a moment-in-time empty condition (even though between the TryDequeue
+            // check and this check, another item could have arrived).
+            if (head._nextSegment == null)
+            {
+                result = default!;
+                return false;
+            }
+
+            return TryDequeueSlow(out result); // slow path that needs to fix up segments
+        }
 
         /// <summary>Tries to dequeue an item, removing empty segments as needed.</summary>
         private bool TryDequeueSlow([MaybeNullWhen(false)] out T item)
@@ -696,7 +708,7 @@ namespace System.Collections.Concurrent
                 // check and this check, another item could have arrived).
                 if (head._nextSegment == null)
                 {
-                    item = default!;
+                    item = default;
                     return false;
                 }
 
@@ -790,7 +802,7 @@ namespace System.Collections.Concurrent
                 // and we'll traverse to that segment.
             }
 
-            result = default!;
+            result = default;
             return false;
         }
 

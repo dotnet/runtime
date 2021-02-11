@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_dsa.h"
 #include "pal_utilities.h"
@@ -151,18 +150,16 @@ int32_t CryptoNative_GetDsaParameters(
     const BIGNUM** y, int32_t* yLength,
     const BIGNUM** x, int32_t* xLength)
 {
-    if (!dsa || !p || !q || !g || !y || !x)
-    {
-        assert(false);
-
-        // since these parameters are 'out' parameters in managed code, ensure they are initialized
-        if (p) *p = NULL; if (pLength) *pLength = 0;
-        if (q) *q = NULL; if (qLength) *qLength = 0;
-        if (g) *g = NULL; if (gLength) *gLength = 0;
-        if (y) *y = NULL; if (yLength) *yLength = 0;
-        if (x) *x = NULL; if (xLength) *xLength = 0;
-        return 0;
-    }
+    assert(p != NULL);
+    assert(q != NULL);
+    assert(g != NULL);
+    assert(y != NULL);
+    assert(x != NULL);
+    assert(pLength != NULL);
+    assert(qLength != NULL);
+    assert(gLength != NULL);
+    assert(yLength != NULL);
+    assert(xLength != NULL);
 
     DSA_get0_pqg(dsa, p, q, g);
     *pLength = BN_num_bytes(*p);

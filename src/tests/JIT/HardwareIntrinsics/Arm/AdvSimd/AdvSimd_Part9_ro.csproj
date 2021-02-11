@@ -1,0 +1,115 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MultiplySubtract.Vector64.Int32.cs" />
+    <Compile Include="MultiplySubtract.Vector64.SByte.cs" />
+    <Compile Include="MultiplySubtract.Vector64.UInt16.cs" />
+    <Compile Include="MultiplySubtract.Vector64.UInt32.cs" />
+    <Compile Include="MultiplySubtract.Vector128.Byte.cs" />
+    <Compile Include="MultiplySubtract.Vector128.Int16.cs" />
+    <Compile Include="MultiplySubtract.Vector128.Int32.cs" />
+    <Compile Include="MultiplySubtract.Vector128.SByte.cs" />
+    <Compile Include="MultiplySubtract.Vector128.UInt16.cs" />
+    <Compile Include="MultiplySubtract.Vector128.UInt32.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector64.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector64.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector64.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector64.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector64.UInt16.Vector64.UInt16.3.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector64.UInt16.Vector128.UInt16.7.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector64.UInt32.Vector64.UInt32.1.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector64.UInt32.Vector128.UInt32.3.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector128.Int16.Vector64.Int16.3.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector128.Int16.Vector128.Int16.7.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector128.Int32.Vector64.Int32.1.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector128.Int32.Vector128.Int32.3.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector128.UInt16.Vector64.UInt16.3.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector128.UInt16.Vector128.UInt16.7.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector128.UInt32.Vector64.UInt32.1.cs" />
+    <Compile Include="MultiplySubtractBySelectedScalar.Vector128.UInt32.Vector128.UInt32.3.cs" />
+    <Compile Include="MultiplySubtractByScalar.Vector64.Int16.cs" />
+    <Compile Include="MultiplySubtractByScalar.Vector64.Int32.cs" />
+    <Compile Include="MultiplySubtractByScalar.Vector64.UInt16.cs" />
+    <Compile Include="MultiplySubtractByScalar.Vector64.UInt32.cs" />
+    <Compile Include="MultiplySubtractByScalar.Vector128.Int16.cs" />
+    <Compile Include="MultiplySubtractByScalar.Vector128.Int32.cs" />
+    <Compile Include="MultiplySubtractByScalar.Vector128.UInt16.cs" />
+    <Compile Include="MultiplySubtractByScalar.Vector128.UInt32.cs" />
+    <Compile Include="MultiplyWideningLower.Vector64.Byte.cs" />
+    <Compile Include="MultiplyWideningLower.Vector64.Int16.cs" />
+    <Compile Include="MultiplyWideningLower.Vector64.Int32.cs" />
+    <Compile Include="MultiplyWideningLower.Vector64.SByte.cs" />
+    <Compile Include="MultiplyWideningLower.Vector64.UInt16.cs" />
+    <Compile Include="MultiplyWideningLower.Vector64.UInt32.cs" />
+    <Compile Include="MultiplyWideningLowerAndAdd.Vector64.Byte.cs" />
+    <Compile Include="MultiplyWideningLowerAndAdd.Vector64.Int16.cs" />
+    <Compile Include="MultiplyWideningLowerAndAdd.Vector64.Int32.cs" />
+    <Compile Include="MultiplyWideningLowerAndAdd.Vector64.SByte.cs" />
+    <Compile Include="MultiplyWideningLowerAndAdd.Vector64.UInt16.cs" />
+    <Compile Include="MultiplyWideningLowerAndAdd.Vector64.UInt32.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.Byte.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.Int16.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.Int32.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.SByte.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.UInt16.cs" />
+    <Compile Include="MultiplyWideningLowerAndSubtract.Vector64.UInt32.cs" />
+    <Compile Include="MultiplyWideningUpper.Vector128.Byte.cs" />
+    <Compile Include="MultiplyWideningUpper.Vector128.Int16.cs" />
+    <Compile Include="MultiplyWideningUpper.Vector128.Int32.cs" />
+    <Compile Include="MultiplyWideningUpper.Vector128.SByte.cs" />
+    <Compile Include="MultiplyWideningUpper.Vector128.UInt16.cs" />
+    <Compile Include="MultiplyWideningUpper.Vector128.UInt32.cs" />
+    <Compile Include="MultiplyWideningUpperAndAdd.Vector128.Byte.cs" />
+    <Compile Include="MultiplyWideningUpperAndAdd.Vector128.Int16.cs" />
+    <Compile Include="MultiplyWideningUpperAndAdd.Vector128.Int32.cs" />
+    <Compile Include="MultiplyWideningUpperAndAdd.Vector128.SByte.cs" />
+    <Compile Include="MultiplyWideningUpperAndAdd.Vector128.UInt16.cs" />
+    <Compile Include="MultiplyWideningUpperAndAdd.Vector128.UInt32.cs" />
+    <Compile Include="MultiplyWideningUpperAndSubtract.Vector128.Byte.cs" />
+    <Compile Include="MultiplyWideningUpperAndSubtract.Vector128.Int16.cs" />
+    <Compile Include="MultiplyWideningUpperAndSubtract.Vector128.Int32.cs" />
+    <Compile Include="MultiplyWideningUpperAndSubtract.Vector128.SByte.cs" />
+    <Compile Include="MultiplyWideningUpperAndSubtract.Vector128.UInt16.cs" />
+    <Compile Include="MultiplyWideningUpperAndSubtract.Vector128.UInt32.cs" />
+    <Compile Include="Negate.Vector64.Int16.cs" />
+    <Compile Include="Negate.Vector64.Int32.cs" />
+    <Compile Include="Negate.Vector64.SByte.cs" />
+    <Compile Include="Negate.Vector64.Single.cs" />
+    <Compile Include="Negate.Vector128.Int16.cs" />
+    <Compile Include="Negate.Vector128.Int32.cs" />
+    <Compile Include="Negate.Vector128.SByte.cs" />
+    <Compile Include="Negate.Vector128.Single.cs" />
+    <Compile Include="NegateSaturate.Vector64.Int16.cs" />
+    <Compile Include="NegateSaturate.Vector64.Int32.cs" />
+    <Compile Include="NegateSaturate.Vector64.SByte.cs" />
+    <Compile Include="NegateSaturate.Vector128.Int16.cs" />
+    <Compile Include="NegateSaturate.Vector128.Int32.cs" />
+    <Compile Include="NegateSaturate.Vector128.SByte.cs" />
+    <Compile Include="NegateScalar.Vector64.Double.cs" />
+    <Compile Include="NegateScalar.Vector64.Single.cs" />
+    <Compile Include="Not.Vector64.Byte.cs" />
+    <Compile Include="Not.Vector64.Double.cs" />
+    <Compile Include="Not.Vector64.Int16.cs" />
+    <Compile Include="Not.Vector64.Int32.cs" />
+    <Compile Include="Not.Vector64.Int64.cs" />
+    <Compile Include="Not.Vector64.SByte.cs" />
+    <Compile Include="Not.Vector64.Single.cs" />
+    <Compile Include="Not.Vector64.UInt16.cs" />
+    <Compile Include="Not.Vector64.UInt32.cs" />
+    <Compile Include="Not.Vector64.UInt64.cs" />
+    <Compile Include="Not.Vector128.Byte.cs" />
+    <Compile Include="Not.Vector128.Double.cs" />
+    <Compile Include="Not.Vector128.Int16.cs" />
+    <Compile Include="Not.Vector128.Int32.cs" />
+    <Compile Include="Program.AdvSimd_Part9.cs" />
+    <Compile Include="..\Shared\Helpers.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

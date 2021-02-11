@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -16,12 +15,12 @@ namespace System.Diagnostics
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TraceSwitch'/> class.</para>
         /// </devdoc>
-        public TraceSwitch(string displayName, string description)
+        public TraceSwitch(string displayName, string? description)
             : base(displayName, description)
         {
         }
 
-        public TraceSwitch(string displayName, string description, string defaultSwitchValue)
+        public TraceSwitch(string displayName, string? description, string defaultSwitchValue)
             : base(displayName, description, defaultSwitchValue)
         { }
 

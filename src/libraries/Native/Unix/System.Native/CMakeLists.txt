@@ -1,7 +1,12 @@
 project(System.Native C)
 
+if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    add_definitions(-DHAS_CONSOLE_SIGNALS)
+endif ()
+
+include_directories("${CLR_SRC_NATIVE_DIR}/common")
+
 set(NATIVE_SOURCES
-    pal_console.c
     pal_errno.c
     pal_interfaceaddresses.c
     pal_io.c
@@ -17,19 +22,32 @@ set(NATIVE_SOURCES
     pal_signal.c
     pal_string.c
     pal_tcpstate.c
+    pal_threading.c
     pal_time.c
     pal_uid.c
     pal_datetime.c
     pal_sysctl.c
 )
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
-
-    if (!HAVE_LINUX_RTNETLINK_H)
-        message(FATAL_ERROR "Could not find linux/rtnetlink.h")
-    endif ()
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_log.m
+        pal_searchpath.m)
+else ()
+    set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_searchpath.c
+        pal_console.c
+        pal_log.c)
 endif ()
+
+if (NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
+endif ()
+
+include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
+
+set(NATIVE_LIBS_EXTRA)
+append_extra_system_libs(NATIVE_LIBS_EXTRA)
 
 if (GEN_SHARED_LIB)
     add_library(System.Native
@@ -37,28 +55,34 @@ if (GEN_SHARED_LIB)
         ${NATIVE_SOURCES}
         ${VERSION_FILE_PATH}
     )
-    if (CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ANDROID)
-        target_link_libraries(System.Native rt)
-    endif ()
 
-    if (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-        target_link_libraries(System.Native pthread)
-    if (HAVE_INOTIFY)
-        find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
-        target_link_libraries(System.Native ${INOTIFY_LIBRARY})
-    endif ()
-    endif ()
-    install_library_and_symbols (System.Native)
+    target_link_libraries(System.Native
+        ${NATIVE_LIBS_EXTRA}
+    )
+
+    if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+        add_custom_command(TARGET System.Native POST_BUILD
+            COMMENT "Verifying System.Native entry points against entrypoints.c "
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                $<TARGET_FILE:System.Native>
+                ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                ${CMAKE_NM}
+            VERBATIM
+        )
+    endif()
+
+    install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
+
+if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES} entrypoints.c)
+endif()
 
 add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Native-Static PROPERTIES PREFIX "")
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
-install (TARGETS System.Native-Static DESTINATION .)
+install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})

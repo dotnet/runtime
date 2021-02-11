@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -393,6 +392,48 @@ namespace System.Text.Json.Serialization.Tests
             {
                 return ((IDictionary<string, TValue>)dict).GetEnumerator();
             }
+        }
+
+        [Fact]
+        public static void NullableCustomStructRoundtrip()
+        {
+            string serialized = JsonSerializer.Serialize(new ClassWithNullablePerson
+            {
+                Person = new Person
+                {
+                    FirstName = "John",
+                    Age = 24
+                }
+            });
+            Assert.Contains(@"{""Person"":{", serialized);
+            Assert.Contains(@"""FirstName"":""John""", serialized);
+            Assert.Contains(@"""Age"":24", serialized);
+            Assert.Contains(@"""Birthday"":null", serialized);
+            Assert.DoesNotContain(@"""Value"":{""", serialized);
+            Assert.DoesNotContain(@"""HasValue"":""", serialized);
+
+            var obj = JsonSerializer.Deserialize<ClassWithNullablePerson>(serialized);
+            Assert.Equal("John", obj.Person?.FirstName);
+            Assert.Equal(24, obj.Person?.Age);
+            Assert.Null(obj.Person?.Birthday);
+
+            serialized = JsonSerializer.Serialize(new ClassWithNullablePerson());
+            Assert.Equal(@"{""Person"":null}", serialized);
+
+            obj = JsonSerializer.Deserialize<ClassWithNullablePerson>(serialized);
+            Assert.Null(obj.Person);
+        }
+
+        public class ClassWithNullablePerson
+        {
+            public Person? Person { get; set; }
+        }
+
+        public struct Person
+        {
+            public string FirstName { get; set; }
+            public int? Age { get; set; }
+            public DateTime? Birthday { get; set; }
         }
     }
 }

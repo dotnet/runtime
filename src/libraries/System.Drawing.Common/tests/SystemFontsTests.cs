@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -139,7 +139,7 @@ namespace System.Drawing.Tests
         public static extern int GetUserDefaultLCID();
 
         // Do not test DefaultFont and DialogFont, as we can't reliably determine from LCID
-        // https://github.com/dotnet/corefx/issues/35664#issuecomment-473556522
+        // https://github.com/dotnet/runtime/issues/28830#issuecomment-473556522
         class SystemFontList
         {
             public SystemFontList(string c_it_m_mb_scFonts)

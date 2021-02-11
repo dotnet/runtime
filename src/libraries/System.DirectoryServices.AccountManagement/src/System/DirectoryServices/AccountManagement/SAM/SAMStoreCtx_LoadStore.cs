@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -308,7 +307,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Map each SAM attribute into the Principal in turn
                 foreach (string samAttribute in samAttributes)
                 {
-                    ArrayList entries = (ArrayList)propertyMappingTableByWinNT[samAttribute.ToLower(CultureInfo.InvariantCulture)];
+                    ArrayList entries = (ArrayList)propertyMappingTableByWinNT[samAttribute.ToLowerInvariant()];
 
                     // If it's not in the table, it's not an SAM attribute we care about
                     if (entries == null)
@@ -485,11 +484,10 @@ namespace System.DirectoryServices.AccountManagement
 
             string name;
             string domainName;
-            int accountUsage;
 
             // Map the SID to a machine and account name
             // If this fails, there's no match
-            int err = Utils.LookupSid(this.MachineUserSuppliedName, _credentials, sid, out name, out domainName, out accountUsage);
+            int err = Utils.LookupSid(this.MachineUserSuppliedName, _credentials, sid, out name, out domainName, out _);
 
             if (err != 0)
             {
@@ -723,17 +721,17 @@ namespace System.DirectoryServices.AccountManagement
             {PropertyNames.PwdInfoAllowReversiblePasswordEncryption, typeof(ComputerPrincipal),       null,   null,   new ToWinNTConverterDelegate(ExceptionToWinNTConverter)}
         };
 
-        private static readonly Hashtable s_userPropertyMappingTableByProperty = null;
-        private static readonly Hashtable s_userPropertyMappingTableByWinNT = null;
+        private static readonly Hashtable s_userPropertyMappingTableByProperty;
+        private static readonly Hashtable s_userPropertyMappingTableByWinNT;
 
-        private static readonly Hashtable s_groupPropertyMappingTableByProperty = null;
-        private static readonly Hashtable s_groupPropertyMappingTableByWinNT = null;
+        private static readonly Hashtable s_groupPropertyMappingTableByProperty;
+        private static readonly Hashtable s_groupPropertyMappingTableByWinNT;
 
-        private static readonly Hashtable s_computerPropertyMappingTableByProperty = null;
-        private static readonly Hashtable s_computerPropertyMappingTableByWinNT = null;
+        private static readonly Hashtable s_computerPropertyMappingTableByProperty;
+        private static readonly Hashtable s_computerPropertyMappingTableByWinNT;
 
-        private static readonly Dictionary<string, ObjectMask> s_validPropertyMap = null;
-        private static readonly Dictionary<Type, ObjectMask> s_maskMap = null;
+        private static readonly Dictionary<string, ObjectMask> s_validPropertyMap;
+        private static readonly Dictionary<Type, ObjectMask> s_maskMap;
 
         [Flags]
         private enum ObjectMask
@@ -784,7 +782,6 @@ namespace System.DirectoryServices.AccountManagement
         {
             byte[] sid = (byte[])de.Properties["objectSid"][0];
 
-            string stringizedSid = Utils.ByteArrayToString(sid);
             string sddlSid = Utils.ConvertSidToSDDL(sid);
             SecurityIdentifier SidObj = new SecurityIdentifier(sddlSid);
             p.LoadValueIntoProperty(propertyName, (object)SidObj);

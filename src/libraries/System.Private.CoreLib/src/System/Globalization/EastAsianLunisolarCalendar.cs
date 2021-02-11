@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Globalization
 {
@@ -189,13 +188,13 @@ namespace System.Globalization
                 // Reject if there is no leap month this year
                 if (GetYearInfo(year, LeapMonth) == 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
+                    ThrowHelper.ThrowArgumentOutOfRange_Month(month);
                 }
             }
 
             if (month < 1 || month > 13)
             {
-                throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
+                ThrowHelper.ThrowArgumentOutOfRange_Month(month);
             }
 
             return year;
@@ -400,7 +399,8 @@ namespace System.Globalization
         private DateTime LunarToTime(DateTime time, int year, int month, int day)
         {
             LunarToGregorian(year, month, day, out int gy, out int gm, out int gd);
-            return GregorianCalendar.GetDefaultInstance().ToDateTime(gy, gm, gd, time.Hour, time.Minute, time.Second, time.Millisecond);
+            time.GetTime(out int hour, out int minute, out int second, out int millisecond);
+            return GregorianCalendar.GetDefaultInstance().ToDateTime(gy, gm, gd, hour, minute, second, millisecond);
         }
 
         private void TimeToLunar(DateTime time, out int year, out int month, out int day)

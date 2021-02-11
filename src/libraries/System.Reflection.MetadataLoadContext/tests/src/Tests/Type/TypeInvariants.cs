@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,6 +13,7 @@ namespace System.Reflection.Tests
     public static class TypeInvariants
     {
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15344", TestRuntimes.Mono)]
         public static void TestInvariantCode()
         {
             // These run some *runtime*-implemented Type objects through our invariant battery.
@@ -603,7 +603,7 @@ namespace System.Reflection.Tests
             Assert.True(position >= 0);
             GenericParameterAttributes attributes = type.GenericParameterAttributes;
 
-            Assert.Equal<Type>(Array.Empty<Type>(), type.GetGenericArguments());
+            Assert.Equal<Type>(Type.EmptyTypes, type.GetGenericArguments());
 
             Assert.False(type.IsByRefLike());
 

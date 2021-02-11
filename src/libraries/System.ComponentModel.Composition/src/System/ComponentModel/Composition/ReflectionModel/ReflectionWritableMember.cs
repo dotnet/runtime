@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
@@ -11,6 +10,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get;
         }
 
-        public abstract void SetValue(object instance, object value);
+        public abstract void SetValue(object? instance, object? value);
     }
 }

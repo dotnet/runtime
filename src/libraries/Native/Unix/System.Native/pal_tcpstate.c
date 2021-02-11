@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 #include "pal_types.h"
@@ -10,8 +9,6 @@
 #include <netinet/tcp_fsm.h>
 #elif HAVE_TCP_H_TCPSTATE_ENUM
 #include <netinet/tcp.h>
-#else
-#warning System does not have TCP states defined in either tcp.h or tcp_fsm.h; falling back to always returning unknown.
 #endif
 
 int32_t SystemNative_MapTcpState(int32_t tcpState)
@@ -64,6 +61,7 @@ int32_t SystemNative_MapTcpState(int32_t tcpState)
             return TcpState_Closing;
 #endif
         default:
+            // System does not have TCP states defined in either tcp.h or tcp_fsm.h; falling back to always returning unknown.
             return TcpState_Unknown;
     }
 }

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -53,11 +53,12 @@ namespace System.Threading
                 default;
         }
 
-        /// <summary>
-        /// Gets the <see cref="CancellationToken"/> with which this registration is associated.  If the
-        /// registration isn't associated with a token (such as after the registration has been disposed),
+        /// <summary>Gets the <see cref="CancellationToken"/> with which this registration is associated.</summary>
+        /// <remarks>
+        /// If the registration isn't associated with a token (such as for a registration returned from a call
+        /// to <see cref="CancellationToken.Register"/> on a token that already had cancellation requested),
         /// this will return a default token.
-        /// </summary>
+        /// </remarks>
         public CancellationToken Token
         {
             get
@@ -147,7 +148,7 @@ namespace System.Threading
         /// they both refer to the output of a single call to the same Register method of a
         /// <see cref="System.Threading.CancellationToken">CancellationToken</see>.
         /// </returns>
-        public override bool Equals(object? obj) => obj is CancellationTokenRegistration && Equals((CancellationTokenRegistration)obj);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is CancellationTokenRegistration && Equals((CancellationTokenRegistration)obj);
 
         /// <summary>
         /// Determines whether the current <see cref="System.Threading.CancellationToken">CancellationToken</see> instance is equal to the

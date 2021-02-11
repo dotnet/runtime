@@ -1,11 +1,13 @@
 <Project>
-  <Import Project="..\Microsoft.Private.PackageBaseline\Microsoft.Private.PackageBaseline.props" />
-
   <PropertyGroup>
     <!-- Set PackageIndexFile to point to our local repo's index.  This tells the packaging targets
          which index should be used for updates -->
-    <PackageIndexFile>$(MSBuildThisFileDirectory)..\Microsoft.Private.PackageBaseline\packageIndex.json</PackageIndexFile>
+    <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageIndex Include="$(PackageIndexFile)" />
+  </ItemGroup>
 
   <!--
     Below targets should moved to packaging.targets in BuildTools but keeping in corefx for convenience right now

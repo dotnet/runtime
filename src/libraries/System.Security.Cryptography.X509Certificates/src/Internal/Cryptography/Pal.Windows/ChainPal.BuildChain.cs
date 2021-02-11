@@ -1,15 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-using Internal.Cryptography;
 using Internal.Cryptography.Pal.Native;
 
 using System.Security.Cryptography;
@@ -25,18 +19,19 @@ namespace Internal.Cryptography.Pal
         /// <summary>
         /// Does not throw on error. Returns null ChainPal instead.
         /// </summary>
-        public static ChainPal BuildChain(
+        public static ChainPal? BuildChain(
             bool useMachineContext,
             ICertificatePal cert,
-            X509Certificate2Collection extraStore,
-            OidCollection applicationPolicy,
-            OidCollection certificatePolicy,
+            X509Certificate2Collection? extraStore,
+            OidCollection? applicationPolicy,
+            OidCollection? certificatePolicy,
             X509RevocationMode revocationMode,
             X509RevocationFlag revocationFlag,
-            X509Certificate2Collection customTrustStore,
+            X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode,
             DateTime verificationTime,
-            TimeSpan timeout)
+            TimeSpan timeout,
+            bool disableAia)
         {
             CertificatePal certificatePal = (CertificatePal)cert;
 
@@ -49,7 +44,7 @@ namespace Internal.Cryptography.Pal
                     chainPara.cbSize = Marshal.SizeOf<CERT_CHAIN_PARA>();
 
                     int applicationPolicyCount;
-                    using (SafeHandle applicationPolicyOids = applicationPolicy.ToLpstrArray(out applicationPolicyCount))
+                    using (SafeHandle applicationPolicyOids = applicationPolicy!.ToLpstrArray(out applicationPolicyCount))
                     {
                         if (!applicationPolicyOids.IsInvalid)
                         {
@@ -59,7 +54,7 @@ namespace Internal.Cryptography.Pal
                         }
 
                         int certificatePolicyCount;
-                        using (SafeHandle certificatePolicyOids = certificatePolicy.ToLpstrArray(out certificatePolicyCount))
+                        using (SafeHandle certificatePolicyOids = certificatePolicy!.ToLpstrArray(out certificatePolicyCount))
                         {
                             if (!certificatePolicyOids.IsInvalid)
                             {
@@ -71,7 +66,7 @@ namespace Internal.Cryptography.Pal
                             chainPara.dwUrlRetrievalTimeout = (int)Math.Floor(timeout.TotalMilliseconds);
 
                             FILETIME ft = FILETIME.FromDateTime(verificationTime);
-                            CertChainFlags flags = MapRevocationFlags(revocationMode, revocationFlag);
+                            CertChainFlags flags = MapRevocationFlags(revocationMode, revocationFlag, disableAia);
                             SafeX509ChainHandle chain;
                             if (!Interop.crypt32.CertGetCertificateChain(storeHandle.DangerousGetHandle(), certificatePal.CertContext, &ft, extraStoreHandle, ref chainPara, flags, IntPtr.Zero, out chain))
                             {
@@ -87,7 +82,7 @@ namespace Internal.Cryptography.Pal
 
         private static SafeChainEngineHandle GetChainEngine(
             X509ChainTrustMode trustMode,
-            X509Certificate2Collection customTrustStore,
+            X509Certificate2Collection? customTrustStore,
             bool useMachineContext)
         {
             SafeChainEngineHandle chainEngineHandle;
@@ -110,17 +105,24 @@ namespace Internal.Cryptography.Pal
             return chainEngineHandle;
         }
 
-        private static SafeCertStoreHandle ConvertStoreToSafeHandle(X509Certificate2Collection extraStore, bool returnEmptyHandle = false)
+        private static SafeCertStoreHandle ConvertStoreToSafeHandle(X509Certificate2Collection? extraStore, bool returnEmptyHandle = false)
         {
             if ((extraStore == null || extraStore.Count == 0) && !returnEmptyHandle)
                 return SafeCertStoreHandle.InvalidHandle;
 
-            return ((StorePal)StorePal.LinkFromCertificateCollection(extraStore)).SafeCertStoreHandle;
+            return ((StorePal)StorePal.LinkFromCertificateCollection(extraStore!)).SafeCertStoreHandle;
         }
 
-        private static CertChainFlags MapRevocationFlags(X509RevocationMode revocationMode, X509RevocationFlag revocationFlag)
+        private static CertChainFlags MapRevocationFlags(
+            X509RevocationMode revocationMode,
+            X509RevocationFlag revocationFlag,
+            bool disableAia)
         {
-            CertChainFlags dwFlags = CertChainFlags.None;
+            const CertChainFlags AiaDisabledFlags =
+                CertChainFlags.CERT_CHAIN_DISABLE_AIA | CertChainFlags.CERT_CHAIN_DISABLE_AUTH_ROOT_AUTO_UPDATE;
+
+            CertChainFlags dwFlags = disableAia ? AiaDisabledFlags : CertChainFlags.None;
+
             if (revocationMode == X509RevocationMode.NoCheck)
                 return dwFlags;
 

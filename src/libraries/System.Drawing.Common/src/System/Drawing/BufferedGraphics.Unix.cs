@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Copyright (C) 2005 Novell, Inc (http://www.novell.com)
 //
@@ -37,10 +38,10 @@ namespace System.Drawing
     public sealed partial class BufferedGraphics
     {
         private Rectangle size;
-        private Bitmap membmp = null;
-        private Graphics source = null;
+        private Bitmap membmp;
+        private Graphics? source;
 
-        internal BufferedGraphics(Graphics targetGraphics, IntPtr targetDc, Rectangle targetRectangle)
+        internal BufferedGraphics(Graphics? targetGraphics, IntPtr targetDc, Rectangle targetRectangle)
         {
             _targetGraphics = targetGraphics;
             _targetDC = targetDc;
@@ -57,7 +58,7 @@ namespace System.Drawing
                     source = Graphics.FromImage(membmp);
                 }
 
-                return source;
+                return source!;
             }
         }
 
@@ -66,7 +67,7 @@ namespace System.Drawing
             if (membmp != null)
             {
                 membmp.Dispose();
-                membmp = null;
+                membmp = null!;
             }
 
             if (source != null)
@@ -78,7 +79,7 @@ namespace System.Drawing
             _targetGraphics = null;
         }
 
-        public void Render(Graphics target)
+        public void Render(Graphics? target)
         {
             if (target == null)
                 return;

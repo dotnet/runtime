@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.CodeDom;
@@ -12,6 +11,7 @@ namespace System.Management.Tests
     public class ManagementClassTests
     {
         [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -26,6 +26,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(CodeLanguage.CSharp)]
         [InlineData(CodeLanguage.VB)]
         public void Get_SourceFile_For_Win32_Processor(CodeLanguage lang)
@@ -47,13 +48,14 @@ namespace System.Management.Tests
         }
 
         [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(CodeLanguage.JScript)]
         [InlineData(CodeLanguage.Mcpp)]
         [InlineData(CodeLanguage.VJSharp)]
         public void Throw_On_Unsupported_Languages(CodeLanguage lang)
         {
-            // On full framework JScript is supported and no exception raised
-            if (lang == CodeLanguage.JScript && PlatformDetection.IsFullFramework)
+            // On .NET Framework JScript is supported and no exception raised
+            if (lang == CodeLanguage.JScript && PlatformDetection.IsNetFramework)
                 return;
 
             var tempFilePath = Path.GetTempFileName();
@@ -74,6 +76,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ClassMembers_For_Win32_LogicalDisk()
         {
             var managementClass = new ManagementClass(new ManagementPath("Win32_LogicalDisk"));
@@ -94,6 +97,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void EnumerateInstances_For_Win32_LogicalDisk()
         {
             using (var managementClass = new ManagementClass(new ManagementPath("Win32_LogicalDisk")))
@@ -112,6 +116,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsElevatedAndSupportsWmi))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Create_Delete_Namespace()
         {
             using (var rootNamespace = new ManagementClass("root:__namespace"))

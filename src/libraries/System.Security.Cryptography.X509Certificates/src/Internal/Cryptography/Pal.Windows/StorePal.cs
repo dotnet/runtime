@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Cryptography.Pal.Native;
 using System;
@@ -37,7 +36,7 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(collection != null);
 
-            SafeCertContextHandle pCertContext = null;
+            SafeCertContextHandle? pCertContext = null;
             while (Interop.crypt32.CertEnumCertificatesInStore(_certStore, ref pCertContext))
             {
                 X509Certificate2 cert = new X509Certificate2(pCertContext.DangerousGetHandle());
@@ -56,7 +55,7 @@ namespace Internal.Cryptography.Pal
             unsafe
             {
                 SafeCertContextHandle existingCertContext = ((CertificatePal)certificate).CertContext;
-                SafeCertContextHandle enumCertContext = null;
+                SafeCertContextHandle? enumCertContext = null;
                 CERT_CONTEXT* pCertContext = existingCertContext.CertContext;
                 if (!Interop.crypt32.CertFindCertificateInStore(_certStore, CertFindType.CERT_FIND_EXISTING, pCertContext, ref enumCertContext))
                     return; // The certificate is not present in the store, simply return.
@@ -71,8 +70,8 @@ namespace Internal.Cryptography.Pal
 
         public void Dispose()
         {
-            SafeCertStoreHandle certStore = _certStore;
-            _certStore = null;
+            SafeCertStoreHandle? certStore = _certStore;
+            _certStore = null!;
             if (certStore != null)
                 certStore.Dispose();
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -40,7 +39,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     <paramref name="addedDefinitions"/> or <paramref name="removedDefinitions"/> is <see langword="null"/>.
         /// </exception>
         public ComposablePartCatalogChangeEventArgs(IEnumerable<ComposablePartDefinition> addedDefinitions,
-            IEnumerable<ComposablePartDefinition> removedDefinitions, AtomicComposition atomicComposition)
+            IEnumerable<ComposablePartDefinition> removedDefinitions, AtomicComposition? atomicComposition)
         {
             Requires.NotNull(addedDefinitions, nameof(addedDefinitions));
             Requires.NotNull(removedDefinitions, nameof(removedDefinitions));
@@ -96,6 +95,6 @@ namespace System.ComponentModel.Composition.Hosting
         ///     When the value is non-null it should be used to record temporary changed state
         ///     and actions that will be executed when the atomicComposition is completeed.
         /// </value>
-        public AtomicComposition AtomicComposition { get; private set; }
+        public AtomicComposition? AtomicComposition { get; private set; }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -15,8 +14,6 @@ internal static partial class Interop
 {
     internal static partial class IpHlpApi
     {
-        // TODO: #3562 - Replace names with the ones from the Windows SDK.
-
         [Flags]
         internal enum AdapterFlags
         {
@@ -426,10 +423,9 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct MibTcp6RowOwnerPid
+        internal unsafe struct MibTcp6RowOwnerPid
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            internal byte[] localAddr;
+            internal fixed byte localAddr[16];
             internal uint localScopeId;
             internal byte localPort1;
             internal byte localPort2;
@@ -437,8 +433,7 @@ internal static partial class Interop
             // There are reports where the high order bytes have garbage in them.
             internal byte ignoreLocalPort3;
             internal byte ignoreLocalPort4;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            internal byte[] remoteAddr;
+            internal fixed byte remoteAddr[16];
             internal uint remoteScopeId;
             internal byte remotePort1;
             internal byte remotePort2;
@@ -448,6 +443,9 @@ internal static partial class Interop
             internal byte ignoreRemotePort4;
             internal TcpState state;
             internal uint owningPid;
+
+            internal ReadOnlySpan<byte> localAddrAsSpan => MemoryMarshal.CreateSpan(ref localAddr[0], 16);
+            internal ReadOnlySpan<byte> remoteAddrAsSpan => MemoryMarshal.CreateSpan(ref remoteAddr[0], 16);
         }
 
         internal enum TcpTableClass
@@ -495,10 +493,9 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct MibUdp6RowOwnerPid
+        internal unsafe struct MibUdp6RowOwnerPid
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-            internal byte[] localAddr;
+            internal fixed byte localAddr[16];
             internal uint localScopeId;
             internal byte localPort1;
             internal byte localPort2;
@@ -507,16 +504,16 @@ internal static partial class Interop
             internal byte ignoreLocalPort3;
             internal byte ignoreLocalPort4;
             internal uint owningPid;
-        }
 
-        internal delegate void StableUnicastIpAddressTableDelegate(IntPtr context, IntPtr table);
+            internal ReadOnlySpan<byte> localAddrAsSpan => MemoryMarshal.CreateSpan(ref localAddr[0], 16);
+        }
 
         [DllImport(Interop.Libraries.IpHlpApi)]
         internal static extern uint GetAdaptersAddresses(
             AddressFamily family,
             uint flags,
             IntPtr pReserved,
-            SafeLocalAllocHandle adapterAddresses,
+            IntPtr adapterAddresses,
             ref uint outBufLen);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
@@ -541,21 +538,21 @@ internal static partial class Interop
         internal static extern uint GetIcmpStatisticsEx(out MibIcmpInfoEx statistics, AddressFamily family);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint GetTcpTable(SafeLocalAllocHandle pTcpTable, ref uint dwOutBufLen, bool order);
+        internal static extern uint GetTcpTable(IntPtr pTcpTable, ref uint dwOutBufLen, bool order);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint GetExtendedTcpTable(SafeLocalAllocHandle pTcpTable, ref uint dwOutBufLen, bool order,
+        internal static extern uint GetExtendedTcpTable(IntPtr pTcpTable, ref uint dwOutBufLen, bool order,
                                                         uint IPVersion, TcpTableClass tableClass, uint reserved);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint GetUdpTable(SafeLocalAllocHandle pUdpTable, ref uint dwOutBufLen, bool order);
+        internal static extern uint GetUdpTable(IntPtr pUdpTable, ref uint dwOutBufLen, bool order);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint GetExtendedUdpTable(SafeLocalAllocHandle pUdpTable, ref uint dwOutBufLen, bool order,
+        internal static extern uint GetExtendedUdpTable(IntPtr pUdpTable, ref uint dwOutBufLen, bool order,
                                                         uint IPVersion, UdpTableClass tableClass, uint reserved);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint GetPerAdapterInfo(uint IfIndex, SafeLocalAllocHandle pPerAdapterInfo, ref uint pOutBufLen);
+        internal static extern uint GetPerAdapterInfo(uint IfIndex, IntPtr pPerAdapterInfo, ref uint pOutBufLen);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
         internal static extern void FreeMibTable(IntPtr handle);
@@ -564,14 +561,11 @@ internal static partial class Interop
         internal static extern uint CancelMibChangeNotify2(IntPtr notificationHandle);
 
         [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static extern uint NotifyStableUnicastIpAddressTable(
-            [In] AddressFamily addressFamily,
-            [Out] out SafeFreeMibTable table,
-            [MarshalAs(UnmanagedType.FunctionPtr)][In] StableUnicastIpAddressTableDelegate callback,
-            [In] IntPtr context,
-            [Out] out SafeCancelMibChangeNotify notificationHandle);
-
-        [DllImport(Interop.Libraries.IpHlpApi, ExactSpelling = true)]
-        internal static extern uint GetNetworkParams(SafeLocalAllocHandle pFixedInfo, ref uint pOutBufLen);
+        internal static extern unsafe uint NotifyStableUnicastIpAddressTable(
+            AddressFamily addressFamily,
+            out SafeFreeMibTable table,
+            delegate* unmanaged<IntPtr, IntPtr, void> callback,
+            IntPtr context,
+            out SafeCancelMibChangeNotify notificationHandle);
     }
 }

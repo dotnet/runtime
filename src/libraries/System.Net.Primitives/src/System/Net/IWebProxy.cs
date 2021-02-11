@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net
 {
@@ -12,8 +11,8 @@ namespace System.Net
     /// </devdoc>
     public interface IWebProxy
     {
-        Uri GetProxy(Uri destination);
+        Uri? GetProxy(Uri destination);
         bool IsBypassed(Uri host);
-        ICredentials Credentials { get; set; }
+        ICredentials? Credentials { get; set; }
     }
 }

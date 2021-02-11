@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -15,23 +14,23 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class CertificatePal
     {
-        public static ICertificatePal FromHandle(IntPtr handle)
+        public static ICertificatePal? FromHandle(IntPtr handle)
         {
             return FromHandle(handle, true);
         }
 
-        internal static ICertificatePal FromHandle(IntPtr handle, bool throwOnFail)
+        internal static ICertificatePal? FromHandle(IntPtr handle, bool throwOnFail)
         {
             return AppleCertificatePal.FromHandle(handle, throwOnFail);
         }
 
-        public static ICertificatePal FromOtherCert(X509Certificate cert)
+        public static ICertificatePal? FromOtherCert(X509Certificate cert)
         {
             return AppleCertificatePal.FromOtherCert(cert);
         }
 
         public static ICertificatePal FromBlob(
-            byte[] rawData,
+            ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             X509KeyStorageFlags keyStorageFlags)
         {

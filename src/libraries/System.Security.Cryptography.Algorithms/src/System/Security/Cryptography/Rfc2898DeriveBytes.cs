@@ -1,20 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Text;
+using System.Buffers.Binary;
 using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
+using System.Text;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class Rfc2898DeriveBytes : DeriveBytes
     {
         private const int MinimumSaltSize = 8;
 
-        private readonly byte[] _password;
         private byte[] _salt;
         private uint _iterations;
         private HMAC _hmac;
@@ -25,6 +26,9 @@ namespace System.Security.Cryptography
         private int _startIndex;
         private int _endIndex;
 
+        /// <summary>
+        /// Gets the hash algorithm used for byte derivation.
+        /// </summary>
         public HashAlgorithmName HashAlgorithm { get; }
 
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations)
@@ -33,26 +37,8 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
+            :this(password, salt, iterations, hashAlgorithm, clearPassword: false)
         {
-            if (salt == null)
-                throw new ArgumentNullException(nameof(salt));
-            if (salt.Length < MinimumSaltSize)
-                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, nameof(salt));
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
-            if (password == null)
-                throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
-
-            _salt = new byte[salt.Length + sizeof(uint)];
-            salt.AsSpan().CopyTo(_salt);
-            _iterations = (uint)iterations;
-            _password = password.CloneByteArray();
-            HashAlgorithm = hashAlgorithm;
-            _hmac = OpenHmac();
-            // _blockSize is in bytes, HashSize is in bits.
-            _blockSize = _hmac.HashSize >> 3;
-
-            Initialize();
         }
 
         public Rfc2898DeriveBytes(string password, byte[] salt)
@@ -66,7 +52,7 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
-            : this(Encoding.UTF8.GetBytes(password), salt, iterations, hashAlgorithm)
+            : this(Encoding.UTF8.GetBytes(password), salt, iterations, hashAlgorithm, clearPassword: true)
         {
         }
 
@@ -93,12 +79,40 @@ namespace System.Security.Cryptography
             RandomNumberGenerator.Fill(_salt.AsSpan(0, saltSize));
 
             _iterations = (uint)iterations;
-            _password = Encoding.UTF8.GetBytes(password);
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
             HashAlgorithm = hashAlgorithm;
-            _hmac = OpenHmac();
+            _hmac = OpenHmac(passwordBytes);
+            CryptographicOperations.ZeroMemory(passwordBytes);
             // _blockSize is in bytes, HashSize is in bits.
             _blockSize = _hmac.HashSize >> 3;
 
+            Initialize();
+        }
+
+        private Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword)
+        {
+            if (salt is null)
+                throw new ArgumentNullException(nameof(salt));
+            if (salt.Length < MinimumSaltSize)
+                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, nameof(salt));
+            if (iterations <= 0)
+                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            if (password is null)
+                throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
+
+            _salt = new byte[salt.Length + sizeof(uint)];
+            salt.AsSpan().CopyTo(_salt);
+            _iterations = (uint)iterations;
+            HashAlgorithm = hashAlgorithm;
+            _hmac = OpenHmac(password);
+
+            if (clearPassword)
+            {
+                CryptographicOperations.ZeroMemory(password);
+            }
+
+            // _blockSize is in bytes, HashSize is in bits.
+            _blockSize = _hmac.HashSize >> 3;
             Initialize();
         }
 
@@ -145,13 +159,11 @@ namespace System.Security.Cryptography
                 if (_hmac != null)
                 {
                     _hmac.Dispose();
-                    _hmac = null;
+                    _hmac = null!;
                 }
 
                 if (_buffer != null)
                     Array.Clear(_buffer, 0, _buffer.Length);
-                if (_password != null)
-                    Array.Clear(_password, 0, _password.Length);
                 if (_salt != null)
                     Array.Clear(_salt, 0, _salt.Length);
             }
@@ -222,10 +234,10 @@ namespace System.Security.Cryptography
             Initialize();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "HMACSHA1 is needed for compat. (https://github.com/dotnet/corefx/issues/9438)")]
-        private HMAC OpenHmac()
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "HMACSHA1 is needed for compat. (https://github.com/dotnet/runtime/issues/17618)")]
+        private HMAC OpenHmac(byte[] password)
         {
-            Debug.Assert(_password != null);
+            Debug.Assert(password != null);
 
             HashAlgorithmName hashAlgorithm = HashAlgorithm;
 
@@ -233,23 +245,24 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_HashAlgorithmNameNullOrEmpty);
 
             if (hashAlgorithm == HashAlgorithmName.SHA1)
-                return new HMACSHA1(_password);
+                return new HMACSHA1(password);
             if (hashAlgorithm == HashAlgorithmName.SHA256)
-                return new HMACSHA256(_password);
+                return new HMACSHA256(password);
             if (hashAlgorithm == HashAlgorithmName.SHA384)
-                return new HMACSHA384(_password);
+                return new HMACSHA384(password);
             if (hashAlgorithm == HashAlgorithmName.SHA512)
-                return new HMACSHA512(_password);
+                return new HMACSHA512(password);
 
             throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
         }
 
+        [MemberNotNull(nameof(_buffer))]
         private void Initialize()
         {
             if (_buffer != null)
                 Array.Clear(_buffer, 0, _buffer.Length);
             _buffer = new byte[_blockSize];
-            _block = 1;
+            _block = 0;
             _startIndex = _endIndex = 0;
         }
 
@@ -258,7 +271,12 @@ namespace System.Security.Cryptography
         // where i is the block number.
         private void Func()
         {
-            Helpers.WriteInt(_block, _salt, _salt.Length - sizeof(uint));
+            // Block number is going to overflow, exceeding the maximum total possible bytes
+            // that can be extracted.
+            if (_block == uint.MaxValue)
+                throw new CryptographicException(SR.Cryptography_ExceedKdfExtractLimit);
+
+            BinaryPrimitives.WriteUInt32BigEndian(_salt.AsSpan(_salt.Length - sizeof(uint)), _block + 1);
             Debug.Assert(_blockSize == _buffer.Length);
 
             // The biggest _blockSize we have is from SHA512, which is 64 bytes.

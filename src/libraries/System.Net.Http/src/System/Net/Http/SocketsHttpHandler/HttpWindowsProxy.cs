@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
@@ -20,19 +20,19 @@ namespace System.Net.Http
         private readonly MultiProxy _insecureProxy;    // URI of the http system proxy if set
         private readonly MultiProxy _secureProxy;      // URI of the https system proxy if set
         private readonly FailedProxyCache _failedProxies = new FailedProxyCache();
-        private readonly List<string> _bypass;         // list of domains not to proxy
-        private readonly bool _bypassLocal = false;    // we should bypass domain considered local
-        private readonly List<IPAddress> _localIp;
-        private ICredentials _credentials;
+        private readonly List<string>? _bypass;         // list of domains not to proxy
+        private readonly bool _bypassLocal;    // we should bypass domain considered local
+        private readonly List<IPAddress>? _localIp;
+        private ICredentials? _credentials;
         private readonly WinInetProxyHelper _proxyHelper;
-        private SafeWinHttpHandle _sessionHandle;
+        private SafeWinHttpHandle? _sessionHandle;
         private bool _disposed;
 
-        public static bool TryCreate(out IWebProxy proxy)
+        public static bool TryCreate([NotNullWhen(true)] out IWebProxy? proxy)
         {
             // This will get basic proxy setting from system using existing
             // WinInetProxyHelper functions. If no proxy is enabled, it will return null.
-            SafeWinHttpHandle sessionHandle = null;
+            SafeWinHttpHandle? sessionHandle = null;
             proxy = null;
 
             WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
@@ -43,7 +43,7 @@ namespace System.Net.Http
 
             if (proxyHelper.AutoSettingsUsed)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(proxyHelper, $"AutoSettingsUsed, calling {nameof(Interop.WinHttp.WinHttpOpen)}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(proxyHelper, $"AutoSettingsUsed, calling {nameof(Interop.WinHttp.WinHttpOpen)}");
                 sessionHandle = Interop.WinHttp.WinHttpOpen(
                     IntPtr.Zero,
                     Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY,
@@ -54,7 +54,7 @@ namespace System.Net.Http
                 if (sessionHandle.IsInvalid)
                 {
                     // Proxy failures are currently ignored by managed handler.
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(proxyHelper, $"{nameof(Interop.WinHttp.WinHttpOpen)} returned invalid handle");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(proxyHelper, $"{nameof(Interop.WinHttp.WinHttpOpen)} returned invalid handle");
                     return false;
                 }
             }
@@ -63,14 +63,14 @@ namespace System.Net.Http
             return true;
         }
 
-        private HttpWindowsProxy(WinInetProxyHelper proxyHelper, SafeWinHttpHandle sessionHandle)
+        private HttpWindowsProxy(WinInetProxyHelper proxyHelper, SafeWinHttpHandle? sessionHandle)
         {
             _proxyHelper = proxyHelper;
             _sessionHandle = sessionHandle;
 
             if (proxyHelper.ManualSettingsUsed)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(proxyHelper, $"ManualSettingsUsed, {proxyHelper.Proxy}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(proxyHelper, $"ManualSettingsUsed, {proxyHelper.Proxy}");
 
                 _secureProxy = MultiProxy.Parse(_failedProxies, proxyHelper.Proxy, true);
                 _insecureProxy = MultiProxy.Parse(_failedProxies, proxyHelper.Proxy, false);
@@ -79,7 +79,7 @@ namespace System.Net.Http
                 {
                     int idx = 0;
                     int start = 0;
-                    string tmp;
+                    string? tmp;
 
                     // Process bypass list for manual setting.
                     // Initial list size is best guess based on string length assuming each entry is at least 5 characters on average.
@@ -177,9 +177,9 @@ namespace System.Net.Http
         /// <summary>
         /// Gets the proxy URI. (IWebProxy interface)
         /// </summary>
-        public Uri GetProxy(Uri uri)
+        public Uri? GetProxy(Uri uri)
         {
-            GetMultiProxy(uri).ReadNext(out Uri proxyUri, out _);
+            GetMultiProxy(uri).ReadNext(out Uri? proxyUri, out _);
             return proxyUri;
         }
 
@@ -209,7 +209,7 @@ namespace System.Net.Http
                         {
                             if (proxyInfo.Proxy != IntPtr.Zero)
                             {
-                                string proxyStr = Marshal.PtrToStringUni(proxyInfo.Proxy);
+                                string proxyStr = Marshal.PtrToStringUni(proxyInfo.Proxy)!;
 
                                 return MultiProxy.CreateLazy(_failedProxies, proxyStr, IsSecureUri(uri));
                             }
@@ -242,7 +242,7 @@ namespace System.Net.Http
             {
                 if (_bypassLocal)
                 {
-                    IPAddress address = null;
+                    IPAddress? address;
 
                     if (uri.IsLoopback)
                     {
@@ -261,7 +261,7 @@ namespace System.Net.Http
                         {
                             // Host is valid IP address.
                             // Check if it belongs to local system.
-                            foreach (IPAddress a in _localIp)
+                            foreach (IPAddress a in _localIp!)
                             {
                                 if (a.Equals(address))
                                 {
@@ -317,7 +317,7 @@ namespace System.Net.Http
             return false;
         }
 
-        public ICredentials Credentials
+        public ICredentials? Credentials
         {
             get
             {
@@ -330,6 +330,6 @@ namespace System.Net.Http
         }
 
         // Access function for unit tests.
-        internal List<string> BypassList => _bypass;
+        internal List<string>? BypassList => _bypass;
     }
 }

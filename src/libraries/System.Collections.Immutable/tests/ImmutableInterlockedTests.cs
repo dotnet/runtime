@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -115,7 +114,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Update_HighConcurrency()
         {
             UpdateHelper<ImmutableList<int>>(func =>
@@ -148,7 +147,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void UpdateArray_HighConcurrency()
         {
             UpdateArrayHelper<int>(func =>
@@ -181,7 +180,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Update_CarefullyScheduled()
         {
             UpdateHelper<ImmutableHashSet<int>>(func =>
@@ -240,7 +239,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void UpdateArray_CarefullyScheduled()
         {
             UpdateArrayHelper<int>(func =>

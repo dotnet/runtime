@@ -1,15 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class SignatureDescription
     {
-        public string KeyAlgorithm { get; set; }
-        public string DigestAlgorithm { get; set; }
-        public string FormatterAlgorithm { get; set; }
-        public string DeformatterAlgorithm { get; set; }
+        public string? KeyAlgorithm { get; set; }
+        public string? DigestAlgorithm { get; set; }
+        public string? FormatterAlgorithm { get; set; }
+        public string? DeformatterAlgorithm { get; set; }
 
         public SignatureDescription()
         {
@@ -25,23 +28,26 @@ namespace System.Security.Cryptography
             DeformatterAlgorithm = el.SearchForTextOfTag("Deformatter");
         }
 
+        [RequiresUnreferencedCode("CreateDeformatter is not trim compatible because the algorithm implementation referenced by DeformatterAlgorithm might be removed.")]
         public virtual AsymmetricSignatureDeformatter CreateDeformatter(AsymmetricAlgorithm key)
         {
-            AsymmetricSignatureDeformatter item = (AsymmetricSignatureDeformatter)CryptoConfig.CreateFromName(DeformatterAlgorithm);
-            item.SetKey(key);
+            AsymmetricSignatureDeformatter? item = (AsymmetricSignatureDeformatter?)CryptoConfig.CreateFromName(DeformatterAlgorithm!);
+            item!.SetKey(key);
             return item;
         }
 
+        [RequiresUnreferencedCode("CreateFormatter is not trim compatible because the algorithm implementation referenced by FormatterAlgorithm might be removed.")]
         public virtual AsymmetricSignatureFormatter CreateFormatter(AsymmetricAlgorithm key)
         {
-            AsymmetricSignatureFormatter item = (AsymmetricSignatureFormatter)CryptoConfig.CreateFromName(FormatterAlgorithm);
-            item.SetKey(key);
+            AsymmetricSignatureFormatter? item = (AsymmetricSignatureFormatter?)CryptoConfig.CreateFromName(FormatterAlgorithm!);
+            item!.SetKey(key);
             return item;
         }
 
-        public virtual HashAlgorithm CreateDigest()
+        [RequiresUnreferencedCode("CreateDigest is not trim compatible because the algorithm implementation referenced by DigestAlgorithm might be removed.")]
+        public virtual HashAlgorithm? CreateDigest()
         {
-            return (HashAlgorithm)CryptoConfig.CreateFromName(DigestAlgorithm);
+            return (HashAlgorithm?)CryptoConfig.CreateFromName(DigestAlgorithm!);
         }
     }
 }

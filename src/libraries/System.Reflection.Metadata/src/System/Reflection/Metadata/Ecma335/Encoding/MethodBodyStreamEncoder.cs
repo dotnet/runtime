@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Reflection.Metadata.Ecma335
 {
@@ -190,7 +189,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentOutOfRange(nameof(instructionEncoder), SR.TooManyExceptionRegions);
             }
 
-            // Note (see also https://github.com/dotnet/corefx/issues/26910)
+            // Note (see also https://github.com/dotnet/runtime/issues/24948)
             //
             // We could potentially automatically determine whether a tiny method with no variables and InitLocals flag set
             // has localloc instruction and thus needs a fat header. We could parse the IL stored in codeBuilder.

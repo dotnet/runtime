@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 
@@ -11,9 +10,9 @@ namespace System.IO.IsolatedStorage
         private ulong _quota;
         private bool _validQuota;
 
-        private object _applicationIdentity;
-        private object _assemblyIdentity;
-        private object _domainIdentity;
+        private object? _applicationIdentity;
+        private object? _assemblyIdentity;
+        private object? _domainIdentity;
 
         protected IsolatedStorage() { }
 
@@ -22,7 +21,7 @@ namespace System.IO.IsolatedStorage
             get
             {
                 if (Helper.IsApplication(Scope))
-                    return _applicationIdentity;
+                    return _applicationIdentity!;
 
                 throw new InvalidOperationException(SR.IsolatedStorage_ApplicationUndefined);
             }
@@ -33,7 +32,7 @@ namespace System.IO.IsolatedStorage
             get
             {
                 if (Helper.IsAssembly(Scope))
-                    return _assemblyIdentity;
+                    return _assemblyIdentity!;
 
                 throw new InvalidOperationException(SR.IsolatedStorage_AssemblyUndefined);
             }
@@ -44,7 +43,7 @@ namespace System.IO.IsolatedStorage
             get
             {
                 if (Helper.IsDomain(Scope))
-                    return _domainIdentity;
+                    return _domainIdentity!;
 
                 throw new InvalidOperationException(SR.IsolatedStorage_AssemblyUndefined);
             }
@@ -128,7 +127,7 @@ namespace System.IO.IsolatedStorage
 
         public abstract void Remove();
 
-        internal string IdentityHash
+        internal string? IdentityHash
         {
             get; private set;
         }
@@ -138,14 +137,12 @@ namespace System.IO.IsolatedStorage
             InitStore(scope, null, appEvidenceType);
         }
 
-        protected void InitStore(IsolatedStorageScope scope, Type domainEvidenceType, Type assemblyEvidenceType)
+        protected void InitStore(IsolatedStorageScope scope, Type? domainEvidenceType, Type? assemblyEvidenceType)
         {
             VerifyScope(scope);
             Scope = scope;
 
-            object identity;
-            string hash;
-            Helper.GetDefaultIdentityAndHash(out identity, out hash, SeparatorInternal);
+            Helper.GetDefaultIdentityAndHash(out object identity, out string hash, SeparatorInternal);
 
             if (Helper.IsApplication(scope))
             {

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -76,7 +75,7 @@ namespace System.Dynamic.Tests
         }
 
         // TODO: Use a case-insensitive binder so that the above actually works.
-        // https://github.com/dotnet/corefx/issues/14012
+        // https://github.com/dotnet/runtime/issues/19482
 
         [Fact]
         public void MethodHiding()
@@ -236,7 +235,7 @@ namespace System.Dynamic.Tests
         [Fact]
         public void NonIndexerParameterizedDirectAccess()
         {
-            // If a paramterized property isn't the type's indexer, we should be allowed to use the
+            // If a parameterized property isn't the type's indexer, we should be allowed to use the
             // getter or setter directly.
             dynamic d = GetObjectWithNonIndexerParameterProperty(true, true);
             d.set_ItemProp(2, 19);
@@ -245,7 +244,7 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        public void NonIndexerParamterizedGetterAndSetterIndexAccess()
+        public void NonIndexerParameterizedGetterAndSetterIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(true, true);
             RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => d.ItemProp[2] = 3);
@@ -255,7 +254,7 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        public void NonIndexerParamterizedGetterOnlyIndexAccess()
+        public void NonIndexerParameterizedGetterOnlyIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(true, false);
             int dump;
@@ -265,7 +264,7 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        public void NonIndexerParamterizedSetterOnlyIndexAccess()
+        public void NonIndexerParameterizedSetterOnlyIndexAccess()
         {
             dynamic d = GetObjectWithNonIndexerParameterProperty(false, true);
             RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => d.ItemProp[2] = 9);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection.Internal;
@@ -760,7 +759,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal readonly MemoryBlock Block;
 
         // row ids in the CustomAttribute table sorted by parents
-        internal readonly int[] PtrTable;
+        internal readonly int[]? PtrTable;
 
         internal CustomAttributeTableReader(
             int numberOfRows,

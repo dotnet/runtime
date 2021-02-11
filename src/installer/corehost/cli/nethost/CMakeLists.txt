@@ -1,8 +1,6 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
-cmake_minimum_required (VERSION 2.6)
 project(nethost)
 
 set(DOTNET_PROJECT_NAME "nethost")
@@ -14,10 +12,9 @@ include_directories(../fxr)
 set(SOURCES
     nethost.cpp
     ../fxr_resolver.cpp
-    ../fxr/fx_ver.cpp
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         Exports.def)
 endif()
@@ -28,7 +25,22 @@ include(../lib_static.cmake)
 add_definitions(-DFEATURE_LIBHOST=1)
 add_definitions(-DNETHOST_EXPORT)
 
+# Copy static lib PDB to the project output directory
+if (WIN32)
+    set_target_properties(libnethost PROPERTIES
+        COMPILE_PDB_NAME "libnethost"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+    )
+endif(WIN32)
+
+install(FILES ../coreclr_delegates.h DESTINATION corehost)
+install(FILES ../hostfxr.h DESTINATION corehost)
 install(FILES nethost.h DESTINATION corehost)
-install(TARGETS nethost DESTINATION corehost)
-install(TARGETS libnethost DESTINATION corehost)
-install_symbols(nethost corehost)
+install_with_stripped_symbols(nethost TARGETS corehost)
+
+# Only Windows creates a symbols file for static libs.
+if (WIN32)
+    install_with_stripped_symbols(libnethost TARGETS corehost)
+else()
+    install(TARGETS libnethost DESTINATION corehost)
+endif(WIN32)

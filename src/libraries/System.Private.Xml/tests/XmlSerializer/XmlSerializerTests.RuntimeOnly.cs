@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SerializationTypes;
 using System;
@@ -161,11 +160,13 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_GuidAsRoot()
     {
-        Xml_GuidAsRoot(new XmlSerializer(typeof(Guid)));
+        Xml_GuidAsRoot_Helper(new XmlSerializer(typeof(Guid)));
     }
 
-    private static void Xml_GuidAsRoot(XmlSerializer serializer)
+    private static void Xml_GuidAsRoot_Helper(XmlSerializer serializer)
     {
+        // TODO: the 'serializer' parameter is not used, this test might have issues
+
         foreach (Guid value in new Guid[] { Guid.NewGuid(), Guid.Empty })
         {
             Assert.StrictEqual(SerializeAndDeserialize<Guid>(value, string.Format(@"<?xml version=""1.0""?>
@@ -314,10 +315,10 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_ListGenericRoot()
     {
-        Xml_ListGenericRoot(new XmlSerializer(typeof(List<string>)));
+        Xml_ListGenericRoot_Helper(new XmlSerializer(typeof(List<string>)));
     }
 
-    private static void Xml_ListGenericRoot(XmlSerializer serializer)
+    private static void Xml_ListGenericRoot_Helper(XmlSerializer serializer)
     {
         List<string> x = new List<string>();
         x.Add("zero");
@@ -963,8 +964,8 @@ public static partial class XmlSerializerTests
     public static void Xml_FromTypes()
     {
         var serializers = XmlSerializer.FromTypes(new Type[] { typeof(Guid), typeof(List<string>) });
-        Xml_GuidAsRoot(serializers[0]);
-        Xml_ListGenericRoot(serializers[1]);
+        Xml_GuidAsRoot_Helper(serializers[0]);
+        Xml_ListGenericRoot_Helper(serializers[1]);
 
         serializers = XmlSerializer.FromTypes(null);
         Assert.Equal(0, serializers.Length);
@@ -1916,7 +1917,6 @@ public static partial class XmlSerializerTests
         XmlReflectionMember member = members[0] = new XmlReflectionMember();
         member.MemberType = typeof(TypeWithQNameArrayAsXmlAttributeInvalidDefaultValue);
         XmlMembersMapping mappings = importer.ImportMembersMapping("root", "", members, true);
-        XmlMemberMapping xmp = mappings[0];
         XmlSchemas schema = new XmlSchemas();
         XmlSchemaExporter exporter = new XmlSchemaExporter(schema);
         AssertExtensions.Throws<XmlException,Exception>(() => exporter.ExportMembersMapping(mappings));
@@ -1958,7 +1958,7 @@ public static partial class XmlSerializerTests
         string xmlFileContent = @"<root><date>2003-01-08T15:00:00-00:00</date></root>";
         Stream sm = GenerateStreamFromString(xmlFileContent);
         XmlTextReader reader = new XmlTextReader(sm);
-        MyXmlTextParser text = new MyXmlTextParser(reader);
+        new MyXmlTextParser(reader);
     }
 
     [Fact]
@@ -2185,9 +2185,6 @@ public static partial class XmlSerializerTests
     public static void XmlMembersMapping_TypeWithXmlAttributes()
     {
         string memberName = "data";
-        string ns = s_defaultNs;
-        XmlReflectionMember member = GetReflectionMember<TypeWithXmlAttributes>(memberName, ns);
-        var members = new XmlReflectionMember[] { member };
 
         TypeWithXmlAttributes value = new TypeWithXmlAttributes { MyName = "fooname", Today = DateTime.Now };
         var actual = RoundTripWithXmlMembersMapping<TypeWithXmlAttributes>(value,
@@ -2629,7 +2626,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(39105)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/1395")]
     public static void Xml_TypeWithReadOnlyMyCollectionProperty()
     {
         var value = new TypeWithReadOnlyMyCollectionProperty();

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify TextRawTextWriterGenerator.ttinclude
 
+#nullable disable
 using System;
 using System.IO;
 using System.Text;
@@ -62,12 +62,12 @@ namespace System.Xml
         // Ignore attributes
         public override void WriteStartAttribute(string prefix, string localName, string ns)
         {
-            base.inAttributeValue = true;
+            base._inAttributeValue = true;
         }
 
         public override void WriteEndAttribute()
         {
-            base.inAttributeValue = false;
+            base._inAttributeValue = false;
         }
 
         // Ignore namespace declarations
@@ -113,7 +113,7 @@ namespace System.Xml
         // Output text content without any escaping; ignore attribute values
         public override void WriteWhitespace(string ws)
         {
-            if (!base.inAttributeValue)
+            if (!base._inAttributeValue)
             {
                 base.WriteRaw(ws);
             }
@@ -122,7 +122,7 @@ namespace System.Xml
         // Output text content without any escaping; ignore attribute values
         public override void WriteString(string textBlock)
         {
-            if (!base.inAttributeValue)
+            if (!base._inAttributeValue)
             {
                 base.WriteRaw(textBlock);
             }
@@ -131,7 +131,7 @@ namespace System.Xml
         // Output text content without any escaping; ignore attribute values
         public override void WriteChars(char[] buffer, int index, int count)
         {
-            if (!base.inAttributeValue)
+            if (!base._inAttributeValue)
             {
                 base.WriteRaw(buffer, index, count);
             }
@@ -140,7 +140,7 @@ namespace System.Xml
         // Output text content without any escaping; ignore attribute values
         public override void WriteRaw(char[] buffer, int index, int count)
         {
-            if (!base.inAttributeValue)
+            if (!base._inAttributeValue)
             {
                 base.WriteRaw(buffer, index, count);
             }
@@ -149,7 +149,7 @@ namespace System.Xml
         // Output text content without any escaping; ignore attribute values
         public override void WriteRaw(string data)
         {
-            if (!base.inAttributeValue)
+            if (!base._inAttributeValue)
             {
                 base.WriteRaw(data);
             }

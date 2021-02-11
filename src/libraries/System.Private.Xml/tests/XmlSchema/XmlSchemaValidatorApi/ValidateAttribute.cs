@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.IO;
@@ -69,7 +68,6 @@ namespace System.Xml.Tests
         public void PassNullXmlSchemaInfo__Valid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
-            XmlSchemaInfo info = new XmlSchemaInfo();
 
             val.Initialize();
             val.ValidateElement("OneAttributeElement", "", null);
@@ -203,17 +201,14 @@ namespace System.Xml.Tests
 
     public class TCGetUnspecifiedDefaultAttributes : CXmlSchemaValidatorTestCase
     {
-        private ITestOutputHelper _output;
         public TCGetUnspecifiedDefaultAttributes(ITestOutputHelper output) : base(output)
         {
-            _output = output;
         }
 
         [Fact]
         public void PassNull__Invalid()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
-            XmlSchemaInfo info = new XmlSchemaInfo();
 
             val.Initialize();
             val.ValidateElement("OneAttributeElement", "", null);
@@ -440,7 +435,6 @@ namespace System.Xml.Tests
         public void CallWithoutValidationOfRequiredAttribute()
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_VALIDATE_ATTRIBUTE);
-            ArrayList atts = new ArrayList();
 
             val.Initialize();
             val.ValidateElement("RequiredAttributeElement", "", null);

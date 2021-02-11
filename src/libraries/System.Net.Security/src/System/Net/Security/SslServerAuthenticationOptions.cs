@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Security.Authentication;
@@ -23,13 +22,15 @@ namespace System.Net.Security
 
         public bool ClientCertificateRequired { get; set; }
 
-        public List<SslApplicationProtocol> ApplicationProtocols { get; set; }
+        public List<SslApplicationProtocol>? ApplicationProtocols { get; set; }
 
-        public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; set; }
+        public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get; set; }
 
-        public ServerCertificateSelectionCallback ServerCertificateSelectionCallback { get; set; }
+        public ServerCertificateSelectionCallback? ServerCertificateSelectionCallback { get; set; }
 
-        public X509Certificate ServerCertificate { get; set; }
+        public X509Certificate? ServerCertificate { get; set; }
+
+        public SslStreamCertificateContext? ServerCertificateContext { get; set; }
 
         public SslProtocols EnabledSslProtocols
         {
@@ -70,6 +71,6 @@ namespace System.Net.Security
         /// When set to null operating system default will be used.
         /// Use extreme caution when changing this setting.
         /// </summary>
-        public CipherSuitesPolicy CipherSuitesPolicy { get; set; }
+        public CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
     }
 }

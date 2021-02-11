@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net.Sockets
 {
@@ -21,7 +20,7 @@ namespace System.Net.Sockets
         // Send without using routing tables.
         DontRoute = 0x0004,
 
-        // This is defined in the .NET Framework and isn't being ported to CoreFx
+        // This is defined in the .NET Framework and isn't being ported to .NET Core
         // since it is Windows specific. However, leave this enum value reserved
         // to prevent future numbering conflicts.
         // MaxIOVectorLength = 0x0010

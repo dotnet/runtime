@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -13,7 +12,7 @@ namespace System.IO.Pipes
 
         // Using RunContinuationsAsynchronously for compat reasons (old API used ThreadPool.QueueUserWorkItem for continuations)
         internal ConnectionCompletionSource(NamedPipeServerStream server)
-            : base(server._threadPoolBinding, ReadOnlyMemory<byte>.Empty)
+            : base(server._threadPoolBinding!, ReadOnlyMemory<byte>.Empty)
         {
             _serverStream = server;
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Runtime.InteropServices;
@@ -144,7 +143,7 @@ namespace System.DirectoryServices.Interop
                             string s = bytes[i].ToString("X", CultureInfo.InvariantCulture);
                             if (s.Length == 1)
                             {
-                                binaryPart.Append("0");
+                                binaryPart.Append('0');
                             }
 
                             binaryPart.Append(s);
@@ -152,9 +151,9 @@ namespace System.DirectoryServices.Interop
 
                         strb.Append("B:");
                         strb.Append(binaryPart.Length);
-                        strb.Append(":");
-                        strb.Append(binaryPart.ToString());
-                        strb.Append(":");
+                        strb.Append(':');
+                        strb.Append(binaryPart);
+                        strb.Append(':');
                         strb.Append(Marshal.PtrToStringUni(dnb.pszDNString));
 
                         return strb.ToString();
@@ -169,9 +168,9 @@ namespace System.DirectoryServices.Interop
                         var strb = new StringBuilder();
                         strb.Append("S:");
                         strb.Append(strValue.Length);
-                        strb.Append(":");
+                        strb.Append(':');
                         strb.Append(strValue);
-                        strb.Append(":");
+                        strb.Append(':');
                         strb.Append(Marshal.PtrToStringUni(dns.pszDNString));
 
                         return strb.ToString();
@@ -251,7 +250,7 @@ namespace System.DirectoryServices.Interop
             };
         }
 
-        private unsafe void SetValue(object managedValue, AdsType adsType)
+        private void SetValue(object managedValue, AdsType adsType)
         {
             adsvalue = new AdsValue()
             {

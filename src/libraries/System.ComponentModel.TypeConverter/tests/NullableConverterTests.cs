@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
@@ -43,7 +42,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void CanConvertFrom_WithContext()
+        public static void CanConvertFrom_WithContext_NullableConverter()
         {
             CanConvertFrom_WithContext(new object[2, 2]
                 {
@@ -54,7 +53,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void CanConvertTo_WithContext()
+        public static void CanConvertTo_WithContext_NullableConverter()
         {
             CanConvertTo_WithContext(new object[3, 2]
                 {
@@ -66,7 +65,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void ConvertFrom_WithContext()
+        public static void ConvertFrom_WithContext_NullableConverter()
         {
             ConvertFrom_WithContext(new object[3, 3]
                 {
@@ -78,7 +77,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void ConvertTo_WithContext()
+        public static void ConvertTo_WithContext_NullableConverter()
         {
             ConvertTo_WithContext(new object[4, 3]
                 {
@@ -100,7 +99,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(expectedMemberInfo, actualUnInitInstanceDescriptor.MemberInfo);
             Assert.Equal(new[] { NullableConverterTests.s_uninitializedInt }, actualUnInitInstanceDescriptor.Arguments);
             Assert.True(actualUnInitInstanceDescriptor.IsComplete);
-            // This appears to be a bug present in desktop as well
+            // This appears to be a bug present in .NET Framework as well
             // Assert.Equal(NullableConverterTests.s_uninitializedInt, actualUnInitInstanceDescriptor.Invoke());
             Assert.Equal(0, actualUnInitInstanceDescriptor.Invoke());
 

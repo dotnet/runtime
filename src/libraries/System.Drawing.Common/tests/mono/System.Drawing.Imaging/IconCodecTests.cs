@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // ICO Codec class testing unit
 //
 // Authors:
-//  Jordi Mas i Hernàndez (jordi@ximian.com)
+//  Jordi Mas i Hern?ndez (jordi@ximian.com)
 //  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // Copyright (C) 2006-2007 Novell, Inc (http://www.novell.com)
@@ -126,7 +126,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values are inconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(16, bmp.Palette.Entries.Length);
                 Assert.Equal(-16777216, bmp.Palette.Entries[0].ToArgb());
                 Assert.Equal(-16777216, bmp.Palette.Entries[1].ToArgb());
@@ -155,7 +155,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values are inconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -186,7 +186,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(35744)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
         public void Bitmap16Data()
         {
             string sInFile = Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico");
@@ -313,7 +313,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("VisualPng.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values areinconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values areinconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(16, bmp.Palette.Entries.Length);
 
                 Assert.Equal(-16777216, bmp.Palette.Entries[0].ToArgb());
@@ -342,7 +342,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("VisualPng.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values areinconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values areinconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -421,7 +421,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(35744)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
         public void Bitmap32Data()
         {
             string sInFile = Helpers.GetTestBitmapPath("VisualPng.ico");
@@ -557,7 +557,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("48x48_one_entry_1bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values are inconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(2, bmp.Palette.Entries.Length);
                 Assert.Equal(-16777216, bmp.Palette.Entries[0].ToArgb());
                 Assert.Equal(-1, bmp.Palette.Entries[1].ToArgb());
@@ -571,7 +571,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("48x48_one_entry_1bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // These values are inconsistent accross Windows & Unix: 0 on Windows, 16 on Unix
+                // These values are inconsistent across Windows & Unix: 0 on Windows, 16 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -663,7 +663,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(35744)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
         public void Bitmap48Data()
         {
             string sInFile = Helpers.GetTestBitmapPath("48x48_one_entry_1bit.ico");
@@ -803,7 +803,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("64x64_one_entry_8bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // This value is inconsistent accross Windows & Unix: 0 on Windows, 256 on Unix
+                // This value is inconsistent across Windows & Unix: 0 on Windows, 256 on Unix
                 Assert.Equal(256, bmp.Palette.Entries.Length);
             }
         }
@@ -815,7 +815,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("64x64_one_entry_8bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // This value is inconsistent accross Windows & Unix: 0 on Windows, 256 on Unix
+                // This value is inconsistent across Windows & Unix: 0 on Windows, 256 on Unix
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -889,7 +889,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(35744)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
         public void Bitmap64Data()
         {
             string sInFile = Helpers.GetTestBitmapPath("64x64_one_entry_8bit.ico");
@@ -1083,7 +1083,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("96x96_one_entry_8bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // This value is inconsistent accross Unix and Windows.
+                // This value is inconsistent across Unix and Windows.
                 Assert.Equal(256, bmp.Palette.Entries.Length);
             }
         }
@@ -1095,7 +1095,7 @@ namespace MonoTests.System.Drawing.Imaging
             string sInFile = Helpers.GetTestBitmapPath("96x96_one_entry_8bit.ico");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
-                // This value is inconsistent accross Unix and Windows.
+                // This value is inconsistent across Unix and Windows.
                 Assert.Equal(0, bmp.Palette.Entries.Length);
             }
         }
@@ -1686,7 +1686,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(35744)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
         public void Bitmap96Data()
         {
             string sInFile = Helpers.GetTestBitmapPath("96x96_one_entry_8bit.ico");

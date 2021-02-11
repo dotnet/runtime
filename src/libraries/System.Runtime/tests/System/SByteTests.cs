@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -77,7 +76,7 @@ namespace System.Tests
         [InlineData((sbyte)78, null, false)]
         [InlineData((sbyte)78, "78", false)]
         [InlineData((sbyte)78, 78, false)]
-        public static void Equals(sbyte i1, object obj, bool expected)
+        public static void EqualsTest(sbyte i1, object obj, bool expected)
         {
             if (obj is sbyte)
             {
@@ -115,7 +114,18 @@ namespace System.Tests
                 yield return new object[] { (sbyte)0x24, "x", defaultFormat, "24" };
                 yield return new object[] { (sbyte)-0x24, "x", defaultFormat, "dc" };
                 yield return new object[] { (sbyte)24, "N", defaultFormat, string.Format("{0:N}", 24.00) };
+
+
             }
+
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+            yield return new object[] { (sbyte)32, "C100", invariantFormat, "¤32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (sbyte)32, "P100", invariantFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { (sbyte)32, "D100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032" };
+            yield return new object[] { (sbyte)32, "E100", invariantFormat, "3.2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { (sbyte)32, "F100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (sbyte)32, "N100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (sbyte)32, "X100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
 
             var customFormat = new NumberFormatInfo()
             {
@@ -138,7 +148,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(sbyte i, string format, IFormatProvider provider, string expected)
+        public static void ToStringTest(sbyte i, string format, IFormatProvider provider, string expected)
         {
             // Format is case insensitive
             string upperFormat = format.ToUpperInvariant();

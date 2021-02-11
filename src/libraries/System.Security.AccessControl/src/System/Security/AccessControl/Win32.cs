@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
@@ -25,7 +24,7 @@ namespace System.Security.AccessControl
             byte[] binaryForm,
             int requestedRevision,
             SecurityInfos si,
-            out string resultSddl)
+            out string? resultSddl)
         {
             int errorCode;
             IntPtr ByteArray;
@@ -41,13 +40,13 @@ namespace System.Security.AccessControl
             // Extract data from the returned pointer
             //
 
-            resultSddl = Marshal.PtrToStringUni(ByteArray);
+            resultSddl = Marshal.PtrToStringUni(ByteArray)!;
 
             //
             // Now is a good time to get rid of the returned pointer
             //
 
-            Interop.Kernel32.LocalFree(ByteArray);
+            Marshal.FreeHGlobal(ByteArray);
 
             return 0;
 
@@ -69,10 +68,10 @@ namespace System.Security.AccessControl
 
         internal static int GetSecurityInfo(
             ResourceType resourceType,
-            string name,
-            SafeHandle handle,
+            string? name,
+            SafeHandle? handle,
             AccessControlSections accessControlSections,
-            out RawSecurityDescriptor resultSd
+            out RawSecurityDescriptor? resultSd
             )
         {
             resultSd = null;
@@ -80,7 +79,7 @@ namespace System.Security.AccessControl
             int errorCode;
             IntPtr SidOwner, SidGroup, Dacl, Sacl, ByteArray;
             SecurityInfos SecurityInfos = 0;
-            Privilege privilege = null;
+            Privilege? privilege = null;
 
             if ((accessControlSections & AccessControlSections.Owner) != 0)
             {
@@ -127,7 +126,7 @@ namespace System.Security.AccessControl
                     {
                         throw new ArgumentException(
                             SR.Argument_InvalidSafeHandle,
-nameof(handle));
+                            nameof(handle));
                     }
                     else
                     {
@@ -193,7 +192,7 @@ nameof(handle));
 
             Marshal.Copy(ByteArray, BinaryForm, 0, (int)Length);
 
-            Interop.Kernel32.LocalFree(ByteArray);
+            Marshal.FreeHGlobal(ByteArray);
 
             resultSd = new RawSecurityDescriptor(BinaryForm, 0);
 
@@ -215,18 +214,18 @@ nameof(handle));
 
         internal static int SetSecurityInfo(
             ResourceType type,
-            string name,
-            SafeHandle handle,
+            string? name,
+            SafeHandle? handle,
             SecurityInfos securityInformation,
-            SecurityIdentifier owner,
-            SecurityIdentifier group,
-            GenericAcl sacl,
-            GenericAcl dacl)
+            SecurityIdentifier? owner,
+            SecurityIdentifier? group,
+            GenericAcl? sacl,
+            GenericAcl? dacl)
         {
             int errorCode;
             int Length;
-            byte[] OwnerBinary = null, GroupBinary = null, SaclBinary = null, DaclBinary = null;
-            Privilege securityPrivilege = null;
+            byte[]? OwnerBinary = null, GroupBinary = null, SaclBinary = null, DaclBinary = null;
+            Privilege? securityPrivilege = null;
 
             if (owner != null)
             {
@@ -290,7 +289,7 @@ nameof(handle));
                     {
                         throw new ArgumentException(
                             SR.Argument_InvalidSafeHandle,
-nameof(handle));
+                            nameof(handle));
                     }
                     else
                     {

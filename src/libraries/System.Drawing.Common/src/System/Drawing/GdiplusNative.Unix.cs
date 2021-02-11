@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Drawing.Drawing2D;
@@ -29,15 +28,20 @@ namespace System.Drawing
 
             internal static IntPtr LoadNativeLibrary()
             {
-                string libraryName;
+                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
 
                 IntPtr lib = IntPtr.Zero;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    libraryName = "libgdiplus.dylib";
-
-                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                    NativeLibrary.TryLoad(libraryName, assembly, default, out lib);
+                    if (!NativeLibrary.TryLoad("libgdiplus.dylib", assembly, default, out lib))
+                    {
+                        // homebrew install location
+                        if (!NativeLibrary.TryLoad("/usr/local/lib/libgdiplus.dylib", assembly, default, out lib))
+                        {
+                            // macports install location
+                            NativeLibrary.TryLoad("/opt/local/lib/libgdiplus.dylib", assembly, default, out lib);
+                        }
+                    }
                 }
                 else
                 {
@@ -45,12 +49,9 @@ namespace System.Drawing
                     // The mono project, where libgdiplus originated, allowed both of the names below to be used, via
                     // a global configuration setting. We prefer the "unversioned" shared object name, and fallback to
                     // the name suffixed with ".0".
-                    libraryName = "libgdiplus.so";
-
-                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                    if (!NativeLibrary.TryLoad(libraryName, assembly, default, out lib))
+                    if (!NativeLibrary.TryLoad("libgdiplus.so", assembly, default, out lib))
                     {
-                         NativeLibrary.TryLoad("libgdiplus.so.0", assembly, default, out lib);
+                        NativeLibrary.TryLoad("libgdiplus.so.0", assembly, default, out lib);
                     }
                 }
 
@@ -400,17 +401,17 @@ namespace System.Drawing
             internal static extern int GdipRecordMetafileFromDelegate_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, IntPtr hdc, EmfType type, ref RectangleF frameRect,
-                MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+                MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipRecordMetafileFromDelegateI_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, IntPtr hdc, EmfType type, ref Rectangle frameRect,
-                MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+                MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetPostScriptGraphicsContext(
-                [MarshalAs(UnmanagedType.LPStr)]string filename,
+                [MarshalAs(UnmanagedType.LPStr)] string filename,
                 int width, int height, double dpix, double dpiy, ref IntPtr graphics);
 
             [DllImport(LibraryName, ExactSpelling = true)]

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 
@@ -75,6 +75,7 @@ namespace System.Linq.Expressions
         /// <param name="propertyAccessor">The <see cref="PropertyInfo"/> for the property which is being assigned to.</param>
         /// <param name="expression">The value to be assigned to <paramref name="propertyAccessor"/>.</param>
         /// <returns>The created <see cref="MemberAssignment"/>.</returns>
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static MemberAssignment Bind(MethodInfo propertyAccessor, Expression expression)
         {
             ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
@@ -85,7 +86,7 @@ namespace System.Linq.Expressions
 
         private static void ValidateSettableFieldOrPropertyMember(MemberInfo member, out Type memberType)
         {
-            Type decType = member.DeclaringType;
+            Type? decType = member.DeclaringType;
             if (decType == null)
             {
                 throw Error.NotAMemberOfAnyType(member, nameof(member));

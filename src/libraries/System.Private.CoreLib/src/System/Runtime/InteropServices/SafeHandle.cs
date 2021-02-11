@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.ConstrainedExecution;
@@ -75,7 +74,7 @@ namespace System.Runtime.InteropServices
         }
 #endif
 
-        protected void SetHandle(IntPtr handle) => this.handle = handle;
+        protected internal void SetHandle(IntPtr handle) => this.handle = handle;
 
         public IntPtr DangerousGetHandle() => handle;
 
@@ -101,15 +100,8 @@ namespace System.Runtime.InteropServices
         {
             Debug.Assert(_fullyInitialized);
 
-            // Attempt to set closed state (low order bit of the _state field).
-            // Might have to attempt these repeatedly, if the operation suffers
-            // interference from an AddRef or Release.
-            int oldState, newState;
-            do
-            {
-                oldState = _state;
-                newState = oldState | StateBits.Closed;
-            } while (Interlocked.CompareExchange(ref _state, newState, oldState) != oldState);
+            // Set closed state (low order bit of the _state field).
+            Interlocked.Or(ref _state, StateBits.Closed);
 
             GC.SuppressFinalize(this);
         }

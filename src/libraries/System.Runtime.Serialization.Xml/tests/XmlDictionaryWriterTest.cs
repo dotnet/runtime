@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -15,7 +14,7 @@ using Xunit;
 
 public static class XmlDictionaryWriterTest
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void XmlBaseWriter_WriteBase64Async()
     {
         string actual;
@@ -62,7 +61,7 @@ public static class XmlDictionaryWriterTest
         Assert.Equal(expect, actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void XmlBaseWriter_FlushAsync()
     {
         string actual = null;
@@ -142,7 +141,7 @@ public static class XmlDictionaryWriterTest
         Assert.Equal(expect, actual);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void XmlBaseWriter_CheckAsync_ThrowInvalidOperationException()
     {
         int byteSize = 1024;

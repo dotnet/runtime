@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
@@ -12,10 +11,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly LazyMemberInfo _member;
         private readonly ExportDefinition _exportDefinition;
-        private readonly ICompositionElement _origin;
-        private IDictionary<string, object> _metadata;
+        private readonly ICompositionElement? _origin;
+        private IDictionary<string, object?>? _metadata;
 
-        public ReflectionMemberExportDefinition(LazyMemberInfo member, ExportDefinition exportDefinition, ICompositionElement origin)
+        public ReflectionMemberExportDefinition(LazyMemberInfo member, ExportDefinition exportDefinition, ICompositionElement? origin)
         {
             if (exportDefinition == null)
             {
@@ -37,7 +36,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _member; }
         }
 
-        public override IDictionary<string, object> Metadata
+        public override IDictionary<string, object?> Metadata
         {
             get
             {
@@ -54,7 +53,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return GetDisplayName(); }
         }
 
-        ICompositionElement ICompositionElement.Origin
+        ICompositionElement? ICompositionElement.Origin
         {
             get { return _origin; }
         }

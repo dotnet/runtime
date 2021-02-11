@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -62,6 +61,7 @@ public static partial class OverlappedTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/mono/mono/issues/15311", TestRuntimes.Mono)]
     public static void PropertyTest3()
     {
         IAsyncResult asyncResult = new Task(() => Console.WriteLine("this is a dummy task"));

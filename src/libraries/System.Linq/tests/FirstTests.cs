@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -81,13 +80,13 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.First());
         }
 
-        private static IEnumerable<T> EmptySource<T>()
-        {
-            yield break;
-        }
-
         private static void TestEmptyNotIList<T>()
         {
+            static IEnumerable<T1> EmptySource<T1>()
+            {
+                yield break;
+            }
+
             var source = EmptySource<T>();
 
             Assert.Null(source as IList<T>);

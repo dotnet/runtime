@@ -1,0 +1,9 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- SDK Style projects auto-magically include this file. -->
+  <Import Project="..\Directory.Build.props" />
+
+  <!-- Properties for all Interop managed test assets -->
+  <PropertyGroup>
+    <InteropCommonDir>$(MSBuildThisFileDirectory)common/</InteropCommonDir>
+  </PropertyGroup>
+</Project>

@@ -1,22 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace System.Xml.Schema
 {
-    using System.Text;
-    using System.Diagnostics;
-
     internal sealed class BitSet
     {
         private const int bitSlotShift = 5;
         private const int bitSlotMask = (1 << bitSlotShift) - 1;
 
-        private int _count;
+        private readonly int _count;
         private uint[] _bits;
 
-        private BitSet()
+        private BitSet(int count, uint[] bits)
         {
+            _count = count;
+            _bits = bits;
         }
 
         public BitSet(int count)
@@ -147,7 +149,7 @@ namespace System.Xml.Schema
         }
 
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             // assume the same type
             if (obj != null)
@@ -195,10 +197,7 @@ namespace System.Xml.Schema
 
         public BitSet Clone()
         {
-            BitSet newset = new BitSet();
-            newset._count = _count;
-            newset._bits = (uint[])_bits.Clone();
-            return newset;
+            return new BitSet(_count, (uint[])_bits.Clone());
         }
 
 

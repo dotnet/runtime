@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "redirected_error_writer.h"
 
@@ -20,7 +19,7 @@ void reset_redirected_error_writer()
     get_redirected_error_stream().swap(newstream);
 }
 
-void redirected_error_writer(const pal::char_t* msg)
+void __cdecl redirected_error_writer(const pal::char_t* msg)
 {
     get_redirected_error_stream() << msg;
 }

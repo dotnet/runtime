@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Mime;
 using System.Text;
@@ -18,21 +18,21 @@ namespace System.Net.Mail
 
     public class MailMessage : IDisposable
     {
-        private AlternateViewCollection _views;
-        private AttachmentCollection _attachments;
-        private AlternateView _bodyView = null;
-        private string _body = string.Empty;
-        private Encoding _bodyEncoding;
+        private AlternateViewCollection? _views;
+        private AttachmentCollection? _attachments;
+        private AlternateView? _bodyView;
+        private string? _body = string.Empty;
+        private Encoding? _bodyEncoding;
         private TransferEncoding _bodyTransferEncoding = TransferEncoding.Unknown;
-        private bool _isBodyHtml = false;
-        private bool _disposed = false;
+        private bool _isBodyHtml;
+        private bool _disposed;
         private readonly Message _message;
         private DeliveryNotificationOptions _deliveryStatusNotification = DeliveryNotificationOptions.None;
 
         public MailMessage()
         {
             _message = new Message();
-            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _message);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _message);
         }
 
         public MailMessage(string from, string to)
@@ -43,18 +43,18 @@ namespace System.Net.Mail
             if (to == null)
                 throw new ArgumentNullException(nameof(to));
 
-            if (from == string.Empty)
+            if (from.Length == 0)
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(from)), nameof(from));
 
-            if (to == string.Empty)
+            if (to.Length == 0)
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
 
             _message = new Message(from, to);
-            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _message);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _message);
         }
 
 
-        public MailMessage(string from, string to, string subject, string body) : this(from, to)
+        public MailMessage(string from, string to, string? subject, string? body) : this(from, to)
         {
             Subject = subject;
             Body = body;
@@ -72,8 +72,8 @@ namespace System.Net.Mail
             _message = new Message(from, to);
         }
 
-
-        public MailAddress From
+        [DisallowNull]
+        public MailAddress? From
         {
             get
             {
@@ -89,7 +89,8 @@ namespace System.Net.Mail
             }
         }
 
-        public MailAddress Sender
+        [DisallowNull]
+        public MailAddress? Sender
         {
             get
             {
@@ -102,7 +103,7 @@ namespace System.Net.Mail
         }
 
         [Obsolete("ReplyTo is obsoleted for this type.  Please use ReplyToList instead which can accept multiple addresses. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public MailAddress ReplyTo
+        public MailAddress? ReplyTo
         {
             get
             {
@@ -174,6 +175,7 @@ namespace System.Net.Mail
             }
         }
 
+        [AllowNull]
         public string Subject
         {
             get
@@ -186,7 +188,7 @@ namespace System.Net.Mail
             }
         }
 
-        public Encoding SubjectEncoding
+        public Encoding? SubjectEncoding
         {
             get
             {
@@ -206,7 +208,7 @@ namespace System.Net.Mail
             }
         }
 
-        public Encoding HeadersEncoding
+        public Encoding? HeadersEncoding
         {
             get
             {
@@ -218,6 +220,7 @@ namespace System.Net.Mail
             }
         }
 
+        [AllowNull]
         public string Body
         {
             get
@@ -243,7 +246,7 @@ namespace System.Net.Mail
             }
         }
 
-        public Encoding BodyEncoding
+        public Encoding? BodyEncoding
         {
             get
             {
@@ -290,11 +293,7 @@ namespace System.Net.Mail
                     throw new ObjectDisposedException(GetType().FullName);
                 }
 
-                if (_attachments == null)
-                {
-                    _attachments = new AttachmentCollection();
-                }
-                return _attachments;
+                return _attachments ??= new AttachmentCollection();
             }
         }
         public AlternateViewCollection AlternateViews
@@ -306,12 +305,7 @@ namespace System.Net.Mail
                     throw new ObjectDisposedException(GetType().FullName);
                 }
 
-                if (_views == null)
-                {
-                    _views = new AlternateViewCollection();
-                }
-
-                return _views;
+                return _views ??= new AlternateViewCollection();
             }
         }
 
@@ -389,7 +383,7 @@ namespace System.Net.Mail
             {
                 // we should not unnecessarily use Multipart/Mixed
                 // When there is no attachement and all the alternative views are of "Alternative" types.
-                MimeMultiPart part = null;
+                MimeMultiPart? part = null;
                 MimeMultiPart viewsPart = new MimeMultiPart(MimeMultiPartType.Alternative);
 
                 if (!string.IsNullOrEmpty(_body))
@@ -470,7 +464,7 @@ namespace System.Net.Mail
         }
 
         internal IAsyncResult BeginSend(BaseWriter writer, bool sendEnvelope, bool allowUnicode,
-            AsyncCallback callback, object state)
+            AsyncCallback? callback, object? state)
         {
             SetContent(allowUnicode);
             return _message.BeginSend(writer, sendEnvelope, allowUnicode, callback, state);
@@ -505,7 +499,7 @@ namespace System.Net.Mail
                 {
                     if (oneSet)
                     {
-                        s.Append(",");
+                        s.Append(',');
                     }
                     s.Append("FAILURE");
                     oneSet = true;
@@ -514,7 +508,7 @@ namespace System.Net.Mail
                 {
                     if (oneSet)
                     {
-                        s.Append(",");
+                        s.Append(',');
                     }
                     s.Append("DELAY");
                 }

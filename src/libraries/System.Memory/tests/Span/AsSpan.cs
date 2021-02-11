@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -109,7 +108,7 @@ namespace System.SpanTests
         {
             var arr = new Guid[20];
 
-            Span<Guid> slice = arr.AsSpan().Slice(2, 2);
+            Span<Guid> slice = arr.AsSpan(2, 2);
             Guid guid = Guid.NewGuid();
             slice[1] = guid;
 

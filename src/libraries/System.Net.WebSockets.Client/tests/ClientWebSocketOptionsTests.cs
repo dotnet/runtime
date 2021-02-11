@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Security;
 using System.Net.Test.Common;
@@ -18,6 +17,7 @@ namespace System.Net.WebSockets.Client.Tests
         public ClientWebSocketOptionsTests(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Credentials not supported on browser
         public static void UseDefaultCredentials_Roundtrips()
         {
             var cws = new ClientWebSocket();
@@ -29,6 +29,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Proxy not supported on browser
         public static void Proxy_Roundtrips()
         {
             var cws = new ClientWebSocket();
@@ -44,8 +45,9 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Null(cws.Options.Proxy);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43751")]
         public async Task Proxy_SetNull_ConnectsSuccessfully(Uri server)
         {
             for (int i = 0; i < 3; i++) // Connect and disconnect multiple times to exercise shared handler on netcoreapp
@@ -62,8 +64,8 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(28027)]
-        [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/25440")]
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Proxy_ConnectThruProxy_Success(Uri server)
         {
@@ -100,6 +102,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Buffer not supported on browser
         public static void SetBuffer_InvalidArgs_Throws()
         {
             // Recreate the minimum WebSocket buffer size values from the .NET Framework version of WebSocket,
@@ -121,6 +124,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // KeepAlive not supported on browser
         public static void KeepAliveInterval_Roundtrips()
         {
             var cws = new ClientWebSocket();
@@ -139,6 +143,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Certificates not supported on browser
         public void RemoteCertificateValidationCallback_Roundtrips()
         {
             using (var cws = new ClientWebSocket())
@@ -158,11 +163,12 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported))]
         [InlineData(false)]
         [InlineData(true)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Certificates not supported on browser
         public async Task RemoteCertificateValidationCallback_PassedRemoteCertificateInfo(bool secure)
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(27846)]
+                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
             }
 
             bool callbackInvoked = false;
@@ -194,11 +200,12 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Connects to remote service")]
         [ConditionalFact(nameof(WebSocketsSupported))]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Credentials not supported on browser
         public async Task ClientCertificates_ValidCertificate_ServerReceivesCertificateAndConnectAsyncSucceeds()
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(27846)]
+                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
             }
 
             using (X509Certificate2 clientCert = Test.Common.Configuration.Certificates.GetClientCertificate())
@@ -228,13 +235,15 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalTheory(nameof(WebSocketsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData("ws://")]
         [InlineData("wss://")]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Credentials not supported on browser
         public async Task NonSecureConnect_ConnectThruProxy_CONNECTisUsed(string connectionType)
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(27846)]
+                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
             }
 
             bool connectionAccepted = false;

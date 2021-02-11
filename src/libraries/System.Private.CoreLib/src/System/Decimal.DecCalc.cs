@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Numerics;
@@ -14,19 +13,15 @@ namespace System
     public partial struct Decimal
     {
         // Low level accessors used by a DecCalc and formatting
-        internal uint High => (uint)hi;
-        internal uint Low => (uint)lo;
-        internal uint Mid => (uint)mid;
+        internal uint High => _hi32;
+        internal uint Low => (uint)_lo64;
+        internal uint Mid => (uint)(_lo64 >> 32);
 
-        internal bool IsNegative => flags < 0;
+        internal bool IsNegative => _flags < 0;
 
-        internal int Scale => (byte)(flags >> ScaleShift);
+        internal int Scale => (byte)(_flags >> ScaleShift);
 
-#if BIGENDIAN
-        private ulong Low64 => ((ulong)Mid << 32) | Low;
-#else
-        private ulong Low64 => Unsafe.As<int, ulong>(ref Unsafe.AsRef(in lo));
-#endif
+        private ulong Low64 => _lo64;
 
         private static ref DecCalc AsMutable(ref decimal d) => ref Unsafe.As<decimal, DecCalc>(ref d);
 
@@ -50,16 +45,23 @@ namespace System
             private uint uflags;
             [FieldOffset(4)]
             private uint uhi;
+#if BIGENDIAN
+            [FieldOffset(8)]
+            private uint umid;
+            [FieldOffset(12)]
+            private uint ulo;
+#else
             [FieldOffset(8)]
             private uint ulo;
             [FieldOffset(12)]
             private uint umid;
+#endif
 
             /// <summary>
-            /// The low and mid fields combined in little-endian order
+            /// The low and mid fields combined
             /// </summary>
             [FieldOffset(8)]
-            private ulong ulomidLE;
+            private ulong ulomid;
 
             private uint High
             {
@@ -85,13 +87,8 @@ namespace System
 
             private ulong Low64
             {
-#if BIGENDIAN
-                get { return ((ulong)umid << 32) | ulo; }
-                set { umid = (uint)(value >> 32); ulo = (uint)value; }
-#else
-                get => ulomidLE;
-                set => ulomidLE = value;
-#endif
+                get => ulomid;
+                set => ulomid = value;
             }
 
             private const uint SignMask = 0x80000000;
@@ -163,7 +160,7 @@ namespace System
                 MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref s, 1)).Fill(0xCD);
             }
 
-            #region Decimal Math Helpers
+#region Decimal Math Helpers
 
             private static unsafe uint GetExponent(float f)
             {
@@ -223,7 +220,7 @@ namespace System
             /// <returns>Returns remainder. Quotient overwrites dividend.</returns>
             private static uint Div96By32(ref Buf12 bufNum, uint den)
             {
-                // TODO: https://github.com/dotnet/coreclr/issues/3439
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 ulong tmp, div;
                 if (bufNum.U2 != 0)
                 {
@@ -249,7 +246,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static bool Div96ByConst(ref ulong high64, ref uint low, uint pow)
             {
-#if BIT64
+#if TARGET_64BIT
                 ulong div64 = high64 / pow;
                 uint div = (uint)((((high64 - div64 * pow) << 32) + low) / pow);
                 if (low == div * pow)
@@ -323,7 +320,7 @@ namespace System
                 // Since 10 = 2 * 5, there must be a factor of 2 for every power of 10 we can extract.
                 // We use this as a quick test on whether to try a given power.
 
-#if BIT64
+#if TARGET_64BIT
                 while ((byte)low == 0 && scale >= 8 && Div96ByConst(ref high64, ref low, 100000000))
                     scale -= 8;
 
@@ -361,7 +358,7 @@ namespace System
                         // Result is zero.  Entire dividend is remainder.
                         return 0;
 
-                    // TODO: https://github.com/dotnet/coreclr/issues/3439
+                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     quo = (uint)(num / den);
                     num -= quo * den; // remainder
                     bufNum.Low64 = num;
@@ -399,7 +396,7 @@ namespace System
                     //
                     return 0;
 
-                // TODO: https://github.com/dotnet/coreclr/issues/3439
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 quo = (uint)(num64 / denHigh32);
                 num = bufNum.U0 | ((num64 - quo * denHigh32) << 32); // remainder
 
@@ -445,7 +442,7 @@ namespace System
                     //
                     return 0;
 
-                // TODO: https://github.com/dotnet/coreclr/issues/3439
+                // TODO: https://github.com/dotnet/runtime/issues/5213
                 uint quo = (uint)(dividend / den);
                 uint remainder = (uint)dividend - quo * den;
 
@@ -541,7 +538,7 @@ PosRem:
             /// <returns>Returns new scale factor. bufRes updated in place, always 3 uints.</returns>
             private static unsafe int ScaleResult(Buf24* bufRes, uint hiRes, int scale)
             {
-                Debug.Assert(hiRes < bufRes->Length);
+                Debug.Assert(hiRes < Buf24.Length);
                 uint* result = (uint*)bufRes;
 
                 // See if we need to scale the result.  The combined scale must
@@ -613,7 +610,7 @@ PosRem:
                             case 4:
                                 power = DivByConst(result, hiRes, out quotient, out remainder, 10000);
                                 break;
-#if BIT64
+#if TARGET_64BIT
                             case 5:
                                 power = DivByConst(result, hiRes, out quotient, out remainder, 100000);
                                 break;
@@ -640,7 +637,7 @@ PosRem:
                         if (quotient == 0 && hiRes != 0)
                             hiRes--;
 
-#if BIT64
+#if TARGET_64BIT
                         newScale -= MaxInt32Scale;
 #else
                         newScale -= 4;
@@ -669,7 +666,7 @@ PosRem:
                             uint cur = 0;
                             do
                             {
-                                Debug.Assert(cur + 1 < bufRes->Length);
+                                Debug.Assert(cur + 1 < Buf24.Length);
                             }
                             while (++result[++cur] == 0);
 
@@ -706,7 +703,7 @@ ThrowOverflow:
                 remainder = high - (quotient = high / power) * power;
                 for (uint i = hiRes - 1; (int)i >= 0; i--)
                 {
-#if BIT64
+#if TARGET_64BIT
                     ulong num = result[i] + ((ulong)remainder << 32);
                     remainder = (uint)num - (result[i] = (uint)(num / power)) * power;
 #else
@@ -1010,7 +1007,7 @@ ThrowOverflow:
                         uint* rgulNum = (uint*)&bufNum;
                         for (uint cur = 0; ;)
                         {
-                            Debug.Assert(cur < bufNum.Length);
+                            Debug.Assert(cur < Buf24.Length);
                             tmp64 += UInt32x32To64(rgulNum[cur], power);
                             rgulNum[cur] = (uint)tmp64;
                             cur++;
@@ -1022,7 +1019,7 @@ ThrowOverflow:
                         if ((uint)tmp64 != 0)
                         {
                             // We're extending the result by another uint.
-                            Debug.Assert(hiProd + 1 < bufNum.Length);
+                            Debug.Assert(hiProd + 1 < Buf24.Length);
                             rgulNum[++hiProd] = (uint)tmp64;
                         }
                     }
@@ -1058,9 +1055,9 @@ ThrowOverflow:
                         uint cur = 3;
                         do
                         {
-                            Debug.Assert(cur < bufNum.Length);
+                            Debug.Assert(cur < Buf24.Length);
                         } while (number[cur++]-- == 0);
-                        Debug.Assert(hiProd < bufNum.Length);
+                        Debug.Assert(hiProd < Buf24.Length);
                         if (number[hiProd] == 0 && --hiProd <= 2)
                             goto ReturnResult;
                     }
@@ -1085,7 +1082,7 @@ ThrowOverflow:
                         uint* number = (uint*)&bufNum;
                         for (uint cur = 3; ++number[cur++] == 0;)
                         {
-                            Debug.Assert(cur < bufNum.Length);
+                            Debug.Assert(cur < Buf24.Length);
                             if (hiProd < cur)
                             {
                                 number[cur] = 1;
@@ -1249,16 +1246,16 @@ ThrowOverflow:
             /// </summary>
             internal static int VarDecCmp(in decimal d1, in decimal d2)
             {
-                if ((d2.Low | d2.Mid | d2.High) == 0)
+                if ((d2.Low64 | d2.High) == 0)
                 {
-                    if ((d1.Low | d1.Mid | d1.High) == 0)
+                    if ((d1.Low64 | d1.High) == 0)
                         return 0;
-                    return (d1.flags >> 31) | 1;
+                    return (d1._flags >> 31) | 1;
                 }
-                if ((d1.Low | d1.Mid | d1.High) == 0)
-                    return -((d2.flags >> 31) | 1);
+                if ((d1.Low64 | d1.High) == 0)
+                    return -((d2._flags >> 31) | 1);
 
-                int sign = (d1.flags >> 31) - (d2.flags >> 31);
+                int sign = (d1._flags >> 31) - (d2._flags >> 31);
                 if (sign != 0)
                     return sign;
                 return VarDecCmpSub(in d1, in d2);
@@ -1266,9 +1263,9 @@ ThrowOverflow:
 
             private static int VarDecCmpSub(in decimal d1, in decimal d2)
             {
-                int flags = d2.flags;
+                int flags = d2._flags;
                 int sign = (flags >> 31) | 1;
-                int scale = flags - d1.flags;
+                int scale = flags - d1._flags;
 
                 ulong low64 = d1.Low64;
                 uint high = d1.High;
@@ -1363,7 +1360,7 @@ ThrowOverflow:
                             scale -= DEC_SCALE_MAX + 1;
                             ulong power = s_ulongPowers10[scale];
 
-                            // TODO: https://github.com/dotnet/coreclr/issues/3439
+                            // TODO: https://github.com/dotnet/runtime/issues/5213
                             tmp = low64 / power;
                             ulong remainder = low64 - tmp * power;
                             low64 = tmp;
@@ -1899,10 +1896,10 @@ ReturnZero:
 
             internal static int GetHashCode(in decimal d)
             {
-                if ((d.Low | d.Mid | d.High) == 0)
+                if ((d.Low64 | d.High) == 0)
                     return 0;
 
-                uint flags = (uint)d.flags;
+                uint flags = (uint)d._flags;
                 if ((flags & ScaleMask) == 0 || (d.Low & 1) != 0)
                     return (int)(flags ^ d.High ^ d.Mid ^ d.Low);
 
@@ -1995,7 +1992,7 @@ ReturnZero:
                             goto ThrowOverflow;
 
                         ulong num = UInt32x32To64(remainder, power);
-                        // TODO: https://github.com/dotnet/coreclr/issues/3439
+                        // TODO: https://github.com/dotnet/runtime/issues/5213
                         uint div = (uint)(num / den);
                         remainder = (uint)num - div * den;
 
@@ -2330,7 +2327,7 @@ ThrowOverflow:
                     // The high bit of the dividend must not be set.
                     if (tmp64 > int.MaxValue)
                     {
-                        Debug.Assert(high + 1 < b.Length);
+                        Debug.Assert(high + 1 < Buf28.Length);
                         buf[++high] = (uint)(tmp64 >> 32);
                     }
 
@@ -2432,7 +2429,7 @@ ThrowOverflow:
 
                 {
                     power = s_powers10[scale];
-                    // TODO: https://github.com/dotnet/coreclr/issues/3439
+                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     uint n = d.uhi;
                     if (n == 0)
                     {
@@ -2686,7 +2683,7 @@ done:
 #endif
                 }
 
-                public int Length => 6;
+                public const int Length = 6;
             }
 
             private struct Buf28
@@ -2694,7 +2691,7 @@ done:
                 public Buf24 Buf24;
                 public uint U6;
 
-                public int Length => 7;
+                public const int Length = 7;
             }
         }
     }

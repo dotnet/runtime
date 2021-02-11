@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System.Collections.Generic;
@@ -13,7 +12,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class TaskRtTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void RunRunTests()
         {
@@ -129,7 +128,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(future2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Future(unwrapped) w/ uncanceled token did not end in RanToCompletion state.");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public static void RunRunTests_Cancellation_Negative()
         {
@@ -169,7 +168,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(future3.IsCanceled, "    > FAILED.  Future(unwrapped) w/ canceled token should have ended in Canceled state");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunRunTests_FastPathTests()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -255,7 +254,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunRunTests_Unwrap_NegativeCases()
         {
             //
@@ -368,7 +367,7 @@ namespace System.Threading.Tasks.Tests
         {
             // Test FromResult with value type
             {
-                var results = new[] { -1, 0, 1, 1, 42, int.MaxValue, int.MinValue, 42, -42 }; // includes duplicate values to ensure that tasks from these aren't the same object
+                var results = new[] { -1, 0, 1, 42, int.MaxValue, int.MinValue, 42, -42 }; // includes duplicate values to ensure that tasks from these aren't the same object
                 Task<int>[] tasks = new Task<int>[results.Length];
                 for (int i = 0; i < results.Length; i++)
                     tasks[i] = Task.FromResult(results[i]);
@@ -397,7 +396,7 @@ namespace System.Threading.Tasks.Tests
 
             // Test FromResult with reference type
             {
-                var results = new[] { new object(), null, new object(), null, new object() }; // includes duplicate values to ensure that tasks from these aren't the same object
+                var results = new[] { new object(), new object(), null, new object() };
                 Task<object>[] tasks = new Task<object>[results.Length];
                 for (int i = 0; i < results.Length; i++)
                     tasks[i] = Task.FromResult(results[i]);
@@ -463,6 +462,77 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        public static void FromResult_KnownResults_Cached()
+        {
+            // Task.FromResult caches some known values, as an implementation detail.
+            // What's cached could change over time, in which case this test will also
+            // need to be updated.
+
+            // Cached
+
+            foreach (bool result in new[] { false, true })
+            {
+                Assert.Same(Task.FromResult(result), Task.FromResult(result));
+                Assert.Equal(result, Task.FromResult(result).Result);
+            }
+
+            for (int i = -1; i <= 8; i++)
+            {
+                Assert.Same(Task.FromResult(i), Task.FromResult(i));
+                Assert.Equal(i, Task.FromResult(i).Result);
+            }
+
+            Assert.Same(Task.FromResult('\0'), Task.FromResult('\0'));
+            Assert.Equal('\0', Task.FromResult('\0').Result);
+
+            Assert.Same(Task.FromResult((byte)0), Task.FromResult((byte)0));
+            Assert.Equal(0, Task.FromResult((byte)0).Result);
+
+            Assert.Same(Task.FromResult((ushort)0), Task.FromResult((ushort)0));
+            Assert.Equal(0, Task.FromResult((ushort)0).Result);
+
+            Assert.Same(Task.FromResult((uint)0), Task.FromResult((uint)0));
+            Assert.Equal(0u, Task.FromResult((uint)0).Result);
+
+            Assert.Same(Task.FromResult((ulong)0), Task.FromResult((ulong)0));
+            Assert.Equal(0ul, Task.FromResult((ulong)0).Result);
+
+            Assert.Same(Task.FromResult((sbyte)0), Task.FromResult((sbyte)0));
+            Assert.Equal(0, Task.FromResult((sbyte)0).Result);
+
+            Assert.Same(Task.FromResult((short)0), Task.FromResult((short)0));
+            Assert.Equal(0, Task.FromResult((short)0).Result);
+
+            Assert.Same(Task.FromResult((long)0), Task.FromResult((long)0));
+            Assert.Equal(0, Task.FromResult((long)0).Result);
+
+            Assert.Same(Task.FromResult(IntPtr.Zero), Task.FromResult(IntPtr.Zero));
+            Assert.Equal(IntPtr.Zero, Task.FromResult(IntPtr.Zero).Result);
+
+            Assert.Same(Task.FromResult(UIntPtr.Zero), Task.FromResult(UIntPtr.Zero));
+            Assert.Equal(UIntPtr.Zero, Task.FromResult(UIntPtr.Zero).Result);
+
+            Assert.Same(Task.FromResult((object)null), Task.FromResult((object)null));
+            Assert.Null(Task.FromResult((object)null).Result);
+
+            Assert.Same(Task.FromResult((string)null), Task.FromResult((string)null));
+            Assert.Null(Task.FromResult((string)null).Result);
+
+            // Not cached
+
+            foreach (int i in new[] { -2, 9, int.MinValue, int.MaxValue })
+            {
+                Assert.NotSame(Task.FromResult(i), Task.FromResult(i));
+                Assert.Equal(i, Task.FromResult(i).Result);
+            }
+
+            Assert.NotSame(Task.FromResult((double)0), Task.FromResult((double)0));
+            Assert.NotSame(Task.FromResult((float)0), Task.FromResult((float)0));
+            Assert.NotSame(Task.FromResult((decimal)0), Task.FromResult((decimal)0));
+            Assert.NotSame(Task.FromResult((Half)0), Task.FromResult((Half)0));
+        }
+
+        [Fact]
         public static void RunFromResult_FaultedTask()
         {
             // Make sure faulted tasks are actually faulted.  We have little choice for this test but to use reflection,
@@ -494,6 +564,29 @@ namespace System.Threading.Tasks.Tests
             Assert.False((bool)isHandledField.GetValue(holderObject), "Expected FromException task to be unobserved before accessing Exception");
             var ignored = faultedTask.Exception;
             Assert.True((bool)isHandledField.GetValue(holderObject), "Expected FromException task to be observed after accessing Exception");
+        }
+
+        [Theory]
+        [InlineData(-2L)]
+        [InlineData((long)int.MinValue)]
+        [InlineData((long)uint.MaxValue)]
+        public static void TaskDelay_OutOfBounds_ThrowsException(long delay)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("delay", () => { Task.Delay(TimeSpan.FromMilliseconds(delay)); });
+            if (delay >= int.MinValue && delay <= int.MaxValue)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsDelay", () => { Task.Delay((int)delay); });
+            }
+        }
+
+        [Fact]
+        public static void TaskDelay_MaxSupported_Success()
+        {
+            var cts = new CancellationTokenSource();
+            Task t = Task.Delay(TimeSpan.FromMilliseconds(uint.MaxValue - 2), cts.Token);
+            Assert.False(t.IsCompleted);
+            cts.Cancel();
+            Assert.True(t.IsCanceled);
         }
 
         [Fact]
@@ -533,7 +626,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(task7.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunDelayTests_NegativeCases()
         {
             CancellationTokenSource disposedCTS = new CancellationTokenSource();
@@ -600,7 +693,7 @@ namespace System.Threading.Tasks.Tests
 
         // Test that exceptions are properly wrapped when thrown in various scenarios.
         // Make sure that "indirect" logic does not add superfluous exception wrapping.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunExceptionWrappingTest()
         {
             Action throwException = delegate { throw new InvalidOperationException(); };
@@ -748,7 +841,7 @@ namespace System.Threading.Tasks.Tests
             AsyncExceptionChecker(asyncFuture, "Future-based FromAsync(beginMethod, ...)");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunHideSchedulerTests()
         {
             TaskScheduler[] schedules = new TaskScheduler[2];
@@ -818,7 +911,7 @@ namespace System.Threading.Tasks.Tests
                () => { new TaskCompletionSource<int>(TaskCreationOptions.HideScheduler); });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunDenyChildAttachTests()
         {
             // StartNew, Task and Future

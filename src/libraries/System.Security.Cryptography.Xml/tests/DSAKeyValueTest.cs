@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information
-//
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // DSAKeyValueTest.cs - Test Cases for DSAKeyValue
 //
 // Author:
 //  Sebastien Pouliot (spouliot@motus.com)
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -53,7 +50,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(17001, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20575", TestPlatforms.OSX)]
         public void GetXml()
         {
             DSAKeyValue dsa = new DSAKeyValue();
@@ -81,7 +78,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(17001, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20575", TestPlatforms.OSX)]
         public void GetXml_SameDsa()
         {
             using (DSA dsa = DSA.Create())
@@ -92,7 +89,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16779")]
+        [Fact]
         public void LoadXml()
         {
             const string pValue = "oDZlcdJA1Kf6UeNEIZqm4KDqA6zpX7CmEtAGWi9pgnBhWOUDVEfhswfsvTLR5BCbKfE6KoHvt5Hh8D1RcAko//iZkLZ+gds9y/5Oxape8tu3TUi1BnNPWu8ieXjMtdnpyudKFsCymssJked1rBeRePG23HTVwOV1DpopjRkjBEU=";
@@ -114,9 +111,14 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(Convert.ToBase64String(parameters.Q), qValue);
             Assert.Equal(Convert.ToBase64String(parameters.G), gValue);
             Assert.Equal(Convert.ToBase64String(parameters.Y), yValue);
-            Assert.NotNull(parameters.Seed);
-            Assert.Equal(Convert.ToBase64String(parameters.Seed), seedValue);
-            Assert.Equal(BitConverter.GetBytes(parameters.Counter)[0], Convert.FromBase64String(pgenCounterValue)[0]);
+
+            // Not all providers support round-tripping the seed value.
+            // Seed and PGenCounter are round-tripped together.
+            if (parameters.Seed != null)
+            {
+                Assert.Equal(Convert.ToBase64String(parameters.Seed), seedValue);
+                Assert.Equal(BitConverter.GetBytes(parameters.Counter)[0], Convert.FromBase64String(pgenCounterValue)[0]);
+            }
         }
 
         [Fact]

@@ -1,16 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SuppressMessageAttribute = System.Diagnostics.CodeAnalysis.SuppressMessageAttribute;
 using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Linq
 {
     /// <summary>
     /// Represents a name of an XML element or attribute. This class cannot be inherited.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Serialization", "CA2229", Justification = "Serialized with custom proxy")]
     public sealed class XName : IEquatable<XName>, ISerializable
     {
         private readonly XNamespace _ns;
@@ -103,7 +102,8 @@ namespace System.Xml.Linq
         /// <param name="expandedName">A string containing an expanded XML name in the format: {namespace}localname.</param>
         /// <returns>An XName object constructed from the expanded name.</returns>
         [CLSCompliant(false)]
-        public static implicit operator XName(string expandedName)
+        [return: NotNullIfNotNull("expandedName")]
+        public static implicit operator XName?(string? expandedName)
         {
             return expandedName != null ? Get(expandedName) : null;
         }
@@ -118,7 +118,7 @@ namespace System.Xml.Linq
         /// <remarks>
         /// For two <see cref="XName"/> objects to be equal, they must have the same expanded name.
         /// </remarks>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return (object)this == obj;
         }
@@ -148,9 +148,9 @@ namespace System.Xml.Linq
         /// This overload is included to enable the comparison between
         /// an instance of XName and string.
         /// </remarks>
-        public static bool operator ==(XName left, XName right)
+        public static bool operator ==(XName? left, XName? right)
         {
-            return (object)left == (object)right;
+            return (object?)left == (object?)right;
         }
 
         /// <summary>
@@ -163,9 +163,9 @@ namespace System.Xml.Linq
         /// This overload is included to enable the comparison between
         /// an instance of XName and string.
         /// </remarks>
-        public static bool operator !=(XName left, XName right)
+        public static bool operator !=(XName? left, XName? right)
         {
-            return (object)left != (object)right;
+            return (object?)left != (object?)right;
         }
 
         /// <summary>
@@ -178,9 +178,9 @@ namespace System.Xml.Linq
         /// Returns true if the current <see cref="XName"/> is equal to
         /// the specified <see cref="XName"/>. Returns false otherwise.
         /// </returns>
-        bool IEquatable<XName>.Equals(XName other)
+        bool IEquatable<XName>.Equals(XName? other)
         {
-            return (object)this == (object)other;
+            return (object)this == (object?)other;
         }
 
         /// <summary>

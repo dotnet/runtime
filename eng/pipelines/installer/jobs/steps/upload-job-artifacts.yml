@@ -1,12 +1,13 @@
 parameters:
   name: ''
-
+  runtimeFlavor: 'coreclr'
+  runtimeVariant: ''
   isOfficialBuild: false
 
 steps:
 # Upload build artifacts (packages) to pipeline only if official, to save storage space.
 - ${{ if eq(parameters.isOfficialBuild, true) }}:
-  - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+  - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
     parameters:
       name: ${{ parameters.name }}
 
@@ -17,7 +18,7 @@ steps:
     testResultsFiles: '*.xml'
     searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
     mergeTestResults: true
-    testRunTitle: Installer-${{ parameters.name }}-$(_BuildConfig)
+    testRunTitle: Installer-${{ parameters.runtimeFlavor }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: eq(variables.SkipTests, false)
 
@@ -33,10 +34,10 @@ steps:
   continueOnError: true
   condition: succeededOrFailed()
 
-- task: PublishBuildArtifacts@1
+- task: PublishPipelineArtifact@1
   displayName: Publish BuildLogs
   inputs:
-    PathtoPublish: '$(Build.StagingDirectory)/BuildLogs'
-    ArtifactName: Installer-Logs-${{ parameters.name }}-$(_BuildConfig)
+    targetPath: '$(Build.StagingDirectory)/BuildLogs'
+    artifactName: Installer-Logs-${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: succeededOrFailed()

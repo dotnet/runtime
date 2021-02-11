@@ -1,6 +1,6 @@
 # Mixed Mode Assemblies
 ## Introduction
-Most interoperability between managed and native code uses P/Invokes, COM, or WinRT. Since P/Invokes are bound to native code at runtime, they’re susceptible to mistakes ranging from incorrect naming to subtle mistakes in signatures that cause stack corruption. COM can also be used to call from native to managed code, but it often requires registration and can add performance overhead. WinRT avoids those problems but isn’t available in all cases.
+Most interoperability between managed and native code uses P/Invokes, COM, or WinRT. Since P/Invokes are bound to native code at runtime, they're susceptible to mistakes ranging from incorrect naming to subtle mistakes in signatures that cause stack corruption. COM can also be used to call from native to managed code, but it often requires registration and can add performance overhead. WinRT avoids those problems but isn't available in all cases.
 
 C++/CLI provides a different, compiler-verified approach to interoperability called mixed-mode assemblies (also sometimes referred to as It-Just-Works or IJW). Rather than requiring that developers do special declarations like P/Invokes, the C++ compiler automatically generates everything needed to transition to and from managed and native code. Additionally, the C++ compiler decides whether a given C++ method should be managed or native, so even within an assembly, transitions happen regularly and without developer intervention required.
 
@@ -28,9 +28,9 @@ jmp     dword ptr [IjwLib!_mep?Bar$$FYAXXZ (10010008)]
 ```
 Where 10010008 matches a ```.vtfixup``` entry that looks like:
 ```
-.vtfixup [1] int32 retainappdomain at D_00010008 // 06000002 (Bar’s token)
+.vtfixup [1] int32 retainappdomain at D_00010008 // 06000002 (Bar's token)
 ```
-According to ECMA 335, ```vtfixups``` can contain multiple entries. However, the Microsoft Visual C++ compiler (MSVC) does not appear to generate those. Vtfixups also contain flags for whether a call should go to the current thread’s appdomain and whether the caller is unmanaged code. MSVC appears to always set those.
+According to ECMA 335, ```vtfixups``` can contain multiple entries. However, the Microsoft Visual C++ compiler (MSVC) does not appear to generate those. Vtfixups also contain flags for whether a call should go to the current thread's appdomain and whether the caller is unmanaged code. MSVC appears to always set those.
 
 ## Starting the Runtime
-While a mixed mode assembly may be loaded into an already-running CLR, that isn’t always the case. It’s also possible for a mixed mode executable to start a process or for a running native process to load a mixed mode library and call into it. On .NET Framework (the only implementation that currently has this functionality), the native code’s ```Main``` or ```DllMain``` calls into mscoree.dll’s ```_CorDllMain``` function (which is resolved from a well-known location). When that happens, ```_CorDllMain``` is responsible for both starting the runtime and filling in vtfixups as described above.
+While a mixed mode assembly may be loaded into an already-running CLR, that isn't always the case. It's also possible for a mixed mode executable to start a process or for a running native process to load a mixed mode library and call into it. On .NET Framework (the only implementation that currently has this functionality), the native code's ```Main``` or ```DllMain``` calls into mscoree.dll's ```_CorDllMain``` function (which is resolved from a well-known location). When that happens, ```_CorDllMain``` is responsible for both starting the runtime and filling in vtfixups as described above.

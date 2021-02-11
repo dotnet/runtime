@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 
 namespace System.Collections.Immutable
@@ -16,8 +14,6 @@ namespace System.Collections.Immutable
     /// <typeparam name="T">The type of element stored by the stack.</typeparam>
     [DebuggerDisplay("IsEmpty = {IsEmpty}; Top = {_head}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableStack<T> : IImmutableStack<T>
     {
         /// <summary>
@@ -31,8 +27,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The element on the top of the stack.
         /// </summary>
-        [MaybeNull]
-        private readonly T _head = default!;
+        private readonly T? _head;
 
         /// <summary>
         /// A stack that contains the rest of the elements (under the top element).
@@ -107,7 +102,6 @@ namespace System.Collections.Immutable
         /// The element on the top of the stack.
         /// </returns>
         /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
-        [Pure]
         public T Peek()
         {
             if (this.IsEmpty)
@@ -126,7 +120,6 @@ namespace System.Collections.Immutable
         /// A read-only reference to the element on the top of the stack.
         /// </returns>
         /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
-        [Pure]
         public ref readonly T PeekRef()
         {
             if (this.IsEmpty)
@@ -143,7 +136,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="value">The element to push onto the stack.</param>
         /// <returns>The new stack.</returns>
-        [Pure]
         public ImmutableStack<T> Push(T value)
         {
             return new ImmutableStack<T>(value, this);
@@ -154,7 +146,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="value">The element to push onto the stack.</param>
         /// <returns>The new stack.</returns>
-        [Pure]
         IImmutableStack<T> IImmutableStack<T>.Push(T value)
         {
             return this.Push(value);
@@ -165,7 +156,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <returns>A stack; never <c>null</c></returns>
         /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
-        [Pure]
         public ImmutableStack<T> Pop()
         {
             if (this.IsEmpty)
@@ -184,8 +174,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A stack; never <c>null</c>
         /// </returns>
-        [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "0#")]
-        [Pure]
         public ImmutableStack<T> Pop(out T value)
         {
             value = this.Peek();
@@ -197,7 +185,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <returns>A stack; never <c>null</c></returns>
         /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
-        [Pure]
         IImmutableStack<T> IImmutableStack<T>.Pop()
         {
             return this.Pop();
@@ -209,7 +196,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// An <see cref="Enumerator"/> that can be used to iterate through the collection.
         /// </returns>
-        [Pure]
         public Enumerator GetEnumerator()
         {
             return new Enumerator(this);
@@ -221,7 +207,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
-        [Pure]
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             return this.IsEmpty ?
@@ -235,7 +220,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
         /// </returns>
-        [Pure]
         IEnumerator IEnumerable.GetEnumerator()
         {
             return new EnumeratorObject(this);
@@ -245,7 +229,6 @@ namespace System.Collections.Immutable
         /// Reverses the order of a stack.
         /// </summary>
         /// <returns>The reversed stack.</returns>
-        [Pure]
         internal ImmutableStack<T> Reverse()
         {
             var r = this.Clear();

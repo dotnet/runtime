@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Globalization;
@@ -32,9 +31,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal static readonly Type s_typeofObject = typeof(object);
         internal static readonly Type s_typeofSystemVoid = typeof(void);
 
-        // In netfx the default assembly is mscorlib.dll --> typeof(string).Assembly.
+        // In .NET Framework the default assembly is mscorlib.dll --> typeof(string).Assembly.
         // In Core type string lives in System.Private.Corelib.dll which doesn't
-        // contain all the types which are living in mscorlib in netfx. Therefore we
+        // contain all the types which are living in mscorlib in .NET Framework. Therefore we
         // use our mscorlib facade which also contains manual type forwards for deserialization.
         internal static readonly Assembly s_urtAssembly = Assembly.Load("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
         internal static readonly string s_urtAssemblyString = s_urtAssembly.FullName!;
@@ -204,8 +203,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal static bool IsPrimitiveArray(Type? type, [NotNullWhen(true)] out object? typeInformation)
         {
-            bool bIsPrimitive = true;
-
             if (ReferenceEquals(type, s_typeofBooleanArray)) typeInformation = InternalPrimitiveTypeE.Boolean;
             else if (ReferenceEquals(type, s_typeofByteArray)) typeInformation = InternalPrimitiveTypeE.Byte;
             else if (ReferenceEquals(type, s_typeofCharArray)) typeInformation = InternalPrimitiveTypeE.Char;
@@ -221,10 +218,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
             else
             {
                 typeInformation = null;
-                bIsPrimitive = false;
+                return false;
             }
 
-            return bIsPrimitive;
+            return true;
         }
 
         private static void InitValueA()

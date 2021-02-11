@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 
@@ -8,10 +7,10 @@ namespace System.Net
 {
     internal static class NetRes
     {
-        public static string GetWebStatusCodeString(FtpStatusCode statusCode, string statusDescription)
+        public static string GetWebStatusCodeString(FtpStatusCode statusCode, string? statusDescription)
         {
             string webStatusCode = "(" + ((int)statusCode).ToString(NumberFormatInfo.InvariantInfo) + ")";
-            string statusMessage = null;
+            string? statusMessage = null;
 
             switch (statusCode)
             {

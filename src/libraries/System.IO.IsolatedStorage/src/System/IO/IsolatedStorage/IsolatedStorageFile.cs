@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
@@ -14,12 +14,12 @@ namespace System.IO.IsolatedStorage
         internal const string s_files = "Files";
         internal const string s_assemFiles = "AssemFiles";
         internal const string s_appFiles = "AppFiles";
-        private string _rootDirectory;
 
         private bool _disposed;
         private bool _closed;
 
         private readonly object _internalLock = new object();
+        private readonly string _rootDirectory;
 
         // Data file notes
         // ===============
@@ -30,14 +30,43 @@ namespace System.IO.IsolatedStorage
         // private const string IDFile = "identity.dat";
 
         // "info.dat" is used to track disk space usage (against quota). The accounting file for Silverlight
-        // stores is "appInfo.dat". CoreFX is always in full trust so we can safely ignore these.
+        // stores is "appInfo.dat". .NET Core is always in full trust so we can safely ignore these.
         //
         // private const string InfoFile = "info.dat";
         // private const string AppInfoFile = "appInfo.dat";
 
-        internal IsolatedStorageFile() { }
+        internal IsolatedStorageFile(IsolatedStorageScope scope)
+        {
+            // Evidence isn't currently available: https://github.com/dotnet/runtime/issues/18208
+            // public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Evidence domainEvidence, Type domainEvidenceType, Evidence assemblyEvidence, Type assemblyEvidenceType) { return default(IsolatedStorageFile); }
 
-        // Using this property to match NetFX for testing
+            // InitStore will set up the IdentityHash
+            InitStore(scope, null, null);
+
+            StringBuilder sb = new StringBuilder(Helper.GetRootDirectory(scope));
+            sb.Append(SeparatorExternal);
+            sb.Append(IdentityHash);
+            sb.Append(SeparatorExternal);
+
+            if (Helper.IsApplication(scope))
+            {
+                sb.Append(s_appFiles);
+            }
+            else if (Helper.IsDomain(scope))
+            {
+                sb.Append(s_files);
+            }
+            else
+            {
+                sb.Append(s_assemFiles);
+            }
+            sb.Append(SeparatorExternal);
+
+            _rootDirectory = sb.ToString();
+            Helper.CreateDirectory(_rootDirectory, scope);
+        }
+
+        // Using this property to match .NET Framework for testing
         private string RootDirectory
         {
             get { return _rootDirectory; }
@@ -223,7 +252,7 @@ namespace System.IO.IsolatedStorage
             {
                 // FileSystem APIs return the complete path of the matching directories however Iso store only provided the directory name
                 // and hid the IsoStore root. Hence we find all the matching directories from the fileSystem and simply return their names.
-                return Directory.EnumerateDirectories(RootDirectory, searchPattern).Select(m => m.Substring(Path.GetDirectoryName(m).Length + 1)).ToArray();
+                return Directory.EnumerateDirectories(RootDirectory, searchPattern).Select(m => m.Substring(Path.GetDirectoryName(m)!.Length + 1)).ToArray();
             }
             catch (UnauthorizedAccessException e)
             {
@@ -262,7 +291,7 @@ namespace System.IO.IsolatedStorage
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (path == string.Empty)
+            if (path.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
@@ -284,7 +313,7 @@ namespace System.IO.IsolatedStorage
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (path == string.Empty)
+            if (path.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
@@ -306,7 +335,7 @@ namespace System.IO.IsolatedStorage
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (path == string.Empty)
+            if (path.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
             }
@@ -331,12 +360,12 @@ namespace System.IO.IsolatedStorage
             if (destinationFileName == null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
-            if (sourceFileName == string.Empty)
+            if (sourceFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
-            if (destinationFileName == string.Empty)
+            if (destinationFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
@@ -352,12 +381,12 @@ namespace System.IO.IsolatedStorage
             if (destinationFileName == null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
-            if (sourceFileName == string.Empty)
+            if (sourceFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
-            if (destinationFileName == string.Empty)
+            if (destinationFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
@@ -393,12 +422,12 @@ namespace System.IO.IsolatedStorage
             if (destinationFileName == null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
-            if (sourceFileName == string.Empty)
+            if (sourceFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
             }
 
-            if (destinationFileName == string.Empty)
+            if (destinationFileName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
             }
@@ -434,12 +463,12 @@ namespace System.IO.IsolatedStorage
             if (destinationDirectoryName == null)
                 throw new ArgumentNullException(nameof(destinationDirectoryName));
 
-            if (sourceDirectoryName == string.Empty)
+            if (sourceDirectoryName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceDirectoryName));
             }
 
-            if (destinationDirectoryName == string.Empty)
+            if (destinationDirectoryName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationDirectoryName));
             }
@@ -469,15 +498,15 @@ namespace System.IO.IsolatedStorage
 
         public static IEnumerator GetEnumerator(IsolatedStorageScope scope)
         {
-            // Not currently supported: https://github.com/dotnet/corefx/issues/10936
+            // Not currently supported: https://github.com/dotnet/runtime/issues/18209
 
             // Implementing this would require serializing/deserializing identity objects which is particularly
-            // complicated given the normal identity objects used by NetFX aren't available on CoreFX.
+            // complicated given the normal identity objects used by .NET Framework aren't available on .NET Core.
             //
             // Starting expectation is that a given store's location would be identical between implementations
-            // (say, for a particular StrongName). You could iterate any store opened at least once by NetFX on
-            // NetFX as it would create the needed identity file. You wouldn't be able to iterate if it was only
-            // ever opened by CoreFX, as the needed file isn't there yet.
+            // (say, for a particular StrongName). You could iterate any store opened at least once by the .NET Framework
+            // at run time as it would create the needed identity file. You wouldn't be able to iterate if it was only
+            // ever opened by .NET Core, as the needed file isn't there yet.
             return new IsolatedStorageFileEnumerator();
         }
 
@@ -487,7 +516,7 @@ namespace System.IO.IsolatedStorage
             {
                 get
                 {
-                    // Getting current throws on NetFX if there is no current item.
+                    // Getting current throws on .NET Framework if there is no current item.
                     throw new InvalidOperationException();
                 }
             }
@@ -565,7 +594,7 @@ namespace System.IO.IsolatedStorage
 
         public static IsolatedStorageFile GetUserStoreForSite()
         {
-            // NetFX and Mono both throw for this method
+            // .NET Framework and Mono both throw for this method
             throw new NotSupportedException(SR.IsolatedStorage_NotValidOnDesktop);
         }
 
@@ -586,14 +615,12 @@ namespace System.IO.IsolatedStorage
 
         private static IsolatedStorageFile GetStore(IsolatedStorageScope scope)
         {
-            IsolatedStorageFile isf = new IsolatedStorageFile();
-            isf.Initialize(scope);
-            return isf;
+            return new IsolatedStorageFile(scope);
         }
 
         // Notes on the GetStore methods:
         //
-        // The System.Security types that NetFX would be getting aren't available. We could potentially map the two
+        // The System.Security types that .NET Framework would be getting aren't available. We could potentially map the two
         // we implicitly support (StrongName and Url) to AssemblyName and Uri. We could also consider accepting those two
         // types.
         //
@@ -609,60 +636,28 @@ namespace System.IO.IsolatedStorage
         //
         // "Known" types are Publisher, StrongName, Url, Site, and Zone.
 
-        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type applicationEvidenceType)
+        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type? applicationEvidenceType)
         {
             // Scope MUST be Application
-            return (applicationEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (applicationEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
-        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object applicationIdentity)
+        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object? applicationIdentity)
         {
             // Scope MUST be Application
-            return (applicationIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (applicationIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
-        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type domainEvidenceType, Type assemblyEvidenceType)
+        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type? domainEvidenceType, Type? assemblyEvidenceType)
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
-            return (domainEvidenceType == null && assemblyEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (domainEvidenceType == null && assemblyEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
-        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object domainIdentity, object assemblyIdentity)
+        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object? domainIdentity, object? assemblyIdentity)
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
-            return (domainIdentity == null && assemblyIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
-        }
-
-        // https://github.com/dotnet/corefx/issues/10935
-        // Evidence isn't currently available
-        // public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Evidence domainEvidence, Type domainEvidenceType, Evidence assemblyEvidence, Type assemblyEvidenceType) { return default(IsolatedStorageFile); }
-
-        private void Initialize(IsolatedStorageScope scope)
-        {
-            // InitStore will set up the IdentityHash
-            InitStore(scope, null, null);
-
-            StringBuilder sb = new StringBuilder(Helper.GetRootDirectory(scope));
-            sb.Append(SeparatorExternal);
-            sb.Append(IdentityHash);
-            sb.Append(SeparatorExternal);
-
-            if (Helper.IsApplication(scope))
-            {
-                sb.Append(s_appFiles);
-            }
-            else if (Helper.IsDomain(scope))
-            {
-                sb.Append(s_files);
-            }
-            else
-            {
-                sb.Append(s_assemFiles);
-            }
-            sb.Append(SeparatorExternal);
-
-            _rootDirectory = sb.ToString();
-            Helper.CreateDirectory(_rootDirectory, scope);
+            return (domainIdentity == null && assemblyIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
         internal string GetFullPath(string partialPath)
@@ -719,7 +714,7 @@ namespace System.IO.IsolatedStorage
             // Deletes the current IsoFile's directory and the identity folder if possible.
             // (e.g. @"C:\Users\jerem\AppData\Local\IsolatedStorage\10v31ho4.bo2\eeolfu22.f2w\Url.qgeirsoc3cznuklvq5xlalurh1m0unxl\AssemFiles\")
 
-            // This matches NetFX logic. We want to try and clean as well as possible without being more aggressive with the identity folders.
+            // This matches .NET Framework logic. We want to try and clean as well as possible without being more aggressive with the identity folders.
             // (e.g. Url.qgeirsoc3cznuklvq5xlalurh1m0unxl, etc.) We don't want to inadvertently yank folders for a different scope under the same
             // identity (at least no more so than NetFX).
 
@@ -734,7 +729,8 @@ namespace System.IO.IsolatedStorage
 
             Close();
 
-            string parentDirectory = Path.GetDirectoryName(RootDirectory.TrimEnd(Path.DirectorySeparatorChar));
+            string? parentDirectory = Path.GetDirectoryName(RootDirectory.TrimEnd(Path.DirectorySeparatorChar));
+            Debug.Assert(parentDirectory != null);
 
             if (ContainsUnknownFiles(parentDirectory))
                 return;
@@ -753,6 +749,7 @@ namespace System.IO.IsolatedStorage
             if (Helper.IsDomain(Scope))
             {
                 parentDirectory = Path.GetDirectoryName(parentDirectory);
+                Debug.Assert(parentDirectory != null);
 
                 if (ContainsUnknownFiles(parentDirectory))
                     return;
@@ -827,9 +824,8 @@ namespace System.IO.IsolatedStorage
                 return false;
 
             // Check if we have unknown files
-
-            // Note that we don't generate these files in CoreFX, but we want to match
-            // NetFX removal semantics as NetFX will generate these.
+            // Note that we don't generate these files in .NET Core, but we want to match
+            // the removal semantics generated by the .NET Framework.
 
             if (Helper.IsRoaming(Scope))
                 return ((files.Length > 1) || !IsIdFile(files[0]));

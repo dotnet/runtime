@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -39,7 +38,7 @@ namespace System.IO.IsolatedStorage
         [Theory,
             InlineData(IsolatedStorageScope.Application | IsolatedStorageScope.User),
             InlineData(IsolatedStorageScope.Application | IsolatedStorageScope.User | IsolatedStorageScope.Roaming)
-            // https://github.com/dotnet/corefx/issues/12628
+            // https://github.com/dotnet/runtime/issues/2092
             // InlineData(IsolatedStorageScope.Application | IsolatedStorageScope.Machine)
             ]
         public void ApplicationIdentityIsSet(IsolatedStorageScope scope)
@@ -53,7 +52,7 @@ namespace System.IO.IsolatedStorage
         [Theory,
             InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.User),
             InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.User | IsolatedStorageScope.Roaming)
-            // https://github.com/dotnet/corefx/issues/12628
+            // https://github.com/dotnet/runtime/issues/2092
             // InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.Machine)
             ]
         public void AssemblyIdentityIsSet(IsolatedStorageScope scope)
@@ -67,7 +66,7 @@ namespace System.IO.IsolatedStorage
         [Theory,
             InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.User | IsolatedStorageScope.Domain),
             InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.User | IsolatedStorageScope.Roaming | IsolatedStorageScope.Domain)
-            // https://github.com/dotnet/corefx/issues/12628
+            // https://github.com/dotnet/runtime/issues/2092
             // InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.Machine | IsolatedStorageScope.Domain)
             ]
         public void DomainIdentityIsSet(IsolatedStorageScope scope)

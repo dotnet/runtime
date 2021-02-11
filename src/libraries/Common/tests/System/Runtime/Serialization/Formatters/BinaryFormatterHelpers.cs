@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Reflection;
@@ -52,7 +51,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             // .NET Core and .NET Native throw PlatformNotSupportedExceptions when deserializing many exceptions.
             // The .NET Framework supports full deserialization.
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 return;
             }

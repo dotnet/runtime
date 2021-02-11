@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -18,7 +17,7 @@ namespace System.Net.NetworkInformation
             // Iface  Destination  Gateway  Flags  RefCnt  Use  Metric  Mask  MTU  Window  IRTT
             foreach (string line in fileLines)
             {
-                if (line.StartsWith(interfaceName))
+                if (line.StartsWith(interfaceName, StringComparison.Ordinal))
                 {
                     StringParser parser = new StringParser(line, '\t', skipEmpty: true);
                     parser.MoveNext();
@@ -57,7 +56,7 @@ namespace System.Net.NetworkInformation
             // 9. Interface name
             foreach (string line in fileLines)
             {
-                if (line.StartsWith("00000000000000000000000000000000"))
+                if (line.StartsWith("00000000000000000000000000000000", StringComparison.Ordinal))
                 {
                    string[] token = line.Split(s_delimiter, StringSplitOptions.RemoveEmptyEntries);
                    if (token.Length > 9 && token[4] != "00000000000000000000000000000000")
@@ -79,12 +78,11 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        internal static List<IPAddress> ParseDhcpServerAddressesFromLeasesFile(string filePath, string name)
+        internal static void ParseDhcpServerAddressesFromLeasesFile(List<IPAddress> collection, string filePath, string name)
         {
             // Parse the /var/lib/dhcp/dhclient.leases file, if it exists.
             // If any errors occur, like the file not existing or being
             // improperly formatted, just bail and return an empty collection.
-            List<IPAddress> collection = new List<IPAddress>();
             try
             {
                 if (File.Exists(filePath)) // avoid an exception in most cases if path doesn't already exist
@@ -111,7 +109,7 @@ namespace System.Net.NetworkInformation
                         int afterAddress = fileContents.IndexOf(';', indexOfDhcp);
                         int beforeAddress = fileContents.LastIndexOf(' ', afterAddress);
                         string dhcpAddressString = fileContents.Substring(beforeAddress + 1, afterAddress - beforeAddress - 1);
-                        IPAddress dhcpAddress;
+                        IPAddress? dhcpAddress;
                         if (IPAddress.TryParse(dhcpAddressString, out dhcpAddress))
                         {
                             collection.Add(dhcpAddress);
@@ -123,8 +121,6 @@ namespace System.Net.NetworkInformation
             {
                 // If any parsing or file reading exception occurs, just ignore it and return the collection.
             }
-
-            return collection;
         }
 
         internal static List<IPAddress> ParseWinsServerAddressesFromSmbConfFile(string smbConfFilePath)

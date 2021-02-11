@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -14,15 +13,15 @@ namespace System.Reflection.TypeLoading.Ecma
     /// </summary>
     internal sealed partial class EcmaAssembly
     {
-        public sealed override event ModuleResolveEventHandler ModuleResolve;
+        public sealed override event ModuleResolveEventHandler? ModuleResolve;
 
         protected sealed override RoModule LoadModule(string moduleName, bool containsMetadata)
         {
-            FileStream peStream = FindModuleNextToAssembly(moduleName);
+            FileStream? peStream = FindModuleNextToAssembly(moduleName);
             if (peStream != null)
                 return CreateModule(peStream, containsMetadata);
 
-            Module moduleFromEvent = ModuleResolve?.Invoke(this, new ResolveEventArgs(moduleName));
+            Module? moduleFromEvent = ModuleResolve?.Invoke(this, new ResolveEventArgs(moduleName));
             if (moduleFromEvent != null)
             {
                 if (!(moduleFromEvent is RoModule roModuleFromEvent && roModuleFromEvent.Loader == Loader))
@@ -33,14 +32,14 @@ namespace System.Reflection.TypeLoading.Ecma
             throw new FileNotFoundException(SR.Format(SR.FileNotFoundModule, moduleName));
         }
 
-        private FileStream FindModuleNextToAssembly(string moduleName)
+        private FileStream? FindModuleNextToAssembly(string moduleName)
         {
             Assembly containingAssembly = this;
             string location = containingAssembly.Location;
             if (location == null || location.Length == 0)
                 return null;
-            string directoryPath = Path.GetDirectoryName(location);
-            string modulePath = Path.Combine(directoryPath, moduleName);
+            string? directoryPath = Path.GetDirectoryName(location);
+            string modulePath = Path.Combine(directoryPath!, moduleName);
             if (File.Exists(modulePath))
                 return File.OpenRead(modulePath);
 

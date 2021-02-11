@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -23,10 +22,7 @@ namespace System.Net.Http
             }
 
             _content = content;
-            _offset = 0;
             _count = content.Length;
-
-            SetBuffer(_content, _offset, _count);
         }
 
         public ByteArrayContent(byte[] content, int offset, int count)
@@ -47,14 +43,15 @@ namespace System.Net.Http
             _content = content;
             _offset = offset;
             _count = count;
-
-            SetBuffer(_content, _offset, _count);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+            stream.Write(_content, _offset, _count);
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsyncCore(stream, default);
 
-        internal override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
             GetType() == typeof(ByteArrayContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
@@ -69,10 +66,13 @@ namespace System.Net.Http
             return true;
         }
 
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            CreateMemoryStreamForByteArray();
+
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(CreateMemoryStreamForByteArray());
 
-        internal override Stream TryCreateContentReadStream() =>
+        internal override Stream? TryCreateContentReadStream() =>
             GetType() == typeof(ByteArrayContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
             null;
 

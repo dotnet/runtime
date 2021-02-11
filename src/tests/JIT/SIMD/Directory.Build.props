@@ -1,0 +1,21 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <CLRTestBatchPreCommands>
+      <![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_JitFuncInfoLogFile=SIMD.log
+if EXIST SIMD.log (del SIMD.log)
+]]>
+    </CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands>
+      <![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_JitFuncInfoLogFile=SIMD.log
+rm -f SIMD.log
+]]>
+    </BashCLRTestPreCommands>
+  </PropertyGroup>
+
+</Project>

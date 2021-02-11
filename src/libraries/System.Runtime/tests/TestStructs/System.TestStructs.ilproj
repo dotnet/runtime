@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <ProjectGuid>{6B002B34-089C-4BC4-91DD-57D350DEA91C}</ProjectGuid>
-    <Configurations>netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <TestStrongNameKeyId>Microsoft</TestStrongNameKeyId>
   </PropertyGroup>
   <ItemGroup>

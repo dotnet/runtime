@@ -1,42 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System
 {
     internal static class ExternDll
     {
-#if FEATURE_PAL && !SILVERLIGHT
-
-#if !PLATFORM_UNIX
-        internal const String DLLPREFIX = "";
-        internal const String DLLSUFFIX = ".dll";
-#else // !PLATFORM_UNIX
-#if __APPLE__
-        internal const String DLLPREFIX = "lib";
-        internal const String DLLSUFFIX = ".dylib";
-#elif _AIX
-        internal const String DLLPREFIX = "lib";
-        internal const String DLLSUFFIX = ".a";
-#elif __hppa__ || IA64
-        internal const String DLLPREFIX = "lib";
-        internal const String DLLSUFFIX = ".sl";
-#else
-        internal const String DLLPREFIX = "lib";
-        internal const String DLLSUFFIX = ".so";
-#endif
-#endif // !PLATFORM_UNIX
-
-        public const string Kernel32 = DLLPREFIX + "rotor_pal" + DLLSUFFIX;
-        public const string User32 = DLLPREFIX + "rotor_pal" + DLLSUFFIX;
-        public const string Mscoree  = DLLPREFIX + "sscoree" + DLLSUFFIX;
-
-#elif FEATURE_PAL && SILVERLIGHT
-
-        public const string Kernel32 = "coreclr";
-        public const string User32 = "coreclr";
-
-#else
         public const string Activeds = "activeds.dll";
         public const string Advapi32 = "advapi32.dll";
         public const string Comctl32 = "comctl32.dll";
@@ -78,6 +46,5 @@ namespace System
         // system.data.oracleclient specific
         internal const string OciDll = "oci.dll";
         internal const string OraMtsDll = "oramts.dll";
-#endif //!FEATURE_PAL
     }
 }

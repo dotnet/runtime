@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Tests;
 using System.Diagnostics;
@@ -37,7 +36,7 @@ namespace System.Collections.Generic.Tests
         [MemberData(nameof(Int64EnumData))]
         [MemberData(nameof(NonEquatableValueTypeData))]
         [MemberData(nameof(ObjectData))]
-        public void Equals<T>(T left, T right, bool expected)
+        public void EqualsTest<T>(T left, T right, bool expected)
         {
             var comparer = EqualityComparer<T>.Default;
             IEqualityComparer nonGenericComparer = comparer;
@@ -305,7 +304,7 @@ namespace System.Collections.Generic.Tests
         [MemberData(nameof(Int64EnumHashData))]
         [MemberData(nameof(NonEquatableValueTypeHashData))]
         [MemberData(nameof(ObjectHashData))]
-        public void GetHashCode<T>(T value, int expected)
+        public void GetHashCodeTest<T>(T value, int expected)
         {
             var comparer = EqualityComparer<T>.Default;
             IEqualityComparer nonGenericComparer = comparer;

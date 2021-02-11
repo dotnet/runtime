@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -66,7 +65,7 @@ namespace Microsoft.NET.HostModel.ComHost
 
             using (StreamWriter writer = File.CreateText(clsidMapPath))
             {
-                writer.Write(JsonSerializer.Serialize(clsidMap, new JsonSerializerOptions { IgnoreNullValues = true }));
+                writer.Write(JsonSerializer.Serialize(clsidMap, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }));
             }
         }
 
@@ -176,14 +175,12 @@ namespace Microsoft.NET.HostModel.ComHost
             foreach (CustomAttributeHandle attr in customAttributes)
             {
                 CustomAttribute attribute = reader.GetCustomAttribute(attr);
-                MemberReference attributeConstructor = reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor);
-                TypeReference attributeType = reader.GetTypeReference((TypeReferenceHandle)attributeConstructor.Parent);
-                if (reader.StringComparer.Equals(attributeType.Namespace, "System.Runtime.InteropServices") && reader.StringComparer.Equals(attributeType.Name, "ComVisibleAttribute"))
+                if (IsTargetAttribute(reader, attribute, "System.Runtime.InteropServices", "ComVisibleAttribute"))
                 {
                     return attr;
                 }
             }
-            return new CustomAttributeHandle();
+            return default;
         }
 
         private static Guid GetTypeGuid(MetadataReader reader, TypeDefinition type)
@@ -193,9 +190,7 @@ namespace Microsoft.NET.HostModel.ComHost
             foreach (CustomAttributeHandle attr in type.GetCustomAttributes())
             {
                 CustomAttribute attribute = reader.GetCustomAttribute(attr);
-                MemberReference attributeConstructor = reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor);
-                TypeReference attributeType = reader.GetTypeReference((TypeReferenceHandle)attributeConstructor.Parent);
-                if (reader.StringComparer.Equals(attributeType.Namespace, "System.Runtime.InteropServices") && reader.StringComparer.Equals(attributeType.Name, "GuidAttribute"))
+                if (IsTargetAttribute(reader, attribute, "System.Runtime.InteropServices", "GuidAttribute"))
                 {
                     CustomAttributeValue<KnownType> data = attribute.DecodeValue(new TypeResolver());
                     return Guid.Parse((string)data.FixedArguments[0].Value);
@@ -209,15 +204,41 @@ namespace Microsoft.NET.HostModel.ComHost
             foreach (CustomAttributeHandle attr in type.GetCustomAttributes())
             {
                 CustomAttribute attribute = reader.GetCustomAttribute(attr);
-                MemberReference attributeConstructor = reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor);
-                TypeReference attributeType = reader.GetTypeReference((TypeReferenceHandle)attributeConstructor.Parent);
-                if (reader.StringComparer.Equals(attributeType.Namespace, "System.Runtime.InteropServices") && reader.StringComparer.Equals(attributeType.Name, "ProgIdAttribute"))
+                if (IsTargetAttribute(reader, attribute, "System.Runtime.InteropServices", "ProgIdAttribute"))
                 {
                     CustomAttributeValue<KnownType> data = attribute.DecodeValue(new TypeResolver());
                     return (string)data.FixedArguments[0].Value;
                 }
             }
             return GetTypeName(reader, type);
+        }
+
+        private static bool IsTargetAttribute(MetadataReader reader, CustomAttribute attribute, string targetNamespace, string targetName)
+        {
+            StringHandle namespaceMaybe;
+            StringHandle nameMaybe;
+            switch (attribute.Constructor.Kind)
+            {
+                case HandleKind.MemberReference:
+                    MemberReference refConstructor = reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor);
+                    TypeReference refType = reader.GetTypeReference((TypeReferenceHandle)refConstructor.Parent);
+                    namespaceMaybe = refType.Namespace;
+                    nameMaybe = refType.Name;
+                    break;
+
+                case HandleKind.MethodDefinition:
+                    MethodDefinition defConstructor = reader.GetMethodDefinition((MethodDefinitionHandle)attribute.Constructor);
+                    TypeDefinition defType = reader.GetTypeDefinition(defConstructor.GetDeclaringType());
+                    namespaceMaybe = defType.Namespace;
+                    nameMaybe = defType.Name;
+                    break;
+
+                default:
+                    Debug.Assert(false, "Unknown attribute constructor kind");
+                    return false;
+            }
+
+            return reader.StringComparer.Equals(namespaceMaybe, targetNamespace) && reader.StringComparer.Equals(nameMaybe, targetName);
         }
 
         private enum KnownType

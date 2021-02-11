@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -91,7 +90,7 @@ namespace System.Linq.Parallel
         // as we do for inner joins.
         //
 
-        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TOutput currentElement, ref TOutputKey currentKey)
+        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TOutput currentElement, [AllowNull] ref TOutputKey currentKey)
         {
             Debug.Assert(_resultSelector != null, "expected a compiled result selector");
             Debug.Assert(_leftSource != null);
@@ -121,7 +120,7 @@ namespace System.Linq.Parallel
                 while (_leftSource.MoveNext(ref leftPair, ref leftKey))
                 {
                     if ((mutables._outputLoopCount++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
+                        _cancellationToken.ThrowIfCancellationRequested();;
 
                     // Find the match in the hash table.
                     HashLookupValueList<TRightInput, TRightKey> matchValue = default(HashLookupValueList<TRightInput, TRightKey>);
@@ -252,7 +251,7 @@ namespace System.Linq.Parallel
             while (dataSource.MoveNext(ref currentPair, ref orderKey))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    CancellationState.ThrowIfCanceled(cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
 
                 TBaseElement element = currentPair.First;
                 THashKey hashKey = currentPair.Second;

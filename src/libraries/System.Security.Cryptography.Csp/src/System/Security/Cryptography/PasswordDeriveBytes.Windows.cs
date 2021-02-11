@@ -1,17 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.NativeCrypto;
-using Microsoft.Win32.SafeHandles;
+using System.Runtime.Versioning;
+
+#pragma warning disable CA5373 // Call to obsolete key derivation function PasswordDeriveBytes.*
 
 namespace System.Security.Cryptography
 {
     public partial class PasswordDeriveBytes : DeriveBytes
     {
-        private SafeProvHandle _safeProvHandle = null;
+        private SafeProvHandle? _safeProvHandle;
 
-        public byte[] CryptDeriveKey(string algname, string alghashname, int keySize, byte[] rgbIV)
+        [SupportedOSPlatform("windows")]
+        public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV)
         {
             if (keySize < 0)
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);
@@ -27,7 +29,7 @@ namespace System.Security.Cryptography
             if (rgbIV == null)
                 throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_InvalidIV);
 
-            byte[] key = null;
+            byte[]? key = null;
             CapiHelper.DeriveKey(ProvHandle, algid, algidhash, _password, _password.Length, keySize << 16, rgbIV, rgbIV.Length, ref key);
             return key;
         }
@@ -52,15 +54,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static SafeProvHandle AcquireSafeProviderHandle(CspParameters cspParams)
+        private static SafeProvHandle AcquireSafeProviderHandle(CspParameters? cspParams)
         {
             if (cspParams == null)
             {
                 cspParams = new CspParameters(CapiHelper.DefaultRsaProviderType);
             }
 
-            SafeProvHandle safeProvHandle = null;
-            CapiHelper.AcquireCsp(cspParams, out safeProvHandle);
+            CapiHelper.AcquireCsp(cspParams, out SafeProvHandle safeProvHandle);
             return safeProvHandle;
         }
     }

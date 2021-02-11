@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 internal partial class Interop
 {
@@ -43,7 +42,6 @@ internal partial class Interop
             internal const int STARTF_USESTDHANDLES = 0x00000100;
             internal const int CREATE_UNICODE_ENVIRONMENT = 0x00000400;
             internal const int CREATE_NO_WINDOW = 0x08000000;
-            internal const uint STATUS_INFO_LENGTH_MISMATCH = 0xC0000004;
         }
     }
 }

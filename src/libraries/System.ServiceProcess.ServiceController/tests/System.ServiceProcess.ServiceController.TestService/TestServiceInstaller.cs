@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
@@ -103,6 +102,7 @@ namespace System.ServiceProcess.Tests
                     {
                         if (svc.Status != ServiceControllerStatus.Running)
                         {
+                            TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Start service " + ServiceName);
                             svc.Start();
                             if (!ServiceName.StartsWith("PropagateExceptionFromOnStart"))
                                 svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(120));
@@ -125,7 +125,6 @@ namespace System.ServiceProcess.Tests
                 // Meantime we still want this service to get deleted, so we'll go ahead and call
                 // DeleteService, which will schedule it to get deleted on reboot.
                 // We won't catch the exception: we do want the test to fail.
-
                 DeleteService();
 
                 ServiceName = null;
@@ -137,11 +136,12 @@ namespace System.ServiceProcess.Tests
             using (ServiceController svc = new ServiceController(ServiceName))
             {
                 // The Service exists at this point, but OpenService is failing, possibly because its being invoked concurrently for another service.
-                // https://github.com/dotnet/corefx/issues/23388
+                // https://github.com/dotnet/runtime/issues/23247
                 if (svc.Status != ServiceControllerStatus.Stopped)
                 {
                     try
                     {
+                        TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Stop service " + ServiceName);
                         svc.Stop();
                     }
                     catch (InvalidOperationException)
@@ -173,6 +173,7 @@ namespace System.ServiceProcess.Tests
                     if (serviceHandle.IsInvalid)
                         throw new Win32Exception($"Could not find service '{ServiceName}'");
 
+                    TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Delete service " + ServiceName);
                     if (!Interop.Advapi32.DeleteService(serviceHandle))
                     {
                         throw new Win32Exception($"Could not delete service '{ServiceName}'");

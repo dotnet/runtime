@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -40,7 +39,7 @@ namespace System.Reflection.TypeLoading
         protected sealed override MethodSig<RoParameter> ComputeMethodSig() => _genericMethodDefinition.SpecializeMethodSig(this);
         protected sealed override MethodSig<RoType> ComputeCustomModifiers() => _genericMethodDefinition.SpecializeCustomModifiers(TypeContext);
 
-        public sealed override MethodBody GetMethodBody() => _genericMethodDefinition.SpecializeMethodBody(this);
+        public sealed override MethodBody? GetMethodBody() => _genericMethodDefinition.SpecializeMethodBody(this);
 
         protected sealed override RoType[] ComputeGenericArgumentsOrParameters() => _genericMethodArguments;
 
@@ -51,7 +50,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments) => throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(object? obj)
         {
             if (!(obj is RoConstructedGenericMethod other))
                 return false;

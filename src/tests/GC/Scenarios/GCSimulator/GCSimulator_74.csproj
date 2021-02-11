@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestExecutionArguments>-t 3 -tp 0 -dz 17 -sdz 8500 -dc 10000 -sdc 5000 -lt 4 -f -dp 0.0 -dw 0.4</CLRTestExecutionArguments>
+    <IsGCSimulatorTest>true</IsGCSimulatorTest>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestProjectToRun>GCSimulator.csproj</CLRTestProjectToRun>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GCSimulator.cs" />
+    <Compile Include="lifetimefx.cs" />
+  </ItemGroup>
+</Project>

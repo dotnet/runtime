@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition.Primitives;
@@ -16,7 +15,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public PartCreatorParameterImportDefinition(
             Lazy<ParameterInfo> importingLazyParameter,
-            ICompositionElement origin,
+            ICompositionElement? origin,
             ContractBasedImportDefinition productImportDefinition)
             : base(importingLazyParameter, CompositionConstants.PartCreatorContractName, CompositionConstants.PartCreatorTypeIdentity,
                 productImportDefinition.RequiredMetadata, productImportDefinition.Cardinality, CreationPolicy.Any, MetadataServices.EmptyMetadata, origin)

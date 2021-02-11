@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Threading
 {
@@ -8,7 +7,7 @@ namespace System.Threading
     {
         /// <summary>
         /// Normally, the current <see cref="HostExecutionContext"/> would be stored on the <see cref="ExecutionContext"/>.
-        /// Since this feature is not fully hooked up, this class just imitates the behavior of the desktop framework, while
+        /// Since this feature is not fully hooked up, this class just imitates the behavior of the .NET Framework, while
         /// separating itself from the <see cref="ExecutionContext"/> to minimize unnecessary additions there.
         /// </summary>
         [ThreadStatic]

@@ -1,0 +1,715 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+.assembly extern mscorlib { .publickeytoken = (B7 7A 5C 56 19 34 E0 89 ) .ver 4:0:0:0 }
+.assembly extern TestFramework { .publickeytoken = ( B0 3F 5F 7F 11 D5 0A 3A )  }
+
+//TYPES IN FORWARDER ASSEMBLIES:
+
+//TEST ASSEMBLY:
+.assembly Generated1 { .hash algorithm 0x00008004 }
+.module Generated1.exe
+
+.class public BaseClass0 
+{
+	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
+		ldarg.0
+		call instance void [mscorlib]System.Object::.ctor()
+		ret
+	}
+}
+.class public BaseClass1 
+		extends BaseClass0
+{
+	.method public hidebysig specialname rtspecialname instance void .ctor() cil managed { 
+		ldarg.0
+		call instance void BaseClass0::.ctor()
+		ret
+	}
+}
+.class public sequential sealed MyStruct51`1<T0> 
+		extends [mscorlib]System.ValueType
+		implements IBase0 
+{
+	.pack 0
+	.size 1
+	.method public hidebysig virtual instance string Method0() cil managed noinlining { 
+		ldstr "MyStruct51::Method0.405()"
+		ret
+	}
+	.method public hidebysig newslot virtual instance string Method1() cil managed noinlining { 
+		ldstr "MyStruct51::Method1.406()"
+		ret
+	}
+	.method public hidebysig newslot virtual instance string 'IBase0.Method1'() cil managed noinlining { 
+		.override method instance string IBase0::Method1()
+		ldstr "MyStruct51::Method1.MI.407()"
+		ret
+	}
+	.method public hidebysig virtual instance string Method2<M0>() cil managed noinlining { 
+		ldstr "MyStruct51::Method2.408<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot virtual instance string 'IBase0.Method2'<M0>() cil managed noinlining { 
+		.override method instance string IBase0::Method2<[1]>()
+		ldstr "MyStruct51::Method2.MI.409<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot virtual instance string Method3<M0>() cil managed noinlining { 
+		ldstr "MyStruct51::Method3.410<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot virtual instance string 'IBase0.Method3'<M0>() cil managed noinlining { 
+		.override method instance string IBase0::Method3<[1]>()
+		ldstr "MyStruct51::Method3.MI.411<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot instance string ClassMethod110<M0>() cil managed noinlining { 
+		ldstr "MyStruct51::ClassMethod110.412<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig newslot instance string ClassMethod111<M0>() cil managed noinlining { 
+		ldstr "MyStruct51::ClassMethod111.413<"
+		ldtoken !!M0
+		call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+		call string [mscorlib]System.String::Concat(object,object)
+		ldstr ">()"
+		call string [mscorlib]System.String::Concat(object,object)
+		ret
+	}
+	.method public hidebysig virtual instance bool Equals(object obj) cil managed { ldc.i4.0 ret }
+	.method public hidebysig virtual instance int32 GetHashCode() cil managed { ldc.i4.0 ret }
+	.method public hidebysig virtual instance string ToString() cil managed { ldstr "" ret }
+}
+.class interface public abstract IBase0 
+{
+	.method public hidebysig newslot abstract virtual instance string Method0() cil managed { }
+	.method public hidebysig newslot abstract virtual instance string Method1() cil managed { }
+	.method public hidebysig newslot abstract virtual instance string Method2<M0>() cil managed { }
+	.method public hidebysig newslot abstract virtual instance string Method3<M0>() cil managed { }
+}
+.class private auto ansi beforefieldinit Framework {
+	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
+		.maxstack 5
+		.locals init (string[] actualResults)
+		ldc.i4.s    0
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.BaseClass0<(BaseClass0)W>(!!W inst, string exp)"
+		ldc.i4.s 0
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.BaseClass1<(BaseClass1)W>(!!W inst, string exp) cil managed {
+		.maxstack 5
+		.locals init (string[] actualResults)
+		ldc.i4.s    0
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.BaseClass1<(BaseClass1)W>(!!W inst, string exp)"
+		ldc.i4.s 0
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.IBase0<(IBase0)W>(!!W inst, string exp) cil managed {
+		.maxstack 9
+		.locals init (string[] actualResults)
+		ldc.i4.s    4
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.IBase0<(IBase0)W>(!!W inst, string exp)"
+		ldc.i4.s 4
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string IBase0::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string IBase0::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string IBase0::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. !!W
+		callvirt     instance string IBase0::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.MyStruct51.T<T0,(valuetype MyStruct51`1<!!T0>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 9
+		.locals init (string[] actualResults)
+		ldc.i4.s    4
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.MyStruct51.T<T0,(valuetype MyStruct51`1<!!T0>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 4
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<!!T0>
+		callvirt     instance string IBase0::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<!!T0>
+		callvirt     instance string IBase0::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<!!T0>
+		callvirt     instance string IBase0::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<!!T0>
+		callvirt     instance string IBase0::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.MyStruct51.A<(valuetype MyStruct51`1<class BaseClass0>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 9
+		.locals init (string[] actualResults)
+		ldc.i4.s    4
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.MyStruct51.A<(valuetype MyStruct51`1<class BaseClass0>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 4
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<class BaseClass0>
+		callvirt     instance string IBase0::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<class BaseClass0>
+		callvirt     instance string IBase0::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<class BaseClass0>
+		callvirt     instance string IBase0::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<class BaseClass0>
+		callvirt     instance string IBase0::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method static void M.MyStruct51.B<(valuetype MyStruct51`1<class BaseClass1>)W>(!!W 'inst', string exp) cil managed {
+		.maxstack 9
+		.locals init (string[] actualResults)
+		ldc.i4.s    4
+		newarr      string
+		stloc.s     actualResults
+		ldarg.1
+		ldstr "M.MyStruct51.B<(valuetype MyStruct51`1<class BaseClass1>)W>(!!W 'inst', string exp)"
+		ldc.i4.s 4
+		ldloc.s      actualResults
+		ldc.i4.s     0
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<class BaseClass1>
+		callvirt     instance string IBase0::Method0()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     1
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<class BaseClass1>
+		callvirt     instance string IBase0::Method1()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     2
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<class BaseClass1>
+		callvirt     instance string IBase0::Method2<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		ldc.i4.s     3
+		ldarga.s     0
+		constrained. valuetype MyStruct51`1<class BaseClass1>
+		callvirt     instance string IBase0::Method3<object>()
+		stelem.ref
+		ldloc.s      actualResults
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,int32,string[])
+		ret
+	}
+	.method public hidebysig static void MethodCallingTest() cil managed
+	{
+		.maxstack  10
+		.locals init (object V_0)
+		ldstr "========================== Method Calling Test =========================="
+		call void [mscorlib]System.Console::WriteLine(string)
+		.locals init (valuetype MyStruct51`1<class BaseClass0> V_1)
+		ldloca V_1
+		initobj valuetype MyStruct51`1<class BaseClass0>
+		ldloca V_1
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass0>::Method0()
+		ldstr "MyStruct51::Method0.405()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass0>::Method1()
+		ldstr "MyStruct51::Method1.406()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass0>::Method2<object>()
+		ldstr "MyStruct51::Method2.408<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass0>::Method3<object>()
+		ldstr "MyStruct51::Method3.410<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass0>::ClassMethod110<object>()
+		ldstr "MyStruct51::ClassMethod110.412<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass0>::ClassMethod111<object>()
+		ldstr "MyStruct51::ClassMethod111.413<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup ldnull call instance bool valuetype MyStruct51`1<class BaseClass0>::Equals(object) pop
+		dup call instance int32 valuetype MyStruct51`1<class BaseClass0>::GetHashCode() pop
+		dup call instance string valuetype MyStruct51`1<class BaseClass0>::ToString() pop
+		pop
+		ldloc V_1
+		box valuetype MyStruct51`1<class BaseClass0>
+		dup
+		callvirt instance string IBase0::Method0()
+		ldstr "MyStruct51::Method0.405()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string IBase0::Method1()
+		ldstr "MyStruct51::Method1.MI.407()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string IBase0::Method2<object>()
+		ldstr "MyStruct51::Method2.MI.409<System.Object>()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string IBase0::Method3<object>()
+		ldstr "MyStruct51::Method3.MI.411<System.Object>()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		.locals init (valuetype MyStruct51`1<class BaseClass1> V_2)
+		ldloca V_2
+		initobj valuetype MyStruct51`1<class BaseClass1>
+		ldloca V_2
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass1>::Method0()
+		ldstr "MyStruct51::Method0.405()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass1>::Method1()
+		ldstr "MyStruct51::Method1.406()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass1>::Method2<object>()
+		ldstr "MyStruct51::Method2.408<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass1>::Method3<object>()
+		ldstr "MyStruct51::Method3.410<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass1>::ClassMethod110<object>()
+		ldstr "MyStruct51::ClassMethod110.412<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		call instance string valuetype MyStruct51`1<class BaseClass1>::ClassMethod111<object>()
+		ldstr "MyStruct51::ClassMethod111.413<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type MyStruct51"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup ldnull call instance bool valuetype MyStruct51`1<class BaseClass1>::Equals(object) pop
+		dup call instance int32 valuetype MyStruct51`1<class BaseClass1>::GetHashCode() pop
+		dup call instance string valuetype MyStruct51`1<class BaseClass1>::ToString() pop
+		pop
+		ldloc V_2
+		box valuetype MyStruct51`1<class BaseClass1>
+		dup
+		callvirt instance string IBase0::Method0()
+		ldstr "MyStruct51::Method0.405()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string IBase0::Method1()
+		ldstr "MyStruct51::Method1.MI.407()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string IBase0::Method2<object>()
+		ldstr "MyStruct51::Method2.MI.409<System.Object>()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		dup
+		callvirt instance string IBase0::Method3<object>()
+		ldstr "MyStruct51::Method3.MI.411<System.Object>()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		pop
+		ldstr "========================================================================\n\n"
+		call void [mscorlib]System.Console::WriteLine(string)
+		ret
+	}
+	.method public hidebysig static void ConstrainedCallsTest() cil managed
+	{
+		.maxstack  10
+		.locals init (object V_0)
+		ldstr "========================== Constrained Calls Test =========================="
+		call void [mscorlib]System.Console::WriteLine(string)
+		.locals init (valuetype MyStruct51`1<class BaseClass0> V_3)
+		ldloca V_3
+		initobj valuetype MyStruct51`1<class BaseClass0>
+		.try {  ldloc V_3
+				ldstr "MyStruct51::Method0.405()#MyStruct51::Method1.MI.407()#MyStruct51::Method2.MI.409<System.Object>()#MyStruct51::Method3.MI.411<System.Object>()#"
+				call void Framework::M.IBase0<valuetype MyStruct51`1<class BaseClass0>>(!!0,string) leave.s LV0
+		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
+		.locals init (valuetype MyStruct51`1<class BaseClass1> V_4)
+		ldloca V_4
+		initobj valuetype MyStruct51`1<class BaseClass1>
+		.try {  ldloc V_4
+				ldstr "MyStruct51::Method0.405()#MyStruct51::Method1.MI.407()#MyStruct51::Method2.MI.409<System.Object>()#MyStruct51::Method3.MI.411<System.Object>()#"
+				call void Framework::M.IBase0<valuetype MyStruct51`1<class BaseClass1>>(!!0,string) leave.s LV1
+		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
+		ldstr "========================================================================\n\n"
+		call void [mscorlib]System.Console::WriteLine(string)
+		ret
+	}
+	.method public hidebysig static void StructConstrainedInterfaceCallsTest() cil managed
+	{
+		.maxstack  10
+		ldstr "===================== Struct Constrained Interface Calls Test ====================="
+		call void [mscorlib]System.Console::WriteLine(string)
+		.locals init (valuetype MyStruct51`1<class BaseClass0> V_5)
+		ldloca V_5
+		initobj valuetype MyStruct51`1<class BaseClass0>
+		.try {  ldloc V_5
+				ldstr "MyStruct51::Method0.405()#" +
+				      "MyStruct51::Method1.MI.407()#" +
+				      "MyStruct51::Method2.MI.409<System.Object>()#" +
+				      "MyStruct51::Method3.MI.411<System.Object>()#"
+				call void Framework::M.MyStruct51.T<class BaseClass0,valuetype MyStruct51`1<class BaseClass0>>(!!1,string) leave.s LV0
+		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
+		.try {  ldloc V_5
+				ldstr "MyStruct51::Method0.405()#" +
+				      "MyStruct51::Method1.MI.407()#" +
+				      "MyStruct51::Method2.MI.409<System.Object>()#" +
+				      "MyStruct51::Method3.MI.411<System.Object>()#"
+				call void Framework::M.MyStruct51.A<valuetype MyStruct51`1<class BaseClass0>>(!!0,string) leave.s LV1
+		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
+		.locals init (valuetype MyStruct51`1<class BaseClass1> V_6)
+		ldloca V_6
+		initobj valuetype MyStruct51`1<class BaseClass1>
+		.try {  ldloc V_6
+				ldstr "MyStruct51::Method0.405()#" +
+				      "MyStruct51::Method1.MI.407()#" +
+				      "MyStruct51::Method2.MI.409<System.Object>()#" +
+				      "MyStruct51::Method3.MI.411<System.Object>()#"
+				call void Framework::M.MyStruct51.T<class BaseClass1,valuetype MyStruct51`1<class BaseClass1>>(!!1,string) leave.s LV2
+		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
+		.try {  ldloc V_6
+				ldstr "MyStruct51::Method0.405()#" +
+				      "MyStruct51::Method1.MI.407()#" +
+				      "MyStruct51::Method2.MI.409<System.Object>()#" +
+				      "MyStruct51::Method3.MI.411<System.Object>()#"
+				call void Framework::M.MyStruct51.B<valuetype MyStruct51`1<class BaseClass1>>(!!0,string) leave.s LV3
+		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
+		ldstr "========================================================================\n\n"
+		call void [mscorlib]System.Console::WriteLine(string)
+		ret
+	}
+	.method public hidebysig static void CalliTest() cil managed
+	{
+		.maxstack  10
+		.locals init (object V_0)
+		ldstr "========================== Method Calli Test =========================="
+		call void [mscorlib]System.Console::WriteLine(string)
+		.locals init (valuetype MyStruct51`1<class BaseClass0> V_7)
+		ldloca V_7
+		initobj valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass0>::Method0()
+		calli default string(object)
+		ldstr "MyStruct51::Method0.405()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass0>::Method1()
+		calli default string(object)
+		ldstr "MyStruct51::Method1.406()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass0>::Method2<object>()
+		calli default string(object)
+		ldstr "MyStruct51::Method2.408<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass0>::Method3<object>()
+		calli default string(object)
+		ldstr "MyStruct51::Method3.410<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass0>::ClassMethod110<object>()
+		calli default string(object)
+		ldstr "MyStruct51::ClassMethod110.412<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass0>::ClassMethod111<object>()
+		calli default string(object)
+		ldstr "MyStruct51::ClassMethod111.413<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass0> on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_7 box valuetype MyStruct51`1<class BaseClass0> ldnull 
+		ldloc V_7 box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance bool valuetype MyStruct51`1<class BaseClass0>::Equals(object) calli default bool(object,object) pop
+		ldloc V_7 box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7 box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance int32 valuetype MyStruct51`1<class BaseClass0>::GetHashCode() calli default int32(object) pop
+		ldloc V_7 box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7 box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass0>::ToString() calli default string(object) pop
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string IBase0::Method0()
+		calli default string(object)
+		ldstr "MyStruct51::Method0.405()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string IBase0::Method1()
+		calli default string(object)
+		ldstr "MyStruct51::Method1.MI.407()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string IBase0::Method2<object>()
+		calli default string(object)
+		ldstr "MyStruct51::Method2.MI.409<System.Object>()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldloc V_7
+		box valuetype MyStruct51`1<class BaseClass0>
+		ldvirtftn instance string IBase0::Method3<object>()
+		calli default string(object)
+		ldstr "MyStruct51::Method3.MI.411<System.Object>()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass0>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		.locals init (valuetype MyStruct51`1<class BaseClass1> V_8)
+		ldloca V_8
+		initobj valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass1>::Method0()
+		calli default string(object)
+		ldstr "MyStruct51::Method0.405()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass1>::Method1()
+		calli default string(object)
+		ldstr "MyStruct51::Method1.406()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass1>::Method2<object>()
+		calli default string(object)
+		ldstr "MyStruct51::Method2.408<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass1>::Method3<object>()
+		calli default string(object)
+		ldstr "MyStruct51::Method3.410<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass1>::ClassMethod110<object>()
+		calli default string(object)
+		ldstr "MyStruct51::ClassMethod110.412<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass1>::ClassMethod111<object>()
+		calli default string(object)
+		ldstr "MyStruct51::ClassMethod111.413<System.Object>()"
+		ldstr "valuetype MyStruct51`1<class BaseClass1> on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_8 box valuetype MyStruct51`1<class BaseClass1> ldnull 
+		ldloc V_8 box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance bool valuetype MyStruct51`1<class BaseClass1>::Equals(object) calli default bool(object,object) pop
+		ldloc V_8 box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8 box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance int32 valuetype MyStruct51`1<class BaseClass1>::GetHashCode() calli default int32(object) pop
+		ldloc V_8 box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8 box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string valuetype MyStruct51`1<class BaseClass1>::ToString() calli default string(object) pop
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string IBase0::Method0()
+		calli default string(object)
+		ldstr "MyStruct51::Method0.405()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string IBase0::Method1()
+		calli default string(object)
+		ldstr "MyStruct51::Method1.MI.407()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string IBase0::Method2<object>()
+		calli default string(object)
+		ldstr "MyStruct51::Method2.MI.409<System.Object>()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldloc V_8
+		box valuetype MyStruct51`1<class BaseClass1>
+		ldvirtftn instance string IBase0::Method3<object>()
+		calli default string(object)
+		ldstr "MyStruct51::Method3.MI.411<System.Object>()"
+		ldstr "IBase0 on type valuetype MyStruct51`1<class BaseClass1>"
+		call void [TestFramework]TestFramework::MethodCallTest(string,string,string)
+		ldstr "========================================================================\n\n"
+		call void [mscorlib]System.Console::WriteLine(string)
+		ret
+	}
+	.method public hidebysig static int32  Main() cil managed
+	{
+		.entrypoint
+		.maxstack  10
+		call void Framework::MethodCallingTest()
+		call void Framework::ConstrainedCallsTest()
+		call void Framework::StructConstrainedInterfaceCallsTest()
+		call void Framework::CalliTest()
+		ldc.i4 100
+		ret
+	}
+}

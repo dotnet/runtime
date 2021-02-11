@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -22,7 +21,7 @@ namespace System.Drawing
 
 #if DEBUG
         private static readonly object s_lockObj = new object();
-        private static int s_idCount = 0;
+        private static int s_idCount;
         private int _id;
 #endif
 
@@ -63,11 +62,11 @@ namespace System.Drawing
         /// Initializes a new instance of the <see cref='FontFamily'/> class in the specified
         /// <see cref='FontCollection'/> and with the specified name.
         /// </summary>
-        public FontFamily(string name, FontCollection fontCollection) => CreateFontFamily(name, fontCollection);
+        public FontFamily(string name, FontCollection? fontCollection) => CreateFontFamily(name, fontCollection);
 
         // Creates the native font family object.
         // Note: GDI+ creates singleton font family objects (from the corresponding font file) and reference count them.
-        private void CreateFontFamily(string name, FontCollection fontCollection)
+        private void CreateFontFamily(string name, FontCollection? fontCollection)
         {
             IntPtr fontfamily = IntPtr.Zero;
             IntPtr nativeFontCollection = (fontCollection == null) ? IntPtr.Zero : fontCollection._nativeFontCollection;
@@ -189,7 +188,7 @@ namespace System.Drawing
             char* name = stackalloc char[32]; // LF_FACESIZE is 32
             int status = Gdip.GdipGetFamilyName(new HandleRef(this, NativeFamily), name, language);
             Gdip.CheckStatus(status);
-            return Marshal.PtrToStringUni((IntPtr)name);
+            return Marshal.PtrToStringUni((IntPtr)name)!;
         }
 
         /// <summary>

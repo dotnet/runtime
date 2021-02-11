@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Security.Authentication.ExtendedProtection;
@@ -15,14 +14,13 @@ namespace System.Net.Mail
         {
         }
 
-        public Authorization Authenticate(string challenge, NetworkCredential credential, object sessionCookie, string spn, ChannelBinding channelBindingToken)
+        public Authorization? Authenticate(string? challenge, NetworkCredential? credential, object sessionCookie, string? spn, ChannelBinding? channelBindingToken)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, "Authenticate");
             try
             {
                 lock (_sessions)
                 {
-                    NTAuthentication clientContext;
+                    NTAuthentication? clientContext;
                     if (!_sessions.TryGetValue(sessionCookie, out clientContext))
                     {
                         if (credential == null)
@@ -36,7 +34,7 @@ namespace System.Net.Mail
 
                     }
 
-                    string resp = clientContext.GetOutgoingBlob(challenge);
+                    string? resp = clientContext.GetOutgoingBlob(challenge);
 
                     if (!clientContext.IsCompleted)
                     {
@@ -53,10 +51,6 @@ namespace System.Net.Mail
             catch (NullReferenceException)
             {
                 return null;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, "Authenticate");
             }
         }
 

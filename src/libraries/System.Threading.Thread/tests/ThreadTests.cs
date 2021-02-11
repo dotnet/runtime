@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,11 +26,11 @@ namespace System.Threading.Threads.Tests
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ConstructorTest()
         {
-            const int SmallStackSizeBytes = 64 << 10; // 64 KB, currently accepted in all supported platforms, and is the PAL minimum
-            const int LargeStackSizeBytes = 16 << 20; // 16 MB
+            const int SmallStackSizeBytes = 128 << 10; // 128 KB
+            const int LargeStackSizeBytes = 16 << 20;  // 16 MB
 
             int pageSizeBytes = Environment.SystemPageSize;
 
@@ -160,6 +159,8 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // System.Diagnostics.Process is not supported on this platform.
         [InlineData("STAMain.exe", "GetApartmentStateTest")]
         [InlineData("STAMain.exe", "SetApartmentStateTest")]
         [InlineData("STAMain.exe", "WaitAllNotSupportedOnSta_Test0")]
@@ -181,19 +182,20 @@ namespace System.Threading.Threads.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void ApartmentState_NoAttributePresent_DefaultState_Windows()
         {
             RemoteExecutor.Invoke(() =>
             {
                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-                Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA));
+                AssertExtensions.ThrowsContains<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA), "MTA");
                 Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ApartmentState_NoAttributePresent_DefaultState_Unix()
         {
@@ -204,8 +206,10 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
+        private static bool IsWindowsNanoServerAndRemoteExecutorSupported => PlatformDetection.IsWindowsNanoServer && RemoteExecutor.IsSupported;
+
         // Thread is always initialized as MTA irrespective of the attribute present.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
+        [ConditionalFact(nameof(IsWindowsNanoServerAndRemoteExecutorSupported))]
         public static void ApartmentState_NoAttributePresent_DefaultState_Nano()
         {
             RemoteExecutor.Invoke(() =>
@@ -215,7 +219,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void ApartmentState_NoAttributePresent_STA_Unix()
         {
@@ -226,6 +230,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
         public static void GetSetApartmentStateTest_ChangeAfterThreadStarted_Windows(
@@ -248,6 +253,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
         public static void ApartmentStateTest_ChangeBeforeThreadStarted_Windows(
@@ -320,15 +326,15 @@ namespace System.Threading.Threads.Tests
             Assert.Equal(expectedFailure, setApartmentState(t, ApartmentState.MTA));
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentCultureTest_DifferentThread()
         {
             CultureInfo culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
             CultureInfo uiCulture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
 
             ExceptionDispatchInfo exceptionFromThread = null;
-            var t = new Thread(() => {
+            var t = new Thread(() =>
+            {
                 try
                 {
                     Assert.Same(culture, Thread.CurrentThread.CurrentCulture);
@@ -361,7 +367,7 @@ namespace System.Threading.Threads.Tests
             exceptionFromThread?.Throw();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentCultureTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -403,14 +409,13 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentPrincipalTest_SkipOnDesktopFramework()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() => Assert.Null(Thread.CurrentPrincipal));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentPrincipalTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -427,18 +432,19 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentPrincipalContextFlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(async () =>
             {
                 Thread.CurrentPrincipal = new ClaimsPrincipal();
 
-                await Task.Run(async() => {
+                await Task.Run(async () =>
+                {
 
                     Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
 
-                    await Task.Run(async() =>
+                    await Task.Run(async () =>
                     {
                         Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
 
@@ -459,8 +465,7 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentPrincipalContextFlowTest_NotFlow()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(async () =>
@@ -468,7 +473,7 @@ namespace System.Threading.Threads.Tests
                 Thread.CurrentPrincipal = new ClaimsPrincipal();
 
                 Task task;
-                using(ExecutionContext.SuppressFlow())
+                using (ExecutionContext.SuppressFlow())
                 {
                     Assert.True(ExecutionContext.IsFlowSuppressed());
 
@@ -485,11 +490,11 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void CurrentPrincipal_SetNull()
         {
             // We run test on remote process because we need to set same principal policy
-            // On netfx default principal policy is PrincipalPolicy.UnauthenticatedPrincipal
+            // On .NET Framework default principal policy is PrincipalPolicy.UnauthenticatedPrincipal
             RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.NoPrincipal);
@@ -510,7 +515,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CurrentThreadTest()
         {
             Thread otherThread = null;
@@ -526,15 +531,14 @@ namespace System.Threading.Threads.Tests
             Assert.NotEqual(mainThread, otherThread);
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ExecutionContextTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(
                 () => Assert.Equal(ExecutionContext.Capture(), Thread.CurrentThread.ExecutionContext));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IsAliveTest()
         {
             var isAliveWhenRunning = false;
@@ -549,7 +553,7 @@ namespace System.Threading.Threads.Tests
             Assert.False(t.IsAlive);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IsBackgroundTest()
         {
             var t = new Thread(() => { });
@@ -570,7 +574,7 @@ namespace System.Threading.Threads.Tests
             t.Start();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IsThreadPoolThreadTest()
         {
             var isThreadPoolThread = false;
@@ -594,7 +598,7 @@ namespace System.Threading.Threads.Tests
             Assert.True(isThreadPoolThread);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ManagedThreadIdTest()
         {
             var e = new ManualResetEvent(false);
@@ -602,12 +606,12 @@ namespace System.Threading.Threads.Tests
             var t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, e.CheckedWait);
             t.IsBackground = true;
             t.Start();
-            Assert.NotEqual(Thread.CurrentThread.ManagedThreadId, t.ManagedThreadId);
+            Assert.NotEqual(Environment.CurrentManagedThreadId, t.ManagedThreadId);
             e.Set();
             waitForThread();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void NameTest()
         {
             string name = Guid.NewGuid().ToString("N");
@@ -617,19 +621,20 @@ namespace System.Threading.Threads.Tests
                 {
                     var ct = Thread.CurrentThread;
                     Assert.Equal(name, ct.Name);
-                    Assert.Throws<InvalidOperationException>(() => ct.Name = null);
-                    Assert.Throws<InvalidOperationException>(() => ct.Name = name + "b");
+                    ct.Name = name + "xyz";
+                    Assert.Equal(name + "xyz", ct.Name);
+                    ct.Name = null;
+                    Assert.Null(ct.Name);
+                    ct.Name = name;
                     Assert.Equal(name, ct.Name);
                 });
             t.IsBackground = true;
             Assert.Null(t.Name);
             t.Name = null;
-            t.Name = null;
             Assert.Null(t.Name);
+            t.Name = name + "xyz";
+            Assert.Equal(name + "xyz", t.Name);
             t.Name = name;
-            Assert.Equal(name, t.Name);
-            Assert.Throws<InvalidOperationException>(() => t.Name = null);
-            Assert.Throws<InvalidOperationException>(() => t.Name = name + "b");
             Assert.Equal(name, t.Name);
             t.Start();
             waitForThread();
@@ -638,18 +643,32 @@ namespace System.Threading.Threads.Tests
             {
                 var ct = Thread.CurrentThread;
                 Assert.Null(ct.Name);
-                ct.Name = null;
+                ct.Name = name;
+                Assert.Equal(name, ct.Name);
+                ct.Name = name + "xyz";
+                Assert.Equal(name + "xyz", ct.Name);
                 ct.Name = null;
                 Assert.Null(ct.Name);
                 ct.Name = name;
                 Assert.Equal(name, ct.Name);
-                Assert.Throws<InvalidOperationException>(() => ct.Name = null);
-                Assert.Throws<InvalidOperationException>(() => ct.Name = name + "b");
-                Assert.Equal(name, ct.Name);
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ThreadNameDoesNotAffectProcessName()
+        {
+            // On Linux, changing the main thread name affects ProcessName.
+            // To avoid that, .NET ignores requests to change the main thread name.
+            RemoteExecutor.Invoke(() =>
+            {
+                const string ThreadName = "my-thread";
+                Thread.CurrentThread.Name = ThreadName;
+                Assert.Equal(ThreadName, Thread.CurrentThread.Name);
+                Assert.NotEqual(ThreadName, Process.GetCurrentProcess().ProcessName);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void PriorityTest()
         {
             var e = new ManualResetEvent(false);
@@ -667,7 +686,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThreadStateTest()
         {
             var e0 = new ManualResetEvent(false);
@@ -704,8 +723,7 @@ namespace System.Threading.Threads.Tests
             Assert.Equal(ThreadState.Stopped, t.ThreadState);
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void AbortSuspendTest()
         {
             var e = new ManualResetEvent(false);
@@ -715,12 +733,13 @@ namespace System.Threading.Threads.Tests
 
             Action verify = () =>
             {
+#pragma warning disable SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume, ResetAbort
                 Assert.Throws<PlatformNotSupportedException>(() => t.Abort());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Abort(t));
-#pragma warning disable 618 // Obsolete members
+                Assert.Throws<PlatformNotSupportedException>(() => Thread.ResetAbort());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Suspend());
                 Assert.Throws<PlatformNotSupportedException>(() => t.Resume());
-#pragma warning restore 618 // Obsolete members
+#pragma warning restore SYSLIB0006, 618 // Obsolete: Abort, Suspend, Resume, ResetAbort
             };
             verify();
 
@@ -728,9 +747,7 @@ namespace System.Threading.Threads.Tests
             verify();
 
             e.Set();
-            waitForThread();
-
-            Assert.Throws<PlatformNotSupportedException>(() => Thread.ResetAbort());
+            waitForThread(); 
         }
 
         private static void VerifyLocalDataSlot(LocalDataStoreSlot slot)
@@ -825,7 +842,7 @@ namespace System.Threading.Threads.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void LocalDataSlotTest()
         {
             var slot = Thread.AllocateDataSlot();
@@ -895,7 +912,7 @@ namespace System.Threading.Threads.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void InterruptTest()
         {
             // Interrupting a thread that is not blocked does not do anything, but once the thread starts blocking, it gets
@@ -944,10 +961,10 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void InterruptInFinallyBlockTest_SkipOnDesktopFramework()
         {
-            // A wait in a finally block can be interrupted. The desktop framework applies the same rules as thread abort, and
+            // A wait in a finally block can be interrupted. The .NET Framework applies the same rules as thread abort, and
             // does not allow thread interrupt in a finally block. There is nothing special about thread interrupt that requires
             // not allowing it in finally blocks, so this behavior has changed in .NET Core.
             var continueThread = new AutoResetEvent(false);
@@ -969,7 +986,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void JoinTest()
         {
             var threadReady = new ManualResetEvent(false);
@@ -1018,9 +1035,35 @@ namespace System.Threading.Threads.Tests
             Assert.InRange((int)stopwatch.ElapsedMilliseconds, 100, int.MaxValue);
         }
 
-        [Fact]
-        public static void StartTest()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void StartTest(bool useUnsafeStart)
         {
+            void Start(Thread t)
+            {
+                if (useUnsafeStart)
+                {
+                    t.UnsafeStart();
+                }
+                else
+                {
+                    t.Start();
+                }
+            }
+
+            void StartParameter(Thread t, object parameter)
+            {
+                if (useUnsafeStart)
+                {
+                    t.UnsafeStart(parameter);
+                }
+                else
+                {
+                    t.Start(parameter);
+                }
+            }
+
             var e = new AutoResetEvent(false);
             Action waitForThread;
             Thread t = null;
@@ -1030,25 +1073,25 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            Assert.Throws<InvalidOperationException>(() => t.Start(null));
-            Assert.Throws<InvalidOperationException>(() => t.Start(t));
-            t.Start();
-            Assert.Throws<ThreadStateException>(() => t.Start());
+            Assert.Throws<InvalidOperationException>(() => StartParameter(t, null));
+            Assert.Throws<InvalidOperationException>(() => StartParameter(t, t));
+            Start(t);
+            Assert.Throws<ThreadStateException>(() => Start(t));
             e.Set();
             waitForThread();
-            Assert.Throws<ThreadStateException>(() => t.Start());
+            Assert.Throws<ThreadStateException>(() => Start(t));
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter => e.CheckedWait());
             t.IsBackground = true;
-            t.Start();
-            Assert.Throws<ThreadStateException>(() => t.Start());
-            Assert.Throws<ThreadStateException>(() => t.Start(null));
-            Assert.Throws<ThreadStateException>(() => t.Start(t));
+            Start(t);
+            Assert.Throws<ThreadStateException>(() => Start(t));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, null));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, t));
             e.Set();
             waitForThread();
-            Assert.Throws<ThreadStateException>(() => t.Start());
-            Assert.Throws<ThreadStateException>(() => t.Start(null));
-            Assert.Throws<ThreadStateException>(() => t.Start(t));
+            Assert.Throws<ThreadStateException>(() => Start(t));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, null));
+            Assert.Throws<ThreadStateException>(() => StartParameter(t, t));
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
                 {
@@ -1056,7 +1099,7 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            t.Start();
+            Start(t);
             waitForThread();
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
@@ -1065,7 +1108,7 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            t.Start(null);
+            StartParameter(t, null);
             waitForThread();
 
             t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
@@ -1074,12 +1117,28 @@ namespace System.Threading.Threads.Tests
                     Assert.Same(t, Thread.CurrentThread);
                 });
             t.IsBackground = true;
-            t.Start(t);
+            StartParameter(t, t);
+            waitForThread();
+
+            var al = new AsyncLocal<int>();
+            al.Value = 42;
+            t = ThreadTestHelpers.CreateGuardedThread(out waitForThread, parameter =>
+            {
+                if (useUnsafeStart)
+                {
+                    Assert.Equal(0, al.Value);
+                }
+                else
+                {
+                    Assert.Equal(42, al.Value);
+                }
+            });
+            t.IsBackground = true;
+            StartParameter(t, t);
             waitForThread();
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void MiscellaneousTest()
         {
             Thread.BeginCriticalRegion();
@@ -1106,7 +1165,7 @@ namespace System.Threading.Threads.Tests
             Thread.Yield();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void WindowsPrincipalPolicyTest_Windows()
         {
@@ -1117,7 +1176,88 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void WindowsPrincipalPolicyTest_Windows_NewThreads()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
+
+                IPrincipal currentPrincipal = Thread.CurrentPrincipal;
+
+                Assert.NotNull(currentPrincipal);
+                Assert.True(currentPrincipal.Identity.IsAuthenticated);
+
+                var first = new Thread(CheckPrincipal);
+                first.Start(currentPrincipal);
+                first.Join();
+
+                var second = new Thread(CheckPrincipal);
+                second.Start(currentPrincipal);
+                second.Join();
+            }).Dispose();
+
+            static void CheckPrincipal(object principal)
+            {
+                Assert.True(Thread.CurrentPrincipal.Identity.IsAuthenticated);
+                Assert.NotNull(Thread.CurrentPrincipal);
+                Assert.Equal((IPrincipal)principal, Thread.CurrentPrincipal);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void NoPrincipalPolicyTest_NewThreads()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.NoPrincipal);
+
+                Assert.Null(Thread.CurrentPrincipal);
+
+                var first = new Thread(() => Assert.Null(Thread.CurrentPrincipal));
+                first.Start();
+                first.Join();
+
+                var second = new Thread(() => Assert.Null(Thread.CurrentPrincipal));
+                second.Start();
+                second.Join();
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34543", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void NoPrincipalToWindowsPrincipalPolicyTest_Windows_NewThreads()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.NoPrincipal);
+
+                Assert.Null(Thread.CurrentPrincipal);
+
+                var first = new Thread(() => Assert.Null(Thread.CurrentPrincipal));
+                first.Start();
+                first.Join();
+
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
+
+                var second = new Thread(CheckPrincipal);
+                second.Start(Thread.CurrentPrincipal);
+                second.Join();
+            }).Dispose();
+
+            static void CheckPrincipal(object principal)
+            {
+                Assert.True(Thread.CurrentPrincipal.Identity.IsAuthenticated);
+                Assert.NotNull(Thread.CurrentPrincipal);
+                Assert.Equal((IPrincipal)principal, Thread.CurrentPrincipal);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void WindowsPrincipalPolicyTest_Unix()
         {
@@ -1128,7 +1268,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void UnauthenticatedPrincipalTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -1138,7 +1278,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void DefaultPrincipalPolicyTest()
         {
             RemoteExecutor.Invoke(() =>

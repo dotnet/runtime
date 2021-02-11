@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -52,7 +51,7 @@ public static class TypeTests_GetMember
     {
         Type t = typeof(Mixed);
 
-        // Desktop compat: Type.GetMember() returns the most specific array type possible given the MemberType combinations passed in.
+        // .NET Framework compat: Type.GetMember() returns the most specific array type possible given the MemberType combinations passed in.
         for (MemberTypes memberType = (MemberTypes)0; memberType <= MemberTypes.All; memberType++)
         {
             MemberInfo[] m = t.GetMember("*", memberType, BindingFlags.Public | BindingFlags.Instance);

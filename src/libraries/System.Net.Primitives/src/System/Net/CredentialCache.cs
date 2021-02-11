@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Net
@@ -13,8 +13,8 @@ namespace System.Net
     // name-password pairs and associates these with host/realm.
     public class CredentialCache : ICredentials, ICredentialsByHost, IEnumerable
     {
-        private Dictionary<CredentialKey, NetworkCredential> _cache;
-        private Dictionary<CredentialHostKey, NetworkCredential> _cacheForHosts;
+        private Dictionary<CredentialKey, NetworkCredential>? _cache;
+        private Dictionary<CredentialHostKey, NetworkCredential>? _cacheForHosts;
         private int _version;
 
         public CredentialCache()
@@ -45,7 +45,7 @@ namespace System.Net
 
             var key = new CredentialKey(uriPrefix, authType);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{cred.Domain}],[{cred.UserName}]");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{cred.Domain}],[{cred.UserName}]");
 
             if (_cache == null)
             {
@@ -90,7 +90,7 @@ namespace System.Net
 
             var key = new CredentialHostKey(host, port, authenticationType);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{credential.Domain}],[{credential.UserName}]");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{credential.Domain}],[{credential.UserName}]");
 
             if (_cacheForHosts == null)
             {
@@ -100,7 +100,7 @@ namespace System.Net
             _cacheForHosts.Add(key, credential);
         }
 
-        public void Remove(Uri uriPrefix, string authType)
+        public void Remove(Uri? uriPrefix, string? authType)
         {
             if (uriPrefix == null || authType == null)
             {
@@ -111,7 +111,7 @@ namespace System.Net
 
             if (_cache == null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
                 return;
             }
 
@@ -119,12 +119,12 @@ namespace System.Net
 
             var key = new CredentialKey(uriPrefix, authType);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Removing key:[{key}]");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Removing key:[{key}]");
 
             _cache.Remove(key);
         }
 
-        public void Remove(string host, int port, string authenticationType)
+        public void Remove(string? host, int port, string? authenticationType)
         {
             if (host == null || authenticationType == null)
             {
@@ -140,7 +140,7 @@ namespace System.Net
 
             if (_cacheForHosts == null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
                 return;
             }
 
@@ -148,12 +148,12 @@ namespace System.Net
 
             var key = new CredentialHostKey(host, port, authenticationType);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Removing key:[{key}]");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Removing key:[{key}]");
 
             _cacheForHosts.Remove(key);
         }
 
-        public NetworkCredential GetCredential(Uri uriPrefix, string authType)
+        public NetworkCredential? GetCredential(Uri uriPrefix, string authType)
         {
             if (uriPrefix == null)
             {
@@ -164,16 +164,14 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(authType));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, uriPrefix, authType);
-
             if (_cache == null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
                 return null;
             }
 
             int longestMatchPrefix = -1;
-            NetworkCredential mostSpecificMatch = null;
+            NetworkCredential? mostSpecificMatch = null;
 
             // Enumerate through every credential in the cache
             foreach (KeyValuePair<CredentialKey, NetworkCredential> pair in _cache)
@@ -195,12 +193,12 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Returning {(mostSpecificMatch == null ? "null" : "(" + mostSpecificMatch.UserName + ":" + mostSpecificMatch.Domain + ")")}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Returning {(mostSpecificMatch == null ? "null" : "(" + mostSpecificMatch.UserName + ":" + mostSpecificMatch.Domain + ")")}");
 
             return mostSpecificMatch;
         }
 
-        public NetworkCredential GetCredential(string host, int port, string authenticationType)
+        public NetworkCredential? GetCredential(string host, int port, string authenticationType)
         {
             if (host == null)
             {
@@ -219,20 +217,18 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host, port, authenticationType);
-
             if (_cacheForHosts == null)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
                 return null;
             }
 
             var key = new CredentialHostKey(host, port, authenticationType);
 
-            NetworkCredential match = null;
+            NetworkCredential? match = null;
             _cacheForHosts.TryGetValue(key, out match);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Returning {((match == null) ? "null" : "(" + match.UserName + ":" + match.Domain + ")")}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Returning {((match == null) ? "null" : "(" + match.UserName + ":" + match.Domain + ")")}");
 
             return match;
         }
@@ -266,7 +262,7 @@ namespace System.Net
             private readonly CredentialCache _cache;
             private readonly int _version;
             private bool _enumerating;
-            private NetworkCredential _current;
+            private NetworkCredential? _current;
 
             private CredentialEnumerator(CredentialCache cache)
             {
@@ -289,7 +285,7 @@ namespace System.Net
                         throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                     }
 
-                    return _current;
+                    return _current!;
                 }
             }
 
@@ -303,7 +299,7 @@ namespace System.Net
                 return _enumerating = MoveNext(out _current);
             }
 
-            protected virtual bool MoveNext(out NetworkCredential current)
+            protected virtual bool MoveNext(out NetworkCredential? current)
             {
                 current = null;
                 return false;
@@ -314,7 +310,7 @@ namespace System.Net
                 _enumerating = false;
             }
 
-            private class SingleTableCredentialEnumerator<TKey> : CredentialEnumerator
+            private class SingleTableCredentialEnumerator<TKey> : CredentialEnumerator where TKey : notnull
             {
                 private Dictionary<TKey, NetworkCredential>.ValueCollection.Enumerator _enumerator; // mutable struct field deliberately not readonly.
 
@@ -343,7 +339,7 @@ namespace System.Net
                 private Dictionary<CredentialHostKey, NetworkCredential>.ValueCollection.Enumerator _enumerator; // mutable struct field deliberately not readonly.
                 private bool _onThisEnumerator;
 
-                public DoubleTableCredentialEnumerator(CredentialCache cache) : base(cache, cache._cache)
+                public DoubleTableCredentialEnumerator(CredentialCache cache) : base(cache, cache._cache!)
                 {
                     Debug.Assert(cache._cacheForHosts != null);
 
@@ -380,7 +376,7 @@ namespace System.Net
 
             private static class DictionaryEnumeratorHelper
             {
-                internal static bool MoveNext<TKey, TValue>(ref Dictionary<TKey, TValue>.ValueCollection.Enumerator enumerator, out TValue current)
+                internal static bool MoveNext<TKey, TValue>(ref Dictionary<TKey, TValue>.ValueCollection.Enumerator enumerator, out TValue current) where TKey : notnull
                 {
                     bool result = enumerator.MoveNext();
                     current = enumerator.Current;
@@ -447,19 +443,19 @@ namespace System.Net
                 string.Equals(Host, other.Host, StringComparison.OrdinalIgnoreCase) &&
                 Port == other.Port;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Equals({this},{other}) returns {equals}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Equals({this},{other}) returns {equals}");
 
             return equals;
         }
 
-        public override bool Equals(object obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is CredentialHostKey && Equals((CredentialHostKey)obj);
 
         public override string ToString() =>
             Host + ":" + Port.ToString(NumberFormatInfo.InvariantInfo) + ":" + AuthenticationType;
     }
 
-    internal sealed class CredentialKey : IEquatable<CredentialKey>
+    internal sealed class CredentialKey : IEquatable<CredentialKey?>
     {
         public readonly Uri UriPrefix;
         public readonly int UriPrefixLength = -1;
@@ -488,7 +484,7 @@ namespace System.Net
                 return false;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Match({UriPrefix} & {uri})");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Match({UriPrefix} & {uri})");
 
             return IsPrefix(uri, UriPrefix);
         }
@@ -528,7 +524,7 @@ namespace System.Net
             StringComparer.OrdinalIgnoreCase.GetHashCode(AuthenticationType) ^
             UriPrefix.GetHashCode();
 
-        public bool Equals(CredentialKey other)
+        public bool Equals([NotNullWhen(true)] CredentialKey? other)
         {
             if (other == null)
             {
@@ -539,12 +535,12 @@ namespace System.Net
                 string.Equals(AuthenticationType, other.AuthenticationType, StringComparison.OrdinalIgnoreCase) &&
                 UriPrefix.Equals(other.UriPrefix);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Equals({this},{other}) returns {equals}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Equals({this},{other}) returns {equals}");
 
             return equals;
         }
 
-        public override bool Equals(object obj) => Equals(obj as CredentialKey);
+        public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as CredentialKey);
 
         public override string ToString() =>
             "[" + UriPrefixLength.ToString(NumberFormatInfo.InvariantInfo) + "]:" + UriPrefix + ":" + AuthenticationType;

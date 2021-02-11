@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "hostpolicy_init.h"
 #include <trace.h>
+#include "bundle/runner.h"
 
 void make_palstr_arr(int argc, const pal::char_t** argv, std::vector<pal::string_t>* out)
 {
@@ -25,8 +25,8 @@ bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
 
     trace::verbose(_X("Reading from host interface version: [0x%04x:%d] to initialize policy version: [0x%04x:%d]"), input->version_hi, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_HI, HOST_INTERFACE_LAYOUT_VERSION_LO);
 
-    //This check is to ensure is an old hostfxr can still load new hostpolicy.
-    //We should not read garbage due to potentially shorter struct size
+    // This check is to ensure is an old hostfxr can still load new hostpolicy.
+    // We should not read garbage due to potentially shorter struct size
 
     pal::string_t fx_requested_ver;
 
@@ -50,9 +50,9 @@ bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
             offsetof(host_interface_t, host_mode) + sizeof(input->host_mode));
     }
 
-    //An old hostfxr may not provide these fields.
-    //The version_lo (sizeof) the old hostfxr saw at build time will be
-    //smaller and we should not attempt to read the fields in that case.
+    // An old hostfxr may not provide these fields.
+    // The version_lo (sizeof) the old hostfxr saw at build time will be
+    // smaller and we should not attempt to read the fields in that case.
     if (input->version_lo >= offsetof(host_interface_t, tfm) + sizeof(input->tfm))
     {
         init->tfm = input->tfm;
@@ -124,6 +124,15 @@ bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
         init->host_info.dotnet_root = input->host_info_dotnet_root;
         init->host_info.app_path = input->host_info_app_path;
         // For the backwards compat case, this will be later initialized with argv[0]
+    }
+
+    if (input->version_lo >= offsetof(host_interface_t, single_file_bundle_header_offset) + sizeof(input->single_file_bundle_header_offset))
+    {
+        if (input->single_file_bundle_header_offset != 0)
+        {
+            static bundle::runner_t bundle_runner(input->host_info_host_path, input->host_info_app_path, input->single_file_bundle_header_offset);
+            bundle::info_t::the_app = &bundle_runner;
+        }
     }
 
     return true;

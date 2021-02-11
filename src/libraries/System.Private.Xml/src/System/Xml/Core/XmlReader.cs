@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -88,7 +87,7 @@ namespace System.Xml
         internal const int AsyncBufferSize = 64 * 1024; //64KB
 
         // Settings
-        public virtual XmlReaderSettings Settings
+        public virtual XmlReaderSettings? Settings
         {
             get
             {
@@ -184,7 +183,7 @@ namespace System.Xml
         }
 
         // returns the schema info interface of the reader
-        public virtual IXmlSchemaInfo SchemaInfo
+        public virtual IXmlSchemaInfo? SchemaInfo
         {
             get
             {
@@ -220,6 +219,7 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsBoolean));
             }
+
             try
             {
                 return XmlConvert.ToBoolean(InternalReadContentAsString());
@@ -238,6 +238,7 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsDateTime));
             }
+
             try
             {
                 return XmlConvert.ToDateTime(InternalReadContentAsString(), XmlDateTimeSerializationMode.RoundtripKind);
@@ -256,6 +257,7 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsDateTimeOffset));
             }
+
             try
             {
                 return XmlConvert.ToDateTimeOffset(InternalReadContentAsString());
@@ -274,6 +276,7 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsDouble));
             }
+
             try
             {
                 return XmlConvert.ToDouble(InternalReadContentAsString());
@@ -292,6 +295,7 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsFloat));
             }
+
             try
             {
                 return XmlConvert.ToSingle(InternalReadContentAsString());
@@ -310,6 +314,7 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsDecimal));
             }
+
             try
             {
                 return XmlConvert.ToDecimal(InternalReadContentAsString());
@@ -328,6 +333,7 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsInt));
             }
+
             try
             {
                 return XmlConvert.ToInt32(InternalReadContentAsString());
@@ -346,6 +352,7 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsLong));
             }
+
             try
             {
                 return XmlConvert.ToInt64(InternalReadContentAsString());
@@ -364,12 +371,13 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsString));
             }
+
             return InternalReadContentAsString();
         }
 
         // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
         // and converts the content to the requested type. Stops at start tags and end tags.
-        public virtual object ReadContentAs(Type returnType, IXmlNamespaceResolver namespaceResolver)
+        public virtual object ReadContentAs(Type returnType, IXmlNamespaceResolver? namespaceResolver)
         {
             if (!CanReadContentAs())
             {
@@ -385,7 +393,7 @@ namespace System.Xml
             {
                 try
                 {
-                    return XmlUntypedStringConverter.Instance.FromString(strContentValue, returnType, (namespaceResolver == null ? this as IXmlNamespaceResolver : namespaceResolver));
+                    return XmlUntypedStringConverter.Instance.FromString(strContentValue, returnType, (namespaceResolver == null ? (this as IXmlNamespaceResolver)! : namespaceResolver));
                 }
                 catch (FormatException e)
                 {
@@ -407,6 +415,7 @@ namespace System.Xml
                 FinishReadElementContentAsXxx();
                 return value;
             }
+
             return string.Empty;
         }
 
@@ -426,6 +435,7 @@ namespace System.Xml
                 FinishReadElementContentAsXxx();
                 return value;
             }
+
             return XmlConvert.ToBoolean(string.Empty);
         }
 
@@ -445,6 +455,7 @@ namespace System.Xml
                 FinishReadElementContentAsXxx();
                 return value;
             }
+
             return XmlConvert.ToDateTime(string.Empty, XmlDateTimeSerializationMode.RoundtripKind);
         }
 
@@ -465,6 +476,7 @@ namespace System.Xml
                 FinishReadElementContentAsXxx();
                 return value;
             }
+
             return XmlConvert.ToDouble(string.Empty);
         }
 
@@ -485,6 +497,7 @@ namespace System.Xml
                 FinishReadElementContentAsXxx();
                 return value;
             }
+
             return XmlConvert.ToSingle(string.Empty);
         }
 
@@ -565,6 +578,7 @@ namespace System.Xml
                 FinishReadElementContentAsXxx();
                 return value;
             }
+
             return string.Empty;
         }
 
@@ -585,6 +599,7 @@ namespace System.Xml
                 FinishReadElementContentAsXxx();
                 return value;
             }
+
             return (returnType == typeof(string)) ? string.Empty : XmlUntypedStringConverter.Instance.FromString(string.Empty, returnType, namespaceResolver);
         }
 
@@ -601,10 +616,10 @@ namespace System.Xml
         public abstract int AttributeCount { get; }
 
         // Gets the value of the attribute with the specified Name
-        public abstract string GetAttribute(string name);
+        public abstract string? GetAttribute(string name);
 
         // Gets the value of the attribute with the LocalName and NamespaceURI
-        public abstract string GetAttribute(string name, string namespaceURI);
+        public abstract string? GetAttribute(string name, string? namespaceURI);
 
         // Gets the value of the attribute with the specified index.
         public abstract string GetAttribute(int i);
@@ -619,7 +634,7 @@ namespace System.Xml
         }
 
         // Gets the value of the attribute with the specified Name.
-        public virtual string this[string name]
+        public virtual string? this[string name]
         {
             get
             {
@@ -628,7 +643,7 @@ namespace System.Xml
         }
 
         // Gets the value of the attribute with the LocalName and NamespaceURI
-        public virtual string this[string name, string namespaceURI]
+        public virtual string? this[string name, string? namespaceURI]
         {
             get
             {
@@ -640,7 +655,7 @@ namespace System.Xml
         public abstract bool MoveToAttribute(string name);
 
         // Moves to the attribute with the specified LocalName and NamespaceURI.
-        public abstract bool MoveToAttribute(string name, string ns);
+        public abstract bool MoveToAttribute(string name, string? ns);
 
         // Moves to the attribute with the specified index.
         public virtual void MoveToAttribute(int i)
@@ -700,7 +715,7 @@ namespace System.Xml
         public abstract XmlNameTable NameTable { get; }
 
         // Resolves a namespace prefix in the current element's scope.
-        public abstract string LookupNamespace(string prefix);
+        public abstract string? LookupNamespace(string prefix);
 
         // Returns true if the XmlReader can expand general entities.
         public virtual bool CanResolveEntity
@@ -1365,15 +1380,14 @@ namespace System.Xml
 
         private void SetNamespacesFlag(XmlTextWriter xtw)
         {
-            XmlTextReader tr = this as XmlTextReader;
-            if (tr != null)
+            if (this is XmlTextReader tr)
             {
                 xtw.Namespaces = tr.Namespaces;
             }
             else
             {
 #pragma warning disable 618
-                XmlValidatingReader vr = this as XmlValidatingReader;
+                XmlValidatingReader? vr = this as XmlValidatingReader;
                 if (vr != null)
                 {
                     xtw.Namespaces = vr.Namespaces;
@@ -1389,6 +1403,7 @@ namespace System.Xml
             {
                 throw new InvalidOperationException(SR.Xml_ReadSubtreeNotOnElement);
             }
+
             return new XmlSubtreeReader(this);
         }
 
@@ -1421,7 +1436,7 @@ namespace System.Xml
         // Internal methods
         //
         // Validation support
-        internal virtual XmlNamespaceManager NamespaceManager
+        internal virtual XmlNamespaceManager? NamespaceManager
         {
             get
             {
@@ -1573,17 +1588,17 @@ namespace System.Xml
             return CanReadContentAs(this.NodeType);
         }
 
-        internal static Exception CreateReadContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
+        internal static Exception CreateReadContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo? lineInfo)
         {
             return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadContentAs, methodName, nodeType), lineInfo));
         }
 
-        internal static Exception CreateReadElementContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo lineInfo)
+        internal static Exception CreateReadElementContentAsException(string methodName, XmlNodeType nodeType, IXmlLineInfo? lineInfo)
         {
             return new InvalidOperationException(AddLineInfo(SR.Format(SR.Xml_InvalidReadElementContentAs, methodName, nodeType), lineInfo));
         }
 
-        private static string AddLineInfo(string message, IXmlLineInfo lineInfo)
+        private static string AddLineInfo(string message, IXmlLineInfo? lineInfo)
         {
             if (lineInfo != null)
             {
@@ -1598,7 +1613,7 @@ namespace System.Xml
         internal string InternalReadContentAsString()
         {
             string value = string.Empty;
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             do
             {
                 switch (this.NodeType)
@@ -1673,6 +1688,7 @@ namespace System.Xml
             {
                 throw new XmlException(SR.Xml_MixedReadElementContentAs, string.Empty, this as IXmlLineInfo);
             }
+
             return true;
         }
 
@@ -1682,6 +1698,7 @@ namespace System.Xml
             {
                 throw new XmlException(SR.Xml_InvalidNodeType, this.NodeType.ToString());
             }
+
             this.Read();
         }
 
@@ -1693,16 +1710,18 @@ namespace System.Xml
                 {
                     return true;
                 }
-                IXmlSchemaInfo schemaInfo = this.SchemaInfo;
+
+                IXmlSchemaInfo? schemaInfo = this.SchemaInfo;
                 if (schemaInfo != null && schemaInfo.IsDefault)
                 {
                     return true;
                 }
+
                 return false;
             }
         }
 
-        internal virtual IDtdInfo DtdInfo
+        internal virtual IDtdInfo? DtdInfo
         {
             get
             {
@@ -1712,33 +1731,30 @@ namespace System.Xml
 
         internal static ConformanceLevel GetV1ConformanceLevel(XmlReader reader)
         {
-            XmlTextReaderImpl tri = GetXmlTextReaderImpl(reader);
+            XmlTextReaderImpl? tri = GetXmlTextReaderImpl(reader);
             return tri != null ? tri.V1ComformanceLevel : ConformanceLevel.Document;
         }
 
-        private static XmlTextReaderImpl GetXmlTextReaderImpl(XmlReader reader)
+        private static XmlTextReaderImpl? GetXmlTextReaderImpl(XmlReader reader)
         {
-            XmlTextReaderImpl tri = reader as XmlTextReaderImpl;
-            if (tri != null)
+            if (reader is XmlTextReaderImpl tri)
             {
                 return tri;
             }
 
-            XmlTextReader tr = reader as XmlTextReader;
-            if (tr != null)
+            if (reader is XmlTextReader tr)
             {
                 return tr.Impl;
             }
 
-            XmlValidatingReaderImpl vri = reader as XmlValidatingReaderImpl;
-            if (vri != null)
+            if (reader is XmlValidatingReaderImpl vri)
             {
                 return vri.ReaderImpl;
             }
+
 #pragma warning disable 618
-            XmlValidatingReader vr = reader as XmlValidatingReader;
+            if (reader is XmlValidatingReader vr)
 #pragma warning restore 618
-            if (vr != null)
             {
                 return vr.Impl.ReaderImpl;
             }
@@ -1768,13 +1784,13 @@ namespace System.Xml
         }
 
         // Creates an XmlReader according to the settings for parsing XML from the given Uri.
-        public static XmlReader Create(string inputUri, XmlReaderSettings settings)
+        public static XmlReader Create(string inputUri, XmlReaderSettings? settings)
         {
-            return XmlReader.Create(inputUri, settings, (XmlParserContext)null);
+            return XmlReader.Create(inputUri, settings, (XmlParserContext?)null);
         }
 
         // Creates an XmlReader according to the settings and parser context for parsing XML from the given Uri.
-        public static XmlReader Create(string inputUri, XmlReaderSettings settings, XmlParserContext inputContext)
+        public static XmlReader Create(string inputUri, XmlReaderSettings? settings, XmlParserContext? inputContext)
         {
             settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(inputUri, inputContext);
@@ -1794,20 +1810,20 @@ namespace System.Xml
         }
 
         // Creates an XmlReader according to the settings for parsing XML from the given stream.
-        public static XmlReader Create(Stream input, XmlReaderSettings settings)
+        public static XmlReader Create(Stream input, XmlReaderSettings? settings)
         {
             return Create(input, settings, string.Empty);
         }
 
         // Creates an XmlReader according to the settings and base Uri for parsing XML from the given stream.
-        public static XmlReader Create(Stream input, XmlReaderSettings settings, string baseUri)
+        public static XmlReader Create(Stream input, XmlReaderSettings? settings, string? baseUri)
         {
             settings ??= XmlReaderSettings.s_defaultReaderSettings;
-            return settings.CreateReader(input, null, (string)baseUri, null);
+            return settings.CreateReader(input, null, baseUri, null);
         }
 
         // Creates an XmlReader according to the settings and parser context for parsing XML from the given stream.
-        public static XmlReader Create(Stream input, XmlReaderSettings settings, XmlParserContext inputContext)
+        public static XmlReader Create(Stream input, XmlReaderSettings? settings, XmlParserContext? inputContext)
         {
             settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(input, null, (string)string.Empty, inputContext);
@@ -1827,27 +1843,27 @@ namespace System.Xml
         }
 
         // Creates an XmlReader according to the settings for parsing XML from the given TextReader.
-        public static XmlReader Create(TextReader input, XmlReaderSettings settings)
+        public static XmlReader Create(TextReader input, XmlReaderSettings? settings)
         {
             return Create(input, settings, string.Empty);
         }
 
         // Creates an XmlReader according to the settings and baseUri for parsing XML from the given TextReader.
-        public static XmlReader Create(TextReader input, XmlReaderSettings settings, string baseUri)
+        public static XmlReader Create(TextReader input, XmlReaderSettings? settings, string? baseUri)
         {
             settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(input, baseUri, null);
         }
 
         // Creates an XmlReader according to the settings and parser context for parsing XML from the given TextReader.
-        public static XmlReader Create(TextReader input, XmlReaderSettings settings, XmlParserContext inputContext)
+        public static XmlReader Create(TextReader input, XmlReaderSettings? settings, XmlParserContext? inputContext)
         {
             settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(input, string.Empty, inputContext);
         }
 
         // Creates an XmlReader according to the settings wrapped over the given reader.
-        public static XmlReader Create(XmlReader reader, XmlReaderSettings settings)
+        public static XmlReader Create(XmlReader reader, XmlReaderSettings? settings)
         {
             settings ??= XmlReaderSettings.s_defaultReaderSettings;
             return settings.CreateReader(reader);
@@ -1856,12 +1872,13 @@ namespace System.Xml
         // !!!!!!
         // NOTE: This method is called via reflection from System.Data.Common.dll.
         // !!!!!!
-        internal static XmlReader CreateSqlReader(Stream input, XmlReaderSettings settings, XmlParserContext inputContext)
+        internal static XmlReader CreateSqlReader(Stream input, XmlReaderSettings? settings, XmlParserContext inputContext)
         {
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
+
             settings ??= XmlReaderSettings.s_defaultReaderSettings;
 
             XmlReader reader;

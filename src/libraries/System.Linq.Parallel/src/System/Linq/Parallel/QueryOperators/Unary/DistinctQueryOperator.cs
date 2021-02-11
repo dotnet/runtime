@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -157,7 +156,7 @@ namespace System.Linq.Parallel
                 while (_source.MoveNext(ref current, ref keyUnused))
                 {
                     if ((_outputLoopCount.Value++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
+                        _cancellationToken.ThrowIfCancellationRequested();;
 
                     // We ensure we never return duplicates by tracking them in our set.
                     if (_hashLookup.Add(current.First))
@@ -221,7 +220,7 @@ namespace System.Linq.Parallel
             // Walks the single data source, skipping elements it has already seen.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, ref TKey currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInputOutput currentElement, [AllowNull] ref TKey currentKey)
             {
                 Debug.Assert(_source != null);
                 Debug.Assert(_hashLookup != null);
@@ -235,7 +234,7 @@ namespace System.Linq.Parallel
                     while (_source.MoveNext(ref elem, ref orderKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         // For each element, we track the smallest order key for that element that we saw so far
                         TKey oldEntry;

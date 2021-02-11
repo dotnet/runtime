@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Configuration;
 using Xunit;
@@ -41,7 +40,7 @@ namespace System.ConfigurationTests
         [Fact]
         public void UriSectionIdnIriParsing()
         {
-            using (var temp = new TempConfig(PlatformDetection.IsFullFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
+            using (var temp = new TempConfig(PlatformDetection.IsNetFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
             {
                 var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
                 UriSection uriSection = (UriSection)config.GetSection("uri");
@@ -53,7 +52,7 @@ namespace System.ConfigurationTests
         [Fact]
         public void UriSectionSchemeSettings()
         {
-            using (var temp = new TempConfig(PlatformDetection.IsFullFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
+            using (var temp = new TempConfig(PlatformDetection.IsNetFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
             {
                 var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
                 UriSection uriSection = (UriSection)config.GetSection("uri");

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -45,7 +44,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Corefx has limitations to build a UWP executable that can be launched directly using Process.Start")]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws pNSE
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;
@@ -61,7 +60,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void UnhandledException_Add_Remove()
         {
             RemoteExecutor.Invoke(() => {
@@ -70,7 +69,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void UnhandledException_NotCalled_When_Handled()
         {
             RemoteExecutor.Invoke(() => {
@@ -86,9 +85,9 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [ActiveIssue(12716)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18984")]
         [PlatformSpecific(~TestPlatforms.OSX)] // Unhandled exception on a separate process causes xunit to crash on osx
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void UnhandledException_Called()
         {
             System.IO.File.Delete("success.txt");
@@ -131,12 +130,12 @@ namespace System.Tests
 
             // GetEntryAssembly may be null (i.e. desktop)
             if (expected == null)
-                expected = Assembly.GetExecutingAssembly().GetName().Name;
+                expected = "DefaultDomain";
 
             Assert.Equal(expected, s);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Id()
         {
             // if running directly on some platforms Xunit may be Id = 1
@@ -151,13 +150,13 @@ namespace System.Tests
             Assert.True(AppDomain.CurrentDomain.IsFullyTrusted);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IsHomogenous()
         {
             Assert.True(AppDomain.CurrentDomain.IsHomogenous);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FirstChanceException_Add_Remove()
         {
             RemoteExecutor.Invoke(() => {
@@ -167,7 +166,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void FirstChanceException_Called()
         {
             RemoteExecutor.Invoke(() => {
@@ -199,7 +198,7 @@ namespace System.Tests
             { }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ProcessExit_Add_Remove()
         {
             RemoteExecutor.Invoke(() => {
@@ -209,7 +208,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ProcessExit_Called()
         {
             string path = GetTestFilePath();
@@ -243,7 +242,7 @@ namespace System.Tests
             Assert.Throws<PlatformNotSupportedException>(() => { AppDomain.CreateDomain("test"); });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExecuteAssemblyByName()
         {
             RemoteExecutor.Invoke(() => {
@@ -274,7 +273,7 @@ namespace System.Tests
             Assert.Equal(10, AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] { "2", "3" }));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetData_SetData()
         {
             RemoteExecutor.Invoke(() => {
@@ -286,7 +285,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetData_SameKeyMultipleTimes_ReplacesOldValue()
         {
             RemoteExecutor.Invoke(() => {
@@ -308,7 +307,7 @@ namespace System.Tests
             Assert.Null(AppDomain.CurrentDomain.IsCompatibilitySwitchSet("randomSwitch"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IsDefaultAppDomain()
         {
             // Xunit may be default app domain if run directly
@@ -324,7 +323,7 @@ namespace System.Tests
             Assert.False(AppDomain.CurrentDomain.IsFinalizingForUnload());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void toString()
         {
             // Workaround issue: UWP culture is process wide
@@ -340,7 +339,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Unload()
         {
             RemoteExecutor.Invoke(() => {
@@ -359,6 +358,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void LoadBytes()
         {
             Assembly assembly = typeof(AppDomainTests).Assembly;
@@ -373,6 +373,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Throws PNSE
         public void MonitoringIsEnabled()
         {
             Assert.True(AppDomain.MonitoringIsEnabled);
@@ -390,8 +391,10 @@ namespace System.Tests
             using (Process p = Process.GetCurrentProcess())
             {
                 TimeSpan processTime = p.UserProcessorTime;
+                Assert.InRange(processTime, TimeSpan.Zero, TimeSpan.MaxValue);
+
                 TimeSpan monitoringTime = AppDomain.CurrentDomain.MonitoringTotalProcessorTime;
-                Assert.InRange(monitoringTime, processTime, TimeSpan.MaxValue);
+                Assert.InRange(monitoringTime, processTime * 0.95, TimeSpan.MaxValue); // *0.95 for a bit of wiggle room due to precision differences with employed timing mechanisms
             }
 
             GC.KeepAlive(o);
@@ -410,7 +413,7 @@ namespace System.Tests
             Assert.False(AppDomain.CurrentDomain.ShadowCopyFiles);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void AppendPrivatePath()
         {
             RemoteExecutor.Invoke(() => {
@@ -418,7 +421,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ClearPrivatePath()
         {
             RemoteExecutor.Invoke(() => {
@@ -426,7 +429,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ClearShadowCopyPath()
         {
             RemoteExecutor.Invoke(() => {
@@ -434,7 +437,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetCachePath()
         {
             RemoteExecutor.Invoke(() => {
@@ -442,7 +445,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetShadowCopyFiles()
         {
             RemoteExecutor.Invoke(() => {
@@ -450,7 +453,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetShadowCopyPath()
         {
             RemoteExecutor.Invoke(() => {
@@ -459,7 +462,7 @@ namespace System.Tests
         }
 
 #pragma warning restore 618
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetAssemblies()
         {
             RemoteExecutor.Invoke(() => {
@@ -496,7 +499,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void AssemblyLoad()
         {
             RemoteExecutor.Invoke(() => {
@@ -527,7 +530,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void AssemblyResolveInvalidAssemblyName()
         {
             RemoteExecutor.Invoke(() => {
@@ -550,7 +553,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void AssemblyResolve()
         {
             CopyTestAssemblies();
@@ -571,12 +574,12 @@ namespace System.Tests
 
                 Type t = Type.GetType("AssemblyResolveTestApp.Class1, AssemblyResolveTestApp", true);
                 Assert.NotNull(t);
-                // https://github.com/dotnet/corefx/issues/38361
+                // https://github.com/dotnet/runtime/issues/29817
                 // Assert.True(AssemblyResolveFlag);
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void AssemblyResolve_RequestingAssembly()
         {
             CopyTestAssemblies();
@@ -601,12 +604,12 @@ namespace System.Tests
                 MethodInfo myMethodInfo = ptype.GetMethod("foo");
                 object ret = myMethodInfo.Invoke(null, null);
                 Assert.NotNull(ret);
-                // https://github.com/dotnet/corefx/issues/38361
+                // https://github.com/dotnet/runtime/issues/29817
                 // Assert.True(AssemblyResolveFlag);
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void AssemblyResolve_IsNotCalledForCoreLibResources()
         {
             RemoteExecutor.Invoke(() =>
@@ -638,7 +641,49 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        class CorrectlyPropagatesException : Exception
+        {
+            public CorrectlyPropagatesException(string message) : base(message)
+            { }
+        }
+
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43909", TestRuntimes.Mono)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AssemblyResolve_ExceptionPropagatesCorrectly(bool throwOnError)
+        {
+            bool handlerExceptionThrown = false;
+
+            ResolveEventHandler handler = (sender, args) =>
+            {
+                if (args.Name.StartsWith("Some.Assembly"))
+                    throw new CorrectlyPropagatesException("Failure");
+                return null;
+            };
+
+            AppDomain.CurrentDomain.AssemblyResolve += handler;
+
+            try
+            {
+                Type.GetType("Some.Assembly.Type, Some.Assembly", throwOnError);
+            }
+            catch (FileLoadException e)
+            {
+                Assert.NotNull(e.InnerException);
+                Assert.IsAssignableFrom<CorrectlyPropagatesException>(e.InnerException);
+                Assert.Equal("Failure", e.InnerException.Message);
+                handlerExceptionThrown = true;
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.AssemblyResolve -= handler;
+            }
+
+            Assert.True(handlerExceptionThrown);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TypeResolve()
         {
             RemoteExecutor.Invoke(() => {
@@ -668,7 +713,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ResourceResolve()
         {
             RemoteExecutor.Invoke(() => {
@@ -699,7 +744,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SetThreadPrincipal()
         {
             RemoteExecutor.Invoke(() => {
@@ -727,7 +772,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetSetupInformation()
         {
             RemoteExecutor.Invoke(() => {
@@ -736,15 +781,18 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void GetPermissionSet()
         {
+#pragma warning disable SYSLIB0003 // Obsolete: CAS
             RemoteExecutor.Invoke(() => {
                 Assert.Equal(new PermissionSet(PermissionState.Unrestricted), AppDomain.CurrentDomain.PermissionSet);
             }).Dispose();
+#pragma warning restore SYSLIB0003 // Obsolete: CAS
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestPlatforms.Linux | TestPlatforms.Browser, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {
@@ -844,6 +892,7 @@ namespace System.Tests
         };
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34030", TestPlatforms.Linux | TestPlatforms.Browser, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleFullSignatureData))]
         public static void TestingCreateInstanceFromObjectHandleFullSignature(string physicalFileName, string assemblyFile, string type, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, string returnedFullNameType)
         {
@@ -907,7 +956,8 @@ namespace System.Tests
             yield return new object[] { "assemblyresolvetestapp", "assemblyresolvetestapp.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37871", TestRuntimes.Mono)]
         public void AssemblyResolve_FirstChanceException()
         {
             RemoteExecutor.Invoke(() => {
@@ -936,7 +986,7 @@ namespace System.Tests
                     return null;
                 };
 
-                // The issue resolved by coreclr#24450, was only reproduced when there was a Resolving handler present
+                // The issue resolved by https://github.com/dotnet/coreclr/pull/24450, was only reproduced when there was a Resolving handler present
                 System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += resolvingHandler;
 
                 assembly.GetType("System.Tests.AGenericClass`1[[Bogus, BogusAssembly]]", false);

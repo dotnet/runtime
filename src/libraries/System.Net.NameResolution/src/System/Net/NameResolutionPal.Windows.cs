@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -14,53 +13,42 @@ namespace System.Net
 {
     internal static partial class NameResolutionPal
     {
-        private static volatile bool s_initialized;
-        private static readonly object s_initializedLock = new object();
-
-        private static readonly unsafe Interop.Winsock.LPLOOKUPSERVICE_COMPLETION_ROUTINE s_getAddrInfoExCallback = GetAddressInfoExCallback;
-        private static bool s_getAddrInfoExSupported;
-
-        public static void EnsureSocketsAreInitialized()
-        {
-            if (!s_initialized)
-            {
-                InitializeSockets();
-            }
-
-            static void InitializeSockets()
-            {
-                lock (s_initializedLock)
-                {
-                    if (!s_initialized)
-                    {
-                        SocketError errorCode = Interop.Winsock.WSAStartup();
-                        if (errorCode != SocketError.Success)
-                        {
-                            // WSAStartup does not set LastWin32Error
-                            throw new SocketException((int)errorCode);
-                        }
-
-                        s_getAddrInfoExSupported = GetAddrInfoExSupportsOverlapped();
-                        s_initialized = true;
-                    }
-                }
-            }
-        }
+        private static volatile int s_getAddrInfoExSupported;
 
         public static bool SupportsGetAddrInfoAsync
         {
             get
             {
-                EnsureSocketsAreInitialized();
-                return s_getAddrInfoExSupported;
+                int supported = s_getAddrInfoExSupported;
+                if (supported == 0)
+                {
+                    Initialize();
+                    supported = s_getAddrInfoExSupported;
+                }
+                return supported == 1;
+
+                static void Initialize()
+                {
+                    Interop.Winsock.EnsureInitialized();
+
+                    IntPtr libHandle = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Ws2_32, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
+                    Debug.Assert(libHandle != IntPtr.Zero);
+
+                    // We can't just check that 'GetAddrInfoEx' exists, because it existed before supporting overlapped.
+                    // The existence of 'GetAddrInfoExCancel' indicates that overlapped is supported.
+                    bool supported = NativeLibrary.TryGetExport(libHandle, Interop.Winsock.GetAddrInfoExCancelFunctionName, out _);
+                    Interlocked.CompareExchange(ref s_getAddrInfoExSupported, supported ? 1 : -1, 0);
+                }
             }
         }
 
-        public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
+        public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, AddressFamily addressFamily, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
         {
+            Interop.Winsock.EnsureInitialized();
+
             aliases = Array.Empty<string>();
 
-            var hints = new Interop.Winsock.AddressInfo { ai_family = AddressFamily.Unspecified }; // Gets all address families
+            var hints = new Interop.Winsock.AddressInfo { ai_family = addressFamily };
             if (!justAddresses)
             {
                 hints.ai_flags = AddressInfoHints.AI_CANONNAME;
@@ -91,8 +79,10 @@ namespace System.Net
             }
         }
 
-        public static unsafe string TryGetNameInfo(IPAddress addr, out SocketError errorCode, out int nativeErrorCode)
+        public static unsafe string? TryGetNameInfo(IPAddress addr, out SocketError errorCode, out int nativeErrorCode)
         {
+            Interop.Winsock.EnsureInitialized();
+
             SocketAddress address = new IPEndPoint(addr, 0).Serialize();
             Span<byte> addressBuffer = address.Size <= 64 ? stackalloc byte[64] : new byte[address.Size];
             for (int i = 0; i < address.Size; i++)
@@ -127,6 +117,8 @@ namespace System.Net
 
         public static unsafe string GetHostName()
         {
+            Interop.Winsock.EnsureInitialized();
+
             // We do not cache the result in case the hostname changes.
 
             const int HostNameBufferLength = 256;
@@ -135,21 +127,23 @@ namespace System.Net
 
             if (result != SocketError.Success)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"GetHostName failed with {result}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, $"GetHostName failed with {result}");
                 throw new SocketException();
             }
 
             return new string((sbyte*)buffer);
         }
 
-        public static unsafe Task GetAddrInfoAsync(string hostName, bool justAddresses)
+        public static unsafe Task? GetAddrInfoAsync(string hostName, bool justAddresses, AddressFamily family, CancellationToken cancellationToken)
         {
+            Interop.Winsock.EnsureInitialized();
+
             GetAddrInfoExContext* context = GetAddrInfoExContext.AllocateContext();
 
             GetAddrInfoExState state;
             try
             {
-                state = new GetAddrInfoExState(hostName, justAddresses);
+                state = new GetAddrInfoExState(context, hostName, justAddresses);
                 context->QueryStateHandle = state.CreateHandle();
             }
             catch
@@ -158,16 +152,30 @@ namespace System.Net
                 throw;
             }
 
-            var hints = new Interop.Winsock.AddressInfoEx { ai_family = AddressFamily.Unspecified }; // Gets all address families
+            var hints = new Interop.Winsock.AddressInfoEx { ai_family = family };
             if (!justAddresses)
             {
                 hints.ai_flags = AddressInfoHints.AI_CANONNAME;
             }
 
             SocketError errorCode = (SocketError)Interop.Winsock.GetAddrInfoExW(
-                hostName, null, Interop.Winsock.NS_ALL, IntPtr.Zero, &hints, &context->Result, IntPtr.Zero, &context->Overlapped, s_getAddrInfoExCallback, &context->CancelHandle);
+                hostName, null, Interop.Winsock.NS_ALL, IntPtr.Zero, &hints, &context->Result, IntPtr.Zero, &context->Overlapped, &GetAddressInfoExCallback, &context->CancelHandle);
 
-            if (errorCode != SocketError.IOPending)
+            if (errorCode == SocketError.IOPending)
+            {
+                state.RegisterForCancellation(cancellationToken);
+            }
+            else if (errorCode == SocketError.TryAgain || (int)errorCode == Interop.Winsock.WSA_E_CANCELLED)
+            {
+                // WSATRY_AGAIN indicates possible problem with reachability according to docs.
+                // However, if servers are really unreachable, we would still get IOPending here
+                // and final result would be posted via overlapped IO.
+                // synchronous failure here may signal issue when GetAddrInfoExW does not work from
+                // impersonated context. Windows 8 and Server 2012 fail for same reason with different errorCode.
+                GetAddrInfoExContext.FreeContext(context);
+                return null;
+            }
+            else
             {
                 ProcessResult(errorCode, context);
             }
@@ -175,6 +183,7 @@ namespace System.Net
             return state.Task;
         }
 
+        [UnmanagedCallersOnly]
         private static unsafe void GetAddressInfoExCallback(int error, int bytes, NativeOverlapped* overlapped)
         {
             // Can be casted directly to GetAddrInfoExContext* because the overlapped is its first field
@@ -189,9 +198,11 @@ namespace System.Net
             {
                 GetAddrInfoExState state = GetAddrInfoExState.FromHandleAndFree(context->QueryStateHandle);
 
+                CancellationToken cancellationToken = state.UnregisterAndGetCancellationToken();
+
                 if (errorCode == SocketError.Success)
                 {
-                    IPAddress[] addresses = ParseAddressInfoEx(context->Result, state.JustAddresses, out string hostName);
+                    IPAddress[] addresses = ParseAddressInfoEx(context->Result, state.JustAddresses, out string? hostName);
                     state.SetResult(state.JustAddresses ? (object)
                         addresses :
                         new IPHostEntry
@@ -203,7 +214,10 @@ namespace System.Net
                 }
                 else
                 {
-                    state.SetResult(ExceptionDispatchInfo.SetCurrentStackTrace(new SocketException((int)errorCode)));
+                    Exception ex = (errorCode == (SocketError)Interop.Winsock.WSA_E_CANCELLED && cancellationToken.IsCancellationRequested)
+                        ? (Exception)new OperationCanceledException(cancellationToken)
+                        : new SocketException((int)errorCode);
+                    state.SetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
                 }
             }
             finally
@@ -212,7 +226,7 @@ namespace System.Net
             }
         }
 
-        private static unsafe IPAddress[] ParseAddressInfo(Interop.Winsock.AddressInfo* addressInfoPtr, bool justAddresses, out string hostName)
+        private static unsafe IPAddress[] ParseAddressInfo(Interop.Winsock.AddressInfo* addressInfoPtr, bool justAddresses, out string? hostName)
         {
             Debug.Assert(addressInfoPtr != null);
 
@@ -241,7 +255,7 @@ namespace System.Net
             // Store them into the array.
             var addresses = new IPAddress[addressCount];
             addressCount = 0;
-            string canonicalName = justAddresses ? "NONNULLSENTINEL" : null;
+            string? canonicalName = justAddresses ? "NONNULLSENTINEL" : null;
             for (Interop.Winsock.AddressInfo* result = addressInfoPtr; result != null; result = result->ai_next)
             {
                 if (canonicalName == null && result->ai_canonname != null)
@@ -272,7 +286,7 @@ namespace System.Net
             return addresses;
         }
 
-        private static unsafe IPAddress[] ParseAddressInfoEx(Interop.Winsock.AddressInfoEx* addressInfoExPtr, bool justAddresses, out string hostName)
+        private static unsafe IPAddress[] ParseAddressInfoEx(Interop.Winsock.AddressInfoEx* addressInfoExPtr, bool justAddresses, out string? hostName)
         {
             Debug.Assert(addressInfoExPtr != null);
 
@@ -301,7 +315,7 @@ namespace System.Net
             // Then store them into an array.
             var addresses = new IPAddress[addressCount];
             addressCount = 0;
-            string canonicalName = justAddresses ? "NONNULLSENTINEL" : null;
+            string? canonicalName = justAddresses ? "NONNULLSENTINEL" : null;
             for (Interop.Winsock.AddressInfoEx* result = addressInfoExPtr; result != null; result = result->ai_next)
             {
                 if (canonicalName == null && result->ai_canonname != IntPtr.Zero)
@@ -346,14 +360,18 @@ namespace System.Net
             return new IPAddress(address, scope);
         }
 
-        private sealed class GetAddrInfoExState : IThreadPoolWorkItem
+        private sealed unsafe class GetAddrInfoExState : IThreadPoolWorkItem
         {
+            private GetAddrInfoExContext* _cancellationContext;
+            private CancellationTokenRegistration _cancellationRegistration;
+
             private AsyncTaskMethodBuilder<IPHostEntry> IPHostEntryBuilder;
             private AsyncTaskMethodBuilder<IPAddress[]> IPAddressArrayBuilder;
-            private object _result;
+            private object? _result;
 
-            public GetAddrInfoExState(string hostName, bool justAddresses)
+            public GetAddrInfoExState(GetAddrInfoExContext *context, string hostName, bool justAddresses)
             {
+                _cancellationContext = context;
                 HostName = hostName;
                 JustAddresses = justAddresses;
                 if (justAddresses)
@@ -373,6 +391,55 @@ namespace System.Net
             public bool JustAddresses { get; }
 
             public Task Task => JustAddresses ? (Task)IPAddressArrayBuilder.Task : IPHostEntryBuilder.Task;
+
+            public void RegisterForCancellation(CancellationToken cancellationToken)
+            {
+                if (!cancellationToken.CanBeCanceled) return;
+
+                lock (this)
+                {
+                    if (_cancellationContext == null)
+                    {
+                        // The operation completed before registration could be done.
+                        return;
+                    }
+
+                    _cancellationRegistration = cancellationToken.UnsafeRegister(o =>
+                    {
+                        var @this = (GetAddrInfoExState)o!;
+                        int cancelResult = 0;
+
+                        lock (@this)
+                        {
+                            GetAddrInfoExContext* context = @this._cancellationContext;
+
+                            if (context != null)
+                            {
+                                // An outstanding operation will be completed with WSA_E_CANCELLED, and GetAddrInfoExCancel will return NO_ERROR.
+                                // If this thread has lost the race between cancellation and completion, this will be a NOP
+                                // with GetAddrInfoExCancel returning WSA_INVALID_HANDLE.
+                                cancelResult = Interop.Winsock.GetAddrInfoExCancel(&context->CancelHandle);
+                            }
+                        }
+
+                        if (cancelResult != 0 && cancelResult != Interop.Winsock.WSA_INVALID_HANDLE && NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Info(@this, $"GetAddrInfoExCancel returned error {cancelResult}");
+                        }
+                    }, this);
+                }
+            }
+
+            public CancellationToken UnregisterAndGetCancellationToken()
+            {
+                lock (this)
+                {
+                    _cancellationContext = null;
+                    _cancellationRegistration.Unregister();
+                }
+
+                return _cancellationRegistration.Token;
+            }
 
             public void SetResult(object result)
             {
@@ -396,7 +463,7 @@ namespace System.Net
                     }
                     else
                     {
-                        IPAddressArrayBuilder.SetResult((IPAddress[])_result);
+                        IPAddressArrayBuilder.SetResult((IPAddress[])_result!);
                     }
                 }
                 else
@@ -407,7 +474,7 @@ namespace System.Net
                     }
                     else
                     {
-                        IPHostEntryBuilder.SetResult((IPHostEntry)_result);
+                        IPHostEntryBuilder.SetResult((IPHostEntry)_result!);
                     }
                 }
             }
@@ -417,7 +484,7 @@ namespace System.Net
             public static GetAddrInfoExState FromHandleAndFree(IntPtr handle)
             {
                 GCHandle gcHandle = GCHandle.FromIntPtr(handle);
-                var state = (GetAddrInfoExState)gcHandle.Target;
+                var state = (GetAddrInfoExState)gcHandle.Target!;
                 gcHandle.Free();
                 return state;
             }

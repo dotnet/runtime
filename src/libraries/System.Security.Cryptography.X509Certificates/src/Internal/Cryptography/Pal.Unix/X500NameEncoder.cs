@@ -1,16 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-
-using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
@@ -124,16 +121,17 @@ namespace Internal.Cryptography.Pal
                 encodedSets.Reverse();
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            using (writer.PushSequence())
             {
-                writer.PushSequence();
                 foreach (byte[] encodedSet in encodedSets)
                 {
                     writer.WriteEncodedValue(encodedSet);
                 }
-                writer.PopSequence();
-                return writer.Encode();
             }
+
+            return writer.Encode();
         }
 
         private static bool NeedsQuoting(string rdnValue)
@@ -215,14 +213,14 @@ namespace Internal.Cryptography.Pal
             // 7 + 6 = 13, round up to the nearest power-of-two.
             const int InitalRdnSize = 16;
             List<byte[]> encodedSets = new List<byte[]>(InitalRdnSize);
-            char[] chars = stringForm.ToCharArray();
+            ReadOnlySpan<char> chars = stringForm;
 
             int pos;
             int end = chars.Length;
 
             int tagStart = -1;
             int tagEnd = -1;
-            Oid tagOid = null;
+            Oid? tagOid = null;
             int valueStart = -1;
             int valueEnd = -1;
             bool hadEscapedQuote = false;
@@ -403,7 +401,7 @@ namespace Internal.Cryptography.Pal
                             Debug.Assert(valueEnd != -1);
                             Debug.Assert(valueStart != -1);
 
-                            encodedSets.Add(ParseRdn(tagOid, chars, valueStart, valueEnd, hadEscapedQuote));
+                            encodedSets.Add(ParseRdn(tagOid, chars[valueStart..valueEnd], hadEscapedQuote));
                             tagOid = null;
                             valueStart = -1;
                             valueEnd = -1;
@@ -472,7 +470,7 @@ namespace Internal.Cryptography.Pal
                     Debug.Assert(valueStart != -1);
                     Debug.Assert(valueEnd != -1);
 
-                    encodedSets.Add(ParseRdn(tagOid, chars, valueStart, valueEnd, hadEscapedQuote));
+                    encodedSets.Add(ParseRdn(tagOid, chars[valueStart..valueEnd], hadEscapedQuote));
                     break;
 
                 // If the entire string was empty, or ended in a dnSeparator.
@@ -511,29 +509,23 @@ namespace Internal.Cryptography.Pal
             return new Oid(stringForm.Substring(tagStart, length));
         }
 
-        private static byte[] ParseRdn(Oid tagOid, char[] chars, int valueStart, int valueEnd, bool hadEscapedQuote)
+        private static byte[] ParseRdn(Oid tagOid, ReadOnlySpan<char> chars, bool hadEscapedQuote)
         {
-            ReadOnlySpan<char> charValue;
-
             if (hadEscapedQuote)
             {
-                charValue = ExtractValue(chars, valueStart, valueEnd);
-            }
-            else
-            {
-                charValue = new ReadOnlySpan<char>(chars, valueStart, valueEnd - valueStart);
+                chars = ExtractValue(chars);
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.PushSetOf();
-                writer.PushSequence();
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
+            using (writer.PushSetOf())
+            using (writer.PushSequence())
+            {
                 try
                 {
-                    writer.WriteObjectIdentifier(tagOid);
+                    writer.WriteObjectIdentifier(tagOid.Value!);
                 }
-                catch (CryptographicException e)
+                catch (ArgumentException e)
                 {
                     throw new CryptographicException(SR.Cryptography_Invalid_X500Name, e);
                 }
@@ -543,55 +535,36 @@ namespace Internal.Cryptography.Pal
                     try
                     {
                         // An email address with an invalid value will throw.
-                        writer.WriteCharacterString(UniversalTagNumber.IA5String, charValue);
+                        writer.WriteCharacterString(UniversalTagNumber.IA5String, chars);
                     }
                     catch (EncoderFallbackException)
                     {
                         throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
                     }
                 }
-                else if (IsValidPrintableString(charValue))
-                {
-                    writer.WriteCharacterString(UniversalTagNumber.PrintableString, charValue);
-                }
                 else
                 {
-                    writer.WriteCharacterString(UniversalTagNumber.UTF8String, charValue);
+                    try
+                    {
+                        writer.WriteCharacterString(UniversalTagNumber.PrintableString, chars);
+                    }
+                    catch (EncoderFallbackException)
+                    {
+                        writer.WriteCharacterString(UniversalTagNumber.UTF8String, chars);
+                    }
                 }
-
-                writer.PopSequence();
-                writer.PopSetOf();
-                return writer.Encode();
             }
+
+            return writer.Encode();
         }
 
-        private static bool IsValidPrintableString(ReadOnlySpan<char> value)
+        private static char[] ExtractValue(ReadOnlySpan<char> chars)
         {
-            try
-            {
-                Encoding encoding = AsnCharacterStringEncodings.GetEncoding(UniversalTagNumber.PrintableString);
-                // Throws on invalid characters.
-                encoding.GetByteCount(value);
-                return true;
-            }
-            catch (EncoderFallbackException)
-            {
-                return false;
-            }
-        }
-
-        private static char[] ExtractValue(char[] chars, int valueStart, int valueEnd)
-        {
-            // The string is guaranteed to be between ((valueEnd - valueStart) / 2) (all quotes) and
-            // (valueEnd - valueStart - 1) (one escaped quote)
-            List<char> builder = new List<char>(valueEnd - valueStart - 1);
-
+            var builder = new List<char>(chars.Length);
             bool skippedQuote = false;
 
-            for (int i = valueStart; i < valueEnd; i++)
+            foreach (char c in chars)
             {
-                char c = chars[i];
-
                 if (c == '"' && !skippedQuote)
                 {
                     skippedQuote = true;

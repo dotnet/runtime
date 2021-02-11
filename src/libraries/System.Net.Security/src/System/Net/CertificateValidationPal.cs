@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -12,16 +12,15 @@ namespace System.Net
     {
         private static readonly object s_syncObject = new object();
 
-        private static volatile X509Store s_myCertStoreEx;
-        private static volatile X509Store s_myMachineCertStoreEx;
+        private static volatile X509Store? s_myCertStoreEx;
+        private static volatile X509Store? s_myMachineCertStoreEx;
 
         static partial void CheckSupportsStore(StoreLocation storeLocation, ref bool hasSupport);
 
-        internal static X509Store EnsureStoreOpened(bool isMachineStore)
+        internal static X509Store? EnsureStoreOpened(bool isMachineStore)
         {
-            X509Store store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
+            X509Store? store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
 
-            // TODO #3862 Investigate if this can be switched to either the static or Lazy<T> patterns.
             if (store == null)
             {
                 StoreLocation storeLocation = isMachineStore ? StoreLocation.LocalMachine : StoreLocation.CurrentUser;
@@ -49,7 +48,7 @@ namespace System.Net
                             // NOTE: that if this call fails we won't keep track and the next time we enter we will try to open the store again.
                             store = OpenStore(storeLocation);
 
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                                 NetEventSource.Info(null, $"storeLocation: {storeLocation} returned store {store}");
 
                             if (isMachineStore)
@@ -65,12 +64,11 @@ namespace System.Net
                         {
                             if (exception is CryptographicException || exception is SecurityException)
                             {
-                                NetEventSource.Fail(null,
-                                    $"Failed to open cert store, location: {storeLocation} exception: {exception}");
+                                Debug.Fail($"Failed to open cert store, location: {storeLocation} exception: {exception}");
                                 return null;
                             }
 
-                            if (NetEventSource.IsEnabled)
+                            if (NetEventSource.Log.IsEnabled())
                                 NetEventSource.Error(null, SR.Format(SR.net_log_open_store_failed, storeLocation, exception));
 
                             throw;

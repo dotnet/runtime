@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.Icon.cs
 //
@@ -44,9 +45,9 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-#if NETCOREAPP
-    [System.ComponentModel.TypeConverter("System.Drawing.IconConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [Editor("System.Drawing.Design.IconEditor, System.Drawing.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [TypeConverter(typeof(IconConverter))]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
@@ -103,25 +104,25 @@ namespace System.Drawing
         internal class IconImage : ImageData
         {
             internal BitmapInfoHeader iconHeader;   //image header
-            internal uint[] iconColors; //colors table
-            internal byte[] iconXOR;    // bits for XOR mask
-            internal byte[] iconAND;    //bits for AND mask
+            internal uint[]? iconColors; //colors table
+            internal byte[]? iconXOR;    // bits for XOR mask
+            internal byte[]? iconAND;    //bits for AND mask
         };
 
         [StructLayout(LayoutKind.Sequential)]
         internal class IconDump : ImageData
         {
-            internal byte[] data;
+            internal byte[]? data;
         };
 
         private Size iconSize;
         private IntPtr handle = IntPtr.Zero;
         private IconDir iconDir;
         private ushort id;
-        private ImageData[] imageData;
+        private ImageData[]? imageData;
         private bool undisposable;
         private bool disposed;
-        private Bitmap bitmap;
+        private Bitmap? bitmap;
 
         private Icon()
         {
@@ -205,7 +206,7 @@ namespace System.Drawing
                 }
 
                 if (id == ushort.MaxValue)
-                    throw new ArgumentException(SR.NoValidIconImageFound, "Icon");
+                    throw new ArgumentException(SR.NoValidIconImageFound, nameof(original));
 
                 iconSize.Height = iconDir.idEntries[id].height;
                 iconSize.Width = iconDir.idEntries[id].width;
@@ -240,13 +241,13 @@ namespace System.Drawing
         public Icon(Type type, string resource)
         {
             if (resource == null)
-                throw new ArgumentException(nameof(resource));
+                throw new ArgumentNullException(nameof(resource));
 
             // For compatibility with the .NET Framework
             if (type == null)
                 throw new NullReferenceException();
 
-            using (Stream s = type.GetTypeInfo().Assembly.GetManifestResourceStream(type, resource))
+            using (Stream? s = type.Assembly.GetManifestResourceStream(type, resource))
             {
                 if (s == null)
                 {
@@ -258,7 +259,7 @@ namespace System.Drawing
 
         internal Icon(string resourceName, bool undisposable)
         {
-            using (Stream s = typeof(Icon).GetTypeInfo().Assembly.GetManifestResourceStream(resourceName))
+            using (Stream? s = typeof(Icon).Assembly.GetManifestResourceStream(resourceName))
             {
                 if (s == null)
                 {
@@ -293,8 +294,8 @@ namespace System.Drawing
 
         private Icon(SerializationInfo info, StreamingContext context)
         {
-            byte[] iconData = (byte[])info.GetValue("IconData", typeof(byte[])); // Do not rename (binary serialization)
-            Size iconSize = (Size)info.GetValue("IconSize", typeof(Size)); // Do not rename (binary serialization)
+            byte[] iconData = (byte[])info.GetValue("IconData", typeof(byte[]))!; // Do not rename (binary serialization)
+            Size iconSize = (Size)info.GetValue("IconSize", typeof(Size))!; // Do not rename (binary serialization)
             var dataStream = new MemoryStream(iconData);
 
             InitFromStreamWithSize(dataStream, iconSize.Width, iconSize.Height);
@@ -313,7 +314,7 @@ namespace System.Drawing
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
             if (string.IsNullOrEmpty(filePath))
-                throw new ArgumentException(SR.NullOrEmptyPath, "path");
+                throw new ArgumentException(SR.NullOrEmptyPath, nameof(filePath));
             if (!File.Exists(filePath))
                 throw new FileNotFoundException(SR.CouldntFindSpecifiedFile, filePath);
 
@@ -346,7 +347,7 @@ namespace System.Drawing
         public static Icon FromHandle(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentException(nameof(handle));
+                throw new ArgumentException(null, nameof(handle));
 
             return new Icon(handle);
         }
@@ -367,20 +368,20 @@ namespace System.Drawing
             writer.Write(bih.biClrImportant);
 
             //now write color table
-            int colCount = ii.iconColors.Length;
+            int colCount = ii.iconColors!.Length;
             for (int j = 0; j < colCount; j++)
                 writer.Write(ii.iconColors[j]);
 
             //now write XOR Mask
-            writer.Write(ii.iconXOR);
+            writer.Write(ii.iconXOR!);
 
             //now write AND Mask
-            writer.Write(ii.iconAND);
+            writer.Write(ii.iconAND!);
         }
 
         private void SaveIconDump(BinaryWriter writer, IconDump id)
         {
-            writer.Write(id.data);
+            writer.Write(id.data!);
         }
 
         private void SaveIconDirEntry(BinaryWriter writer, IconDirEntry ide, uint offset)
@@ -415,7 +416,7 @@ namespace System.Drawing
                 while (writer.BaseStream.Length < iconDir.idEntries[i].imageOffset)
                     writer.Write((byte)0);
 
-                if (imageData[i] is IconDump)
+                if (imageData![i] is IconDump)
                     SaveIconDump(writer, (IconDump)imageData[i]);
                 else
                     SaveIconImage(writer, (IconImage)imageData[i]);
@@ -446,10 +447,10 @@ namespace System.Drawing
             }
 
             SaveIconDirEntry(writer, iconDir.idEntries[best], 22);
-            SaveIconImage(writer, (IconImage)imageData[best]);
+            SaveIconImage(writer, (IconImage)imageData![best]);
         }
 
-        private void SaveBitmapAsIcon(BinaryWriter writer)
+        private unsafe void SaveBitmapAsIcon(BinaryWriter writer)
         {
             writer.Write((ushort)0);    // idReserved must be 0
             writer.Write((ushort)1);    // idType must be 1
@@ -457,7 +458,7 @@ namespace System.Drawing
 
             // when transformed into a bitmap only a single image exists
             IconDirEntry ide = default;
-            ide.width = (byte)bitmap.Width;
+            ide.width = (byte)bitmap!.Width;
             ide.height = (byte)bitmap.Height;
             ide.colorCount = 0; // 32 bbp == 0, for palette size
             ide.reserved = 0;   // always 0
@@ -466,7 +467,7 @@ namespace System.Drawing
             ide.imageOffset = 22;   // 22 is the first icon position (for single icon files)
 
             BitmapInfoHeader bih = default;
-            bih.biSize = (uint)Marshal.SizeOf(typeof(BitmapInfoHeader));
+            bih.biSize = (uint)sizeof(BitmapInfoHeader);
             bih.biWidth = bitmap.Width;
             bih.biHeight = 2 * bitmap.Height; // include both XOR and AND images
             bih.biPlanes = 1;
@@ -574,7 +575,7 @@ namespace System.Drawing
             {
                 ColorPalette pal = bmp.Palette; // Managed palette
 
-                for (int i = 0; i < ii.iconColors.Length; i++)
+                for (int i = 0; i < ii.iconColors!.Length; i++)
                 {
                     pal.Entries[i] = Color.FromArgb((int)ii.iconColors[i] | unchecked((int)0xff000000));
                 }
@@ -586,7 +587,7 @@ namespace System.Drawing
 
             for (int y = 0; y < biHeight; y++)
             {
-                Marshal.Copy(ii.iconXOR, bytesPerLine * y,
+                Marshal.Copy(ii.iconXOR!, bytesPerLine * y,
                     (IntPtr)(bits.Scan0.ToInt64() + bits.Stride * (biHeight - 1 - y)), bytesPerLine);
             }
 
@@ -602,7 +603,7 @@ namespace System.Drawing
                 {
                     for (int bit = 7; bit >= 0; bit--)
                     {
-                        if (((ii.iconAND[y * bytesPerLine + x] >> bit) & 1) != 0)
+                        if (((ii.iconAND![y * bytesPerLine + x] >> bit) & 1) != 0)
                         {
                             bmp.SetPixel(x * 8 + 7 - bit, biHeight - y - 1, Color.Transparent);
                         }

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Internal
 {
@@ -62,7 +62,7 @@ namespace System.Reflection.Internal
             return true;
         }
 
-        internal static bool Equals(byte[] left, byte[] right)
+        internal static bool Equals(byte[]? left, byte[]? right)
         {
             if (ReferenceEquals(left, right))
             {
@@ -99,7 +99,7 @@ namespace System.Reflection.Internal
             return Hash.GetFNVHashCode(x);
         }
 
-        bool IEqualityComparer<byte[]>.Equals(byte[] x, byte[] y)
+        bool IEqualityComparer<byte[]>.Equals(byte[]? x, byte[]? y)
         {
             return Equals(x, y);
         }

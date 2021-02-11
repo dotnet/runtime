@@ -1,13 +1,10 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Diagnostics
-Imports System.Globalization
 Imports System.Reflection
 Imports System.Runtime.InteropServices
-Imports System.Runtime.Remoting
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
@@ -150,13 +147,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         Throw exInner
                     Catch exInner As OutOfMemoryException
                         Throw exInner
-                    Catch exInner As System.Threading.ThreadAbortException
-                        Throw exInner
                     Catch
                         oTmp = Nothing
                     End Try
                     If oTmp Is Nothing Then
-                        Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
+                        Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
                     Else
                         Try
                             Return LateIndexGet(oTmp, args, paramnames)
@@ -165,7 +160,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         End Try
                     End If
                 Else
-                    Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
+                    Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
                 End If
 
             Catch ex As TargetInvocationException
@@ -217,7 +212,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 If RValueBase AndAlso objType.IsValueType Then
                     'note that objType is passed byref to InternalLateSet and that it 
                     'should be valid by the time we get to this point
-                    Throw New Exception(GetResourceString(SR.RValueBaseForValueType, VBFriendlyName(objType, o), VBFriendlyName(objType, o)))
+                    Throw New Exception(SR.Format(SR.RValueBaseForValueType, VBFriendlyName(objType, o), VBFriendlyName(objType, o)))
                 End If
             Catch ex As System.MissingMemberException When OptimisticSet = True
                 'A missing member exception means it has no Set member.  Silently handle the exception.
@@ -271,6 +266,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 If UseCallType = CallType.Set Then
                     flags = flags Or BindingFlags.PutRefDispProperty
                     If args(args.GetUpperBound(0)) Is Nothing Then
+                        Debug.Assert(OperatingSystem.IsWindows())
 #Disable Warning BC40000 ' DispatchWrapper is marked obsolete.
                         args(args.GetUpperBound(0)) = New DispatchWrapper(Nothing)
 #Enable Warning BC40000
@@ -290,12 +286,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Dim NewValue As Object
 
                     If fi.IsInitOnly Then
-                        Throw New MissingMemberException(GetResourceString(SR.MissingMember_ReadOnlyField2, name, VBFriendlyName(objType, o)))
+                        Throw New MissingMemberException(SR.Format(SR.MissingMember_ReadOnlyField2, name, VBFriendlyName(objType, o)))
                     End If
 
                     If (args Is Nothing OrElse args.Length = 0) Then
                         'Everything must be shadowed
-                        Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
+                        Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
 
                     ElseIf args.Length = 1 Then
                         NewValue = args(0)
@@ -422,14 +418,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         Throw exInner
                     Catch exInner As OutOfMemoryException
                         Throw exInner
-                    Catch exInner As System.Threading.ThreadAbortException
-                        Throw exInner
                     Catch exInner As Exception
                         oTmp = Nothing
                     End Try
 
                     If oTmp Is Nothing Then
-                        Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
+                        Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
                     Else
                         Try
                             LateIndexSet(oTmp, args, paramnames)
@@ -438,7 +432,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         End Try
                     End If
                 Else
-                    Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
+                    Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
                 End If
 
             Catch ex As TargetInvocationException
@@ -447,10 +441,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 ElseIf TypeOf ex.InnerException Is TargetParameterCountException Then
                     If (flags And BindingFlags.PutRefDispProperty) <> 0 Then
                         'Set was being called
-                        Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberSetNotFoundOnType2, name, VBFriendlyName(objType, o)))
+                        Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberSetNotFoundOnType2, name, VBFriendlyName(objType, o)))
                     Else
                         'Let was being called
-                        Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberLetNotFoundOnType2, name, VBFriendlyName(objType, o)))
+                        Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberLetNotFoundOnType2, name, VBFriendlyName(objType, o)))
                     End If
                 Else
                     Throw ex.InnerException
@@ -468,7 +462,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If objType.BaseType.FullName = "System.__ComObject" Then
                 Return
             End If
-            Throw New InvalidOperationException(GetResourceString(SR.LateboundCallToInheritedComClass))
+            Throw New InvalidOperationException(SR.LateboundCallToInheritedComClass)
 
         End Sub
 
@@ -491,7 +485,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 'Named arguments are not allowed as indexers        
                 If paramnames IsNot Nothing AndAlso paramnames.Length <> 0 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNamedArgs))
+                    Throw New ArgumentException(SR.Argument_InvalidNamedArgs)
                 End If
 
                 Dim ArgCount As Integer
@@ -564,7 +558,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                     'Catch the missing method here, Invoke below will throw an ArgumentException
                     If members Is Nothing Or iNext = 0 Then
-                        Throw New MissingMemberException(GetResourceString(SR.MissingMember_NoDefaultMemberFound1, VBFriendlyName(objType, o)))
+                        Throw New MissingMemberException(SR.Format(SR.MissingMember_NoDefaultMemberFound1, VBFriendlyName(objType, o)))
                     End If
                     match = New MethodBase(iNext - 1) {}
                     For i = 0 To iNext - 1
@@ -573,8 +567,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         Catch ex As StackOverflowException
                             Throw ex
                         Catch ex As OutOfMemoryException
-                            Throw ex
-                        Catch ex As System.Threading.ThreadAbortException
                             Throw ex
                         Catch ex As Exception
                             ' If this assert is triggered due to an AccessViolationException,
@@ -628,7 +620,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     End If
 
                 Catch ex As Exception When IsMissingMemberException(ex)
-                    Throw New MissingMemberException(GetResourceString(SR.MissingMember_NoDefaultMemberFound1, VBFriendlyName(objType, o)))
+                    Throw New MissingMemberException(SR.Format(SR.MissingMember_NoDefaultMemberFound1, VBFriendlyName(objType, o)))
 
                 Catch ex As TargetInvocationException
                     Throw ex.InnerException
@@ -697,7 +689,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 LateIndexSet(o, args, paramnames)
 
                 If RValueBase AndAlso o.GetType().IsValueType Then
-                    Throw New Exception(GetResourceString(SR.RValueBaseForValueType, o.GetType().Name, o.GetType().Name))
+                    Throw New Exception(SR.Format(SR.RValueBaseForValueType, o.GetType().Name, o.GetType().Name))
                 End If
             Catch ex As System.MissingMemberException When OptimisticSet = True
                 'A missing member exception means it has no Set member.  Silently handle the exception.
@@ -722,7 +714,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 'Named arguments are not allowed as indexers        
                 If paramnames IsNot Nothing AndAlso paramnames.Length <> 0 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNamedArgs))
+                    Throw New ArgumentException(SR.Argument_InvalidNamedArgs)
                 End If
 
                 Dim ArgCount As Integer
@@ -810,7 +802,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                     'Catch the missing method here, Invoke below will throw an ArgumentException
                     If members Is Nothing Or iNext = 0 Then
-                        Throw New MissingMemberException(GetResourceString(SR.MissingMember_NoDefaultMemberFound1, VBFriendlyName(objType, o)))
+                        Throw New MissingMemberException(SR.Format(SR.MissingMember_NoDefaultMemberFound1, VBFriendlyName(objType, o)))
                     End If
 
                     match = New MethodBase(iNext - 1) {}
@@ -820,8 +812,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         Catch ex As StackOverflowException
                             Throw ex
                         Catch ex As OutOfMemoryException
-                            Throw ex
-                        Catch ex As System.Threading.ThreadAbortException
                             Throw ex
                         Catch
                             ' If this assert is triggered because of an AccessViolation exception,
@@ -870,7 +860,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 Catch ex As Exception When IsMissingMemberException(ex)
                     'Override the message so that we're consistent with above Throw
-                    Throw New MissingMemberException(GetResourceString(SR.MissingMember_NoDefaultMemberFound1, VBFriendlyName(objType, o)))
+                    Throw New MissingMemberException(SR.Format(SR.MissingMember_NoDefaultMemberFound1, VBFriendlyName(objType, o)))
 
                 Catch ex As TargetInvocationException
                     Throw ex.InnerException
@@ -943,11 +933,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 mi = GetMembersByName(objIReflect, name, flags)
 
                 If (mi Is Nothing) OrElse (mi.Length = 0) Then
-                    Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
+                    Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
                 End If
                 If MemberIsField(mi) Then
                     'This expression is not a procedure, but occurs as the target of a procedure call.
-                    Throw New ArgumentException(GetResourceString(SR.ExpressionNotProcedure, name, VBFriendlyName(objType, o)))
+                    Throw New ArgumentException(SR.Format(SR.ExpressionNotProcedure, name, VBFriendlyName(objType, o)))
                 End If
 
                 'Try a FastCall
@@ -961,7 +951,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     If member.MemberType = MemberTypes.Property Then
                         member = CType(member, PropertyInfo).GetGetMethod()
                         If member Is Nothing Then
-                            Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
+                            Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
                         End If
                     End If
 
@@ -1004,7 +994,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 'Some exceptions can occur that need to be mapped to MissingMemberException
             Catch ex As Exception When IsMissingMemberException(ex)
-                Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
+                Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType, o)))
 
             Catch ex As TargetInvocationException
                 Throw ex.InnerException
@@ -1182,7 +1172,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 If Not IsStatic Then
                     'Reference to non-shared member '|1' requires an object reference.
                     Throw New NullReferenceException(
-                        GetResourceString(SR.NullReference_InstanceReqToAccessMember1, MemberToString(Member)))
+                        SR.Format(SR.NullReference_InstanceReqToAccessMember1, MemberToString(Member)))
                 End If
             End If
         End Sub

@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.NetworkInformation;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -31,69 +32,53 @@ namespace System.Net.Mail
         International = 1, // SMTPUTF8 - Email Address Internationalization (EAI)
     }
 
+    [UnsupportedOSPlatform("browser")]
     public class SmtpClient : IDisposable
     {
-        private string _host;
+        private string? _host;
         private int _port;
         private int _timeout = 100000;
         private bool _inCall;
         private bool _cancelled;
         private bool _timedOut;
-        private string _targetName = null;
+        private string? _targetName;
         private SmtpDeliveryMethod _deliveryMethod = SmtpDeliveryMethod.Network;
         private SmtpDeliveryFormat _deliveryFormat = SmtpDeliveryFormat.SevenBit; // Non-EAI default
-        private string _pickupDirectoryLocation = null;
+        private string? _pickupDirectoryLocation;
         private SmtpTransport _transport;
-        private MailMessage _message; //required to prevent premature finalization
-        private MailWriter _writer;
-        private MailAddressCollection _recipients;
+        private MailMessage? _message; //required to prevent premature finalization
+        private MailWriter? _writer;
+        private MailAddressCollection? _recipients;
         private SendOrPostCallback _onSendCompletedDelegate;
-        private Timer _timer;
-        private ContextAwareResult _operationCompletedResult = null;
-        private AsyncOperation _asyncOp = null;
+        private Timer? _timer;
+        private ContextAwareResult? _operationCompletedResult;
+        private AsyncOperation? _asyncOp;
         private static readonly AsyncCallback s_contextSafeCompleteCallback = new AsyncCallback(ContextSafeCompleteCallback);
         private const int DefaultPort = 25;
-        internal string clientDomain = null;
-        private bool _disposed = false;
-        private ServicePoint _servicePoint;
+        internal string _clientDomain;
+        private bool _disposed;
+        private ServicePoint? _servicePoint;
         // (async only) For when only some recipients fail.  We still send the e-mail to the others.
-        private SmtpFailedRecipientException _failedRecipientException;
+        private SmtpFailedRecipientException? _failedRecipientException;
         // ports above this limit are invalid
         private const int MaxPortValue = 65535;
-        public event SendCompletedEventHandler SendCompleted;
+        public event SendCompletedEventHandler? SendCompleted;
         private bool _useDefaultCredentials;
-        private ICredentialsByHost _customCredentials;
+        private ICredentialsByHost? _customCredentials;
 
         public SmtpClient()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            try
-            {
-                Initialize();
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            }
+            Initialize();
         }
 
-        public SmtpClient(string host)
+        public SmtpClient(string? host)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
-            try
-            {
-                _host = host;
-                Initialize();
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            }
+            _host = host;
+            Initialize();
         }
 
-        public SmtpClient(string host, int port)
+        public SmtpClient(string? host, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host, port);
             try
             {
                 if (port < 0)
@@ -107,14 +92,16 @@ namespace System.Net.Mail
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
+        [MemberNotNull(nameof(_transport))]
+        [MemberNotNull(nameof(_onSendCompletedDelegate))]
+        [MemberNotNull(nameof(_clientDomain))]
         private void Initialize()
         {
             _transport = new SmtpTransport(this);
-            if (NetEventSource.IsEnabled) NetEventSource.Associate(this, _transport);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _transport);
             _onSendCompletedDelegate = new SendOrPostCallback(SendCompletedWaitCallback);
 
             if (_host != null && _host.Length != 0)
@@ -130,7 +117,7 @@ namespace System.Net.Mail
             if (_targetName == null)
                 _targetName = "SMTPSVC/" + _host;
 
-            if (clientDomain == null)
+            if (_clientDomain == null)
             {
                 // We use the local host name as the default client domain
                 // for the client's EHLO or HELO message. This limits the
@@ -161,14 +148,14 @@ namespace System.Net.Mail
                         sb.Append(ch);
                 }
                 if (sb.Length > 0)
-                    clientDomain = sb.ToString();
+                    _clientDomain = sb.ToString();
                 else
-                    clientDomain = "LocalHost";
+                    _clientDomain = "LocalHost";
             }
         }
 
-
-        public string Host
+        [DisallowNull]
+        public string? Host
         {
             get
             {
@@ -186,7 +173,7 @@ namespace System.Net.Mail
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                if (value == string.Empty)
+                if (value.Length == 0)
                 {
                     throw new ArgumentException(SR.net_emptystringset, nameof(value));
                 }
@@ -245,7 +232,7 @@ namespace System.Net.Mail
             }
         }
 
-        public ICredentialsByHost Credentials
+        public ICredentialsByHost? Credentials
         {
             get
             {
@@ -295,17 +282,16 @@ namespace System.Net.Mail
             get
             {
                 CheckHostAndPort();
-                if (_servicePoint == null)
-                {
-                    // This differs from desktop, where it uses an internal overload of FindServicePoint that just
-                    // takes a string host and an int port, bypassing the need for a Uri. We workaround that here by
-                    // creating an http Uri, simply for the purposes of getting an appropriate ServicePoint instance.
-                    // This has some subtle impact on behavior, e.g. the returned ServicePoint's Address property will
-                    // be usable, whereas in desktop it throws an exception that "This property is not supported for
-                    // protocols that do not use URI."
-                    _servicePoint = ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
-                }
-                return _servicePoint;
+
+                // This differs from desktop, where it uses an internal overload of FindServicePoint that just
+                // takes a string host and an int port, bypassing the need for a Uri. We workaround that here by
+                // creating an http Uri, simply for the purposes of getting an appropriate ServicePoint instance.
+                // This has some subtle impact on behavior, e.g. the returned ServicePoint's Address property will
+                // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
+                // protocols that do not use URI."
+#pragma warning disable SYSLIB0014
+                return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
+#pragma warning restore SYSLIB0014
             }
         }
 
@@ -333,7 +319,7 @@ namespace System.Net.Mail
             }
         }
 
-        public string PickupDirectoryLocation
+        public string? PickupDirectoryLocation
         {
             get
             {
@@ -371,7 +357,7 @@ namespace System.Net.Mail
             }
         }
 
-        public string TargetName
+        public string? TargetName
         {
             get { return _targetName; }
             set { _targetName = value; }
@@ -397,9 +383,9 @@ namespace System.Net.Mail
             }
         }
 
-        internal MailWriter GetFileMailWriter(string pickupDirectory)
+        internal MailWriter GetFileMailWriter(string? pickupDirectory)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"{nameof(pickupDirectory)}={pickupDirectory}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{nameof(pickupDirectory)}={pickupDirectory}");
 
             if (!Path.IsPathRooted(pickupDirectory))
                 throw new SmtpException(SR.SmtpNeedAbsolutePickupDirectory);
@@ -422,12 +408,12 @@ namespace System.Net.Mail
             SendCompleted?.Invoke(this, e);
         }
 
-        private void SendCompletedWaitCallback(object operationState)
+        private void SendCompletedWaitCallback(object? operationState)
         {
-            OnSendCompleted((AsyncCompletedEventArgs)operationState);
+            OnSendCompleted((AsyncCompletedEventArgs)operationState!);
         }
 
-        public void Send(string from, string recipients, string subject, string body)
+        public void Send(string from, string recipients, string? subject, string? body)
         {
             if (_disposed)
             {
@@ -440,157 +426,148 @@ namespace System.Net.Mail
 
         public void Send(MailMessage message)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, message);
-
             if (_disposed)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"DeliveryMethod={DeliveryMethod}");
+                NetEventSource.Associate(this, message);
+            }
+
+            SmtpFailedRecipientException? recipientException = null;
+
+            if (InCall)
+            {
+                throw new InvalidOperationException(SR.net_inasync);
+            }
+
+            if (message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            if (DeliveryMethod == SmtpDeliveryMethod.Network)
+                CheckHostAndPort();
+
+            MailAddressCollection recipients = new MailAddressCollection();
+
+            if (message.From == null)
+            {
+                throw new InvalidOperationException(SR.SmtpFromRequired);
+            }
+
+            if (message.To != null)
+            {
+                foreach (MailAddress address in message.To)
+                {
+                    recipients.Add(address);
+                }
+            }
+            if (message.Bcc != null)
+            {
+                foreach (MailAddress address in message.Bcc)
+                {
+                    recipients.Add(address);
+                }
+            }
+            if (message.CC != null)
+            {
+                foreach (MailAddress address in message.CC)
+                {
+                    recipients.Add(address);
+                }
+            }
+
+            if (recipients.Count == 0)
+            {
+                throw new InvalidOperationException(SR.SmtpRecipientRequired);
+            }
+
+            _transport.IdentityRequired = false;  // everything completes on the same thread.
+
             try
             {
-                if (NetEventSource.IsEnabled)
+                InCall = true;
+                _timedOut = false;
+                _timer = new Timer(new TimerCallback(TimeOutCallback), null, Timeout, Timeout);
+                bool allowUnicode = false;
+                string? pickupDirectory = PickupDirectoryLocation;
+
+                MailWriter writer;
+                switch (DeliveryMethod)
                 {
-                    NetEventSource.Info(this, $"DeliveryMethod={DeliveryMethod}");
-                    NetEventSource.Associate(this, message);
+                    case SmtpDeliveryMethod.PickupDirectoryFromIis:
+                        throw new NotSupportedException(SR.SmtpGetIisPickupDirectoryNotSupported);
+
+                    case SmtpDeliveryMethod.SpecifiedPickupDirectory:
+                        if (EnableSsl)
+                        {
+                            throw new SmtpException(SR.SmtpPickupDirectoryDoesnotSupportSsl);
+                        }
+
+                        allowUnicode = IsUnicodeSupported(); // Determend by the DeliveryFormat paramiter
+                        ValidateUnicodeRequirement(message, recipients, allowUnicode);
+                        writer = GetFileMailWriter(pickupDirectory);
+                        break;
+
+                    case SmtpDeliveryMethod.Network:
+                    default:
+                        GetConnection();
+                        // Detected durring GetConnection(), restrictable using the DeliveryFormat paramiter
+                        allowUnicode = IsUnicodeSupported();
+                        ValidateUnicodeRequirement(message, recipients, allowUnicode);
+                        writer = _transport.SendMail(message.Sender ?? message.From, recipients,
+                            message.BuildDeliveryStatusNotificationString(), allowUnicode, out recipientException);
+                        break;
+                }
+                _message = message;
+                message.Send(writer, DeliveryMethod != SmtpDeliveryMethod.Network, allowUnicode);
+                writer.Close();
+
+                //throw if we couldn't send to any of the recipients
+                if (DeliveryMethod == SmtpDeliveryMethod.Network && recipientException != null)
+                {
+                    throw recipientException;
+                }
+            }
+            catch (Exception e)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
+
+                if (e is SmtpFailedRecipientException && !((SmtpFailedRecipientException)e).fatal)
+                {
+                    throw;
                 }
 
-                SmtpFailedRecipientException recipientException = null;
-
-                if (InCall)
+                Abort();
+                if (_timedOut)
                 {
-                    throw new InvalidOperationException(SR.net_inasync);
+                    throw new SmtpException(SR.net_timeout);
                 }
 
-                if (message == null)
+                if (e is SecurityException ||
+                    e is AuthenticationException ||
+                    e is SmtpException)
                 {
-                    throw new ArgumentNullException(nameof(message));
+                    throw;
                 }
 
-                if (DeliveryMethod == SmtpDeliveryMethod.Network)
-                    CheckHostAndPort();
-
-                MailAddressCollection recipients = new MailAddressCollection();
-
-                if (message.From == null)
-                {
-                    throw new InvalidOperationException(SR.SmtpFromRequired);
-                }
-
-                if (message.To != null)
-                {
-                    foreach (MailAddress address in message.To)
-                    {
-                        recipients.Add(address);
-                    }
-                }
-                if (message.Bcc != null)
-                {
-                    foreach (MailAddress address in message.Bcc)
-                    {
-                        recipients.Add(address);
-                    }
-                }
-                if (message.CC != null)
-                {
-                    foreach (MailAddress address in message.CC)
-                    {
-                        recipients.Add(address);
-                    }
-                }
-
-                if (recipients.Count == 0)
-                {
-                    throw new InvalidOperationException(SR.SmtpRecipientRequired);
-                }
-
-                _transport.IdentityRequired = false;  // everything completes on the same thread.
-
-                try
-                {
-                    InCall = true;
-                    _timedOut = false;
-                    _timer = new Timer(new TimerCallback(TimeOutCallback), null, Timeout, Timeout);
-                    bool allowUnicode = false;
-                    string pickupDirectory = PickupDirectoryLocation;
-
-                    MailWriter writer;
-                    switch (DeliveryMethod)
-                    {
-                        case SmtpDeliveryMethod.PickupDirectoryFromIis:
-                            throw new NotSupportedException(SR.SmtpGetIisPickupDirectoryNotSupported);
-
-                        case SmtpDeliveryMethod.SpecifiedPickupDirectory:
-                            if (EnableSsl)
-                            {
-                                throw new SmtpException(SR.SmtpPickupDirectoryDoesnotSupportSsl);
-                            }
-
-                            allowUnicode = IsUnicodeSupported(); // Determend by the DeliveryFormat paramiter
-                            ValidateUnicodeRequirement(message, recipients, allowUnicode);
-                            writer = GetFileMailWriter(pickupDirectory);
-                            break;
-
-                        case SmtpDeliveryMethod.Network:
-                        default:
-                            GetConnection();
-                            // Detected durring GetConnection(), restrictable using the DeliveryFormat paramiter
-                            allowUnicode = IsUnicodeSupported();
-                            ValidateUnicodeRequirement(message, recipients, allowUnicode);
-                            writer = _transport.SendMail(message.Sender ?? message.From, recipients,
-                                message.BuildDeliveryStatusNotificationString(), allowUnicode, out recipientException);
-                            break;
-                    }
-                    _message = message;
-                    message.Send(writer, DeliveryMethod != SmtpDeliveryMethod.Network, allowUnicode);
-                    writer.Close();
-                    _transport.ReleaseConnection();
-
-                    //throw if we couldn't send to any of the recipients
-                    if (DeliveryMethod == SmtpDeliveryMethod.Network && recipientException != null)
-                    {
-                        throw recipientException;
-                    }
-                }
-                catch (Exception e)
-                {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
-
-                    if (e is SmtpFailedRecipientException && !((SmtpFailedRecipientException)e).fatal)
-                    {
-                        throw;
-                    }
-
-                    Abort();
-                    if (_timedOut)
-                    {
-                        throw new SmtpException(SR.net_timeout);
-                    }
-
-                    if (e is SecurityException ||
-                        e is AuthenticationException ||
-                        e is SmtpException)
-                    {
-                        throw;
-                    }
-
-                    throw new SmtpException(SR.SmtpSendMailFailure, e);
-                }
-                finally
-                {
-                    InCall = false;
-                    if (_timer != null)
-                    {
-                        _timer.Dispose();
-                    }
-                }
+                throw new SmtpException(SR.SmtpSendMailFailure, e);
             }
             finally
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                InCall = false;
+                if (_timer != null)
+                {
+                    _timer.Dispose();
+                }
             }
         }
 
-        public void SendAsync(string from, string recipients, string subject, string body, object userToken)
+        public void SendAsync(string from, string recipients, string? subject, string? body, object? userToken)
         {
             if (_disposed)
             {
@@ -599,14 +576,13 @@ namespace System.Net.Mail
             SendAsync(new MailMessage(from, recipients, subject, body), userToken);
         }
 
-        public void SendAsync(MailMessage message, object userToken)
+        public void SendAsync(MailMessage message, object? userToken)
         {
             if (_disposed)
             {
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, message, userToken, _transport);
 
             try
             {
@@ -657,84 +633,76 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.SmtpRecipientRequired);
                 }
 
-                try
+                InCall = true;
+                _cancelled = false;
+                _message = message;
+                string? pickupDirectory = PickupDirectoryLocation;
+
+                CredentialCache? cache;
+                // Skip token capturing if no credentials are used or they don't include a default one.
+                // Also do capture the token if ICredential is not of CredentialCache type so we don't know what the exact credential response will be.
+                _transport.IdentityRequired = Credentials != null && (ReferenceEquals(Credentials, CredentialCache.DefaultNetworkCredentials) || (cache = Credentials as CredentialCache) == null || IsSystemNetworkCredentialInCache(cache));
+
+                _asyncOp = AsyncOperationManager.CreateOperation(userToken);
+                switch (DeliveryMethod)
                 {
-                    InCall = true;
-                    _cancelled = false;
-                    _message = message;
-                    string pickupDirectory = PickupDirectoryLocation;
+                    case SmtpDeliveryMethod.PickupDirectoryFromIis:
+                        throw new NotSupportedException(SR.SmtpGetIisPickupDirectoryNotSupported);
 
-                    CredentialCache cache;
-                    // Skip token capturing if no credentials are used or they don't include a default one.
-                    // Also do capture the token if ICredential is not of CredentialCache type so we don't know what the exact credential response will be.
-                    _transport.IdentityRequired = Credentials != null && (ReferenceEquals(Credentials, CredentialCache.DefaultNetworkCredentials) || (cache = Credentials as CredentialCache) == null || IsSystemNetworkCredentialInCache(cache));
-
-                    _asyncOp = AsyncOperationManager.CreateOperation(userToken);
-                    switch (DeliveryMethod)
-                    {
-                        case SmtpDeliveryMethod.PickupDirectoryFromIis:
-                            throw new NotSupportedException(SR.SmtpGetIisPickupDirectoryNotSupported);
-
-                        case SmtpDeliveryMethod.SpecifiedPickupDirectory:
+                    case SmtpDeliveryMethod.SpecifiedPickupDirectory:
+                        {
+                            if (EnableSsl)
                             {
-                                if (EnableSsl)
-                                {
-                                    throw new SmtpException(SR.SmtpPickupDirectoryDoesnotSupportSsl);
-                                }
-
-                                _writer = GetFileMailWriter(pickupDirectory);
-                                bool allowUnicode = IsUnicodeSupported();
-                                ValidateUnicodeRequirement(message, _recipients, allowUnicode);
-                                message.Send(_writer, true, allowUnicode);
-
-                                if (_writer != null)
-                                    _writer.Close();
-
-                                _transport.ReleaseConnection();
-                                AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(null, false, _asyncOp.UserSuppliedState);
-                                InCall = false;
-                                _asyncOp.PostOperationCompleted(_onSendCompletedDelegate, eventArgs);
-                                break;
+                                throw new SmtpException(SR.SmtpPickupDirectoryDoesnotSupportSsl);
                             }
 
-                        case SmtpDeliveryMethod.Network:
-                        default:
-                            _operationCompletedResult = new ContextAwareResult(_transport.IdentityRequired, true, null, this, s_contextSafeCompleteCallback);
-                            lock (_operationCompletedResult.StartPostingAsyncOp())
-                            {
-                                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Calling BeginConnect. Transport: {_transport}");
-                                _transport.BeginGetConnection(_operationCompletedResult, ConnectCallback, _operationCompletedResult, Host, Port);
-                                _operationCompletedResult.FinishPostingAsyncOp();
-                            }
+                            _writer = GetFileMailWriter(pickupDirectory);
+                            bool allowUnicode = IsUnicodeSupported();
+                            ValidateUnicodeRequirement(message, _recipients, allowUnicode);
+                            message.Send(_writer, true, allowUnicode);
+
+                            if (_writer != null)
+                                _writer.Close();
+
+                            AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(null, false, _asyncOp.UserSuppliedState);
+                            InCall = false;
+                            _asyncOp.PostOperationCompleted(_onSendCompletedDelegate, eventArgs);
                             break;
-                    }
-                }
-                catch (Exception e)
-                {
-                    InCall = false;
+                        }
 
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
-
-                    if (e is SmtpFailedRecipientException && !((SmtpFailedRecipientException)e).fatal)
-                    {
-                        throw;
-                    }
-
-                    Abort();
-
-                    if (e is SecurityException ||
-                        e is AuthenticationException ||
-                        e is SmtpException)
-                    {
-                        throw;
-                    }
-
-                    throw new SmtpException(SR.SmtpSendMailFailure, e);
+                    case SmtpDeliveryMethod.Network:
+                    default:
+                        _operationCompletedResult = new ContextAwareResult(_transport.IdentityRequired, true, null, this, s_contextSafeCompleteCallback);
+                        lock (_operationCompletedResult.StartPostingAsyncOp())
+                        {
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Calling BeginConnect. Transport: {_transport}");
+                            _transport.BeginGetConnection(_operationCompletedResult, ConnectCallback, _operationCompletedResult, Host!, Port);
+                            _operationCompletedResult.FinishPostingAsyncOp();
+                        }
+                        break;
                 }
             }
-            finally
+            catch (Exception e)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                InCall = false;
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
+
+                if (e is SmtpFailedRecipientException && !((SmtpFailedRecipientException)e).fatal)
+                {
+                    throw;
+                }
+
+                Abort();
+
+                if (e is SecurityException ||
+                    e is AuthenticationException ||
+                    e is SmtpException)
+                {
+                    throw;
+                }
+
+                throw new SmtpException(SR.SmtpSendMailFailure, e);
             }
         }
 
@@ -759,27 +727,18 @@ namespace System.Net.Mail
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
-            try
+            if (!InCall || _cancelled)
             {
-                if (!InCall || _cancelled)
-                {
-                    return;
-                }
+                return;
+            }
 
-                _cancelled = true;
-                Abort();
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            }
+            _cancelled = true;
+            Abort();
         }
 
 
         //************* Task-based async public methods *************************
-        public Task SendMailAsync(string from, string recipients, string subject, string body)
+        public Task SendMailAsync(string from, string recipients, string? subject, string? body)
         {
             var message = new MailMessage(from, recipients, subject, body);
             return SendMailAsync(message, cancellationToken: default);
@@ -790,7 +749,7 @@ namespace System.Net.Mail
             return SendMailAsync(message, cancellationToken: default);
         }
 
-        public Task SendMailAsync(string from, string recipients, string subject, string body, CancellationToken cancellationToken)
+        public Task SendMailAsync(string from, string recipients, string? subject, string? body, CancellationToken cancellationToken)
         {
             var message = new MailMessage(from, recipients, subject, body);
             return SendMailAsync(message, cancellationToken);
@@ -804,7 +763,7 @@ namespace System.Net.Mail
             }
 
             // Create a TaskCompletionSource to represent the operation
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource();
 
             CancellationTokenRegistration ctr = default;
 
@@ -812,7 +771,7 @@ namespace System.Net.Mail
             int state = 0;
 
             // Register a handler that will transfer completion results to the TCS Task
-            SendCompletedEventHandler handler = null;
+            SendCompletedEventHandler? handler = null;
             handler = (sender, e) =>
             {
                 if (e.UserState == tcs)
@@ -831,7 +790,7 @@ namespace System.Net.Mail
                     {
                         if (e.Error != null) tcs.TrySetException(e.Error);
                         else if (e.Cancelled) tcs.TrySetCanceled();
-                        else tcs.TrySetResult(null);
+                        else tcs.TrySetResult();
                     }
                 }
             };
@@ -850,7 +809,7 @@ namespace System.Net.Mail
 
             ctr = cancellationToken.Register(s =>
             {
-                ((SmtpClient)s).SendAsyncCancel();
+                ((SmtpClient)s!).SendAsyncCancel();
             }, this);
 
             if (Interlocked.Exchange(ref state, 1) != 0)
@@ -891,7 +850,7 @@ namespace System.Net.Mail
             }
         }
 
-        private void TimeOutCallback(object state)
+        private void TimeOutCallback(object? state)
         {
             if (!_timedOut)
             {
@@ -900,10 +859,9 @@ namespace System.Net.Mail
             }
         }
 
-        private void Complete(Exception exception, IAsyncResult result)
+        private void Complete(Exception? exception, IAsyncResult result)
         {
-            ContextAwareResult operationCompletedResult = (ContextAwareResult)result.AsyncState;
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            ContextAwareResult operationCompletedResult = (ContextAwareResult)result.AsyncState!;
             try
             {
                 if (_cancelled)
@@ -915,7 +873,7 @@ namespace System.Net.Mail
                 // An individual failed recipient exception is benign, only abort here if ALL the recipients failed.
                 else if (exception != null && (!(exception is SmtpFailedRecipientException) || ((SmtpFailedRecipientException)exception).fatal))
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                     Abort();
 
                     if (!(exception is SmtpException))
@@ -937,7 +895,6 @@ namespace System.Net.Mail
                             exception = se;
                         }
                     }
-                    _transport.ReleaseConnection();
                 }
             }
             finally
@@ -945,15 +902,15 @@ namespace System.Net.Mail
                 operationCompletedResult.InvokeCallback(exception);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Complete");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Complete");
         }
 
         private static void ContextSafeCompleteCallback(IAsyncResult ar)
         {
             ContextAwareResult result = (ContextAwareResult)ar;
-            SmtpClient client = (SmtpClient)ar.AsyncState;
-            Exception exception = result.Result as Exception;
-            AsyncOperation asyncOp = client._asyncOp;
+            SmtpClient client = (SmtpClient)ar.AsyncState!;
+            Exception? exception = result.Result as Exception;
+            AsyncOperation asyncOp = client._asyncOp!;
             AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(exception, client._cancelled, asyncOp.UserSuppliedState);
             client.InCall = false;
             client._failedRecipientException = null; // Reset before the next send.
@@ -962,10 +919,9 @@ namespace System.Net.Mail
 
         private void SendMessageCallback(IAsyncResult result)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
-                _message.EndSend(result);
+                _message!.EndSend(result);
                 // If some recipients failed but not others, throw AFTER sending the message.
                 Complete(_failedRecipientException, result);
             }
@@ -973,16 +929,11 @@ namespace System.Net.Mail
             {
                 Complete(e, result);
             }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            }
         }
 
 
         private void SendMailCallback(IAsyncResult result)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 _writer = _transport.EndSendMail(result);
@@ -996,7 +947,6 @@ namespace System.Net.Mail
             catch (Exception e)
             {
                 Complete(e, result);
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 return;
             }
 
@@ -1008,23 +958,18 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    _message.BeginSend(_writer, DeliveryMethod != SmtpDeliveryMethod.Network,
-                        IsUnicodeSupported(), new AsyncCallback(SendMessageCallback), result.AsyncState);
+                    _message!.BeginSend(_writer, DeliveryMethod != SmtpDeliveryMethod.Network,
+                        IsUnicodeSupported(), new AsyncCallback(SendMessageCallback), result.AsyncState!);
                 }
             }
             catch (Exception e)
             {
                 Complete(e, result);
             }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            }
         }
 
         private void ConnectCallback(IAsyncResult result)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
                 _transport.EndGetConnection(result);
@@ -1036,19 +981,15 @@ namespace System.Net.Mail
                 {
                     // Detected durring Begin/EndGetConnection, restrictable using DeliveryFormat
                     bool allowUnicode = IsUnicodeSupported();
-                    ValidateUnicodeRequirement(_message, _recipients, allowUnicode);
-                    _transport.BeginSendMail(_message.Sender ?? _message.From, _recipients,
+                    ValidateUnicodeRequirement(_message!, _recipients!, allowUnicode);
+                    _transport.BeginSendMail(_message!.Sender ?? _message.From!, _recipients!,
                         _message.BuildDeliveryStatusNotificationString(), allowUnicode,
-                        new AsyncCallback(SendMailCallback), result.AsyncState);
+                        new AsyncCallback(SendMailCallback), result.AsyncState!);
                 }
             }
             catch (Exception e)
             {
                 Complete(e, result);
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
@@ -1063,31 +1004,20 @@ namespace System.Net.Mail
             {
                 address.GetSmtpAddress(allowUnicode);
             }
-            if (message.Sender != null)
-            {
-                message.Sender.GetSmtpAddress(allowUnicode);
-            }
-            message.From.GetSmtpAddress(allowUnicode);
+
+            message.Sender?.GetSmtpAddress(allowUnicode);
+            message.From!.GetSmtpAddress(allowUnicode);
         }
 
         private void GetConnection()
         {
             if (!_transport.IsConnected)
             {
-                _transport.GetConnection(_host, _port);
+                _transport.GetConnection(_host!, _port);
             }
         }
 
-        private void Abort()
-        {
-            try
-            {
-                _transport.Abort();
-            }
-            catch
-            {
-            }
-        }
+        private void Abort() => _transport.Abort();
 
         public void Dispose()
         {
@@ -1104,17 +1034,11 @@ namespace System.Net.Mail
                     _cancelled = true;
                     Abort();
                 }
-
-                if ((_transport != null))
+                else
                 {
-                    _transport.ReleaseConnection();
+                    _transport?.ReleaseConnection();
                 }
-
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                }
-
+                _timer?.Dispose();
                 _disposed = true;
             }
         }

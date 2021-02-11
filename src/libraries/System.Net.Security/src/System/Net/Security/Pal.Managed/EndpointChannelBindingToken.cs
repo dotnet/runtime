@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
@@ -10,9 +9,9 @@ namespace System.Net.Security
 {
     internal static class EndpointChannelBindingToken
     {
-        internal static ChannelBinding Build(SafeDeleteContext securityContext)
+        internal static ChannelBinding? Build(SafeDeleteContext securityContext)
         {
-            using (X509Certificate2 cert = CertificateValidationPal.GetRemoteCertificate(securityContext))
+            using (X509Certificate2? cert = CertificateValidationPal.GetRemoteCertificate(securityContext))
             {
                 if (cert == null)
                     return null;

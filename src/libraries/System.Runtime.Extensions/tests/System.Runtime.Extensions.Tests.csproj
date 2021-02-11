@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);Unix</DefineConstants>
+    <DefineConstants Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">$(DefineConstants);Unix</DefineConstants>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ApplicationIdTests.cs" />
@@ -39,6 +39,7 @@
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Convert.BoxedObjectCheck.cs" />
     <Compile Include="System\Convert.FromBase64.cs" />
+    <Compile Include="System\Convert.FromHexString.cs" />
     <Compile Include="System\Convert.TestBase.cs" />
     <Compile Include="System\Convert.ToBase64CharArray.cs" />
     <Compile Include="System\Convert.ToBase64String.cs" />
@@ -48,6 +49,7 @@
     <Compile Include="System\Convert.ToDateTime.cs" />
     <Compile Include="System\Convert.ToDecimal.cs" />
     <Compile Include="System\Convert.ToDouble.cs" />
+    <Compile Include="System\Convert.ToHexString.cs" />
     <Compile Include="System\Convert.ToInt16.cs" />
     <Compile Include="System\Convert.ToInt32.cs" />
     <Compile Include="System\Convert.ToInt64.cs" />
@@ -73,27 +75,22 @@
     <Compile Include="System\Runtime\ProfileOptimization.cs" />
     <Compile Include="System\Runtime\CompilerServices\SwitchExpressionExceptionTests.cs" />
 
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNodeName.cs" Condition="'$(TargetsUnix)' == 'true'">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetNodeName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs">
-      <Link>Common\System\IO\PathFeatures.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
-      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
-      <Link>Common\System\Security\Cryptography\ByteUtils.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNodeName.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'"
+             Link="Common\Interop\Unix\System.Native\Interop.GetNodeName.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs"
+             Link="Common\System\IO\PathFeatures.cs" />
+    <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
+             Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
+             Link="Common\System\Security\Cryptography\ByteUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="AssemblyResolveTestApp\AssemblyResolveTestApp.csproj" />
     <ProjectReference Include="TestAppOutsideOfTPA\TestAppOutsideOfTPA.csproj" />
     <ProjectReference Include="VoidMainWithExitCodeApp\VoidMainWithExitCodeApp.csproj" />
     <ProjectReference Include="TestApp\TestApp.csproj" />
-    <ProjectReference Include="TargetFrameworkNameTestApp\TargetFrameworkNameTestApp.csproj" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <ProjectReference Include="TargetFrameworkNameTestApp\TargetFrameworkNameTestApp.csproj" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -83,7 +82,6 @@ namespace System.Runtime.Caching
         }
     }
 
-    [SuppressMessage("Microsoft.Portability", "CA1900:ValueTypeFieldsShouldBePortable", Justification = "Grandfathered suppression from original caching code checkin")]
     [StructLayout(LayoutKind.Explicit)]
     internal struct ExpiresEntry
     {
@@ -619,7 +617,6 @@ namespace System.Runtime.Caching
             }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Grandfathered suppression from original caching code checkin")]
         internal void UtcUpdateCacheEntry(MemoryCacheEntry cacheEntry, DateTime utcExpires)
         {
             lock (this)
@@ -953,7 +950,6 @@ namespace System.Runtime.Caching
             }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Grandfathered suppression from original caching code checkin")]
         internal void UtcUpdate(MemoryCacheEntry cacheEntry, DateTime utcNewExpires)
         {
             int oldBucket = cacheEntry.ExpiresBucket;

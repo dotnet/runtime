@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using Internal.Cryptography;
@@ -17,7 +16,6 @@ namespace System.Security.Cryptography
         {
             // This class wraps TripleDES
             _impl = TripleDES.Create();
-            _impl.FeedbackSize = 8;
         }
 
         public override int FeedbackSize
@@ -68,10 +66,10 @@ namespace System.Security.Cryptography
         public override void GenerateIV() => _impl.GenerateIV();
         public override void GenerateKey() => _impl.GenerateKey();
 
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) =>
+        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) =>
             _impl.CreateEncryptor(rgbKey, Helpers.TrimLargeIV(rgbIV, BlockSize));
 
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) =>
+        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) =>
             _impl.CreateDecryptor(rgbKey, Helpers.TrimLargeIV(rgbIV, BlockSize));
 
         protected override void Dispose(bool disposing)

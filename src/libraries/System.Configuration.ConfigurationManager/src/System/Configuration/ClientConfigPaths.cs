@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security;
 
 namespace System.Configuration
@@ -32,7 +33,7 @@ namespace System.Configuration
             _includesUserConfig = includeUserConfig;
 
             Assembly exeAssembly = null;
-            string applicationFilename = null;
+            bool isSingleFile = false;
 
             if (exePath != null)
             {
@@ -42,39 +43,65 @@ namespace System.Configuration
                 {
                     throw ExceptionUtil.ParameterInvalid(nameof(exePath));
                 }
-
-                applicationFilename = ApplicationUri;
             }
             else
             {
                 // Exe path wasn't specified, get it from the entry assembly
                 exeAssembly = Assembly.GetEntryAssembly();
 
-                if (exeAssembly == null)
-                    throw new PlatformNotSupportedException();
-
-                HasEntryAssembly = true;
-
-                // The original NetFX (desktop) code tried to get the local path without using Uri.
-                // If we ever find a need to do this again be careful with the logic. "file:///" is
-                // used for local paths and "file://" for UNCs. Simply removing the prefix will make
-                // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
-                // "/home").
-                string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
-                Uri uri = new Uri(configBasePath);
-
-                if (uri.IsFile)
+                // in case of SingleFile deployment, Assembly.Location is empty.
+                if (exeAssembly?.Location.Length == 0)
                 {
+                    isSingleFile = true;
+                    HasEntryAssembly = true;
+                }
+
+                if (exeAssembly != null && !isSingleFile)
+                {
+                    HasEntryAssembly = true;
+
+                    // The original .NET Framework code tried to get the local path without using Uri.
+                    // If we ever find a need to do this again be careful with the logic. "file:///" is
+                    // used for local paths and "file://" for UNCs. Simply removing the prefix will make
+                    // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
+                    // "/home").
+                    string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
+                    Uri uri = new Uri(configBasePath);
+
+                    Debug.Assert(uri.IsFile);
                     ApplicationUri = uri.LocalPath;
-                    applicationFilename = uri.LocalPath;
                 }
                 else
                 {
-                    ApplicationUri = Uri.EscapeDataString(configBasePath);
+                    try
+                    {
+                        // An EntryAssembly may not be found when running from a custom host.
+                        // Try to find the native entry point.
+                        using (Process currentProcess = Process.GetCurrentProcess())
+                        {
+                            ApplicationUri = currentProcess.MainModule?.FileName;
+                        }
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        ApplicationUri = string.Empty;
+                    }
                 }
             }
 
-            ApplicationConfigUri = ApplicationUri + ConfigExtension;
+            if (!string.IsNullOrEmpty(ApplicationUri))
+            {
+                string applicationPath = ApplicationUri;
+                if (isSingleFile)
+                {
+                    // on Unix, we want to first append '.dll' extension and on Windows change '.exe' to '.dll'
+                    // eventually, in ApplicationConfigUri we will get '{applicationName}.dll.config'
+                    applicationPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                        Path.ChangeExtension(ApplicationUri, ".dll") : ApplicationUri + ".dll";
+                }
+
+                ApplicationConfigUri = applicationPath + ConfigExtension;
+            }
 
             // In the case when exePath was explicitly supplied, we will not be able to
             // construct user.config paths, so quit here.
@@ -84,7 +111,7 @@ namespace System.Configuration
             if (!_includesUserConfig) return;
 
             bool isHttp = StringUtil.StartsWithOrdinalIgnoreCase(ApplicationConfigUri, HttpUri);
-            SetNamesAndVersion(applicationFilename, exeAssembly, isHttp);
+            SetNamesAndVersion(exeAssembly, isHttp);
             if (isHttp) return;
 
             // Create a directory suffix for local and roaming config of three parts:
@@ -92,14 +119,14 @@ namespace System.Configuration
             // (1) Company name
             string part1 = Validate(_companyName, limitSize: true);
 
-            // (2) Domain or product name & an application urit hash
+            // (2) Domain or product name & an application uri hash
             string namePrefix = Validate(AppDomain.CurrentDomain.FriendlyName, limitSize: true);
             if (string.IsNullOrEmpty(namePrefix))
                 namePrefix = Validate(ProductName, limitSize: true);
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
-                ? ApplicationUri.ToLower(CultureInfo.InvariantCulture)
+                ? ApplicationUri.ToLowerInvariant()
                 : null;
-            string hashSuffix = GetTypeAndHashSuffix(applicationUriLower);
+            string hashSuffix = GetTypeAndHashSuffix(applicationUriLower, isSingleFile);
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
                 ? namePrefix + hashSuffix
                 : null;
@@ -192,7 +219,7 @@ namespace System.Configuration
         // The evidence we use, in priority order, is Strong Name, Url and Exe Path. If one of
         // these is found, we compute a SHA1 hash of it and return a suffix based on that.
         // If none is found, we return null.
-        private static string GetTypeAndHashSuffix(string exePath)
+        private static string GetTypeAndHashSuffix(string exePath, bool isSingleFile)
         {
             Assembly assembly = Assembly.GetEntryAssembly();
 
@@ -200,34 +227,50 @@ namespace System.Configuration
             string typeName = null;
             string hash = null;
 
-            if (assembly != null)
+            if (assembly != null && !isSingleFile)
             {
                 AssemblyName assemblyName = assembly.GetName();
                 Uri codeBase = new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name));
 
-                hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName);
+                try
+                {
+                    // Certain platforms may not have support for crypto
+                    hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName);
+                }
+                catch (PlatformNotSupportedException) { }
+
                 if (hash != null)
                 {
                     typeName = StrongNameDesc;
                 }
                 else
                 {
-                    hash = IdentityHelper.GetNormalizedUriHash(codeBase);
-                    typeName = UrlDesc;
+                    try
+                    {
+                        // Certain platforms may not have support for crypto
+                        hash = IdentityHelper.GetNormalizedUriHash(codeBase);
+                        typeName = UrlDesc;
+                    }
+                    catch (PlatformNotSupportedException) { }
                 }
             }
             else if (!string.IsNullOrEmpty(exePath))
             {
-                // Fall back on the exe name
-                hash = IdentityHelper.GetStrongHashSuitableForObjectName(exePath);
-                typeName = PathDesc;
+                try
+                {
+                    // Fall back on the exe name
+                    // Certain platforms may not have support for crypto
+                    hash = IdentityHelper.GetStrongHashSuitableForObjectName(exePath);
+                    typeName = PathDesc;
+                }
+                catch (PlatformNotSupportedException) { }
             }
 
             if (!string.IsNullOrEmpty(hash)) suffix = "_" + typeName + "_" + hash;
             return suffix;
         }
 
-        private void SetNamesAndVersion(string applicationFilename, Assembly exeAssembly, bool isHttp)
+        private void SetNamesAndVersion(Assembly exeAssembly, bool isHttp)
         {
             Type mainType = null;
 
@@ -272,7 +315,7 @@ namespace System.Configuration
                     // Try the remainder of the namespace
                     if (ns != null)
                     {
-                        int lastDot = ns.LastIndexOf(".", StringComparison.Ordinal);
+                        int lastDot = ns.LastIndexOf('.');
                         if ((lastDot != -1) && (lastDot < ns.Length - 1)) ProductName = ns.Substring(lastDot + 1);
                         else ProductName = ns;
 
@@ -291,7 +334,7 @@ namespace System.Configuration
                     // Try the first part of the namespace
                     if (ns != null)
                     {
-                        int firstDot = ns.IndexOf(".", StringComparison.Ordinal);
+                        int firstDot = ns.IndexOf('.');
                         _companyName = firstDot != -1 ? ns.Substring(0, firstDot) : ns;
 
                         _companyName = _companyName.Trim();

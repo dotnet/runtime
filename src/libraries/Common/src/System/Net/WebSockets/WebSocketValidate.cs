@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -52,7 +51,7 @@ namespace System.Net.WebSockets
                 throw new ArgumentException(SR.net_WebSockets_InvalidEmptySubProtocol, nameof(subProtocol));
             }
 
-            string invalidChar = null;
+            string? invalidChar = null;
             int i = 0;
             while (i < subProtocol.Length)
             {
@@ -64,7 +63,9 @@ namespace System.Net.WebSockets
                 }
 
                 if (!char.IsLetterOrDigit(ch) &&
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'.  This file is built into a project that doesn't have string.Contains(char).
                     Separators.IndexOf(ch) >= 0)
+#pragma warning restore CA2249
                 {
                     invalidChar = ch.ToString();
                     break;
@@ -79,7 +80,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        internal static void ValidateCloseStatus(WebSocketCloseStatus closeStatus, string statusDescription)
+        internal static void ValidateCloseStatus(WebSocketCloseStatus closeStatus, string? statusDescription)
         {
             if (closeStatus == WebSocketCloseStatus.Empty && !string.IsNullOrEmpty(statusDescription))
             {

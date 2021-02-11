@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Option Explicit On
 Option Strict On
@@ -10,7 +9,6 @@ Imports System.Globalization
 Imports System.Collections.Generic
 Imports System.Diagnostics
 
-Imports Microsoft.VisualBasic.Strings
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Imports Microsoft.VisualBasic.CompilerServices.Operators
 Imports Microsoft.VisualBasic.CompilerServices.Utils
@@ -146,7 +144,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             WidthChanged = False
 
             If Length = 0 Then Return
-            Input = Input.ToLower(System.Globalization.CultureInfo.InvariantCulture)
+            Input = Input.ToLowerInvariant()
 
             Dim ExtraChars As Integer
 
@@ -332,7 +330,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             Options)
 
                         If RangePatternError Then
-                            Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Pattern"))
+                            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Pattern"))
                         End If
 
                         If RangeMismatch Then
@@ -362,7 +360,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             Options)
 
                         If AsteriskPatternError Then
-                            Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Pattern"))
+                            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Pattern"))
                         End If
 
                         Return Not AsteriskMismatch

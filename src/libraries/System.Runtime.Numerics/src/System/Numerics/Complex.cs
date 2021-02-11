@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Diagnostics;
@@ -369,7 +368,7 @@ namespace System.Numerics
             return left.m_real != right.m_real || left.m_imaginary != right.m_imaginary;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is Complex)) return false;
             return Equals((Complex)obj);
@@ -424,7 +423,6 @@ namespace System.Numerics
             // instead produces (PositiveInfinity, PositiveInfinity).
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Sinh", Justification = "Sinh is the name of a mathematical function.")]
         public static Complex Sinh(Complex value)
         {
             // Use sinh(z) = -i sin(iz) to compute via sin(z).
@@ -462,7 +460,6 @@ namespace System.Numerics
             return new Complex(Math.Cos(value.m_real) * cosh, -Math.Sin(value.m_real) * sinh);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Cosh", Justification = "Cosh is the name of a mathematical function.")]
         public static Complex Cosh(Complex value)
         {
             // Use cosh(z) = cos(iz) to compute via cos(z).
@@ -519,7 +516,6 @@ namespace System.Numerics
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Tanh", Justification = "Tanh is the name of a mathematical function.")]
         public static Complex Tanh(Complex value)
         {
             // Use tanh(z) = -i tan(iz) to compute via tan(z).
@@ -681,7 +677,6 @@ namespace System.Numerics
             return new Complex(cosImaginary, sinImaginary);
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Sqrt", Justification = "Sqrt is the name of a mathematical function.")]
         public static Complex Sqrt(Complex value)
         {
 

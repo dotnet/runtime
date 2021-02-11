@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -48,6 +47,11 @@ namespace System.Net.NetworkInformation.Tests
 
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
+                }
             }
         }
 
@@ -82,6 +86,11 @@ namespace System.Net.NetworkInformation.Tests
 
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
+                }
             }
         }
 
@@ -111,6 +120,11 @@ namespace System.Net.NetworkInformation.Tests
                 {
                     // Ethernet, WIFI and loopback should have known status.
                     Assert.True((nic.OperationalStatus == OperationalStatus.Up) || (nic.OperationalStatus == OperationalStatus.Down));
+                }
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
                 }
             }
         }
@@ -203,7 +217,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/corefx/issues/15513 and https://github.com/Microsoft/WSL/issues/3561
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/runtime/issues/20029 and https://github.com/Microsoft/WSL/issues/3561
         [PlatformSpecific(TestPlatforms.Linux)]  // Some APIs are not supported on Linux
         public void BasicTest_GetIPInterfaceStatistics_Success_Linux()
         {
@@ -252,13 +266,14 @@ namespace System.Net.NetworkInformation.Tests
         }
 
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/corefx/issues/15513 and https://github.com/Microsoft/WSL/issues/3561
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/runtime/issues/20029 and https://github.com/Microsoft/WSL/issues/3561
         public void BasicTest_GetIsNetworkAvailable_Success()
         {
             Assert.True(NetworkInterface.GetIsNetworkAvailable());
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(~(TestPlatforms.OSX|TestPlatforms.FreeBSD))]
         [InlineData(false)]
         [InlineData(true)]

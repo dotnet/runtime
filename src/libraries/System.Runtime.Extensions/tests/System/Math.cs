@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using Xunit.Sdk;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0
 
@@ -39,6 +39,11 @@ namespace System.Tests
         // will use CrossPlatformMachineEpsilon / 10 and expected result in the format of x.xxxxxx will
         // use CrossPlatformMachineEpsilon * 10.
         private const float CrossPlatformMachineEpsilonSingle = 4.76837158e-07f;
+
+        // The existing estimate functions either have an error of no more than 1.5 * 2^-12 (approx. 3.66e-04)
+        // or perform one Newton-Raphson iteration which, for the currently tested values, gives an error of
+        // no more than approx. 1.5 * 2^-7 (approx 1.17e-02).
+        private const double CrossPlatformMachineEpsilonForEstimates = 1.171875e-02;
 
         /// <summary>Verifies that two <see cref="double"/> values are equal, within the <paramref name="allowedVariance"/>.</summary>
         /// <param name="expected">The expected value</param>
@@ -151,6 +156,24 @@ namespace System.Tests
             {
                 throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
             }
+        }
+
+        [Fact]
+        public static void E()
+        {
+            Assert.Equal(unchecked((long)0x4005BF0A8B145769), BitConverter.DoubleToInt64Bits(Math.E));
+        }
+
+        [Fact]
+        public static void Pi()
+        {
+            Assert.Equal(unchecked((long)0x400921FB54442D18), BitConverter.DoubleToInt64Bits(Math.PI));
+        }
+
+        [Fact]
+        public static void Tau()
+        {
+            Assert.Equal(unchecked((long)0x401921FB54442D18), BitConverter.DoubleToInt64Bits(Math.Tau));
         }
 
         /// <summary>Verifies that two <see cref="float"/> values are equal, within the <paramref name="variance"/>.</summary>
@@ -420,6 +443,15 @@ namespace System.Tests
             Assert.Equal(0L, Math.Abs(0L));
             Assert.Equal(3L, Math.Abs(-3L));
             Assert.Throws<OverflowException>(() => Math.Abs(long.MinValue));
+        }
+
+        [Fact]
+        public static void Abs_NInt()
+        {
+            Assert.Equal((nint)3, Math.Abs((nint)3));
+            Assert.Equal((nint)0, Math.Abs((nint)0));
+            Assert.Equal((nint)3, Math.Abs((nint)(-3)));
+            Assert.Throws<OverflowException>(() => Math.Abs(nint.MinValue));
         }
 
         [Fact]
@@ -1052,12 +1084,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
-        [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
-        [InlineData(double.NaN, double.NaN, double.NaN)]
-        [InlineData(-0.0, 0.0, 0.0)]
-        [InlineData(2.0, -3.0, 2.0)]
-        [InlineData(3.0, -2.0, 3.0)]
-        [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity)]
+        [InlineData(double.MinValue,         double.MaxValue,         double.MaxValue)]
+        [InlineData(double.MaxValue,         double.MinValue,         double.MaxValue)]
+        [InlineData(double.NaN,              double.NaN,              double.NaN)]
+        [InlineData(double.NaN,              1.0,                     double.NaN)]
+        [InlineData(1.0,                     double.NaN,              double.NaN)]
+        [InlineData(double.PositiveInfinity, double.NaN,              double.NaN)]
+        [InlineData(double.NegativeInfinity, double.NaN,              double.NaN)]
+        [InlineData(double.NaN,              double.PositiveInfinity, double.NaN)]
+        [InlineData(double.NaN,              double.NegativeInfinity, double.NaN)]
+        [InlineData(-0.0,                    0.0,                     0.0)]
+        [InlineData( 0.0,                   -0.0,                     0.0)]
+        [InlineData( 2.0,                   -3.0,                     2.0)]
+        [InlineData(-3.0,                    2.0,                     2.0)]
+        [InlineData( 3.0,                   -2.0,                     3.0)]
+        [InlineData(-2.0,                    3.0,                     3.0)]
         public static void Max_Double_NotNetFramework(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.Max(x, y), 0.0);
@@ -1085,6 +1127,13 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Max_NInt()
+        {
+            Assert.Equal((nint)3, Math.Max((nint)(-2), (nint)3));
+            Assert.Equal(nint.MaxValue, Math.Max(nint.MinValue, nint.MaxValue));
+        }
+
+        [Fact]
         public static void Max_SByte()
         {
             Assert.Equal((sbyte)3, Math.Max((sbyte)(-2), (sbyte)3));
@@ -1093,12 +1142,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
-        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
-        [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(-0.0f, 0.0f, 0.0f)]
-        [InlineData(2.0f, -3.0f, 2.0f)]
-        [InlineData(3.0f, -2.0f, 3.0f)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
+        [InlineData(float.MinValue,         float.MaxValue,         float.MaxValue)]
+        [InlineData(float.MaxValue,         float.MinValue,         float.MaxValue)]
+        [InlineData(float.NaN,              float.NaN,              float.NaN)]
+        [InlineData(float.NaN,              1.0,                    float.NaN)]
+        [InlineData(1.0,                    float.NaN,              float.NaN)]
+        [InlineData(float.PositiveInfinity, float.NaN,              float.NaN)]
+        [InlineData(float.NegativeInfinity, float.NaN,              float.NaN)]
+        [InlineData(float.NaN,              float.PositiveInfinity, float.NaN)]
+        [InlineData(float.NaN,              float.NegativeInfinity, float.NaN)]
+        [InlineData(-0.0,                   0.0,                    0.0)]
+        [InlineData( 0.0,                  -0.0,                    0.0)]
+        [InlineData( 2.0,                  -3.0,                    2.0)]
+        [InlineData(-3.0,                   2.0,                    2.0)]
+        [InlineData( 3.0,                  -2.0,                    3.0)]
+        [InlineData(-2.0,                   3.0,                    3.0)]
         public static void Max_Single_NotNetFramework(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, Math.Max(x, y), 0.0f);
@@ -1126,6 +1185,13 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Max_NUInt()
+        {
+            Assert.Equal((nuint)3, Math.Max((nuint)2, (nuint)3));
+            Assert.Equal(nuint.MaxValue, Math.Max(nuint.MinValue, nuint.MaxValue));
+        }
+
+        [Fact]
         public static void Min_Byte()
         {
             Assert.Equal((byte)2, Math.Min((byte)3, (byte)2));
@@ -1141,12 +1207,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
-        [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
-        [InlineData(double.NaN, double.NaN, double.NaN)]
-        [InlineData(-0.0, 0.0, -0.0)]
-        [InlineData(2.0, -3.0, -3.0)]
-        [InlineData(3.0, -2.0, -2.0)]
-        [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
+        [InlineData(double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity)]
+        [InlineData(double.MinValue,         double.MaxValue,         double.MinValue)]
+        [InlineData(double.MaxValue,         double.MinValue,         double.MinValue)]
+        [InlineData(double.NaN,              double.NaN,              double.NaN)]
+        [InlineData(double.NaN,              1.0,                     double.NaN)]
+        [InlineData(1.0,                     double.NaN,              double.NaN)]
+        [InlineData(double.PositiveInfinity, double.NaN,              double.NaN)]
+        [InlineData(double.NegativeInfinity, double.NaN,              double.NaN)]
+        [InlineData(double.NaN,              double.PositiveInfinity, double.NaN)]
+        [InlineData(double.NaN,              double.NegativeInfinity, double.NaN)]
+        [InlineData(-0.0,                    0.0,                     -0.0)]
+        [InlineData( 0.0,                   -0.0,                     -0.0)]
+        [InlineData( 2.0,                   -3.0,                     -3.0)]
+        [InlineData(-3.0,                    2.0,                     -3.0)]
+        [InlineData( 3.0,                   -2.0,                     -2.0)]
+        [InlineData(-2.0,                    3.0,                     -2.0)]
         public static void Min_Double_NotNetFramework(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.Min(x, y), 0.0);
@@ -1174,6 +1250,13 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Min_NInt()
+        {
+            Assert.Equal((nint)(-2), Math.Min((nint)3, (nint)(-2)));
+            Assert.Equal(nint.MinValue, Math.Min(nint.MinValue, nint.MaxValue));
+        }
+
+        [Fact]
         public static void Min_SByte()
         {
             Assert.Equal((sbyte)(-2), Math.Min((sbyte)3, (sbyte)(-2)));
@@ -1182,12 +1265,22 @@ namespace System.Tests
 
         [Theory]
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
-        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
-        [InlineData(float.NaN, float.NaN, float.NaN)]
-        [InlineData(-0.0f, 0.0f, -0.0f)]
-        [InlineData(2.0f, -3.0f, -3.0f)]
-        [InlineData(3.0f, -2.0f, -2.0f)]
-        [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(float.MinValue,         float.MaxValue,         float.MinValue)]
+        [InlineData(float.MaxValue,         float.MinValue,         float.MinValue)]
+        [InlineData(float.NaN,              float.NaN,              float.NaN)]
+        [InlineData(float.NaN,              1.0,                    float.NaN)]
+        [InlineData(1.0,                    float.NaN,              float.NaN)]
+        [InlineData(float.PositiveInfinity, float.NaN,              float.NaN)]
+        [InlineData(float.NegativeInfinity, float.NaN,              float.NaN)]
+        [InlineData(float.NaN,              float.PositiveInfinity, float.NaN)]
+        [InlineData(float.NaN,              float.NegativeInfinity, float.NaN)]
+        [InlineData(-0.0,                   0.0,                    -0.0)]
+        [InlineData( 0.0,                  -0.0,                    -0.0)]
+        [InlineData( 2.0,                  -3.0,                    -3.0)]
+        [InlineData(-3.0,                   2.0,                    -3.0)]
+        [InlineData( 3.0,                  -2.0,                    -2.0)]
+        [InlineData(-2.0,                   3.0,                    -2.0)]
         public static void Min_Single_NotNetFramework(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, Math.Min(x, y), 0.0f);
@@ -1212,6 +1305,13 @@ namespace System.Tests
         {
             Assert.Equal((ulong)2, Math.Min((ulong)3, (ulong)2));
             Assert.Equal(ulong.MinValue, Math.Min(ulong.MinValue, ulong.MaxValue));
+        }
+
+        [Fact]
+        public static void Min_NUInt()
+        {
+            Assert.Equal((nuint)2, Math.Min((nuint)3, (nuint)2));
+            Assert.Equal(nuint.MinValue, Math.Min(nuint.MinValue, nuint.MaxValue));
         }
 
         public static IEnumerable<object[]> Pow_TestData
@@ -1383,6 +1483,84 @@ namespace System.Tests
             AssertEqual(expectedResult, Math.Pow(x, y), allowedVariance);
         }
 
+        [Theory]
+        [InlineData( double.NegativeInfinity, -0.0,                     0.0)]
+        [InlineData(-3.1415926535897932,      -0.31830988618379069,     CrossPlatformMachineEpsilonForEstimates)]   // value: (pi)
+        [InlineData(-2.7182818284590452,      -0.36787944117144233,     CrossPlatformMachineEpsilonForEstimates)]   // value: (e)
+        [InlineData(-2.3025850929940457,      -0.43429448190325176,     CrossPlatformMachineEpsilonForEstimates)]   // value: (ln(10))
+        [InlineData(-1.5707963267948966,      -0.63661977236758138,     CrossPlatformMachineEpsilonForEstimates)]   // value: (pi / 2)
+        [InlineData(-1.4426950408889634,      -0.69314718055994529,     CrossPlatformMachineEpsilonForEstimates)]   // value: (log2(e))
+        [InlineData(-1.4142135623730950,      -0.70710678118654757,     CrossPlatformMachineEpsilonForEstimates)]   // value: (sqrt(2))
+        [InlineData(-1.1283791670955126,      -0.88622692545275805,     CrossPlatformMachineEpsilonForEstimates)]   // value: (2 / sqrt(pi))
+        [InlineData(-1.0,                     -1.0,                     CrossPlatformMachineEpsilonForEstimates)]
+        [InlineData(-0.78539816339744831,     -1.2732395447351628,      CrossPlatformMachineEpsilonForEstimates)]   // value: (pi / 4)
+        [InlineData(-0.70710678118654752,     -1.4142135623730949,      CrossPlatformMachineEpsilonForEstimates)]   // value: (1 / sqrt(2))
+        [InlineData(-0.69314718055994531,     -1.4426950408889634,      CrossPlatformMachineEpsilonForEstimates)]   // value: (ln(2))
+        [InlineData(-0.63661977236758134,     -1.5707963267948966,      CrossPlatformMachineEpsilonForEstimates)]   // value: (2 / pi)
+        [InlineData(-0.43429448190325183,     -2.3025850929940459,      CrossPlatformMachineEpsilonForEstimates)]   // value: (log10(e))
+        [InlineData(-0.31830988618379067,     -3.1415926535897931,      CrossPlatformMachineEpsilonForEstimates)]   // value: (1 / pi)
+        [InlineData(-0.0,                      double.NegativeInfinity, 0.0)]
+        [InlineData( double.NaN,               double.NaN,              0.0)]
+        [InlineData( 0.0,                      double.PositiveInfinity, 0.0)]
+        [InlineData( 0.31830988618379067,      3.1415926535897931,      CrossPlatformMachineEpsilonForEstimates)]   // value: (1 / pi)
+        [InlineData( 0.43429448190325183,      2.3025850929940459,      CrossPlatformMachineEpsilonForEstimates)]   // value: (log10(e))
+        [InlineData( 0.63661977236758134,      1.5707963267948966,      CrossPlatformMachineEpsilonForEstimates)]   // value: (2 / pi)
+        [InlineData( 0.69314718055994531,      1.4426950408889634,      CrossPlatformMachineEpsilonForEstimates)]   // value: (ln(2))
+        [InlineData( 0.70710678118654752,      1.4142135623730949,      CrossPlatformMachineEpsilonForEstimates)]   // value: (1 / sqrt(2))
+        [InlineData( 0.78539816339744831,      1.2732395447351628,      CrossPlatformMachineEpsilonForEstimates)]   // value: (pi / 4)
+        [InlineData( 1.0,                      1.0,                     CrossPlatformMachineEpsilonForEstimates)]
+        [InlineData( 1.1283791670955126,       0.88622692545275805,     CrossPlatformMachineEpsilonForEstimates)]   // value: (2 / sqrt(pi))
+        [InlineData( 1.4142135623730950,       0.70710678118654757,     CrossPlatformMachineEpsilonForEstimates)]   // value: (sqrt(2))
+        [InlineData( 1.4426950408889634,       0.69314718055994529,     CrossPlatformMachineEpsilonForEstimates)]   // value: (log2(e))
+        [InlineData( 1.5707963267948966,       0.63661977236758138,     CrossPlatformMachineEpsilonForEstimates)]   // value: (pi / 2)
+        [InlineData( 2.3025850929940457,       0.43429448190325176,     CrossPlatformMachineEpsilonForEstimates)]   // value: (ln(10))
+        [InlineData( 2.7182818284590452,       0.36787944117144233,     CrossPlatformMachineEpsilonForEstimates)]   // value: (e)
+        [InlineData( 3.1415926535897932,       0.31830988618379069,     CrossPlatformMachineEpsilonForEstimates)]   // value: (pi)
+        [InlineData( double.PositiveInfinity,  0.0,                     0.0)]
+        public static void ReciprocalEstimate(double value, double expectedResult, double allowedVariance)
+        {
+            AssertEqual(expectedResult, Math.ReciprocalEstimate(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( double.NegativeInfinity,  double.NaN,              0.0)]
+        [InlineData(-3.1415926535897932,       double.NaN,              0.0)]                                       // value: (pi)
+        [InlineData(-2.7182818284590452,       double.NaN,              0.0)]                                       // value: (e)
+        [InlineData(-2.3025850929940457,       double.NaN,              0.0)]                                       // value: (ln(10))
+        [InlineData(-1.5707963267948966,       double.NaN,              0.0)]                                       // value: (pi / 2)
+        [InlineData(-1.4426950408889634,       double.NaN,              0.0)]                                       // value: (log2(e))
+        [InlineData(-1.4142135623730950,       double.NaN,              0.0)]                                       // value: (sqrt(2))
+        [InlineData(-1.1283791670955126,       double.NaN,              0.0)]                                       // value: (2 / sqrt(pi))
+        [InlineData(-1.0,                      double.NaN,              0.0)]
+        [InlineData(-0.78539816339744831,      double.NaN,              0.0)]                                       // value: (pi / 4)
+        [InlineData(-0.70710678118654752,      double.NaN,              0.0)]                                       // value: (1 / sqrt(2))
+        [InlineData(-0.69314718055994531,      double.NaN,              0.0)]                                       // value: (ln(2))
+        [InlineData(-0.63661977236758134,      double.NaN,              0.0)]                                       // value: (2 / pi)
+        [InlineData(-0.43429448190325183,      double.NaN,              0.0)]                                       // value: (log10(e))
+        [InlineData(-0.31830988618379067,      double.NaN,              0.0)]                                       // value: (1 / pi)
+        [InlineData(-0.0,                      double.NegativeInfinity, 0.0)]
+        [InlineData( double.NaN,               double.NaN,              0.0)]
+        [InlineData( 0.0,                      double.PositiveInfinity, 0.0)]
+        [InlineData( 0.31830988618379067,      1.7724538509055161,      CrossPlatformMachineEpsilonForEstimates)]   // value: (1 / pi)
+        [InlineData( 0.43429448190325183,      1.5174271293851465,      CrossPlatformMachineEpsilonForEstimates)]   // value: (log10(e))
+        [InlineData( 0.63661977236758134,      1.2533141373155001,      CrossPlatformMachineEpsilonForEstimates)]   // value: (2 / pi)
+        [InlineData( 0.69314718055994531,      1.2011224087864498,      CrossPlatformMachineEpsilonForEstimates)]   // value: (ln(2))
+        [InlineData( 0.70710678118654752,      1.189207115002721,       CrossPlatformMachineEpsilonForEstimates)]   // value: (1 / sqrt(2))
+        [InlineData( 0.78539816339744831,      1.1283791670955126,      CrossPlatformMachineEpsilonForEstimates)]   // value: (pi / 4)
+        [InlineData( 1.0,                      1.0,                     CrossPlatformMachineEpsilonForEstimates)]
+        [InlineData( 1.1283791670955126,       0.94139626377671493,     CrossPlatformMachineEpsilonForEstimates)]   // value: (2 / sqrt(pi))
+        [InlineData( 1.4142135623730950,       0.84089641525371461,     CrossPlatformMachineEpsilonForEstimates)]   // value: (sqrt(2))
+        [InlineData( 1.4426950408889634,       0.83255461115769769,     CrossPlatformMachineEpsilonForEstimates)]   // value: (log2(e))
+        [InlineData( 1.5707963267948966,       0.79788456080286541,     CrossPlatformMachineEpsilonForEstimates)]   // value: (pi / 2)
+        [InlineData( 2.3025850929940457,       0.6590102289822608,      CrossPlatformMachineEpsilonForEstimates)]   // value: (ln(10))
+        [InlineData( 2.7182818284590452,       0.60653065971263342,     CrossPlatformMachineEpsilonForEstimates)]   // value: (e)
+        [InlineData( 3.1415926535897932,       0.56418958354775628,     CrossPlatformMachineEpsilonForEstimates)]   // value: (pi)
+        [InlineData( double.PositiveInfinity,  0.0,                     0.0)]
+        public static void ReciprocalSqrtEstimate(double value, double expectedResult, double allowedVariance)
+        {
+            AssertEqual(expectedResult, Math.ReciprocalSqrtEstimate(value), allowedVariance);
+        }
+
         [Fact]
         public static void Round_Decimal()
         {
@@ -1394,14 +1572,6 @@ namespace System.Tests
             Assert.Equal(-1.0m, Math.Round(-1.4m));
             Assert.Equal(-2.0m, Math.Round(-1.5m));
             Assert.Equal(-2e16m, Math.Round(-2e16m));
-        }
-
-        [Fact]
-        public static void Round_Decimal_Digits()
-        {
-            Assert.Equal(3.422m, Math.Round(3.42156m, 3, MidpointRounding.AwayFromZero));
-            Assert.Equal(-3.422m, Math.Round(-3.42156m, 3, MidpointRounding.AwayFromZero));
-            Assert.Equal(decimal.Zero, Math.Round(decimal.Zero, 3, MidpointRounding.AwayFromZero));
         }
 
         [Fact]
@@ -1418,7 +1588,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Round_Double_Digits()
+        public static void Round_Double_Digits_SpecificCases()
         {
             Assert.Equal(3.422, Math.Round(3.42156, 3, MidpointRounding.AwayFromZero), 10);
             Assert.Equal(-3.422, Math.Round(-3.42156, 3, MidpointRounding.AwayFromZero), 10);
@@ -1471,6 +1641,14 @@ namespace System.Tests
             Assert.Equal(0, Math.Sign(0));
             Assert.Equal(-1, Math.Sign(-3));
             Assert.Equal(1, Math.Sign(3));
+        }
+
+        [Fact]
+        public static void Sign_NInt()
+        {
+            Assert.Equal(0, Math.Sign((nint)0));
+            Assert.Equal(-1, Math.Sign((nint)(-3)));
+            Assert.Equal(1, Math.Sign((nint)3));
         }
 
         [Fact]
@@ -1530,6 +1708,47 @@ namespace System.Tests
         public static void Sin(double value, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.Sin(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( double.NegativeInfinity,  double.NaN,           double.NaN,          0.0,                              0.0)]
+        [InlineData(-3.1415926535897932,      -0.0,                 -1.0,                 CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon * 10)]  // value: -(pi)
+        [InlineData(-2.7182818284590452,      -0.41078129050290870, -0.91173391478696510, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(e)
+        [InlineData(-2.3025850929940457,      -0.74398033695749319, -0.66820151019031295, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(ln(10))
+        [InlineData(-1.5707963267948966,      -1.0,                  0.0,                 CrossPlatformMachineEpsilon * 10, CrossPlatformMachineEpsilon)]       // value: -(pi / 2)
+        [InlineData(-1.4426950408889634,      -0.99180624439366372,  0.12775121753523991, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(log2(e))
+        [InlineData(-1.4142135623730950,      -0.98776594599273553,  0.15594369476537447, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(sqrt(2))
+        [InlineData(-1.1283791670955126,      -0.90371945743584630,  0.42812514788535792, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(2 / sqrt(pi))
+        [InlineData(-1.0,                     -0.84147098480789651,  0.54030230586813972, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]
+        [InlineData(-0.78539816339744831,     -0.70710678118654752,  0.70710678118654752, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(pi / 4),        expected_sin: -(1 / sqrt(2)),    expected_cos: 1
+        [InlineData(-0.70710678118654752,     -0.64963693908006244,  0.76024459707563015, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(1 / sqrt(2))
+        [InlineData(-0.69314718055994531,     -0.63896127631363480,  0.76923890136397213, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(ln(2))
+        [InlineData(-0.63661977236758134,     -0.59448076852482208,  0.80410982822879171, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(2 / pi)
+        [InlineData(-0.43429448190325183,     -0.42077048331375735,  0.90716712923909839, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(log10(e))
+        [InlineData(-0.31830988618379067,     -0.31296179620778659,  0.94976571538163866, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(1 / pi)
+        [InlineData(-0.0,                     -0.0,                  1.0,                 0.0,                              CrossPlatformMachineEpsilon * 10)]
+        [InlineData( double.NaN,               double.NaN,           double.NaN,          0.0,                              0.0)]
+        [InlineData( 0.0,                      0.0,                  1.0,                 0.0,                              CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 0.31830988618379067,      0.31296179620778659,  0.94976571538163866, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (1 / pi)
+        [InlineData( 0.43429448190325183,      0.42077048331375735,  0.90716712923909839, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (log10(e))
+        [InlineData( 0.63661977236758134,      0.59448076852482208,  0.80410982822879171, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (2 / pi)
+        [InlineData( 0.69314718055994531,      0.63896127631363480,  0.76923890136397213, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (ln(2))
+        [InlineData( 0.70710678118654752,      0.64963693908006244,  0.76024459707563015, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (1 / sqrt(2))
+        [InlineData( 0.78539816339744831,      0.70710678118654752,  0.70710678118654752, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (pi / 4),        expected_sin:  (1 / sqrt(2)),    expected_cos: 1
+        [InlineData( 1.0,                      0.84147098480789651,  0.54030230586813972, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]
+        [InlineData( 1.1283791670955126,       0.90371945743584630,  0.42812514788535792, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (2 / sqrt(pi))
+        [InlineData( 1.4142135623730950,       0.98776594599273553,  0.15594369476537447, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (sqrt(2))
+        [InlineData( 1.4426950408889634,       0.99180624439366372,  0.12775121753523991, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (log2(e))
+        [InlineData( 1.5707963267948966,       1.0,                  0.0,                 CrossPlatformMachineEpsilon * 10, CrossPlatformMachineEpsilon)]       // value:  (pi / 2)
+        [InlineData( 2.3025850929940457,       0.74398033695749319, -0.66820151019031295, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (ln(10))
+        [InlineData( 2.7182818284590452,       0.41078129050290870, -0.91173391478696510, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (e)
+        [InlineData( 3.1415926535897932,       0.0,                 -1.0,                 CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon * 10)]  // value:  (pi)
+        [InlineData( double.PositiveInfinity,  double.NaN,           double.NaN,          0.0,                              0.0)]
+        public static void SinCos(double value, double expectedResultSin, double expectedResultCos, double allowedVarianceSin, double allowedVarianceCos)
+        {
+            (double resultSin, double resultCos) = Math.SinCos(value);
+            AssertEqual(expectedResultSin, resultSin, allowedVarianceSin);
+            AssertEqual(expectedResultCos, resultCos, allowedVarianceCos);
         }
 
         [Theory]
@@ -1718,34 +1937,311 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(1073741, 2147483647, 2000, 1647)]
-        [InlineData(6, 13952, 2000, 1952)]
-        [InlineData(0, 0, 2000, 0)]
-        [InlineData(-7, -14032, 2000, -32)]
-        [InlineData(-1073741, -2147483648, 2000, -1648)]
-        [InlineData(-1073741, 2147483647, -2000, 1647)]
-        [InlineData(-6, 13952, -2000, 1952)]
-        public static void DivRem(int quotient, int dividend, int divisor, int expectedRemainder)
+        [InlineData(0U, 0U, "00000000000000000000000000000000")]
+        [InlineData(0U, 1U, "00000000000000000000000000000000")]
+        [InlineData(1U, 0U, "00000000000000000000000000000000")]
+        [InlineData(2U, 3U, "00000000000000000000000000000006")]
+        [InlineData(ulong.MaxValue, 2, "0000000000000001FFFFFFFFFFFFFFFE")]
+        [InlineData(ulong.MaxValue, 1, "0000000000000000FFFFFFFFFFFFFFFF")]
+        [InlineData(ulong.MaxValue, ulong.MaxValue, "FFFFFFFFFFFFFFFE0000000000000001")]
+        [InlineData(ulong.MaxValue, 3, "0000000000000002FFFFFFFFFFFFFFFD")]
+        [InlineData(0xE8FAF08929B46BB5, 0x26B442D59782BA17, "23394CF8915296631EB6255F4A612F43")]
+        public static void BigMul128_Unsigned(ulong a, ulong b, string result)
         {
-            int remainder;
-            Assert.Equal(quotient, Math.DivRem(dividend, divisor, out remainder));
-            Assert.Equal(expectedRemainder, remainder);
+            ulong high = Math.BigMul(a, b, out ulong low);
+            Assert.Equal(result, high.ToString("X16") + low.ToString("X16"));
         }
 
         [Theory]
-        [InlineData(4611686018427387L, 9223372036854775807L, 2000L, 1807L)]
-        [InlineData(4611686018427387L, -9223372036854775808L, -2000L, -1808L)]
-        [InlineData(-4611686018427387L, 9223372036854775807L, -2000L, 1807L)]
-        [InlineData(-4611686018427387L, -9223372036854775808L, 2000L, -1808L)]
-        [InlineData(6L, 13952L, 2000L, 1952L)]
-        [InlineData(0L, 0L, 2000L, 0L)]
-        [InlineData(-7L, -14032L, 2000L, -32L)]
-        [InlineData(-6L, 13952L, -2000L, 1952L)]
-        public static void DivRemLong(long quotient, long dividend, long divisor, long expectedRemainder)
+        [InlineData(0L, 0L, "00000000000000000000000000000000")]
+        [InlineData(0L, 1L, "00000000000000000000000000000000")]
+        [InlineData(1L, 0L, "00000000000000000000000000000000")]
+        [InlineData(2L, 3L, "00000000000000000000000000000006")]
+        [InlineData(3L, -2L, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA")]
+        [InlineData(-1L, -1L, "00000000000000000000000000000001")]
+        [InlineData(-1L, long.MinValue, "00000000000000008000000000000000")]
+        [InlineData(1L, long.MinValue, "FFFFFFFFFFFFFFFF8000000000000000")]
+        [InlineData(0x7DD8FD06E61C42C7, 0x23B8308969A5D354, "118F366A0AEB79CDB340AA067592EE4C")]
+        [InlineData(0x6DACB8FC835F41B5, -0x2D90EF8C7ED29BBA, "EC7A8BB31D6035AD27742486E387AB7E")]
+        [InlineData(-0x166FA7C456154C28, 0x13CF93153370AB0B, "FE43855FCCDA31541A45864AC9B70248")]
+        [InlineData(-0x57A14FB8778E4F94, -0x33BDC4C7D41A44C9, "11B61855830A65CBA363C1FE50E7CB34")]
+        public static void BigMul128_Signed(long a, long b, string result)
         {
-            long remainder;
-            Assert.Equal(quotient, Math.DivRem(dividend, divisor, out remainder));
-            Assert.Equal(expectedRemainder, remainder);
+            long high = Math.BigMul(a, b, out long low);
+            Assert.Equal(result, high.ToString("X16") + low.ToString("X16"));
+        }
+
+        [Theory]
+        [InlineData(sbyte.MaxValue, sbyte.MaxValue, 1, 0)]
+        [InlineData(sbyte.MaxValue, 1, sbyte.MaxValue, 0)]
+        [InlineData(sbyte.MaxValue, 2, 63, 1)]
+        [InlineData(sbyte.MaxValue, -1, -127, 0)]
+        [InlineData(11, 22, 0, 11)]
+        [InlineData(80, 22, 3, 14)]
+        [InlineData(80, -22, -3, 14)]
+        [InlineData(-80, 22, -3, -14)]
+        [InlineData(-80, -22, 3, -14)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0, sbyte.MaxValue, 0, 0)]
+        [InlineData(sbyte.MinValue, sbyte.MaxValue, -1, -1)]
+        [InlineData(sbyte.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemSByte(sbyte dividend, sbyte divisor, sbyte expectedQuotient, sbyte expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(byte.MaxValue, byte.MaxValue, 1, 0)]
+        [InlineData(byte.MaxValue, 1, byte.MaxValue, 0)]
+        [InlineData(byte.MaxValue, 2, 127, 1)]
+        [InlineData(52, 5, 10, 2)]
+        [InlineData(100, 33, 3, 1)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0, byte.MaxValue, 0, 0)]
+        [InlineData(250, 50, 5, 0)]
+        [InlineData(byte.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemByte(byte dividend, byte divisor, byte expectedQuotient, byte expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(short.MaxValue, short.MaxValue, 1, 0)]
+        [InlineData(short.MaxValue, 1, short.MaxValue, 0)]
+        [InlineData(short.MaxValue, 2, 16383, 1)]
+        [InlineData(short.MaxValue, -1, -32767, 0)]
+        [InlineData(12345, 22424, 0, 12345)]
+        [InlineData(300, 22, 13, 14)]
+        [InlineData(300, -22, -13, 14)]
+        [InlineData(-300, 22, -13, -14)]
+        [InlineData(-300, -22, 13, -14)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0, short.MaxValue, 0, 0)]
+        [InlineData(short.MinValue, short.MaxValue, -1, -1)]
+        [InlineData(13952, 2000, 6, 1952)]
+        [InlineData(short.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemInt16(short dividend, short divisor, short expectedQuotient, short expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(ushort.MaxValue, ushort.MaxValue, 1, 0)]
+        [InlineData(ushort.MaxValue, 1, ushort.MaxValue, 0)]
+        [InlineData(ushort.MaxValue, 2, 32767, 1)]
+        [InlineData(12345, 42424, 0, 12345)]
+        [InlineData(51474, 31474, 1, 20000)]
+        [InlineData(10000, 333, 30, 10)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0, ushort.MaxValue, 0, 0)]
+        [InlineData(13952, 2000, 6, 1952)]
+        [InlineData(ushort.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemUInt16(ushort dividend, ushort divisor, ushort expectedQuotient, ushort expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(2147483647, 2000, 1073741, 1647)]
+        [InlineData(13952, 2000, 6, 1952)]
+        [InlineData(0, 2000, 0, 0)]
+        [InlineData(-14032, 2000, -7, -32)]
+        [InlineData(-2147483648, 2000, -1073741, -1648)]
+        [InlineData(2147483647, -2000, -1073741, 1647)]
+        [InlineData(13952, -2000, -6, 1952)]
+        [InlineData(13952, 0, 0, 0)]
+        [InlineData(int.MaxValue, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemInt32(int dividend, int divisor, int expectedQuotient, int expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor, out int remainder));
+            }
+            else
+            {
+                Assert.Equal(expectedQuotient, Math.DivRem(dividend, divisor, out int remainder));
+                Assert.Equal(expectedRemainder, remainder);
+
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+            if (IntPtr.Size == 4)
+            {
+                DivRemNativeInt(dividend, divisor, expectedQuotient, expectedRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(uint.MaxValue, uint.MaxValue, 1, 0)]
+        [InlineData(uint.MaxValue, 1, uint.MaxValue, 0)]
+        [InlineData(uint.MaxValue, 2, 2147483647, 1)]
+        [InlineData(123456789, 4242424242, 0, 123456789)]
+        [InlineData(514748364, 3147483647, 0, 514748364)]
+        [InlineData(1000000, 333, 3003, 1)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0UL, uint.MaxValue, 0, 0)]
+        [InlineData(13952, 2000, 6, 1952)]
+        [InlineData(uint.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemUInt32(uint dividend, uint divisor, uint expectedQuotient, uint expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+            if (IntPtr.Size == 4)
+            {
+                DivRemNativeUInt(dividend, divisor, expectedQuotient, expectedRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(9223372036854775807L, 2000L, 4611686018427387L, 1807L)]
+        [InlineData(-9223372036854775808L, -2000L, 4611686018427387L, -1808L)]
+        [InlineData(9223372036854775807L, -2000L, -4611686018427387L, 1807L)]
+        [InlineData(-9223372036854775808L, 2000L, -4611686018427387L, -1808L)]
+        [InlineData(13952L, 2000L, 6L, 1952L)]
+        [InlineData(0L, 2000L, 0L, 0L)]
+        [InlineData(-14032L, 2000L, -7L, -32L)]
+        [InlineData(13952L, -2000L, -6L, 1952L)]
+        [InlineData(long.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemInt64(long dividend, long divisor, long expectedQuotient, long expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor, out long remainder));
+            }
+            else
+            {
+                Assert.Equal(expectedQuotient, Math.DivRem(dividend, divisor, out long remainder));
+                Assert.Equal(expectedRemainder, remainder);
+
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+            if (IntPtr.Size == 8)
+            {
+                DivRemNativeInt((nint)dividend, (nint)divisor, (nint)expectedQuotient, (nint)expectedRemainder);
+            }
+        }
+
+        [Theory]
+        [InlineData(ulong.MaxValue, ulong.MaxValue, 1, 0)]
+        [InlineData(ulong.MaxValue, 1, ulong.MaxValue, 0)]
+        [InlineData(ulong.MaxValue, 2, 9223372036854775807, 1)]
+        [InlineData(123456789, 4242424242, 0, 123456789)]
+        [InlineData(5147483647, 3147483647, 1, 2000000000)]
+        [InlineData(1000000, 333, 3003, 1)]
+        [InlineData(0, 1, 0, 0)]
+        [InlineData(0UL, ulong.MaxValue, 0, 0)]
+        [InlineData(13952, 2000, 6, 1952)]
+        [InlineData(ulong.MaxValue, 0, 0, 0)]
+        [InlineData(1, 0, 0, 0)]
+        [InlineData(0, 0, 0, 0)]
+        public static void DivRemUInt64(ulong dividend, ulong divisor, ulong expectedQuotient, ulong expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+            if (IntPtr.Size == 8)
+            {
+                DivRemNativeUInt((nuint)dividend, (nuint)divisor, (nuint)expectedQuotient, (nuint)expectedRemainder);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DivRemNativeInt(nint dividend, nint divisor, nint expectedQuotient, nint expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DivRemNativeUInt(nuint dividend, nuint divisor, nuint expectedQuotient, nuint expectedRemainder)
+        {
+            if (divisor == 0)
+            {
+                Assert.Throws<DivideByZeroException>(() => Math.DivRem(dividend, divisor));
+            }
+            else
+            {
+                var (actualQuotient, actualRemainder) = Math.DivRem(dividend, divisor);
+                Assert.Equal(expectedQuotient, actualQuotient);
+                Assert.Equal(expectedRemainder, actualRemainder);
+            }
         }
 
         public static IEnumerable<object[]> Clamp_UnsignedInt_TestData()
@@ -2061,6 +2557,21 @@ namespace System.Tests
             Assert.Equal(expected, Math.Clamp(value, min, max));
         }
 
+
+        [Theory]
+        [MemberData(nameof(Clamp_SignedInt_TestData))]
+        public static void Clamp_NInt(int value, int min, int max, int expected)
+        {
+            Assert.Equal((nint)expected, Math.Clamp((nint)value, (nint)min, (nint)max));
+        }
+
+        [Theory]
+        [MemberData(nameof(Clamp_UnsignedInt_TestData))]
+        public static void Clamp_NUInt(uint value, uint min, uint max, uint expected)
+        {
+            Assert.Equal((nuint)expected, Math.Clamp((nuint)value, (nuint)min, (nuint)max));
+        }
+
         [Theory]
         [MemberData(nameof(Clamp_SignedInt_TestData))]
         [InlineData(double.NegativeInfinity, double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
@@ -2363,6 +2874,13 @@ namespace System.Tests
         [InlineData(-0.0,                      unchecked((int)(0x80000000)), -0.0,                      0)]
         [InlineData( double.NaN,               unchecked((int)(0x7FFFFFFF)),  double.NaN,               0)]
         [InlineData( 0.0,                      unchecked((int)(0x80000000)),  0,                        0)]
+        [InlineData( double.NaN,              0,                              double.NaN,               0)]
+        [InlineData( double.PositiveInfinity, 0,                              double.PositiveInfinity,  0)]
+        [InlineData( double.NegativeInfinity, 0,                              double.NegativeInfinity,  0)]
+        [InlineData( 1,                       2147483647,                     double.PositiveInfinity,  0)]
+        [InlineData( double.NaN,              1,                              double.NaN,               0)]
+        [InlineData( double.PositiveInfinity, -1,                             double.PositiveInfinity,  0)]
+        [InlineData( double.PositiveInfinity, unchecked((int)(0x7FFFFFFF)),   double.PositiveInfinity,  0)]
         [InlineData( 0.11331473229676087,     -4,                             0.0070821707685475542,    CrossPlatformMachineEpsilon / 100)]
         [InlineData( 0.15195522325791297,     -3,                             0.018994402907239121,     CrossPlatformMachineEpsilon / 10)]
         [InlineData( 0.20269956628651730,     -3,                             0.025337445785814663,     CrossPlatformMachineEpsilon / 10)]
@@ -2377,6 +2895,26 @@ namespace System.Tests
         [InlineData( 0.64321824193300488,     -1,                             0.32160912096650246,      CrossPlatformMachineEpsilon)]
         [InlineData( 0.74005557395545179,     -1,                             0.37002778697772587,      CrossPlatformMachineEpsilon)]
         [InlineData( 0.80200887896145195,     -1,                             0.40100443948072595,      CrossPlatformMachineEpsilon)]
+        [InlineData( 0,                       2147483647,                     0,                        CrossPlatformMachineEpsilon)]
+        [InlineData( 0,                       -2147483648,                    0,                        CrossPlatformMachineEpsilon)]
+        [InlineData( 1,                       -1,                             0.5,                      CrossPlatformMachineEpsilon)]
+        [InlineData( 8.98846567431158E+307,   -2097,                          5E-324,                   CrossPlatformMachineEpsilon)]
+        [InlineData( 5E-324,                  2097,                           8.98846567431158E+307,    CrossPlatformMachineEpsilon)]
+        [InlineData( 1.000244140625,          -1074,                          5E-324,                   CrossPlatformMachineEpsilon)]
+        [InlineData( 0.7499999999999999,      -1073,                          5E-324,                   CrossPlatformMachineEpsilon)]
+        [InlineData( 0.5000000000000012,      -1024,                          2.781342323134007E-309,   CrossPlatformMachineEpsilon)]
+        [InlineData( 0.6619858980995045,      3,                              5.295887184796036,        CrossPlatformMachineEpsilon * 10)]
+        [InlineData( -8.06684839057968,       -2,                             -2.01671209764492,        CrossPlatformMachineEpsilon * 10)]
+        [InlineData( -8.06684839057968,       -2,                             -2.01671209764492,        CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 4.345239849338305,       -1,                             2.1726199246691524,       CrossPlatformMachineEpsilon * 10)]
+        [InlineData( -8.38143342755525,       0,                              -8.38143342755525,        CrossPlatformMachineEpsilon * 10)]
+        [InlineData( -0.4066039223853553,     4,                              -6.505662758165685,       CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 4.345239849338305,       -1,                             2.1726199246691524,       CrossPlatformMachineEpsilon * 10)]
+        [InlineData( -8.38143342755525,       0,                              -8.38143342755525,        CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 0.6619858980995045,      3,                              5.295887184796036,        CrossPlatformMachineEpsilon * 10)]
+        [InlineData( -0.4066039223853553,     4,                              -6.505662758165685,       CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 1,                       0,                              1,                        CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 1,                       1,                              2,                        CrossPlatformMachineEpsilon * 10)]
         [InlineData( 1,                        0,                             1,                        CrossPlatformMachineEpsilon * 10)]
         [InlineData( 1.2468689889006383,       0,                             1.2468689889006384,       CrossPlatformMachineEpsilon * 10)]
         [InlineData( 1.3512498725672678,       0,                             1.3512498725672677,       CrossPlatformMachineEpsilon * 10)]
@@ -2392,7 +2930,16 @@ namespace System.Tests
         [InlineData( 4.9334096679145963,       2,                             19.733638671658387,       CrossPlatformMachineEpsilon * 100)]
         [InlineData( 6.5808859910179210,       2,                             26.323543964071686,       CrossPlatformMachineEpsilon * 100)]
         [InlineData( 8.8249778270762876,       3,                             70.599822616610297,       CrossPlatformMachineEpsilon * 100)]
-        [InlineData( double.PositiveInfinity,  unchecked((int)(0x7FFFFFFF)),  double.PositiveInfinity,  0)]
+        [InlineData( -6.531673581913484,       1,                             -13.063347163826968,      CrossPlatformMachineEpsilon * 100)]
+        [InlineData( 9.267056966972586,        2,                             37.06822786789034,        CrossPlatformMachineEpsilon * 100)]
+        [InlineData( 0.5617597462207241,       5,                             17.97631187906317,        CrossPlatformMachineEpsilon * 100)]
+        [InlineData( 0.7741522965913037,       6,                             49.545746981843436,       CrossPlatformMachineEpsilon * 100)]
+        [InlineData( -0.6787637026394024,      7,                             -86.88175393784351,       CrossPlatformMachineEpsilon * 100)]        
+        [InlineData( -6.531673581913484,       1,                             -13.063347163826968,      CrossPlatformMachineEpsilon * 100)]
+        [InlineData( 9.267056966972586,        2,                             37.06822786789034,        CrossPlatformMachineEpsilon * 100)]
+        [InlineData( 0.5617597462207241,       5,                             17.97631187906317,        CrossPlatformMachineEpsilon * 100)]
+        [InlineData( 0.7741522965913037,       6,                             49.545746981843436,       CrossPlatformMachineEpsilon * 100)]
+        [InlineData( -0.6787637026394024,      7,                             -86.88175393784351,       CrossPlatformMachineEpsilon * 100)]
         public static void ScaleB(double x, int n, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.ScaleB(x, n), allowedVariance);
@@ -2431,7 +2978,7 @@ namespace System.Tests
         [InlineData(MidpointRounding.ToZero)]
         [InlineData(MidpointRounding.ToNegativeInfinity)]
         [InlineData(MidpointRounding.ToPositiveInfinity)]
-        public static void Round_Double_Digits(MidpointRounding mode)
+        public static void Round_Double_Digits_ByMidpointRounding(MidpointRounding mode)
         {
             Assert.Equal(double.NaN, Math.Round(double.NaN, 3, mode));
             Assert.Equal(double.PositiveInfinity, Math.Round(double.PositiveInfinity, 3, mode));
@@ -2458,7 +3005,7 @@ namespace System.Tests
         [InlineData(MidpointRounding.ToZero)]
         [InlineData(MidpointRounding.ToNegativeInfinity)]
         [InlineData(MidpointRounding.ToPositiveInfinity)]
-        public static void Round_Decimal_Digits(MidpointRounding mode)
+        public static void Round_Decimal_Digits_ByMidpointRounding(MidpointRounding mode)
         {
             Assert.Equal(decimal.Zero, Math.Round(decimal.Zero, 3, mode));
         }
@@ -2530,6 +3077,104 @@ namespace System.Tests
         {
             Assert.Equal(expected, Math.Round(x, 0, mode));
             Assert.Equal(expected, decimal.Round(x, 0, mode));
+        }
+
+        [Fact]
+        public static void Round_Double_Constant_Arg()
+        {
+            Assert.Equal( 0, Math.Round( 0.5));
+            Assert.Equal( 0, Math.Round(-0.5));
+            Assert.Equal( 1, Math.Round( 1.0));
+            Assert.Equal(-1, Math.Round(-1.0));
+            Assert.Equal( 2, Math.Round( 1.5));
+            Assert.Equal(-2, Math.Round(-1.5));
+            Assert.Equal( 2, Math.Round( 2.0));
+            Assert.Equal(-2, Math.Round(-2.0));
+            Assert.Equal( 2, Math.Round( 2.5));
+            Assert.Equal(-2, Math.Round(-2.5));
+            Assert.Equal( 3, Math.Round( 3.0));
+            Assert.Equal(-3, Math.Round(-3.0));
+            Assert.Equal( 4, Math.Round( 3.5));
+            Assert.Equal(-4, Math.Round(-3.5));
+
+            Assert.Equal( 0, Math.Round( 0.5, MidpointRounding.ToZero));
+            Assert.Equal( 0, Math.Round( 0.5, MidpointRounding.ToZero));
+            Assert.Equal( 1, Math.Round( 1.0, MidpointRounding.ToZero));
+            Assert.Equal(-1, Math.Round(-1.0, MidpointRounding.ToZero));
+            Assert.Equal( 1, Math.Round( 1.5, MidpointRounding.ToZero));
+            Assert.Equal(-1, Math.Round(-1.5, MidpointRounding.ToZero));
+            Assert.Equal( 2, Math.Round( 2.0, MidpointRounding.ToZero));
+            Assert.Equal(-2, Math.Round(-2.0, MidpointRounding.ToZero));
+            Assert.Equal( 2, Math.Round( 2.5, MidpointRounding.ToZero));
+            Assert.Equal(-2, Math.Round(-2.5, MidpointRounding.ToZero));
+            Assert.Equal( 3, Math.Round( 3.0, MidpointRounding.ToZero));
+            Assert.Equal(-3, Math.Round(-3.0, MidpointRounding.ToZero));
+            Assert.Equal( 3, Math.Round( 3.5, MidpointRounding.ToZero));
+            Assert.Equal(-3, Math.Round(-3.5, MidpointRounding.ToZero));
+
+            Assert.Equal( 1, Math.Round( 0.5, MidpointRounding.AwayFromZero));
+            Assert.Equal( 1, Math.Round( 0.5, MidpointRounding.AwayFromZero));
+            Assert.Equal( 1, Math.Round( 1.0, MidpointRounding.AwayFromZero));
+            Assert.Equal(-1, Math.Round(-1.0, MidpointRounding.AwayFromZero));
+            Assert.Equal( 2, Math.Round( 1.5, MidpointRounding.AwayFromZero));
+            Assert.Equal(-2, Math.Round(-1.5, MidpointRounding.AwayFromZero));
+            Assert.Equal( 2, Math.Round( 2.0, MidpointRounding.AwayFromZero));
+            Assert.Equal(-2, Math.Round(-2.0, MidpointRounding.AwayFromZero));
+            Assert.Equal( 3, Math.Round( 2.5, MidpointRounding.AwayFromZero));
+            Assert.Equal(-3, Math.Round(-2.5, MidpointRounding.AwayFromZero));
+            Assert.Equal( 3, Math.Round( 3.0, MidpointRounding.AwayFromZero));
+            Assert.Equal(-3, Math.Round(-3.0, MidpointRounding.AwayFromZero));
+            Assert.Equal( 4, Math.Round( 3.5, MidpointRounding.AwayFromZero));
+            Assert.Equal(-4, Math.Round(-3.5, MidpointRounding.AwayFromZero));
+        }
+
+        [Fact]
+        public static void Round_Float_Constant_Arg()
+        {
+            Assert.Equal( 0, MathF.Round( 0.5f));
+            Assert.Equal( 0, MathF.Round(-0.5f));
+            Assert.Equal( 1, MathF.Round( 1.0f));
+            Assert.Equal(-1, MathF.Round(-1.0f));
+            Assert.Equal( 2, MathF.Round( 1.5f));
+            Assert.Equal(-2, MathF.Round(-1.5f));
+            Assert.Equal( 2, MathF.Round( 2.0f));
+            Assert.Equal(-2, MathF.Round(-2.0f));
+            Assert.Equal( 2, MathF.Round( 2.5f));
+            Assert.Equal(-2, MathF.Round(-2.5f));
+            Assert.Equal( 3, MathF.Round( 3.0f));
+            Assert.Equal(-3, MathF.Round(-3.0f));
+            Assert.Equal( 4, MathF.Round( 3.5f));
+            Assert.Equal(-4, MathF.Round(-3.5f));
+
+            Assert.Equal( 0, MathF.Round( 0.5f, MidpointRounding.ToZero));
+            Assert.Equal( 0, MathF.Round( 0.5f, MidpointRounding.ToZero));
+            Assert.Equal( 1, MathF.Round( 1.0f, MidpointRounding.ToZero));
+            Assert.Equal(-1, MathF.Round(-1.0f, MidpointRounding.ToZero));
+            Assert.Equal( 1, MathF.Round( 1.5f, MidpointRounding.ToZero));
+            Assert.Equal(-1, MathF.Round(-1.5f, MidpointRounding.ToZero));
+            Assert.Equal( 2, MathF.Round( 2.0f, MidpointRounding.ToZero));
+            Assert.Equal(-2, MathF.Round(-2.0f, MidpointRounding.ToZero));
+            Assert.Equal( 2, MathF.Round( 2.5f, MidpointRounding.ToZero));
+            Assert.Equal(-2, MathF.Round(-2.5f, MidpointRounding.ToZero));
+            Assert.Equal( 3, MathF.Round( 3.0f, MidpointRounding.ToZero));
+            Assert.Equal(-3, MathF.Round(-3.0f, MidpointRounding.ToZero));
+            Assert.Equal( 3, MathF.Round( 3.5f, MidpointRounding.ToZero));
+            Assert.Equal(-3, MathF.Round(-3.5f, MidpointRounding.ToZero));
+
+            Assert.Equal( 1, MathF.Round( 0.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 1, MathF.Round( 0.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 1, MathF.Round( 1.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-1, MathF.Round(-1.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 2, MathF.Round( 1.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-2, MathF.Round(-1.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 2, MathF.Round( 2.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-2, MathF.Round(-2.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 3, MathF.Round( 2.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-3, MathF.Round(-2.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 3, MathF.Round( 3.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-3, MathF.Round(-3.0f, MidpointRounding.AwayFromZero));
+            Assert.Equal( 4, MathF.Round( 3.5f, MidpointRounding.AwayFromZero));
+            Assert.Equal(-4, MathF.Round(-3.5f, MidpointRounding.AwayFromZero));
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -145,7 +144,7 @@ namespace System.Xml.Linq
 
         internal override bool DeepEquals(XNode node)
         {
-            XProcessingInstruction other = node as XProcessingInstruction;
+            XProcessingInstruction? other = node as XProcessingInstruction;
             return other != null && target == other.target && data == other.data;
         }
 

@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public class RSAPKCS1SignatureDeformatter : AsymmetricSignatureDeformatter
     {
-        private RSA _rsaKey;
-        private string _algName;
+        private RSA? _rsaKey;
+        private string? _algName;
 
         public RSAPKCS1SignatureDeformatter() { }
         public RSAPKCS1SignatureDeformatter(AsymmetricAlgorithm key)
@@ -38,7 +39,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                // For desktop compat, exception is deferred until VerifySignature
+                // For .NET Framework compat, exception is deferred until VerifySignature
                 _algName = null;
             }
         }

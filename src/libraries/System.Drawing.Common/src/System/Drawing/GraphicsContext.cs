@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Drawing.Drawing2D;
 
@@ -24,17 +23,17 @@ namespace System.Drawing
         /// <summary>
         /// The context's clip region.
         /// </summary>
-        private Region _clipRegion;
+        private Region? _clipRegion;
 
         /// <summary>
         /// The next context up the stack.
         /// </summary>
-        private GraphicsContext _nextContext;
+        private GraphicsContext? _nextContext;
 
         /// <summary>
         /// The previous context down the stack.
         /// </summary>
-        private GraphicsContext _prevContext;
+        private GraphicsContext? _prevContext;
 
         /// <summary>
         /// Flags that determines whether the context was created for a Graphics.Save() operation.
@@ -45,18 +44,12 @@ namespace System.Drawing
         /// </summary>
         private bool _isCumulative;
 
-        private GraphicsContext()
-        {
-        }
-
         public GraphicsContext(Graphics g)
         {
             Matrix transform = g.Transform;
             if (!transform.IsIdentity)
             {
-                float[] elements = transform.Elements;
-                _transformOffset.X = elements[4];
-                _transformOffset.Y = elements[5];
+                _transformOffset = transform.Offset;
             }
             transform.Dispose();
 
@@ -128,7 +121,7 @@ namespace System.Drawing
         /// <summary>
         ///     The clipping region the GraphicsContext.
         /// </summary>
-        public Region Clip
+        public Region? Clip
         {
             get
             {
@@ -139,7 +132,7 @@ namespace System.Drawing
         /// <summary>
         /// The next GraphicsContext object in the stack.
         /// </summary>
-        public GraphicsContext Next
+        public GraphicsContext? Next
         {
             get
             {
@@ -154,7 +147,7 @@ namespace System.Drawing
         /// <summary>
         /// The previous GraphicsContext object in the stack.
         /// </summary>
-        public GraphicsContext Previous
+        public GraphicsContext? Previous
         {
             get
             {

@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
-#include "pal_compiler.h"
+#pragma once
+
 #include "pal_locale.h"
+#include "pal_compiler.h"
 
 // Enum that corresponds to managed enum CultureData.LocaleStringData.
 // The numeric values of the enum members match their Win32 counterparts.
@@ -18,7 +19,6 @@ typedef enum
     LocaleString_NativeLanguageName = 0x04,
     LocaleString_EnglishCountryName = 0x00001002,
     LocaleString_NativeCountryName = 0x08,
-    LocaleString_ListSeparator = 0x0C,
     LocaleString_DecimalSeparator = 0x0E,
     LocaleString_ThousandSeparator = 0x0F,
     LocaleString_Digits = 0x00000013,
@@ -43,12 +43,12 @@ typedef enum
     LocaleString_PerMilleSymbol = 0x00000077
 } LocaleStringData;
 
-DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
+PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                                                           LocaleStringData localeStringData,
                                                           UChar* value,
                                                           int32_t valueLength);
 
-DLLEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
+PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,
                                                           int32_t valueLength);
 

@@ -1,11 +1,11 @@
 ﻿<Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(PackageTargetRuntime)' == 'linux-arm' or '$(PackageTargetRuntime)' == 'linux-arm64' or '$(PackageTargetRuntime)' == 'linux-x64' or '$(PackageTargetRuntime)' == 'osx-x64' or '$(PackageTargetRuntime)' == 'freebsd-x64'">
-    <File Include="$(NativeBinDir)\System.IO.Ports.Native$(LibraryFileExtension)" >
+    <File Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)" >
       <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
     </File>
   </ItemGroup>
@@ -15,5 +15,5 @@
     </_buildRIDWithMetadata>
     <IndexedDependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

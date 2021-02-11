@@ -1,39 +1,31 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.QPack;
+using System.Threading;
 
 namespace System.Net.Http
 {
     public class HttpMethod : IEquatable<HttpMethod>
     {
         private readonly string _method;
+        private readonly int? _http3Index;
+
+        private byte[]? _http3EncodedBytes;
         private int _hashcode;
 
-        private static readonly HttpMethod s_getMethod = new HttpMethod("GET");
-        private static readonly HttpMethod s_putMethod = new HttpMethod("PUT");
-        private static readonly HttpMethod s_postMethod = new HttpMethod("POST");
-        private static readonly HttpMethod s_deleteMethod = new HttpMethod("DELETE");
-        private static readonly HttpMethod s_headMethod = new HttpMethod("HEAD");
-        private static readonly HttpMethod s_optionsMethod = new HttpMethod("OPTIONS");
-        private static readonly HttpMethod s_traceMethod = new HttpMethod("TRACE");
-        private static readonly HttpMethod s_patchMethod = new HttpMethod("PATCH");
-        private static readonly HttpMethod s_connectMethod = new HttpMethod("CONNECT");
-
-        private static readonly Dictionary<HttpMethod, HttpMethod> s_knownMethods = new Dictionary<HttpMethod, HttpMethod>(9)
-        {
-            { s_getMethod, s_getMethod },
-            { s_putMethod, s_putMethod },
-            { s_postMethod, s_postMethod },
-            { s_deleteMethod, s_deleteMethod },
-            { s_headMethod, s_headMethod },
-            { s_optionsMethod, s_optionsMethod },
-            { s_traceMethod, s_traceMethod },
-            { s_patchMethod, s_patchMethod },
-            { s_connectMethod, s_connectMethod },
-        };
+        private static readonly HttpMethod s_getMethod = new HttpMethod("GET", http3StaticTableIndex: H3StaticTable.MethodGet);
+        private static readonly HttpMethod s_putMethod = new HttpMethod("PUT", http3StaticTableIndex: H3StaticTable.MethodPut);
+        private static readonly HttpMethod s_postMethod = new HttpMethod("POST", http3StaticTableIndex: H3StaticTable.MethodPost);
+        private static readonly HttpMethod s_deleteMethod = new HttpMethod("DELETE", http3StaticTableIndex: H3StaticTable.MethodDelete);
+        private static readonly HttpMethod s_headMethod = new HttpMethod("HEAD", http3StaticTableIndex: H3StaticTable.MethodHead);
+        private static readonly HttpMethod s_optionsMethod = new HttpMethod("OPTIONS", http3StaticTableIndex: H3StaticTable.MethodOptions);
+        private static readonly HttpMethod s_traceMethod = new HttpMethod("TRACE", -1);
+        private static readonly HttpMethod s_patchMethod = new HttpMethod("PATCH", -1);
+        private static readonly HttpMethod s_connectMethod = new HttpMethod("CONNECT", http3StaticTableIndex: H3StaticTable.MethodConnect);
 
         public static HttpMethod Get
         {
@@ -88,6 +80,20 @@ namespace System.Net.Http
             get { return _method; }
         }
 
+        internal byte[] Http3EncodedBytes
+        {
+            get {
+                byte[]? http3EncodedBytes = Volatile.Read(ref _http3EncodedBytes);
+                if (http3EncodedBytes is null) {
+                    Volatile.Write (ref _http3EncodedBytes, http3EncodedBytes = _http3Index is int index && index >= 0 ?
+                        QPackEncoder.EncodeStaticIndexedHeaderFieldToArray(index) :
+                        QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.MethodGet, _method));
+                }
+
+                return http3EncodedBytes;
+            }
+        }
+
         public HttpMethod(string method)
         {
             if (string.IsNullOrEmpty(method))
@@ -102,11 +108,17 @@ namespace System.Net.Http
             _method = method;
         }
 
+        private HttpMethod(string method, int http3StaticTableIndex)
+        {
+            _method = method;
+            _http3Index = http3StaticTableIndex;
+        }
+
         #region IEquatable<HttpMethod> Members
 
-        public bool Equals(HttpMethod other)
+        public bool Equals([NotNullWhen(true)] HttpMethod? other)
         {
-            if ((object)other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -123,7 +135,7 @@ namespace System.Net.Http
 
         #endregion
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return Equals(obj as HttpMethod);
         }
@@ -143,14 +155,14 @@ namespace System.Net.Http
             return _method;
         }
 
-        public static bool operator ==(HttpMethod left, HttpMethod right)
+        public static bool operator ==(HttpMethod? left, HttpMethod? right)
         {
-            return (object)left == null || (object)right == null ?
+            return left is null || right is null ?
                 ReferenceEquals(left, right) :
                 left.Equals(right);
         }
 
-        public static bool operator !=(HttpMethod left, HttpMethod right)
+        public static bool operator !=(HttpMethod? left, HttpMethod? right)
         {
             return !(left == right);
         }
@@ -162,9 +174,38 @@ namespace System.Net.Http
         internal static HttpMethod Normalize(HttpMethod method)
         {
             Debug.Assert(method != null);
-            return s_knownMethods.TryGetValue(method, out HttpMethod normalized) ?
-                normalized :
-                method;
+            Debug.Assert(!string.IsNullOrEmpty(method._method));
+
+            // _http3Index is only set for the singleton instances, so if it's not null,
+            // we can avoid the lookup.  Otherwise, look up the method instance and return the
+            // normalized instance if it's found.
+
+            if (method._http3Index is null && method._method.Length >= 3) // 3 == smallest known method
+            {
+                HttpMethod? match = (method._method[0] | 0x20) switch
+                {
+                    'c' => s_connectMethod,
+                    'd' => s_deleteMethod,
+                    'g' => s_getMethod,
+                    'h' => s_headMethod,
+                    'o' => s_optionsMethod,
+                    'p' => method._method.Length switch
+                    {
+                        3 => s_putMethod,
+                        4 => s_postMethod,
+                        _ => s_patchMethod,
+                    },
+                    't' => s_traceMethod,
+                    _ => null,
+                };
+
+                if (match is not null && string.Equals(method._method, match._method, StringComparison.OrdinalIgnoreCase))
+                {
+                    return match;
+                }
+            }
+
+            return method;
         }
 
         internal bool MustHaveRequestBody

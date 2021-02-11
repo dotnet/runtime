@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -47,10 +46,10 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => ModuleDefinition.GetCustomAttributes().ToTrueCustomAttributes(this);
 
-        internal MethodInfo ComputeEntryPoint(bool fileRefEntryPointAllowed)
+        internal MethodInfo? ComputeEntryPoint(bool fileRefEntryPointAllowed)
         {
             PEHeaders peHeaders = PEReader.PEHeaders;
-            CorHeader corHeader = peHeaders.CorHeader;
+            CorHeader corHeader = peHeaders.CorHeader!;
 
             if ((corHeader.Flags & CorFlags.NativeEntryPoint) != 0)
                 return null;
@@ -76,8 +75,8 @@ namespace System.Reflection.TypeLoading.Ecma
 
                         MetadataReader reader = Reader;
                         string moduleName = ((AssemblyFileHandle)handle).GetAssemblyFile(reader).Name.GetString(reader);
-                        EcmaModule roModule = (EcmaModule)(Assembly.GetModule(moduleName));
-                        return roModule.ComputeEntryPoint(fileRefEntryPointAllowed: false);
+                        EcmaModule? roModule = (EcmaModule?)(Assembly.GetModule(moduleName));
+                        return roModule!.ComputeEntryPoint(fileRefEntryPointAllowed: false);
                     }
 
                 default:
@@ -88,9 +87,9 @@ namespace System.Reflection.TypeLoading.Ecma
         public sealed override void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine)
         {
             PEHeaders peHeaders = PEReader.PEHeaders;
-            PEMagic peMagic = peHeaders.PEHeader.Magic;
+            PEMagic peMagic = peHeaders.PEHeader!.Magic;
             Machine coffMachine = peHeaders.CoffHeader.Machine;
-            CorFlags corFlags = peHeaders.CorHeader.Flags;
+            CorFlags corFlags = peHeaders.CorHeader!.Flags;
 
             peKind = default;
             if ((corFlags & CorFlags.ILOnly) != 0)
@@ -110,10 +109,10 @@ namespace System.Reflection.TypeLoading.Ecma
         //
         // Search for members on <Module> type.
         //
-        public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr) => GetModuleType().GetField(name, bindingAttr);
+        public sealed override FieldInfo? GetField(string name, BindingFlags bindingAttr) => GetModuleType().GetField(name, bindingAttr);
         public sealed override FieldInfo[] GetFields(BindingFlags bindingFlags) => GetModuleType().GetFields(bindingFlags);
         public sealed override MethodInfo[] GetMethods(BindingFlags bindingFlags) => GetModuleType().GetMethods(bindingFlags);
-        protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) => GetModuleType().InternalGetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
+        protected sealed override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => GetModuleType().InternalGetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
         private RoType GetModuleType() => ModuleTypeToken.ToTypeDefinitionHandle().ResolveTypeDef(this);
 
         public sealed override Type[] GetTypes()
@@ -125,10 +124,10 @@ namespace System.Reflection.TypeLoading.Ecma
             return TypeDefTable.ToArray<Type>(skip: 1); // 0x02000001 is the <Module> type which is always skipped by this api.
         }
 
-        internal sealed override IEnumerable<RoType> GetDefinedRoTypes()
+        internal sealed override IEnumerable<RoType>? GetDefinedRoTypes()
         {
             EnsureTypeDefTableFullyFilled();
-            return TypeDefTable.EnumerateValues(skip: 1); // 0x02000001 is the <Module> type which is always skipped by this api.
+            return TypeDefTable.EnumerateValues(skip: 1)!; // 0x02000001 is the <Module> type which is always skipped by this api.
         }
 
         internal PEReader PEReader => _guardedPEReader.PEReader;

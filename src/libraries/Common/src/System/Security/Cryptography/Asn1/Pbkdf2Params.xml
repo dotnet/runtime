@@ -24,6 +24,6 @@
   -->
   <asn:Integer name="IterationCount" backingType="int" />
   <!-- The biggest value that makes sense currently is 256/8 => 32. -->
-  <asn:Integer name="KeyLength" backingType="byte" optional="true" />    
+  <asn:Integer name="KeyLength" backingType="int" optional="true" />    
   <asn:AsnType name="Prf" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" defaultDerInit="0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x07, 0x05, 0x00" />
 </asn:Sequence>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
@@ -860,17 +859,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
                     if (validHash)
                     {
-                        using (SHA1 hasher = SHA1.Create())
-                        {
-                            byte[] hash = hasher.ComputeHash(tsaCert.RawData);
+                        byte[] hash = SHA1.HashData(tsaCert.RawData);
 
-                            Buffer.BlockCopy(
-                                hash,
-                                0,
-                                signingCertificateV1Bytes,
-                                signingCertificateV1Bytes.Length - hash.Length,
-                                hash.Length);
-                        }
+                        Buffer.BlockCopy(
+                            hash,
+                            0,
+                            signingCertificateV1Bytes,
+                            signingCertificateV1Bytes.Length - hash.Length,
+                            hash.Length);
                     }
 
                     if (!skipIssuerSerial)

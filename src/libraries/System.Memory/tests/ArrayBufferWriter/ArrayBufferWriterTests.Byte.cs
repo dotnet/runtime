@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading.Tasks;
@@ -88,6 +87,38 @@ namespace System.Buffers.Tests
 
             Assert.Equal(outputMemory.Length, streamOutput.Length);
             Assert.True(outputMemory.Span.SequenceEqual(streamOutput));
+        }
+
+        // NOTE: GetMemory_ExceedMaximumBufferSize test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalFact(nameof(IsX64))]
+        [OuterLoop]
+        public void GetMemory_ExceedMaximumBufferSize()
+        {
+            const int MaxArrayLength = 0X7FEFFFFF;
+            int initialCapacity = int.MaxValue / 2 + 1;
+
+            try
+            {
+                var output = new ArrayBufferWriter<byte>(initialCapacity);
+                output.Advance(initialCapacity);
+
+                // Validate we can't double the buffer size, but can grow
+                Memory<byte> memory;
+                memory = output.GetMemory(1);
+
+                // The buffer should grow more than the 1 byte requested otherwise performance will not be usable
+                // between 1GB and 2GB. The current implementation maxes out the buffer size to MaxArrayLength.
+                Assert.Equal(MaxArrayLength - initialCapacity, memory.Length);
+                Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
+            }
+            catch (OutOfMemoryException)
+            {
+                // On memory constrained devices, we can get an OutOfMemoryException, which we can safely ignore.
+            }
         }
     }
 }

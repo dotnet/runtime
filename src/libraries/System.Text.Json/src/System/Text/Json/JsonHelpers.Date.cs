@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -212,11 +211,8 @@ namespace System.Text.Json
         {
             parseData = default;
 
-            // Source does not have enough characters for YYYY-MM-DD
-            if (source.Length < 10)
-            {
-                return false;
-            }
+            // too short datetime
+            Debug.Assert(source.Length >= 10);
 
             // Parse the calendar date
             // -----------------------
@@ -253,8 +249,6 @@ namespace System.Text.Json
             }
 
             // We now have YYYY-MM-DD [dateX]
-
-            Debug.Assert(source.Length >= 10);
             if (source.Length == 10)
             {
                 // Just a calendar date
@@ -421,8 +415,7 @@ namespace System.Text.Json
                 case JsonConstants.Plus:
                 case JsonConstants.Hyphen:
                     parseData.OffsetToken = curByte;
-                    return ParseOffset(ref parseData, source.Slice(sourceIndex))
-                        && true;
+                    return ParseOffset(ref parseData, source.Slice(sourceIndex));
                 default:
                     return false;
             }
@@ -605,7 +598,7 @@ namespace System.Text.Json
             }
 
             // This needs to allow leap seconds when appropriate.
-            // See https://github.com/dotnet/corefx/issues/39185.
+            // See https://github.com/dotnet/runtime/issues/30135.
             if (((uint)parseData.Second) > 59)
             {
                 value = default;

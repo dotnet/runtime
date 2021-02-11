@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Test.Cryptography;
@@ -8,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static partial class DesTests
     {
         private static readonly byte[] KnownWeakKey = "e0e0e0e0f1f1f1f1".HexToByteArray();

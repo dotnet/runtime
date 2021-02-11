@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +12,7 @@ namespace System.IO.Tests
         protected abstract void InvokeCreate(T item);
 
         [Fact]
-        [ActiveIssue(39108)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30108")]
         public void DoesntExistThenCreate_ReturnsDefaultValues()
         {
             T item = GetMissingItem();
@@ -49,7 +48,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void TimesStillSetAfterDelete()
+        public void TimesResetAfterDelete()
         {
             T item = GetExistingItem();
 
@@ -63,11 +62,13 @@ namespace System.IO.Tests
                 times.Add(timeFunction, timeFunction.Getter(item));
             }
 
-            // Deleting shouldn't change any info state
+            // Deleting should refresh state
             item.Delete();
+
             Assert.All(times, time =>
             {
-                Assert.Equal(time.Value, time.Key.Getter(item));
+                // We check that all the file times have been refreshed
+                Assert.NotEqual(time.Key.Getter(item), time.Value);
             });
         }
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -56,21 +55,19 @@ namespace System.Dynamic.Utils
         /// changed after creation. The exception is if the enumerable is
         /// already a ReadOnlyCollection{T}, in which case we just return it.
         /// </summary>
-        public static ReadOnlyCollection<T> ToReadOnly<T>(this IEnumerable<T> enumerable)
+        public static ReadOnlyCollection<T> ToReadOnly<T>(this IEnumerable<T>? enumerable)
         {
             if (enumerable == null)
             {
                 return EmptyReadOnlyCollection<T>.Instance;
             }
 
-            var troc = enumerable as TrueReadOnlyCollection<T>;
-            if (troc != null)
+            if (enumerable is TrueReadOnlyCollection<T> troc)
             {
                 return troc;
             }
 
-            var builder = enumerable as ReadOnlyCollectionBuilder<T>;
-            if (builder != null)
+            if (enumerable is ReadOnlyCollectionBuilder<T> builder)
             {
                 return builder.ToReadOnlyCollection();
             }
@@ -88,7 +85,10 @@ namespace System.Dynamic.Utils
             int h = 6551;
             foreach (T t in list)
             {
-                h ^= (h << 5) ^ cmp.GetHashCode(t);
+                if (t != null)
+                {
+                    h ^= (h << 5) ^ cmp.GetHashCode(t);
+                }
             }
             return h;
         }

@@ -14,7 +14,7 @@
   <CustomElement xmlns="">asd</CustomElement>
   <entry>
     <id>EntryId</id>
-    <title type="text">SyndicationFeed released for .net Core</title>
+    <title type="text">SyndicationFeed released for .NET</title>
     <updated>2017-06-26T21:41:43Z</updated>
     <link rel="alternate" href="EntryLinkHref" />
     <content src="EntryContentSrc" />

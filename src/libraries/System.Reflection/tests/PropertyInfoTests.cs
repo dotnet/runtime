@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -82,6 +81,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15027", TestRuntimes.Mono)]
         [MemberData(nameof(GetValue_Invalid_TestData))]
         public void GetValue_Invalid(Type type, string name, object obj, object[] index, Type exceptionType)
         {
@@ -96,6 +96,9 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(BaseClass), nameof(BaseClass.Name), new BaseClass(), "hello", null, "hello" };
             yield return new object[] { typeof(AdvancedIndexerClass), "Item", new AdvancedIndexerClass(), "hello", new object[] { 99, 2, new string[] { "hello" }, "f" }, "992f1" };
             yield return new object[] { typeof(AdvancedIndexerClass), "Item", new AdvancedIndexerClass(), "pw", new object[] { 99, 2, new string[] { "hello" }, "SOME string" }, "992SOME string1" };
+            yield return new object[] { typeof(BaseClass), nameof(BaseClass.ShortEnumProperty), new BaseClass(), (byte)1, null, (BaseClass.ShortEnum)1 };
+            yield return new object[] { typeof(BaseClass), nameof(BaseClass.IntEnumProperty), new BaseClass(), (short)2, null, (BaseClass.IntEnum)2 };
+            yield return new object[] { typeof(BaseClass), nameof(BaseClass.LongEnumProperty), new BaseClass(), (int)3, null, (BaseClass.LongEnum)3 };
         }
 
         [Theory]
@@ -244,7 +247,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(BaseClass), nameof(BaseClass.ReadWriteProperty1), typeof(BaseClass), nameof(BaseClass.ReadWriteProperty1), true)]
         [InlineData(typeof(BaseClass), nameof(BaseClass.ReadWriteProperty1), typeof(BaseClass), nameof(BaseClass.ReadWriteProperty2), false)]
-        public void Equals(Type type1, string name1, Type type2, string name2, bool expected)
+        public void EqualsTest(Type type1, string name1, Type type2, string name2, bool expected)
         {
             PropertyInfo propertyInfo1 = GetProperty(type1, name1);
             PropertyInfo propertyInfo2 = GetProperty(type2, name2);
@@ -357,6 +360,13 @@ namespace System.Reflection.Tests
                 get { return _staticObjectArrayProperty; }
                 set { _staticObjectArrayProperty = value; }
             }
+
+            public enum ShortEnum : short {}
+            public enum IntEnum {}
+            public enum LongEnum : long {}
+            public ShortEnum ShortEnumProperty { get; set; }
+            public IntEnum IntEnumProperty { get; set; }
+            public LongEnum LongEnumProperty { get; set; }
 
             public object[] _objectArray;
             public object[] ObjectArrayProperty

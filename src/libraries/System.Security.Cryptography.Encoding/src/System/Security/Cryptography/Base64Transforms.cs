@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This file contains two ICryptoTransforms: ToBase64Transform and FromBase64Transform
 // they may be attached to a CryptoStream in either read or write mode
@@ -8,6 +7,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography
@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
                 ThrowHelper.ThrowCryptographicException();
             }
 
-            Debug.Assert(status == OperationStatus.NeedMoreData);
+            Debug.Assert(status == OperationStatus.Done);
             Debug.Assert(consumed == InputBlockSize);
 
             return written;
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography
         ~ToBase64Transform()
         {
             // A finalizer is not necessary here, however since we shipped a finalizer that called
-            // Dispose(false) in desktop v2.0, we need to keep it in case any existing code had subclassed
+            // Dispose(false) in .NET Framework v2.0, we need to keep it in case any existing code had subclassed
             // this transform and expects to have a base class finalizer call its dispose method.
             Dispose(false);
         }
@@ -141,7 +141,7 @@ namespace System.Security.Cryptography
                 ThrowHelper.ThrowArgumentNull(ThrowHelper.ExceptionArgument.outputBuffer);
 
             // The common case is inputCount = InputBlockSize
-            byte[] tmpBufferArray = null;
+            byte[]? tmpBufferArray = null;
             Span<byte> tmpBuffer = stackalloc byte[StackAllocSize];
             if (inputCount > StackAllocSize)
             {
@@ -186,7 +186,7 @@ namespace System.Security.Cryptography
             }
 
             // The common case is inputCount <= Base64InputBlockSize
-            byte[] tmpBufferArray = null;
+            byte[]? tmpBufferArray = null;
             Span<byte> tmpBuffer = stackalloc byte[StackAllocSize];
             if (inputCount > StackAllocSize)
             {
@@ -290,7 +290,7 @@ namespace System.Security.Cryptography
             int bytesToTransform = _inputIndex + tmpBuffer.Length;
             Debug.Assert(bytesToTransform >= 4);
 
-            byte[] transformBufferArray = null;
+            byte[]? transformBufferArray = null;
             Span<byte> transformBuffer = stackalloc byte[StackAllocSize];
             if (bytesToTransform > StackAllocSize)
             {
@@ -324,7 +324,7 @@ namespace System.Security.Cryptography
             ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
         }
 
-        private void ReturnToCryptoPool(byte[] array, int clearSize)
+        private void ReturnToCryptoPool(byte[]? array, int clearSize)
         {
             if (array != null)
             {
@@ -359,7 +359,7 @@ namespace System.Security.Cryptography
                 if (_inputBuffer != null)
                 {
                     CryptographicOperations.ZeroMemory(_inputBuffer);
-                    _inputBuffer = null;
+                    _inputBuffer = null!;
                 }
 
                 Reset();
@@ -398,11 +398,17 @@ namespace System.Security.Cryptography
                 ThrowArgumentOutOfRange(ExceptionArgument.inputCount);
         }
 
+        [DoesNotReturn]
         public static void ThrowArgumentNull(ExceptionArgument argument) => throw new ArgumentNullException(argument.ToString());
+        [DoesNotReturn]
         public static void ThrowArgumentOutOfRange(ExceptionArgument argument) => throw new ArgumentOutOfRangeException(argument.ToString(), SR.ArgumentOutOfRange_NeedNonNegNum);
+        [DoesNotReturn]
         public static void ThrowInvalidOffLen() => throw new ArgumentException(SR.Argument_InvalidOffLen);
+        [DoesNotReturn]
         public static void ThrowObjectDisposed() => throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
+        [DoesNotReturn]
         public static void ThrowCryptographicException() => throw new CryptographicException(SR.Cryptography_SSE_InvalidDataSize);
+        [DoesNotReturn]
         public static void ThrowBase64FormatException() => throw new FormatException();
 
         public enum ExceptionArgument

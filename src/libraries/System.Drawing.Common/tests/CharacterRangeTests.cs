@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -72,7 +71,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new CharacterRange(1, 2), new object(), false };
 
             // .NET Framework throws NullReferenceException.
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 yield return new object[] { new CharacterRange(1, 2), null, false };
             }

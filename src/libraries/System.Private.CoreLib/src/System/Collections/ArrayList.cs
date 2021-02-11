@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -28,17 +27,11 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArrayList : IList, ICloneable
     {
-        private object?[] _items = null!; // Do not rename (binary serialization)
+        private object?[] _items; // Do not rename (binary serialization)
         private int _size; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
 
         private const int _defaultCapacity = 4;
-
-        // Note: this constructor is a bogus constructor that does nothing
-        // and is for use only with SyncArrayList.
-        internal ArrayList(bool trash)
-        {
-        }
 
         // Constructs a ArrayList. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
@@ -269,7 +262,7 @@ namespace System.Collections
             else
             {
                 for (int i = 0; i < _size; i++)
-                    if ((_items[i] != null) && (_items[i]!.Equals(item))) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (_items[i] is object o && o.Equals(item))
                         return true;
                 return false;
             }
@@ -923,7 +916,7 @@ namespace System.Collections
                 else
                 {
                     for (int i = startIndex; i < endIndex; i++)
-                        if (_list[i] != null && _list[i]!.Equals(value)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if (_list[i] is object o && o.Equals(value))
                             return i;
                     return -1;
                 }
@@ -991,7 +984,7 @@ namespace System.Collections
                 else
                 {
                     for (int i = startIndex; i >= endIndex; i--)
-                        if (_list[i] != null && _list[i]!.Equals(value)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if (_list[i] is object o && o.Equals(value))
                             return i;
                     return -1;
                 }
@@ -1196,7 +1189,6 @@ namespace System.Collections
             private readonly object _root;
 
             internal SyncArrayList(ArrayList list)
-                : base(false)
             {
                 _list = list;
                 _root = list.SyncRoot;
@@ -2215,7 +2207,7 @@ namespace System.Collections
             private int _baseSize;
             private int _baseVersion;
 
-            internal Range(ArrayList list, int index, int count) : base(false)
+            internal Range(ArrayList list, int index, int count)
             {
                 _baseList = list;
                 _baseIndex = index;
@@ -2319,7 +2311,7 @@ namespace System.Collections
                 else
                 {
                     for (int i = 0; i < _baseSize; i++)
-                        if (_baseList[_baseIndex + i] != null && _baseList[_baseIndex + i]!.Equals(item)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if (_baseList[_baseIndex + i] is object o && o.Equals(item))
                             return true;
                     return false;
                 }
@@ -2582,7 +2574,7 @@ namespace System.Collections
                 if (_baseSize == 0)
                     return Array.Empty<object?>();
                 object[] array = new object[_baseSize];
-                Array.Copy(_baseList._items, _baseIndex, array, 0, _baseSize);
+                _baseList.CopyTo(_baseIndex, array, 0, _baseSize);
                 return array;
             }
 

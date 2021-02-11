@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -210,14 +209,14 @@ namespace System.Reflection.Tests
 
         private class Base
         {
-            public int MyMethod() { throw null; }
-            public static int MyStaticMethod() { throw null; }
+            public int MyMethod() { throw null!; }
+            public static int MyStaticMethod() { throw null!; }
         }
 
         private class Derived : Base
         {
-            public new int MyMethod() { throw null; }
-            public static new int MyStaticMethod() { throw null; }
+            public new int MyMethod() { throw null!; }
+            public static new int MyStaticMethod() { throw null!; }
         }
     }
 

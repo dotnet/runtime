@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Net;
@@ -10,7 +9,7 @@ namespace System.Net.Mail
 {
     internal interface ISmtpAuthenticationModule
     {
-        Authorization Authenticate(string challenge, NetworkCredential credentials, object sessionCookie, string spn, ChannelBinding channelBindingToken);
+        Authorization? Authenticate(string? challenge, NetworkCredential? credentials, object sessionCookie, string? spn, ChannelBinding? channelBindingToken);
         string AuthenticationType { get; }
 
         //

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -310,7 +309,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(Guid guid1, object obj, bool expected)
+        public static void EqualsTest(Guid guid1, object obj, bool expected)
         {
             if (obj is Guid)
             {
@@ -343,7 +342,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(Guid guid, string format, string expected)
+        public static void ToStringTest(Guid guid, string format, string expected)
         {
             IFormattable formattable = guid;
             if (string.IsNullOrEmpty(format) || format == "D")

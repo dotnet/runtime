@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -514,6 +513,8 @@ namespace Internal.Cryptography.Pal.Native
     internal enum CertChainFlags : int
     {
         None                                           = 0x00000000,
+        CERT_CHAIN_DISABLE_AUTH_ROOT_AUTO_UPDATE       = 0x00000100,
+        CERT_CHAIN_DISABLE_AIA                         = 0x00002000,
         CERT_CHAIN_REVOCATION_CHECK_END_CERT           = 0x10000000,
         CERT_CHAIN_REVOCATION_CHECK_CHAIN              = 0x20000000,
         CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT = 0x40000000,
@@ -796,5 +797,12 @@ namespace Internal.Cryptography.Pal.Native
         public int CycleDetectionModulus;
         public IntPtr hExclusiveRoot;
         public IntPtr hExclusiveTrustedPeople;
+    }
+
+    [Flags]
+    internal enum CryptImportPublicKeyInfoFlags
+    {
+        NONE = 0,
+        CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG = 0x40000000,
     }
 }

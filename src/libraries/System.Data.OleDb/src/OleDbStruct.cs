@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -33,11 +32,36 @@ namespace System.Data.OleDb
     }
 #endif
 
-#if (WIN32 && !ARCH_arm)
-    [StructLayoutAttribute(LayoutKind.Sequential, Pack = 2)]
-#else
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+
+    [StructLayout(LayoutKind.Sequential, Pack = 2)]
+    internal struct tagDBPARAMBINDINFO_x86
+    {
+        internal IntPtr pwszDataSourceType;
+        internal IntPtr pwszName;
+        internal IntPtr ulParamSize;
+        internal int dwFlags;
+        internal byte bPrecision;
+        internal byte bScale;
+
+#if DEBUG
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append("tagDBPARAMBINDINFO_x86").Append(Environment.NewLine);
+            if (IntPtr.Zero != pwszDataSourceType)
+            {
+                builder.Append("pwszDataSourceType =").Append(Marshal.PtrToStringUni(pwszDataSourceType)).Append(Environment.NewLine);
+            }
+            builder.Append("\tulParamSize  =" + ulParamSize.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            builder.Append("\tdwFlags     =0x" + dwFlags.ToString("X4", CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            builder.Append("\tPrecision   =" + bPrecision.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            builder.Append("\tScale       =" + bScale.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            return builder.ToString();
+        }
 #endif
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     internal struct tagDBPARAMBINDINFO
     {
         internal IntPtr pwszDataSourceType;
@@ -224,13 +248,13 @@ namespace System.Data.OleDb
     internal sealed class tagDBLITERALINFO
     {
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pwszLiteralValue = null;
+        internal string? pwszLiteralValue = null;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pwszInvalidChars = null;
+        internal string? pwszInvalidChars = null;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pwszInvalidStartingChars = null;
+        internal string? pwszInvalidStartingChars = null;
 
         internal int it;
 
@@ -281,13 +305,23 @@ namespace System.Data.OleDb
         VARIANT vValue;
     }
 #endif
-#if (WIN32 && !ARCH_arm)
-    [StructLayoutAttribute(LayoutKind.Sequential, Pack = 2)]
-#else
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
-#endif
-    internal sealed class tagDBPROP
+
+    internal interface ItagDBPROP
     {
+        OleDbPropertyStatus dwStatus { get; }
+        object? vValue { get; }
+        int dwPropertyID { get; }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 2)]
+    internal sealed class tagDBPROP_x86 : ItagDBPROP
+    {
+        OleDbPropertyStatus ItagDBPROP.dwStatus => this.dwStatus;
+
+        object? ItagDBPROP.vValue => this.vValue;
+
+        int ItagDBPROP.dwPropertyID => this.dwPropertyID;
+
         internal int dwPropertyID;
         internal int dwOptions;
         internal OleDbPropertyStatus dwStatus;
@@ -295,7 +329,36 @@ namespace System.Data.OleDb
         internal tagDBIDX columnid;
 
         // Variant
-        [MarshalAs(UnmanagedType.Struct)] internal object vValue;
+        [MarshalAs(UnmanagedType.Struct)] internal object? vValue;
+
+        internal tagDBPROP_x86()
+        {
+        }
+
+        internal tagDBPROP_x86(int propertyID, bool required, object value)
+        {
+            dwPropertyID = propertyID;
+            dwOptions = ((required) ? ODB.DBPROPOPTIONS_REQUIRED : ODB.DBPROPOPTIONS_OPTIONAL);
+            vValue = value;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    internal sealed class tagDBPROP : ItagDBPROP
+    {
+        OleDbPropertyStatus ItagDBPROP.dwStatus => this.dwStatus;
+
+        object? ItagDBPROP.vValue => this.vValue;
+
+        int ItagDBPROP.dwPropertyID => this.dwPropertyID;
+        internal int dwPropertyID;
+        internal int dwOptions;
+        internal OleDbPropertyStatus dwStatus;
+
+        internal tagDBIDX columnid;
+
+        // Variant
+        [MarshalAs(UnmanagedType.Struct)] internal object? vValue;
 
         internal tagDBPROP()
         {
@@ -353,22 +416,22 @@ namespace System.Data.OleDb
     internal sealed class tagDBCOLUMNINFO
     {
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pwszName = null;
+        internal string? pwszName = null;
 
         //[MarshalAs(UnmanagedType.Interface)]
         internal IntPtr pTypeInfo = (IntPtr)0;
 
         internal IntPtr iOrdinal = (IntPtr)0;
 
-        internal int dwFlags = 0;
+        internal int dwFlags;
 
         internal IntPtr ulColumnSize = (IntPtr)0;
 
-        internal short wType = 0;
+        internal short wType;
 
-        internal byte bPrecision = 0;
+        internal byte bPrecision;
 
-        internal byte bScale = 0;
+        internal byte bScale;
 
         internal tagDBIDX columnid;
 
@@ -424,21 +487,63 @@ namespace System.Data.OleDb
         VARIANT vValues;
     }
 #endif
-#if (WIN32 && !ARCH_arm)
-    [StructLayoutAttribute(LayoutKind.Sequential, Pack = 2)]
-#else
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
-#endif
-    internal sealed class tagDBPROPINFO
+
+    internal interface ItagDBPROPINFO
     {
-        [MarshalAs(UnmanagedType.LPWStr)] internal string pwszDescription;
+        int dwPropertyID { get; }
+        int dwFlags { get; }
+        int vtType { get; }
+        object? vValue { get; }
+        string? pwszDescription { get; }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 2)]
+    internal sealed class tagDBPROPINFO_x86 : ItagDBPROPINFO
+    {
+        int ItagDBPROPINFO.dwPropertyID => this.dwPropertyID;
+
+        int ItagDBPROPINFO.dwFlags => this.dwFlags;
+
+        int ItagDBPROPINFO.vtType => this.vtType;
+
+        object? ItagDBPROPINFO.vValue => this.vValue;
+
+        string? ItagDBPROPINFO.pwszDescription => this.pwszDescription;
+
+        [MarshalAs(UnmanagedType.LPWStr)] internal string? pwszDescription;
 
         internal int dwPropertyID;
         internal int dwFlags;
 
         internal short vtType;
 
-        [MarshalAs(UnmanagedType.Struct)] internal object vValue;
+        [MarshalAs(UnmanagedType.Struct)] internal object? vValue;
+
+        internal tagDBPROPINFO_x86()
+        {
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+    internal sealed class tagDBPROPINFO : ItagDBPROPINFO
+    {
+        int ItagDBPROPINFO.dwPropertyID => this.dwPropertyID;
+
+        int ItagDBPROPINFO.dwFlags => this.dwFlags;
+
+        int ItagDBPROPINFO.vtType => this.vtType;
+
+        object? ItagDBPROPINFO.vValue => this.vValue;
+
+        string? ItagDBPROPINFO.pwszDescription => this.pwszDescription;
+        [MarshalAs(UnmanagedType.LPWStr)] internal string? pwszDescription;
+
+        internal int dwPropertyID;
+        internal int dwFlags;
+
+        internal short vtType;
+
+        [MarshalAs(UnmanagedType.Struct)] internal object? vValue;
 
         internal tagDBPROPINFO()
         {
@@ -462,5 +567,18 @@ namespace System.Data.OleDb
         internal IntPtr rgPropertyIDs;
         internal int cPropertyIDs;
         internal Guid guidPropertySet;
+    }
+
+    internal static class OleDbStructHelpers
+    {
+        internal static ItagDBPROPINFO CreateTagDbPropInfo() =>
+            ODB.IsRunningOnX86 ? (ItagDBPROPINFO)new tagDBPROPINFO_x86() : new tagDBPROPINFO();
+
+        internal static ItagDBPROP CreateTagDbProp(int propertyID, bool required, object value) =>
+            ODB.IsRunningOnX86 ? (ItagDBPROP) new tagDBPROP_x86(propertyID, required, value) :
+                    new tagDBPROP(propertyID, required, value);
+
+        internal static ItagDBPROP CreateTagDbProp() =>
+            ODB.IsRunningOnX86 ? (ItagDBPROP) new tagDBPROP_x86() : new tagDBPROP();
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Specialized;
 using System.IO;
@@ -12,7 +11,7 @@ namespace System.Configuration
     // Need the System.Security.Cryptography.Xml package published before this can be enabled,
     // for now, make it throw PlatformNotSupported.
     //
-    // https://github.com/dotnet/corefx/issues/14950
+    // https://github.com/dotnet/runtime/issues/19838
 
     public sealed class RsaProtectedConfigurationProvider : ProtectedConfigurationProvider
     {
@@ -221,7 +220,7 @@ namespace System.Configuration
             }
             catch
             {
-                // On NetFX (Desktop) we try to P/Invoke directly to Windows to get a "better" exception
+                // On .NET Framework we try to P/Invoke directly to Windows to get a "better" exception
                 // ThrowBetterException(keyMustExist);
                 throw;
             }

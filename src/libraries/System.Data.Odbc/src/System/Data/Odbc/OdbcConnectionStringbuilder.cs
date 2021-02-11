@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.ObjectModel;
@@ -8,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Odbc
 {
@@ -31,16 +31,16 @@ namespace System.Data.Odbc
             { DbConnectionStringKeywords.Dsn, Keywords.Dsn }
         };
 
-        private string[] _knownKeywords;
+        private string[]? _knownKeywords;
 
         private string _dsn = DbConnectionStringDefaults.Dsn;
         private string _driver = DbConnectionStringDefaults.Driver;
 
-        public OdbcConnectionStringBuilder() : this((string)null)
+        public OdbcConnectionStringBuilder() : this(null)
         {
         }
 
-        public OdbcConnectionStringBuilder(string connectionString) : base(true)
+        public OdbcConnectionStringBuilder(string? connectionString) : base(true)
         {
             if (!string.IsNullOrEmpty(connectionString))
             {
@@ -48,6 +48,7 @@ namespace System.Data.Odbc
             }
         }
 
+        [AllowNull]
         public override object this[string keyword]
         {
             get
@@ -120,7 +121,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                string[] knownKeywords = _knownKeywords;
+                string[]? knownKeywords = _knownKeywords;
                 if (null == knownKeywords)
                 {
                     knownKeywords = s_validKeywords;
@@ -246,7 +247,7 @@ namespace System.Data.Odbc
             base[keyword] = value;
         }
 
-        public override bool TryGetValue(string keyword, out object value)
+        public override bool TryGetValue(string keyword, [NotNullWhen(true)] out object? value)
         {
             ADP.CheckArgumentNull(keyword, nameof(keyword));
             Keywords index;

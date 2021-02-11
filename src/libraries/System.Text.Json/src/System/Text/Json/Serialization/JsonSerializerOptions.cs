@@ -1,8 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Text.Encodings.Web;
@@ -19,18 +19,30 @@ namespace System.Text.Json
         internal static readonly JsonSerializerOptions s_defaultOptions = new JsonSerializerOptions();
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
-        private static readonly ConcurrentDictionary<string, ImmutableCollectionCreator> s_createRangeDelegates = new ConcurrentDictionary<string, ImmutableCollectionCreator>();
-        private MemberAccessor _memberAccessorStrategy;
-        private JsonNamingPolicy _dictionayKeyPolicy;
-        private JsonNamingPolicy _jsonPropertyNamingPolicy;
+
+        // Simple LRU cache for the public (de)serialize entry points that avoid some lookups in _classes.
+        // Although this may be written by multiple threads, 'volatile' was not added since any local affinity is fine.
+        private JsonClassInfo? _lastClass { get; set; }
+
+        // For any new option added, adding it to the options copied in the copy constructor below must be considered.
+
+        private MemberAccessor? _memberAccessorStrategy;
+        private JsonNamingPolicy? _dictionaryKeyPolicy;
+        private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
-        private JavaScriptEncoder _encoder;
+        private ReferenceHandler? _referenceHandler;
+        private JavaScriptEncoder? _encoder;
+        private JsonIgnoreCondition _defaultIgnoreCondition;
+        private JsonNumberHandling _numberHandling;
+
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
         private bool _allowTrailingCommas;
         private bool _haveTypesBeenCreated;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
+        private bool _ignoreReadonlyFields;
+        private bool _includeFields;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
 
@@ -40,6 +52,66 @@ namespace System.Text.Json
         public JsonSerializerOptions()
         {
             Converters = new ConverterList(this);
+        }
+
+        /// <summary>
+        /// Copies the options from a <see cref="JsonSerializerOptions"/> instance to a new instance.
+        /// </summary>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> instance to copy options from.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="options"/> is <see langword="null"/>.
+        /// </exception>
+        public JsonSerializerOptions(JsonSerializerOptions options)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            _memberAccessorStrategy = options._memberAccessorStrategy;
+            _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
+            _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
+            _readCommentHandling = options._readCommentHandling;
+            _referenceHandler = options._referenceHandler;
+            _encoder = options._encoder;
+            _defaultIgnoreCondition = options._defaultIgnoreCondition;
+            _numberHandling = options._numberHandling;
+
+            _defaultBufferSize = options._defaultBufferSize;
+            _maxDepth = options._maxDepth;
+            _allowTrailingCommas = options._allowTrailingCommas;
+            _ignoreNullValues = options._ignoreNullValues;
+            _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
+            _ignoreReadonlyFields = options._ignoreReadonlyFields;
+            _includeFields = options._includeFields;
+            _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
+            _writeIndented = options._writeIndented;
+
+            Converters = new ConverterList(this, (ConverterList)options.Converters);
+            EffectiveMaxDepth = options.EffectiveMaxDepth;
+
+            // _classes is not copied as sharing the JsonClassInfo and JsonPropertyInfo caches can result in
+            // unnecessary references to type metadata, potentially hindering garbage collection on the source options.
+
+            // _haveTypesBeenCreated is not copied; it's okay to make changes to this options instance as (de)serialization has not occurred.
+        }
+
+        /// <summary>
+        /// Constructs a new <see cref="JsonSerializerOptions"/> instance with a predefined set of options determined by the specified <see cref="JsonSerializerDefaults"/>.
+        /// </summary>
+        /// <param name="defaults"> The <see cref="JsonSerializerDefaults"/> to reason about.</param>
+        public JsonSerializerOptions(JsonSerializerDefaults defaults) : this()
+        {
+            if (defaults == JsonSerializerDefaults.Web)
+            {
+                _propertyNameCaseInsensitive = true;
+                _jsonPropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                _numberHandling = JsonNumberHandling.AllowReadingFromString;
+            }
+            else if (defaults != JsonSerializerDefaults.General)
+            {
+                throw new ArgumentOutOfRangeException(nameof(defaults));
+            }
         }
 
         /// <summary>
@@ -95,7 +167,7 @@ namespace System.Text.Json
         /// <summary>
         /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
         /// </summary>
-        public JavaScriptEncoder Encoder
+        public JavaScriptEncoder? Encoder
         {
             get
             {
@@ -116,16 +188,16 @@ namespace System.Text.Json
         /// This property can be set to <see cref="JsonNamingPolicy.CamelCase"/> to specify a camel-casing policy.
         /// It is not used when deserializing.
         /// </remarks>
-        public JsonNamingPolicy DictionaryKeyPolicy
+        public JsonNamingPolicy? DictionaryKeyPolicy
         {
             get
             {
-                return _dictionayKeyPolicy;
+                return _dictionaryKeyPolicy;
             }
             set
             {
                 VerifyMutable();
-                _dictionayKeyPolicy = value;
+                _dictionaryKeyPolicy = value;
             }
         }
 
@@ -135,7 +207,10 @@ namespace System.Text.Json
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// or <see cref="DefaultIgnoreCondition"/> has been set to a non-default value. These properties cannot be used together.
         /// </exception>
+        [Obsolete("To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.", error: false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public bool IgnoreNullValues
         {
             get
@@ -145,7 +220,69 @@ namespace System.Text.Json
             set
             {
                 VerifyMutable();
+
+                if (value && _defaultIgnoreCondition != JsonIgnoreCondition.Never)
+                {
+                    throw new InvalidOperationException(SR.DefaultIgnoreConditionAlreadySpecified);
+                }
+
                 _ignoreNullValues = value;
+            }
+        }
+
+        /// <summary>
+        /// Specifies a condition to determine when properties with default values are ignored during serialization or deserialization.
+        /// The default value is <see cref="JsonIgnoreCondition.Never" />.
+        /// </summary>
+        /// <exception cref="ArgumentException">
+        /// Thrown if this property is set to <see cref="JsonIgnoreCondition.Always"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred,
+        /// or <see cref="IgnoreNullValues"/> has been set to <see langword="true"/>. These properties cannot be used together.
+        /// </exception>
+        public JsonIgnoreCondition DefaultIgnoreCondition
+        {
+            get
+            {
+                return _defaultIgnoreCondition;
+            }
+            set
+            {
+                VerifyMutable();
+
+                if (value == JsonIgnoreCondition.Always)
+                {
+                    throw new ArgumentException(SR.DefaultIgnoreConditionInvalid);
+                }
+
+                if (value != JsonIgnoreCondition.Never && _ignoreNullValues)
+                {
+                    throw new InvalidOperationException(SR.DefaultIgnoreConditionAlreadySpecified);
+                }
+
+                _defaultIgnoreCondition = value;
+            }
+        }
+
+        /// <summary>
+        /// Specifies how number types should be handled when serializing or deserializing.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public JsonNumberHandling NumberHandling
+        {
+            get => _numberHandling;
+            set
+            {
+                VerifyMutable();
+
+                if (!JsonHelpers.IsValidNumberHandlingValue(value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                _numberHandling = value;
             }
         }
 
@@ -170,6 +307,50 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _ignoreReadOnlyProperties = value;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether read-only fields are ignored during serialization.
+        /// A property is read-only if it isn't marked with the <c>readonly</c> keyword.
+        /// The default value is false.
+        /// </summary>
+        /// <remarks>
+        /// Read-only fields are not deserialized regardless of this setting.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public bool IgnoreReadOnlyFields
+        {
+            get
+            {
+                return _ignoreReadonlyFields;
+            }
+            set
+            {
+                VerifyMutable();
+                _ignoreReadonlyFields = value;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether fields are handled serialization and deserialization.
+        /// The default value is false.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public bool IncludeFields
+        {
+            get
+            {
+                return _includeFields;
+            }
+            set
+            {
+                VerifyMutable();
+                _includeFields = value;
             }
         }
 
@@ -214,7 +395,7 @@ namespace System.Text.Json
         /// The policy is not used for properties that have a <see cref="JsonPropertyNameAttribute"/> applied.
         /// This property can be set to <see cref="JsonNamingPolicy.CamelCase"/> to specify a camel-casing policy.
         /// </remarks>
-        public JsonNamingPolicy PropertyNamingPolicy
+        public JsonNamingPolicy? PropertyNamingPolicy
         {
             get
             {
@@ -296,16 +477,28 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        /// Configures how object references are handled when reading and writing JSON.
+        /// </summary>
+        public ReferenceHandler? ReferenceHandler
+        {
+            get => _referenceHandler;
+            set
+            {
+                VerifyMutable();
+                _referenceHandler = value;
+            }
+        }
+
         internal MemberAccessor MemberAccessorStrategy
         {
             get
             {
                 if (_memberAccessorStrategy == null)
                 {
-#if BUILDING_INBOX_LIBRARY
+#if NETFRAMEWORK || NETCOREAPP
                     _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
 #else
-                    // todo: should we attempt to detect here, or at least have a #define like #SUPPORTS_IL_EMIT
                     _memberAccessorStrategy = new ReflectionMemberAccessor();
 #endif
                 }
@@ -314,17 +507,39 @@ namespace System.Text.Json
             }
         }
 
-        internal JsonClassInfo GetOrAddClass(Type classType)
+        internal JsonClassInfo GetOrAddClass(Type type)
         {
             _haveTypesBeenCreated = true;
 
             // todo: for performance and reduced instances, consider using the converters and JsonClassInfo from s_defaultOptions by cloning (or reference directly if no changes).
-            if (!_classes.TryGetValue(classType, out JsonClassInfo result))
+            // https://github.com/dotnet/runtime/issues/32357
+            if (!_classes.TryGetValue(type, out JsonClassInfo? result))
             {
-                result = _classes.GetOrAdd(classType, new JsonClassInfo(classType, this));
+                result = _classes.GetOrAdd(type, new JsonClassInfo(type, this));
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Return the ClassInfo for root API calls.
+        /// This has a LRU cache that is intended only for public API calls that specify the root type.
+        /// </summary>
+        internal JsonClassInfo GetOrAddClassForRootType(Type type)
+        {
+            JsonClassInfo? jsonClassInfo = _lastClass;
+            if (jsonClassInfo?.Type != type)
+            {
+                jsonClassInfo = GetOrAddClass(type);
+                _lastClass = jsonClassInfo;
+            }
+
+            return jsonClassInfo;
+        }
+
+        internal bool TypeIsCached(Type type)
+        {
+            return _classes.ContainsKey(type);
         }
 
         internal JsonReaderOptions GetReaderOptions()
@@ -347,21 +562,6 @@ namespace System.Text.Json
                 SkipValidation = true
 #endif
             };
-        }
-
-        internal bool CreateRangeDelegatesContainsKey(string key)
-        {
-            return s_createRangeDelegates.ContainsKey(key);
-        }
-
-        internal bool TryGetCreateRangeDelegate(string delegateKey, out ImmutableCollectionCreator createRangeDelegate)
-        {
-            return s_createRangeDelegates.TryGetValue(delegateKey, out createRangeDelegate) && createRangeDelegate != null;
-        }
-
-        internal bool TryAddCreateRangeDelegate(string key, ImmutableCollectionCreator createRangeDelegate)
-        {
-            return s_createRangeDelegates.TryAdd(key, createRangeDelegate);
         }
 
         internal void VerifyMutable()

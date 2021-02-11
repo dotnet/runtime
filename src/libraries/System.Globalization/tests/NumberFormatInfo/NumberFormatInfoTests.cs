@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection;
@@ -85,6 +84,20 @@ namespace System.Globalization.Tests
             nfi.NativeDigits = newDigits;
 
             Assert.Equal(newDigits, nfi.NativeDigits);
+        }
+
+        [Fact]
+        public void TestNFIFormatLimits()
+        {
+            foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.AllCultures))
+            {
+                NumberFormatInfo nfi = ci.NumberFormat;
+                Assert.InRange(nfi.CurrencyNegativePattern, 0, 16);
+                Assert.InRange(nfi.CurrencyPositivePattern, 0, 3);
+                Assert.InRange(nfi.PercentNegativePattern, 0, 11);
+                Assert.InRange(nfi.PercentPositivePattern, 0, 3);
+                Assert.InRange(nfi.NumberNegativePattern, 0, 4);
+            }
         }
 
         [Theory]

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Collections.Immutable
@@ -31,7 +31,7 @@ namespace System.Collections.Immutable
         /// <c>false</c> if the location's value remained the same because the last
         /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
-        public static bool Update<T>(ref T location, Func<T, T> transformer) where T : class
+        public static bool Update<T>(ref T location, Func<T, T> transformer) where T : class?
         {
             Requires.NotNull(transformer, nameof(transformer));
 
@@ -75,7 +75,7 @@ namespace System.Collections.Immutable
         /// <c>false</c> if the location's value remained the same because the last
         /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
-        public static bool Update<T, TArg>(ref T location, Func<T, TArg, T> transformer, TArg transformerArgument) where T : class
+        public static bool Update<T, TArg>(ref T location, Func<T, TArg, T> transformer, TArg transformerArgument) where T : class?
         {
             Requires.NotNull(transformer, nameof(transformer));
 
@@ -122,7 +122,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(transformer, nameof(transformer));
 
             bool successful;
-            T[]? oldArray = Volatile.Read(ref location.array);
+            T[]? oldArray = Volatile.Read(ref Unsafe.AsRef(in location.array));
             do
             {
                 ImmutableArray<T> newImmutableArray = transformer(new ImmutableArray<T>(oldArray));
@@ -132,7 +132,7 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-                T[]? interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
+                T[]? interlockedResult = Interlocked.CompareExchange(ref Unsafe.AsRef(in location.array), newImmutableArray.array, oldArray);
                 successful = ReferenceEquals(oldArray, interlockedResult);
                 oldArray = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
@@ -166,7 +166,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(transformer, nameof(transformer));
 
             bool successful;
-            T[]? oldArray = Volatile.Read(ref location.array);
+            T[]? oldArray = Volatile.Read(ref Unsafe.AsRef(in location.array));
             do
             {
                 ImmutableArray<T> newImmutableArray = transformer(new ImmutableArray<T>(oldArray), transformerArgument);
@@ -176,7 +176,7 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-                T[]? interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
+                T[]? interlockedResult = Interlocked.CompareExchange(ref Unsafe.AsRef(in location.array), newImmutableArray.array, oldArray);
                 successful = ReferenceEquals(oldArray, interlockedResult);
                 oldArray = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
@@ -196,7 +196,7 @@ namespace System.Collections.Immutable
         /// <returns>The prior value at the specified <paramref name="location"/>.</returns>
         public static ImmutableArray<T> InterlockedExchange<T>(ref ImmutableArray<T> location, ImmutableArray<T> value)
         {
-            return new ImmutableArray<T>(Interlocked.Exchange(ref location.array, value.array));
+            return new ImmutableArray<T>(Interlocked.Exchange(ref Unsafe.AsRef(in location.array), value.array));
         }
 
         /// <summary>
@@ -210,7 +210,7 @@ namespace System.Collections.Immutable
         /// <returns>The prior value at the specified <paramref name="location"/>.</returns>
         public static ImmutableArray<T> InterlockedCompareExchange<T>(ref ImmutableArray<T> location, ImmutableArray<T> value, ImmutableArray<T> comparand)
         {
-            return new ImmutableArray<T>(Interlocked.CompareExchange(ref location.array, value.array, comparand.array));
+            return new ImmutableArray<T>(Interlocked.CompareExchange(ref Unsafe.AsRef(in location.array), value.array, comparand.array));
         }
 
         /// <summary>
@@ -354,6 +354,10 @@ namespace System.Collections.Immutable
                 }
 
                 var updatedCollection = priorCollection.SetItem(key, newValue);
+                if (object.ReferenceEquals(priorCollection, updatedCollection))
+                {
+                    return oldValue;
+                }
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
                 successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
@@ -397,6 +401,10 @@ namespace System.Collections.Immutable
                 }
 
                 var updatedCollection = priorCollection.SetItem(key, newValue);
+                if (object.ReferenceEquals(priorCollection, updatedCollection))
+                {
+                    return oldValue;
+                }
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
                 successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
@@ -526,7 +534,7 @@ namespace System.Collections.Immutable
 
                 if (priorCollection.IsEmpty)
                 {
-                    value = default(T)!;
+                    value = default;
                     return false;
                 }
 
@@ -581,7 +589,7 @@ namespace System.Collections.Immutable
 
                 if (priorCollection.IsEmpty)
                 {
-                    value = default(T)!;
+                    value = default;
                     return false;
                 }
 

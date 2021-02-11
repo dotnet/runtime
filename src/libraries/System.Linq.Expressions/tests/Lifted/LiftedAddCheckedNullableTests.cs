@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using Xunit;
@@ -180,7 +179,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact] // See https://github.com/dotnet/corefx/issues/13048
+        [Fact] // See https://github.com/dotnet/runtime/issues/19106
         public static void CheckLiftedAddCheckedRegressionTest()
         {
             // Regression test for an issue where `liftToNull` was set to `false` in `AddChecked`,

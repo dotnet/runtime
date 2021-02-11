@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -11,7 +10,6 @@ namespace System.Diagnostics.Eventing.Reader
     /// The metadata for a specific Opcode defined by a Provider.
     /// An instance of this class is obtained from a ProviderMetadata object.
     /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Opcode", Justification = "matell: Shipped public in 3.5, breaking change to fix now.")]
     public sealed class EventOpcode
     {
         private readonly int _value;

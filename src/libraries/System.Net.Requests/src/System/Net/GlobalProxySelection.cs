@@ -1,6 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net
 {
@@ -8,57 +9,29 @@ namespace System.Net
     public class GlobalProxySelection
     {
         // This defers to WebRequest.DefaultWebProxy, but returns EmptyWebProxy instead of null.
+        [AllowNull]
         public static IWebProxy Select
         {
-            get
-            {
-                IWebProxy proxy = WebRequest.DefaultWebProxy;
-                if (proxy == null)
-                {
-                    proxy = GetEmptyWebProxy();
-                }
-                return proxy;
-            }
-
-            set
-            {
-                WebRequest.DefaultWebProxy = value;
-            }
+            get => WebRequest.DefaultWebProxy ?? GetEmptyWebProxy();
+            set => WebRequest.DefaultWebProxy = value;
         }
 
-        public static IWebProxy GetEmptyWebProxy()
-        {
-            return new EmptyWebProxy();
-        }
+        public static IWebProxy GetEmptyWebProxy() => new EmptyWebProxy();
 
         private sealed class EmptyWebProxy : IWebProxy
         {
-            private ICredentials _credentials;
+            private ICredentials? _credentials;
 
-            public EmptyWebProxy()
-            {
-            }
+            public EmptyWebProxy() { }
 
-            public Uri GetProxy(Uri uri)
-            {
-                return uri;
-            }
+            public Uri GetProxy(Uri uri) => uri;
 
-            public bool IsBypassed(Uri uri)
-            {
-                return true; // no proxy, always bypasses
-            }
+            public bool IsBypassed(Uri uri) => true; // no proxy, always bypasses
 
-            public ICredentials Credentials
+            public ICredentials? Credentials
             {
-                get
-                {
-                    return _credentials;
-                }
-                set
-                {
-                    _credentials = value; // doesn't do anything, but doesn't break contract either
-                }
+                get => _credentials;
+                set => _credentials = value; // doesn't do anything, but doesn't break contract either
             }
         }
     }

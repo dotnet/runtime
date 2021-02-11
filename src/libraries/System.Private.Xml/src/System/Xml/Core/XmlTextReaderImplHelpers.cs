@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -12,6 +11,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -27,18 +27,18 @@ namespace System.Xml
             internal char[] chars;
             internal int charPos;
             internal int charsUsed;
-            internal Encoding encoding;
+            internal Encoding? encoding;
             internal bool appendMode;
 
             // input stream & byte buffer
-            internal Stream stream;
-            internal Decoder decoder;
-            internal byte[] bytes;
+            internal Stream? stream;
+            internal Decoder? decoder;
+            internal byte[]? bytes;
             internal int bytePos;
             internal int bytesUsed;
 
             // input text reader
-            internal TextReader textReader;
+            internal TextReader? textReader;
 
             // current line number & position
             internal int lineNo;
@@ -46,14 +46,14 @@ namespace System.Xml
 
             // base uri of the current entity
             internal string baseUriStr;
-            internal Uri baseUri;
+            internal Uri? baseUri;
 
             // eof flag of the entity
             internal bool isEof;
             internal bool isStreamEof;
 
             // entity type & id
-            internal IDtdEntityInfo entity;
+            internal IDtdEntityInfo? entity;
             internal int entityId;
 
             // normalization
@@ -64,7 +64,7 @@ namespace System.Xml
 
             internal void Clear()
             {
-                chars = null;
+                chars = null!;
                 charPos = 0;
                 charsUsed = 0;
                 encoding = null;
@@ -124,7 +124,7 @@ namespace System.Xml
             internal XmlSpace xmlSpace;
             internal string xmlLang;
             internal string defaultNamespace;
-            internal XmlContext previousContext;
+            internal XmlContext? previousContext;
 
             internal XmlContext()
             {
@@ -154,10 +154,10 @@ namespace System.Xml
             public override bool PopScope() { return false; }
             public override void AddNamespace(string prefix, string uri) { }
             public override void RemoveNamespace(string prefix, string uri) { }
-            public override IEnumerator GetEnumerator() { return null; }
-            public override IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope) { return null; }
-            public override string LookupNamespace(string prefix) { return string.Empty; }
-            public override string LookupPrefix(string uri) { return null; }
+            public override IEnumerator GetEnumerator() { return null!; }
+            public override IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope) { return null!; }
+            public override string LookupNamespace(string? prefix) { return string.Empty; }
+            public override string? LookupPrefix(string uri) { return null; }
             public override bool HasNamespace(string prefix) { return false; }
         }
 
@@ -181,12 +181,12 @@ namespace System.Xml
                 get { return _reader.DtdParserProxy_NameTable; }
             }
 
-            IXmlNamespaceResolver IDtdParserAdapter.NamespaceResolver
+            IXmlNamespaceResolver? IDtdParserAdapter.NamespaceResolver
             {
                 get { return _reader.DtdParserProxy_NamespaceResolver; }
             }
 
-            Uri IDtdParserAdapter.BaseUri
+            Uri? IDtdParserAdapter.BaseUri
             {
                 // SxS: DtdParserProxy_BaseUri property on the reader may expose machine scope resources. This property
                 // is just returning the value of the other property, so it may expose machine scope resource as well.
@@ -244,22 +244,22 @@ namespace System.Xml
                 return _reader.DtdParserProxy_ReadData();
             }
 
-            int IDtdParserAdapter.ParseNumericCharRef(StringBuilder internalSubsetBuilder)
+            int IDtdParserAdapter.ParseNumericCharRef(StringBuilder? internalSubsetBuilder)
             {
                 return _reader.DtdParserProxy_ParseNumericCharRef(internalSubsetBuilder);
             }
 
-            int IDtdParserAdapter.ParseNamedCharRef(bool expand, StringBuilder internalSubsetBuilder)
+            int IDtdParserAdapter.ParseNamedCharRef(bool expand, StringBuilder? internalSubsetBuilder)
             {
                 return _reader.DtdParserProxy_ParseNamedCharRef(expand, internalSubsetBuilder);
             }
 
-            void IDtdParserAdapter.ParsePI(StringBuilder sb)
+            void IDtdParserAdapter.ParsePI(StringBuilder? sb)
             {
                 _reader.DtdParserProxy_ParsePI(sb);
             }
 
-            void IDtdParserAdapter.ParseComment(StringBuilder sb)
+            void IDtdParserAdapter.ParseComment(StringBuilder? sb)
             {
                 _reader.DtdParserProxy_ParseComment(sb);
             }
@@ -269,12 +269,12 @@ namespace System.Xml
                 return _reader.DtdParserProxy_PushEntity(entity, out entityId);
             }
 
-            bool IDtdParserAdapter.PopEntity(out IDtdEntityInfo oldEntity, out int newEntityId)
+            bool IDtdParserAdapter.PopEntity(out IDtdEntityInfo? oldEntity, out int newEntityId)
             {
                 return _reader.DtdParserProxy_PopEntity(out oldEntity, out newEntityId);
             }
 
-            bool IDtdParserAdapter.PushExternalSubset(string systemId, string publicId)
+            bool IDtdParserAdapter.PushExternalSubset(string? systemId, string? publicId)
             {
                 return _reader.DtdParserProxy_PushExternalSubset(systemId, publicId);
             }
@@ -285,6 +285,7 @@ namespace System.Xml
                 _reader.DtdParserProxy_PushInternalDtd(baseUri, internalDtd);
             }
 
+            [DoesNotReturn]
             void IDtdParserAdapter.Throw(Exception e)
             {
                 _reader.DtdParserProxy_Throw(e);
@@ -305,7 +306,7 @@ namespace System.Xml
                 get { return _reader.DtdParserProxy_DtdValidation; }
             }
 
-            IValidationEventHandling IDtdParserAdapterWithValidation.ValidationEventHandling
+            IValidationEventHandling? IDtdParserAdapterWithValidation.ValidationEventHandling
             {
                 get { return _reader.DtdParserProxy_ValidationEventHandling; }
             }
@@ -332,7 +333,7 @@ namespace System.Xml
         private class NodeData : IComparable
         {
             // static instance with no data - is used when XmlTextReader is closed
-            private static volatile NodeData s_None;
+            private static volatile NodeData? s_None;
 
             // NOTE: Do not use this property for reference comparison. It may not be unique.
             internal static NodeData None
@@ -352,15 +353,15 @@ namespace System.Xml
             internal XmlNodeType type;
 
             // name
-            internal string localName;
-            internal string prefix;
-            internal string ns;
-            internal string nameWPrefix;
+            internal string localName = null!;
+            internal string prefix = null!;
+            internal string? ns;
+            internal string? nameWPrefix;
 
             // value:
             // value == null -> the value is kept in the 'chars' buffer starting at valueStartPos and valueLength long
-            private string _value;
-            private char[] _chars;
+            private string? _value;
+            private char[]? _chars;
             private int _valueStartPos;
             private int _valueLength;
 
@@ -386,11 +387,11 @@ namespace System.Xml
             internal bool xmlContextPushed;
 
             // attribute value chunks
-            internal NodeData nextAttrValueChunk;
+            internal NodeData? nextAttrValueChunk;
 
             // type info
-            internal object schemaType;
-            internal object typedValue;
+            internal object? schemaType;
+            internal object? typedValue;
 
             internal NodeData()
             {
@@ -456,6 +457,7 @@ namespace System.Xml
 
                     if (_value == null)
                     {
+                        Debug.Assert(_chars != null);
                         _value = new string(_chars, _valueStartPos, _valueLength);
                     }
                     return _value;
@@ -466,25 +468,35 @@ namespace System.Xml
             {
                 if (ValueBuffered)
                 {
+                    Debug.Assert(_chars != null);
                     XmlTextReaderImpl.StripSpaces(_chars, _valueStartPos, ref _valueLength);
                 }
                 else
                 {
+                    Debug.Assert(_value != null);
                     _value = XmlTextReaderImpl.StripSpaces(_value);
                 }
             }
 
+            [MemberNotNull("_value")]
+            [MemberNotNull("nameWPrefix")]
+            [MemberNotNull("localName")]
+            [MemberNotNull("prefix")]
+            [MemberNotNull("ns")]
             internal void Clear(XmlNodeType type)
             {
                 this.type = type;
                 ClearName();
                 _value = string.Empty;
                 _valueStartPos = -1;
-                nameWPrefix = string.Empty;
                 schemaType = null;
                 typedValue = null;
             }
 
+            [MemberNotNull("localName")]
+            [MemberNotNull("prefix")]
+            [MemberNotNull("ns")]
+            [MemberNotNull("nameWPrefix")]
             internal void ClearName()
             {
                 localName = string.Empty;
@@ -529,7 +541,7 @@ namespace System.Xml
                 SetNamedNode(type, localName, string.Empty, localName);
             }
 
-            internal void SetNamedNode(XmlNodeType type, string localName, string prefix, string nameWPrefix)
+            internal void SetNamedNode(XmlNodeType type, string localName, string prefix, string? nameWPrefix)
             {
                 Debug.Assert(localName != null);
                 Debug.Assert(localName.Length > 0);
@@ -637,10 +649,12 @@ namespace System.Xml
                 }
                 if (_valueStartPos != -1)
                 {
+                    Debug.Assert(_chars != null);
                     XmlTextReaderImpl.AdjustLineInfo(_chars, _valueStartPos, _valueStartPos + valueOffset, isNormalized, ref lineInfo);
                 }
                 else
                 {
+                    Debug.Assert(_value != null);
                     XmlTextReaderImpl.AdjustLineInfo(_value, 0, valueOffset, isNormalized, ref lineInfo);
                 }
             }
@@ -672,9 +686,9 @@ namespace System.Xml
                 return nameWPrefix;
             }
 
-            int IComparable.CompareTo(object obj)
+            int IComparable.CompareTo(object? obj)
             {
-                NodeData other = obj as NodeData;
+                NodeData? other = obj as NodeData;
                 if (other != null)
                 {
                     if (Ref.Equal(localName, other.localName))
@@ -715,7 +729,7 @@ namespace System.Xml
                 get { return s_instance; }
             }
 
-            public int Compare(object x, object y)
+            public int Compare(object? x, object? y)
             {
                 Debug.Assert(x == null || x is NodeData || x is IDtdDefaultAttributeInfo);
                 Debug.Assert(y == null || y is NodeData || y is IDtdDefaultAttributeInfo);
@@ -732,7 +746,7 @@ namespace System.Xml
                     return 1;
                 }
 
-                NodeData nodeData = x as NodeData;
+                NodeData? nodeData = x as NodeData;
                 if (nodeData != null)
                 {
                     localName = nodeData.localName;
@@ -740,8 +754,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    IDtdDefaultAttributeInfo attrDef = x as IDtdDefaultAttributeInfo;
-                    if (attrDef != null)
+                    if (x is IDtdDefaultAttributeInfo attrDef)
                     {
                         localName = attrDef.LocalName;
                         prefix = attrDef.Prefix;
@@ -760,8 +773,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    IDtdDefaultAttributeInfo attrDef = y as IDtdDefaultAttributeInfo;
-                    if (attrDef != null)
+                    if (y is IDtdDefaultAttributeInfo attrDef)
                     {
                         localName2 = attrDef.LocalName;
                         prefix2 = attrDef.Prefix;

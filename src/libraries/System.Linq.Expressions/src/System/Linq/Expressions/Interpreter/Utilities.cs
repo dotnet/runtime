@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -15,8 +15,6 @@ namespace System.Linq.Expressions.Interpreter
     {
         private const int MaximumArity = 17;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
         internal static Type MakeDelegate(Type[] types)
         {
             Debug.Assert(types != null && types.Length > 0);
@@ -96,7 +94,7 @@ namespace System.Linq.Expressions.Interpreter
                 _ => i,
             };
 
-        internal static object GetPrimitiveDefaultValue(Type type)
+        internal static object? GetPrimitiveDefaultValue(Type type)
         {
             object result;
 
@@ -162,7 +160,7 @@ namespace System.Linq.Expressions.Interpreter
         /// </summary>
         public static void UnwrapAndRethrow(TargetInvocationException exception)
         {
-            ExceptionDispatchInfo.Throw(exception.InnerException);
+            ExceptionDispatchInfo.Throw(exception.InnerException!);
         }
     }
 
@@ -171,11 +169,11 @@ namespace System.Linq.Expressions.Interpreter
     /// </summary>
     internal class HybridReferenceDictionary<TKey, TValue> where TKey : class
     {
-        private KeyValuePair<TKey, TValue>[] _keysAndValues;
-        private Dictionary<TKey, TValue> _dict;
+        private KeyValuePair<TKey, TValue>[]? _keysAndValues;
+        private Dictionary<TKey, TValue>? _dict;
         private const int ArraySize = 10;
 
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             Debug.Assert(key != null);
 
@@ -194,7 +192,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
             }
-            value = default(TValue);
+            value = default;
             return false;
         }
 
@@ -228,7 +226,7 @@ namespace System.Linq.Expressions.Interpreter
                 return _dict.ContainsKey(key);
             }
 
-            KeyValuePair<TKey, TValue>[] keysAndValues = _keysAndValues;
+            KeyValuePair<TKey, TValue>[]? keysAndValues = _keysAndValues;
             if (keysAndValues != null)
             {
                 for (int i = 0; i < keysAndValues.Length; i++)
@@ -273,7 +271,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 Debug.Assert(key != null);
 
-                TValue res;
+                TValue? res;
                 if (TryGetValue(key, out res))
                 {
                     return res;

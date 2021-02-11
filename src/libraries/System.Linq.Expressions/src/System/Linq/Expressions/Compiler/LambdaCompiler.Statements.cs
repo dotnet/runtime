@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Globalization;
 using System.Reflection;
@@ -87,8 +87,7 @@ namespace System.Linq.Expressions.Compiler
             if (HasVariables(node) &&
                 (_scope.MergedScopes == null || !_scope.MergedScopes.Contains(node)))
             {
-                CompilerScope scope;
-                if (!_tree.Scopes.TryGetValue(node, out scope))
+                if (!_tree.Scopes.TryGetValue(node, out CompilerScope? scope))
                 {
                     //
                     // Very often, we want to compile nodes as reductions
@@ -123,7 +122,7 @@ namespace System.Linq.Expressions.Compiler
         {
             if (_scope.Node == node)
             {
-                _scope = _scope.Exit();
+                _scope = _scope.Exit()!;
             }
         }
 
@@ -411,7 +410,7 @@ namespace System.Linq.Expressions.Compiler
                     // allowed, but can't be reached.
                     if (uniqueKeys.Add(key))
                     {
-                        keys.Add(new SwitchLabel(key, test.Value, labels[i]));
+                        keys.Add(new SwitchLabel(key, test.Value!, labels[i]));
                     }
                 }
             }
@@ -444,7 +443,7 @@ namespace System.Linq.Expressions.Compiler
             return true;
         }
 
-        private static decimal ConvertSwitchValue(object value)
+        private static decimal ConvertSwitchValue(object? value)
         {
             if (value is char)
             {
@@ -552,7 +551,7 @@ namespace System.Linq.Expressions.Compiler
                     // explicit guard
                     Label secondHalf = _ilg.DefineLabel();
                     _ilg.Emit(OpCodes.Ldloc, info.Value);
-                    EmitConstant(buckets[mid - 1].Last().Constant);
+                    EmitConstant(buckets[mid - 1][^1].Constant);
                     _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, secondHalf);
                     EmitSwitchBuckets(info, buckets, first, mid - 1);
                     _ilg.MarkLabel(secondHalf);
@@ -583,7 +582,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 after = _ilg.DefineLabel();
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
-                EmitConstant(bucket.Last().Constant);
+                EmitConstant(bucket[^1].Constant);
                 _ilg.Emit(info.IsUnsigned ? OpCodes.Bgt_Un : OpCodes.Bgt, after.Value);
                 _ilg.Emit(OpCodes.Ldloc, info.Value);
                 EmitConstant(bucket[0].Constant);
@@ -629,7 +628,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (info.Is64BitSwitch)
             {
-                _ilg.MarkLabel(after.Value);
+                _ilg.MarkLabel(after!.Value);
             }
         }
 
@@ -739,7 +738,7 @@ namespace System.Linq.Expressions.Compiler
                         Expression.Equal(switchValue, Expression.Constant(null, typeof(string))),
                         Expression.Assign(switchIndex, Utils.Constant(nullCase)),
                         Expression.IfThenElse(
-                            Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex),
+                            CallTryGetValue(dictInit, switchValue, switchIndex),
                             Utils.Empty,
                             Expression.Assign(switchIndex, Utils.Constant(-1))
                         )
@@ -752,12 +751,20 @@ namespace System.Linq.Expressions.Compiler
             return true;
         }
 
+        [DynamicDependency("TryGetValue", typeof(Dictionary<,>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The method will be preserved by the DynamicDependency.")]
+        private static MethodCallExpression CallTryGetValue(Expression dictInit, ParameterExpression switchValue, ParameterExpression switchIndex)
+        {
+            return Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex);
+        }
+
         #endregion
 
         private void CheckRethrow()
         {
             // Rethrow is only valid inside a catch.
-            for (LabelScopeInfo j = _labelBlock; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = _labelBlock; j != null; j = j.Parent)
             {
                 if (j.Kind == LabelScopeKind.Catch)
                 {
@@ -777,7 +784,7 @@ namespace System.Linq.Expressions.Compiler
         private void CheckTry()
         {
             // Try inside a filter is not verifiable
-            for (LabelScopeInfo j = _labelBlock; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = _labelBlock; j != null; j = j.Parent)
             {
                 if (j.Kind == LabelScopeKind.Filter)
                 {
@@ -821,7 +828,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(node.Body);
 
             Type tryType = node.Type;
-            LocalBuilder value = null;
+            LocalBuilder? value = null;
             if (tryType != typeof(void))
             {
                 //store the value of the try body
@@ -857,7 +864,7 @@ namespace System.Linq.Expressions.Compiler
                 if (tryType != typeof(void))
                 {
                     //store the value of the catch block body
-                    _ilg.Emit(OpCodes.Stloc, value);
+                    _ilg.Emit(OpCodes.Stloc, value!);
                 }
 
                 ExitScope(cb);
@@ -883,7 +890,7 @@ namespace System.Linq.Expressions.Compiler
                 }
 
                 // Emit the body
-                EmitExpressionAsVoid(node.Finally ?? node.Fault);
+                EmitExpressionAsVoid(node.Finally ?? node.Fault!);
 
                 _ilg.EndExceptionBlock();
                 PopLabelBlock(LabelScopeKind.Finally);
@@ -895,8 +902,8 @@ namespace System.Linq.Expressions.Compiler
 
             if (tryType != typeof(void))
             {
-                _ilg.Emit(OpCodes.Ldloc, value);
-                FreeLocal(value);
+                _ilg.Emit(OpCodes.Ldloc, value!);
+                FreeLocal(value!);
             }
             PopLabelBlock(LabelScopeKind.Try);
         }
@@ -939,7 +946,7 @@ namespace System.Linq.Expressions.Compiler
             // begin the catch, clear the exception, we've
             // already saved it
             _ilg.MarkLabel(endFilter);
-            _ilg.BeginCatchBlock(exceptionType: null);
+            _ilg.BeginCatchBlock(exceptionType: null!);
             _ilg.Emit(OpCodes.Pop);
         }
 

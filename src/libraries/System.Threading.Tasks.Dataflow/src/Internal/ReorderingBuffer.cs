@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -15,6 +14,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace System.Threading.Tasks.Dataflow.Internal
@@ -45,7 +45,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Action used to output items in order.</summary>
         private readonly Action<object, TOutput> _outputAction;
         /// <summary>The ID of the next item that should be released from the reordering buffer.</summary>
-        private long _nextReorderedIdToOutput = 0;
+        private long _nextReorderedIdToOutput;
 
         /// <summary>Gets the object used to synchronize all access to the reordering buffer's internals.</summary>
         private object ValueLock { get { return _reorderingBuffer; } }
@@ -66,7 +66,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="id">The ID of the item.</param>
         /// <param name="item">The completed item.</param>
         /// <param name="itemIsValid">Specifies whether the item is valid (true) or just a placeholder (false).</param>
-        internal void AddItem(long id, TOutput item, bool itemIsValid)
+        internal void AddItem(long id, TOutput? item, bool itemIsValid)
         {
             Debug.Assert(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
@@ -84,7 +84,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 else
                 {
                     Debug.Assert((ulong)id > (ulong)_nextReorderedIdToOutput, "Duplicate id.");
-                    _reorderingBuffer.Add(id, new KeyValuePair<bool, TOutput>(itemIsValid, item));
+                    _reorderingBuffer.Add(id, new KeyValuePair<bool, TOutput>(itemIsValid, item!));
                 }
             }
         }
@@ -104,7 +104,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// true if the item was not added but is next in line.
         /// false if the item was not added and is not next in line.
         /// </returns>
-        internal bool? AddItemIfNextAndTrusted(long id, TOutput item, bool isTrusted)
+        internal bool? AddItemIfNextAndTrusted(long id, TOutput? item, bool isTrusted)
         {
             Debug.Assert(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
@@ -132,20 +132,20 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="id">The id of the message to be ignored.</param>
         public void IgnoreItem(long id)
         {
-            AddItem(id, default(TOutput), itemIsValid: false);
+            AddItem(id, default(TOutput)!, itemIsValid: false);
         }
 
         /// <summary>Outputs the item.  The item must have already been confirmed to have the next ID.</summary>
         /// <param name="theNextItem">The item to output.</param>
         /// <param name="itemIsValid">Whether the item is valid.</param>
-        private void OutputNextItem(TOutput theNextItem, bool itemIsValid)
+        private void OutputNextItem(TOutput? theNextItem, bool itemIsValid)
         {
             Common.ContractAssertMonitorStatus(ValueLock, held: true);
 
             // Note that we're now looking for a different item, and pass this one through.
             // Then release any items which may be pending.
             _nextReorderedIdToOutput++;
-            if (itemIsValid) _outputAction(_owningSource, theNextItem);
+            if (itemIsValid) _outputAction(_owningSource, theNextItem!);
 
             // Try to get the next available item from the buffer and output it.  Continue to do so
             // until we run out of items in the reordering buffer or don't yet have the next ID buffered.

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
@@ -22,10 +21,8 @@ namespace System.Text.Json
         /// Writes the <see cref="DateTimeOffset"/> using the round-trippable ('O') <see cref="StandardFormat"/> , for example: 2017-06-12T05:30:45.7680000-07:00.
         /// </remarks>
         public void WriteString(JsonEncodedText propertyName, DateTimeOffset value)
-            => WriteStringHelper(propertyName.EncodedUtf8Bytes, value);
-
-        private void WriteStringHelper(ReadOnlySpan<byte> utf8PropertyName, DateTimeOffset value)
         {
+            ReadOnlySpan<byte> utf8PropertyName = propertyName.EncodedUtf8Bytes;
             Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             WriteStringByOptions(utf8PropertyName, value);
@@ -142,7 +139,7 @@ namespace System.Text.Json
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < propertyName.Length);
 
-            char[] propertyArray = null;
+            char[]? propertyArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndexProp);
 
@@ -165,7 +162,7 @@ namespace System.Text.Json
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < utf8PropertyName.Length);
 
-            byte[] propertyArray = null;
+            byte[]? propertyArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndexProp);
 
@@ -373,6 +370,13 @@ namespace System.Text.Json
             BytesPending += bytesWritten;
 
             output[BytesPending++] = JsonConstants.Quote;
+        }
+
+        internal void WritePropertyName(DateTimeOffset value)
+        {
+            Span<byte> buffer = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
+            JsonWriterHelper.WriteDateTimeOffsetTrimmed(buffer, value, out int bytesWritten);
+            WritePropertyNameUnescaped(buffer.Slice(0, bytesWritten));
         }
     }
 }

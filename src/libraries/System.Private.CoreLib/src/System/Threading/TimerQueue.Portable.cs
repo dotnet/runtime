@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,9 +34,14 @@ namespace System.Threading
             var timers = new List<TimerQueue>(Instances.Length);
             s_scheduledTimersToFire ??= new List<TimerQueue>(Instances.Length);
 
-            Thread timerThread = new Thread(TimerThread);
-            timerThread.IsBackground = true;
-            timerThread.Start();
+            // The timer thread must start in the default execution context without transferring the context, so
+            // using UnsafeStart() instead of Start()
+            Thread timerThread = new Thread(TimerThread)
+            {
+                Name = ".NET Timers",
+                IsBackground = true
+            };
+            timerThread.UnsafeStart();
 
             // Do this after creating the thread in case thread creation fails so that it will try again next time
             s_scheduledTimers = timers;
@@ -122,7 +126,7 @@ namespace System.Threading
                 {
                     foreach (TimerQueue timerToFire in timersToFire)
                     {
-                        ThreadPool.UnsafeQueueUserWorkItemInternal(timerToFire, preferLocal: false);
+                        ThreadPool.UnsafeQueueTimeSensitiveWorkItem(timerToFire);
                     }
                     timersToFire.Clear();
                 }

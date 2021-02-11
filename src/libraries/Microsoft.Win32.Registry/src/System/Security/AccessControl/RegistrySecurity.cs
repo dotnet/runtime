@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
@@ -95,7 +94,7 @@ namespace System.Security.AccessControl
         {
         }
 
-        private static Exception _HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
+        private static Exception? _HandleErrorCode(int errorCode, string? name, SafeHandle? handle, object? context)
         {
             return _HandleErrorCodeCore(errorCode, name, handle, context);
         }

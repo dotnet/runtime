@@ -11,7 +11,7 @@
     <!-- We define our own implementation of GetResourceString -->
     <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
     <!-- For debug builds we include the full value string so that we get actual resources, even in the case the toolchain strips the resources file -->
-    <GenerateResxSourceIncludeDefaultValues Condition="'$(ConfigurationGroup)' == 'Debug'">true</GenerateResxSourceIncludeDefaultValues>
+    <GenerateResxSourceIncludeDefaultValues Condition="'$(Configuration)' == 'Debug'">true</GenerateResxSourceIncludeDefaultValues>
   </PropertyGroup>
 
   <!-- Include files under StringResourcesPath by convention unless OmitResources is set. -->

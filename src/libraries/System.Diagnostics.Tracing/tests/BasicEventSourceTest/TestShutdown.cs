@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if USE_MDT_EVENTSOURCE
 using Microsoft.Diagnostics.Tracing;
@@ -12,7 +11,7 @@ namespace BasicEventSourceTests
 {
     public class TestShutdown
     {
-        // TODO: Depends on desktop APIs (AppDomainSetup and Evidence).
+        // TODO: Depends on .NET Framework APIs (AppDomainSetup and Evidence).
 #if FALSE
         /// <summary>
         /// Test for manifest event being logged during AD/Process shutdown during EventSource Dispose(bool) method.

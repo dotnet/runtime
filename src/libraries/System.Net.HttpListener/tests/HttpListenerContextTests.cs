@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Net.Sockets;
@@ -14,7 +13,8 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    [SkipOnCoreClr("System.Net.Tests are inestable")]
+    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", RuntimeConfiguration.Checked)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerContextTests : IDisposable
     {
@@ -108,7 +108,6 @@ namespace System.Net.Tests
             Assert.Equal("user", context.User.Identity.Name);
 
             HttpListenerWebSocketContext webSocketContext = await context.AcceptWebSocketAsync(null);
-            IPrincipal user = webSocketContext.User;
 
             // Should be copied as User gets disposed when HttpListenerContext is closed.
             Assert.NotSame(context.User, webSocketContext.User);

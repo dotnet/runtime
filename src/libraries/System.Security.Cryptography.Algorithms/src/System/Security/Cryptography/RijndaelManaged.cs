@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [UnsupportedOSPlatform("browser")]
     public sealed class RijndaelManaged : Rijndael
     {
         private readonly Aes _impl;
@@ -18,6 +19,7 @@ namespace System.Security.Cryptography
 
             // This class wraps Aes
             _impl = Aes.Create();
+            _impl.FeedbackSize = 128;
         }
 
         public override int BlockSize
@@ -27,7 +29,7 @@ namespace System.Security.Cryptography
             {
                 Debug.Assert(BlockSizeValue == 128);
 
-                // Values which were legal in desktop RijndaelManaged but not here in this wrapper type
+                // Values which were legal in .NET Framework RijndaelManaged but not here in this wrapper type
                 if (value == 192 || value == 256)
                     throw new PlatformNotSupportedException(SR.Cryptography_Rijndael_BlockSize);
 
@@ -35,6 +37,12 @@ namespace System.Security.Cryptography
                 if (value != 128)
                     throw new CryptographicException(SR.Cryptography_Rijndael_BlockSize);
             }
+        }
+
+        public override int FeedbackSize
+        {
+            get => _impl.FeedbackSize;
+            set => _impl.FeedbackSize = value;
         }
 
         public override byte[] IV
@@ -69,9 +77,9 @@ namespace System.Security.Cryptography
         // LegalBlockSizes not forwarded because base has correct information
         public override KeySizes[] LegalKeySizes => _impl.LegalKeySizes;
         public override ICryptoTransform CreateEncryptor() => _impl.CreateEncryptor();
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) => _impl.CreateEncryptor(rgbKey, rgbIV);
+        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) => _impl.CreateEncryptor(rgbKey, rgbIV);
         public override ICryptoTransform CreateDecryptor() => _impl.CreateDecryptor();
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) => _impl.CreateDecryptor(rgbKey, rgbIV);
+        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) => _impl.CreateDecryptor(rgbKey, rgbIV);
         public override void GenerateIV() => _impl.GenerateIV();
         public override void GenerateKey() => _impl.GenerateKey();
 

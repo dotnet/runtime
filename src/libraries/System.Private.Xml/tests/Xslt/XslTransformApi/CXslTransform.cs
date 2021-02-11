@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using Xunit.Abstractions;
@@ -478,7 +477,7 @@ namespace System.Xml.Tests
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
             {
-                LoadXSL("xmlResolver_document_function_absolute_uri.xsl", inputType, readerType);
+                LoadXSL("xmlResolver_document_function_absolute_uri_replaced.xsl", inputType, readerType);
                 xslt.XmlResolver = new XmlUrlResolver();
                 Transform("fruits.xml", transformType, docType);
                 VerifyResult(@"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>");
@@ -803,7 +802,6 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation("Load stylesheet with entity reference: Bug #68450 ")]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Reader, DocType.XPathDocument)]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Writer, DocType.XPathDocument)]
@@ -2102,7 +2100,7 @@ namespace System.Xml.Tests
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
             {
-                LoadXSL("xmlResolver_document_function_absolute_uri.xsl", inputType, readerType);
+                LoadXSL("xmlResolver_document_function_absolute_uri_replaced.xsl", inputType, readerType);
                 TransformResolver("fruits.xml", transformType, docType, new XmlUrlResolver());
                 VerifyResult(@"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>");
             });

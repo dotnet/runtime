@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
@@ -42,8 +41,8 @@ namespace System.Data
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            System.Reflection.ConstructorInfo ctor = null;
-            object[] values = null;
+            System.Reflection.ConstructorInfo? ctor = null;
+            object[]? values = null;
 
             if (destinationType == typeof(InstanceDescriptor) && value is DataRelation)
             {
@@ -54,7 +53,7 @@ namespace System.Data
                 if (string.IsNullOrEmpty(parentTable.Namespace) && string.IsNullOrEmpty(childTable.Namespace))
                 {
                     ctor = typeof(DataRelation).GetConstructor(new Type[] { typeof(string) /*relationName*/, typeof(string) /*parentTableName*/, typeof(string) /*childTableName */,
-                        typeof(string[]) /*parentColumnNames */, typeof(string[])  /*childColumnNames*/, typeof(bool) /*nested*/ });
+                        typeof(string[]) /*parentColumnNames */, typeof(string[])  /*childColumnNames*/, typeof(bool) /*nested*/ })!;
 
                     values = new object[] { rel.RelationName, rel.ParentKey.Table.TableName, rel.ChildKey.Table.TableName, rel.ParentColumnNames, rel.ChildColumnNames, rel.Nested };
                 }
@@ -62,7 +61,7 @@ namespace System.Data
                 {
                     ctor = typeof(DataRelation).GetConstructor(new Type[] { typeof(string)/*relationName*/, typeof(string)/*parentTableName*/, typeof(string)/*parentTableNamespace*/,
                         typeof(string)/*childTableName */, typeof(string)/*childTableNamespace */,
-                        typeof(string[])/*parentColumnNames */, typeof(string[]) /*childColumnNames*/, typeof(bool) /*nested*/});
+                        typeof(string[])/*parentColumnNames */, typeof(string[]) /*childColumnNames*/, typeof(bool) /*nested*/})!;
 
                     values = new object[] { rel.RelationName, rel.ParentKey.Table.TableName, rel.ParentKey.Table.Namespace, rel.ChildKey.Table.TableName,
                         rel.ChildKey.Table.Namespace, rel.ParentColumnNames, rel.ChildColumnNames, rel.Nested };

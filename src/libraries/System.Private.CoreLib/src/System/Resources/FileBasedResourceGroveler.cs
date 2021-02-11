@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -37,13 +36,12 @@ namespace System.Resources
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
 
-            string? fileName = null;
             ResourceSet? rs = null;
 
             // Don't use Assembly manifest, but grovel on disk for a file.
             // Create new ResourceSet, if a file exists on disk for it.
             string tempFileName = _mediator.GetResourceFileName(culture);
-            fileName = FindResourceFile(culture, tempFileName);
+            string? fileName = FindResourceFile(culture, tempFileName);
             if (fileName == null)
             {
                 if (tryParents)

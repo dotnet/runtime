@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -166,7 +166,7 @@ namespace System
             return new TimeSpan(_ticks >= 0 ? _ticks : -_ticks);
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is TimeSpan)
             {
@@ -200,8 +200,15 @@ namespace System
             if (double.IsNaN(value))
                 throw new ArgumentException(SR.Arg_CannotBeNaN);
             double ticks = value * scale;
-            if ((ticks > long.MaxValue) || (ticks < long.MinValue))
+            return IntervalFromDoubleTicks(ticks);
+        }
+
+        private static TimeSpan IntervalFromDoubleTicks(double ticks)
+        {
+            if ((ticks > long.MaxValue) || (ticks < long.MinValue) || double.IsNaN(ticks))
                 throw new OverflowException(SR.Overflow_TimeSpanTooLong);
+            if (ticks == long.MaxValue)
+                return TimeSpan.MaxValue;
             return new TimeSpan((long)ticks);
         }
 
@@ -317,7 +324,7 @@ namespace System
             ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.ParseExactMultiple(input, formats, formatProvider, styles);
         }
-        public static bool TryParse(string? s, out TimeSpan result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out TimeSpan result)
         {
             if (s == null)
             {
@@ -331,7 +338,7 @@ namespace System
             return TimeSpanParse.TryParse(s, null, out result);
         }
 
-        public static bool TryParse(string? input, IFormatProvider? formatProvider, out TimeSpan result)
+        public static bool TryParse([NotNullWhen(true)] string? input, IFormatProvider? formatProvider, out TimeSpan result)
         {
             if (input == null)
             {
@@ -344,7 +351,7 @@ namespace System
         {
             return TimeSpanParse.TryParse(input, formatProvider, out result);
         }
-        public static bool TryParseExact(string? input, string format, IFormatProvider? formatProvider, out TimeSpan result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, IFormatProvider? formatProvider, out TimeSpan result)
         {
             if (input == null || format == null)
             {
@@ -358,7 +365,7 @@ namespace System
         {
             return TimeSpanParse.TryParseExact(input, format, formatProvider, TimeSpanStyles.None, out result);
         }
-        public static bool TryParseExact(string? input, string[] formats, IFormatProvider? formatProvider, out TimeSpan result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, out TimeSpan result)
         {
             if (input == null)
             {
@@ -367,12 +374,12 @@ namespace System
             }
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
         }
-        public static bool TryParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider? formatProvider, out TimeSpan result)
+        public static bool TryParseExact(ReadOnlySpan<char> input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, out TimeSpan result)
         {
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
         }
 
-        public static bool TryParseExact(string? input, string format, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
             if (input == null || format == null)
@@ -389,7 +396,7 @@ namespace System
             ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.TryParseExact(input, format, formatProvider, styles, out result);
         }
-        public static bool TryParseExact(string? input, string[] formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
             if (input == null)
@@ -400,7 +407,7 @@ namespace System
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, styles, out result);
         }
 
-        public static bool TryParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
+        public static bool TryParseExact(ReadOnlySpan<char> input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, styles, out result);
@@ -447,12 +454,7 @@ namespace System
             // Rounding to the nearest tick is as close to the result we would have with unlimited
             // precision as possible, and so likely to have the least potential to surprise.
             double ticks = Math.Round(timeSpan.Ticks * factor);
-            if (ticks > long.MaxValue || ticks < long.MinValue)
-            {
-                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
-            }
-
-            return FromTicks((long)ticks);
+            return IntervalFromDoubleTicks(ticks);
         }
 
         public static TimeSpan operator *(double factor, TimeSpan timeSpan) => timeSpan * factor;
@@ -465,12 +467,7 @@ namespace System
             }
 
             double ticks = Math.Round(timeSpan.Ticks / divisor);
-            if (ticks > long.MaxValue || ticks < long.MinValue || double.IsNaN(ticks))
-            {
-                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
-            }
-
-            return FromTicks((long)ticks);
+            return IntervalFromDoubleTicks(ticks);
         }
 
         // Using floating-point arithmetic directly means that infinities can be returned, which is reasonable

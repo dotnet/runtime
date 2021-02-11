@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -772,6 +771,7 @@ namespace Tests.Integration
         public class FooWithTwoFoos : IFoo1, IFoo2 { }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void InheritedExport_TwoInterfaces()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(FooWithTwoFoos));
@@ -820,7 +820,7 @@ namespace Tests.Integration
         public class FooWithInterfaceWithMultipleFoos : IFoo3 { }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void InheritedExport_InterfaceHiearchy()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(FooWithInterfaceWithMultipleFoos));

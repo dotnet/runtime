@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -42,22 +42,21 @@ namespace System.Net.Http.Headers
             return new MediaTypeWithQualityHeaderValue(this);
         }
 
-        public static new MediaTypeWithQualityHeaderValue Parse(string input)
+        public static new MediaTypeWithQualityHeaderValue Parse(string? input)
         {
             int index = 0;
             return (MediaTypeWithQualityHeaderValue)MediaTypeHeaderParser.SingleValueWithQualityParser.ParseValue(
                 input, null, ref index);
         }
 
-        public static bool TryParse(string input, out MediaTypeWithQualityHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out MediaTypeWithQualityHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (MediaTypeHeaderParser.SingleValueWithQualityParser.TryParseValue(input, null, ref index, out output))
+            if (MediaTypeHeaderParser.SingleValueWithQualityParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (MediaTypeWithQualityHeaderValue)output;
+                parsedValue = (MediaTypeWithQualityHeaderValue)output!;
                 return true;
             }
             return false;

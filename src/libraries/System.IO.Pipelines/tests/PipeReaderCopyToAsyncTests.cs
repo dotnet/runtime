@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -33,7 +32,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<TaskCanceledException>(() => pipe.Reader.CopyToAsync(new MemoryStream(), new CancellationToken(true)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CopyToAsyncStreamWorks()
         {
             var messages = new List<byte[]>()
@@ -169,7 +168,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingBetweenReadsThrowsOperationCancelledException()
         {
             var pipe = new Pipe(s_testOptions);
@@ -194,7 +193,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingPipeWriterViaCancellationTokenThrowsOperationCancelledException()
         {
             var pipe = new Pipe(s_testOptions);
@@ -209,7 +208,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingPipeWriterViaPendingFlushThrowsOperationCancelledException()
         {
             var pipe = new Pipe(s_testOptions);
@@ -223,7 +222,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task CancelingStreamViaCancellationTokenThrowsOperationCancelledException()
         {
             var pipe = new Pipe(s_testOptions);
@@ -265,10 +264,94 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(20, result.Buffer.Length);
             pipe.Reader.Complete();
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(0)]
+        [InlineData(1)]
+        public async Task ThrowingFromStreamCallsAdvanceToWithStartOfLastReadResult(int throwAfterNWrites)
+        {
+            var pipe = new Pipe(s_testOptions);
+            var wrappedPipeReader = new TestPipeReader(pipe.Reader);
+
+            var stream = new ThrowAfterNWritesStream(throwAfterNWrites);
+            Task task = wrappedPipeReader.CopyToAsync(stream);
+
+            pipe.Writer.WriteEmpty(10);
+            await pipe.Writer.FlushAsync();
+
+            // Write twice for the test case where the stream throws on the second write.
+            pipe.Writer.WriteEmpty(10);
+            await pipe.Writer.FlushAsync();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => task);
+
+            SequencePosition startPosition = wrappedPipeReader.LastReadResult.Buffer.Start;
+
+            Assert.NotNull(startPosition.GetObject());
+            Assert.True(startPosition.Equals(wrappedPipeReader.LastConsumed));
+            Assert.True(startPosition.Equals(wrappedPipeReader.LastExamined));
+        }
+
         private class ThrowingStream : ThrowAfterNWritesStream
         {
             public ThrowingStream() : base(0)
             {
+            }
+        }
+
+        private class TestPipeReader : PipeReader
+        {
+            private readonly PipeReader _inner;
+
+
+            public TestPipeReader(PipeReader inner)
+            {
+                _inner = inner;
+            }
+
+            public ReadResult LastReadResult { get; private set; }
+            public SequencePosition LastConsumed { get; private set; }
+            public SequencePosition LastExamined { get; private set; }
+
+            public override void AdvanceTo(SequencePosition consumed)
+            {
+                LastConsumed = consumed;
+                LastExamined = consumed;
+                _inner.AdvanceTo(consumed);
+            }
+
+            public override void AdvanceTo(SequencePosition consumed, SequencePosition examined)
+            {
+                LastConsumed = consumed;
+                LastExamined = examined;
+                _inner.AdvanceTo(consumed);
+            }
+
+            public override void CancelPendingRead()
+            {
+                _inner.CancelPendingRead();
+            }
+
+            public override void Complete(Exception exception = null)
+            {
+                _inner.Complete(exception);
+            }
+
+            public override async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
+            {
+                LastReadResult = await _inner.ReadAsync(cancellationToken);
+                return LastReadResult;
+            }
+
+            public override bool TryRead(out ReadResult result)
+            {
+                if (_inner.TryRead(out result))
+                {
+                    LastReadResult = result;
+                    return true;
+                }
+
+                return false;
             }
         }
     }

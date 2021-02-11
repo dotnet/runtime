@@ -1,12 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
@@ -15,26 +13,26 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     {
         internal int? RequireExplicitPolicyDepth;
         internal int? InhibitMappingDepth;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
 
             if (RequireExplicitPolicyDepth.HasValue)
             {
-                writer.WriteInteger(new Asn1Tag(TagClass.ContextSpecific, 0), RequireExplicitPolicyDepth.Value);
+                writer.WriteInteger(RequireExplicitPolicyDepth.Value, new Asn1Tag(TagClass.ContextSpecific, 0));
             }
 
 
             if (InhibitMappingDepth.HasValue)
             {
-                writer.WriteInteger(new Asn1Tag(TagClass.ContextSpecific, 1), InhibitMappingDepth.Value);
+                writer.WriteInteger(InhibitMappingDepth.Value, new Asn1Tag(TagClass.ContextSpecific, 1));
             }
 
             writer.PopSequence(tag);
@@ -44,37 +42,50 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static PolicyConstraintsAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out PolicyConstraintsAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, encoded, out PolicyConstraintsAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
-        internal static void Decode(AsnReader reader, out PolicyConstraintsAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out PolicyConstraintsAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out PolicyConstraintsAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out PolicyConstraintsAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
+            try
+            {
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
 
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out PolicyConstraintsAsn decoded)
+        {
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
 
-                if (sequenceReader.TryReadInt32(new Asn1Tag(TagClass.ContextSpecific, 0), out int tmpRequireExplicitPolicyDepth))
+                if (sequenceReader.TryReadInt32(out int tmpRequireExplicitPolicyDepth, new Asn1Tag(TagClass.ContextSpecific, 0)))
                 {
                     decoded.RequireExplicitPolicyDepth = tmpRequireExplicitPolicyDepth;
                 }
@@ -89,7 +100,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
 
-                if (sequenceReader.TryReadInt32(new Asn1Tag(TagClass.ContextSpecific, 1), out int tmpInhibitMappingDepth))
+                if (sequenceReader.TryReadInt32(out int tmpInhibitMappingDepth, new Asn1Tag(TagClass.ContextSpecific, 1)))
                 {
                     decoded.InhibitMappingDepth = tmpInhibitMappingDepth;
                 }

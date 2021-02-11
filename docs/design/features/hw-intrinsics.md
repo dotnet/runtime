@@ -2,17 +2,17 @@ Implementation of Hardware Intrinsics in CoreCLR
 ================================================
 This document describes the implementation of hardware intrinsics in CoreCLR.
 For information about how the intrinsic APIs are designed, proposed and approved,
-see https://github.com/dotnet/designs/blob/master/accepted/platform-intrinsics.md.
+see https://github.com/dotnet/designs/blob/master/accepted/2018/platform-intrinsics.md.
 
 In discussing the hardware intrinsics, we refer to the target platform, such as X86 or Arm64, as the "platform" and each set of extensions that are implemented as a unit (e.g. AVX2 on X64 or Simd on Arm64) as an "ISA".
 
-There is a design document for the Arm64 intrinsics: https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/arm64-intrinsics.md. It should be updated to reflect current (and ongoing) progress.
+There is a design document for the Arm64 intrinsics: https://github.com/dotnet/runtime/blob/master/docs/design/features/arm64-intrinsics.md. It should be updated to reflect current (and ongoing) progress.
 
 ## Overview
 
 The reference assemblies for the hardware intrinsics live in corefx, but all of the implementation is in the coreclr repo:
 
-* The C# implementation lives in coreclr/src/System.Private.CoreLib/shared/System/Runtime/Intrinsics. These are little more than skeleton methods that are only compiled if needed for indirect invocation.
+* The C# implementation lives in coreclr/System.Private.CoreLib/shared/System/Runtime/Intrinsics. These are little more than skeleton methods that are only compiled if needed for indirect invocation.
 
   * Note that they are mirrored to other repositories, including corefx, corert and mono.
 
@@ -30,7 +30,7 @@ The vector types supported by one or more target ISAs are supported across platf
 * `Vector256<T>` - A 256-bit vector of type `T`
   * `Vector256<T>` intrinsics are supported only on x86 (and x64).
 
-Note that these are generic types, which distinguishes these from native intrinsic vector types. It also somewhat complicates interop, as the runtime currently doesn't support interop for generic types. See https://github.com/dotnet/coreclr/issues/1685
+Note that these are generic types, which distinguishes these from native intrinsic vector types. It also somewhat complicates interop, as the runtime currently doesn't support interop for generic types. See https://github.com/dotnet/runtime/issues/4547
 
 Not all intrinsics defined on these types support all primitive type parameters. When not supported, they are expected to throw `NotSupportedException`. This is generally handled by the C# implementation code, though for the most part this is a non-issue, as the ISA-specific intrinsics are declared over all supported concrete types (e.g. `Vector128<float>` rather than `Vector128<T>`).
 
@@ -53,7 +53,7 @@ The JIT depends on the VM and configuration settings to determine what target pl
 
 ### Importation
 
-Hardware intrinsics are built on RyuJIT's `NamedIntrinsic` mechanism to identify method calls that should be recognized as intrinsics (see https://github.com/dotnet/coreclr/blob/master/src/jit/namedintrinsiclist.h). In the incoming IL, intrinsic invocations are just method calls, so the JIT must distinguish intrinsic calls from ordinary call-sites and map them to its IR representation: the `GenTreeHWIntrinsic` node.
+Hardware intrinsics are built on RyuJIT's `NamedIntrinsic` mechanism to identify method calls that should be recognized as intrinsics (see https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/namedintrinsiclist.h). In the incoming IL, intrinsic invocations are just method calls, so the JIT must distinguish intrinsic calls from ordinary call-sites and map them to its IR representation: the `GenTreeHWIntrinsic` node.
 
 The [Intrinsic] attribute was added to eliminate the need to check each call-site. It [Intrinsic] attribute has a different meaning on each attribute target:
 
@@ -69,7 +69,7 @@ Currently, the JIT determines in the importer whether it will:
 * Generate a call (e.g. if it is a recognized intrinsic but an operand is not immediate as it is expected to be). The `mustExpand` option, which is returned by the VM as an "out" parameter to the `getIntrinsicID` method, must be false in this case.
 * Throw `PlatformNotSupportedException` if it is not a recognized and supported intrinsic for the current platform.
 
-There is some room for improvement here. For example, it may be that an argument that appears to be non-constant could later be determined to be a constant value (https://github.com/dotnet/coreclr/issues/17108).
+There is some room for improvement here. For example, it may be that an argument that appears to be non-constant could later be determined to be a constant value (https://github.com/dotnet/runtime/issues/9989).
 
 ### Hardware Intrinsics Table
 
@@ -88,7 +88,7 @@ The hardware intrinsics nodes are generally imported as `GenTreeHWIntrinsic` nod
 
 ### Lowering
 
-As described here: https://github.com/dotnet/coreclr/blob/master/Documentation/botr/ryujit-overview.md#lowering, Lowering is responsible for transforming the IR in such a way that the control flow, and any register requirements, are fully exposed. This includes determining what instructions can be "contained" in another, such as immediates or addressing modes. For the hardware intrinsics, these are done in the target-specific methods `Lowering::LowerHWIntrinsic()` and `Lowering::ContainCheckHWIntrinsic()`.
+As described [here](../coreclr/jit/ryujit-overview.md#lowering), Lowering is responsible for transforming the IR in such a way that the control flow, and any register requirements, are fully exposed. This includes determining what instructions can be "contained" in another, such as immediates or addressing modes. For the hardware intrinsics, these are done in the target-specific methods `Lowering::LowerHWIntrinsic()` and `Lowering::ContainCheckHWIntrinsic()`.
 
 The main consideration here is whether there are child nodes that are folded into the generated instruction. These may be:
 * An immediate operand
@@ -112,13 +112,13 @@ By design, the actual code generation is fairly straightforward, since the hardw
 
 The only thing that makes the hardware intrinsics different in the area of instruction encodings is that they depend on many instructions (and their encodings) that are not used in any context other than the implementation of the associated hardware intrinsic.
 
-The encodings are largely specified by `coreclr\src\jit\instrs{arch}.h`, and most of the target-specific code is in the `emit{arch}.*` files.
+The encodings are largely specified by `coreclr\jit\instrs{arch}.h`, and most of the target-specific code is in the `emit{arch}.*` files.
 
-This is an area of the JIT that could use some redesign and refactoring (https://github.com/dotnet/coreclr/issues/23006 and https://github.com/dotnet/coreclr/issues/21441 among others).
+This is an area of the JIT that could use some redesign and refactoring (https://github.com/dotnet/runtime/issues/12178 and https://github.com/dotnet/runtime/issues/11631 among others).
 
 ## Testing
 
-The tests for the hardware intrinsics reside in the coreclr/tests/src/JIT/HardwareIntrinsics directory.
+The tests for the hardware intrinsics reside in the src/tests/JIT/HardwareIntrinsics directory.
 
-Many of the tests are generated programmatically from templates. See `coreclr\tests\src\JIT\HardwareIntrinsics\General\Shared\GenerateTests.csx`. We would like to see most, if not all, of the remaining tests converted to use this mechanism.
+Many of the tests are generated programmatically from templates. See `src\tests\JIT\HardwareIntrinsics\General\Shared\GenerateTests.csx`. We would like to see most, if not all, of the remaining tests converted to use this mechanism.
 

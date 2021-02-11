@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Drawing.Internal
 {
@@ -11,9 +10,6 @@ namespace System.Drawing.Internal
     {
         // Unknown device
         Unknown = 0x00,
-
-        // Display DC - obtained from GetDC/GetDCEx/BeginPaint.
-        Display = 0x01,
 
         // Window DC including non-client area - obtained from GetWindowDC
         NCWindow = 0x02,

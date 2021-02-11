@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // (C) 2002 Ville Palo
 // (C) 2003 Martin Willemoes Hansen
@@ -79,7 +79,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal((byte)128, testBinary[1]);
             Assert.Equal((byte)64, testBinary[0]);
 
-            // See https://github.com/dotnet/corefx/issues/39883
+            // See https://github.com/dotnet/runtime/issues/30416
             Assert.Throws<IndexOutOfRangeException>(() => testBinary[testBinary.Length]);
 
             Assert.Throws<SqlNullValueException>(() => SqlBinary.Null[2]);

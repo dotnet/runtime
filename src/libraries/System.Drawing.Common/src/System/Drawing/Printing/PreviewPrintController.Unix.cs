@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.PreviewPrintController.cs
 //
@@ -47,9 +48,9 @@ namespace System.Drawing.Printing
                 throw new InvalidPrinterException(document.PrinterSettings);
             }
 
-            foreach (PreviewPageInfo pi in _list)
+            foreach (PreviewPageInfo? pi in _list)
             {
-                pi.Image.Dispose();
+                pi!.Image.Dispose();
             }
 
             _list.Clear();

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -17,6 +16,7 @@ static const int32_t kErrorSeeError = -2;
 static const int32_t kErrorUnknownAlgorithm = -3;
 static const int32_t kErrorUnknownState = -4;
 
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Export a key object.
 
@@ -31,7 +31,7 @@ An export passphrase is required for private keys, and ignored for public keys.
 
 Follows pal_seckey return conventions.
 */
-DLLEXPORT int32_t AppleCryptoNative_SecKeyExport(
+PALEXPORT int32_t AppleCryptoNative_SecKeyExport(
     SecKeyRef pKey, int32_t exportPrivate, CFStringRef cfExportPassphrase, CFDataRef* ppDataOut, int32_t* pOSStatus);
 
 /*
@@ -46,8 +46,9 @@ but is in fact the X.509 SubjectPublicKeyInfo structure.
 Returns 1 on success, 0 on failure (*pOSStatus should be set) and negative numbers for various
 state machine errors.
 */
-DLLEXPORT int32_t AppleCryptoNative_SecKeyImportEphemeral(
+PALEXPORT int32_t AppleCryptoNative_SecKeyImportEphemeral(
     uint8_t* pbKeyBlob, int32_t cbKeyBlob, int32_t isPrivateKey, SecKeyRef* ppKeyOut, int32_t* pOSStatus);
+#endif
 
 /*
 For RSA and DSA this function returns the number of bytes in "the key", which corresponds to
@@ -57,11 +58,13 @@ For ECC the value should not be used.
 
 0 is returned for invalid inputs.
 */
-DLLEXPORT uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey);
+PALEXPORT uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey);
 
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Export a key and re-import it to the NULL keychain.
 
 Only internal callers are expected.
 */
 OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type);
+#endif

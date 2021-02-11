@@ -1,10 +1,11 @@
 ﻿<Project DefaultTargets="Build" InitialTargets="FindNetCoreAppPackages">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
     <!-- We use the PackageVersion property defined in packaging.props for the Prerelease packages which are using it to be built -->
     <_PreReleasePackageVersion>$(PackageVersion)</_PreReleasePackageVersion>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
+    <PackageDescription>Package used to represent out-of-band packages that are not included in NetCoreApp.</PackageDescription>
   </PropertyGroup>
 
   <Target Name="FindNetCoreAppPackages">
@@ -30,5 +31,5 @@
     
   </Target>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

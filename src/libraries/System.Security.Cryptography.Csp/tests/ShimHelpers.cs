@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -51,6 +50,9 @@ namespace System.Security.Cryptography.Csp.Tests
                 // DecryptValue and EncryptValue throw PNSE in base class, so they don't need to be checked.
                 "DecryptValue",
                 "EncryptValue",
+                // PEM Import/Export defers to Import methods.
+                "ImportFromPem",
+                "ImportFromEncryptedPem",
                 // Key Import/Export defers to ImportParameters/ExportParameters (covered by *KeyFileTests)
                 "ImportRSAPrivateKey",
                 "ImportRSAPublicKey",
@@ -68,6 +70,13 @@ namespace System.Security.Cryptography.Csp.Tests
                 "TryExportSubjectPublicKeyInfo",
                 "TryExportPkcs8PrivateKey",
                 "TryExportEncryptedPkcs8PrivateKey",
+                // DSASignatureFormat methods defer to older methods.
+                "CreateSignatureCore",
+                "SignDataCore",
+                "TryCreateSignatureCore",
+                "TrySignDataCore",
+                "VerifyDataCore",
+                "VerifySignatureCore",
             };
 
             IEnumerable<MethodInfo> baseMethods = shimType.

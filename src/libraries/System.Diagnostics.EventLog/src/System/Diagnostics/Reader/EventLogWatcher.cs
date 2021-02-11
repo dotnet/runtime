@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using Microsoft.Win32;
@@ -108,7 +107,7 @@ namespace System.Diagnostics.Eventing.Reader
 
                 _registeredWaitHandle.Unregister(_unregisterDoneHandle);
 
-                if (_callbackThreadId != Thread.CurrentThread.ManagedThreadId)
+                if (_callbackThreadId != Environment.CurrentManagedThreadId)
                 {
                     // Not calling Stop from within callback - wait for
                     // Any outstanding callbacks to complete.
@@ -212,7 +211,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         internal void SubscribedEventsAvailableCallback(object state, bool timedOut)
         {
-            _callbackThreadId = Thread.CurrentThread.ManagedThreadId;
+            _callbackThreadId = Environment.CurrentManagedThreadId;
             try
             {
                 RequestEvents();

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,8 +15,8 @@ namespace System.Net.Sockets
     public class TcpClient : IDisposable
     {
         private AddressFamily _family;
-        private Socket _clientSocket;
-        private NetworkStream _dataStream;
+        private Socket _clientSocket = null!; // initialized by helper called from ctor
+        private NetworkStream? _dataStream;
         private volatile int _disposed;
         private bool _active;
 
@@ -30,7 +30,7 @@ namespace System.Net.Sockets
         // Initializes a new instance of the System.Net.Sockets.TcpClient class.
         public TcpClient(AddressFamily family)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, family);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, family);
 
             // Validate parameter
             if (family != AddressFamily.InterNetwork &&
@@ -42,14 +42,12 @@ namespace System.Net.Sockets
 
             _family = family;
             InitializeClientSocket();
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class with the specified end point.
         public TcpClient(IPEndPoint localEP)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, localEP);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localEP);
 
             if (localEP == null)
             {
@@ -59,15 +57,13 @@ namespace System.Net.Sockets
             _family = localEP.AddressFamily; // set before calling CreateSocket
             InitializeClientSocket();
             _clientSocket.Bind(localEP);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class and connects to the specified port on
         // the specified host.
         public TcpClient(string hostname, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, hostname);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, hostname);
 
             if (hostname == null)
             {
@@ -78,6 +74,8 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
+            _family = AddressFamily.Unknown;
+
             try
             {
                 Connect(hostname, port);
@@ -87,19 +85,13 @@ namespace System.Net.Sockets
                 _clientSocket?.Close();
                 throw;
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Used by TcpListener.Accept().
         internal TcpClient(Socket acceptedSocket)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, acceptedSocket);
-
             _clientSocket = acceptedSocket;
             _active = true;
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Used by the class to indicate that a connection has been made.
@@ -114,7 +106,7 @@ namespace System.Net.Sockets
         // Used by the class to provide the underlying network socket.
         public Socket Client
         {
-            get { return Disposed ? null : _clientSocket; }
+            get { return Disposed ? null! : _clientSocket; }
             set
             {
                 _clientSocket = value;
@@ -139,7 +131,6 @@ namespace System.Net.Sockets
         // Connects the Client to the specified port on the specified host.
         public void Connect(string hostname, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, hostname);
 
             ThrowIfDisposed();
 
@@ -166,7 +157,7 @@ namespace System.Net.Sockets
             //       DNS when trying to connect. Use of AddressList[0] is
             //       bad form.
             IPAddress[] addresses = Dns.GetHostAddresses(hostname);
-            ExceptionDispatchInfo lastex = null;
+            ExceptionDispatchInfo? lastex = null;
 
             try
             {
@@ -182,8 +173,13 @@ namespace System.Net.Sockets
                             if ((address.AddressFamily == AddressFamily.InterNetwork && Socket.OSSupportsIPv4) || Socket.OSSupportsIPv6)
                             {
                                 var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                                if (address.IsIPv4MappedToIPv6)
+                                {
+                                    socket.DualMode = true;
+                                }
+
                                 // Use of Interlocked.Exchanged ensures _clientSocket is written before Disposed is read.
-                                Interlocked.Exchange(ref _clientSocket, socket);
+                                Interlocked.Exchange(ref _clientSocket!, socket);
                                 if (Disposed)
                                 {
                                     // Dispose the socket so it throws ObjectDisposedException when we Connect.
@@ -196,7 +192,7 @@ namespace System.Net.Sockets
                                 }
                                 catch
                                 {
-                                    _clientSocket = null;
+                                    _clientSocket = null!;
                                     throw;
                                 }
                             }
@@ -228,15 +224,11 @@ namespace System.Net.Sockets
                     throw new SocketException((int)SocketError.NotConnected);
                 }
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Connects the Client to the specified port on the specified host.
         public void Connect(IPAddress address, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
-
             ThrowIfDisposed();
 
             if (address == null)
@@ -250,15 +242,11 @@ namespace System.Net.Sockets
 
             IPEndPoint remoteEP = new IPEndPoint(address, port);
             Connect(remoteEP);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Connect the Client to the specified end point.
         public void Connect(IPEndPoint remoteEP)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, remoteEP);
-
             ThrowIfDisposed();
 
             if (remoteEP == null)
@@ -269,84 +257,81 @@ namespace System.Net.Sockets
             Client.Connect(remoteEP);
             _family = Client.AddressFamily;
             _active = true;
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public void Connect(IPAddress[] ipAddresses, int port)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, ipAddresses);
-
             Client.Connect(ipAddresses, port);
             _family = Client.AddressFamily;
             _active = true;
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public Task ConnectAsync(IPAddress address, int port) =>
-            Task.Factory.FromAsync(
-                (targetAddess, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetAddess, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
-                address, port, state: this);
+            CompleteConnectAsync(Client.ConnectAsync(address, port));
 
         public Task ConnectAsync(string host, int port) =>
-            Task.Factory.FromAsync(
-                (targetHost, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetHost, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
-                host, port, state: this);
+            CompleteConnectAsync(Client.ConnectAsync(host, port));
 
         public Task ConnectAsync(IPAddress[] addresses, int port) =>
-            Task.Factory.FromAsync(
-                (targetAddresses, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetAddresses, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
-                addresses, port, state: this);
+            CompleteConnectAsync(Client.ConnectAsync(addresses, port));
 
-        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
+        /// <summary>
+        /// Connects the client to a remote TCP host using the specified endpoint as an asynchronous operation.
+        /// </summary>
+        /// <param name="remoteEP">The <see cref="IPEndPoint"/> to which you intend to connect.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public Task ConnectAsync(IPEndPoint remoteEP) =>
+            CompleteConnectAsync(Client.ConnectAsync(remoteEP));
+
+        private async Task CompleteConnectAsync(Task task)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
-
-            IAsyncResult result = Client.BeginConnect(address, port, requestCallback, state);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            return result;
+            await task.ConfigureAwait(false);
+            _active = true;
         }
 
-        public IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
+        public ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(address, port, cancellationToken));
+
+        public ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(host, port, cancellationToken));
+
+        public ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(addresses, port, cancellationToken));
+
+        /// <summary>
+        /// Connects the client to a remote TCP host using the specified endpoint as an asynchronous operation.
+        /// </summary>
+        /// <param name="remoteEP">The <see cref="IPEndPoint"/> to which you intend to connect.</param>
+        /// <param name="cancellationToken">A cancellation token used to propagate notification that this operation should be canceled.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public ValueTask ConnectAsync(IPEndPoint remoteEP, CancellationToken cancellationToken) =>
+            CompleteConnectAsync(Client.ConnectAsync(remoteEP, cancellationToken));
+
+        private async ValueTask CompleteConnectAsync(ValueTask task)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, (string)host);
-
-            IAsyncResult result = Client.BeginConnect(host, port, requestCallback, state);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            return result;
+            await task.ConfigureAwait(false);
+            _active = true;
         }
 
-        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
+        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback? requestCallback, object? state) =>
+            Client.BeginConnect(address, port, requestCallback, state);
 
-            IAsyncResult result = Client.BeginConnect(addresses, port, requestCallback, state);
+        public IAsyncResult BeginConnect(string host, int port, AsyncCallback? requestCallback, object? state) =>
+            Client.BeginConnect(host, port, requestCallback, state);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            return result;
-        }
+        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback? requestCallback, object? state) =>
+            Client.BeginConnect(addresses, port, requestCallback, state);
 
         public void EndConnect(IAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, asyncResult);
-
             _clientSocket.EndConnect(asyncResult);
             _active = true;
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         // Returns the stream used to read and write data to the remote host.
         public NetworkStream GetStream()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             ThrowIfDisposed();
 
             if (!Connected)
@@ -359,7 +344,6 @@ namespace System.Net.Sockets
                 _dataStream = new NetworkStream(Client, true);
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, _dataStream);
             return _dataStream;
         }
 
@@ -368,13 +352,11 @@ namespace System.Net.Sockets
         // Disposes the Tcp connection.
         protected virtual void Dispose(bool disposing)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-
             if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
             {
                 if (disposing)
                 {
-                    IDisposable dataStream = _dataStream;
+                    IDisposable? dataStream = _dataStream;
                     if (dataStream != null)
                     {
                         dataStream.Dispose();
@@ -402,58 +384,46 @@ namespace System.Net.Sockets
                     GC.SuppressFinalize(this);
                 }
             }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         public void Dispose() => Dispose(true);
 
-        ~TcpClient()
-        {
-#if DEBUG
-            DebugThreadTracking.SetThreadSource(ThreadKinds.Finalization);
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.System | ThreadKinds.Async))
-            {
-#endif
-                Dispose(false);
-#if DEBUG
-            }
-#endif
-        }
+        ~TcpClient() => Dispose(false);
 
         // Gets or sets the size of the receive buffer in bytes.
         public int ReceiveBufferSize
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, value); }
         }
 
         // Gets or sets the size of the send buffer in bytes.
         public int SendBufferSize
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer, value); }
         }
 
         // Gets or sets the receive time out value of the connection in milliseconds.
         public int ReceiveTimeout
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, value); }
         }
 
         // Gets or sets the send time out value of the connection in milliseconds.
         public int SendTimeout
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, value); }
         }
 
         // Gets or sets the value of the connection's linger option.
-        public LingerOption LingerState
+        [DisallowNull]
+        public LingerOption? LingerState
         {
             get { return Client.LingerState; }
-            set { Client.LingerState = value; }
+            set { Client.LingerState = value!; }
         }
 
         // Enables or disables delay when send or receive buffers are full.

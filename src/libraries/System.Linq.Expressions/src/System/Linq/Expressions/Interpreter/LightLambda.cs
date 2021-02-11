@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,7 +15,7 @@ namespace System.Linq.Expressions.Interpreter
     [DebuggerDisplay("{DebugView,nq}")]
     public partial class LightLambda
     {
-        private readonly IStrongBox[] _closure;
+        private readonly IStrongBox[]? _closure;
         private readonly Interpreter _interpreter;
 #if NO_FEATURE_STATIC_DELEGATE
         private static readonly CacheDict<Type, Func<LightLambda, Delegate>> _runCache = new CacheDict<Type, Func<LightLambda, Delegate>>(100);
@@ -25,7 +24,7 @@ namespace System.Linq.Expressions.Interpreter
         // Adaptive compilation support
         private readonly LightDelegateCreator _delegateCreator;
 
-        internal LightLambda(LightDelegateCreator delegateCreator, IStrongBox[] closure)
+        internal LightLambda(LightDelegateCreator delegateCreator, IStrongBox[]? closure)
         {
             _delegateCreator = delegateCreator;
             _closure = closure;
@@ -55,10 +54,9 @@ namespace System.Linq.Expressions.Interpreter
 
                 foreach (Instruction instruction in instructions)
                 {
-                    var enterTryCatchFinally = instruction as EnterTryCatchFinallyInstruction;
-                    if (enterTryCatchFinally != null)
+                    if (instruction is EnterTryCatchFinallyInstruction enterTryCatchFinally)
                     {
-                        TryCatchFinallyHandler handler = enterTryCatchFinally.Handler;
+                        TryCatchFinallyHandler handler = enterTryCatchFinally.Handler!;
 
                         AddTryStart(handler.TryStartIndex);
                         AddHandlerExit(handler.TryEndIndex + 1 /* include Goto instruction that acts as a "leave" */);
@@ -71,12 +69,12 @@ namespace System.Linq.Expressions.Interpreter
 
                         if (handler.IsCatchBlockExist)
                         {
-                            foreach (ExceptionHandler catchHandler in handler.Handlers)
+                            foreach (ExceptionHandler catchHandler in handler.Handlers!)
                             {
                                 _handlerEnter.Add(catchHandler.HandlerStartIndex - 1 /* include EnterExceptionHandler instruction */, catchHandler.ToString());
                                 AddHandlerExit(catchHandler.HandlerEndIndex);
 
-                                ExceptionFilter filter = catchHandler.Filter;
+                                ExceptionFilter? filter = catchHandler.Filter;
                                 if (filter != null)
                                 {
                                     _handlerEnter.Add(filter.StartIndex - 1 /* include EnterExceptionFilter instruction */, "filter");
@@ -86,10 +84,9 @@ namespace System.Linq.Expressions.Interpreter
                         }
                     }
 
-                    var enterTryFault = instruction as EnterTryFaultInstruction;
-                    if (enterTryFault != null)
+                    if (instruction is EnterTryFaultInstruction enterTryFault)
                     {
-                        TryFaultHandler handler = enterTryFault.Handler;
+                        TryFaultHandler handler = enterTryFault.Handler!;
 
                         AddTryStart(handler.TryStartIndex);
                         AddHandlerExit(handler.TryEndIndex + 1 /* include Goto instruction that acts as a "leave" */);
@@ -160,7 +157,7 @@ namespace System.Linq.Expressions.Interpreter
                         }
                     }
 
-                    string handler;
+                    string? handler;
                     if (_handlerEnter.TryGetValue(i, out handler))
                     {
                         sb.Append(_indent).AppendLine(handler);
@@ -406,14 +403,14 @@ namespace System.Linq.Expressions.Interpreter
         }
 #endif
 
-        public object Run(params object[] arguments)
+        public object? Run(params object?[] arguments)
         {
             InterpretedFrame frame = MakeFrame();
             for (int i = 0; i < arguments.Length; i++)
             {
                 frame.Data[i] = arguments[i];
             }
-            InterpretedFrame currentFrame = frame.Enter();
+            InterpretedFrame? currentFrame = frame.Enter();
             try
             {
                 _interpreter.Run(frame);
@@ -430,14 +427,14 @@ namespace System.Linq.Expressions.Interpreter
             return frame.Pop();
         }
 
-        public object RunVoid(params object[] arguments)
+        public object? RunVoid(params object?[] arguments)
         {
             InterpretedFrame frame = MakeFrame();
             for (int i = 0; i < arguments.Length; i++)
             {
                 frame.Data[i] = arguments[i];
             }
-            InterpretedFrame currentFrame = frame.Enter();
+            InterpretedFrame? currentFrame = frame.Enter();
             try
             {
                 _interpreter.Run(frame);

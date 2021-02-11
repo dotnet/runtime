@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Drawing
 {
@@ -37,7 +38,7 @@ namespace System.Drawing
         /// <summary>
         ///     A list of images to be animated.
         /// </summary>
-        private static List<ImageInfo> s_imageInfoList;
+        private static List<ImageInfo>? s_imageInfoList;
 
         /// <summary>
         ///     A variable to flag when an image or images need to be updated due to the selection of a new frame
@@ -50,7 +51,7 @@ namespace System.Drawing
         /// <summary>
         ///     The thread used for animating the images.
         /// </summary>
-        private static Thread s_animationThread;
+        private static Thread? s_animationThread;
 
         /// <summary>
         ///     Lock that allows either concurrent read-access to the images list for multiple threads, or write-
@@ -124,10 +125,8 @@ namespace System.Drawing
                         if (imageInfo.FrameDirty)
                         {
                             // See comment in the class header about locking the image ref.
-#pragma warning disable CA2002
                             lock (imageInfo.Image)
                             {
-#pragma warning restore CA2002
                                 imageInfo.UpdateFrame();
                             }
                         }
@@ -175,10 +174,8 @@ namespace System.Drawing
                 foreach (ImageInfo imageInfo in s_imageInfoList)
                 {
                     // See comment in the class header about locking the image ref.
-#pragma warning disable CA2002
                     lock (imageInfo.Image)
                     {
-#pragma warning restore CA2002
                         imageInfo.UpdateFrame();
                     }
                 }
@@ -201,13 +198,11 @@ namespace System.Drawing
                 return;
             }
 
-            ImageInfo imageInfo = null;
+            ImageInfo? imageInfo = null;
 
             // See comment in the class header about locking the image ref.
-#pragma warning disable CA2002
             lock (image)
             {
-#pragma warning restore CA2002
                 // could we avoid creating an ImageInfo object if FrameCount == 1 ?
                 imageInfo = new ImageInfo(image);
             }
@@ -263,7 +258,7 @@ namespace System.Drawing
                     if (s_animationThread == null)
                     {
                         s_animationThread = new Thread(new ThreadStart(AnimateImages50ms));
-                        s_animationThread.Name = typeof(ImageAnimator).Name;
+                        s_animationThread.Name = nameof(ImageAnimator);
                         s_animationThread.IsBackground = true;
                         s_animationThread.Start();
                     }
@@ -285,7 +280,7 @@ namespace System.Drawing
         /// <summary>
         ///    Whether or not the image has multiple time-based frames.
         /// </summary>
-        public static bool CanAnimate(Image image)
+        public static bool CanAnimate([NotNullWhen(true)] Image? image)
         {
             if (image == null)
             {
@@ -293,10 +288,8 @@ namespace System.Drawing
             }
 
             // See comment in the class header about locking the image ref.
-#pragma warning disable CA2002
             lock (image)
             {
-#pragma warning restore CA2002
                 Guid[] dimensions = image.FrameDimensionsList;
 
                 foreach (Guid guid in dimensions)

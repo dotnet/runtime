@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.ImageAnimator.cs
 //
@@ -32,6 +33,7 @@
 //
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Imaging;
 using System.Threading;
 
@@ -43,14 +45,14 @@ namespace System.Drawing
 
         private int frameCount;
         private int activeFrame;
-        private Thread thread;
+        private Thread? thread;
 
         public AnimateEventArgs(Image image)
         {
             frameCount = image.GetFrameCount(FrameDimension.Time);
         }
 
-        public Thread RunThread
+        public Thread? RunThread
         {
             get { return thread; }
             set { thread = value; }
@@ -87,7 +89,7 @@ namespace System.Drawing
                 return;
 
             PropertyItem item = image.GetPropertyItem(0x5100); // FrameDelay in libgdiplus
-            byte[] value = item.Value;
+            byte[] value = item.Value!;
             int[] delay = new int[(value.Length >> 2)];
             for (int i = 0, n = 0; i < value.Length; i += 4, n++)
             {
@@ -105,7 +107,7 @@ namespace System.Drawing
             thread.Start();
         }
 
-        public static bool CanAnimate(Image image)
+        public static bool CanAnimate([NotNullWhen(true)] Image? image)
         {
             if (image == null)
                 return false;
@@ -131,16 +133,18 @@ namespace System.Drawing
 
             if (ht.ContainsKey(image))
             {
-                AnimateEventArgs evtArgs = (AnimateEventArgs)ht[image];
-                evtArgs.RunThread.Abort();
+                AnimateEventArgs evtArgs = (AnimateEventArgs)ht[image]!;
+#pragma warning disable SYSLIB0006 // https://github.com/dotnet/runtime/issues/39405
+                evtArgs.RunThread!.Abort();
+#pragma warning restore SYSLIB0006
                 ht.Remove(image);
             }
         }
 
         public static void UpdateFrames()
         {
-            foreach (Image image in ht.Keys)
-                UpdateImageFrame(image);
+            foreach (Image? image in ht.Keys)
+                UpdateImageFrame(image!);
         }
 
 
@@ -156,7 +160,7 @@ namespace System.Drawing
         // this method avoid checks that aren't requied for UpdateFrames()
         private static void UpdateImageFrame(Image image)
         {
-            AnimateEventArgs aea = (AnimateEventArgs)ht[image];
+            AnimateEventArgs aea = (AnimateEventArgs)ht[image]!;
             image.SelectActiveFrame(FrameDimension.Time, aea.GetNextFrame());
         }
     }
@@ -177,20 +181,13 @@ namespace System.Drawing
 
         public void LoopHandler()
         {
-            try
+            int n = 0;
+            while (true)
             {
-                int n = 0;
-                while (true)
-                {
-                    Thread.Sleep(delay[n++]);
-                    frameChangeHandler(null, animateEventArgs);
-                    if (n == delay.Length)
-                        n = 0;
-                }
-            }
-            catch (ThreadAbortException)
-            {
-                Thread.ResetAbort(); // we're going to finish anyway
+                Thread.Sleep(delay[n++]);
+                frameChangeHandler(null, animateEventArgs);
+                if (n == delay.Length)
+                    n = 0;
             }
         }
     }

@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
 #include "pal_compiler.h"
 #include "pal_types.h"
 #include "pal_errno.h"
+#include <pal_networking_common.h>
 
 /**
  * These error values are different on every platform so make a
@@ -59,6 +59,7 @@ typedef enum
  */
 typedef enum
 {
+    AddressFamily_AF_UNKNOWN = -1, // System.Net.AddressFamily.Unknown
     AddressFamily_AF_UNSPEC = 0,   // System.Net.AddressFamily.Unspecified
     AddressFamily_AF_UNIX = 1,     // System.Net.AddressFamily.Unix
     AddressFamily_AF_INET = 2,     // System.Net.AddressFamily.InterNetwork
@@ -74,6 +75,7 @@ typedef enum
  */
 typedef enum
 {
+    SocketType_UNKNOWN = -1,       // System.Net.SocketType.Unknown
     SocketType_SOCK_STREAM = 1,    // System.Net.SocketType.Stream
     SocketType_SOCK_DGRAM = 2,     // System.Net.SocketType.Dgram
     SocketType_SOCK_RAW = 3,       // System.Net.SocketType.Raw
@@ -88,6 +90,7 @@ typedef enum
  */
 typedef enum
 {
+    ProtocolType_PT_UNKNOWN = -1,    // System.Net.ProtocolType.Unknown
     ProtocolType_PT_UNSPECIFIED = 0, // System.Net.ProtocolType.Unspecified
     ProtocolType_PT_ICMP = 1,        // System.Net.ProtocolType.Icmp
     ProtocolType_PT_TCP = 6,         // System.Net.ProtocolType.Tcp
@@ -107,18 +110,6 @@ typedef enum
     MulticastOption_MULTICAST_DROP = 1, // IP{,V6}_DROP_MEMBERSHIP
     MulticastOption_MULTICAST_IF = 2    // IP_MULTICAST_IF
 } MulticastOption;
-
-/*
- * Socket shutdown modes.
- *
- * NOTE: these values are taken from System.Net.SocketShutdown.
- */
-typedef enum
-{
-    SocketShutdown_SHUT_READ = 0,  // SHUT_RD
-    SocketShutdown_SHUT_WRITE = 1, // SHUT_WR
-    SocketShutdown_SHUT_BOTH = 2,  // SHUT_RDWR
-} SockerShutdown;
 
 /*
  * Socket option levels.
@@ -310,12 +301,20 @@ typedef struct
     uint32_t Padding;    // Pad out to 8-byte alignment
 } SocketEvent;
 
-DLLEXPORT int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entry);
+PALEXPORT int32_t SystemNative_PlatformSupportsGetAddrInfoAsync(void);
 
-DLLEXPORT void SystemNative_FreeHostEntry(HostEntry* entry);
+PALEXPORT int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t addressFamily, HostEntry* entry);
+
+typedef void (*GetHostEntryForNameCallback)(HostEntry* entry, int status);
+PALEXPORT int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address,
+                                                        int32_t addressFamily,
+                                                        HostEntry* entry,
+                                                        GetHostEntryForNameCallback callback);
+
+PALEXPORT void SystemNative_FreeHostEntry(HostEntry* entry);
 
 
-DLLEXPORT int32_t SystemNative_GetNameInfo(const uint8_t* address,
+PALEXPORT int32_t SystemNative_GetNameInfo(const uint8_t* address,
                                int32_t addressLength,
                                int8_t isIPv6,
                                uint8_t* host,
@@ -324,103 +323,117 @@ DLLEXPORT int32_t SystemNative_GetNameInfo(const uint8_t* address,
                                int32_t serviceLength,
                                int32_t flags);
 
-DLLEXPORT int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength);
+PALEXPORT int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength);
 
-DLLEXPORT int32_t SystemNative_GetHostName(uint8_t* name, int32_t nameLength);
+PALEXPORT int32_t SystemNative_GetHostName(uint8_t* name, int32_t nameLength);
 
-DLLEXPORT int32_t SystemNative_GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize);
+PALEXPORT int32_t SystemNative_GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize);
 
-DLLEXPORT int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t socketAddressLen, int32_t* addressFamily);
+PALEXPORT int32_t SystemNative_GetAddressFamily(const uint8_t* socketAddress, int32_t socketAddressLen, int32_t* addressFamily);
 
-DLLEXPORT int32_t SystemNative_SetAddressFamily(uint8_t* socketAddress, int32_t socketAddressLen, int32_t addressFamily);
+PALEXPORT int32_t SystemNative_SetAddressFamily(uint8_t* socketAddress, int32_t socketAddressLen, int32_t addressFamily);
 
-DLLEXPORT int32_t SystemNative_GetPort(const uint8_t* socketAddress, int32_t socketAddressLen, uint16_t* port);
+PALEXPORT int32_t SystemNative_GetPort(const uint8_t* socketAddress, int32_t socketAddressLen, uint16_t* port);
 
-DLLEXPORT int32_t SystemNative_SetPort(uint8_t* socketAddress, int32_t socketAddressLen, uint16_t port);
+PALEXPORT int32_t SystemNative_SetPort(uint8_t* socketAddress, int32_t socketAddressLen, uint16_t port);
 
-DLLEXPORT int32_t SystemNative_GetIPv4Address(const uint8_t* socketAddress, int32_t socketAddressLen, uint32_t* address);
+PALEXPORT int32_t SystemNative_GetIPv4Address(const uint8_t* socketAddress, int32_t socketAddressLen, uint32_t* address);
 
-DLLEXPORT int32_t SystemNative_SetIPv4Address(uint8_t* socketAddress, int32_t socketAddressLen, uint32_t address);
+PALEXPORT int32_t SystemNative_SetIPv4Address(uint8_t* socketAddress, int32_t socketAddressLen, uint32_t address);
 
-DLLEXPORT int32_t SystemNative_GetIPv6Address(
+PALEXPORT int32_t SystemNative_GetIPv6Address(
     const uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t* scopeId);
 
-DLLEXPORT int32_t SystemNative_SetIPv6Address(
+PALEXPORT int32_t SystemNative_SetIPv6Address(
     uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t scopeId);
 
-DLLEXPORT int32_t SystemNative_GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6);
+PALEXPORT int32_t SystemNative_GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6);
 
-DLLEXPORT int32_t SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo);
+PALEXPORT int32_t SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo);
 
-DLLEXPORT int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option);
+PALEXPORT int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option);
 
-DLLEXPORT int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option);
+PALEXPORT int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option);
 
-DLLEXPORT int32_t SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option);
+PALEXPORT int32_t SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option);
 
-DLLEXPORT int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option);
+PALEXPORT int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option);
 
-DLLEXPORT int32_t SystemNative_GetLingerOption(intptr_t socket, LingerOption* option);
+PALEXPORT int32_t SystemNative_GetLingerOption(intptr_t socket, LingerOption* option);
 
-DLLEXPORT int32_t SystemNative_SetLingerOption(intptr_t socket, LingerOption* option);
+PALEXPORT int32_t SystemNative_SetLingerOption(intptr_t socket, LingerOption* option);
 
-DLLEXPORT int32_t SystemNative_SetReceiveTimeout(intptr_t socket, int32_t millisecondsTimeout);
+PALEXPORT int32_t SystemNative_SetReceiveTimeout(intptr_t socket, int32_t millisecondsTimeout);
 
-DLLEXPORT int32_t SystemNative_SetSendTimeout(intptr_t socket, int32_t millisecondsTimeout);
+PALEXPORT int32_t SystemNative_SetSendTimeout(intptr_t socket, int32_t millisecondsTimeout);
 
-DLLEXPORT int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
+PALEXPORT int32_t SystemNative_Receive(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* received);
 
-DLLEXPORT int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);
+PALEXPORT int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
 
-DLLEXPORT int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket);
+PALEXPORT int32_t SystemNative_Send(intptr_t socket, void* buffer, int32_t bufferLen, int32_t flags, int32_t* sent);
 
-DLLEXPORT int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socketAddress, int32_t socketAddressLen);
+PALEXPORT int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);
 
-DLLEXPORT int32_t SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
+PALEXPORT int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket);
 
-DLLEXPORT int32_t SystemNative_GetPeerName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
+PALEXPORT int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socketAddress, int32_t socketAddressLen);
 
-DLLEXPORT int32_t SystemNative_GetSockName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
+PALEXPORT int32_t SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
 
-DLLEXPORT int32_t SystemNative_Listen(intptr_t socket, int32_t backlog);
+PALEXPORT int32_t SystemNative_GetPeerName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
 
-DLLEXPORT int32_t SystemNative_Shutdown(intptr_t socket, int32_t socketShutdown);
+PALEXPORT int32_t SystemNative_GetSockName(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
 
-DLLEXPORT int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error);
+PALEXPORT int32_t SystemNative_Listen(intptr_t socket, int32_t backlog);
 
-DLLEXPORT int32_t SystemNative_GetSockOpt(
+PALEXPORT int32_t SystemNative_Shutdown(intptr_t socket, int32_t socketShutdown);
+
+PALEXPORT int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error);
+
+PALEXPORT int32_t SystemNative_GetSockOpt(
     intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
 
-DLLEXPORT int32_t SystemNative_SetSockOpt(
+PALEXPORT int32_t SystemNative_GetRawSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
+
+PALEXPORT int32_t SystemNative_SetSockOpt(
     intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
 
-DLLEXPORT int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket);
+PALEXPORT int32_t SystemNative_SetRawSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
 
-DLLEXPORT int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* available);
+PALEXPORT int32_t SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, intptr_t* createdSocket);
 
-DLLEXPORT int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available);
+PALEXPORT int32_t SystemNative_GetSocketType(intptr_t socket, int32_t* addressFamily, int32_t* socketType, int32_t* protocolType, int32_t* isListening);
 
-DLLEXPORT int32_t SystemNative_CreateSocketEventPort(intptr_t* port);
+PALEXPORT int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* available);
 
-DLLEXPORT int32_t SystemNative_CloseSocketEventPort(intptr_t port);
+PALEXPORT int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available);
 
-DLLEXPORT int32_t SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent** buffer);
+PALEXPORT int32_t SystemNative_CreateSocketEventPort(intptr_t* port);
 
-DLLEXPORT int32_t SystemNative_FreeSocketEventBuffer(SocketEvent* buffer);
+PALEXPORT int32_t SystemNative_CloseSocketEventPort(intptr_t port);
 
-DLLEXPORT int32_t SystemNative_TryChangeSocketEventRegistration(
+PALEXPORT int32_t SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent** buffer);
+
+PALEXPORT int32_t SystemNative_FreeSocketEventBuffer(SocketEvent* buffer);
+
+PALEXPORT int32_t SystemNative_TryChangeSocketEventRegistration(
     intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
 
-DLLEXPORT int32_t SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* buffer, int32_t* count);
+PALEXPORT int32_t SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* buffer, int32_t* count);
 
-DLLEXPORT int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void);
+PALEXPORT int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void);
 
-DLLEXPORT char* SystemNative_GetPeerUserName(intptr_t socket);
+PALEXPORT char* SystemNative_GetPeerUserName(intptr_t socket);
 
-DLLEXPORT void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize);
+PALEXPORT void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize);
 
-DLLEXPORT int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent);
+PALEXPORT int32_t SystemNative_GetMaximumAddressSize(void);
 
-DLLEXPORT int32_t SystemNative_Disconnect(intptr_t socket);
+PALEXPORT int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent);
 
-DLLEXPORT uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName);
+PALEXPORT int32_t SystemNative_Disconnect(intptr_t socket);
+
+PALEXPORT uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName);

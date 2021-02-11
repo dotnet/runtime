@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -114,8 +113,7 @@ namespace System.Collections.Generic
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
             }
 
-            int arrayLen = array.Length;
-            if (arrayLen - arrayIndex < _size)
+            if (array.Length - arrayIndex < _size)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
@@ -185,7 +183,7 @@ namespace System.Collections.Generic
         {
             if (_size == _array.Length)
             {
-                int newcapacity = (int)((long)_array.Length * (long)GrowFactor / 100);
+                int newcapacity = (int)(_array.Length * (long)GrowFactor / 100);
                 if (newcapacity < _array.Length + MinimumGrow)
                 {
                     newcapacity = _array.Length + MinimumGrow;
@@ -380,7 +378,7 @@ namespace System.Collections.Generic
 
         public void TrimExcess()
         {
-            int threshold = (int)(((double)_array.Length) * 0.9);
+            int threshold = (int)(_array.Length * 0.9);
             if (_size < threshold)
             {
                 SetCapacity(_size);
@@ -390,14 +388,13 @@ namespace System.Collections.Generic
         // Implements an enumerator for a Queue.  The enumerator uses the
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<T>,
             System.Collections.IEnumerator
         {
             private readonly Queue<T> _q;
             private readonly int _version;
             private int _index;   // -1 = not started, -2 = ended/disposed
-            [AllowNull] private T _currentElement;
+            private T? _currentElement;
 
             internal Enumerator(Queue<T> q)
             {
@@ -459,7 +456,7 @@ namespace System.Collections.Generic
                 {
                     if (_index < 0)
                         ThrowEnumerationNotStartedOrEnded();
-                    return _currentElement;
+                    return _currentElement!;
                 }
             }
 

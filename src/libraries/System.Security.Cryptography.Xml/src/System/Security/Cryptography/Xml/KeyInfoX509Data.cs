@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Globalization;
@@ -13,15 +12,15 @@ namespace System.Security.Cryptography.Xml
     public class KeyInfoX509Data : KeyInfoClause
     {
         // An array of certificates representing the certificate chain
-        private ArrayList _certificates = null;
+        private ArrayList _certificates;
         // An array of issuer serial structs
-        private ArrayList _issuerSerials = null;
+        private ArrayList _issuerSerials;
         // An array of SKIs
-        private ArrayList _subjectKeyIds = null;
+        private ArrayList _subjectKeyIds;
         // An array of subject names
-        private ArrayList _subjectNames = null;
+        private ArrayList _subjectNames;
         // A raw byte data representing a certificate revocation list
-        private byte[] _CRL = null;
+        private byte[] _CRL;
 
         //
         // public constructors

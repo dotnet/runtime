@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -13,7 +12,7 @@ namespace System.Linq.Tests
     {
         [Theory]
         [InlineData(new int[] { 2, 3, 2, 4, 5 }, new int[] { 1, 9, 4 })]
-        public void SameResultsWithQueryAndRepeatCalls(IEnumerable<int> first, IEnumerable<int> second)
+        public void SameResultsWithQueryAndRepeatCalls_Int(IEnumerable<int> first, IEnumerable<int> second)
         {
             // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
             SameResultsWithQueryAndRepeatCallsWorker(first, second);
@@ -21,7 +20,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [InlineData(new[] { "AAA", "", "q", "C", "#", "!@#$%^", "0987654321", "Calling Twice" }, new[] { "!@#$%^", "C", "AAA", "", "Calling Twice", "SoS" })]
-        public void SameResultsWithQueryAndRepeatCalls(IEnumerable<string> first, IEnumerable<string> second)
+        public void SameResultsWithQueryAndRepeatCalls_String(IEnumerable<string> first, IEnumerable<string> second)
         {
             // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
             SameResultsWithQueryAndRepeatCallsWorker(first, second);
@@ -245,7 +244,7 @@ namespace System.Linq.Tests
             yield return new object[] { Enumerable.Range(0, 500).Select(i => Enumerable.Repeat(i, 1)).Reverse() };
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
         public void CountOfConcatIteratorShouldThrowExceptionOnIntegerOverflow()
         {
             var supposedlyLargeCollection = new DelegateBasedCollection<int> { CountWorker = () => int.MaxValue };
@@ -407,7 +406,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(GetToArrayDataSources))]
         public void CollectionInterleavedWithLazyEnumerables_ToArray(IEnumerable<int>[] arrays)
         {
-            // See https://github.com/dotnet/corefx/issues/23680
+            // See https://github.com/dotnet/runtime/issues/23389
 
             IEnumerable<int> concats = arrays[0];
 

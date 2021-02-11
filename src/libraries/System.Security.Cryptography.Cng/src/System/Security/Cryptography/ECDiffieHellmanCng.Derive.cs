@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
@@ -22,7 +21,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            // This deviates from the .NET Framework behavior.  NetFx can't handle unknown public
+            // This deviates from the .NET Framework behavior.  .NET Framework can't handle unknown public
             // key types, but on .NET Core there are automatically two: the public class produced by
             // this class' PublicKey member, and the private class produced by ECDiffieHellman.Create().PublicKey
             //
@@ -50,7 +49,7 @@ namespace System.Security.Cryptography
             if (otherPartyPublicKey.KeySize != KeySize)
                 throw new ArgumentException(SR.Cryptography_ArgECDHKeySizeMismatch, nameof(otherPartyPublicKey));
 
-            // Setting the flag to UseSecretAsHmacKey even when the KDF isn't HMAC, because that's what NetFx does.
+            // Setting the flag to UseSecretAsHmacKey even when the KDF isn't HMAC, because that's what .NET Framework does.
             Interop.NCrypt.SecretAgreementFlags flags =
                 UseSecretAgreementAsHmacKey
                     ? Interop.NCrypt.SecretAgreementFlags.UseSecretAsHmacKey
@@ -88,7 +87,7 @@ namespace System.Security.Cryptography
                             flags);
                     default:
                         Debug.Fail($"Unknown KDF ({KeyDerivationFunction})");
-                        // Match NetFx behavior
+                        // Match .NET Framework behavior
                         goto case ECDiffieHellmanKeyDerivationFunction.Tls;
                 }
             }
@@ -112,11 +111,15 @@ namespace System.Security.Cryptography
 
             ECParameters otherPartyParameters = otherPartyPublicKey.ExportParameters();
 
-            using (ECDiffieHellmanCng otherPartyCng = (ECDiffieHellmanCng)Create(otherPartyParameters))
-            using (otherKey = (ECDiffieHellmanCngPublicKey)otherPartyCng.PublicKey)
-            using (CngKey importedKey = otherKey.Import())
+            using (ECDiffieHellmanCng otherPartyCng = new ECDiffieHellmanCng())
             {
-                return DeriveSecretAgreementHandle(importedKey);
+                otherPartyCng.ImportParameters(otherPartyParameters);
+
+                using (otherKey = (ECDiffieHellmanCngPublicKey)otherPartyCng.PublicKey)
+                using (CngKey importedKey = otherKey.Import())
+                {
+                    return DeriveSecretAgreementHandle(importedKey);
+                }
             }
         }
 

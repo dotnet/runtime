@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -21,7 +20,7 @@ internal static partial class Interop
             SafeNCryptSecretHandle hSharedSecret,
             string pwszKDF,
             [In] ref NCryptBufferDesc pParameterList,
-            [Out, MarshalAs(UnmanagedType.LPArray)] byte[] pbDerivedKey,
+            [Out, MarshalAs(UnmanagedType.LPArray)] byte[]? pbDerivedKey,
             int cbDerivedKey,
             [Out] out int pcbResult,
             SecretAgreementFlags dwFlags);
@@ -34,9 +33,9 @@ internal static partial class Interop
             SafeNCryptSecretHandle secretAgreement,
             string kdf,
             string hashAlgorithm,
-            byte[] hmacKey,
-            byte[] secretPrepend,
-            byte[] secretAppend,
+            byte[]? hmacKey,
+            byte[]? secretPrepend,
+            byte[]? secretAppend,
             SecretAgreementFlags flags)
         {
             // First marshal the hash algoritm
@@ -68,7 +67,7 @@ internal static partial class Interop
                         if (pHmacKey != null)
                         {
                             NCryptBuffer hmacKeyBuffer = default;
-                            hmacKeyBuffer.cbBuffer = hmacKey.Length;
+                            hmacKeyBuffer.cbBuffer = hmacKey!.Length;
                             hmacKeyBuffer.BufferType = BufferType.KdfHmacKey;
                             hmacKeyBuffer.pvBuffer = new IntPtr(pHmacKey);
 
@@ -79,7 +78,7 @@ internal static partial class Interop
                         if (pSecretPrepend != null)
                         {
                             NCryptBuffer secretPrependBuffer = default;
-                            secretPrependBuffer.cbBuffer = secretPrepend.Length;
+                            secretPrependBuffer.cbBuffer = secretPrepend!.Length;
                             secretPrependBuffer.BufferType = BufferType.KdfSecretPrepend;
                             secretPrependBuffer.pvBuffer = new IntPtr(pSecretPrepend);
 
@@ -90,7 +89,7 @@ internal static partial class Interop
                         if (pSecretAppend != null)
                         {
                             NCryptBuffer secretAppendBuffer = default;
-                            secretAppendBuffer.cbBuffer = secretAppend.Length;
+                            secretAppendBuffer.cbBuffer = secretAppend!.Length;
                             secretAppendBuffer.BufferType = BufferType.KdfSecretAppend;
                             secretAppendBuffer.pvBuffer = new IntPtr(pSecretAppend);
 
@@ -175,8 +174,8 @@ internal static partial class Interop
         internal static byte[] DeriveKeyMaterialHash(
             SafeNCryptSecretHandle secretAgreement,
             string hashAlgorithm,
-            byte[] secretPrepend,
-            byte[] secretAppend,
+            byte[]? secretPrepend,
+            byte[]? secretAppend,
             SecretAgreementFlags flags)
         {
             return DeriveKeyMaterial(
@@ -195,9 +194,9 @@ internal static partial class Interop
         internal static byte[] DeriveKeyMaterialHmac(
             SafeNCryptSecretHandle secretAgreement,
             string hashAlgorithm,
-            byte[] hmacKey,
-            byte[] secretPrepend,
-            byte[] secretAppend,
+            byte[]? hmacKey,
+            byte[]? secretPrepend,
+            byte[]? secretAppend,
             SecretAgreementFlags flags)
         {
             return DeriveKeyMaterial(
@@ -213,7 +212,7 @@ internal static partial class Interop
         /// <summary>
         ///     Derive key material from a secret agreement using the TLS KDF
         /// </summary>
-        internal static byte[] DeriveKeyMaterialTls(
+        internal static unsafe byte[] DeriveKeyMaterialTls(
             SafeNCryptSecretHandle secretAgreement,
             byte[] label,
             byte[] seed,
@@ -221,28 +220,25 @@ internal static partial class Interop
         {
             Span<NCryptBuffer> buffers = stackalloc NCryptBuffer[2];
 
-            unsafe
+            fixed (byte* pLabel = label, pSeed = seed)
             {
-                fixed (byte* pLabel = label, pSeed = seed)
-                {
-                    NCryptBuffer labelBuffer = default;
-                    labelBuffer.cbBuffer = label.Length;
-                    labelBuffer.BufferType = BufferType.KdfTlsLabel;
-                    labelBuffer.pvBuffer = new IntPtr(pLabel);
-                    buffers[0] = labelBuffer;
+                NCryptBuffer labelBuffer = default;
+                labelBuffer.cbBuffer = label.Length;
+                labelBuffer.BufferType = BufferType.KdfTlsLabel;
+                labelBuffer.pvBuffer = new IntPtr(pLabel);
+                buffers[0] = labelBuffer;
 
-                    NCryptBuffer seedBuffer = default;
-                    seedBuffer.cbBuffer = seed.Length;
-                    seedBuffer.BufferType = BufferType.KdfTlsSeed;
-                    seedBuffer.pvBuffer = new IntPtr(pSeed);
-                    buffers[1] = seedBuffer;
+                NCryptBuffer seedBuffer = default;
+                seedBuffer.cbBuffer = seed.Length;
+                seedBuffer.BufferType = BufferType.KdfTlsSeed;
+                seedBuffer.pvBuffer = new IntPtr(pSeed);
+                buffers[1] = seedBuffer;
 
-                    return DeriveKeyMaterial(
-                        secretAgreement,
-                        BCryptNative.KeyDerivationFunction.Tls,
-                        buffers,
-                        flags);
-                }
+                return DeriveKeyMaterial(
+                    secretAgreement,
+                    BCryptNative.KeyDerivationFunction.Tls,
+                    buffers,
+                    flags);
             }
         }
     }

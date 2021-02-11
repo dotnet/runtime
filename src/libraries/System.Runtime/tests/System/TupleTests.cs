@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -217,14 +216,16 @@ namespace System.Tests
 
             public void IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException()
             {
-                // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+                // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+                // See https://github.com/dotnet/runtime/issues/19265
                 IStructuralEquatable equatable = (IStructuralEquatable)Tuple;
                 Assert.Throws<NullReferenceException>(() => equatable.Equals(Tuple, null));
             }
 
             public void IStructuralEquatable_GetHashCode_NullComparer_ThrowsNullReferenceException()
             {
-                // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+                // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+                // See https://github.com/dotnet/runtime/issues/19265
                 IStructuralEquatable equatable = (IStructuralEquatable)Tuple;
                 Assert.Throws<NullReferenceException>(() => equatable.GetHashCode(null));
             }
@@ -240,7 +241,8 @@ namespace System.Tests
 
             public void IStructuralComparable_NullComparer_ThrowsNullReferenceException()
             {
-                // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+                // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+                // See https://github.com/dotnet/runtime/issues/19265
                 IStructuralComparable comparable = (IStructuralComparable)Tuple;
                 Assert.Throws<NullReferenceException>(() => comparable.CompareTo(Tuple, null));
             }
@@ -426,7 +428,7 @@ namespace System.Tests
             tupleDriverB = new TupleTestDriver<short, int, long, string, char, float, double, DateTime, Tuple<bool, object>, TimeSpan>((short)1, (int)1, long.MinValue, "This");
             tupleDriverC = new TupleTestDriver<short, int, long, string, char, float, double, DateTime, Tuple<bool, object>, TimeSpan>((short)1, (int)1, long.MinValue, "this");
             tupleDriverA.CompareTo(tupleDriverB, 0, 5);
-            tupleDriverA.CompareTo(tupleDriverC, 1, 5);
+            tupleDriverA.CompareTo(tupleDriverC, PlatformDetection.IsInvariantGlobalization ? /* 'T'-'t' */ -32 : 1, 5);
             //Tuple-5
             tupleDriverA = new TupleTestDriver<short, int, long, string, char, float, double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-1), (int)(-1), (long)0, "is", 'A');
             tupleDriverB = new TupleTestDriver<short, int, long, string, char, float, double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-1), (int)(-1), (long)0, "is", 'A');

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using StringHandle = System.Int64;
 using System.Xml;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -13,8 +13,8 @@ namespace System.Xml
     {
         private const int MaxArrayEntries = 2048;
 
-        private XmlDictionaryString[] _strings;
-        private Dictionary<int, XmlDictionaryString> _stringDict;
+        private XmlDictionaryString[]? _strings;
+        private Dictionary<int, XmlDictionaryString>? _stringDict;
 
         public XmlBinaryReaderSession()
         {
@@ -26,7 +26,7 @@ namespace System.Xml
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(id), SR.XmlInvalidID));
             if (value == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
-            XmlDictionaryString xmlString;
+            XmlDictionaryString? xmlString;
             if (TryLookup(id, out xmlString))
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIDDefined));
 
@@ -55,7 +55,7 @@ namespace System.Xml
             return xmlString;
         }
 
-        public bool TryLookup(int key, out XmlDictionaryString result)
+        public bool TryLookup(int key, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
             if (_strings != null && key >= 0 && key < _strings.Length)
             {
@@ -71,7 +71,7 @@ namespace System.Xml
             return false;
         }
 
-        public bool TryLookup(string value, out XmlDictionaryString result)
+        public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
             if (value == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
@@ -105,7 +105,7 @@ namespace System.Xml
             return false;
         }
 
-        public bool TryLookup(XmlDictionaryString value, out XmlDictionaryString result)
+        public bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
             if (value == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));

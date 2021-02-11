@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
@@ -39,12 +38,12 @@ namespace System.Net.NetworkInformation
         public static unsafe NetworkInterface[] GetBsdNetworkInterfaces()
         {
             Dictionary<string, BsdNetworkInterface> interfacesByName = new Dictionary<string, BsdNetworkInterface>();
-            List<Exception> exceptions = null;
+            List<Exception>? exceptions = null;
             const int MaxTries = 3;
             for (int attempt = 0; attempt < MaxTries; attempt++)
             {
                 // Because these callbacks are executed in a reverse-PInvoke, we do not want any exceptions
-                // to propogate out, because they will not be catchable. Instead, we track all the exceptions
+                // to propagate out, because they will not be catchable. Instead, we track all the exceptions
                 // that are thrown in these callbacks, and aggregate them at the end.
                 int result = Interop.Sys.EnumerateInterfaceAddresses(
                     (name, ipAddr) =>
@@ -128,7 +127,7 @@ namespace System.Net.NetworkInformation
         /// <returns>The cached or new BsdNetworkInterface with the given name.</returns>
         private static BsdNetworkInterface GetOrCreate(Dictionary<string, BsdNetworkInterface> interfaces, string name, int index)
         {
-            BsdNetworkInterface oni;
+            BsdNetworkInterface? oni;
             if (!interfaces.TryGetValue(name, out oni))
             {
                 oni = new BsdNetworkInterface(name, index);

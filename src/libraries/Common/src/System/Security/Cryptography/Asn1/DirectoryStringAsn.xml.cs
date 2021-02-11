@@ -1,23 +1,21 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct DirectoryStringAsn
     {
-        internal string TeletexString;
-        internal string PrintableString;
+        internal string? TeletexString;
+        internal string? PrintableString;
         internal ReadOnlyMemory<byte>? UniversalString;
-        internal string Utf8String;
-        internal string BmpString;
+        internal string? Utf8String;
+        internal string? BmpString;
 
 #if DEBUG
         static DirectoryStringAsn()
@@ -25,14 +23,14 @@ namespace System.Security.Cryptography.Asn1
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
             {
-                if (usedTags.TryGetValue(tag, out string existing))
+                if (usedTags.TryGetValue(tag, out string? existing))
                 {
                     throw new InvalidOperationException($"Tag '{tag}' is in use by both '{existing}' and '{fieldName}'");
                 }
 
                 usedTags.Add(tag, fieldName);
             };
-            
+
             ensureUniqueTag(new Asn1Tag(UniversalTagNumber.T61String), "TeletexString");
             ensureUniqueTag(new Asn1Tag(UniversalTagNumber.PrintableString), "PrintableString");
             ensureUniqueTag(new Asn1Tag((UniversalTagNumber)28), "UniversalString");
@@ -43,13 +41,13 @@ namespace System.Security.Cryptography.Asn1
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false; 
-            
+            bool wroteValue = false;
+
             if (TeletexString != null)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 writer.WriteCharacterString(UniversalTagNumber.T61String, TeletexString);
                 wroteValue = true;
             }
@@ -58,7 +56,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 writer.WriteCharacterString(UniversalTagNumber.PrintableString, PrintableString);
                 wroteValue = true;
             }
@@ -67,7 +65,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 // Validator for tag constraint for UniversalString
                 {
                     if (!Asn1Tag.TryDecode(UniversalString.Value.Span, out Asn1Tag validateTag, out _) ||
@@ -77,7 +75,14 @@ namespace System.Security.Cryptography.Asn1
                     }
                 }
 
-                writer.WriteEncodedValue(UniversalString.Value.Span);
+                try
+                {
+                    writer.WriteEncodedValue(UniversalString.Value.Span);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
                 wroteValue = true;
             }
 
@@ -85,7 +90,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 writer.WriteCharacterString(UniversalTagNumber.UTF8String, Utf8String);
                 wroteValue = true;
             }
@@ -94,7 +99,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 writer.WriteCharacterString(UniversalTagNumber.BMPString, BmpString);
                 wroteValue = true;
             }
@@ -107,21 +112,40 @@ namespace System.Security.Cryptography.Asn1
 
         internal static DirectoryStringAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, out DirectoryStringAsn decoded);
-            reader.ThrowIfNotEmpty();
-            return decoded;
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+                DecodeCore(ref reader, encoded, out DirectoryStringAsn decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
-        internal static void Decode(AsnReader reader, out DirectoryStringAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out DirectoryStringAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
+            try
+            {
+                DecodeCore(ref reader, rebind, out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
 
+        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out DirectoryStringAsn decoded)
+        {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
+
             if (tag.HasSameClassAndValue(new Asn1Tag(UniversalTagNumber.T61String)))
             {
                 decoded.TeletexString = reader.ReadCharacterString(UniversalTagNumber.T61String);
@@ -132,7 +156,8 @@ namespace System.Security.Cryptography.Asn1
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)28)))
             {
-                decoded.UniversalString = reader.ReadEncodedValue();
+                tmpSpan = reader.ReadEncodedValue();
+                decoded.UniversalString = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(UniversalTagNumber.UTF8String)))
             {

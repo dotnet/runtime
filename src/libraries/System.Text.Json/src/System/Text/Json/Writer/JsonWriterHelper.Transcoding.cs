@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -11,7 +10,7 @@ namespace System.Text.Json
 {
     internal static partial class JsonWriterHelper
     {
-        // TODO: Replace this with publicly shipping implementation: https://github.com/dotnet/corefx/issues/34094
+        // TODO: Replace this with publicly shipping implementation: https://github.com/dotnet/runtime/issues/28204
         /// <summary>
         /// Converts a span containing a sequence of UTF-16 bytes into UTF-8 bytes.
         ///

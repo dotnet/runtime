@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
@@ -15,9 +14,6 @@ namespace System.Net.Security
 {
     internal class CipherSuitesPolicyPal
     {
-        private static readonly byte[] RequireEncryptionDefault =
-            Encoding.ASCII.GetBytes("DEFAULT\0");
-
         private static readonly byte[] AllowNoEncryptionDefault =
             Encoding.ASCII.GetBytes("ALL:eNULL\0");
 
@@ -56,7 +52,7 @@ namespace System.Net.Security
                     {
                         foreach (TlsCipherSuite cs in allowedCipherSuites)
                         {
-                            string name = Interop.Ssl.GetOpenSslCipherSuiteName(
+                            string? name = Interop.Ssl.GetOpenSslCipherSuiteName(
                                 ssl,
                                 cs,
                                 out bool isTls12OrLower);
@@ -79,7 +75,7 @@ namespace System.Net.Security
             }
         }
 
-        internal static bool ShouldOptOutOfTls13(CipherSuitesPolicy policy, EncryptionPolicy encryptionPolicy)
+        internal static bool ShouldOptOutOfTls13(CipherSuitesPolicy? policy, EncryptionPolicy encryptionPolicy)
         {
             // if TLS 1.3 was explicitly requested the underlying code will throw
             // if default option (SslProtocols.None) is used we will opt-out of TLS 1.3
@@ -106,7 +102,7 @@ namespace System.Net.Security
             return policy.Pal._tls13CipherSuites.Length == 1;
         }
 
-        internal static bool ShouldOptOutOfLowerThanTls13(CipherSuitesPolicy policy, EncryptionPolicy encryptionPolicy)
+        internal static bool ShouldOptOutOfLowerThanTls13(CipherSuitesPolicy? policy, EncryptionPolicy encryptionPolicy)
         {
             if (policy == null)
             {
@@ -129,8 +125,8 @@ namespace System.Net.Security
         internal static bool WantsTls13(SslProtocols protocols)
             => protocols == SslProtocols.None || (protocols & SslProtocols.Tls13) != 0;
 
-        internal static byte[] GetOpenSslCipherList(
-            CipherSuitesPolicy policy,
+        internal static byte[]? GetOpenSslCipherList(
+            CipherSuitesPolicy? policy,
             SslProtocols protocols,
             EncryptionPolicy encryptionPolicy)
         {
@@ -153,8 +149,8 @@ namespace System.Net.Security
             return policy.Pal._cipherSuites;
         }
 
-        internal static byte[] GetOpenSslCipherSuites(
-            CipherSuitesPolicy policy,
+        internal static byte[]? GetOpenSslCipherSuites(
+            CipherSuitesPolicy? policy,
             SslProtocols protocols,
             EncryptionPolicy encryptionPolicy)
         {
@@ -172,12 +168,12 @@ namespace System.Net.Security
             return policy.Pal._tls13CipherSuites;
         }
 
-        private static byte[] CipherListFromEncryptionPolicy(EncryptionPolicy policy)
+        private static byte[]? CipherListFromEncryptionPolicy(EncryptionPolicy policy)
         {
             switch (policy)
             {
                 case EncryptionPolicy.RequireEncryption:
-                    return RequireEncryptionDefault;
+                    return null;
                 case EncryptionPolicy.AllowNoEncryption:
                     return AllowNoEncryptionDefault;
                 case EncryptionPolicy.NoEncryption:

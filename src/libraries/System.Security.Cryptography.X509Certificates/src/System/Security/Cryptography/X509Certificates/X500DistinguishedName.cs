@@ -1,15 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -17,6 +8,19 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X500DistinguishedName : AsnEncodedData
     {
         public X500DistinguishedName(byte[] encodedDistinguishedName)
+            : base(new Oid(null, null), encodedDistinguishedName)
+        {
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X500DistinguishedName"/>
+        ///   class using information from the provided data.
+        /// </summary>
+        /// <param name="encodedDistinguishedName">
+        ///   The encoded distinguished name.
+        /// </param>
+        /// <seealso cref="Encode"/>
+        public X500DistinguishedName(ReadOnlySpan<byte> encodedDistinguishedName)
             : base(new Oid(null, null), encodedDistinguishedName)
         {
         }
@@ -47,7 +51,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
-                string name = _lazyDistinguishedName;
+                string? name = _lazyDistinguishedName;
                 if (name == null)
                 {
                     name = _lazyDistinguishedName = Decode(X500DistinguishedNameFlags.Reversed);
@@ -85,6 +89,6 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, "flag"));
         }
 
-        private volatile string _lazyDistinguishedName;
+        private volatile string? _lazyDistinguishedName;
     }
 }

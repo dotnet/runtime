@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -31,12 +30,12 @@ namespace System.Diagnostics
         private readonly char[] _charBuffer;
 
         // Delegate to call user function.
-        private readonly Action<string> _userCallBack;
+        private readonly Action<string?> _userCallBack;
 
         private readonly CancellationTokenSource _cts;
-        private Task _readToBufferTask;
-        private readonly Queue<string> _messageQueue;
-        private StringBuilder _sb;
+        private Task? _readToBufferTask;
+        private readonly Queue<string?> _messageQueue;
+        private StringBuilder? _sb;
         private bool _bLastCarriageReturn;
         private bool _cancelOperation;
 
@@ -46,7 +45,7 @@ namespace System.Diagnostics
         // Creates a new AsyncStreamReader for the given stream. The
         // character encoding is set by encoding and the buffer size,
         // in number of 16-bit characters, is set by bufferSize.
-        internal AsyncStreamReader(Stream stream, Action<string> callback, Encoding encoding)
+        internal AsyncStreamReader(Stream stream, Action<string?> callback, Encoding encoding)
         {
             Debug.Assert(stream != null && encoding != null && callback != null, "Invalid arguments!");
             Debug.Assert(stream.CanRead, "Stream must be readable!");
@@ -62,7 +61,7 @@ namespace System.Diagnostics
             _charBuffer = new char[maxCharsPerBuffer];
 
             _cts = new CancellationTokenSource();
-            _messageQueue = new Queue<string>();
+            _messageQueue = new Queue<string?>();
         }
 
         // User calls BeginRead to start the asynchronous read
@@ -98,7 +97,7 @@ namespace System.Diagnostics
                         break;
 
                     int charLen = _decoder.GetChars(_byteBuffer, 0, bytesRead, _charBuffer, 0);
-                    _sb.Append(_charBuffer, 0, charLen);
+                    _sb!.Append(_charBuffer, 0, charLen);
                     MoveLinesFromStringBuilderToMessageQueue();
                 }
                 catch (IOException)
@@ -128,7 +127,7 @@ namespace System.Diagnostics
             // We're at EOF, process current buffer content and flush message queue.
             lock (_messageQueue)
             {
-                if (_sb.Length != 0)
+                if (_sb!.Length != 0)
                 {
                     _messageQueue.Enqueue(_sb.ToString());
                     _sb.Length = 0;
@@ -149,7 +148,7 @@ namespace System.Diagnostics
         {
             int currentIndex = _currentLinePos;
             int lineStart = 0;
-            int len = _sb.Length;
+            int len = _sb!.Length;
 
             // skip a beginning '\n' character of new block if last block ended
             // with '\r'
@@ -221,7 +220,7 @@ namespace System.Diagnostics
                 {
                     // Get the next line (if there isn't one, we're done) and
                     // invoke the user's callback with it.
-                    string line;
+                    string? line;
                     lock (_messageQueue)
                     {
                         if (_messageQueue.Count == 0)
@@ -245,7 +244,7 @@ namespace System.Diagnostics
                 // Otherwise, let the exception propagate.
                 if (rethrowInNewThread)
                 {
-                    ThreadPool.QueueUserWorkItem(edi => ((ExceptionDispatchInfo)edi).Throw(), ExceptionDispatchInfo.Capture(e));
+                    ThreadPool.QueueUserWorkItem(edi => ((ExceptionDispatchInfo)edi!).Throw(), ExceptionDispatchInfo.Capture(e));
                     return true;
                 }
                 throw;
@@ -254,13 +253,22 @@ namespace System.Diagnostics
 
         // Wait until we hit EOF. This is called from Process.WaitForExit
         // We will lose some information if we don't do this.
-        internal void WaitUtilEOF()
+        internal void WaitUntilEOF()
         {
-            if (_readToBufferTask != null)
+            if (_readToBufferTask is Task task)
             {
-                _readToBufferTask.GetAwaiter().GetResult();
-                _readToBufferTask = null;
+                task.GetAwaiter().GetResult();
             }
+        }
+
+        internal Task WaitUntilEOFAsync(CancellationToken cancellationToken)
+        {
+            if (_readToBufferTask is Task task)
+            {
+                return task.WithCancellation(cancellationToken);
+            }
+
+            return Task.CompletedTask;
         }
 
         public void Dispose()

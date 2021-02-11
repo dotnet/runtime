@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -87,7 +86,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(TestDataWithPredicate))]
-        public void Any(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
+        public void Any_Predicate(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
         {
             if (predicate == null)
             {

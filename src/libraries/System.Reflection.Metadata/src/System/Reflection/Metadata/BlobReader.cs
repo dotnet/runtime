@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection.Internal;
@@ -587,7 +586,7 @@ namespace System.Reflection.Metadata
         /// <remarks>Defined as a 'SerString' in the ECMA CLI specification.</remarks>
         /// <returns>String value or null.</returns>
         /// <exception cref="BadImageFormatException">If the encoding is invalid.</exception>
-        public string ReadSerializedString()
+        public string? ReadSerializedString()
         {
             int length;
             if (TryReadCompressedInteger(out length))
@@ -644,7 +643,7 @@ namespace System.Reflection.Metadata
         /// Boxed constant value. To avoid allocating the object use Read* methods directly.
         /// Constants of type <see cref="ConstantTypeCode.String"/> are encoded as UTF16 strings, use <see cref="ReadUTF16(int)"/> to read them.
         /// </returns>
-        public object ReadConstant(ConstantTypeCode typeCode)
+        public object? ReadConstant(ConstantTypeCode typeCode)
         {
             // Partition II section 22.9:
             //

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -96,7 +95,7 @@ namespace System.Drawing
 
         public TextureBrush(Image image, RectangleF dstRect) : this(image, dstRect, null) { }
 
-        public TextureBrush(Image image, RectangleF dstRect, ImageAttributes imageAttr)
+        public TextureBrush(Image image, RectangleF dstRect, ImageAttributes? imageAttr)
         {
             if (image == null)
             {
@@ -119,7 +118,7 @@ namespace System.Drawing
 
         public TextureBrush(Image image, Rectangle dstRect) : this(image, dstRect, null) { }
 
-        public TextureBrush(Image image, Rectangle dstRect, ImageAttributes imageAttr)
+        public TextureBrush(Image image, Rectangle dstRect, ImageAttributes? imageAttr)
         {
             if (image == null)
             {

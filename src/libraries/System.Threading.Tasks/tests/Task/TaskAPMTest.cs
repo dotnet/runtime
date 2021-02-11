@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -43,7 +42,7 @@ namespace System.Threading.Tasks.Tests
         /// </summary>
         private const int LongTaskMilliseconds = 100;
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]
@@ -111,7 +110,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(asyncResult.CompletedSynchronously, "Should not have completed synchronously.");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]

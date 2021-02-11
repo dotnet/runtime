@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -15,7 +14,7 @@ namespace System.Text.Json
 
         private const int DefaultInitialArraySize = 2;
 
-        private int[] _array;
+        private int[]? _array;
 
         // This ulong container represents a tiny stack to track the state during nested transitions.
         // The first bit represents the state of the current depth (1 == object, 0 == array).
@@ -135,6 +134,7 @@ namespace System.Text.Json
 
         private void DoubleArray(int minSize)
         {
+            Debug.Assert(_array != null);
             Debug.Assert(_array.Length < int.MaxValue / 2, $"Array too large - arrayLength: {_array.Length}");
             Debug.Assert(minSize >= 0 && minSize >= _array.Length);
 

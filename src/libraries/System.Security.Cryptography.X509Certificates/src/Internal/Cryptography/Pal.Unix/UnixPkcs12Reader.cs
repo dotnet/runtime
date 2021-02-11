@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -22,38 +22,53 @@ namespace Internal.Cryptography.Pal
         private const int ErrorInvalidPasswordHResult = unchecked((int)0x80070056);
 
         private PfxAsn _pfxAsn;
-        private ContentInfoAsn[] _safeContentsValues;
-        private CertAndKey[] _certs;
+        private ContentInfoAsn[]? _safeContentsValues;
+        private CertAndKey[]? _certs;
         private int _certCount;
+        private PointerMemoryManager<byte>? _tmpManager;
 
         protected abstract ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data);
         protected abstract AsymmetricAlgorithm LoadKey(ReadOnlyMemory<byte> safeBagBagValue);
 
-        protected void ParsePkcs12(byte[] data)
+        protected void ParsePkcs12(ReadOnlySpan<byte> data)
         {
-            // RFC7292 specifies BER instead of DER
-            AsnReader reader = new AsnReader(data, AsnEncodingRules.BER);
-            ReadOnlyMemory<byte> encodedData = reader.PeekEncodedValue();
-
-            // Windows compatibility: Ignore trailing data.
-            if (encodedData.Length != data.Length)
+            try
             {
-                reader = new AsnReader(encodedData, AsnEncodingRules.BER);
+                // RFC7292 specifies BER instead of DER
+                AsnValueReader reader = new AsnValueReader(data, AsnEncodingRules.BER);
+
+                // Windows compatibility: Ignore trailing data.
+                ReadOnlySpan<byte> encodedData = reader.PeekEncodedValue();
+
+                unsafe
+                {
+                    IntPtr tmpPtr = Marshal.AllocHGlobal(encodedData.Length);
+                    Span<byte> tmpSpan = new Span<byte>((byte*)tmpPtr, encodedData.Length);
+                    encodedData.CopyTo(tmpSpan);
+                    _tmpManager = new PointerMemoryManager<byte>((void*)tmpPtr, encodedData.Length);
+                }
+
+                ReadOnlyMemory<byte> tmpMemory = _tmpManager.Memory;
+                reader = new AsnValueReader(tmpMemory.Span, AsnEncodingRules.BER);
+
+                PfxAsn.Decode(ref reader, tmpMemory, out PfxAsn pfxAsn);
+
+                if (pfxAsn.AuthSafe.ContentType != Oids.Pkcs7Data)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                _pfxAsn = pfxAsn;
             }
-
-            PfxAsn.Decode(reader, out PfxAsn pfxAsn);
-
-            if (pfxAsn.AuthSafe.ContentType != Oids.Pkcs7Data)
+            catch (AsnContentException e)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
-
-            _pfxAsn = pfxAsn;
         }
 
         internal CertAndKey GetSingleCert()
         {
-            CertAndKey[] certs = _certs;
+            CertAndKey[]? certs = _certs;
             Debug.Assert(certs != null);
 
             if (_certCount < 1)
@@ -88,7 +103,7 @@ namespace Internal.Cryptography.Pal
             while (_certCount > 0)
             {
                 int idx = _certCount - 1;
-                CertAndKey ret = _certs[idx];
+                CertAndKey ret = _certs![idx];
                 _certs[idx] = default;
                 _certCount--;
                 yield return ret;
@@ -97,8 +112,29 @@ namespace Internal.Cryptography.Pal
 
         public void Dispose()
         {
-            ContentInfoAsn[] rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
-            CertAndKey[] rentedCerts = Interlocked.Exchange(ref _certs, null);
+            // Generally, having a MemoryManager cleaned up in a Dispose is a bad practice.
+            // In this case, the UnixPkcs12Reader is only ever created in a using statement,
+            // never accessed by a second thread, and there isn't a manual call to Dispose
+            // mixed in anywhere.
+            if (_tmpManager != null)
+            {
+                unsafe
+                {
+                    Span<byte> tmp = _tmpManager.GetSpan();
+                    CryptographicOperations.ZeroMemory(tmp);
+
+                    fixed (byte* ptr = tmp)
+                    {
+                        Marshal.FreeHGlobal((IntPtr)ptr);
+                    }
+                }
+
+                ((IDisposable)_tmpManager).Dispose();
+                _tmpManager = null;
+            }
+
+            ContentInfoAsn[]? rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
+            CertAndKey[]? rentedCerts = Interlocked.Exchange(ref _certs, null);
 
             if (rentedContents != null)
             {
@@ -173,7 +209,7 @@ namespace Internal.Cryptography.Pal
                     }
                     catch (CryptographicException)
                     {
-                        ContentInfoAsn[] partialSuccess = _safeContentsValues;
+                        ContentInfoAsn[]? partialSuccess = _safeContentsValues;
                         _safeContentsValues = null;
 
                         if (partialSuccess != null)
@@ -248,11 +284,11 @@ namespace Internal.Cryptography.Pal
             // Nothing requires that there be fewer keys than certs,
             // but it's sort of nonsensical when loading this way.
             CertBagAsn[] certBags = ArrayPool<CertBagAsn>.Shared.Rent(10);
-            AttributeAsn[][] certBagAttrs = ArrayPool<AttributeAsn[]>.Shared.Rent(10);
+            AttributeAsn[]?[] certBagAttrs = ArrayPool<AttributeAsn[]?>.Shared.Rent(10);
             SafeBagAsn[] keyBags = ArrayPool<SafeBagAsn>.Shared.Rent(10);
-            RentedSubjectPublicKeyInfo[] publicKeyInfos = null;
-            AsymmetricAlgorithm[] keys = null;
-            CertAndKey[] certs = null;
+            RentedSubjectPublicKeyInfo[]? publicKeyInfos = null;
+            AsymmetricAlgorithm[]? keys = null;
+            CertAndKey[]? certs = null;
             int certBagIdx = 0;
             int keyBagIdx = 0;
 
@@ -326,7 +362,7 @@ namespace Internal.Cryptography.Pal
                 }
 
                 ArrayPool<CertBagAsn>.Shared.Return(certBags, clearArray: true);
-                ArrayPool<AttributeAsn[]>.Shared.Return(certBagAttrs, clearArray: true);
+                ArrayPool<AttributeAsn[]?>.Shared.Return(certBagAttrs, clearArray: true);
                 ArrayPool<SafeBagAsn>.Shared.Return(keyBags, clearArray: true);
             }
         }
@@ -337,31 +373,38 @@ namespace Internal.Cryptography.Pal
             // and one plain (contains encrypted keys)
             ContentInfoAsn[] rented = ArrayPool<ContentInfoAsn>.Shared.Rent(10);
 
-            AsnReader outer = new AsnReader(authSafeContents, AsnEncodingRules.BER);
-            AsnReader reader = outer.ReadSequence();
-            outer.ThrowIfNotEmpty();
-            int i = 0;
-
-            while (reader.HasData)
+            try
             {
-                GrowIfNeeded(ref rented, i);
-                ContentInfoAsn.Decode(reader, out rented[i]);
-                i++;
-            }
+                AsnValueReader outer = new AsnValueReader(authSafeContents.Span, AsnEncodingRules.BER);
+                AsnValueReader reader = outer.ReadSequence();
+                outer.ThrowIfNotEmpty();
+                int i = 0;
 
-            rented.AsSpan(i).Clear();
-            return rented;
+                while (reader.HasData)
+                {
+                    GrowIfNeeded(ref rented, i);
+                    ContentInfoAsn.Decode(ref reader, authSafeContents, out rented[i]);
+                    i++;
+                }
+
+                rented.AsSpan(i).Clear();
+                return rented;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
         }
 
         private void DecryptAndProcessSafeContents(
             ReadOnlySpan<char> password,
             ref CertBagAsn[] certBags,
-            ref AttributeAsn[][] certBagAttrs,
+            ref AttributeAsn[]?[] certBagAttrs,
             ref int certBagIdx,
             ref SafeBagAsn[] keyBags,
             ref int keyBagIdx)
         {
-            for (int i = 0; i < _safeContentsValues.Length; i++)
+            for (int i = 0; i < _safeContentsValues!.Length; i++)
             {
                 string contentType = _safeContentsValues[i].ContentType;
                 bool process = false;
@@ -402,7 +445,7 @@ namespace Internal.Cryptography.Pal
             AsymmetricAlgorithm[] keys,
             RentedSubjectPublicKeyInfo[] publicKeyInfos)
         {
-            byte[] spkiBuf = null;
+            byte[]? spkiBuf = null;
 
             for (int i = keyBagIdx - 1; i >= 0; i--)
             {
@@ -417,7 +460,7 @@ namespace Internal.Cryptography.Pal
 
                     while (!key.TryExportSubjectPublicKeyInfo(spkiBuf, out pubLength))
                     {
-                        byte[] toReturn = spkiBuf;
+                        byte[]? toReturn = spkiBuf;
                         spkiBuf = CryptoPool.Rent((toReturn?.Length ?? 128) * 2);
 
                         if (toReturn != null)
@@ -455,12 +498,12 @@ namespace Internal.Cryptography.Pal
 
         private void BuildCertsWithKeys(
             CertBagAsn[] certBags,
-            AttributeAsn[][] certBagAttrs,
+            AttributeAsn[]?[] certBagAttrs,
             CertAndKey[] certs,
             int certBagIdx,
             SafeBagAsn[] keyBags,
             RentedSubjectPublicKeyInfo[] publicKeyInfos,
-            AsymmetricAlgorithm[] keys,
+            AsymmetricAlgorithm?[] keys,
             int keyBagIdx)
         {
             for (certBagIdx--; certBagIdx >= 0; certBagIdx--)
@@ -469,7 +512,7 @@ namespace Internal.Cryptography.Pal
 
                 foreach (AttributeAsn attr in certBagAttrs[certBagIdx] ?? Array.Empty<AttributeAsn>())
                 {
-                    if (attr.AttrType.Value == Oids.LocalKeyId && attr.AttrValues.Length > 0)
+                    if (attr.AttrType == Oids.LocalKeyId && attr.AttrValues.Length > 0)
                     {
                         matchingKeyIdx = FindMatchingKey(
                             keyBags,
@@ -490,7 +533,7 @@ namespace Internal.Cryptography.Pal
                 // compare SubjectPublicKeyInfo values
                 if (matchingKeyIdx == -1 && keyBagIdx > 0)
                 {
-                    ICertificatePalCore cert = certs[certBagIdx].Cert;
+                    ICertificatePalCore cert = certs[certBagIdx].Cert!;
                     string algorithm = cert.KeyAlgorithm;
                     byte[] keyParams = cert.KeyAlgorithmParameters;
                     byte[] keyValue = cert.PublicKeyValue;
@@ -533,7 +576,7 @@ namespace Internal.Cryptography.Pal
             {
                 case Oids.Rsa:
                 case Oids.RsaPss:
-                    switch (publicKeyInfo.Algorithm.Algorithm.Value)
+                    switch (publicKeyInfo.Algorithm.Algorithm)
                     {
                         case Oids.Rsa:
                         case Oids.RsaPss:
@@ -547,7 +590,7 @@ namespace Internal.Cryptography.Pal
                         AlgorithmIdentifierAsn.RepresentsNull(keyParams);
                 case Oids.EcPublicKey:
                 case Oids.EcDiffieHellman:
-                    switch (publicKeyInfo.Algorithm.Algorithm.Value)
+                    switch (publicKeyInfo.Algorithm.Algorithm)
                     {
                         case Oids.EcPublicKey:
                         case Oids.EcDiffieHellman:
@@ -561,7 +604,7 @@ namespace Internal.Cryptography.Pal
                         publicKeyInfo.Algorithm.Parameters.Value.Span.SequenceEqual(keyParams);
             }
 
-            if (algorithm != publicKeyInfo.Algorithm.Algorithm.Value)
+            if (algorithm != publicKeyInfo.Algorithm.Algorithm)
             {
                 return false;
             }
@@ -581,9 +624,9 @@ namespace Internal.Cryptography.Pal
         {
             for (int i = 0; i < keyBagCount; i++)
             {
-                foreach (AttributeAsn attr in keyBags[i].BagAttributes)
+                foreach (AttributeAsn attr in keyBags[i].BagAttributes ?? Array.Empty<AttributeAsn>())
                 {
-                    if (attr.AttrType.Value == Oids.LocalKeyId && attr.AttrValues.Length > 0)
+                    if (attr.AttrType == Oids.LocalKeyId && attr.AttrValues.Length > 0)
                     {
                         ReadOnlyMemory<byte> curKeyId =
                             Helpers.DecodeOctetStringAsMemory(attr.AttrValues[0]);
@@ -656,7 +699,7 @@ namespace Internal.Cryptography.Pal
         private static void ProcessSafeContents(
             in ContentInfoAsn safeContentsAsn,
             ref CertBagAsn[] certBags,
-            ref AttributeAsn[][] certBagAttrs,
+            ref AttributeAsn[]?[] certBagAttrs,
             ref int certBagIdx,
             ref SafeBagAsn[] keyBags,
             ref int keyBagIdx)
@@ -668,33 +711,40 @@ namespace Internal.Cryptography.Pal
                 contentData = Helpers.DecodeOctetStringAsMemory(contentData);
             }
 
-            AsnReader outer = new AsnReader(contentData, AsnEncodingRules.BER);
-            AsnReader reader = outer.ReadSequence();
-            outer.ThrowIfNotEmpty();
-
-            while (reader.HasData)
+            try
             {
-                SafeBagAsn.Decode(reader, out SafeBagAsn bag);
+                AsnValueReader outer = new AsnValueReader(contentData.Span, AsnEncodingRules.BER);
+                AsnValueReader reader = outer.ReadSequence();
+                outer.ThrowIfNotEmpty();
 
-                if (bag.BagId == Oids.Pkcs12CertBag)
+                while (reader.HasData)
                 {
-                    CertBagAsn certBag = CertBagAsn.Decode(bag.BagValue, AsnEncodingRules.BER);
+                    SafeBagAsn.Decode(ref reader, contentData, out SafeBagAsn bag);
 
-                    if (certBag.CertId == Oids.Pkcs12X509CertBagType)
+                    if (bag.BagId == Oids.Pkcs12CertBag)
                     {
-                        GrowIfNeeded(ref certBags, certBagIdx);
-                        GrowIfNeeded(ref certBagAttrs, certBagIdx);
-                        certBags[certBagIdx] = certBag;
-                        certBagAttrs[certBagIdx] = bag.BagAttributes;
-                        certBagIdx++;
+                        CertBagAsn certBag = CertBagAsn.Decode(bag.BagValue, AsnEncodingRules.BER);
+
+                        if (certBag.CertId == Oids.Pkcs12X509CertBagType)
+                        {
+                            GrowIfNeeded(ref certBags, certBagIdx);
+                            GrowIfNeeded(ref certBagAttrs, certBagIdx);
+                            certBags[certBagIdx] = certBag;
+                            certBagAttrs[certBagIdx] = bag.BagAttributes;
+                            certBagIdx++;
+                        }
+                    }
+                    else if (bag.BagId == Oids.Pkcs12KeyBag || bag.BagId == Oids.Pkcs12ShroudedKeyBag)
+                    {
+                        GrowIfNeeded(ref keyBags, keyBagIdx);
+                        keyBags[keyBagIdx] = bag;
+                        keyBagIdx++;
                     }
                 }
-                else if (bag.BagId == Oids.Pkcs12KeyBag || bag.BagId == Oids.Pkcs12ShroudedKeyBag)
-                {
-                    GrowIfNeeded(ref keyBags, keyBagIdx);
-                    keyBags[keyBagIdx] = bag;
-                    keyBagIdx++;
-                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 
@@ -718,7 +768,7 @@ namespace Internal.Cryptography.Pal
                 }
                 finally
                 {
-                    CryptoPool.Return(decrypted.Array, clearSize: decrypted.Count);
+                    CryptoPool.Return(decrypted.Array!, clearSize: decrypted.Count);
                 }
             }
 
@@ -741,8 +791,8 @@ namespace Internal.Cryptography.Pal
 
         internal struct CertAndKey
         {
-            internal ICertificatePalCore Cert;
-            internal AsymmetricAlgorithm Key;
+            internal ICertificatePalCore? Cert;
+            internal AsymmetricAlgorithm? Key;
 
             internal void Dispose()
             {
@@ -753,11 +803,11 @@ namespace Internal.Cryptography.Pal
 
         private struct RentedSubjectPublicKeyInfo
         {
-            private byte[] _rented;
+            private byte[]? _rented;
             private int _clearSize;
             internal SubjectPublicKeyInfoAsn Value;
 
-            internal void TrackArray(byte[] rented, int clearSize = CryptoPool.ClearAll)
+            internal void TrackArray(byte[]? rented, int clearSize = CryptoPool.ClearAll)
             {
                 Debug.Assert(_rented == null);
 
@@ -767,7 +817,7 @@ namespace Internal.Cryptography.Pal
 
             public void Dispose()
             {
-                byte[] rented = Interlocked.Exchange(ref _rented, null);
+                byte[]? rented = Interlocked.Exchange(ref _rented, null);
 
                 if (rented != null)
                 {

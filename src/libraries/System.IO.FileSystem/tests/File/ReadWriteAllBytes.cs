@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -23,7 +21,6 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidParameters()
         {
-            string path = GetTestFilePath();
             Assert.Throws<ArgumentException>(() => File.WriteAllBytes(string.Empty, new byte[0]));
             Assert.Throws<ArgumentException>(() => File.ReadAllBytes(string.Empty));
         }
@@ -59,6 +56,7 @@ namespace System.IO.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public void ReadFileOver2GB()
         {
             string path = GetTestFilePath();
@@ -83,6 +81,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
         public void OpenFile_ThrowsIOException()
         {
             string path = GetTestFilePath();
@@ -108,7 +107,7 @@ namespace System.IO.Tests
             try
             {
                 // Operation succeeds when being run by the Unix superuser
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0)
+                if (PlatformDetection.IsSuperUser)
                 {
                     File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text"));
                     Assert.Equal(Encoding.UTF8.GetBytes("text"), File.ReadAllBytes(path));

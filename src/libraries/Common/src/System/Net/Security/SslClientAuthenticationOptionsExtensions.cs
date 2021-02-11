@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 #if DEBUG
@@ -31,14 +30,14 @@ namespace System.Net.Security
 
 #if DEBUG
             // Try to detect if a property gets added that we're not copying correctly.
-            foreach (PropertyInfo pi in options.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            foreach (PropertyInfo pi in typeof(SslClientAuthenticationOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                object origValue = pi.GetValue(options);
-                object cloneValue = pi.GetValue(clone);
+                object? origValue = pi.GetValue(options);
+                object? cloneValue = pi.GetValue(clone);
 
                 if (origValue is IEnumerable origEnumerable)
                 {
-                    IEnumerable cloneEnumerable = cloneValue as IEnumerable;
+                    IEnumerable? cloneEnumerable = cloneValue as IEnumerable;
                     Debug.Assert(cloneEnumerable != null, $"{pi.Name}. Expected enumerable cloned value.");
 
                     IEnumerator e1 = origEnumerable.GetEnumerator();

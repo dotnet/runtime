@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.Caching.Configuration;
@@ -17,7 +16,6 @@ using System.Diagnostics;
 
 namespace System.Runtime.Caching
 {
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "The class represents a type of cache")]
     public class MemoryCache : ObjectCache, IEnumerable, IDisposable
     {
         private const DefaultCacheCapabilities CAPABILITIES = DefaultCacheCapabilities.InMemoryProvider
@@ -345,7 +343,7 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            if (name == string.Empty)
+            if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
             }
@@ -365,7 +363,7 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            if (name == string.Empty)
+            if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
             }
@@ -868,7 +866,6 @@ namespace System.Runtime.Caching
         // used when redirecting ASP.NET cache into the MemoryCache.  This avoids infinite recursion
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the
         // config system.
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Grandfathered suppression from original caching code checkin")]
         internal void UpdateConfig(NameValueCollection config)
         {
             if (config == null)

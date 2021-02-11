@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
@@ -53,14 +52,14 @@ namespace System.Xml.Xsl.XsltOld
 
                     if (result is XPathNodeIterator)
                     {
-                        // we cash this query because otherwise current() works incorrectly. Bug#382166.
+                        // we cash this query because otherwise current() works incorrectly. Bug #382166.
                         // To be perfect we should use frame.NewNodeSet here
                         processor.PushActionFrame(CopyNodeSetAction.GetAction(), new XPathArrayIterator(query));
                         frame.State = NodeSetCopied;
                         break;
                     }
 
-                    XPathNavigator nav = result as XPathNavigator;
+                    XPathNavigator? nav = result as XPathNavigator;
                     if (nav != null)
                     {
                         processor.PushActionFrame(CopyNodeSetAction.GetAction(), new XPathSingletonIterator(nav));
@@ -68,7 +67,7 @@ namespace System.Xml.Xsl.XsltOld
                         break;
                     }
 
-                    string value = XmlConvert.ToXPathString(result);
+                    string? value = XmlConvert.ToXPathString(result);
                     if (processor.TextEvent(value))
                     {
                         frame.Finished();

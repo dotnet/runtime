@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.PageSettings.cs
 //
@@ -54,7 +55,7 @@ namespace System.Drawing.Printing
         private float hardMarginX;
         private float hardMarginY;
         private RectangleF printableArea;
-        private PrinterSettings printerSettings;
+        private PrinterSettings printerSettings = null!;
 #pragma warning restore 649
 
         public PageSettings() : this(new PrinterSettings())

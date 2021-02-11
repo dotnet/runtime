@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Cryptography;
 using Internal.Cryptography.Pal;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Text;
@@ -14,13 +14,13 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public class X509Certificate : IDisposable, IDeserializationCallback, ISerializable
     {
-        private volatile byte[] _lazyCertHash;
-        private volatile string _lazyIssuer;
-        private volatile string _lazySubject;
-        private volatile byte[] _lazySerialNumber;
-        private volatile string _lazyKeyAlgorithm;
-        private volatile byte[] _lazyKeyAlgorithmParameters;
-        private volatile byte[] _lazyPublicKey;
+        private volatile byte[]? _lazyCertHash;
+        private volatile string? _lazyIssuer;
+        private volatile string? _lazySubject;
+        private volatile byte[]? _lazySerialNumber;
+        private volatile string? _lazyKeyAlgorithm;
+        private volatile byte[]? _lazyKeyAlgorithmParameters;
+        private volatile byte[]? _lazyPublicKey;
         private DateTime _lazyNotBefore = DateTime.MinValue;
         private DateTime _lazyNotAfter = DateTime.MinValue;
 
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.X509Certificates
             _lazyNotBefore = DateTime.MinValue;
             _lazyNotAfter = DateTime.MinValue;
 
-            ICertificatePalCore pal = Pal;
+            ICertificatePalCore? pal = Pal;
             if (pal != null)
             {
                 Pal = null;
@@ -48,30 +48,36 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        // Null turns into the empty span here, which is correct for compat.
         public X509Certificate(byte[] data)
+            : this(new ReadOnlySpan<byte>(data))
         {
-            if (data != null && data.Length != 0)
+        }
+
+        private protected X509Certificate(ReadOnlySpan<byte> data)
+        {
+            if (!data.IsEmpty)
             {
                 // For compat reasons, this constructor treats passing a null or empty data set as the same as calling the nullary constructor.
-                using (var safePasswordHandle = new SafePasswordHandle((string)null))
+                using (var safePasswordHandle = new SafePasswordHandle((string?)null))
                 {
                     Pal = CertificatePal.FromBlob(data, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet);
                 }
             }
         }
 
-        public X509Certificate(byte[] rawData, string password)
+        public X509Certificate(byte[] rawData, string? password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
         [System.CLSCompliantAttribute(false)]
-        public X509Certificate(byte[] rawData, SecureString password)
+        public X509Certificate(byte[] rawData, SecureString? password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        public X509Certificate(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        public X509Certificate(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null || rawData.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
@@ -85,9 +91,22 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
-        public X509Certificate(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
+        public X509Certificate(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null || rawData.Length == 0)
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
+
+            ValidateKeyStorageFlags(keyStorageFlags);
+
+            using (var safePasswordHandle = new SafePasswordHandle(password))
+            {
+                Pal = CertificatePal.FromBlob(rawData, safePasswordHandle, keyStorageFlags);
+            }
+        }
+
+        private protected X509Certificate(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
+        {
+            if (rawData.IsEmpty)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
 
             ValidateKeyStorageFlags(keyStorageFlags);
@@ -110,22 +129,35 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509Certificate(string fileName)
-            : this(fileName, (string)null, X509KeyStorageFlags.DefaultKeySet)
+            : this(fileName, (string?)null, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        public X509Certificate(string fileName, string password)
+        public X509Certificate(string fileName, string? password)
             : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
         [System.CLSCompliantAttribute(false)]
-        public X509Certificate(string fileName, SecureString password)
+        public X509Certificate(string fileName, SecureString? password)
             : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        public X509Certificate(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        public X509Certificate(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+
+            ValidateKeyStorageFlags(keyStorageFlags);
+
+            using (var safePasswordHandle = new SafePasswordHandle(password))
+            {
+                Pal = CertificatePal.FromFile(fileName, safePasswordHandle, keyStorageFlags);
+            }
+        }
+
+        private protected X509Certificate(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
@@ -139,7 +171,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
-        public X509Certificate(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags) : this()
+        public X509Certificate(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
@@ -163,7 +195,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2229", Justification = "Public API has already shipped.")]
         public X509Certificate(SerializationInfo info, StreamingContext context) : this()
         {
             throw new PlatformNotSupportedException();
@@ -184,7 +215,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException();
         }
 
-        void IDeserializationCallback.OnDeserialization(object sender)
+        void IDeserializationCallback.OnDeserialization(object? sender)
         {
             throw new PlatformNotSupportedException();
         }
@@ -206,9 +237,9 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                string issuer = _lazyIssuer;
+                string? issuer = _lazyIssuer;
                 if (issuer == null)
-                    issuer = _lazyIssuer = Pal.Issuer;
+                    issuer = _lazyIssuer = Pal!.Issuer;
                 return issuer;
             }
         }
@@ -219,9 +250,9 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                string subject = _lazySubject;
+                string? subject = _lazySubject;
                 if (subject == null)
-                    subject = _lazySubject = Pal.Subject;
+                    subject = _lazySubject = Pal!.Subject;
                 return subject;
             }
         }
@@ -239,15 +270,15 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            X509Certificate other = obj as X509Certificate;
+            X509Certificate? other = obj as X509Certificate;
             if (other == null)
                 return false;
             return Equals(other);
         }
 
-        public virtual bool Equals(X509Certificate other)
+        public virtual bool Equals([NotNullWhen(true)] X509Certificate? other)
         {
             if (other == null)
                 return false;
@@ -274,10 +305,10 @@ namespace System.Security.Cryptography.X509Certificates
 
         public virtual byte[] Export(X509ContentType contentType)
         {
-            return Export(contentType, (string)null);
+            return Export(contentType, (string?)null);
         }
 
-        public virtual byte[] Export(X509ContentType contentType, string password)
+        public virtual byte[] Export(X509ContentType contentType, string? password)
         {
             VerifyContentType(contentType);
 
@@ -291,7 +322,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
-        public virtual byte[] Export(X509ContentType contentType, SecureString password)
+        public virtual byte[] Export(X509ContentType contentType, SecureString? password)
         {
             VerifyContentType(contentType);
 
@@ -322,7 +353,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
             {
-                hasher.AppendData(Pal.RawData);
+                hasher.AppendData(Pal!.RawData);
                 return hasher.GetHashAndReset();
             }
         }
@@ -336,7 +367,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
             {
-                hasher.AppendData(Pal.RawData);
+                hasher.AppendData(Pal!.RawData);
                 return hasher.TryGetHashAndReset(destination, out bytesWritten);
             }
         }
@@ -357,7 +388,7 @@ namespace System.Security.Cryptography.X509Certificates
         // Only use for internal purposes when the returned byte[] will not be mutated
         private byte[] GetRawCertHash()
         {
-            return _lazyCertHash ?? (_lazyCertHash = Pal.Thumbprint);
+            return _lazyCertHash ?? (_lazyCertHash = Pal!.Thumbprint);
         }
 
         public virtual string GetEffectiveDateString()
@@ -384,7 +415,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            return Pal.RawData.CloneByteArray();
+            return Pal!.RawData.CloneByteArray();
         }
 
         public override int GetHashCode()
@@ -405,9 +436,9 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            string keyAlgorithm = _lazyKeyAlgorithm;
+            string? keyAlgorithm = _lazyKeyAlgorithm;
             if (keyAlgorithm == null)
-                keyAlgorithm = _lazyKeyAlgorithm = Pal.KeyAlgorithm;
+                keyAlgorithm = _lazyKeyAlgorithm = Pal!.KeyAlgorithm;
             return keyAlgorithm;
         }
 
@@ -415,9 +446,9 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            byte[] keyAlgorithmParameters = _lazyKeyAlgorithmParameters;
+            byte[]? keyAlgorithmParameters = _lazyKeyAlgorithmParameters;
             if (keyAlgorithmParameters == null)
-                keyAlgorithmParameters = _lazyKeyAlgorithmParameters = Pal.KeyAlgorithmParameters;
+                keyAlgorithmParameters = _lazyKeyAlgorithmParameters = Pal!.KeyAlgorithmParameters;
             return keyAlgorithmParameters.CloneByteArray();
         }
 
@@ -433,9 +464,9 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            byte[] publicKey = _lazyPublicKey;
+            byte[]? publicKey = _lazyPublicKey;
             if (publicKey == null)
-                publicKey = _lazyPublicKey = Pal.PublicKeyValue;
+                publicKey = _lazyPublicKey = Pal!.PublicKeyValue;
             return publicKey.CloneByteArray();
         }
 
@@ -458,21 +489,21 @@ namespace System.Security.Cryptography.X509Certificates
         // Only use for internal purposes when the returned byte[] will not be mutated
         private byte[] GetRawSerialNumber()
         {
-            return _lazySerialNumber ?? (_lazySerialNumber = Pal.SerialNumber);
+            return _lazySerialNumber ?? (_lazySerialNumber = Pal!.SerialNumber);
         }
 
         [Obsolete("This method has been deprecated.  Please use the Subject property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual string GetName()
         {
             ThrowIfInvalid();
-            return Pal.LegacySubject;
+            return Pal!.LegacySubject;
         }
 
         [Obsolete("This method has been deprecated.  Please use the Issuer property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public virtual string GetIssuerName()
         {
             ThrowIfInvalid();
-            return Pal.LegacyIssuer;
+            return Pal!.LegacyIssuer;
         }
 
         public override string ToString()
@@ -534,13 +565,13 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
-        public virtual void Import(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        public virtual void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         [System.CLSCompliantAttribute(false)]
-        public virtual void Import(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
+        public virtual void Import(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
@@ -550,18 +581,18 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
-        public virtual void Import(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        public virtual void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         [System.CLSCompliantAttribute(false)]
-        public virtual void Import(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags)
+        public virtual void Import(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
-        internal ICertificatePalCore Pal { get; private set; }
+        internal ICertificatePalCore? Pal { get; private set; }
 
         internal DateTime GetNotAfter()
         {
@@ -569,7 +600,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             DateTime notAfter = _lazyNotAfter;
             if (notAfter == DateTime.MinValue)
-                notAfter = _lazyNotAfter = Pal.NotAfter;
+                notAfter = _lazyNotAfter = Pal!.NotAfter;
             return notAfter;
         }
 
@@ -579,7 +610,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             DateTime notBefore = _lazyNotBefore;
             if (notBefore == DateTime.MinValue)
-                notBefore = _lazyNotBefore = Pal.NotBefore;
+                notBefore = _lazyNotBefore = Pal!.NotBefore;
             return notBefore;
         }
 
@@ -606,7 +637,7 @@ namespace System.Security.Cryptography.X509Certificates
                 // we can fall back to the Hijri calendar, otherwise fall back to the invariant culture.
                 if (culture.DateTimeFormat.Calendar is UmAlQuraCalendar)
                 {
-                    culture = culture.Clone() as CultureInfo;
+                    culture = (culture.Clone() as CultureInfo)!;
                     culture.DateTimeFormat.Calendar = new HijriCalendar();
                 }
                 else

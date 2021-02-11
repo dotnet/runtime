@@ -1,17 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography
 {
-    public class CryptoConfig
+    public partial class CryptoConfig
     {
         private const string AssemblyName_Cng = "System.Security.Cryptography.Cng";
         private const string AssemblyName_Csp = "System.Security.Cryptography.Csp";
@@ -33,14 +32,12 @@ namespace System.Security.Cryptography
 
         private const string ECDsaIdentifier = "ECDsa";
 
-        private static volatile Dictionary<string, string> s_defaultOidHT;
-        private static volatile Dictionary<string, object> s_defaultNameHT;
+        private static volatile Dictionary<string, string>? s_defaultOidHT;
+        private static volatile Dictionary<string, object>? s_defaultNameHT;
         private static readonly ConcurrentDictionary<string, Type> appNameHT = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, string> appOidHT = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        private static readonly char[] SepArray = { '.' }; // valid ASN.1 separators
-
-        // CoreFx does not support AllowOnlyFipsAlgorithms
+        // .NET Core does not support AllowOnlyFipsAlgorithms
         public static bool AllowOnlyFipsAlgorithms => false;
 
         private static Dictionary<string, string> DefaultOidHT
@@ -190,7 +187,7 @@ namespace System.Security.Cryptography
                 ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);
 
                 // Windows will register the public ECDsaCng type.  Non-Windows gets a special handler.
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     ht.Add(ECDsaIdentifier, ECDsaCngType);
                 }
@@ -275,7 +272,7 @@ namespace System.Security.Cryptography
                 s_defaultNameHT = ht;
                 return s_defaultNameHT;
 
-                // Types in Desktop but currently unsupported in CoreFx:
+                // Types in .NET Framework but currently unsupported in .NET Core:
                 // Type HMACRIPEMD160Type = typeof(System.Security.Cryptography.HMACRIPEMD160);
                 // Type MAC3DESType = typeof(System.Security.Cryptography.MACTripleDES);
                 // Type DSASignatureDescriptionType = typeof(System.Security.Cryptography.DSASignatureDescription);
@@ -326,18 +323,19 @@ namespace System.Security.Cryptography
             }
         }
 
-        public static object CreateFromName(string name, params object[] args)
+        [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
+        public static object? CreateFromName(string name, params object?[]? args)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
             // Check to see if we have an application defined mapping
-            appNameHT.TryGetValue(name, out Type retvalType);
+            appNameHT.TryGetValue(name, out Type? retvalType);
 
             // We allow the default table to Types and Strings
             // Types get used for types in .Algorithms assembly.
             // strings get used for delay-loaded stuff in other assemblies such as .Csp.
-            if (retvalType == null && DefaultNameHT.TryGetValue(name, out object retvalObj))
+            if (retvalType == null && DefaultNameHT.TryGetValue(name, out object? retvalObj))
             {
                 retvalType = retvalObj as Type;
 
@@ -419,14 +417,14 @@ namespace System.Security.Cryptography
             cons = candidates.ToArray();
 
             // Bind to matching ctor.
-            ConstructorInfo rci = Type.DefaultBinder.BindToMethod(
+            ConstructorInfo? rci = Type.DefaultBinder.BindToMethod(
                 ConstructorDefault,
                 cons,
                 ref args,
                 null,
                 null,
                 null,
-                out object state) as ConstructorInfo;
+                out object? state) as ConstructorInfo;
 
             // Check for ctor we don't like (non-existent, delegate or decorated with declarative linktime demand).
             if (rci == null || typeof(Delegate).IsAssignableFrom(rci.DeclaringType))
@@ -446,7 +444,8 @@ namespace System.Security.Cryptography
             return retval;
         }
 
-        public static object CreateFromName(string name)
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
+        public static object? CreateFromName(string name)
         {
             return CreateFromName(name, null);
         }
@@ -478,12 +477,12 @@ namespace System.Security.Cryptography
             }
         }
 
-        public static string MapNameToOID(string name)
+        public static string? MapNameToOID(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            appOidHT.TryGetValue(name, out string oidName);
+            appOidHT.TryGetValue(name, out string? oidName);
 
             if (string.IsNullOrEmpty(oidName) && !DefaultOidHT.TryGetValue(name, out oidName))
             {
@@ -503,7 +502,7 @@ namespace System.Security.Cryptography
             if (str == null)
                 throw new ArgumentNullException(nameof(str));
 
-            string[] oidString = str.Split(SepArray);
+            string[] oidString = str.Split('.'); // valid ASN.1 separator
             uint[] oidNums = new uint[oidString.Length];
             for (int i = 0; i < oidString.Length; i++)
             {
@@ -547,7 +546,7 @@ namespace System.Security.Cryptography
             return encodedOidNums;
         }
 
-        private static void EncodeSingleOidNum(uint value, byte[] destination, ref int index)
+        private static void EncodeSingleOidNum(uint value, byte[]? destination, ref int index)
         {
             // Write directly to destination starting at index, and update index based on how many bytes written.
             // If destination is null, just return updated index.

@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
     public class ProductHeaderValue : ICloneable
     {
-        private string _name;
-        private string _version;
+        private readonly string _name;
+        private readonly string? _version;
 
         public string Name
         {
@@ -17,7 +17,7 @@ namespace System.Net.Http.Headers
         }
 
         // We can't use the System.Version type, since a version can be e.g. "x11".
-        public string Version
+        public string? Version
         {
             get { return _version; }
         }
@@ -27,7 +27,7 @@ namespace System.Net.Http.Headers
         {
         }
 
-        public ProductHeaderValue(string name, string version)
+        public ProductHeaderValue(string name, string? version)
         {
             HeaderUtilities.CheckValidToken(name, nameof(name));
 
@@ -48,10 +48,6 @@ namespace System.Net.Http.Headers
             _version = source._version;
         }
 
-        private ProductHeaderValue()
-        {
-        }
-
         public override string ToString()
         {
             if (string.IsNullOrEmpty(_version))
@@ -61,9 +57,9 @@ namespace System.Net.Http.Headers
             return _name + "/" + _version;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            ProductHeaderValue other = obj as ProductHeaderValue;
+            ProductHeaderValue? other = obj as ProductHeaderValue;
 
             if (other == null)
             {
@@ -86,27 +82,26 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static ProductHeaderValue Parse(string input)
+        public static ProductHeaderValue Parse(string? input)
         {
             int index = 0;
             return (ProductHeaderValue)GenericHeaderParser.SingleValueProductParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out ProductHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out ProductHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.SingleValueProductParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.SingleValueProductParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (ProductHeaderValue)output;
+                parsedValue = (ProductHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetProductLength(string input, int startIndex, out ProductHeaderValue parsedValue)
+        internal static int GetProductLength(string input, int startIndex, out ProductHeaderValue? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -125,14 +120,13 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            ProductHeaderValue result = new ProductHeaderValue();
-            result._name = input.Substring(startIndex, nameLength);
+            string name = input.Substring(startIndex, nameLength);
             int current = startIndex + nameLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
             if ((current == input.Length) || (input[current] != '/'))
             {
-                parsedValue = result;
+                parsedValue = new ProductHeaderValue(name);
                 return current - startIndex;
             }
 
@@ -147,12 +141,12 @@ namespace System.Net.Http.Headers
                 return 0; // If there is a '/' separator it must be followed by a valid token.
             }
 
-            result._version = input.Substring(current, versionLength);
+            string version = input.Substring(current, versionLength);
 
             current = current + versionLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
-            parsedValue = result;
+            parsedValue = new ProductHeaderValue(name, version);
             return current - startIndex;
         }
 

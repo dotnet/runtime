@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -301,8 +300,12 @@ namespace System.Resources.Extensions.Tests
                 // Apply type-forwarded from here, so that we mimic what would happen in ResXWriter which runs in VS on desktop
                 string assemblyQualifiedTypeName = GetSerializationTypeName(serializedType);
 
-                // workaround for https://github.com/dotnet/corefx/issues/42092
+                // workaround for https://github.com/dotnet/runtime/issues/31289
                 assemblyQualifiedTypeName = assemblyQualifiedTypeName.Replace(s_coreAssemblyName, s_mscorlibAssemblyName);
+
+                // The logic below is intentionally incorrect. Generic type names like System.Collections.Generic.List`1[[System.String, ...]]
+                // will be split on the first comma, causing unbalanced [[ and ]] in the resulting substrings. This is for compatibility
+                // with the existing incorrect logic in Full Framework.
 
                 int pos = assemblyQualifiedTypeName.IndexOf(',');
                 if (pos > 0 && pos < assemblyQualifiedTypeName.Length - 1)

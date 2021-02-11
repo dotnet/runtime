@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #if NETCOREAPP
 #define HAVE_STORE_ISOPEN
@@ -341,8 +340,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
          * and\or have lower testing hooks or use Microsoft Fakes Framework to redirect
          * and encapsulate the actual storage logic so it can be tested, along with mock exceptions
          * to verify exception handling.
-         * See issue https://github.com/dotnet/corefx/issues/12833
-         * and https://github.com/dotnet/corefx/issues/12223
+         * See issue https://github.com/dotnet/runtime/issues/19030
+         * and https://github.com/dotnet/runtime/issues/18792
 
         [Fact]
         public static void TestAddAndRemove() {}
@@ -535,7 +534,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 #if Unix
-        [ConditionalFact(nameof(NotRunningAsRoot))] // root can read '2.pem'
+        [ConditionalFact(nameof(NotRunningAsRootAndRemoteExecutorSupported))] // root can read '2.pem'
         [PlatformSpecific(TestPlatforms.Linux)] // Windows/OSX doesn't use SSL_CERT_{DIR,FILE}.
         private void X509Store_MachineStoreLoadSkipsInvalidFiles()
         {
@@ -579,7 +578,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [DllImport("libc")]
         private static extern uint geteuid();
 
-        public static bool NotRunningAsRoot => geteuid() != 0;
+        public static bool NotRunningAsRootAndRemoteExecutorSupported => geteuid() != 0 && RemoteExecutor.IsSupported;
 #endif
     }
 }

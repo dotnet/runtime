@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public abstract class AsymmetricSignatureFormatter
     {
         protected AsymmetricSignatureFormatter() { }
@@ -18,7 +20,8 @@ namespace System.Security.Cryptography
             if (hash == null)
                 throw new ArgumentNullException(nameof(hash));
 
-            SetHashAlgorithm(hash.ToAlgorithmName());
+            SetHashAlgorithm(hash.ToAlgorithmName()!);
+            Debug.Assert(hash.Hash != null);
             return CreateSignature(hash.Hash);
         }
 

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -53,7 +53,7 @@ namespace System
             return 0;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is long))
             {
@@ -76,7 +76,7 @@ namespace System
 
         public override string ToString()
         {
-            return Number.FormatInt64(m_value, null, null);
+            return Number.Int64ToDecStr(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
@@ -135,7 +135,7 @@ namespace System
             return Number.ParseInt64(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse(string? s, out long result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out long result)
         {
             if (s == null)
             {
@@ -151,7 +151,7 @@ namespace System
             return Number.TryParseInt64IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out long result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out long result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 

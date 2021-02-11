@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
@@ -46,6 +45,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void ShouldSucceed()
         {
             var rb = new RegistrationBuilder();
@@ -175,6 +175,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ClassExportingInterface<T> : IGenericInterface<T> { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void GenericInterfaceExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ClassExportingInterface<>));
@@ -188,6 +189,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ClassExportingBaseClass<T> : GenericBaseClass<T> { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void GenericBaseClassExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ClassExportingBaseClass<>));
@@ -210,6 +212,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ExplicitGenericClass<T> { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void ExplicitGenericExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ExplicitGenericClass<>));
@@ -221,6 +224,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ExplicitGenericClass<T, U> { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
         public void ExplicitGenericArity2ExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ExplicitGenericClass<,>));

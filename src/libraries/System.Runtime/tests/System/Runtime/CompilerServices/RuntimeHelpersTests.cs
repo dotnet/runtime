@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -68,22 +66,6 @@ namespace System.Runtime.CompilerServices.Tests
             int i = 3;
             object iOV = RuntimeHelpers.GetObjectValue(i);
             Assert.Equal(i, (int)iOV);
-        }
-
-        [Fact]
-        public static unsafe void OffsetToStringData()
-        {
-            // RuntimeHelpers.OffsetToStringData
-            char[] expectedValues = new char[] { 'a', 'b', 'c', 'd', 'e', 'f' };
-            string s = "abcdef";
-
-            fixed (char* values = s) // Compiler will use OffsetToStringData with fixed statements
-            {
-                for (int i = 0; i < expectedValues.Length; i++)
-                {
-                    Assert.Equal(expectedValues[i], values[i]);
-                }
-            }
         }
 
         [Fact]
@@ -209,16 +191,106 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
-        [Fact]
-        public static void GetUninitializedObject_InvalidArguments_ThrowsException()
+        public static IEnumerable<object[]> GetUninitializedObject_NegativeTestCases()
         {
-            AssertExtensions.Throws<ArgumentNullException>("type", () => RuntimeHelpers.GetUninitializedObject(null));
+            // TODO: Test actual function pointer types when typeof(delegate*<...>) support is available
 
-            AssertExtensions.Throws<ArgumentException>(null, () => RuntimeHelpers.GetUninitializedObject(typeof(string))); // special type
-            Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.IO.Stream))); // abstract type
-            Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.IEnumerable))); // interface
-            Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.Generic.List<>))); // generic definition
-            Assert.Throws<NotSupportedException>(() => RuntimeHelpers.GetUninitializedObject(typeof(TypedReference))); // byref-like type
+            yield return new[] { typeof(string), typeof(ArgumentException) }; // variable-length type
+            yield return new[] { typeof(int[]), typeof(ArgumentException) }; // variable-length type
+            yield return new[] { typeof(int[,]), typeof(ArgumentException) }; // variable-length type
+            yield return new[] { Array.CreateInstance(typeof(int), new[] { 1 }, new[] { 1 }).GetType(), typeof(ArgumentException) }; // variable-length type (non-szarray)
+            yield return new[] { typeof(Array), typeof(MemberAccessException) }; // abstract type
+            yield return new[] { typeof(Enum), typeof(MemberAccessException) }; // abstract type
+
+            yield return new[] { typeof(Stream), typeof(MemberAccessException) }; // abstract type
+            yield return new[] { typeof(Buffer), typeof(MemberAccessException) }; // static type (runtime sees it as abstract)
+            yield return new[] { typeof(IDisposable), typeof(MemberAccessException) }; // interface type
+
+            yield return new[] { typeof(List<>), typeof(MemberAccessException) }; // open generic type
+            yield return new[] { typeof(List<>).GetGenericArguments()[0], PlatformDetection.IsMonoRuntime ? typeof(MemberAccessException) : typeof(ArgumentException) }; // 'T' placeholder typedesc
+
+            yield return new[] { typeof(Delegate), typeof(MemberAccessException) }; // abstract type
+
+            yield return new[] { typeof(void), typeof(ArgumentException) }; // explicit block in place
+            yield return new[] { typeof(int).MakePointerType(), typeof(ArgumentException) }; // pointer typedesc
+            yield return new[] { typeof(int).MakeByRefType(), typeof(ArgumentException) }; // byref typedesc
+
+            yield return new[] { typeof(ReadOnlySpan<int>), typeof(NotSupportedException) }; // byref type
+            yield return new[] { typeof(ArgIterator), typeof(NotSupportedException) }; // byref type
+
+            Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: false);
+            if (canonType != null)
+            {
+                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations                
+            }
+
+            Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: false);
+            if (comObjType != null)
+            {
+                yield return new[] { comObjType, typeof(NotSupportedException) }; // COM type
+            }
+
+            if (PlatformDetection.SupportsComInterop)
+            {
+                yield return new[] { typeof(WbemContext), typeof(NotSupportedException) }; // COM type
+            }
+        }
+
+        // This type definition is lifted from System.Management, just for testing purposes
+        [ClassInterface((short)0x0000)]
+        [Guid("674B6698-EE92-11D0-AD71-00C04FD8FDFF")]
+        [ComImport]
+        internal class WbemContext
+        {
+        }
+
+        internal class ClassWithBeforeFieldInitCctor
+        {
+            private static readonly int _theInt = GetInt();
+
+            private static int GetInt()
+            {
+                AppDomain.CurrentDomain.SetData("ClassWithBeforeFieldInitCctor_CctorRan", true);
+                return 0;
+            }
+        }
+
+        internal class ClassWithNormalCctor
+        {
+#pragma warning disable CS0414 // unused private field
+            private static readonly int _theInt;
+#pragma warning restore CS0414
+
+            static ClassWithNormalCctor()
+            {
+                AppDomain.CurrentDomain.SetData("ClassWithNormalCctor_CctorRan", true);
+                _theInt = 0;
+            }
+        }
+
+        [Fact]
+        public static void GetUninitalizedObject_DoesNotRunBeforeFieldInitCctors()
+        {
+            object o = RuntimeHelpers.GetUninitializedObject(typeof(ClassWithBeforeFieldInitCctor));
+            Assert.IsType<ClassWithBeforeFieldInitCctor>(o);
+
+            Assert.Null(AppDomain.CurrentDomain.GetData("ClassWithBeforeFieldInitCctor_CctorRan"));
+        }
+
+        [Fact]
+        public static void GetUninitalizedObject_RunsNormalStaticCtors()
+        {
+            object o = RuntimeHelpers.GetUninitializedObject(typeof(ClassWithNormalCctor));
+            Assert.IsType<ClassWithNormalCctor>(o);
+
+            Assert.Equal(true, AppDomain.CurrentDomain.GetData("ClassWithNormalCctor_CctorRan"));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetUninitializedObject_NegativeTestCases))]
+        public static void GetUninitializedObject_InvalidArguments_ThrowsException(Type typeToInstantiate, Type expectedExceptionType)
+        {
+            Assert.Throws(expectedExceptionType, () => RuntimeHelpers.GetUninitializedObject(typeToInstantiate));
         }
 
         [Fact]
@@ -229,10 +301,18 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void GetUninitializedObject_Struct()
+        {
+            object o = RuntimeHelpers.GetUninitializedObject(typeof(Guid));
+            Assert.Equal(Guid.Empty, Assert.IsType<Guid>(o));
+        }
+
+        [Fact]
         public static void GetUninitializedObject_Nullable()
         {
             // Nullable returns the underlying type instead
-            Assert.Equal(typeof(int), RuntimeHelpers.GetUninitializedObject(typeof(Nullable<int>)).GetType());
+            object o = RuntimeHelpers.GetUninitializedObject(typeof(int?));
+            Assert.Equal(0, Assert.IsType<int>(o));
         }
 
         private class ObjectWithDefaultCtor
@@ -262,6 +342,22 @@ namespace System.Runtime.CompilerServices.Tests
 
             range = new Range(Index.FromStart(0), Index.FromStart(a.Length + 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => { int [] array = RuntimeHelpers.GetSubArray(a, range); });
+        }
+
+        [Fact]
+        [SkipOnMono("Not presently implemented on Mono")]
+        public static void AllocateTypeAssociatedMemoryInvalidArguments()
+        {
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1); });
+        }
+
+        [Fact]
+        [SkipOnMono("Not presently implemented on Mono")]
+        public static void AllocateTypeAssociatedMemoryValidArguments()
+        {
+            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);
+            Assert.NotEqual(memory, IntPtr.Zero);
         }
 
         [StructLayoutAttribute(LayoutKind.Sequential)]

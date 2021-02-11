@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection;
@@ -39,7 +38,7 @@ namespace System.Transactions.Tests
         [InlineData(CloneType.RollbackDependent, IsolationLevel.Snapshot, false, TransactionStatus.Aborted)]
         [InlineData(CloneType.RollbackDependent, IsolationLevel.Chaos, false, TransactionStatus.Aborted)]
         [InlineData(CloneType.RollbackDependent, IsolationLevel.Unspecified, false, TransactionStatus.Aborted)]
-        // TODO: Issue #10353 - These variations need to be added once we have promotion support.
+        // These variations need to be added once we have promotion support.
         /*
         [InlineData(CloneType.Normal, true, TransactionStatus.Committed)]
         [InlineData(CloneType.Normal, IsolationLevel.RepeatableRead, false, TransactionStatus.Committed)]
@@ -158,7 +157,7 @@ namespace System.Transactions.Tests
         }
 
         [OuterLoop] // transaction timeout of 1.5 seconds per InlineData invocation.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.Serializable, false, TransactionStatus.Aborted)]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.RepeatableRead, false, TransactionStatus.Aborted)]
         [InlineData(CloneType.BlockingDependent, IsolationLevel.ReadCommitted, false, TransactionStatus.Aborted)]

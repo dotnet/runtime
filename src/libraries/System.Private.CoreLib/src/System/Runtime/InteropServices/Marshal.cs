@@ -1,21 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Security;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Security;
 using System.Text;
 
 using Internal.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
-using nuint = System.UInt64;
-#else
-using nuint = System.UInt32;
-#endif
 
 namespace System.Runtime.InteropServices
 {
@@ -36,7 +29,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static readonly int SystemMaxDBCSCharSize = GetSystemMaxDBCSCharSize();
 
-        public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((IntPtr)cb);
+        public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((nint)cb);
 
         public static unsafe string? PtrToStringAnsi(IntPtr ptr)
         {
@@ -170,7 +163,7 @@ namespace System.Runtime.InteropServices
             if (arr is null)
                 throw new ArgumentNullException(nameof(arr));
 
-            void* pRawData = Unsafe.AsPointer(ref arr.GetRawSzArrayData());
+            void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
         }
 
@@ -350,7 +343,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ReadIntPtr(object ptr, int ofs)
         {
-#if BIT64
+#if TARGET_64BIT
             return (IntPtr)ReadInt64(ptr, ofs);
 #else // 32
             return (IntPtr)ReadInt32(ptr, ofs);
@@ -359,7 +352,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
-#if BIT64
+#if TARGET_64BIT
             return (IntPtr)ReadInt64(ptr, ofs);
 #else // 32
             return (IntPtr)ReadInt32(ptr, ofs);
@@ -464,7 +457,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteIntPtr(IntPtr ptr, int ofs, IntPtr val)
         {
-#if BIT64
+#if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
             WriteInt32(ptr, ofs, (int)val);
@@ -473,7 +466,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteIntPtr(object ptr, int ofs, IntPtr val)
         {
-#if BIT64
+#if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
             WriteInt32(ptr, ofs, (int)val);
@@ -516,6 +509,8 @@ namespace System.Runtime.InteropServices
             PrelinkCore(m);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "This only needs to prelink methods that are actually used")]
         public static void PrelinkAll(Type c)
         {
             if (c is null)
@@ -540,7 +535,9 @@ namespace System.Runtime.InteropServices
         /// Creates a new instance of "structuretype" and marshals data from a
         /// native memory block to it.
         /// </summary>
-        public static object? PtrToStructure(IntPtr ptr, Type structureType)
+        public static object? PtrToStructure(IntPtr ptr,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            Type structureType)
         {
             if (ptr == IntPtr.Zero)
             {
@@ -576,8 +573,7 @@ namespace System.Runtime.InteropServices
             PtrToStructure(ptr, (object)structure!);
         }
 
-        [return: MaybeNull]
-        public static T PtrToStructure<T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
+        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 
@@ -603,7 +599,7 @@ namespace System.Runtime.InteropServices
         {
             if (errorCode < 0)
             {
-                throw GetExceptionForHR(errorCode, IntPtr.Zero)!;
+                throw GetExceptionForHR(errorCode)!;
             }
         }
 
@@ -619,7 +615,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToBSTR();
@@ -629,7 +625,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: false, unicode: false);
@@ -639,7 +635,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: false, unicode: true);
@@ -649,7 +645,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: true, unicode: false);
@@ -659,7 +655,7 @@ namespace System.Runtime.InteropServices
         {
             if (s is null)
             {
-                throw new ArgumentNullException(nameof(s));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
             return s.MarshalToString(globalAlloc: true, unicode: true);
@@ -678,13 +674,13 @@ namespace System.Runtime.InteropServices
             // Overflow checking
             if (nb != lnb)
             {
-                throw new ArgumentOutOfRangeException(nameof(s));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr hglobal = AllocHGlobal((IntPtr)nb);
+            IntPtr ptr = AllocHGlobal((IntPtr)nb);
 
-            StringToAnsiString(s, (byte*)hglobal, nb);
-            return hglobal;
+            StringToAnsiString(s, (byte*)ptr, nb);
+            return ptr;
         }
 
         public static unsafe IntPtr StringToHGlobalUni(string? s)
@@ -699,16 +695,15 @@ namespace System.Runtime.InteropServices
             // Overflow checking
             if (nb < s.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(s));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr hglobal = AllocHGlobal((IntPtr)nb);
+            IntPtr ptr = AllocHGlobal((IntPtr)nb);
 
-            fixed (char* firstChar = s)
-            {
-                string.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
-            }
-            return hglobal;
+            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            ((char*)ptr)[s.Length] = '\0';
+
+            return ptr;
         }
 
         private static unsafe IntPtr StringToHGlobalUTF8(string? s)
@@ -720,10 +715,10 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr pMem = AllocHGlobal(nb + 1);
+            IntPtr ptr = AllocHGlobal(nb + 1);
 
             int nbWritten;
-            byte* pbMem = (byte*)pMem;
+            byte* pbMem = (byte*)ptr;
 
             fixed (char* firstChar = s)
             {
@@ -732,7 +727,7 @@ namespace System.Runtime.InteropServices
 
             pbMem[nbWritten] = 0;
 
-            return pMem;
+            return ptr;
         }
 
         public static unsafe IntPtr StringToCoTaskMemUni(string? s)
@@ -747,16 +742,15 @@ namespace System.Runtime.InteropServices
             // Overflow checking
             if (nb < s.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(s));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr hglobal = AllocCoTaskMem(nb);
+            IntPtr ptr = AllocCoTaskMem(nb);
 
-            fixed (char* firstChar = s)
-            {
-                string.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
-            }
-            return hglobal;
+            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            ((char*)ptr)[s.Length] = '\0';
+
+            return ptr;
         }
 
         public static unsafe IntPtr StringToCoTaskMemUTF8(string? s)
@@ -768,10 +762,10 @@ namespace System.Runtime.InteropServices
 
             int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
-            IntPtr pMem = AllocCoTaskMem(nb + 1);
+            IntPtr ptr = AllocCoTaskMem(nb + 1);
 
             int nbWritten;
-            byte* pbMem = (byte*)pMem;
+            byte* pbMem = (byte*)ptr;
 
             fixed (char* firstChar = s)
             {
@@ -780,7 +774,7 @@ namespace System.Runtime.InteropServices
 
             pbMem[nbWritten] = 0;
 
-            return pMem;
+            return ptr;
         }
 
         public static unsafe IntPtr StringToCoTaskMemAnsi(string? s)
@@ -796,13 +790,13 @@ namespace System.Runtime.InteropServices
             // Overflow checking
             if (nb != lnb)
             {
-                throw new ArgumentOutOfRangeException(nameof(s));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s);
             }
 
-            IntPtr hglobal = AllocCoTaskMem(nb);
+            IntPtr ptr = AllocCoTaskMem(nb);
 
-            StringToAnsiString(s, (byte*)hglobal, nb);
-            return hglobal;
+            StringToAnsiString(s, (byte*)ptr, nb);
+            return ptr;
         }
 
         /// <summary>
@@ -873,6 +867,9 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
+            // COMPAT: This block of code isn't entirely correct.
+            // Users passing in typeof(MulticastDelegate) as 't' skip this check
+            // since Delegate is a base type of MulticastDelegate.
             Type? c = t.BaseType;
             if (c != typeof(Delegate) && c != typeof(MulticastDelegate))
             {
@@ -912,8 +909,6 @@ namespace System.Runtime.InteropServices
 
             return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
         }
-
-        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
 
         public static unsafe void ZeroFreeBSTR(IntPtr s)
         {
@@ -970,9 +965,47 @@ namespace System.Runtime.InteropServices
             FreeHGlobal(s);
         }
 
+        public static unsafe IntPtr StringToBSTR(string? s)
+        {
+            if (s is null)
+            {
+                return IntPtr.Zero;
+            }
+
+            IntPtr bstr = AllocBSTR(s.Length);
+
+            s.AsSpan().CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
+
+            return bstr;
+        }
+
+        public static string PtrToStringBSTR(IntPtr ptr)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(ptr));
+            }
+
+            return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
+        }
+
         internal static unsafe uint SysStringByteLen(IntPtr s)
         {
             return *(((uint*)s) - 1);
+        }
+
+        [SupportedOSPlatform("windows")]
+        public static Type? GetTypeFromCLSID(Guid clsid) => GetTypeFromCLSID(clsid, null, throwOnError: false);
+
+        /// <summary>
+        /// Initializes the underlying handle of a newly created <see cref="SafeHandle" /> to the provided value.
+        /// </summary>
+        /// <param name="safeHandle"><see cref="SafeHandle"/> instance to update</param>
+        /// <param name="handle">Pre-existing handle</param>
+        public static void InitHandle(SafeHandle safeHandle, IntPtr handle)
+        {
+            // To help maximize performance of P/Invokes, don't check if safeHandle is null.
+            safeHandle.SetHandle(handle);
         }
     }
 }

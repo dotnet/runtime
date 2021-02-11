@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -52,10 +51,10 @@ namespace System.DirectoryServices.Protocols
         {
             checked
             {
-                IntPtr intPtrArray = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IntPtr)) * size);
+                IntPtr intPtrArray = Marshal.AllocHGlobal(IntPtr.Size * size);
                 for (int i = 0; i < size; i++)
                 {
-                    IntPtr tempPtr = (IntPtr)((long)intPtrArray + Marshal.SizeOf(typeof(IntPtr)) * i);
+                    IntPtr tempPtr = (IntPtr)((long)intPtrArray + IntPtr.Size * i);
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
                 return intPtrArray;

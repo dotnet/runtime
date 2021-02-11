@@ -1,17 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Drawing.Imaging
 {
     /// <summary>
     /// Specifies the format of the image.
     /// </summary>
-#if NETCOREAPP
-    [TypeConverter("System.Drawing.ImageFormatConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
-#endif
+    [TypeConverter(typeof(ImageFormatConverter))]
     public sealed class ImageFormat
     {
         // Format IDs
@@ -129,9 +127,9 @@ namespace System.Drawing.Imaging
         /// Returns a value indicating whether the specified object is an <see cref='ImageFormat'/> equivalent to this
         /// <see cref='ImageFormat'/>.
         /// </summary>
-        public override bool Equals(object o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
-            ImageFormat format = o as ImageFormat;
+            ImageFormat? format = o as ImageFormat;
             if (format == null)
                 return false;
             return _guid == format._guid;
@@ -145,9 +143,8 @@ namespace System.Drawing.Imaging
             return _guid.GetHashCode();
         }
 
-#if !FEATURE_PAL
         // Find any random encoder which supports this format
-        internal ImageCodecInfo FindEncoder()
+        internal ImageCodecInfo? FindEncoder()
         {
             ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
             foreach (ImageCodecInfo codec in codecs)
@@ -157,7 +154,6 @@ namespace System.Drawing.Imaging
             }
             return null;
         }
-#endif
 
         /// <summary>
         /// Converts this <see cref='System.Drawing.Imaging.ImageFormat'/> to a human-readable string.

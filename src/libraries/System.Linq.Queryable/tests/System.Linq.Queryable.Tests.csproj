@@ -1,6 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
@@ -9,6 +9,7 @@
     <Compile Include="AppendPrependTests.cs" />
     <Compile Include="AverageTests.cs" />
     <Compile Include="CastTests.cs" />
+    <Compile Include="ChunkTests.cs" />
     <Compile Include="ConcatTests.cs" />
     <Compile Include="ContainsTests.cs" />
     <Compile Include="CountTests.cs" />
@@ -53,8 +54,7 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs">
-      <Link>Common\System\Linq\SkipTakeData.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Linq\SkipTakeData.cs"
+             Link="Common\System\Linq\SkipTakeData.cs" />
   </ItemGroup>
 </Project>

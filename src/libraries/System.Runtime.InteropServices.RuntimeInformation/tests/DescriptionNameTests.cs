@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -12,9 +13,20 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 {
     public class DescriptionNameTests
     {
+        // When running both inner and outer loop together, dump only once
+        private static bool s_dumpedRuntimeInfo = false;
+
+        private static readonly bool s_isInHelix = Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(key => key.StartsWith("HELIX")).Any();
+
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE when binariesLocation is not an empty string.
         public void DumpRuntimeInformationToConsole()
         {
+            if (s_dumpedRuntimeInfo || !s_isInHelix)
+                return;
+
+            s_dumpedRuntimeInfo = true;
+
             // Not really a test, but useful to dump a variety of information to the test log to help
             // debug environmental issues, in particular in CI
 
@@ -22,7 +34,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             string osd = RuntimeInformation.OSDescription.Trim();
             string osv = Environment.OSVersion.ToString();
             string osa = RuntimeInformation.OSArchitecture.ToString();
-            Console.WriteLine($"### OS: Distro={dvs} Description={osd} Version={osv} Arch={osa}");
+            string rid = RuntimeInformation.RuntimeIdentifier;
+            Console.WriteLine($"### OS: Distro={dvs} Description={osd} Version={osv} Arch={osa} Rid={rid}");
 
             string lcr = PlatformDetection.LibcRelease;
             string lcv = PlatformDetection.LibcVersion;
@@ -40,6 +53,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             Console.WriteLine($"### CURRENT DIRECTORY: {Environment.CurrentDirectory}");
 
+            Console.WriteLine($"### CGROUPS VERSION: {Interop.cgroups.s_cgroupVersion}");
             string cgroupsLocation = Interop.cgroups.s_cgroupMemoryLimitPath;
             if (cgroupsLocation != null)
             {
@@ -59,7 +73,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                 sb.AppendFormat($"###\tArchitecture: {RuntimeInformation.ProcessArchitecture.ToString()}").AppendLine();
                 foreach (string prop in new string[]
                 {
-                        #pragma warning disable 0618 // some of these Int32-returning properties are marked obsolete
                         nameof(p.BasePriority),
                         nameof(p.HandleCount),
                         nameof(p.Id),
@@ -69,21 +82,14 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                         nameof(p.MainWindowTitle),
                         nameof(p.MaxWorkingSet),
                         nameof(p.MinWorkingSet),
-                        nameof(p.NonpagedSystemMemorySize),
                         nameof(p.NonpagedSystemMemorySize64),
-                        nameof(p.PagedMemorySize),
                         nameof(p.PagedMemorySize64),
-                        nameof(p.PagedSystemMemorySize),
                         nameof(p.PagedSystemMemorySize64),
-                        nameof(p.PeakPagedMemorySize),
                         nameof(p.PeakPagedMemorySize64),
-                        nameof(p.PeakVirtualMemorySize),
                         nameof(p.PeakVirtualMemorySize64),
-                        nameof(p.PeakWorkingSet),
                         nameof(p.PeakWorkingSet64),
                         nameof(p.PriorityBoostEnabled),
                         nameof(p.PriorityClass),
-                        nameof(p.PrivateMemorySize),
                         nameof(p.PrivateMemorySize64),
                         nameof(p.PrivilegedProcessorTime),
                         nameof(p.ProcessName),
@@ -93,11 +99,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                         nameof(p.StartTime),
                         nameof(p.TotalProcessorTime),
                         nameof(p.UserProcessorTime),
-                        nameof(p.VirtualMemorySize),
                         nameof(p.VirtualMemorySize64),
-                        nameof(p.WorkingSet),
                         nameof(p.WorkingSet64),
-                        #pragma warning restore 0618
                 })
                 {
                     sb.Append($"###\t{prop}: ");
@@ -116,14 +119,38 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             if (osd.Contains("Linux"))
             {
-                // Dump several procfs files
-                foreach (string path in new string[] { "/proc/self/mountinfo", "/proc/self/cgroup", "/proc/self/limits" })
+                // Dump several procfs files and /etc/os-release
+                foreach (string path in new string[] {
+                    "/proc/self/mountinfo",
+                    "/proc/self/cgroup",
+                    "/proc/self/limits",
+                    "/etc/os-release",
+                    "/etc/sysctl.conf",
+                    "/proc/meminfo",
+                    "/proc/sys/vm/oom_kill_allocating_task",
+                    "/proc/sys/kernel/core_pattern",
+                    "/proc/sys/kernel/core_uses_pid",
+                    "/proc/sys/kernel/coredump_filter"
+                })
                 {
                     Console.WriteLine($"### CONTENTS OF \"{path}\":");
                     try
                     {
-                        using (Process cat = Process.Start("cat", path))
+                        using (Process cat = new Process())
                         {
+                            cat.StartInfo.FileName = "cat";
+                            cat.StartInfo.Arguments = path;
+                            cat.StartInfo.RedirectStandardOutput = true;
+                            cat.OutputDataReceived += (sender, e) =>
+                            {
+                                string trimmed = e.Data?.Trim();
+                                if (!string.IsNullOrEmpty(trimmed) && trimmed[0] != '#') // skip comments in files
+                                {
+                                    Console.WriteLine(e.Data);
+                                }
+                            };
+                            cat.Start();
+                            cat.BeginOutputReadLine();
                             cat.WaitForExit();
                         }
                     }
@@ -136,10 +163,20 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact]
+        [OuterLoop]
+        [PlatformSpecific(~TestPlatforms.Browser)] // throws PNSE when binariesLocation is not an empty string.
+        public void DumpRuntimeInformationToConsoleOuter()
+        {
+            // Outer loop runs don't run inner loop tests.
+            // But we want to log this data for any Helix run.
+            DumpRuntimeInformationToConsole();
+        }
+
+        [Fact]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         public void VerifyRuntimeNameOnNetCoreApp()
         {
-            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET Core"), RuntimeInformation.FrameworkDescription);
+            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET"), RuntimeInformation.FrameworkDescription);
             Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
         }
 

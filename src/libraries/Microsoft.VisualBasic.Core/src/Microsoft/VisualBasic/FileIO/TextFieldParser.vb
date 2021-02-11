@@ -1,6 +1,5 @@
 ﻿' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 Option Explicit On
 Option Strict On
 
@@ -13,7 +12,6 @@ Imports System.Text
 Imports System.Text.RegularExpressions
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
-Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic.FileIO
 
@@ -223,7 +221,7 @@ Namespace Microsoft.VisualBasic.FileIO
                 Return m_TextFieldType
             End Get
             Set(ByVal value As FieldType)
-                ValidateFieldTypeEnumValue(value, "value")
+                ValidateFieldTypeEnumValue(value, NameOf(value))
                 m_TextFieldType = value
                 m_NeedPropertyCheck = True
             End Set
@@ -599,7 +597,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
             ' Make sure the file exists
             If Not File.Exists(fullPath) Then
-                Throw New IO.FileNotFoundException(GetResourceString(SR.IO_FileNotFound_Path, fullPath))
+                Throw New IO.FileNotFoundException(SR.Format(SR.IO_FileNotFound_Path, fullPath))
             End If
 
             Return fullPath
@@ -839,6 +837,7 @@ Namespace Microsoft.VisualBasic.FileIO
                         End If
                         Cursor = i + 1
 
+#Disable Warning CA1834 ' Consider using 'StringBuilder.Append(char)' when applicable
                         ' See if vbLf should be added as well
                         If Character = vbCr Then
                             If Cursor < m_CharsRead Then
@@ -853,6 +852,7 @@ Namespace Microsoft.VisualBasic.FileIO
                                 End If
                             End If
                         End If
+#Enable Warning CA1834 ' Consider using 'StringBuilder.Append(char)' when applicable
 
                         Return Builder.ToString()
                     End If
@@ -914,7 +914,7 @@ Namespace Microsoft.VisualBasic.FileIO
                     If EndHelper.MalformedLine Then
                         m_ErrorLine = Line.TrimEnd(Chr(13), Chr(10))
                         m_ErrorLineNumber = CurrentLineNumber
-                        Throw New MalformedLineException(GetResourceString(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
+                        Throw New MalformedLineException(SR.Format(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
                     End If
 
                     If EndHelper.FieldFinished Then
@@ -934,13 +934,13 @@ Namespace Microsoft.VisualBasic.FileIO
                             If NewLine Is Nothing Then
                                 m_ErrorLine = Line.TrimEnd(Chr(13), Chr(10))
                                 m_ErrorLineNumber = CurrentLineNumber
-                                Throw New MalformedLineException(GetResourceString(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
+                                Throw New MalformedLineException(SR.Format(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
                             End If
 
                             If Line.Length + NewLine.Length > m_MaxLineSize Then
                                 m_ErrorLine = Line.TrimEnd(Chr(13), Chr(10))
                                 m_ErrorLineNumber = CurrentLineNumber
-                                Throw New MalformedLineException(GetResourceString(SR.TextFieldParser_MaxLineSizeExceeded, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
+                                Throw New MalformedLineException(SR.Format(SR.TextFieldParser_MaxLineSizeExceeded, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
                             End If
 
                             Line &= NewLine
@@ -949,7 +949,7 @@ Namespace Microsoft.VisualBasic.FileIO
                             If EndHelper.MalformedLine Then
                                 m_ErrorLine = Line.TrimEnd(Chr(13), Chr(10))
                                 m_ErrorLineNumber = CurrentLineNumber
-                                Throw New MalformedLineException(GetResourceString(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
+                                Throw New MalformedLineException(SR.Format(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
                             End If
                         Loop Until EndHelper.FieldFinished
 
@@ -1099,7 +1099,7 @@ Namespace Microsoft.VisualBasic.FileIO
             If Line.LengthInTextElements < m_LineLength Then
                 m_ErrorLine = Line.String
                 m_ErrorLineNumber = m_LineNumber - 1
-                Throw New MalformedLineException(GetResourceString(SR.TextFieldParser_MalFormedFixedWidthLine, LineNumber.ToString(CultureInfo.InvariantCulture)), LineNumber)
+                Throw New MalformedLineException(SR.Format(SR.TextFieldParser_MalFormedFixedWidthLine, LineNumber.ToString(CultureInfo.InvariantCulture)), LineNumber)
             End If
 
         End Sub
@@ -1426,13 +1426,13 @@ Namespace Microsoft.VisualBasic.FileIO
         Private m_Reader As TextReader
 
         ' An array holding the strings that indicate a line is a comment
-        Private m_CommentTokens() As String = New String() {}
+        Private m_CommentTokens() As String = Array.Empty(Of String)()
 
         ' The line last read by either ReadLine or ReadFields
         Private m_LineNumber As Long = 1
 
         ' Flags whether or not there is data left to read. Assume there is at creation
-        Private m_EndOfData As Boolean = False
+        Private m_EndOfData As Boolean
 
         ' Holds the last malformed line
         Private m_ErrorLine As String = ""
@@ -1477,13 +1477,13 @@ Namespace Microsoft.VisualBasic.FileIO
         Private m_TrimWhiteSpace As Boolean = True
 
         ' The position of the cursor in the buffer
-        Private m_Position As Integer = 0
+        Private m_Position As Integer
 
         ' The position of the peek cursor
-        Private m_PeekPosition As Integer = 0
+        Private m_PeekPosition As Integer
 
         ' The number of chars in the buffer
-        Private m_CharsRead As Integer = 0
+        Private m_CharsRead As Integer
 
         ' Indicates that the user has changed properties so that we need to validate before a read
         Private m_NeedPropertyCheck As Boolean = True
@@ -1521,7 +1521,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Const ENDING_QUOTE As String = """[{0}]*"
 
         ' Indicates passed in stream should be not be closed
-        Private m_LeaveOpen As Boolean = False
+        Private m_LeaveOpen As Boolean
     End Class
 
     ''' <summary>

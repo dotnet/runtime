@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection;
@@ -13,9 +12,24 @@ namespace System.Runtime.InteropServices.Tests
     public partial class GetIDispatchForObjectTests
     {
         [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void GetIDispatchForObject_NetCore_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetIDispatchForObject(null));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void GetIDispatchForObject_NullObject_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("o", () => Marshal.GetIDispatchForObject(null));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void GetIDispatchForObject_NonDispatchObject_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => Marshal.GetIDispatchForObject(string.Empty));
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Factories;
 using System.ComponentModel.Composition.Hosting;
@@ -91,7 +90,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestPublicImportsExpectingPublicExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -100,7 +99,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestInternalImportsExpectingPublicExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -109,7 +108,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestPublicImportsExpectingInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -118,7 +117,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestInternalImportsExpectingInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -127,7 +126,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestPublicImportsExpectingProtectedExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -136,7 +135,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestInternalImportsExpectingProtectedExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -145,7 +144,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestPublicImportsExpectingProtectedInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -154,7 +153,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestInternalImportsExpectingProtectedInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -163,7 +162,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestPublicImportsExpectingPrivateExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -172,7 +171,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestInternalImportsExpectingPrivateExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();

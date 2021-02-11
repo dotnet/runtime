@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Net.NetworkInformation
@@ -16,14 +14,13 @@ namespace System.Net.NetworkInformation
         private const string s_ipv4PingFile = "ping";
         private const string s_ipv6PingFile = "ping6";
 
-        private static readonly string s_discoveredPing4UtilityPath = GetPingUtilityPath(ipv4: true);
-        private static readonly string s_discoveredPing6UtilityPath = GetPingUtilityPath(ipv4: false);
-        private static readonly bool s_isBSD = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
+        private static readonly string? s_discoveredPing4UtilityPath = GetPingUtilityPath(ipv4: true);
+        private static readonly string? s_discoveredPing6UtilityPath = GetPingUtilityPath(ipv4: false);
         private static readonly Lazy<bool> s_isBusybox = new Lazy<bool>(() => IsBusyboxPing(s_discoveredPing4UtilityPath));
 
         // We don't want to pick up an arbitrary or malicious ping
         // command, so that's why we do the path probing ourselves.
-        private static string GetPingUtilityPath(bool ipv4)
+        private static string? GetPingUtilityPath(bool ipv4)
         {
             string fileName = ipv4 ? s_ipv4PingFile : s_ipv6PingFile;
             foreach (string folder in s_binFolders)
@@ -39,14 +36,17 @@ namespace System.Net.NetworkInformation
         }
 
         // Check if found ping is symlink to busybox like alpine /bin/ping -> /bin/busybox
-        private static unsafe bool IsBusyboxPing(string pingBinary)
+        private static bool IsBusyboxPing(string? pingBinary)
         {
-            string linkedName = Interop.Sys.ReadLink(pingBinary);
-
-            // If pingBinary is not link linkedName will be null
-            if (linkedName != null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
+            if (pingBinary != null)
             {
-                return true;
+                string? linkedName = Interop.Sys.ReadLink(pingBinary);
+
+                // If pingBinary is not link linkedName will be null
+                if (linkedName != null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
+                {
+                    return true;
+                }
             }
 
             return false;
@@ -57,24 +57,72 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// The location of the IPv4 ping utility on the current machine.
         /// </summary>
-        public static string Ping4UtilityPath { get { return s_discoveredPing4UtilityPath; } }
+        public static string? Ping4UtilityPath { get { return s_discoveredPing4UtilityPath; } }
 
         /// <summary>
         /// The location of the IPv6 ping utility on the current machine.
         /// </summary>
-        public static string Ping6UtilityPath { get { return s_discoveredPing6UtilityPath; } }
+        public static string? Ping6UtilityPath { get { return s_discoveredPing6UtilityPath; } }
 
         /// <summary>
         /// Constructs command line arguments appropriate for the ping or ping6 utility.
         /// </summary>
         /// <param name="packetSize">The packet size to use in the ping. Exact packet payload cannot be specified.</param>
+        /// <param name="timeout">The timeout to use in the ping, in milliseconds.</param>
         /// <param name="address">A string representation of the IP address to ping.</param>
+        /// <param name="ipv4">true for ipv4; false for ipv6.</param>
+        /// <param name="ttl">The time to live.</param>
+        /// <param name="fragmentOption">Fragmentation options.</param>
         /// <returns>The constructed command line arguments, which can be passed to ping or ping6.</returns>
-        public static string ConstructCommandLine(int packetSize, string address, bool ipv4, int ttl = 0, PingFragmentOptions fragmentOption = PingFragmentOptions.Default)
+        public static string ConstructCommandLine(int packetSize, int timeout, string address, bool ipv4, int ttl = 0, PingFragmentOptions fragmentOption = PingFragmentOptions.Default)
         {
-
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.Append("-c 1"); // Just send a single ping ("count = 1")
+
+            //if timeout is zero then some ping implementations can stuck infinitely if endpoint is unreachable
+            if (timeout == 0)
+                timeout = 1;
+
+            // Pass timeout argument to ping utility
+            // BusyBox, Linux: ping and ping6 requires -W flag which accepts timeout in SECONDS.
+            // FreeBSD: ping requires -W flag which accepts timeout in MILLISECONDS;
+            // ping6 requires -x which accepts timeout in MILLISECONDS
+            // OSX: ping requires -W flag which accepts timeout in MILLISECONDS; ping6 doesn't support timeout
+            if (OperatingSystem.IsFreeBSD())
+            {
+                if (ipv4)
+                {
+                    sb.Append(" -W ");
+                }
+                else
+                {
+                    sb.Append(" -x ");
+                }
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                if (ipv4)
+                {
+                    sb.Append(" -W ");
+                }
+                else
+                {
+                    goto skipped_timeout;
+                }
+            }
+            else
+            {
+                sb.Append(" -W ");
+                const int millisInSecond = 1000;
+                timeout = Math.DivRem(timeout, millisInSecond, out int remainder);
+                if (remainder != 0)
+                {
+                    timeout += 1;
+                }
+            }
+            sb.Append(timeout);
+
+        skipped_timeout:
 
             // The command-line flags for "Do-not-fragment" and "TTL" are not standard.
             // In fact, they are different even between ping and ping6 on the same machine.
@@ -84,7 +132,7 @@ namespace System.Net.NetworkInformation
 
             if (ttl > 0)
             {
-                if (s_isBSD)
+                if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsMacOS())
                 {
                     // OSX and FreeBSD use -h to set hop limit for IPv6 and -m ttl for IPv4
                     if (ipv4)
@@ -105,9 +153,9 @@ namespace System.Net.NetworkInformation
                 sb.Append(ttl);
             }
 
-            if (fragmentOption != PingFragmentOptions.Default )
+            if (fragmentOption != PingFragmentOptions.Default)
             {
-                if (s_isBSD)
+                if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsMacOS())
                 {
                     // The bit is off by default on OSX & FreeBSD
                     if (fragmentOption == PingFragmentOptions.Dont) {
@@ -150,10 +198,10 @@ namespace System.Net.NetworkInformation
         {
             int timeIndex = pingOutput.IndexOf("time=", StringComparison.Ordinal);
             int afterTime = timeIndex + "time=".Length;
-            int msIndex = pingOutput.IndexOf("ms", afterTime);
+            int msIndex = pingOutput.IndexOf("ms", afterTime, StringComparison.Ordinal);
             int numLength = msIndex - afterTime - 1;
-            string timeSubstring = pingOutput.Substring(afterTime, numLength);
-            double parsedRtt = double.Parse(timeSubstring, CultureInfo.InvariantCulture);
+            ReadOnlySpan<char> timeSubstring = pingOutput.AsSpan(afterTime, numLength);
+            double parsedRtt = double.Parse(timeSubstring, provider: CultureInfo.InvariantCulture);
             return (long)Math.Round(parsedRtt);
         }
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -36,7 +35,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override int MetadataToken => _handle.GetToken();
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(object? obj)
         {
             if (!(obj is EcmaProperty other))
                 return false;
@@ -59,7 +58,7 @@ namespace System.Reflection.TypeLoading.Ecma
         protected sealed override PropertyAttributes ComputeAttributes() => PropertyDefinition.Attributes;
         protected sealed override Type ComputePropertyType() => PropertyDefinition.DecodeSignature(_module, TypeContext).ReturnType;
 
-        protected sealed override object ComputeRawConstantValue() => PropertyDefinition.GetDefaultValue().ToRawObject(Reader);
+        protected sealed override object? ComputeRawConstantValue() => PropertyDefinition.GetDefaultValue().ToRawObject(Reader);
 
         public sealed override Type[] GetOptionalCustomModifiers() => GetCustomModifiers(isRequired: false);
         public sealed override Type[] GetRequiredCustomModifiers() => GetCustomModifiers(isRequired: true);
@@ -72,7 +71,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override string ToString()
         {
-            string disposedString = Loader.GetDisposedString();
+            string? disposedString = Loader.GetDisposedString();
             if (disposedString != null)
                 return disposedString;
 
@@ -96,8 +95,8 @@ namespace System.Reflection.TypeLoading.Ecma
             return sb.ToString();
         }
 
-        protected sealed override RoMethod ComputeGetterMethod() => PropertyDefinition.GetAccessors().Getter.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);
-        protected sealed override RoMethod ComputeSetterMethod() => PropertyDefinition.GetAccessors().Setter.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);
+        protected sealed override RoMethod? ComputeGetterMethod() => PropertyDefinition.GetAccessors().Getter.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);
+        protected sealed override RoMethod? ComputeSetterMethod() => PropertyDefinition.GetAccessors().Setter.ToMethodOrNull(GetRoDeclaringType(), ReflectedType);
 
         private MetadataReader Reader => _module.Reader;
         private MetadataLoadContext Loader => GetRoModule().Loader;

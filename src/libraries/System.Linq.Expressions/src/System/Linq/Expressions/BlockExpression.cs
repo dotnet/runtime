@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -65,13 +64,13 @@ namespace System.Linq.Expressions
         /// <param name="variables">The <see cref="Variables"/> property of the result.</param>
         /// <param name="expressions">The <see cref="Expressions"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public BlockExpression Update(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions)
+        public BlockExpression Update(IEnumerable<ParameterExpression>? variables, IEnumerable<Expression> expressions)
         {
             if (expressions != null)
             {
                 // Ensure variables is safe to enumerate twice.
                 // (If this means a second call to ToReadOnly it will return quickly).
-                ICollection<ParameterExpression> vars;
+                ICollection<ParameterExpression>? vars;
                 if (variables == null)
                 {
                     vars = null;
@@ -89,7 +88,7 @@ namespace System.Linq.Expressions
                 {
                     // Ensure expressions is safe to enumerate twice.
                     // (If this means a second call to ToReadOnly it will return quickly).
-                    ICollection<Expression> exps = expressions as ICollection<Expression>;
+                    ICollection<Expression>? exps = expressions as ICollection<Expression>;
                     if (exps == null)
                     {
                         expressions = exps = expressions.ToReadOnly();
@@ -101,25 +100,25 @@ namespace System.Linq.Expressions
                 }
             }
 
-            return Block(Type, variables, expressions);
+            return Block(Type, variables, expressions!);
         }
 
-        internal virtual bool SameVariables(ICollection<ParameterExpression> variables) =>
+        internal virtual bool SameVariables(ICollection<ParameterExpression>? variables) =>
             variables == null || variables.Count == 0;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual bool SameExpressions(ICollection<Expression> expressions)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual Expression GetExpression(int index)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual int ExpressionCount
         {
             get
@@ -128,7 +127,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
             throw ContractUtils.Unreachable;
@@ -149,8 +148,8 @@ namespace System.Linq.Expressions
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
         /// subclass of BlockExpression which is being used.
         /// </summary>
-        [ExcludeFromCodeCoverage] // Unreachable
-        internal virtual BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
+        internal virtual BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
             throw ContractUtils.Unreachable;
         }
@@ -170,12 +169,11 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static ReadOnlyCollection<Expression> ReturnReadOnlyExpressions(BlockExpression provider, ref object collection)
         {
-            Expression tObj = collection as Expression;
-            if (tObj != null)
+            if (collection is Expression tObj)
             {
                 // otherwise make sure only one read-only collection ever gets exposed
                 Interlocked.CompareExchange(
-                    ref collection,
+                    ref collection!,
                     new ReadOnlyCollection<Expression>(new BlockExpressionList(provider, tObj)),
                     tObj
                 );
@@ -212,8 +210,7 @@ namespace System.Linq.Expressions
             Debug.Assert(expressions != null);
             if (expressions.Count == 2)
             {
-                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
-                if (alreadyCollection != null)
+                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(expressions, alreadyCollection);
                 }
@@ -239,7 +236,7 @@ namespace System.Linq.Expressions
             return ReturnReadOnlyExpressions(this, ref _arg0);
         }
 
-        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
             Debug.Assert(args != null);
             Debug.Assert(args.Length == 2);
@@ -266,8 +263,7 @@ namespace System.Linq.Expressions
             Debug.Assert(expressions != null);
             if (expressions.Count == 3)
             {
-                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
-                if (alreadyCollection != null)
+                if (_arg0 is ReadOnlyCollection<Expression>  alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(expressions, alreadyCollection);
                 }
@@ -306,7 +302,7 @@ namespace System.Linq.Expressions
             return ReturnReadOnlyExpressions(this, ref _arg0);
         }
 
-        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
             Debug.Assert(args != null);
             Debug.Assert(args.Length == 3);
@@ -334,8 +330,7 @@ namespace System.Linq.Expressions
             Debug.Assert(expressions != null);
             if (expressions.Count == 4)
             {
-                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
-                if (alreadyCollection != null)
+                if (_arg0 is ReadOnlyCollection<Expression>  alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(expressions, alreadyCollection);
                 }
@@ -379,7 +374,7 @@ namespace System.Linq.Expressions
             return ReturnReadOnlyExpressions(this, ref _arg0);
         }
 
-        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
             Debug.Assert(args != null);
             Debug.Assert(args.Length == 4);
@@ -419,8 +414,7 @@ namespace System.Linq.Expressions
             Debug.Assert(expressions != null);
             if (expressions.Count == 5)
             {
-                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
-                if (alreadyCollection != null)
+                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(expressions, alreadyCollection);
                 }
@@ -458,7 +452,7 @@ namespace System.Linq.Expressions
             return ReturnReadOnlyExpressions(this, ref _arg0);
         }
 
-        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
             Debug.Assert(args != null);
             Debug.Assert(args.Length == 5);
@@ -496,7 +490,7 @@ namespace System.Linq.Expressions
             return ExpressionUtils.ReturnReadOnly(ref _expressions);
         }
 
-        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
             Debug.Assert(variables == null || variables.Count == 0);
             Debug.Assert(args != null);
@@ -514,7 +508,7 @@ namespace System.Linq.Expressions
             _variables = variables;
         }
 
-        internal override bool SameVariables(ICollection<ParameterExpression> variables) =>
+        internal override bool SameVariables(ICollection<ParameterExpression>? variables) =>
             ExpressionUtils.SameElements(variables, _variables);
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeVariables()
@@ -525,7 +519,7 @@ namespace System.Linq.Expressions
         protected IReadOnlyList<ParameterExpression> VariablesList => _variables;
 
         // Used for rewrite of the nodes to either reuse existing set of variables if not rewritten.
-        internal IReadOnlyList<ParameterExpression> ReuseOrValidateVariables(ReadOnlyCollection<ParameterExpression> variables)
+        internal IReadOnlyList<ParameterExpression> ReuseOrValidateVariables(ReadOnlyCollection<ParameterExpression>? variables)
         {
             if (variables != null && variables != VariablesList)
             {
@@ -560,8 +554,7 @@ namespace System.Linq.Expressions
             Debug.Assert(expressions != null);
             if (expressions.Count == 1)
             {
-                ReadOnlyCollection<Expression> alreadyCollection = _body as ReadOnlyCollection<Expression>;
-                if (alreadyCollection != null)
+                if (_body is ReadOnlyCollection<Expression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(expressions, alreadyCollection);
                 }
@@ -590,11 +583,11 @@ namespace System.Linq.Expressions
             return ReturnReadOnlyExpressions(this, ref _body);
         }
 
-        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[]? args)
         {
             if (args == null)
             {
-                Debug.Assert(variables.Count == Variables.Count);
+                Debug.Assert(variables!.Count == Variables.Count);
                 ValidateVariables(variables, nameof(variables));
                 return new Scope1(variables, _body);
             }
@@ -629,11 +622,11 @@ namespace System.Linq.Expressions
             return ExpressionUtils.ReturnReadOnly(ref _body);
         }
 
-        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[]? args)
         {
             if (args == null)
             {
-                Debug.Assert(variables.Count == Variables.Count);
+                Debug.Assert(variables!.Count == Variables.Count);
                 ValidateVariables(variables, nameof(variables));
                 return new ScopeN(variables, _body);
             }
@@ -654,11 +647,11 @@ namespace System.Linq.Expressions
 
         public sealed override Type Type { get; }
 
-        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
+        internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[]? args)
         {
             if (args == null)
             {
-                Debug.Assert(variables.Count == Variables.Count);
+                Debug.Assert(variables!.Count == Variables.Count);
                 ValidateVariables(variables, nameof(variables));
                 return new ScopeWithType(variables, Body, Type);
             }
@@ -714,13 +707,13 @@ namespace System.Linq.Expressions
             return -1;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void Insert(int index, Expression item)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void RemoveAt(int index)
         {
             throw ContractUtils.Unreachable;
@@ -737,7 +730,7 @@ namespace System.Linq.Expressions
 
                 return _block.GetExpression(index);
             }
-            [ExcludeFromCodeCoverage] // Unreachable
+            [ExcludeFromCodeCoverage(Justification = "Unreachable")]
             set
             {
                 throw ContractUtils.Unreachable;
@@ -748,13 +741,13 @@ namespace System.Linq.Expressions
 
         #region ICollection<Expression> Members
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void Add(Expression item)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public void Clear()
         {
             throw ContractUtils.Unreachable;
@@ -789,7 +782,7 @@ namespace System.Linq.Expressions
 
         public int Count => _block.ExpressionCount;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public bool IsReadOnly
         {
             get
@@ -798,7 +791,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         public bool Remove(Expression item)
         {
             throw ContractUtils.Unreachable;
@@ -952,7 +945,7 @@ namespace System.Linq.Expressions
         /// <param name="variables">The variables in the block.</param>
         /// <param name="expressions">The expressions in the block.</param>
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
-        public static BlockExpression Block(IEnumerable<ParameterExpression> variables, params Expression[] expressions)
+        public static BlockExpression Block(IEnumerable<ParameterExpression>? variables, params Expression[] expressions)
         {
             return Block(variables, (IEnumerable<Expression>)expressions);
         }
@@ -964,7 +957,7 @@ namespace System.Linq.Expressions
         /// <param name="variables">The variables in the block.</param>
         /// <param name="expressions">The expressions in the block.</param>
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
-        public static BlockExpression Block(Type type, IEnumerable<ParameterExpression> variables, params Expression[] expressions)
+        public static BlockExpression Block(Type type, IEnumerable<ParameterExpression>? variables, params Expression[] expressions)
         {
             return Block(type, variables, (IEnumerable<Expression>)expressions);
         }
@@ -975,7 +968,7 @@ namespace System.Linq.Expressions
         /// <param name="variables">The variables in the block.</param>
         /// <param name="expressions">The expressions in the block.</param>
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
-        public static BlockExpression Block(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions)
+        public static BlockExpression Block(IEnumerable<ParameterExpression>? variables, IEnumerable<Expression> expressions)
         {
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
             ReadOnlyCollection<ParameterExpression> variableList = variables.ToReadOnly();
@@ -1003,7 +996,7 @@ namespace System.Linq.Expressions
         /// <param name="variables">The variables in the block.</param>
         /// <param name="expressions">The expressions in the block.</param>
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
-        public static BlockExpression Block(Type type, IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions)
+        public static BlockExpression Block(Type type, IEnumerable<ParameterExpression>? variables, IEnumerable<Expression> expressions)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(expressions, nameof(expressions));
@@ -1031,7 +1024,7 @@ namespace System.Linq.Expressions
             return BlockCore(type, variableList, expressionList);
         }
 
-        private static BlockExpression BlockCore(Type type, ReadOnlyCollection<ParameterExpression> variables, ReadOnlyCollection<Expression> expressions)
+        private static BlockExpression BlockCore(Type? type, ReadOnlyCollection<ParameterExpression> variables, ReadOnlyCollection<Expression> expressions)
         {
             ValidateVariables(variables, nameof(variables));
 
@@ -1046,7 +1039,7 @@ namespace System.Linq.Expressions
 
                     return new ScopeWithType(variables, expressions, type);
                 }
-                Expression last = expressions.Last();
+                Expression last = expressions[^1];
                 if (type != typeof(void))
                 {
                     if (!TypeUtils.AreReferenceAssignable(type, last.Type))

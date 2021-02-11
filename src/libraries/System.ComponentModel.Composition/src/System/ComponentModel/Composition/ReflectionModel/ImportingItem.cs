@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Primitives;
 using System.Globalization;
@@ -34,7 +33,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _importType; }
         }
 
-        public object CastExportsToImportType(Export[] exports)
+        public object? CastExportsToImportType(Export[] exports)
         {
             if (Definition.Cardinality == ImportCardinality.ZeroOrMore)
             {
@@ -61,7 +60,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             for (int i = 0; i < array.Length; i++)
             {
-                object value = CastSingleExportToImportType(elementType, exports[i]);
+                object? value = CastSingleExportToImportType(elementType, exports[i]);
 
                 array.SetValue(value, i);
             }
@@ -69,7 +68,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return array;
         }
 
-        private object CastExportsToSingleImportType(Export[] exports)
+        private object? CastExportsToSingleImportType(Export[] exports)
         {
             if (exports == null)
             {
@@ -89,7 +88,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return CastSingleExportToImportType(ImportType.ActualType, exports[0]);
         }
 
-        private object CastSingleExportToImportType(Type type, Export export)
+        private object? CastSingleExportToImportType(Type type, Export export)
         {
             if (ImportType.CastExport != null)
             {
@@ -99,12 +98,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return Cast(type, export);
         }
 
-        private object Cast(Type type, Export export)
+        private object? Cast(Type type, Export export)
         {
-            object value = export.Value;
+            object? value = export.Value;
 
-            object result;
-            if (!ContractServices.TryCast(type, value, out result))
+            if (!ContractServices.TryCast(type, value, out object? result))
             {
                 throw new ComposablePartException(
                     SR.Format(

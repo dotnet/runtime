@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Quic.Implementations;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,15 +19,30 @@ namespace System.Net.Quic
         /// <param name="remoteEndPoint">The remote endpoint to connect to.</param>
         /// <param name="sslClientAuthenticationOptions">TLS options</param>
         /// <param name="localEndPoint">The local endpoint to connect from.</param>
-        public QuicConnection(IPEndPoint remoteEndPoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint = null)
+        public QuicConnection(EndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
             : this(QuicImplementationProviders.Default, remoteEndPoint, sslClientAuthenticationOptions, localEndPoint)
         {
         }
 
-        // !!! TEMPORARY: Remove "implementationProvider" before shipping
-        public QuicConnection(QuicImplementationProvider implementationProvider, IPEndPoint remoteEndPoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint = null)
+        /// <summary>
+        /// Create an outbound QUIC connection.
+        /// </summary>
+        /// <param name="options">The connection options.</param>
+        public QuicConnection(QuicClientConnectionOptions options)
+            : this(QuicImplementationProviders.Default, options)
         {
-            _provider = implementationProvider.CreateConnection(remoteEndPoint, sslClientAuthenticationOptions, localEndPoint);
+        }
+
+        // !!! TEMPORARY: Remove or make internal before shipping
+        public QuicConnection(QuicImplementationProvider implementationProvider, EndPoint remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
+            : this(implementationProvider, new QuicClientConnectionOptions() { RemoteEndPoint = remoteEndPoint, ClientAuthenticationOptions = sslClientAuthenticationOptions, LocalEndPoint = localEndPoint })
+        {
+        }
+
+        // !!! TEMPORARY: Remove or make internal before shipping
+        public QuicConnection(QuicImplementationProvider implementationProvider, QuicClientConnectionOptions options)
+        {
+            _provider = implementationProvider.CreateConnection(options);
         }
 
         internal QuicConnection(QuicConnectionProvider provider)
@@ -42,7 +57,7 @@ namespace System.Net.Quic
 
         public IPEndPoint LocalEndPoint => _provider.LocalEndPoint;
 
-        public IPEndPoint RemoteEndPoint => _provider.RemoteEndPoint;
+        public EndPoint RemoteEndPoint => _provider.RemoteEndPoint;
 
         public SslApplicationProtocol NegotiatedApplicationProtocol => _provider.NegotiatedApplicationProtocol;
 
@@ -74,8 +89,18 @@ namespace System.Net.Quic
         /// <summary>
         /// Close the connection and terminate any active streams.
         /// </summary>
-        public void Close() => _provider.Close();
+        public ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default) => _provider.CloseAsync(errorCode, cancellationToken);
 
         public void Dispose() => _provider.Dispose();
+
+        /// <summary>
+        /// Gets the maximum number of bidirectional streams that can be made to the peer.
+        /// </summary>
+        public long GetRemoteAvailableUnidirectionalStreamCount() => _provider.GetRemoteAvailableUnidirectionalStreamCount();
+
+        /// <summary>
+        /// Gets the maximum number of unidirectional streams that can be made to the peer.
+        /// </summary>
+        public long GetRemoteAvailableBidirectionalStreamCount() => _provider.GetRemoteAvailableBidirectionalStreamCount();
     }
 }

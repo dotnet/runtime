@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -22,7 +21,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <remarks>
         /// If null the encoder doesn't support construction of control flow.
         /// </remarks>
-        public ControlFlowBuilder ControlFlowBuilder { get; }
+        public ControlFlowBuilder? ControlFlowBuilder { get; }
 
         /// <summary>
         /// Creates an encoder backed by code and control-flow builders.
@@ -33,7 +32,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Must be specified to be able to use some of the control-flow factory methods of <see cref="InstructionEncoder"/>,
         /// such as <see cref="Branch(ILOpCode, LabelHandle)"/>, <see cref="DefineLabel"/>, <see cref="MarkLabel(LabelHandle)"/> etc.
         /// </param>
-        public InstructionEncoder(BlobBuilder codeBuilder, ControlFlowBuilder controlFlowBuilder = null)
+        public InstructionEncoder(BlobBuilder codeBuilder, ControlFlowBuilder? controlFlowBuilder = null)
         {
             if (codeBuilder == null)
             {

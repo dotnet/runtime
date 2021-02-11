@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -589,8 +588,8 @@ namespace System.Management
     [Serializable]
     public class ManagementException : SystemException
     {
-        private readonly ManagementBaseObject errorObject = null;
-        private readonly ManagementStatus     errorCode = 0;
+        private readonly ManagementBaseObject errorObject;
+        private readonly ManagementStatus     errorCode;
 
         internal static void ThrowWithExtendedInfo(ManagementStatus errorCode)
         {
@@ -675,7 +674,6 @@ namespace System.Management
         protected ManagementException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             errorCode = (ManagementStatus)info.GetValue("errorCode", typeof(ManagementStatus));
-            errorObject = info.GetValue("errorObject", typeof(ManagementBaseObject)) as ManagementBaseObject;
         }
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementException'/> class</para>
@@ -722,7 +720,9 @@ namespace System.Management
         {
             base.GetObjectData(info, context);
             info.AddValue("errorCode", errorCode);
-            info.AddValue("errorObject", errorObject);
+
+            // For .NET Framework compat we need to set `errorObject` as null
+            info.AddValue("errorObject", null);
         }
 
         private static string GetMessage(Exception e)

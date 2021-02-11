@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -11,13 +9,12 @@ namespace System.Net.Sockets
 {
     public partial class SafeSocketHandle
     {
-        private ThreadPoolBoundHandle _iocpBoundHandle;
+        private ThreadPoolBoundHandle? _iocpBoundHandle;
         private bool _skipCompletionPortOnSuccess;
-        private readonly object _iocpBindingLock = new object();
 
         internal void SetExposed() { /* nop */ }
 
-        internal ThreadPoolBoundHandle IOCPBoundHandle
+        internal ThreadPoolBoundHandle? IOCPBoundHandle
         {
             get
             {
@@ -25,7 +22,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal ThreadPoolBoundHandle GetThreadPoolBoundHandle() => !_released ? _iocpBoundHandle : null;
+        internal ThreadPoolBoundHandle? GetThreadPoolBoundHandle() => !_released ? _iocpBoundHandle : null;
 
         // Binds the Socket Win32 Handle to the ThreadPool's CompletionPort.
         internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle(bool trySkipCompletionPortOnSuccess)
@@ -40,17 +37,18 @@ namespace System.Net.Sockets
                 return _iocpBoundHandle;
             }
 
-            lock (_iocpBindingLock)
+            lock (this)
             {
-                ThreadPoolBoundHandle boundHandle = _iocpBoundHandle;
+                ThreadPoolBoundHandle? boundHandle = _iocpBoundHandle;
 
                 if (boundHandle == null)
                 {
                     // Bind the socket native _handle to the ThreadPool.
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "calling ThreadPool.BindHandle()");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "calling ThreadPool.BindHandle()");
 
                     try
                     {
+                        Debug.Assert(OperatingSystem.IsWindows());
                         // The handle (this) may have been already released:
                         // E.g.: The socket has been disposed in the main thread. A completion callback may
                         //       attempt starting another operation.
@@ -59,6 +57,7 @@ namespace System.Net.Sockets
                     catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
                     {
                         bool closed = IsClosed;
+                        bool alreadyBound = !IsInvalid && !IsClosed && (exception is ArgumentException);
                         CloseAsIs(abortive: false);
                         if (closed)
                         {
@@ -67,6 +66,12 @@ namespace System.Net.Sockets
                             // instead propagate as an ObjectDisposedException.
                             ThrowSocketDisposedException(exception);
                         }
+
+                        if (alreadyBound)
+                        {
+                            throw new InvalidOperationException(SR.net_sockets_asyncoperations_notallowed, exception);
+                        }
+
                         throw;
                     }
 
@@ -101,6 +106,7 @@ namespace System.Net.Sockets
             // ThreadPoolBoundHandle allows FreeNativeOverlapped even after it has been disposed.
             if (_iocpBoundHandle != null)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 _iocpBoundHandle.Dispose();
             }
 
@@ -125,14 +131,14 @@ namespace System.Net.Sockets
             // WSAEWOULDBLOCK, in which case we need to do some recovery.
             if (!abortive)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, Following 'blockable' branch");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, Following 'blockable' branch");
                 errorCode = Interop.Winsock.closesocket(handle);
 #if DEBUG
                 _closeSocketResult = errorCode;
 #endif
                 if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, closesocket()#1:{errorCode}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, closesocket()#1:{errorCode}");
 
                 // If it's not WSAEWOULDBLOCK, there's no more recourse - we either succeeded or failed.
                 if (errorCode != SocketError.WouldBlock)
@@ -149,7 +155,7 @@ namespace System.Net.Sockets
                     ref nonBlockCmd);
                 if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, ioctlsocket()#1:{errorCode}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, ioctlsocket()#1:{errorCode}");
 
                 // If that succeeded, try again.
                 if (errorCode == SocketError.Success)
@@ -159,7 +165,7 @@ namespace System.Net.Sockets
                     _closeSocketResult = errorCode;
 #endif
                     if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, closesocket#2():{errorCode}");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, closesocket#2():{errorCode}");
 
                     // If it's not WSAEWOULDBLOCK, there's no more recourse - we either succeeded or failed.
                     if (errorCode != SocketError.WouldBlock)
@@ -186,7 +192,7 @@ namespace System.Net.Sockets
             _closeSocketLinger = errorCode;
 #endif
             if (errorCode == SocketError.SocketError) errorCode = (SocketError)Marshal.GetLastWin32Error();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
 
             if (errorCode != SocketError.Success && errorCode != SocketError.InvalidArgument && errorCode != SocketError.ProtocolOption)
             {
@@ -198,12 +204,12 @@ namespace System.Net.Sockets
 #if DEBUG
             _closeSocketResult = errorCode;
 #endif
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, closesocket#3():{(errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode)}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"handle:{handle}, closesocket#3():{(errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode)}");
 
             return errorCode;
         }
 
-        private static void ThrowSocketDisposedException(Exception innerException = null) =>
+        private static void ThrowSocketDisposedException(Exception? innerException = null) =>
             throw new ObjectDisposedException(typeof(Socket).FullName, innerException);
     }
 }

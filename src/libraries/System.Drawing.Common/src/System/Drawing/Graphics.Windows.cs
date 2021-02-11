@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -38,19 +37,19 @@ namespace System.Drawing
         /// We don't keep a GraphicsContext for the current context since it is available at any time from GDI+ and
         /// we don't want to keep track of changes in it.
         /// </summary>
-        private GraphicsContext _previousContext;
+        private GraphicsContext? _previousContext;
 
         private static readonly object s_syncObject = new object();
 
         // Object reference used for printing; it could point to a PrintPreviewGraphics to obtain the VisibleClipBounds, or
         // a DeviceContext holding a printer DC.
-        private object _printingHelper;
+        private object? _printingHelper;
 
         // GDI+'s preferred HPALETTE.
         private static IntPtr s_halftonePalette;
 
         // pointer back to the Image backing a specific graphic object
-        private Image _backingImage;
+        private Image? _backingImage;
 
         /// <summary>
         /// Constructor to initialize this object from a native GDI+ Graphics pointer.
@@ -151,7 +150,7 @@ namespace System.Drawing
             while (_previousContext != null)
             {
                 // Dispose entire stack.
-                GraphicsContext context = _previousContext.Previous;
+                GraphicsContext? context = _previousContext.Previous;
                 _previousContext.Dispose();
                 _previousContext = context;
             }
@@ -201,7 +200,7 @@ namespace System.Drawing
         /// Represents an object used in connection with the printing API, it is used to hold a reference to a
         /// PrintPreviewGraphics (fake graphics) or a printer DeviceContext (and maybe more in the future).
         /// </summary>
-        internal object PrintingHelper
+        internal object? PrintingHelper
         {
             get => _printingHelper;
             set
@@ -244,37 +243,31 @@ namespace System.Drawing
             int destWidth = blockRegionSize.Width;
             int destHeight = blockRegionSize.Height;
 
-            using (DeviceContext dc = DeviceContext.FromHwnd(IntPtr.Zero))
+            IntPtr screenDC = Interop.User32.GetDC(IntPtr.Zero);
+            try
             {
-                // The DC of the screen.
-                IntPtr screenDC = dc.Hdc;
-
-                // The DC of the current graphics object.
                 IntPtr targetDC = GetHdc();
+                int result = Interop.Gdi32.BitBlt(
+                    targetDC,
+                    destinationX,
+                    destinationY,
+                    destWidth,
+                    destHeight,
+                    screenDC,
+                    sourceX,
+                    sourceY,
+                    (Interop.Gdi32.RasterOp)copyPixelOperation);
 
-                try
+                //a zero result indicates a win32 exception has been thrown
+                if (result == 0)
                 {
-                    int result = Interop.Gdi32.BitBlt(
-                        targetDC,
-                        destinationX,
-                        destinationY,
-                        destWidth,
-                        destHeight,
-                        screenDC,
-                        sourceX,
-                        sourceY,
-                        (Interop.Gdi32.RasterOp)copyPixelOperation);
-
-                    //a zero result indicates a win32 exception has been thrown
-                    if (result == 0)
-                    {
-                        throw new Win32Exception();
-                    }
+                    throw new Win32Exception();
                 }
-                finally
-                {
-                    ReleaseHdc();
-                }
+            }
+            finally
+            {
+                Interop.User32.ReleaseDC(IntPtr.Zero, screenDC);
+                ReleaseHdc();
             }
         }
 
@@ -435,7 +428,7 @@ namespace System.Drawing
             PointF destPoint,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileDestPoint(
                 new HandleRef(this, NativeGraphics),
@@ -450,7 +443,7 @@ namespace System.Drawing
             Point destPoint,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileDestPointI(
                 new HandleRef(this, NativeGraphics),
@@ -466,7 +459,7 @@ namespace System.Drawing
             RectangleF destRect,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileDestRect(
                 new HandleRef(this, NativeGraphics),
@@ -482,7 +475,7 @@ namespace System.Drawing
             Rectangle destRect,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileDestRectI(
                 new HandleRef(this, NativeGraphics),
@@ -498,7 +491,7 @@ namespace System.Drawing
             PointF[] destPoints,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
@@ -522,7 +515,7 @@ namespace System.Drawing
             Point[] destPoints,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
@@ -548,7 +541,7 @@ namespace System.Drawing
             GraphicsUnit unit,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestPoint(
                 new HandleRef(this, NativeGraphics),
@@ -568,7 +561,7 @@ namespace System.Drawing
             GraphicsUnit unit,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestPointI(
                 new HandleRef(this, NativeGraphics),
@@ -588,7 +581,7 @@ namespace System.Drawing
             GraphicsUnit unit,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestRect(
                 new HandleRef(this, NativeGraphics),
@@ -608,7 +601,7 @@ namespace System.Drawing
             GraphicsUnit unit,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestRectI(
                 new HandleRef(this, NativeGraphics),
@@ -628,7 +621,7 @@ namespace System.Drawing
             GraphicsUnit unit,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
@@ -656,7 +649,7 @@ namespace System.Drawing
             GraphicsUnit unit,
             EnumerateMetafileProc callback,
             IntPtr callbackData,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
@@ -698,12 +691,10 @@ namespace System.Drawing
 
             if (!cumulTransform.IsIdentity)
             {
-                float[] elements = cumulTransform.Elements;
-                currentOffset.X = elements[4];
-                currentOffset.Y = elements[5];
+                currentOffset = cumulTransform.Offset;
             }
 
-            GraphicsContext context = _previousContext;
+            GraphicsContext? context = _previousContext;
 
             while (context != null)
             {
@@ -734,7 +725,7 @@ namespace System.Drawing
                 {
                     context = context.Previous;
 
-                    if (context == null || !context.Next.IsCumulative)
+                    if (context == null || !context.Next!.IsCumulative)
                     {
                         break;
                     }
@@ -786,7 +777,7 @@ namespace System.Drawing
         private void PopContext(int currentContextState)
         {
             Debug.Assert(_previousContext != null, "Trying to restore a context when the stack is empty");
-            GraphicsContext context = _previousContext;
+            GraphicsContext? context = _previousContext;
 
             // Pop all contexts up the stack.
             while (context != null)
@@ -919,8 +910,7 @@ namespace System.Drawing
         }
 
         // This is called from AppDomain.ProcessExit and AppDomain.DomainUnload.
-        [PrePrepareMethod]
-        private static void OnDomainUnload(object sender, EventArgs e)
+        private static void OnDomainUnload(object? sender, EventArgs e)
         {
             if (s_halftonePalette != IntPtr.Zero)
             {

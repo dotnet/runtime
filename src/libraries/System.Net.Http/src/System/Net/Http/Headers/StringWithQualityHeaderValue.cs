@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Net.Http.Headers
 {
     public class StringWithQualityHeaderValue : ICloneable
     {
-        private string _value;
-        private double? _quality;
+        private readonly string _value;
+        private readonly double? _quality;
 
         public string Value
         {
@@ -50,10 +50,6 @@ namespace System.Net.Http.Headers
             _quality = source._quality;
         }
 
-        private StringWithQualityHeaderValue()
-        {
-        }
-
         public override string ToString()
         {
             if (_quality.HasValue)
@@ -64,9 +60,9 @@ namespace System.Net.Http.Headers
             return _value;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            StringWithQualityHeaderValue other = obj as StringWithQualityHeaderValue;
+            StringWithQualityHeaderValue? other = obj as StringWithQualityHeaderValue;
 
             if (other == null)
             {
@@ -103,29 +99,28 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static StringWithQualityHeaderValue Parse(string input)
+        public static StringWithQualityHeaderValue Parse(string? input)
         {
             int index = 0;
             return (StringWithQualityHeaderValue)GenericHeaderParser.SingleValueStringWithQualityParser.ParseValue(
                 input, null, ref index);
         }
 
-        public static bool TryParse(string input, out StringWithQualityHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out StringWithQualityHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
             if (GenericHeaderParser.SingleValueStringWithQualityParser.TryParseValue(
-                input, null, ref index, out output))
+                input, null, ref index, out object? output))
             {
-                parsedValue = (StringWithQualityHeaderValue)output;
+                parsedValue = (StringWithQualityHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetStringWithQualityLength(string input, int startIndex, out object parsedValue)
+        internal static int GetStringWithQualityLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -144,14 +139,13 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            StringWithQualityHeaderValue result = new StringWithQualityHeaderValue();
-            result._value = input.Substring(startIndex, valueLength);
+            string value = input.Substring(startIndex, valueLength);
             int current = startIndex + valueLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
             if ((current == input.Length) || (input[current] != ';'))
             {
-                parsedValue = result;
+                parsedValue = new StringWithQualityHeaderValue(value);
                 return current - startIndex; // we have a valid token, but no quality.
             }
 
@@ -159,18 +153,19 @@ namespace System.Net.Http.Headers
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
             // If we found a ';' separator, it must be followed by a quality information
-            if (!TryReadQuality(input, result, ref current))
+            if (!TryReadQuality(input, out double quality, ref current))
             {
                 return 0;
             }
 
-            parsedValue = result;
+            parsedValue = new StringWithQualityHeaderValue(value, quality);
             return current - startIndex;
         }
 
-        private static bool TryReadQuality(string input, StringWithQualityHeaderValue result, ref int index)
+        private static bool TryReadQuality(string input, out double quality, ref int index)
         {
             int current = index;
+            quality = default;
 
             // See if we have a quality value by looking for "q"
             if ((current == input.Length) || ((input[current] != 'q') && (input[current] != 'Q')))
@@ -202,7 +197,6 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            double quality = 0;
             if (!double.TryParse(input.AsSpan(current, qualityLength), NumberStyles.AllowDecimalPoint,
                 NumberFormatInfo.InvariantInfo, out quality))
             {
@@ -213,8 +207,6 @@ namespace System.Net.Http.Headers
             {
                 return false;
             }
-
-            result._quality = quality;
 
             current = current + qualityLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);

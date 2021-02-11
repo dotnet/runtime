@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
@@ -17,12 +16,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public ReflectionParameterImportDefinition(
             Lazy<ParameterInfo> importingLazyParameter,
             string contractName,
-            string requiredTypeIdentity,
-            IEnumerable<KeyValuePair<string, Type>> requiredMetadata,
+            string? requiredTypeIdentity,
+            IEnumerable<KeyValuePair<string, Type>>? requiredMetadata,
             ImportCardinality cardinality,
             CreationPolicy requiredCreationPolicy,
-            IDictionary<string, object> metadata,
-            ICompositionElement origin)
+            IDictionary<string, object?> metadata,
+            ICompositionElement? origin)
             : base(contractName, requiredTypeIdentity, requiredMetadata, cardinality, false, true, requiredCreationPolicy, metadata, origin)
         {
             if (importingLazyParameter == null)

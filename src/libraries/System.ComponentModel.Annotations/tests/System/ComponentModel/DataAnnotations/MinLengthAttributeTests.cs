@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -73,7 +72,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         [Theory]
         [MemberData(nameof(ValidValues_ICollection))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MinLengthAttribute in the .NET Framework doesn't support ICollection.Count. See https://github.com/dotnet/corefx/issues/18361")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MinLengthAttribute in the .NET Framework doesn't support ICollection.Count. See https://github.com/dotnet/runtime/issues/21101")]
         public void Validate_ICollection_NetCore_Valid(MinLengthAttribute attribute, object value)
         {
             attribute.Validate(value, new ValidationContext(new object()));
@@ -82,7 +81,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         [Theory]
         [MemberData(nameof(InvalidValues_ICollection))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MinLengthAttribute in the .NET Framework doesn't support ICollection.Count. See https://github.com/dotnet/corefx/issues/18361")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MinLengthAttribute in the .NET Framework doesn't support ICollection.Count. See https://github.com/dotnet/runtime/issues/21101")]
         public void Validate_ICollection_NetCore_Invalid(MinLengthAttribute attribute, object value)
         {
             Assert.Throws<ValidationException>(() => attribute.Validate(value, new ValidationContext(new object())));
@@ -92,7 +91,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Theory]
         [MemberData(nameof(ValidValues_ICollection))]
         [MemberData(nameof(InvalidValues_ICollection))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "MinLengthAttribute in .NET Core supports ICollection.Count. See https://github.com/dotnet/corefx/issues/18361")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "MinLengthAttribute in .NET Core supports ICollection.Count. See https://github.com/dotnet/runtime/issues/21101")]
         public void Validate_ICollection_NetFx_ThrowsInvalidCastException(MinLengthAttribute attribute, object value)
         {
             Assert.Throws<InvalidCastException>(() => attribute.Validate(value, new ValidationContext(new object())));

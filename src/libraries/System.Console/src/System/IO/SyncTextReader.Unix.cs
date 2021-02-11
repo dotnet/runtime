@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
 namespace System.IO
 {
     /* SyncTextReader intentionally locks on itself rather than a private lock object.
-     * This is done to synchronize different console readers(Issue#2855).
+     * This is done to synchronize different console readers (https://github.com/dotnet/corefx/pull/2855).
      */
     internal sealed partial class SyncTextReader : TextReader
     {
@@ -40,5 +39,7 @@ namespace System.IO
                 }
             }
         }
+
+        public int ReadLine(Span<byte> buffer) => Inner.ReadLine(buffer);
     }
 }

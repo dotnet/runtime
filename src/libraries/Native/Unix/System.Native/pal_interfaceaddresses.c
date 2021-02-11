@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_config.h"
 #include "pal_interfaceaddresses.h"
@@ -20,19 +19,25 @@
 #if HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
 #endif
+#if HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
 #if HAVE_ETHTOOL_H
 #include <linux/ethtool.h>
 #include <linux/sockios.h>
 #include <arpa/inet.h>
 #endif
+#if HAVE_NET_IFMEDIA_H
+#include <net/if_media.h>
+#endif
 
 #if defined(AF_PACKET)
 #include <sys/ioctl.h>
-#if defined(_WASM_)
+#if HAVE_NETPACKET_PACKET_H
 #include <netpacket/packet.h>
-#else // _WASM_
+#else
 #include <linux/if_packet.h>
-#endif // _WASM_
+#endif
 #elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>
@@ -41,9 +46,14 @@
 #endif
 
 #if HAVE_RT_MSGHDR
+#if HAVE_IOS_NET_ROUTE_H
+#include "ios/net/route.h"
+#else
 #include <net/route.h>
 #endif
+#endif
 
+#if HAVE_GETIFADDRS
 // Convert mask to prefix length e.g. 255.255.255.0 -> 24
 // mask parameter is pointer to buffer where address starts and length is
 // buffer length e.g. 4 for IPv4 and 16 for IPv6.
@@ -83,11 +93,13 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 
     return len;
 }
+#endif
 
 int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
+#if HAVE_GETIFADDRS
     struct ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
@@ -110,7 +122,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
             freeifaddrs(headAddr);
             return -1;
         }
-        
+
         assert(result == actualName);
         int family = current->ifa_addr->sa_family;
         if (family == AF_INET)
@@ -190,6 +202,26 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
                 lla.NumAddressBytes = sadl->sdl_alen;
                 lla.HardwareType = MapHardwareType(sadl->sdl_type);
 
+#if HAVE_NET_IFMEDIA_H
+                if (lla.HardwareType == NetworkInterfaceType_Ethernet)
+                {
+                    // WI-FI and Ethernet have same address type so we can try to distinguish more
+                    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+                    if (fd >= 0)
+                    {
+                        struct ifmediareq ifmr;
+                        memset(&ifmr, 0, sizeof(ifmr));
+                        strncpy(ifmr.ifm_name, actualName, sizeof(ifmr.ifm_name));
+
+                        if ((ioctl(fd, SIOCGIFMEDIA, (caddr_t)&ifmr) == 0) && (IFM_TYPE(ifmr.ifm_current) == IFM_IEEE80211))
+                        {
+                            lla.HardwareType = NetworkInterfaceType_Wireless80211;
+                        }
+
+                        close(fd);
+                    }
+                }
+#endif
                 memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), (uint8_t*)LLADDR(sadl), sadl->sdl_alen);
                 onLinkLayerFound(current->ifa_name, &lla);
             }
@@ -199,10 +231,19 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
 
     freeifaddrs(headAddr);
     return 0;
+#else
+    // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
+    (void)onIpv4Found;
+    (void)onIpv6Found;
+    (void)onLinkLayerFound;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
+#if HAVE_GETIFADDRS
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;
@@ -217,6 +258,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 
     if (getifaddrs(&head) == -1)
     {
+        assert(errno != 0);
         return -1;
     }
 
@@ -243,6 +285,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     void * memoryBlock = calloc((size_t)count, sizeof(NetworkInterfaceInfo));
     if (memoryBlock == NULL)
     {
+        errno = ENOMEM;
         return -1;
     }
 
@@ -282,8 +325,9 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                 nii->SupportsMulticast = 1;
             }
 
-            // Get administrative state as best guess for now.
-            nii->OperationalState = (ifaddrsEntry->ifa_flags & IFF_UP) ? OperationalStatus_Up : OperationalStatus_Down;
+            // OperationalState returns whether the interface can transmit data packets.
+            // The administrator must have enabled the interface (IFF_UP), and the cable must be plugged in (IFF_RUNNING).
+            nii->OperationalState = ((ifaddrsEntry->ifa_flags & (IFF_UP|IFF_RUNNING)) == (IFF_UP|IFF_RUNNING)) ? OperationalStatus_Up : OperationalStatus_Down;
         }
 
         if (ifaddrsEntry->ifa_addr == NULL)
@@ -373,7 +417,11 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                         ecmd.cmd = ETHTOOL_GSET;
                         if (ioctl(socketfd, SIOCETHTOOL, &ifr) == 0)
                         {
-                            nii->Speed = (int)ethtool_cmd_speed(&ecmd);
+#ifdef TARGET_ANDROID
+                            nii->Speed = (int64_t)ecmd.speed;
+#else
+                            nii->Speed = (int64_t)ethtool_cmd_speed(&ecmd);
+#endif
                             if (nii->Speed > 0)
                             {
                                 // If we did not get -1
@@ -400,9 +448,18 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     }
 
     return 0;
+#else
+    // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
+    (void)interfaceCount;
+    (void)interfaceList;
+    (void)addressCount;
+    (void)addressList;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
-#if HAVE_RT_MSGHDR
+#if HAVE_RT_MSGHDR && defined(CTL_NET)
 int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
 {
     static struct in6_addr anyaddr = IN6ADDR_ANY_INIT;
@@ -440,7 +497,8 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
         }
 
         byteCount = tmpEstimatedSize;
-        buffer = realloc(buffer, byteCount);
+        free(buffer);
+        buffer = malloc(byteCount);
         if (buffer == NULL)
         {
             errno = ENOMEM;
@@ -506,5 +564,13 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
 
     free(buffer);
     return 0;
+}
+#else
+int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
+{
+    (void)interfaceIndex;
+    (void)onGatewayFound;
+    errno = ENOTSUP;
+    return -1;
 }
 #endif // HAVE_RT_MSGHDR

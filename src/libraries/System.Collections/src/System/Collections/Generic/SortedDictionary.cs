@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -36,11 +35,22 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(dictionary));
             }
 
-            _set = new TreeSet<KeyValuePair<TKey, TValue>>(new KeyValuePairComparer(comparer));
+            var keyValuePairComparer = new KeyValuePairComparer(comparer);
 
-            foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+            if (dictionary is SortedDictionary<TKey, TValue> sortedDictionary &&
+                sortedDictionary._set.Comparer is KeyValuePairComparer kv &&
+                kv.keyComparer.Equals(keyValuePairComparer.keyComparer))
             {
-                _set.Add(pair);
+                _set = new TreeSet<KeyValuePair<TKey, TValue>>(sortedDictionary._set, keyValuePairComparer);
+            }
+            else
+            {
+                _set = new TreeSet<KeyValuePair<TKey, TValue>>(keyValuePairComparer);
+
+                foreach (KeyValuePair<TKey, TValue> pair in dictionary)
+                {
+                    _set.Add(pair);
+                }
             }
         }
 
@@ -289,7 +299,7 @@ namespace System.Collections.Generic
             TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
             if (node == null)
             {
-                value = default(TValue)!;
+                value = default;
                 return false;
             }
             value = node.Item.Value;
@@ -313,12 +323,12 @@ namespace System.Collections.Generic
 
         ICollection IDictionary.Keys
         {
-            get { return (ICollection)Keys; }
+            get { return Keys; }
         }
 
         ICollection IDictionary.Values
         {
-            get { return (ICollection)Values; }
+            get { return Values; }
         }
 
         object? IDictionary.this[object key]
@@ -327,7 +337,7 @@ namespace System.Collections.Generic
             {
                 if (IsCompatibleKey(key))
                 {
-                    TValue value;
+                    TValue? value;
                     if (TryGetValue((TKey)key, out value))
                     {
                         return value;
@@ -343,7 +353,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue)! == null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (value == null && default(TValue) != null)
                     throw new ArgumentNullException(nameof(value));
 
                 try
@@ -372,7 +382,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (value == null && !(default(TValue)! == null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (value == null && default(TValue) != null)
                 throw new ArgumentNullException(nameof(value));
 
             try
@@ -441,7 +451,6 @@ namespace System.Collections.Generic
             return new Enumerator(this, Enumerator.KeyValuePair);
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
             private TreeSet<KeyValuePair<TKey, TValue>>.Enumerator _treeEnum;
@@ -630,8 +639,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 }
 
-                TKey[]? keys = array as TKey[];
-                if (keys != null)
+                if (array is TKey[] keys)
                 {
                     CopyTo(keys, index);
                 }
@@ -689,7 +697,6 @@ namespace System.Collections.Generic
                 get { return ((ICollection)_dictionary).SyncRoot; }
             }
 
-            [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
             public struct Enumerator : IEnumerator<TKey>, IEnumerator
             {
                 private SortedDictionary<TKey, TValue>.Enumerator _dictEnum;
@@ -814,8 +821,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 }
 
-                TValue[]? values = array as TValue[];
-                if (values != null)
+                if (array is TValue[] values)
                 {
                     CopyTo(values, index);
                 }
@@ -873,7 +879,6 @@ namespace System.Collections.Generic
                 get { return ((ICollection)_dictionary).SyncRoot; }
             }
 
-            [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
             public struct Enumerator : IEnumerator<TValue>, IEnumerator
             {
                 private SortedDictionary<TKey, TValue>.Enumerator _dictEnum;
@@ -960,10 +965,11 @@ namespace System.Collections.Generic
     public sealed class TreeSet<T> : SortedSet<T>
     {
         public TreeSet()
-            : base()
         { }
 
         public TreeSet(IComparer<T>? comparer) : base(comparer) { }
+
+        internal TreeSet(TreeSet<T> set, IComparer<T>? comparer) : base(set, comparer) { }
 
         private TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
 

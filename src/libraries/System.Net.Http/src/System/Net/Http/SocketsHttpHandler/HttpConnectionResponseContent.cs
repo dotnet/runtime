@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -11,7 +10,7 @@ namespace System.Net.Http
 {
     internal sealed class HttpConnectionResponseContent : HttpContent
     {
-        private Stream _stream;
+        private Stream? _stream;
         private bool _consumedStream; // separate from _stream so that Dispose can drain _stream
 
         public void SetStream(Stream stream)
@@ -34,12 +33,30 @@ namespace System.Net.Http
             return _stream;
         }
 
-        protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+        protected override void SerializeToStream(Stream stream, TransportContext? context,
+            CancellationToken cancellationToken)
+        {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            using (Stream contentStream = ConsumeStream())
+            {
+                const int BufferSize = 8192;
+                contentStream.CopyTo(stream, BufferSize);
+            }
+        }
+
+        protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsync(stream, context, CancellationToken.None);
 
-        internal sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            Debug.Assert(stream != null);
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
 
             using (Stream contentStream = ConsumeStream())
             {
@@ -53,6 +70,9 @@ namespace System.Net.Http
             length = 0;
             return false;
         }
+
+        protected sealed override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
+            ConsumeStream();
 
         protected sealed override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(ConsumeStream());

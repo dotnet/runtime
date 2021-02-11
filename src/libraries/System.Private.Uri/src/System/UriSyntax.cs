@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This file utilizes partial class feature and contains
 // only internal implementation of UriParser type
 
 using System.Collections;
 using System.Diagnostics;
+using System.Threading;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -106,26 +107,6 @@ namespace System
 
         internal const int NoDefaultPort = -1;
         private const int c_InitialTableSize = 25;
-
-        internal static bool DontEnableStrictRFC3986ReservedCharacterSets
-        {
-            // In .NET Framework this would test against an AppContextSwitch. Since this is a potentially
-            // breaking change, we'll leave in the system used to disable it.
-            get
-            {
-                return false;
-            }
-        }
-
-        internal static bool DontKeepUnicodeBidiFormattingCharacters
-        {
-            // In .NET Framework this would test against an AppContextSwitch. Since this is a potentially
-            // breaking change, we'll leave in the system used to disable it.
-            get
-            {
-                return false;
-            }
-        }
 
         private class BuiltInUriParser : UriParser
         {
@@ -287,7 +268,12 @@ namespace System
 
         internal void InternalValidate(Uri thisUri, out UriFormatException? parsingError)
         {
+            thisUri.DebugAssertInCtor();
             InitializeAndValidate(thisUri, out parsingError);
+
+            // InitializeAndValidate should not be called outside of the constructor
+            Debug.Assert(sizeof(Uri.Flags) == sizeof(ulong));
+            Interlocked.Or(ref Unsafe.As<Uri.Flags, ulong>(ref thisUri._flags), (ulong)Uri.Flags.CustomParser_ParseMinimalAlreadyCalled);
         }
 
         internal string? InternalResolve(Uri thisBaseUri, Uri uriLink, out UriFormatException? parsingError)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -102,7 +101,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the buffer content.</exception>
         public ImmutableArray<byte> ToImmutableArray(int start, int byteCount)
         {
-            var array = ToArray(start, byteCount);
+            byte[]? array = ToArray(start, byteCount);
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
         }
 
@@ -203,7 +202,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the <paramref name="buffer"/>.</exception>
         public void WriteBytes(ImmutableArray<byte> buffer, int start, int byteCount)
         {
-            WriteBytes(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(buffer), start, byteCount);
+            WriteBytes(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(buffer)!, start, byteCount);
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
@@ -413,7 +412,7 @@ namespace System.Reflection.Metadata
         /// Null string is represented as a single byte 0xFF.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void WriteSerializedString(string str)
+        public void WriteSerializedString(string? str)
         {
             if (str == null)
             {
@@ -519,7 +518,7 @@ namespace System.Reflection.Metadata
         /// Writes a constant value (see ECMA-335 Partition II section 22.9) at the current position.
         /// </summary>
         /// <exception cref="ArgumentException"><paramref name="value"/> is not of a constant type.</exception>
-        public void WriteConstant(object value)
+        public void WriteConstant(object? value)
         {
             BlobWriterImpl.WriteConstant(ref this, value);
         }

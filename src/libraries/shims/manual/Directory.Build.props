@@ -11,21 +11,15 @@
 
   <PropertyGroup>
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
-    <!-- Use runtime assemblies for the TargetFramework, using build configuration OSGroup -->
-    <RefPath>$(ArtifactsBinDir)runtime/$(TargetFramework)-$(_bc_OSGroup)-$(_bc_ConfigurationGroup)-$(ArchGroup)/</RefPath>
-    <CoreCLROSGroup>$(_bc_OSGroup)</CoreCLROSGroup>
-    <CoreCLRConfiguration>$(_bc_ConfigurationGroup)</CoreCLRConfiguration>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <ReferencePath
-      Include="$(RefPath)System.*.dll;$(RefPath)Microsoft.Win32.*.dll;$(RefPath)netstandard.dll"
-      Exclude="$(RefPath)$(MSBuildProjectName).dll" />
+    <ReferencePath Include="$(NetCoreAppCurrentRuntimePath)System.*.dll;
+                            $(NetCoreAppCurrentRuntimePath)Microsoft.Win32.*.dll;
+                            $(NetCoreAppCurrentRuntimePath)netstandard.dll"
+                   Exclude="$(NetCoreAppCurrentRuntimePath)$(MSBuildProjectName).dll;
+                            $(NetCoreAppCurrentRuntimePath)System.*.Native.dll" />
+    <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
-
-  <Target Name="AddSystemPrivateCoreLibReferencePath" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="ResolveReferences">
-    <ItemGroup>
-      <ReferencePath Include="@(CoreCLRFiles)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" />
-    </ItemGroup>
-  </Target>
 </Project>

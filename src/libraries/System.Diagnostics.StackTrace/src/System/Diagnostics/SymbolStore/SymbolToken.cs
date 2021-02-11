@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics.SymbolStore
 {
@@ -17,7 +18,7 @@ namespace System.Diagnostics.SymbolStore
 
         public override int GetHashCode() => _token;
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is SymbolToken)
                 return Equals((SymbolToken)obj);

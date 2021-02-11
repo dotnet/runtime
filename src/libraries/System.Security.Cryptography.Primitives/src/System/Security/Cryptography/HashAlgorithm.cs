@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,13 +14,15 @@ namespace System.Security.Cryptography
         private bool _disposed;
         protected int HashSizeValue;
         protected internal byte[]? HashValue;
-        protected int State = 0;
+        protected int State;
 
         protected HashAlgorithm() { }
 
+        [Obsolete(Obsoletions.DefaultCryptoAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultCryptoAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static HashAlgorithm Create() =>
             CryptoConfigForwarder.CreateDefaultHashAlgorithm();
 
+        [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static HashAlgorithm? Create(string hashName) =>
             (HashAlgorithm?)CryptoConfigForwarder.CreateFromName(hashName);
 
@@ -185,7 +187,7 @@ namespace System.Security.Cryptography
             {
                 // Although we don't have any resources to dispose at this level,
                 // we need to continue to throw ObjectDisposedExceptions from CalculateHash
-                // for compatibility with the desktop framework.
+                // for compatibility with the .NET Framework.
                 _disposed = true;
             }
             return;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -13,7 +12,7 @@ namespace System.Drawing
         // libgdiplus does not implement GdipGetPenCustomEndCap, so we cache the last-known value here.
         // Note that this value is not necessarily in sync with the true native value of this property,
         // as it could have been set outside of the CustomEndCap property on this type.
-        private CustomLineCap _cachedEndCap;
+        private CustomLineCap? _cachedEndCap;
 
         /// <summary>
         /// Gets or sets a custom cap style to use at the beginning of lines drawn with this <see cref='Pen'/>.
@@ -68,7 +67,7 @@ namespace System.Drawing
                 }
 
                 // Windows GDI+ clones the CustomLineCap before storing it in the Pen.
-                CustomLineCap clone = value == null ? null : (CustomLineCap)value.Clone();
+                CustomLineCap? clone = value == null ? null : (CustomLineCap)value.Clone();
 
                 int status = Gdip.GdipSetPenCustomEndCap(
                     new HandleRef(this, NativePen),

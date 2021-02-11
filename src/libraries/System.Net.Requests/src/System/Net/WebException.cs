@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Net.Http;
@@ -17,31 +16,31 @@ namespace System.Net
         private const WebExceptionStatus DefaultStatus = WebExceptionStatus.UnknownError;
 
         private readonly WebExceptionStatus _status = DefaultStatus;
-        private readonly WebResponse _response = null;
+        private readonly WebResponse? _response;
 
         public WebException()
         {
         }
 
-        public WebException(string message) :
+        public WebException(string? message) :
             base(message)
         {
         }
 
-        public WebException(string message, Exception innerException) :
+        public WebException(string? message, Exception? innerException) :
             this(message, innerException, DefaultStatus, null)
         {
         }
 
-        public WebException(string message, WebExceptionStatus status) :
+        public WebException(string? message, WebExceptionStatus status) :
             this(message, null, status, null)
         {
         }
 
-        public WebException(string message,
-                            Exception innerException,
+        public WebException(string? message,
+                            Exception? innerException,
                             WebExceptionStatus status,
-                            WebResponse response) :
+                            WebResponse? response) :
             base(message, innerException)
         {
             _status = status;
@@ -58,21 +57,9 @@ namespace System.Net
         {
         }
 
-        public WebExceptionStatus Status
-        {
-            get
-            {
-                return _status;
-            }
-        }
+        public WebExceptionStatus Status => _status;
 
-        public WebResponse Response
-        {
-            get
-            {
-                return _response;
-            }
-        }
+        public WebResponse? Response => _response;
 
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
@@ -109,15 +96,15 @@ namespace System.Net
 
         private static WebExceptionStatus GetStatusFromExceptionHelper(HttpRequestException ex)
         {
-            SocketException socketEx = ex.InnerException as SocketException;
+            SocketException? socketException = ex.InnerException as SocketException;
 
-            if (socketEx is null)
+            if (socketException is null)
             {
                 return WebExceptionStatus.UnknownError;
             }
 
             WebExceptionStatus status;
-            switch (socketEx.SocketErrorCode)
+            switch (socketException.SocketErrorCode)
             {
                 case SocketError.NoData:
                 case SocketError.HostNotFound:

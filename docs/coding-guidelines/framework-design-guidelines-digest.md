@@ -227,7 +227,7 @@ generic collections are only supported in the Framework version 2.0 and above.
 
 &#10003; **DO** prefer throwing existing common general purpose exceptions like
 `ArgumentNullException`, `ArgumentOutOfRangeException`,
-`InvalidOperationException` instead of defining custom exceptions. throw the
+`InvalidOperationException` instead of defining custom exceptions. Throw the
 most specific exception possible.
 
 &#10003; **DO** ensure that exception messages are clear and actionable.
@@ -307,5 +307,5 @@ conformance to the [Framework Design Guidelines][FDG] (also see [MSDN](https://m
 
 ## Presentations
 
-* [Overview of the Framework Design Guidelines](http://blogs.msdn.com/kcwalina/archive/2007/03/29/1989896.aspx)
-* [TechEd 2007 Presentation about framework engineering](http://blogs.msdn.com/kcwalina/archive/2008/01/08/FrameworkEngineering.aspx)
+* [Overview of the Framework Design Guidelines](https://docs.microsoft.com/en-us/archive/blogs/kcwalina/online-lecture-on-api-design)
+* [TechEd 2007 Presentation about framework engineering](https://docs.microsoft.com/en-us/archive/blogs/kcwalina/video-recording-of-framework-engineering-architecting-designing-and-developing-reusable-libraries)

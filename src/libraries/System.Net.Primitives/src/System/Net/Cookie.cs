@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net
@@ -36,7 +35,7 @@ namespace System.Net
         internal const string MaxSupportedVersionString = "1";
 
         internal const string SeparatorLiteral = "; ";
-        internal const string EqualsLiteral = "=";
+        internal const char EqualsLiteral = '=';
         internal const string QuotesLiteral = "\"";
         internal const string SpecialAttributeLiteral = "$";
 
@@ -46,9 +45,9 @@ namespace System.Net
         internal static readonly char[] ReservedToValue = new char[] { ';', ',' };
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
-        private Uri m_commentUri = null; // Do not rename (binary serialization)
+        private Uri? m_commentUri; // Do not rename (binary serialization)
         private CookieVariant m_cookieVariant = CookieVariant.Plain; // Do not rename (binary serialization)
-        private bool m_discard = false; // Do not rename (binary serialization)
+        private bool m_discard; // Do not rename (binary serialization)
         private string m_domain = string.Empty; // Do not rename (binary serialization)
         private bool m_domain_implicit = true; // Do not rename (binary serialization)
         private DateTime m_expires = DateTime.MinValue; // Do not rename (binary serialization)
@@ -57,19 +56,20 @@ namespace System.Net
         private bool m_path_implicit = true; // Do not rename (binary serialization)
         private string m_port = string.Empty; // Do not rename (binary serialization)
         private bool m_port_implicit = true; // Do not rename (binary serialization)
-        private int[] m_port_list = null; // Do not rename (binary serialization)
-        private bool m_secure = false; // Do not rename (binary serialization)
+        private int[]? m_port_list; // Do not rename (binary serialization)
+        private bool m_secure; // Do not rename (binary serialization)
         [System.Runtime.Serialization.OptionalField]
         private bool m_httpOnly = false; // Do not rename (binary serialization)
         private DateTime m_timeStamp = DateTime.Now; // Do not rename (binary serialization)
         private string m_value = string.Empty; // Do not rename (binary serialization)
-        private int m_version = 0; // Do not rename (binary serialization)
+        private int m_version; // Do not rename (binary serialization)
 
         private string m_domainKey = string.Empty; // Do not rename (binary serialization)
 
-        internal bool IsQuotedVersion = false;
-
-        internal bool IsQuotedDomain = false;
+#pragma warning disable 0649 // set via reflection by CookieParser: https://github.com/dotnet/runtime/issues/19348
+        internal bool IsQuotedVersion; // Do not rename (binary serialization)
+        internal bool IsQuotedDomain; // Do not rename (binary serialization)
+#pragma warning restore 0649
 
 #if DEBUG
         static Cookie()
@@ -78,42 +78,43 @@ namespace System.Net
         }
 #endif
 
-        // These PreserveDependency attributes are a workaround for https://github.com/dotnet/corefx/issues/13607.
+        // These DynamicDependency attributes are a workaround for https://github.com/dotnet/runtime/issues/19348.
         // HttpListener uses the non-public ToServerString, which isn't used by anything else in this assembly,
         // and which accesses other internals and can't be moved to HttpListener (at least not without incurring
         // functional differences).  However, once we do our initial System.Net.Primitives build and ToServerString
-        // survives to it, we no longer want the PreserveDependencyAttribute to remain around, so that ToServerString
+        // survives to it, we no longer want the DynamicDependencyAttribute to remain around, so that ToServerString
         // can be trimmed out if the relevant functionality from HttpListener isn't used when performing whole-app
         // analysis.  As such, when trimming System.Net.Primitives, we build the assembly with ILLinkKeepDepAttributes=false,
-        // such that when this assembly is compiled, ToServerString will remain but the PreserveDependency attributes
+        // such that when this assembly is compiled, ToServerString will remain but the DynamicDependency attributes
         // will be removed.  This hack will need to be revisited if anything else in the assembly starts using
-        // PreserveDependencyAttribute.
+        // DynamicDependencyAttribute.
         // https://github.com/mono/linker/issues/802
 
-        [PreserveDependency("ToServerString")]
+        [DynamicDependency("ToServerString")]
         public Cookie()
         {
         }
 
-        [PreserveDependency("ToServerString")] // Workaround for https://github.com/dotnet/corefx/issues/13607
-        public Cookie(string name, string value)
+        [DynamicDependency("ToServerString")] // Workaround for https://github.com/dotnet/runtime/issues/19348
+        public Cookie(string name, string? value)
         {
             Name = name;
             Value = value;
         }
 
-        public Cookie(string name, string value, string path)
+        public Cookie(string name, string? value, string? path)
             : this(name, value)
         {
             Path = path;
         }
 
-        public Cookie(string name, string value, string path, string domain)
+        public Cookie(string name, string? value, string? path, string? domain)
             : this(name, value, path)
         {
             Domain = domain;
         }
 
+        [AllowNull]
         public string Comment
         {
             get
@@ -126,7 +127,7 @@ namespace System.Net
             }
         }
 
-        public Uri CommentUri
+        public Uri? CommentUri
         {
             get
             {
@@ -164,6 +165,7 @@ namespace System.Net
             }
         }
 
+        [AllowNull]
         public string Domain
         {
             get
@@ -231,7 +233,7 @@ namespace System.Net
                 }
             }
         }
-        internal bool InternalSetName(string value)
+        internal bool InternalSetName(string? value)
         {
             if (string.IsNullOrEmpty(value) || value[0] == '$' || value.IndexOfAny(ReservedToName) != -1 || value[0] == ' ' || value[value.Length - 1] == ' ')
             {
@@ -242,6 +244,7 @@ namespace System.Net
             return true;
         }
 
+        [AllowNull]
         public string Path
         {
             get
@@ -410,14 +413,6 @@ namespace System.Net
                     // Domain must start with '.' if set explicitly.
                     if (domain[0] != '.')
                     {
-                        if (!(variant == CookieVariant.Rfc2965 || variant == CookieVariant.Plain))
-                        {
-                            if (shouldThrow)
-                            {
-                                throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, m_domain));
-                            }
-                            return false;
-                        }
                         domain = '.' + domain;
                     }
 
@@ -494,7 +489,24 @@ namespace System.Net
                 switch (m_cookieVariant)
                 {
                     case CookieVariant.Plain:
-                        m_path = path;
+                        // As per RFC6265 5.1.4. (https://tools.ietf.org/html/rfc6265#section-5.1.4):
+                        // | 2. If the uri-path is empty or if the first character of the uri-
+                        // |    path is not a %x2F ("/") character, output %x2F ("/") and skip
+                        // |    the remaining steps.
+                        // | 3. If the uri-path contains no more than one %x2F ("/") character,
+                        // |    output %x2F ("/") and skip the remaining step.
+                        // Note: Normally Uri.AbsolutePath contains at least one "/" after parsing,
+                        //       but it's possible construct Uri with an empty path using a custom UriParser
+                        int lastSlash;
+                        if (path.Length == 0 || path[0] != '/' || (lastSlash = path.LastIndexOf('/')) == 0)
+                        {
+                            m_path = "/";
+                            break;
+                        }
+
+                        // | 4. Output the characters of the uri-path from the first character up
+                        // |    to, but not including, the right-most %x2F ("/").
+                        m_path = path.Substring(0, lastSlash);
                         break;
                     case CookieVariant.Rfc2109:
                         m_path = path.Substring(0, path.LastIndexOf('/')); // May be empty
@@ -505,18 +517,6 @@ namespace System.Net
                         // NOTE: this code is not resilient against future versions with different 'Path' semantics.
                         m_path = path.Substring(0, path.LastIndexOf('/') + 1);
                         break;
-                }
-            }
-            else
-            {
-                // Check current path (implicit/explicit) against given URI.
-                if (!path.StartsWith(CookieParser.CheckQuoted(m_path)))
-                {
-                    if (shouldThrow)
-                    {
-                        throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PathAttributeName, m_path));
-                    }
-                    return false;
                 }
             }
 
@@ -530,7 +530,7 @@ namespace System.Net
             {
                 // Port must match against the one from the uri.
                 valid = false;
-                foreach (int p in m_port_list)
+                foreach (int p in m_port_list!)
                 {
                     if (p == port)
                     {
@@ -573,6 +573,7 @@ namespace System.Net
             return true;
         }
 
+        [AllowNull]
         public string Port
         {
             get
@@ -627,7 +628,7 @@ namespace System.Net
         }
 
 
-        internal int[] PortList
+        internal int[]? PortList
         {
             get
             {
@@ -656,6 +657,7 @@ namespace System.Net
             }
         }
 
+        [AllowNull]
         public string Value
         {
             get
@@ -707,9 +709,9 @@ namespace System.Net
             }
         }
 
-        public override bool Equals(object comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
-            Cookie other = comparand as Cookie;
+            Cookie? other = comparand as Cookie;
 
             return other != null
                     && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase)
@@ -787,7 +789,7 @@ namespace System.Net
             }
         }
 
-        internal string ToServerString()
+        internal string? ToServerString()
         {
             string result = Name + EqualsLiteral + Value;
             if (m_comment != null && m_comment.Length > 0)
@@ -830,7 +832,7 @@ namespace System.Net
             {
                 result += SeparatorLiteral + CookieFields.VersionAttributeName + EqualsLiteral + m_version.ToString(NumberFormatInfo.InvariantInfo);
             }
-            return result == EqualsLiteral ? null : result;
+            return result == "=" ? null : result;
         }
     }
 }

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -16,15 +16,15 @@ namespace System.Net.Http.Headers
     {
         private static readonly Func<NameValueHeaderValue> s_defaultNameValueCreator = CreateNameValue;
 
-        private string _name;
-        private string _value;
+        private string _name = null!; // Name always set after default constructor used
+        private string? _value;
 
         public string Name
         {
             get { return _name; }
         }
 
-        public string Value
+        public string? Value
         {
             get { return _value; }
             set
@@ -43,7 +43,7 @@ namespace System.Net.Http.Headers
         {
         }
 
-        public NameValueHeaderValue(string name, string value)
+        public NameValueHeaderValue(string name, string? value)
         {
             CheckNameValueFormat(name, value);
 
@@ -80,9 +80,9 @@ namespace System.Net.Http.Headers
             return nameHashCode;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            NameValueHeaderValue other = obj as NameValueHeaderValue;
+            NameValueHeaderValue? other = obj as NameValueHeaderValue;
 
             if (other == null)
             {
@@ -114,22 +114,21 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public static NameValueHeaderValue Parse(string input)
+        public static NameValueHeaderValue Parse(string? input)
         {
             int index = 0;
             return (NameValueHeaderValue)GenericHeaderParser.SingleValueNameValueParser.ParseValue(
                 input, null, ref index);
         }
 
-        public static bool TryParse(string input, out NameValueHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out NameValueHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.SingleValueNameValueParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.SingleValueNameValueParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (NameValueHeaderValue)output;
+                parsedValue = (NameValueHeaderValue)output!;
                 return true;
             }
             return false;
@@ -165,7 +164,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static void ToString(ObjectCollection<NameValueHeaderValue> values, char separator, bool leadingSeparator,
+        internal static void ToString(ObjectCollection<NameValueHeaderValue>? values, char separator, bool leadingSeparator,
             StringBuilder destination)
         {
             Debug.Assert(destination != null);
@@ -186,7 +185,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static int GetHashCode(ObjectCollection<NameValueHeaderValue> values)
+        internal static int GetHashCode(ObjectCollection<NameValueHeaderValue>? values)
         {
             if ((values == null) || (values.Count == 0))
             {
@@ -201,13 +200,13 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        internal static int GetNameValueLength(string input, int startIndex, out NameValueHeaderValue parsedValue)
+        internal static int GetNameValueLength(string input, int startIndex, out NameValueHeaderValue? parsedValue)
         {
             return GetNameValueLength(input, startIndex, s_defaultNameValueCreator, out parsedValue);
         }
 
         internal static int GetNameValueLength(string input, int startIndex,
-            Func<NameValueHeaderValue> nameValueCreator, out NameValueHeaderValue parsedValue)
+            Func<NameValueHeaderValue> nameValueCreator, out NameValueHeaderValue? parsedValue)
         {
             Debug.Assert(input != null);
             Debug.Assert(startIndex >= 0);
@@ -265,7 +264,7 @@ namespace System.Net.Http.Headers
 
         // Returns the length of a name/value list, separated by 'delimiter'. E.g. "a=b, c=d, e=f" adds 3
         // name/value pairs to 'nameValueCollection' if 'delimiter' equals ','.
-        internal static int GetNameValueListLength(string input, int startIndex, char delimiter,
+        internal static int GetNameValueListLength(string? input, int startIndex, char delimiter,
             ObjectCollection<NameValueHeaderValue> nameValueCollection)
         {
             Debug.Assert(nameValueCollection != null);
@@ -279,7 +278,7 @@ namespace System.Net.Http.Headers
             int current = startIndex + HttpRuleParser.GetWhitespaceLength(input, startIndex);
             while (true)
             {
-                NameValueHeaderValue parameter = null;
+                NameValueHeaderValue? parameter;
                 int nameValueLength = NameValueHeaderValue.GetNameValueLength(input, current,
                     s_defaultNameValueCreator, out parameter);
 
@@ -288,7 +287,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                nameValueCollection.Add(parameter);
+                nameValueCollection.Add(parameter!);
                 current = current + nameValueLength;
                 current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
@@ -304,7 +303,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static NameValueHeaderValue Find(ObjectCollection<NameValueHeaderValue> values, string name)
+        internal static NameValueHeaderValue? Find(ObjectCollection<NameValueHeaderValue>? values, string name)
         {
             Debug.Assert((name != null) && (name.Length > 0));
 
@@ -346,18 +345,34 @@ namespace System.Net.Http.Headers
             return valueLength;
         }
 
-        private static void CheckNameValueFormat(string name, string value)
+        private static void CheckNameValueFormat(string name, string? value)
         {
             HeaderUtilities.CheckValidToken(name, nameof(name));
             CheckValueFormat(value);
         }
 
-        private static void CheckValueFormat(string value)
+        private static void CheckValueFormat(string? value)
         {
-            // Either value is null/empty or a valid token/quoted string
-            if (!(string.IsNullOrEmpty(value) || (GetValueLength(value, 0) == value.Length)))
+            // Either value is null/empty or a valid token/quoted string https://tools.ietf.org/html/rfc7230#section-3.2.6
+            if (string.IsNullOrEmpty(value))
+            {
+                return;
+            }
+
+            // Trailing/leading space are not allowed
+            if (value[0] == ' ' || value[0] == '\t' || value[^1] == ' ' || value[^1] == '\t')
             {
                 throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+            }
+
+            // If it's not a token we check if it's a valid quoted string
+            if (HttpRuleParser.GetTokenLength(value, 0) == 0)
+            {
+                HttpParseResult parseResult = HttpRuleParser.GetQuotedStringLength(value, 0, out int valueLength);
+                if ((parseResult == HttpParseResult.Parsed && valueLength != value.Length) || parseResult != HttpParseResult.Parsed)
+                {
+                    throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                }
             }
         }
 

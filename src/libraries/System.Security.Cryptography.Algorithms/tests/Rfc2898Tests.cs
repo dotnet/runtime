@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.DeriveBytesTests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class Rfc2898Tests
     {
         // 8 bytes is the minimum accepted value, by using it we've already assured that the minimum is acceptable.
@@ -391,6 +392,55 @@ namespace System.Security.Cryptography.DeriveBytesTests
             }
         }
 
+        [Fact]
+        public static void GetBytes_ExceedCounterLimit()
+        {
+            FieldInfo blockField = typeof(Rfc2898DeriveBytes).GetField("_block", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(blockField);
+
+            using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
+            {
+                // Set the internal block counter to be on the last possible block. This should succeed.
+                blockField.SetValue(deriveBytes, uint.MaxValue - 1);
+                deriveBytes.GetBytes(20); // Extract 20 bytes, a full block.
+
+                // Block should now be uint.MaxValue, which will overflow when writing.
+                Assert.Throws<CryptographicException>(() => deriveBytes.GetBytes(1));
+            }
+        }
+
+        [Fact]
+        public static void Ctor_PasswordMutatedAfterCreate()
+        {
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(TestPassword);
+            byte[] derived;
+
+            using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(passwordBytes, s_testSaltB, DefaultIterationCount))
+            {
+                derived = deriveBytes.GetBytes(64);
+            }
+
+            using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(passwordBytes, s_testSaltB, DefaultIterationCount))
+            {
+                passwordBytes[0] ^= 0xFF; // Flipping a byte after the object is constructed should not be observed.
+
+                byte[] actual = deriveBytes.GetBytes(64);
+                Assert.Equal(derived, actual);
+            }
+        }
+
+        [Fact]
+        public static void Ctor_PasswordBytes_NotCleared()
+        {
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(TestPassword);
+            byte[] passwordBytesOriginal = passwordBytes.AsSpan().ToArray();
+
+            using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(passwordBytes, s_testSaltB, DefaultIterationCount))
+            {
+                Assert.Equal(passwordBytesOriginal, passwordBytes);
+            }
+        }
+
         private static void TestKnownValue(string password, byte[] salt, int iterationCount, byte[] expected)
         {
             byte[] output;
@@ -501,6 +551,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
             {
                 CaseName = "SHA256 alternate",
                 HashAlgorithmName = "SHA256",
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
                 Password = "abcdefghij",
                 Salt = ascii.GetBytes("abcdefghij"),
                 IterationCount = 1,
@@ -515,6 +566,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
             {
                 CaseName = "SHA384 alternate",
                 HashAlgorithmName = "SHA384",
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
                 Password = "abcdefghij",
                 Salt = ascii.GetBytes("abcdefghij"),
                 IterationCount = 1,
@@ -529,6 +581,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
             {
                 CaseName = "SHA512 alternate",
                 HashAlgorithmName = "SHA512",
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
                 Password = "abcdefghij",
                 Salt = ascii.GetBytes("abcdefghij"),
                 IterationCount = 1,

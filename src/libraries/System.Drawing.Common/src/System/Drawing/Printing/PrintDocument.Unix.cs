@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
 //
 // System.Drawing.PrintDocument.cs
 //
@@ -40,13 +40,14 @@ using System.ComponentModel;
 
 namespace System.Drawing.Printing
 {
+    [DefaultProperty("DocumentName"), DefaultEvent("PrintPage")]
     public class PrintDocument : System.ComponentModel.Component
     {
         private PageSettings defaultpagesettings;
         private PrinterSettings printersettings;
         private PrintController printcontroller;
         private string documentname;
-        private bool originAtMargins = false; // .NET V1.1 Beta
+        private bool originAtMargins; // .NET V1.1 Beta
 
         public PrintDocument()
         {
@@ -142,7 +143,7 @@ namespace System.Drawing.Printing
             if (printArgs.Cancel)
                 return;
 
-            Graphics g = null;
+            Graphics? g = null;
 
             if (printArgs.GraphicsContext != null)
             {
@@ -155,7 +156,7 @@ namespace System.Drawing.Printing
             do
             {
                 QueryPageSettingsEventArgs queryPageSettingsArgs = new QueryPageSettingsEventArgs(
-                        DefaultPageSettings.Clone() as PageSettings);
+                        (DefaultPageSettings.Clone() as PageSettings)!);
                 OnQueryPageSettings(queryPageSettingsArgs);
 
                 PageSettings pageSettings = queryPageSettingsArgs.PageSettings;
@@ -169,7 +170,7 @@ namespace System.Drawing.Printing
                 // size, orientation, etc. We use a single graphic for now to keep Cairo using a single PDF file.
 
                 printPageArgs.GraphicsContext = printArgs.GraphicsContext;
-                Graphics pg = PrintController.OnStartPage(this, printPageArgs);
+                Graphics? pg = PrintController.OnStartPage(this, printPageArgs);
 
                 // assign Graphics in printPageArgs
                 printPageArgs.SetGraphics(pg);
@@ -221,15 +222,15 @@ namespace System.Drawing.Printing
         }
 
         [SRDescription("Raised when printing begins")]
-        public event PrintEventHandler BeginPrint;
+        public event PrintEventHandler? BeginPrint;
 
         [SRDescription("Raised when printing ends")]
-        public event PrintEventHandler EndPrint;
+        public event PrintEventHandler? EndPrint;
 
         [SRDescription("Raised when printing of a new page begins")]
-        public event PrintPageEventHandler PrintPage;
+        public event PrintPageEventHandler? PrintPage;
 
         [SRDescription("Raised before printing of a new page begins")]
-        public event QueryPageSettingsEventHandler QueryPageSettings;
+        public event QueryPageSettingsEventHandler? QueryPageSettings;
     }
 }

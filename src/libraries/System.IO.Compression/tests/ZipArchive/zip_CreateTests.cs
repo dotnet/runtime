@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -89,7 +88,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
         public static async Task CreateNormal_Unicode_Seekable()
         {
             using (var s = new MemoryStream())
@@ -102,7 +100,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
         public static async Task CreateNormal_Unicode_Unseekable()
         {
             using (var s = new MemoryStream())

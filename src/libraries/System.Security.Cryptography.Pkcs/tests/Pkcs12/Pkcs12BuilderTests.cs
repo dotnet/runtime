@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -403,13 +402,9 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                 Assert.Equal(EmptyHex, encoded.ByteArrayToHex());
             }
 
-            // [ActiveIssue(11046, TestPlatforms.AnyUnix)]
-            if (withMac || RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                X509Certificate2Collection collection = new X509Certificate2Collection();
-                collection.Import(encoded, password, X509KeyStorageFlags.DefaultKeySet);
-                Assert.Equal(0, collection.Count);
-            }
+            X509Certificate2Collection collection = new X509Certificate2Collection();
+            collection.Import(encoded, password, X509KeyStorageFlags.DefaultKeySet);
+            Assert.Equal(0, collection.Count);
         }
 
         [Theory]
@@ -458,13 +453,9 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
                 Assert.Equal(FullyEmptyHex, encoded.ByteArrayToHex());
             }
 
-            // [ActiveIssue(11046, TestPlatforms.AnyUnix)]
-            if (withMac || RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                X509Certificate2Collection collection = new X509Certificate2Collection();
-                collection.Import(encoded, password, X509KeyStorageFlags.DefaultKeySet);
-                Assert.Equal(0, collection.Count);
-            }
+            X509Certificate2Collection collection = new X509Certificate2Collection();
+            collection.Import(encoded, password, X509KeyStorageFlags.DefaultKeySet);
+            Assert.Equal(0, collection.Count);
         }
 
         [Fact]

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Data.SqlTypes.Tests
@@ -27,19 +27,18 @@ namespace System.Data.SqlTypes.Tests
 
         private static readonly string[,] s_specialMatchingString = new string[4, 2] {{"Lorem ipsum dolor sit amet", "\uFF2C\uFF4F\uFF52\uFF45\uFF4D\u3000\uFF49\uFF50\uFF53\uFF55\uFF4D\u3000\uFF44\uFF4F\uFF4C\uFF4F\uFF52\u3000\uFF53\uFF49\uFF54\u3000\uFF41\uFF4D\uFF45\uFF54"},
                                                                          {"\u304B\u305F\u304B\u306A", "\u30AB\u30BF\u30AB\u30CA"},
-                                                                         {"\uFF8C\uFF67\uFF7D\uFF9E\uFF65\uFF77\uFF9E\uFF80\uFF70", "\u30D5\u30A1\u30BA\u30FB\u30AE\u30BF\u30FC"},
-                                                                         {"engine", "eNGine"}};
+                                                                         {"engine", "eNGine"},
+
+                                                                         // Keep the following item at the end of the array as some tests need to exclude it.
+                                                                         {"\uFF8C\uFF67\uFF7D\uFF9E\uFF65\uFF77\uFF9E\uFF80\uFF70", "\u30D5\u30A1\u30BA\u30FB\u30AE\u30BF\u30FC"}
+                                                                         };
 
         private static readonly int s_sampleStringCount = s_sampleString.Length - 1;
 
         private static readonly UnicodeEncoding s_unicodeEncoding = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
 
-        [ActiveIssue(12518, TestPlatforms.AnyUnix)] // TODO: Add this to the theory below when the issue is addressed on Unix
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [InlineData("ja-JP", 0x0411)] // Japanese - Japan
-        public static void SqlStringValidComparisonTest_Windows(string cultureName, int localeId) => SqlStringValidComparisonTest(cultureName, localeId);
-
-        [Theory]
         [InlineData("ar-SA", 0x0401)] // Arabic - Saudi Arabia
         [InlineData("de-DE", 0x0407)] // German - Germany
         [InlineData("hi-IN", 0x0439)] // Hindi - India
@@ -53,6 +52,12 @@ namespace System.Data.SqlTypes.Tests
         [InlineData("en-US", 0x0409)] // English - United States
         public static void SqlStringValidComparisonTest(string cultureName, int localeId)
         {
+            if (PlatformDetection.IsIcuGlobalization && cultureName == "ja-JP" && localeId == 0x0411)
+            {
+                // TODO: Remove this once: https://github.com/dotnet/runtime/issues/18912 is fixed on ICU.
+                throw new SkipTestException($"PlatformDetection.IsIcuGlobalization and cultureName == ja-JP");
+            }
+
             var culture = new CultureInfo(cultureName);
 
             const SqlCompareOptions DefaultCompareOption = SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreKanaType | SqlCompareOptions.IgnoreWidth;
@@ -86,7 +91,16 @@ namespace System.Data.SqlTypes.Tests
             SqlString str1;
             SqlString str2;
 
-            for (int i = 0; i < s_specialMatchingString.GetLength(0); ++i)
+            int count = s_specialMatchingString.GetLength(0);
+
+            // Some of Windows versions have a regression, so ignore last entry in the s_specialMatchingString if this is the case.
+            if (PlatformDetection.IsWindows10Version1903OrGreater &&
+                CultureInfo.InvariantCulture.CompareInfo.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) != 0)
+            {
+                count--;
+            }
+
+            for (int i = 0; i < count; ++i)
             {
                 // SqlString(string) creates instance with the default comparison options
                 str1 = new SqlString(s_specialMatchingString[i, 0], localeID);

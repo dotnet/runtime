@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -28,8 +27,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(n, f());
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ClassData(typeof(CompilationTypes))]
         [OuterLoop("May fail with SO on Debug JIT")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CompileDeepTree_NoStackOverflowFast(bool useInterpreter)
         {
             Expression e = Expression.Constant(0);
@@ -141,7 +141,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void VariableBinder_CatchBlock_Filter1()
         {
-            // See https://github.com/dotnet/corefx/issues/11994 for reported issue
+            // See https://github.com/dotnet/runtime/issues/18676 for reported issue
 
             Verify_VariableBinder_CatchBlock_Filter(
                 Expression.Catch(
@@ -155,7 +155,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void VariableBinder_CatchBlock_Filter2()
         {
-            // See https://github.com/dotnet/corefx/issues/11994 for reported issue
+            // See https://github.com/dotnet/runtime/issues/18676 for reported issue
 
             Verify_VariableBinder_CatchBlock_Filter(
                 Expression.Catch(
@@ -167,6 +167,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Simple()
         {
             Expression<Func<int>> f = () => Math.Abs(42);
@@ -183,6 +184,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Exceptions()
         {
             ParameterExpression x = Expression.Parameter(typeof(int), "x");
@@ -243,6 +245,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Closure1()
         {
             Expression<Func<Func<int>>> f = () => () => 42;
@@ -277,6 +280,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Closure2()
         {
             Expression<Func<int, Func<int>>> f = x => () => x;
@@ -334,6 +338,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Closure3()
         {
             // Using an unchecked addition to ensure that an add instruction is emitted (and not add.ovf)

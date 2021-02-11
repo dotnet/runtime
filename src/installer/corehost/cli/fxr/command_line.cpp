@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "command_line.h"
 #include <error_codes.h>
@@ -9,6 +8,7 @@
 #include "sdk_info.h"
 #include <trace.h>
 #include <utils.h>
+#include "bundle/info.h"
 
 namespace
 {
@@ -144,7 +144,7 @@ namespace
         if (mode == host_mode_t::apphost)
         {
             app_candidate = host_info.app_path;
-            doesAppExist = pal::realpath(&app_candidate);
+            doesAppExist = bundle::info_t::is_single_file_bundle() || pal::realpath(&app_candidate);
         }
         else
         {
@@ -289,21 +289,21 @@ void command_line::print_muxer_info(const pal::string_t &dotnet_root)
     trace::println(_X("  Commit:  %s"), commit.substr(0, 10).c_str());
 
     trace::println();
-    trace::println(_X(".NET Core SDKs installed:"));
+    trace::println(_X(".NET SDKs installed:"));
     if (!sdk_info::print_all_sdks(dotnet_root, _X("  ")))
     {
         trace::println(_X("  No SDKs were found."));
     }
 
     trace::println();
-    trace::println(_X(".NET Core runtimes installed:"));
+    trace::println(_X(".NET runtimes installed:"));
     if (!framework_info::print_all_frameworks(dotnet_root, _X("  ")))
     {
         trace::println(_X("  No runtimes were found."));
     }
 
     trace::println();
-    trace::println(_X("To install additional .NET Core runtimes or SDKs:"));
+    trace::println(_X("To install additional .NET runtimes or SDKs:"));
     trace::println(_X("  %s"), DOTNET_CORE_DOWNLOAD_URL);
 }
 
@@ -335,6 +335,6 @@ void command_line::print_muxer_usage(bool is_sdk_present)
         trace::println();
         trace::println(_X("Common Options:"));
         trace::println(_X("  -h|--help                           Displays this help."));
-        trace::println(_X("  --info                              Display .NET Core information."));
+        trace::println(_X("  --info                              Display .NET information."));
     }
 }

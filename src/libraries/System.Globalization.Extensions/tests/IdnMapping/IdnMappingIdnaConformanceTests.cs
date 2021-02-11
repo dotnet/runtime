@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using Xunit;
@@ -28,7 +27,10 @@ namespace System.Globalization.Tests
             {
                 try
                 {
-                    var map = new IdnMapping();
+                    var map = new IdnMapping()
+                    {
+                        UseStd3AsciiRules = true
+                    };
                     var asciiResult = map.GetAscii(entry.Source);
                     Assert.Equal(entry.ASCIIResult.Value, asciiResult, StringComparer.OrdinalIgnoreCase);
                 }
@@ -36,7 +38,7 @@ namespace System.Globalization.Tests
                 {
                     string actualCodePoints = GetCodePoints(entry.Source);
                     string expectedCodePoints = GetCodePoints(entry.ASCIIResult.Value);
-                    throw new Exception($"Expected IdnMapping.GetAscii(\"{actualCodePoints}\" to return \"{expectedCodePoints}\".");
+                    throw new Exception($"Expected IdnMapping.GetAscii(\"{actualCodePoints}\" to return \"{expectedCodePoints}\". Line Number: {entry.LineNumber}");
                 }
             });
         }
@@ -66,7 +68,7 @@ namespace System.Globalization.Tests
                     {
                         string actualCodePoints = GetCodePoints(entry.Source);
                         string expectedCodePoints = GetCodePoints(entry.UnicodeResult.Value);
-                        throw new Exception($"Expected IdnMapping.GetUnicode(\"{actualCodePoints}\" to return \"{expectedCodePoints}\".");
+                        throw new Exception($"Expected IdnMapping.GetUnicode(\"{actualCodePoints}\" to return \"{expectedCodePoints}\". Line Number: {entry.LineNumber}");
                     }
                 }
             });
@@ -80,20 +82,23 @@ namespace System.Globalization.Tests
         /// from the 6.0\IdnaTest.txt.  To find them, search for "GETASCII DOES NOT FAIL ON WINDOWS 8.1"
         /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         /// </remarks>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/21332
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/runtime/issues/22409
         public void GetAscii_Invalid()
         {
             Assert.All(Factory.GetDataset().Where(entry => !entry.ASCIIResult.Success), entry =>
             {
                 try
                 {
-                    var map = new IdnMapping();
+                    var map = new IdnMapping()
+                    {
+                        UseStd3AsciiRules = true
+                    };
                     AssertExtensions.Throws<ArgumentException>("unicode", () => map.GetAscii(entry.Source));
                 }
                 catch (ThrowsException)
                 {
                     string codePoints = GetCodePoints(entry.Source);
-                    throw new Exception($"Expected IdnMapping.GetAscii(\"{codePoints}\") to throw an ArgumentException.");
+                    throw new Exception($"Expected IdnMapping.GetAscii(\"{codePoints}\") to throw an ArgumentException. Line Number: {entry.LineNumber}");
                 }
             });
         }
@@ -113,13 +118,16 @@ namespace System.Globalization.Tests
             {
                 try
                 {
-                    var map = new IdnMapping();
+                    var map = new IdnMapping()
+                    {
+                        UseStd3AsciiRules = true
+                    };
                     AssertExtensions.Throws<ArgumentException>("ascii", () => map.GetUnicode(entry.Source));
                 }
                 catch (ThrowsException)
                 {
                     string codePoints = GetCodePoints(entry.Source);
-                    throw new Exception($"Expected IdnMapping.GetUnicode(\"{codePoints}\") to throw an ArgumentException.");
+                    throw new Exception($"Expected IdnMapping.GetUnicode(\"{codePoints}\") to throw an ArgumentException. Line Number: {entry.LineNumber}");
                 }
             });
         }
@@ -129,7 +137,7 @@ namespace System.Globalization.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public static void Equals(bool allowUnassigned, bool useStd3AsciiRules)
+        public static void EqualsTest(bool allowUnassigned, bool useStd3AsciiRules)
         {
             // first check for equals
             IdnMapping original = new IdnMapping() { AllowUnassigned = allowUnassigned, UseStd3AsciiRules = useStd3AsciiRules };

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -39,6 +38,7 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // named semaphores aren't supported on Unix
+        [ActiveIssue("https://github.com/mono/mono/issues/15161", TestRuntimes.Mono)]
         [Fact]
         public void Ctor_NamesArentSupported_Unix()
         {
@@ -138,7 +138,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AnonymousProducerConsumer()
         {
             using (Semaphore s = new Semaphore(0, int.MaxValue))
@@ -189,6 +189,7 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // named semaphores aren't supported on Unix
+        [ActiveIssue("https://github.com/mono/mono/issues/15160", TestRuntimes.Mono)]
         [Fact]
         public void OpenExisting_NotSupported_Unix()
         {
@@ -268,7 +269,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
         public void PingPong()
         {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -9,7 +8,7 @@ namespace System
     /// <summary>Provides an object wrapper that can transition between strong and weak references to the object.</summary>
     internal sealed class StrongToWeakReference<T> : WeakReference where T : class
     {
-        private T _strongRef;
+        private T? _strongRef;
 
         /// <summary>Initializes the instance with a strong reference to the specified object.</summary>
         /// <param name="obj">The object to wrap.</param>
@@ -30,9 +29,9 @@ namespace System
         }
 
         /// <summary>Gets the wrapped object.</summary>
-        public new T Target => _strongRef ?? WeakTarget;
+        public new T? Target => _strongRef ?? WeakTarget;
 
         /// <summary>Gets the wrapped object via its weak reference.</summary>
-        private T WeakTarget => base.Target as T;
+        private T? WeakTarget => base.Target as T;
     }
 }

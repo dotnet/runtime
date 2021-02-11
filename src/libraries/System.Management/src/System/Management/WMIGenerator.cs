@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.CSharp;
 using Microsoft.VisualBasic;
@@ -51,21 +50,21 @@ namespace System.Management
         private string OriginalNamespace = string.Empty;
         private string OriginalClassName = string.Empty;
         private readonly string OriginalPath = string.Empty;
-        private bool bSingletonClass = false;
+        private bool bSingletonClass;
         private bool bUnsignedSupported = true;
         private string NETNamespace = string.Empty;
         private string arrConvFuncName = string.Empty;
         private string enumType = string.Empty;
         private const int DMTF_DATETIME_STR_LENGTH = 25;
-        private bool bDateConversionFunctionsAdded = false;
-        private bool bTimeSpanConversionFunctionsAdded = false;
+        private bool bDateConversionFunctionsAdded;
+        private bool bTimeSpanConversionFunctionsAdded;
 
 
 
 
         private ManagementClass classobj;
         private CodeDomProvider cp;
-        private TextWriter tw = null;
+        private TextWriter tw;
         private readonly string genFileName = string.Empty;
         private CodeTypeDeclaration cc;
         private CodeTypeDeclaration ccc;
@@ -102,7 +101,7 @@ namespace System.Management
         private SortedList PublicNamesUsed = new SortedList(StringComparer.OrdinalIgnoreCase);
         private SortedList PrivateNamesUsed = new SortedList(StringComparer.OrdinalIgnoreCase);
 
-        private bool bHasEmbeddedProperties = false;
+        private bool bHasEmbeddedProperties;
 
 
         /// <summary>
@@ -825,7 +824,7 @@ namespace System.Management
 
             if (strTemp.Length > 0)
             {
-                string strFirstChar = strTemp.Substring(0, 1).ToUpper(CultureInfo.InvariantCulture);
+                string strFirstChar = strTemp.Substring(0, 1).ToUpperInvariant();
                 strTemp = strFirstChar + strTemp.Substring(1, strTemp.Length - 1);
             }
 
@@ -846,7 +845,7 @@ namespace System.Management
             {
                 strNs = OriginalNamespace;
                 strNs = strNs.Replace('\\', '.');
-                strNs = strNs.ToUpper(CultureInfo.InvariantCulture);
+                strNs = strNs.ToUpperInvariant();
             }
             else
             {
@@ -870,7 +869,7 @@ namespace System.Management
                 strClass = OriginalClassName;
             }
 
-            // Check if the name of the class starts with a charachter. If not add "C" to the begining of the name
+            // Check if the name of the class starts with a charachter. If not add "C" to the beginning of the name
             if (char.IsLetter(strClass[0]) == false)
             {
                 strClass = "C" + strClass;
@@ -1141,7 +1140,7 @@ namespace System.Management
                     strPropName[j - i] = strPropTemp[j];
                 }
 
-                cmp.Name = (new string(strPropName)).ToUpper(CultureInfo.InvariantCulture);
+                cmp.Name = (new string(strPropName)).ToUpperInvariant();
                 cmp.Attributes = MemberAttributes.Public | MemberAttributes.Final;
                 cmp.Type = ConvertCIMType(prop.Type, prop.IsArray);
 
@@ -3037,7 +3036,7 @@ namespace System.Management
                                 {
                                     CodeTypeReference dateType = cmm.ReturnType;
                                     // Check if it is Time interval and if so change the type to Time Interval
-                                    bool isRetTypeTimeInterval = GetDateTimeType(prop, ref dateType);
+                                    GetDateTimeType(prop, ref dateType);
                                     cmm.ReturnType = dateType;
                                 }
                                 retRefType = cmm.ReturnType;
@@ -4727,7 +4726,7 @@ namespace System.Management
             bool bAdd = true;
             if (str.Length == 0)
             {
-                return string.Copy("");
+                return string.Empty;
             }
 
             char[] arrString = str.ToCharArray();
@@ -4837,7 +4836,7 @@ namespace System.Management
 
                     case CodeLanguage.JScript:
                         strProvider = "JScript.NET.";
-                        bSucceeded = false; // JScriptCodeProvider does not exist on CoreFx
+                        bSucceeded = false; // JScriptCodeProvider does not exist on .NET Core
                         break;
 
                     case CodeLanguage.CSharp:
@@ -5006,7 +5005,7 @@ namespace System.Management
             string strTemp = "0x";
             int ret = 0;
 
-            if (bitMap.StartsWith(strTemp, StringComparison.Ordinal) || bitMap.StartsWith(strTemp.ToUpper(CultureInfo.InvariantCulture), StringComparison.Ordinal))
+            if (bitMap.StartsWith(strTemp, StringComparison.Ordinal) || bitMap.StartsWith(strTemp.ToUpperInvariant(), StringComparison.Ordinal))
             {
                 strTemp = string.Empty;
                 char[] arrString = bitMap.ToCharArray();
@@ -5298,7 +5297,7 @@ namespace System.Management
         */
 
         /// <summary>
-        /// Adds comments at the begining of the class defination
+        /// Adds comments at the beginning of the class defination
         /// </summary>
         private void AddClassComments(CodeTypeDeclaration cc)
         {
@@ -5927,28 +5926,28 @@ namespace System.Management
         /// Internal function used to create code to convert DateTime or ManagementPath to String
         /// convert a expression. Used in adding code for Property Set for DateTime and Reference properties
         /// </summary>
-        private CodeExpression ConvertPropertyToString(string strType, CodeExpression beginingExpression)
+        private CodeExpression ConvertPropertyToString(string strType, CodeExpression beginningExpression)
         {
             switch (strType)
             {
                 case "System.DateTime":
 
                     CodeMethodInvokeExpression cmie1 = new CodeMethodInvokeExpression();
-                    cmie1.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.DateTime"), beginingExpression));
+                    cmie1.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.DateTime"), beginningExpression));
                     cmie1.Method.MethodName = PrivateNamesUsed["ToDMTFDateTimeMethod"].ToString();
                     return cmie1;
 
                 case "System.TimeSpan":
 
                     CodeMethodInvokeExpression cmie2 = new CodeMethodInvokeExpression();
-                    cmie2.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.TimeSpan"), beginingExpression));
+                    cmie2.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.TimeSpan"), beginningExpression));
                     cmie2.Method.MethodName = PrivateNamesUsed["ToDMTFTimeIntervalMethod"].ToString();
                     return cmie2;
 
                 case "System.Management.ManagementPath":
                     return new CodePropertyReferenceExpression(new CodeCastExpression(
                         new CodeTypeReference(PublicNamesUsed["PathClass"].ToString()),
-                        beginingExpression), PublicNamesUsed["PathProperty"].ToString());
+                        beginningExpression), PublicNamesUsed["PathProperty"].ToString());
 
 
             }
@@ -6117,7 +6116,6 @@ namespace System.Management
         private bool GetDateTimeType(PropertyData prop, ref CodeTypeReference codeType)
         {
             bool isTimeInterval = false;
-            codeType = null;
             if (prop.IsArray)
             {
                 codeType = new CodeTypeReference("System.DateTime", 1);
@@ -7339,11 +7337,6 @@ namespace System.Management
             cmie2.Method = new CodeMethodReferenceExpression(cmie, "PadLeft");
             cmie2.Parameters.Add(new CodePrimitiveExpression(2));
             cmie2.Parameters.Add(new CodePrimitiveExpression('0'));
-
-            CodeMethodInvokeExpression cmie3 = GenerateConcatStrings(cmie, cmie2);
-            /*                new CodeMethodInvokeExpression();
-                        cmie3.Method = new CodeMethodReferenceExpression(cmie,"Concat");
-                        cmie3.Parameters.Add(cmie2); */
 
             cmmdt.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(dmtfDateTime),
                 GenerateConcatStrings(new CodeVariableReferenceExpression(dmtfDateTime),

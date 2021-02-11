@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 
@@ -23,9 +23,9 @@ namespace System.Security.Cryptography.Pkcs
         private partial class ECDsaCmsSignature : CmsSignature
         {
             private readonly HashAlgorithmName _expectedDigest;
-            private readonly string _signatureAlgorithm;
+            private readonly string? _signatureAlgorithm;
 
-            internal ECDsaCmsSignature(string signatureAlgorithm, HashAlgorithmName expectedDigest)
+            internal ECDsaCmsSignature(string? signatureAlgorithm, HashAlgorithmName expectedDigest)
             {
                 _signatureAlgorithm = signatureAlgorithm;
                 _expectedDigest = expectedDigest;
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Pkcs
                             _signatureAlgorithm));
                 }
 
-                ECDsa key = certificate.GetECDsaPublicKey();
+                ECDsa? key = certificate.GetECDsaPublicKey();
 
                 if (key == null)
                 {
@@ -105,13 +105,13 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm certKey,
+                AsymmetricAlgorithm? certKey,
                 bool silent,
-                out Oid signatureAlgorithm,
-                out byte[] signatureValue)
+                [NotNullWhen(true)] out string? signatureAlgorithm,
+                [NotNullWhen(true)] out byte[]? signatureValue)
             {
                 // If there's no private key, fall back to the public key for a "no private key" exception.
-                ECDsa key = certKey as ECDsa ??
+                ECDsa? key = certKey as ECDsa ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<ECDsa>(certificate, silent) ??
                     certificate.GetECDsaPublicKey();
 
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                string oidValue =
+                string? oidValue =
                     hashAlgorithmName == HashAlgorithmName.SHA1 ? Oids.ECDsaWithSha1 :
                     hashAlgorithmName == HashAlgorithmName.SHA256 ? Oids.ECDsaWithSha256 :
                     hashAlgorithmName == HashAlgorithmName.SHA384 ? Oids.ECDsaWithSha384 :
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                signatureAlgorithm = new Oid(oidValue, oidValue);
+                signatureAlgorithm = oidValue;
 
 #if NETCOREAPP || NETSTANDARD2_1
                 int bufSize;
@@ -156,7 +156,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         var signedHash = new ReadOnlySpan<byte>(rented, 0, bytesWritten);
 
-                        if (key != null && !certificate.GetECDsaPublicKey().VerifyHash(dataHash, signedHash))
+                        if (key != null && !certificate.GetECDsaPublicKey()!.VerifyHash(dataHash, signedHash))
                         {
                             // key did not match certificate
                             signatureValue = null;

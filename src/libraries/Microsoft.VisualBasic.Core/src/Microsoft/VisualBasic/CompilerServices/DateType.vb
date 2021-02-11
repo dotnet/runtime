@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Globalization
@@ -25,7 +24,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return ParsedDate
             Else
                 'Truncate the string to 32 characters for the message
-                Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromStringTo, Left(Value, 32), "Date"))
+                Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromStringTo, Left(Value, 32), "Date"))
             End If
         End Function
 
@@ -68,7 +67,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             End If
 
-            Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(Value), "Date"))
+            Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(Value), "Date"))
         End Function
 
         Friend Shared Function TryParse(ByVal Value As String, ByRef Result As System.DateTime) As Boolean

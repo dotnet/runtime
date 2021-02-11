@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Composition.Primitives
 {
@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///         </note>
         ///     </para>
         /// </remarks>
-        public virtual IDictionary<string, object> Metadata
+        public virtual IDictionary<string, object?> Metadata
         {
             get { return MetadataServices.EmptyMetadata; }
         }
@@ -102,13 +102,13 @@ namespace System.ComponentModel.Composition.Primitives
         /// </remarks>
         public abstract ComposablePart CreatePart();
 
-        internal virtual bool TryGetExports(ImportDefinition definition, out Tuple<ComposablePartDefinition, ExportDefinition> singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> multipleMatches)
+        internal virtual bool TryGetExports(ImportDefinition definition, out Tuple<ComposablePartDefinition, ExportDefinition>? singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleMatches)
         {
             singleMatch = null;
             multipleMatches = null;
 
-            List<Tuple<ComposablePartDefinition, ExportDefinition>> multipleExports = null;
-            Tuple<ComposablePartDefinition, ExportDefinition> singleExport = null;
+            List<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleExports = null;
+            Tuple<ComposablePartDefinition, ExportDefinition>? singleExport = null;
             bool matchesFound = false;
             foreach (var export in ExportDefinitions)
             {
@@ -147,7 +147,7 @@ namespace System.ComponentModel.Composition.Primitives
             return true;
         }
 
-        internal virtual ComposablePartDefinition GetGenericPartDefinition()
+        internal virtual ComposablePartDefinition? GetGenericPartDefinition()
         {
             return null;
         }

@@ -1,10 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,18 +23,27 @@ namespace System.Text.Json
         /// <param name="cancellationToken">
         /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
         /// </param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="utf8Json"/>is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        public static ValueTask<TValue> DeserializeAsync<TValue>(
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// </exception>
+        public static ValueTask<TValue?> DeserializeAsync<[DynamicallyAccessedMembers(MembersAccessedOnRead)] TValue>(
             Stream utf8Json,
-            JsonSerializerOptions options = null,
+            JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
+            {
                 throw new ArgumentNullException(nameof(utf8Json));
+            }
 
             return ReadAsync<TValue>(utf8Json, typeof(TValue), options, cancellationToken);
         }
@@ -50,17 +60,21 @@ namespace System.Text.Json
         /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
         /// </param>
         /// <exception cref="System.ArgumentNullException">
-        /// Thrown if <paramref name="utf8Json"/> or <paramref name="returnType"/> is null.
+        /// <paramref name="utf8Json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        public static ValueTask<object> DeserializeAsync(
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="returnType"/> or its serializable members.
+        /// </exception>
+        public static ValueTask<object?> DeserializeAsync(
             Stream utf8Json,
-            Type returnType,
-            JsonSerializerOptions options = null,
+            [DynamicallyAccessedMembers(MembersAccessedOnRead)] Type returnType,
+            JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
@@ -69,32 +83,34 @@ namespace System.Text.Json
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));
 
-            return ReadAsync<object>(utf8Json, returnType, options, cancellationToken);
+            return ReadAsync<object?>(utf8Json, returnType, options, cancellationToken);
         }
 
-        private static async ValueTask<TValue> ReadAsync<TValue>(
+        private static async ValueTask<TValue?> ReadAsync<TValue>(
             Stream utf8Json,
             Type returnType,
-            JsonSerializerOptions options = null,
-            CancellationToken cancellationToken = default)
+            JsonSerializerOptions? options,
+            CancellationToken cancellationToken)
         {
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
-            ReadStack readStack = default;
-            readStack.Current.Initialize(returnType, options);
+            ReadStack state = default;
+            state.Initialize(returnType, options, supportContinuation: true);
+
+            JsonConverter converter = state.Current.JsonPropertyInfo!.ConverterBase;
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
 
-            // todo: switch to ArrayBuffer implementation to handle and simplify the allocs?
+            // todo: https://github.com/dotnet/runtime/issues/32355
             int utf8BomLength = JsonConstants.Utf8Bom.Length;
             byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Max(options.DefaultBufferSize, utf8BomLength));
             int bytesInBuffer = 0;
             long totalBytesRead = 0;
             int clearMax = 0;
-            bool firstIteration = true;
+            bool isFirstIteration = true;
 
             try
             {
@@ -135,9 +151,10 @@ namespace System.Text.Json
                     }
 
                     int start = 0;
-                    if (firstIteration)
+                    if (isFirstIteration)
                     {
-                        firstIteration = false;
+                        isFirstIteration = false;
+
                         // Handle the UTF-8 BOM if present
                         Debug.Assert(buffer.Length >= JsonConstants.Utf8Bom.Length);
                         if (buffer.AsSpan().StartsWith(JsonConstants.Utf8Bom))
@@ -148,21 +165,25 @@ namespace System.Text.Json
                     }
 
                     // Process the data available
-                    ReadCore(
+                    TValue value = ReadCore<TValue>(
                         ref readerState,
                         isFinalBlock,
                         new ReadOnlySpan<byte>(buffer, start, bytesInBuffer),
                         options,
-                        ref readStack);
+                        ref state,
+                        converter);
 
-                    Debug.Assert(readStack.BytesConsumed <= bytesInBuffer);
-                    int bytesConsumed = checked((int)readStack.BytesConsumed);
+                    Debug.Assert(state.BytesConsumed <= bytesInBuffer);
+                    int bytesConsumed = checked((int)state.BytesConsumed);
 
                     bytesInBuffer -= bytesConsumed;
 
                     if (isFinalBlock)
                     {
-                        break;
+                        // The reader should have thrown if we have remaining bytes.
+                        Debug.Assert(bytesInBuffer == 0);
+
+                        return value;
                     }
 
                     // Check if we need to shift or expand the buffer because there wasn't enough data to complete deserialization.
@@ -193,19 +214,15 @@ namespace System.Text.Json
                 new Span<byte>(buffer, 0, clearMax).Clear();
                 ArrayPool<byte>.Shared.Return(buffer);
             }
-
-            // The reader should have thrown if we have remaining bytes.
-            Debug.Assert(bytesInBuffer == 0);
-
-            return (TValue)readStack.Current.ReturnValue;
         }
 
-        private static void ReadCore(
+        private static TValue ReadCore<TValue>(
             ref JsonReaderState readerState,
             bool isFinalBlock,
             ReadOnlySpan<byte> buffer,
             JsonSerializerOptions options,
-            ref ReadStack readStack)
+            ref ReadStack state,
+            JsonConverter converterBase)
         {
             var reader = new Utf8JsonReader(buffer, isFinalBlock, readerState);
 
@@ -213,15 +230,13 @@ namespace System.Text.Json
             // to enable read ahead behaviors to ensure we have complete json objects and arrays
             // ({}, []) when needed. (Notably to successfully parse JsonElement via JsonDocument
             // to assign to object and JsonElement properties in the constructed .NET object.)
-            readStack.ReadAhead = !isFinalBlock;
-            readStack.BytesConsumed = 0;
+            state.ReadAhead = !isFinalBlock;
+            state.BytesConsumed = 0;
 
-            ReadCore(
-                options,
-                ref reader,
-                ref readStack);
+            TValue? value = ReadCore<TValue>(converterBase, ref reader, options, ref state);
 
             readerState = reader.CurrentState;
+            return value!;
         }
     }
 }

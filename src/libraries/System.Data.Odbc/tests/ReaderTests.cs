@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Data.Odbc.Tests
 {
     public class ReaderTests : IntegrationTestBase
     {
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [ConditionalFact]
         public void EmptyReader()
         {
             command.CommandText =
@@ -42,7 +42,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [ConditionalFact]
         public void GetValues()
         {
             command.CommandText =
@@ -75,7 +75,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [ConditionalFact]
         public void GetValueFailsWithBigIntWithBackwardsCompatibility()
         {
             command.CommandText =
@@ -110,7 +110,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [ConditionalFact]
         public void GetDataTypeName()
         {
             command.CommandText =
@@ -136,7 +136,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [ConditionalFact]
         public void GetFieldTypeIsNotSupportedInSqlite()
         {
             command.CommandText =
@@ -167,7 +167,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [ConditionalFact]
         public void IsDbNullIsNotSupportedInSqlite()
         {
             command.CommandText =
@@ -198,7 +198,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [ConditionalFact]
         public void InvalidRowIndex()
         {
             command.CommandText =
@@ -230,7 +230,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [ConditionalFact]
         public void InvalidRowName()
         {
             command.CommandText =

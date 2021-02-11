@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Xml.Schema;
@@ -26,7 +25,6 @@ namespace System.Xml.Tests
         public void CallAtRootLevel_Without_With_PartialValidationSet(bool partialValidation)
         {
             XmlSchemaValidator val;
-            XmlSchemaInfo info = new XmlSchemaInfo();
             XmlSchemaSet schemas = CreateSchemaSet("", "<?xml version=\"1.0\"?>\n" +
                                                        "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n" +
                                                        "    <xs:attribute name=\"attr1\" />\n" +

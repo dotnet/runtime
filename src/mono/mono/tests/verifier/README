@@ -1,0 +1,22 @@
+Run make clean to cleanup the generated files.
+Run make test to run the tests.
+
+TODO:
+
+III,1.7.1 - Modified binary assembly.
+III,1.7.2 - Modified binary assembly.
+III,1.7.3 - Modified binary assembly.
+III,1.7.4 - Modified binary assembly.
+III,1.7.6 - Modified binary assembly.
+III,1.8.1.4 - Test non-store operations on unititalised this (not needed for LSL)
+III,1.8.1.5 - Test delegate construction enforced (not needed for LSL)
+III,3.15 - Binary tests for branching to addresses that are not first bytes of opcodes.
+III,3.17 - Binary tests as with III,3.15.
+III,3.27 - Tests for conversions other than to i4 and r8 (not needed for LSL)
+III,3.38 - Tests for other argument loading opcodes (not needed for LSL)
+III,3.39 - Tests for other argument address loading opcodes (not needed for LSL)
+III,3.43 - Tests for other local loading opcodes (not needed for LSL), test local initialisation (binary).
+III,3.44 - Tests for other local address loading opcodes (not needed for LSL), test local initialisation (binary).
+III,3.61 - Verification type matching? starg tests (non-short) (not needed for LSL)
+III,3.63 - As 3.61, verification type matching? stloc (non-short) (not needed for LSL)
+I,8.7 - Assignment Compatibility store tests (verification type compatibility) for store opcodes.

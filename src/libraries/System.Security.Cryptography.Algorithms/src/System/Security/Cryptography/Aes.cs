@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     public abstract class Aes : SymmetricAlgorithm
     {
         protected Aes()
@@ -24,9 +26,10 @@ namespace System.Security.Cryptography
             return new AesImplementation();
         }
 
-        public static new Aes Create(string algorithmName)
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
+        public static new Aes? Create(string algorithmName)
         {
-            return (Aes)CryptoConfig.CreateFromName(algorithmName);
+            return (Aes?)CryptoConfig.CreateFromName(algorithmName);
         }
 
         private static readonly KeySizes[] s_legalBlockSizes = { new KeySizes(128, 128, 0) };

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 
@@ -10,7 +9,7 @@ namespace System.Xml
     public abstract class XmlNodeList : IEnumerable, IDisposable
     {
         // Retrieves a node at the given index.
-        public abstract XmlNode Item(int index);
+        public abstract XmlNode? Item(int index);
 
         // Gets the number of nodes in this XmlNodeList.
         public abstract int Count { get; }
@@ -21,7 +20,7 @@ namespace System.Xml
 
         // Retrieves a node at the given index.
         [System.Runtime.CompilerServices.IndexerName("ItemOf")]
-        public virtual XmlNode this[int i] { get { return Item(i); } }
+        public virtual XmlNode? this[int i] { get { return Item(i); } }
 
         void IDisposable.Dispose()
         {

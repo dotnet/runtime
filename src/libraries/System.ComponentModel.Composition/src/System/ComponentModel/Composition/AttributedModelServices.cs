@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.AttributedModel;
@@ -17,8 +16,7 @@ namespace System.ComponentModel.Composition
 {
     public static class AttributedModelServices
     {
-        [SuppressMessage("Microsoft.Design", "CA1004")]
-        public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object> metadata)
+        public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object?> metadata)
         {
             Requires.NotNull(metadata, nameof(metadata));
 
@@ -54,19 +52,19 @@ namespace System.ComponentModel.Composition
             return AttributedModelDiscovery.CreatePart(reflectionComposablePartDefinition, attributedPart);
         }
 
-        public static ComposablePartDefinition CreatePartDefinition(Type type, ICompositionElement origin)
+        public static ComposablePartDefinition CreatePartDefinition(Type type, ICompositionElement? origin)
         {
             Requires.NotNull(type, nameof(type));
 
             return AttributedModelServices.CreatePartDefinition(type, origin, false);
         }
 
-        public static ComposablePartDefinition CreatePartDefinition(Type type, ICompositionElement origin, bool ensureIsDiscoverable)
+        public static ComposablePartDefinition CreatePartDefinition(Type type, ICompositionElement? origin, bool ensureIsDiscoverable)
         {
             Requires.NotNull(type, nameof(type));
             if (ensureIsDiscoverable)
             {
-                return AttributedModelDiscovery.CreatePartDefinitionIfDiscoverable(type, origin);
+                return AttributedModelDiscovery.CreatePartDefinitionIfDiscoverable(type, origin)!;
             }
             else
             {
@@ -119,7 +117,7 @@ namespace System.ComponentModel.Composition
 
             string typeIdentity = AttributedModelServices.GetTypeIdentity(typeof(T));
 
-            IDictionary<string, object> metadata = new Dictionary<string, object>();
+            IDictionary<string, object?> metadata = new Dictionary<string, object?>();
             metadata.Add(CompositionConstants.ExportTypeIdentityMetadataName, typeIdentity);
 
             return batch.AddExport(new Export(contractName, metadata, () => exportedValue));
@@ -163,6 +161,7 @@ namespace System.ComponentModel.Composition
         ///     Satisfies the imports of the specified attributed object exactly once and they will not
         ///     ever be recomposed.
         /// </summary>
+        /// <param name="compositionService">The composition service to use.</param>
         /// <param name="attributedPart">
         ///     The attributed object to set the imports.
         /// </param>
@@ -192,9 +191,11 @@ namespace System.ComponentModel.Composition
         ///     Satisfies the imports of the specified attributed object exactly once and they will not
         ///     ever be recomposed.
         /// </summary>
+        /// <param name="compositionService">The composition service to use.</param>
         /// <param name="attributedPart">
         ///     The attributed object to set the imports.
         /// </param>
+        /// <param name="reflectionContext">The reflection context for the part.</param>
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="compositionService"/> or <paramref name="attributedPart"/>  or <paramref name="reflectionContext"/> is <see langword="null"/>.
         /// </exception>

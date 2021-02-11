@@ -2094,11 +2094,11 @@ private:
 
         const SizeType len1 = GetStringLength();
         const SizeType len2 = rhs.GetStringLength();
-        if(len1 != len2) { return false; }
+        if (len1 != len2) { return false; }
 
         const Ch* const str1 = GetString();
         const Ch* const str2 = rhs.GetString();
-        if(str1 == str2) { return true; } // fast path for constant string
+        if (str1 == str2) { return true; } // fast path for constant string
 
         return (std::memcmp(str1, str2, sizeof(Ch) * len1) == 0);
     }

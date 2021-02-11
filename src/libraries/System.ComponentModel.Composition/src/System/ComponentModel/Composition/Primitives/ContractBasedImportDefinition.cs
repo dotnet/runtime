@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
@@ -23,10 +22,10 @@ namespace System.ComponentModel.Composition.Primitives
         // Unlike contract name, both metadata and required metadata has a sensible default; set it to an empty
         // enumerable, so that derived definitions only need to override ContractName by default.
         private readonly IEnumerable<KeyValuePair<string, Type>> _requiredMetadata = Enumerable.Empty<KeyValuePair<string, Type>>();
-        private Expression<Func<ExportDefinition, bool>> _constraint;
+        private Expression<Func<ExportDefinition, bool>>? _constraint;
         private readonly CreationPolicy _requiredCreationPolicy = CreationPolicy.Any;
-        private readonly string _requiredTypeIdentity = null;
-        private bool _isRequiredMetadataValidated = false;
+        private readonly string? _requiredTypeIdentity;
+        private bool _isRequiredMetadataValidated;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ContractBasedImportDefinition"/> class.
@@ -99,8 +98,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <paramref name="cardinality"/> is not one of the <see cref="ImportCardinality"/>
         ///     values.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ContractBasedImportDefinition(string contractName, string requiredTypeIdentity, IEnumerable<KeyValuePair<string, Type>> requiredMetadata,
+        public ContractBasedImportDefinition(string contractName, string? requiredTypeIdentity, IEnumerable<KeyValuePair<string, Type>>? requiredMetadata,
             ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, CreationPolicy requiredCreationPolicy)
             : this(contractName, requiredTypeIdentity, requiredMetadata, cardinality, isRecomposable, isPrerequisite, requiredCreationPolicy, MetadataServices.EmptyMetadata)
         {
@@ -146,6 +144,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     the exports used to satisfy this import. If no specific <see cref="CreationPolicy"/> is needed
         ///     pass the default <see cref="CreationPolicy.Any"/>.
         /// </param>
+        /// <param name="metadata">The metadata associated with this import.</param>
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="contractName"/> is <see langword="null"/>.
         /// </exception>
@@ -161,9 +160,8 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <paramref name="cardinality"/> is not one of the <see cref="ImportCardinality"/>
         ///     values.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ContractBasedImportDefinition(string contractName, string requiredTypeIdentity, IEnumerable<KeyValuePair<string, Type>> requiredMetadata,
-            ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, CreationPolicy requiredCreationPolicy, IDictionary<string, object> metadata)
+        public ContractBasedImportDefinition(string contractName, string? requiredTypeIdentity, IEnumerable<KeyValuePair<string, Type>>? requiredMetadata,
+            ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, CreationPolicy requiredCreationPolicy, IDictionary<string, object?> metadata)
             : base(contractName, cardinality, isRecomposable, isPrerequisite, metadata)
         {
             Requires.NotNullOrEmpty(contractName, nameof(contractName));
@@ -186,7 +184,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     on the type that this import expects. If the value is <see langword="null"/> then this import
         ///     doesn't expect a particular type.
         /// </value>
-        public virtual string RequiredTypeIdentity
+        public virtual string? RequiredTypeIdentity
         {
             get { return _requiredTypeIdentity; }
         }
@@ -207,7 +205,6 @@ namespace System.ComponentModel.Composition.Primitives
         ///         return an empty <see cref="IEnumerable{T}"/> instead.
         ///     </note>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public virtual IEnumerable<KeyValuePair<string, Type>> RequiredMetadata
         {
             get
@@ -321,7 +318,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             if (!string.IsNullOrEmpty(RequiredTypeIdentity))
             {
-                string exportTypeIdentity = definition.Metadata.GetValue<string>(CompositionConstants.ExportTypeIdentityMetadataName);
+                string? exportTypeIdentity = definition.Metadata.GetValue<string>(CompositionConstants.ExportTypeIdentityMetadataName);
 
                 if (!StringComparers.ContractName.Equals(RequiredTypeIdentity, exportTypeIdentity))
                 {
@@ -334,8 +331,7 @@ namespace System.ComponentModel.Composition.Primitives
                 string metadataKey = metadataItem.Key;
                 Type metadataValueType = metadataItem.Value;
 
-                object metadataValue = null;
-                if (!definition.Metadata.TryGetValue(metadataKey, out metadataValue))
+                if (!definition.Metadata.TryGetValue(metadataKey, out object? metadataValue))
                 {
                     return false;
                 }
@@ -382,7 +378,7 @@ namespace System.ComponentModel.Composition.Primitives
                 sb.Append(string.Format("\n\tRequiredCreationPolicy\t{0}", RequiredCreationPolicy));
             }
 
-            if (_requiredMetadata.Count() > 0)
+            if (_requiredMetadata.Any())
             {
                 sb.Append("\n\tRequiredMetadata");
                 foreach (KeyValuePair<string, Type> metadataItem in _requiredMetadata)

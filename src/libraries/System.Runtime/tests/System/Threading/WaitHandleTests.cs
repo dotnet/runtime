@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Microsoft.Win32.SafeHandles;
@@ -78,14 +77,40 @@ namespace System.Threading.Tests
             Assert.Equal(0, WaitHandle.WaitAny(wh));
         }
 
+        static ManualResetEvent[] CreateManualResetEvents(int length)
+        {
+            var handles = new ManualResetEvent[length];
+            for (int i = 0; i < handles.Length; i++)
+                handles[i] = new ManualResetEvent(true);
+            return handles;
+        }
+
+        [Fact]
+        public static void WaitAny_MaxHandles()
+        {
+            Assert.Equal(0, WaitHandle.WaitAny(CreateManualResetEvents(64)));
+            Assert.Throws<NotSupportedException>(() => WaitHandle.WaitAny(CreateManualResetEvents(65)));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34366", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void WaitAny_MaxHandles_STA()
+        {
+            Thread t = new Thread(() =>
+            {
+                Assert.Equal(0, WaitHandle.WaitAny(CreateManualResetEvents(63)));
+                Assert.Throws<NotSupportedException>(() => WaitHandle.WaitAny(CreateManualResetEvents(64)));
+            });
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
+            t.Join();
+        }
+
         [Fact]
         public static void WaitAll()
         {
-            var handles = new ManualResetEvent[] {
-            new ManualResetEvent(true),
-            new ManualResetEvent(true),
-            new ManualResetEvent(true)
-        };
+            ManualResetEvent[] handles = CreateManualResetEvents(3);
 
             Assert.True(WaitHandle.WaitAll(handles));
             Assert.True(WaitHandle.WaitAll(handles, 1));
@@ -132,6 +157,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34366", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
         public static void WaitAll_SameNames()
         {
@@ -298,6 +324,7 @@ namespace System.Threading.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34366", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(SignalAndWait_MemberData))]
         public static void SignalAndWait(
             WaitHandle toSignal,

@@ -1,67 +1,32 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace System.Text.Json
 {
     internal abstract class MemberAccessor
     {
-        public abstract JsonClassInfo.ConstructorDelegate CreateConstructor(Type classType);
+        public abstract JsonClassInfo.ConstructorDelegate? CreateConstructor(Type classType);
 
-        public abstract Action<TProperty> CreateAddDelegate<TProperty>(MethodInfo addMethod, object target);
+        public abstract JsonClassInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor);
 
-        public abstract ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType);
+        public abstract JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
+            CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo constructor);
 
-        public abstract ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType);
+        public abstract Action<TCollection, object?> CreateAddMethodDelegate<TCollection>();
 
-        protected MethodInfo ImmutableCollectionCreateRangeMethod(Type constructingType, Type elementType)
-        {
-            MethodInfo createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
+        public abstract Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>();
 
-            if (createRangeMethod == null)
-            {
-                return null;
-            }
+        public abstract Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>();
 
-            return createRangeMethod.MakeGenericMethod(elementType);
-        }
+        public abstract Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo);
 
-        protected MethodInfo ImmutableDictionaryCreateRangeMethod(Type constructingType, Type elementType)
-        {
-            MethodInfo createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
+        public abstract Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo);
 
-            if (createRangeMethod == null)
-            {
-                return null;
-            }
+        public abstract Func<object, TProperty> CreateFieldGetter<TProperty>(FieldInfo fieldInfo);
 
-            return createRangeMethod.MakeGenericMethod(typeof(string), elementType);
-        }
-
-        private MethodInfo FindImmutableCreateRangeMethod(Type constructingType)
-        {
-            MethodInfo[] constructingTypeMethods = constructingType.GetMethods();
-
-            foreach (MethodInfo method in constructingTypeMethods)
-            {
-                if (method.Name == "CreateRange" && method.GetParameters().Length == 1)
-                {
-                    return method;
-                }
-            }
-
-            // This shouldn't happen because constructingType should be an immutable type with
-            // a CreateRange method. `null` being returned here will cause a JsonException to be
-            // thrown when the desired CreateRange delegate is about to be invoked.
-            Debug.Fail("Could not create the appropriate CreateRange method.");
-            return null;
-        }
-
-        public abstract Func<object, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo);
-
-        public abstract Action<object, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo);
+        public abstract Action<object, TProperty> CreateFieldSetter<TProperty>(FieldInfo fieldInfo);
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
@@ -16,7 +15,7 @@ namespace System.ComponentModel.Composition.Hosting
             private readonly ComposablePartDefinition _partDefinition;
             private readonly ExportDefinition _exportDefinition;
             private readonly ExportDefinition _factoryExportDefinition;
-            private FactoryExportPartDefinition _factoryExportPartDefinition;
+            private FactoryExportPartDefinition? _factoryExportPartDefinition;
 
             public FactoryExport(ComposablePartDefinition partDefinition, ExportDefinition exportDefinition)
             {
@@ -113,7 +112,7 @@ namespace System.ComponentModel.Composition.Hosting
                     get { return _definition.ImportDefinitions; }
                 }
 
-                public override object GetExportedValue(ExportDefinition definition)
+                public override object? GetExportedValue(ExportDefinition definition)
                 {
                     if (definition != _definition.FactoryExportDefinition)
                     {
@@ -130,9 +129,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 public void Dispose()
                 {
-                    IDisposable disposable = _export as IDisposable;
-
-                    if (disposable != null)
+                    if (_export is IDisposable disposable)
                     {
                         disposable.Dispose();
                     }

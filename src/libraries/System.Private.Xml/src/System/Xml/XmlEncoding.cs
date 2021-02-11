@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Text;
 using System.Diagnostics;
 
@@ -29,7 +29,7 @@ namespace System.Xml
             int byteCount = count + ((_lastByte >= 0) ? 1 : 0);
             if (flush && (byteCount % CharSize != 0))
             {
-                throw new ArgumentException(SR.Format(SR.Enc_InvalidByteInEncoding, -1), (string)null);
+                throw new ArgumentException(SR.Format(SR.Enc_InvalidByteInEncoding, -1), (string?)null);
             }
             return byteCount / CharSize;
         }
@@ -85,6 +85,7 @@ namespace System.Xml
             {
                 Buffer.BlockCopy(bytes, byteIndex, chars, charIndex * CharSize, byteCount);
             }
+
             return charCount;
         }
 
@@ -149,6 +150,7 @@ namespace System.Xml
             {
                 Buffer.BlockCopy(bytes, byteIndex, chars, charIndex * CharSize, (int)(byteCount & ~0x1));
             }
+
             charsUsed += byteCount / CharSize;
             bytesUsed += byteCount;
 
@@ -209,7 +211,7 @@ namespace System.Xml
 
     internal class Ucs4Encoding : Encoding
     {
-        internal Ucs4Decoder ucs4Decoder;
+        internal Ucs4Decoder ucs4Decoder = null!; // assigned in the derived classes
 
         public override string WebName
         {
@@ -236,7 +238,7 @@ namespace System.Xml
 
         public override byte[] GetBytes(string s)
         {
-            return null; //ucs4Decoder.GetByteCount(chars, index, count);
+            return null!; //ucs4Decoder.GetByteCount(chars, index, count);
         }
         public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
@@ -277,7 +279,7 @@ namespace System.Xml
 
         public override Encoder GetEncoder()
         {
-            return null;
+            return null!;
         }
 
         internal static Encoding UCS4_Littleendian
@@ -315,8 +317,6 @@ namespace System.Xml
 
     internal sealed class Ucs4Encoding1234 : Ucs4Encoding
     {
-        private static readonly byte[] s_preamble = new byte[4] { 0x00, 0x00, 0xfe, 0xff };
-
         public Ucs4Encoding1234()
         {
             ucs4Decoder = new Ucs4Decoder1234();
@@ -335,13 +335,11 @@ namespace System.Xml
             return new byte[4] { 0x00, 0x00, 0xfe, 0xff };
         }
 
-        public override ReadOnlySpan<byte> Preamble => s_preamble;
+        public override ReadOnlySpan<byte> Preamble => new byte[4] { 0x00, 0x00, 0xfe, 0xff }; // rely on C# compiler optimization to eliminate allocation
     }
 
     internal sealed class Ucs4Encoding4321 : Ucs4Encoding
     {
-        private static readonly byte[] s_preamble = new byte[4] { 0xff, 0xfe, 0x00, 0x00 };
-
         public Ucs4Encoding4321()
         {
             ucs4Decoder = new Ucs4Decoder4321();
@@ -360,13 +358,11 @@ namespace System.Xml
             return new byte[4] { 0xff, 0xfe, 0x00, 0x00 };
         }
 
-        public override ReadOnlySpan<byte> Preamble => s_preamble;
+        public override ReadOnlySpan<byte> Preamble => new byte[4] { 0xff, 0xfe, 0x00, 0x00 };
     }
 
     internal sealed class Ucs4Encoding2143 : Ucs4Encoding
     {
-        private static readonly byte[] s_preamble = new byte[4] { 0x00, 0x00, 0xff, 0xfe };
-
         public Ucs4Encoding2143()
         {
             ucs4Decoder = new Ucs4Decoder2143();
@@ -379,18 +375,17 @@ namespace System.Xml
                 return "ucs-4 (order 2143)";
             }
         }
+
         public override byte[] GetPreamble()
         {
             return new byte[4] { 0x00, 0x00, 0xff, 0xfe };
         }
 
-        public override ReadOnlySpan<byte> Preamble => s_preamble;
+        public override ReadOnlySpan<byte> Preamble => new byte[4] { 0x00, 0x00, 0xff, 0xfe };
     }
 
     internal sealed class Ucs4Encoding3412 : Ucs4Encoding
     {
-        private static readonly byte[] s_preamble = new byte[4] { 0xfe, 0xff, 0x00, 0x00 };
-
         public Ucs4Encoding3412()
         {
             ucs4Decoder = new Ucs4Decoder3412();
@@ -409,13 +404,13 @@ namespace System.Xml
             return new byte[4] { 0xfe, 0xff, 0x00, 0x00 };
         }
 
-        public override ReadOnlySpan<byte> Preamble => s_preamble;
+        public override ReadOnlySpan<byte> Preamble => new byte[4] { 0xfe, 0xff, 0x00, 0x00 };
     }
 
     internal abstract class Ucs4Decoder : Decoder
     {
         internal byte[] lastBytes = new byte[4];
-        internal int lastBytesCount = 0;
+        internal int lastBytesCount;
 
         public override int GetCharCount(byte[] bytes, int index, int count)
         {
@@ -437,11 +432,13 @@ namespace System.Xml
                     byteIndex++;
                     byteCount--;
                 }
+
                 // still not enough bytes -> return
                 if (lastBytesCount < 4)
                 {
                     return 0;
                 }
+
                 // decode 1 character from the byte cache
                 i = GetFullChars(lastBytes, 0, 4, chars, charIndex);
                 Debug.Assert(i == 1);
@@ -464,8 +461,10 @@ namespace System.Xml
                 {
                     lastBytes[j] = bytes[byteIndex + byteCount - bytesLeft + j];
                 }
+
                 lastBytesCount = bytesLeft;
             }
+
             return i;
         }
 
@@ -486,6 +485,7 @@ namespace System.Xml
                     byteCount--;
                     bytesUsed++;
                 }
+
                 // still not enough bytes -> return
                 if (lbc < 4)
                 {
@@ -493,6 +493,7 @@ namespace System.Xml
                     completed = true;
                     return;
                 }
+
                 // decode 1 character from the byte cache
                 i = GetFullChars(lastBytes, 0, 4, chars, charIndex);
 
@@ -517,6 +518,7 @@ namespace System.Xml
             {
                 completed = true;
             }
+
             bytesUsed += byteCount;
 
             // decode block of byte quadruplets
@@ -530,6 +532,7 @@ namespace System.Xml
                 {
                     lastBytes[j] = bytes[byteIndex + byteCount - bytesLeft + j];
                 }
+
                 lastBytesCount = bytesLeft;
             }
         }
@@ -552,10 +555,10 @@ namespace System.Xml
 
             for (i = byteIndex, j = charIndex; i + 3 < byteCount;)
             {
-                code = (uint)((bytes[i + 3] << 24) | (bytes[i + 2] << 16) | (bytes[i + 1] << 8) | bytes[i]);
+                code = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(i));
                 if (code > 0x10FFFF)
                 {
-                    throw new ArgumentException(SR.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
+                    throw new ArgumentException(SR.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string?)null);
                 }
                 else if (code > 0xFFFF)
                 {
@@ -573,12 +576,14 @@ namespace System.Xml
                         chars[j] = (char)code;
                     }
                 }
+
                 j++;
                 i += 4;
             }
+
             return j - charIndex;
         }
-    };
+    }
 
     internal class Ucs4Decoder1234 : Ucs4Decoder
     {
@@ -591,10 +596,10 @@ namespace System.Xml
 
             for (i = byteIndex, j = charIndex; i + 3 < byteCount;)
             {
-                code = (uint)((bytes[i] << 24) | (bytes[i + 1] << 16) | (bytes[i + 2] << 8) | bytes[i + 3]);
+                code = BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(i));
                 if (code > 0x10FFFF)
                 {
-                    throw new ArgumentException(SR.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
+                    throw new ArgumentException(SR.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string?)null);
                 }
                 else if (code > 0xFFFF)
                 {
@@ -612,9 +617,11 @@ namespace System.Xml
                         chars[j] = (char)code;
                     }
                 }
+
                 j++;
                 i += 4;
             }
+
             return j - charIndex;
         }
     }
@@ -634,7 +641,7 @@ namespace System.Xml
                 code = (uint)((bytes[i + 1] << 24) | (bytes[i] << 16) | (bytes[i + 3] << 8) | bytes[i + 2]);
                 if (code > 0x10FFFF)
                 {
-                    throw new ArgumentException(SR.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
+                    throw new ArgumentException(SR.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string?)null);
                 }
                 else if (code > 0xFFFF)
                 {
@@ -652,9 +659,11 @@ namespace System.Xml
                         chars[j] = (char)code;
                     }
                 }
+
                 j++;
                 i += 4;
             }
+
             return j - charIndex;
         }
     }
@@ -674,7 +683,7 @@ namespace System.Xml
                 code = (uint)((bytes[i + 2] << 24) | (bytes[i + 3] << 16) | (bytes[i] << 8) | bytes[i + 1]);
                 if (code > 0x10FFFF)
                 {
-                    throw new ArgumentException(SR.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string)null);
+                    throw new ArgumentException(SR.Format(SR.Enc_InvalidByteInEncoding, new object[1] { i }), (string?)null);
                 }
                 else if (code > 0xFFFF)
                 {
@@ -692,9 +701,11 @@ namespace System.Xml
                         chars[j] = (char)code;
                     }
                 }
+
                 j++;
                 i += 4;
             }
+
             return j - charIndex;
         }
     }

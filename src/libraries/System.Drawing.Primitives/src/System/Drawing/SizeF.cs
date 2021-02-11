@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Drawing
 {
@@ -138,7 +138,7 @@ namespace System.Drawing
         /// Tests to see whether the specified object is a <see cref='System.Drawing.SizeF'/>  with the same dimensions
         /// as this <see cref='System.Drawing.SizeF'/>.
         /// </summary>
-        public override readonly bool Equals(object? obj) => obj is SizeF && Equals((SizeF)obj);
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is SizeF && Equals((SizeF)obj);
 
         public readonly bool Equals(SizeF other) => this == other;
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -16,7 +15,7 @@ namespace System.Net.Sockets
         private static readonly bool s_supportsKeepAliveViaSocketOption = SupportsKeepAliveViaSocketOption();
         private static readonly ConditionalWeakTable<SafeSocketHandle, IOControlKeepAlive> s_socketKeepAliveTable = new ConditionalWeakTable<SafeSocketHandle, IOControlKeepAlive>();
         [ThreadStatic]
-        private static byte[] s_keepAliveValuesBuffer;
+        private static byte[]? s_keepAliveValuesBuffer;
 
         private uint _timeMs = WindowsDefaultTimeMs;
         private uint _intervalMs = WindowsDefaultIntervalMs;
@@ -37,7 +36,7 @@ namespace System.Net.Sockets
 
         public static int Get(SafeSocketHandle handle, SocketOptionName optionName)
         {
-            if (s_socketKeepAliveTable.TryGetValue(handle, out IOControlKeepAlive ioControlKeepAlive))
+            if (s_socketKeepAliveTable.TryGetValue(handle, out IOControlKeepAlive? ioControlKeepAlive))
             {
                 return optionName == SocketOptionName.TcpKeepAliveTime ?
                     MillisecondsToSeconds(ioControlKeepAlive._timeMs) :
@@ -75,6 +74,7 @@ namespace System.Net.Sockets
             byte[] buffer = s_keepAliveValuesBuffer ?? (s_keepAliveValuesBuffer = new byte[3 * sizeof(uint)]);
             ioControlKeepAlive.Fill(buffer);
             int realOptionLength = 0;
+            Debug.Assert(OperatingSystem.IsWindows());
             return SocketPal.WindowsIoctl(handle, unchecked((int)IOControlCode.KeepAliveValues), buffer, null, out realOptionLength);
         }
 

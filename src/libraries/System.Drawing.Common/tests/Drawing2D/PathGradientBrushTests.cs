@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Copyright (C) 2005-2006 Novell, Inc (http://www.novell.com)
 //
@@ -36,8 +36,7 @@ namespace System.Drawing.Drawing2D.Tests
         private readonly PointF[] _defaultFloatPoints = new PointF[2] { new PointF(1, 2), new PointF(20, 30) };
         private readonly RectangleF _defaultRectangle = new RectangleF(1, 2, 19, 28);
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Ctor_Points_ReturnsExpected()
         {
             using (PathGradientBrush bi = new PathGradientBrush(_defaultIntPoints))
@@ -59,8 +58,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { WrapMode.TileFlipY };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [MemberData(nameof(WrapMode_TestData))]
         public void Ctor_PointsWrapMode_ReturnsExpected(WrapMode wrapMode)
         {
@@ -102,8 +100,7 @@ namespace System.Drawing.Drawing2D.Tests
                 new PathGradientBrush(_defaultFloatPoints, (WrapMode)int.MaxValue));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Ctor_Path_ReturnsExpected()
         {
             using (GraphicsPath path = new GraphicsPath(_defaultFloatPoints, new byte[] { 0, 1 }))
@@ -131,8 +128,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Clone_ReturnsExpected()
         {
             using (GraphicsPath path = new GraphicsPath(_defaultFloatPoints, new byte[] { 0, 1 }))
@@ -175,8 +171,7 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.CenterColor = Color.Blue);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void SurroundColors_ReturnsExpected()
         {
             Color[] expectedColors = new Color[2] { Color.FromArgb(255, 0, 0, 255), Color.FromArgb(255, 255, 0, 0) };
@@ -280,8 +275,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new float[1] { 1 }, new float[3] { 0, 3, 1 } };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [MemberData(nameof(Blend_FactorsPositions_TestData))]
         public void Blend_ReturnsExpected(float[] factors, float[] positions)
         {
@@ -356,7 +350,7 @@ namespace System.Drawing.Drawing2D.Tests
 
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => brush.Blend = invalidBlend);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", null, () => brush.Blend = invalidBlend);
             }
         }
 
@@ -372,11 +366,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Blend_NullBlendProperites_ThrowsArgumentNullException()
+        public void Blend_NullBlendProperites_ThrowsArgumentException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentNullException>("source", () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentNullException>("value", "source", () =>
                     brush.Blend = new Blend() { Factors = new float[0], Positions = null });
             }
         }
@@ -603,8 +597,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void InterpolationColors_CannotChange()
         {
             Color[] colors = new Color[2] { Color.FromArgb(255, 0, 0, 255), Color.FromArgb(255, 255, 0, 0) };
@@ -658,11 +651,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void InterpolationColors_NullPoints_ArgumentNullException()
+        public void InterpolationColors_NullPoints_ArgumentException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentNullException>("source", () =>
+                AssertExtensions.Throws<ArgumentException, ArgumentNullException>("value", "source", () =>
                     brush.InterpolationColors = new ColorBlend() { Colors = new Color[1], Positions = null });
             }
         }
@@ -687,11 +680,11 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void InterpolationColors_PointsLengthGreaterThenColorsLength_ArgumentException()
+        public void InterpolationColors_PointsLengthGreaterThenColorsLength_ArgumentOutOfRangeException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentException>(null, () =>
+                AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("value", null, () =>
                     brush.InterpolationColors = new ColorBlend() { Colors = new Color[1], Positions = new float[2] });
             }
         }

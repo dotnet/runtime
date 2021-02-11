@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -165,12 +164,10 @@ namespace System.Text.Encodings.Web
             if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
 
             numberOfCharactersWritten = 0;
+
             uint asUtf8 = unchecked((uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)unicodeScalar));
             do
             {
-                char highNibble, lowNibble;
-                HexUtil.ByteToHexDigits(unchecked((byte)asUtf8), out highNibble, out lowNibble);
-
                 if (numberOfCharactersWritten + 3 > bufferLength)
                 {
                     numberOfCharactersWritten = 0;
@@ -178,8 +175,8 @@ namespace System.Text.Encodings.Web
                 }
 
                 *buffer = '%'; buffer++;
-                *buffer = highNibble; buffer++;
-                *buffer = lowNibble; buffer++;
+                *buffer = HexConverter.ToCharUpper((int)asUtf8 >> 4); buffer++;
+                *buffer = HexConverter.ToCharUpper((int)asUtf8); buffer++;
 
                 numberOfCharactersWritten += 3;
             }

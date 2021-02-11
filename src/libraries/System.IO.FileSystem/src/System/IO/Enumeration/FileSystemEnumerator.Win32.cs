@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -42,6 +41,10 @@ namespace System.IO.Enumeration
                 case Interop.StatusOptions.STATUS_SUCCESS:
                     Debug.Assert(statusBlock.Information.ToInt64() != 0);
                     return true;
+                // FILE_NOT_FOUND can occur when there are NO files in a volume root (usually there are hidden system files).
+                case Interop.StatusOptions.STATUS_FILE_NOT_FOUND:
+                    DirectoryFinished();
+                    return false;
                 default:
                     int error = (int)Interop.NtDll.RtlNtStatusToDosError(status);
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Primitives;
 using System.Globalization;
@@ -13,8 +12,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly ExportDefinition _definition;
         private readonly ReflectionMember _member;
-        private object _cachedValue = null;
-        private volatile bool _isValueCached = false;
+        private object? _cachedValue;
+        private volatile bool _isValueCached;
 
         public ExportingMember(ExportDefinition definition, ReflectionMember member)
         {
@@ -42,13 +41,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _definition; }
         }
 
-        public object GetExportedValue(object instance, object @lock)
+        public object? GetExportedValue(object? instance, object @lock)
         {
             EnsureReadable();
 
             if (!_isValueCached)
             {
-                object exportedValue;
+                object? exportedValue;
                 try
                 {
                     exportedValue = _member.GetValue(instance);

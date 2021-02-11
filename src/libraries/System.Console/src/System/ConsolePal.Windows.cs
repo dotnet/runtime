@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -12,7 +11,18 @@ namespace System
     // Provides Windows-based support for System.Console.
     internal static class ConsolePal
     {
+        /// <summary>Hardcoded Encoding.Unicode.CodePage to avoid accessing Encoding.Unicode and forcing it into existence unnecessarily.</summary>
+        private const int UnicodeCodePage = 1200;
+
+#if DEBUG
+        static ConsolePal() => Debug.Assert(UnicodeCodePage == Encoding.Unicode.CodePage);
+#endif
+
         private static IntPtr InvalidHandleValue => new IntPtr(-1);
+
+        /// <summary>Ensures that the console has been initialized for use.</summary>
+        internal static void EnsureConsoleInitialized()
+        { }
 
         private static bool IsWindows7()
         {
@@ -26,19 +36,19 @@ namespace System
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE,
                 FileAccess.Read,
-                useFileAPIs: Console.InputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsInputRedirected);
+                useFileAPIs: Console.InputEncoding.CodePage != UnicodeCodePage || Console.IsInputRedirected);
 
         public static Stream OpenStandardOutput() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE,
                 FileAccess.Write,
-                useFileAPIs: Console.OutputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsOutputRedirected);
+                useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage || Console.IsOutputRedirected);
 
         public static Stream OpenStandardError() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE,
                 FileAccess.Write,
-                useFileAPIs: Console.OutputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsErrorRedirected);
+                useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage || Console.IsErrorRedirected);
 
         private static IntPtr InputHandle =>
             Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
@@ -96,7 +106,7 @@ namespace System
 
         public static void SetConsoleInputEncoding(Encoding enc)
         {
-            if (enc.CodePage != Encoding.Unicode.CodePage)
+            if (enc.CodePage != UnicodeCodePage)
             {
                 if (!Interop.Kernel32.SetConsoleCP(enc.CodePage))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
@@ -110,7 +120,7 @@ namespace System
 
         public static void SetConsoleOutputEncoding(Encoding enc)
         {
-            if (enc.CodePage != Encoding.Unicode.CodePage)
+            if (enc.CodePage != UnicodeCodePage)
             {
                 if (!Interop.Kernel32.SetConsoleOutputCP(enc.CodePage))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
@@ -414,7 +424,8 @@ namespace System
                     throw new IOException(SR.IO_NoConsole);
 
                 int mode = 0;
-                Interop.Kernel32.GetConsoleMode(handle, out mode); // failure ignored in full framework
+                if (!Interop.Kernel32.GetConsoleMode(handle, out mode))
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
 
                 if (value)
                 {
@@ -565,36 +576,23 @@ namespace System
             }
         }
 
-        public static int CursorLeft
+        public static (int Left, int Top) GetCursorPosition()
         {
-            get
-            {
-                Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
-                return csbi.dwCursorPosition.X;
-            }
-        }
-
-        public static int CursorTop
-        {
-            get
-            {
-                Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
-                return csbi.dwCursorPosition.Y;
-            }
+            Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+            return (csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y);
         }
 
         public static unsafe string Title
         {
             get
             {
-                Span<char> initialBuffer = stackalloc char[256];
-                ValueStringBuilder builder = new ValueStringBuilder(initialBuffer);
+                ValueStringBuilder builder = new ValueStringBuilder(stackalloc char[256]);
 
                 while (true)
                 {
                     uint result = Interop.Errors.ERROR_SUCCESS;
 
-                    fixed (char* c = &builder.GetPinnableReference())
+                    fixed (char* c = builder)
                     {
                         result = Interop.Kernel32.GetConsoleTitleW(c, (uint)builder.Capacity);
                     }
@@ -938,16 +936,16 @@ namespace System
             Interop.Kernel32.SMALL_RECT srWindow = csbi.srWindow;
 
             // Check for arithmetic underflows & overflows.
-            int newRight = left + srWindow.Right - srWindow.Left + 1;
-            if (left < 0 || newRight > csbi.dwSize.X || newRight < 0)
+            int newRight = left + srWindow.Right - srWindow.Left;
+            if (left < 0 || newRight > csbi.dwSize.X - 1 || newRight < left)
                 throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleWindowPos);
-            int newBottom = top + srWindow.Bottom - srWindow.Top + 1;
-            if (top < 0 || newBottom > csbi.dwSize.Y || newBottom < 0)
+            int newBottom = top + srWindow.Bottom - srWindow.Top;
+            if (top < 0 || newBottom > csbi.dwSize.Y - 1 || newBottom < top)
                 throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleWindowPos);
 
             // Preserve the size, but move the position.
-            srWindow.Bottom -= (short)(srWindow.Top - top);
-            srWindow.Right -= (short)(srWindow.Left - left);
+            srWindow.Bottom = (short)newBottom;
+            srWindow.Right = (short)newRight;
             srWindow.Left = (short)left;
             srWindow.Top = (short)top;
 
@@ -1120,24 +1118,24 @@ namespace System
                 base.Dispose(disposing);
             }
 
-            public override int Read(byte[] buffer, int offset, int count)
+            public override int Read(Span<byte> buffer)
             {
-                ValidateRead(buffer, offset, count);
-
-                int bytesRead;
-                int errCode = ReadFileNative(_handle, buffer, offset, count, _isPipe, out bytesRead, _useFileAPIs);
+                int errCode = ReadFileNative(_handle, buffer, _isPipe, out int bytesRead, _useFileAPIs);
                 if (Interop.Errors.ERROR_SUCCESS != errCode)
+                {
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
+                }
+
                 return bytesRead;
             }
 
-            public override void Write(byte[] buffer, int offset, int count)
+            public override void Write(ReadOnlySpan<byte> buffer)
             {
-                ValidateWrite(buffer, offset, count);
-
-                int errCode = WriteFileNative(_handle, buffer, offset, count, _useFileAPIs);
+                int errCode = WriteFileNative(_handle, buffer, _useFileAPIs);
                 if (Interop.Errors.ERROR_SUCCESS != errCode)
+                {
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
+                }
             }
 
             public override void Flush()
@@ -1151,35 +1149,26 @@ namespace System
             // world working set and to avoid requiring a reference to the
             // System.IO.FileSystem contract.
 
-            private static unsafe int ReadFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool isPipe, out int bytesRead, bool useFileAPIs)
+            private static unsafe int ReadFileNative(IntPtr hFile, Span<byte> buffer, bool isPipe, out int bytesRead, bool useFileAPIs)
             {
-                Debug.Assert(offset >= 0, "offset >= 0");
-                Debug.Assert(count >= 0, "count >= 0");
-                Debug.Assert(bytes != null, "bytes != null");
-                // Don't corrupt memory when multiple threads are erroneously writing
-                // to this stream simultaneously.
-                if (bytes.Length - offset < count)
-                    throw new IndexOutOfRangeException(SR.IndexOutOfRange_IORaceCondition);
-
-                // You can't use the fixed statement on an array of length 0.
-                if (bytes.Length == 0)
+                if (buffer.IsEmpty)
                 {
                     bytesRead = 0;
                     return Interop.Errors.ERROR_SUCCESS;
                 }
 
                 bool readSuccess;
-                fixed (byte* p = &bytes[0])
+                fixed (byte* p = buffer)
                 {
                     if (useFileAPIs)
                     {
-                        readSuccess = (0 != Interop.Kernel32.ReadFile(hFile, p + offset, count, out bytesRead, IntPtr.Zero));
+                        readSuccess = (0 != Interop.Kernel32.ReadFile(hFile, p, buffer.Length, out bytesRead, IntPtr.Zero));
                     }
                     else
                     {
                         // If the code page could be Unicode, we should use ReadConsole instead, e.g.
                         int charsRead;
-                        readSuccess = Interop.Kernel32.ReadConsole(hFile, p + offset, count / BytesPerWChar, out charsRead, IntPtr.Zero);
+                        readSuccess = Interop.Kernel32.ReadConsole(hFile, p, buffer.Length / BytesPerWChar, out charsRead, IntPtr.Zero);
                         bytesRead = charsRead * BytesPerWChar;
                     }
                 }
@@ -1188,33 +1177,27 @@ namespace System
 
                 // For pipes that are closing or broken, just stop.
                 // (E.g. ERROR_NO_DATA ("pipe is being closed") is returned when we write to a console that is closing;
-                // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is mot an error, but EOF.)
+                // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is not an error, but EOF.)
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.Errors.ERROR_NO_DATA || errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
                     return Interop.Errors.ERROR_SUCCESS;
                 return errorCode;
             }
 
-            private static unsafe int WriteFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool useFileAPIs)
+            private static unsafe int WriteFileNative(IntPtr hFile, ReadOnlySpan<byte> bytes, bool useFileAPIs)
             {
-                Debug.Assert(offset >= 0, "offset >= 0");
-                Debug.Assert(count >= 0, "count >= 0");
-                Debug.Assert(bytes != null, "bytes != null");
-                Debug.Assert(bytes.Length >= offset + count, "bytes.Length >= offset + count");
-
-                // You can't use the fixed statement on an array of length 0.
-                if (bytes.Length == 0)
+                if (bytes.IsEmpty)
                     return Interop.Errors.ERROR_SUCCESS;
 
                 bool writeSuccess;
-                fixed (byte* p = &bytes[0])
+                fixed (byte* p = bytes)
                 {
                     if (useFileAPIs)
                     {
                         int numBytesWritten;
-                        writeSuccess = (0 != Interop.Kernel32.WriteFile(hFile, p + offset, count, out numBytesWritten, IntPtr.Zero));
+                        writeSuccess = (0 != Interop.Kernel32.WriteFile(hFile, p, bytes.Length, out numBytesWritten, IntPtr.Zero));
                         // In some cases we have seen numBytesWritten returned that is twice count;
-                        // so we aren't asserting the value of it. See corefx #24508
+                        // so we aren't asserting the value of it. See https://github.com/dotnet/runtime/issues/23776
                     }
                     else
                     {
@@ -1225,8 +1208,8 @@ namespace System
                         // However, we do not need to worry about that because the StreamWriter in Console has
                         // a much shorter buffer size anyway.
                         int charsWritten;
-                        writeSuccess = Interop.Kernel32.WriteConsole(hFile, p + offset, count / BytesPerWChar, out charsWritten, IntPtr.Zero);
-                        Debug.Assert(!writeSuccess || count / BytesPerWChar == charsWritten);
+                        writeSuccess = Interop.Kernel32.WriteConsole(hFile, p, bytes.Length / BytesPerWChar, out charsWritten, IntPtr.Zero);
+                        Debug.Assert(!writeSuccess || bytes.Length / BytesPerWChar == charsWritten);
                     }
                 }
                 if (writeSuccess)

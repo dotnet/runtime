@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -14,7 +13,6 @@
 ===========================================================*/
 
 using System.Threading;
-using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Diagnostics;
 
@@ -85,8 +83,8 @@ namespace System.Runtime
         // walk once every 10 seconds, or when we will likely fail.  This
         // amortization scheme can reduce the cost of a memory gate by about
         // a factor of 100.
-        private static long s_hiddenLastKnownFreeAddressSpace = 0;
-        private static long s_hiddenLastTimeCheckingAddressSpace = 0;
+        private static long s_hiddenLastKnownFreeAddressSpace;
+        private static long s_hiddenLastTimeCheckingAddressSpace;
         private const int CheckThreshold = 10 * 1000;  // 10 seconds
 
         private static long LastKnownFreeAddressSpace
@@ -161,9 +159,6 @@ namespace System.Runtime
             // re-convert into bytes
             requestedSizeRounded <<= 20;
 
-            ulong availPageFile = 0;  // available VM (physical + page file)
-            ulong totalAddressSpaceFree = 0;  // non-contiguous free address space
-
             // Check for available memory, with 2 attempts at getting more
             // memory.
             // Stage 0: If we don't have enough, trigger a GC.
@@ -178,6 +173,9 @@ namespace System.Runtime
             // would probably work, but do some thinking first.)
             for (int stage = 0; stage < 3; stage++)
             {
+                ulong availPageFile;  // available VM (physical + page file)
+                ulong totalAddressSpaceFree;  // non-contiguous free address space
+
                 if (!CheckForAvailableMemory(out availPageFile, out totalAddressSpaceFree))
                 {
                     // _mustSubtractReservation == false
@@ -235,10 +233,6 @@ namespace System.Runtime
                         if (!needPageFile)
                             continue;
 
-                        // Attempt to grow the OS's page file.  Note that we ignore
-                        // any allocation routines from the host intentionally.
-                        RuntimeHelpers.PrepareConstrainedRegions();
-
                         // This shouldn't overflow due to the if clauses above.
                         UIntPtr numBytes = new UIntPtr(segmentSize);
                         GrowPageFileIfNecessaryAndPossible(numBytes);
@@ -286,8 +280,6 @@ namespace System.Runtime
             if (LastKnownFreeAddressSpace < 0)
                 CheckForFreeAddressSpace(segmentSize, true);
 
-            RuntimeHelpers.PrepareConstrainedRegions();
-
             AddMemoryFailPointReservation((long)size);
             _mustSubtractReservation = true;
         }
@@ -317,8 +309,6 @@ namespace System.Runtime
             // within the GC heap.
             if (_mustSubtractReservation)
             {
-                RuntimeHelpers.PrepareConstrainedRegions();
-
                 AddMemoryFailPointReservation(-((long)_reservedMemory));
                 _mustSubtractReservation = false;
             }

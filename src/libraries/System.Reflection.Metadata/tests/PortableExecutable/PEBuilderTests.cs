@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -135,6 +134,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // System.Security.Cryptography isn't supported on browser
         public void BasicValidationSigned()
         {
             using (var peStream = new MemoryStream())
@@ -147,7 +147,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 // The expected checksum can be determined by saving the PE stream to a file,
                 // running "sn -R test.dll KeyPair.snk" and inspecting the resulting binary.
                 // The re-signed binary should be the same as the original one.
-                // See https://github.com/dotnet/corefx/issues/25829.
+                // See https://github.com/dotnet/runtime/issues/24407.
                 peStream.Position = 0;
                 var actualChecksum = new PEHeaders(peStream).PEHeader.CheckSum;
                 Assert.Equal(0x0000319cU, actualChecksum);
@@ -655,6 +655,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // System.Security.Cryptography isn't supported on browser
         public void Checksum()
         {
             Assert.True(TestChecksumAndAuthenticodeSignature(new MemoryStream(Misc.Signed), Misc.KeyPair));
@@ -662,6 +663,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // System.Security.Cryptography isn't supported on browser
         public void ChecksumFXAssemblies()
         {
             var paths = new[]

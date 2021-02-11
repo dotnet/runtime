@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -141,7 +140,6 @@ namespace System.Net.Primitives.Functional.Tests
             yield return new object[] { u5, "$=value" }; // Invalid name
             yield return new object[] { new Uri("http://url.com"), "na\tme=value; domain=.domain.com" }; // Invalid name
             yield return new object[] { new Uri("http://url.com"), "name=value; domain=.domain.com" }; // Domain not the same
-            yield return new object[] { new Uri("http://url.com/path"), "name=value; domain=.url.com; path=/root" }; // Path not the same
             yield return new object[] { new Uri("http://url.com:90"), "name=value; port=\"80\"" }; // Port not the same
             yield return new object[] { new Uri("http://url.com"), "name=value; domain=" }; // Empty domain
             yield return new object[] { u6, "name11=value11; version=invalidversion" }; // Invalid version

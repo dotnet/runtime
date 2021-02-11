@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.Apple;
 
@@ -9,9 +8,9 @@ namespace System.Security.Cryptography
     internal sealed class SecKeyPair : IDisposable
     {
         internal SafeSecKeyRefHandle PublicKey { get; private set; }
-        internal SafeSecKeyRefHandle PrivateKey { get; private set; }
+        internal SafeSecKeyRefHandle? PrivateKey { get; private set; }
 
-        private SecKeyPair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+        private SecKeyPair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle? privateKey)
         {
             PublicKey = publicKey;
             PrivateKey = privateKey;
@@ -22,7 +21,7 @@ namespace System.Security.Cryptography
             PrivateKey?.Dispose();
             PrivateKey = null;
             PublicKey?.Dispose();
-            PublicKey = null;
+            PublicKey = null!;
         }
 
         internal static SecKeyPair PublicPrivatePair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)

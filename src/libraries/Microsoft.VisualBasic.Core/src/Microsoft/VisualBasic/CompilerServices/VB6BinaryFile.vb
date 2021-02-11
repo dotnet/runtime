@@ -1,10 +1,10 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
+Imports System.Runtime.Versioning
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -25,9 +25,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         ' the implementation of Lock in base class VB6RandomFile does not handle m_lRecordLen=-1
+        <UnsupportedOSPlatform("macos")> 
         Friend Overloads Overrides Sub Lock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Start"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
             End If
 
             Dim absRecordLength As Long
@@ -48,9 +49,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         ' see Lock description
+        <UnsupportedOSPlatform("macos")> 
         Friend Overloads Overrides Sub Unlock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Start"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
             End If
 
             Dim absRecordLength As Long
@@ -186,7 +188,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ' reading from a file that was write-only. The inner exception was added to provide more context.
             If (m_access <> OpenAccess.ReadWrite) AndAlso (m_access <> OpenAccess.Read) Then
                 Dim JustNeedTheMessage As New NullReferenceException ' We don't have access to the localized resources for this string.
-                Throw New NullReferenceException(JustNeedTheMessage.Message, New IO.IOException(GetResourceString(SR.FileOpenedNoRead)))
+                Throw New NullReferenceException(JustNeedTheMessage.Message, New IO.IOException(SR.FileOpenedNoRead))
             End If
 
             ' read past any leading spaces or tabs

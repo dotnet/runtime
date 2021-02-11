@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -127,9 +126,9 @@ namespace System.Security.AccessControl
             // Let the underlying ACL API's demand unmanaged code permission.
         }
 
-        private static Exception HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
+        private static Exception? HandleErrorCode(int errorCode, string? name, SafeHandle? handle, object? context)
         {
-            System.Exception exception = null;
+            System.Exception? exception = null;
 
             switch (errorCode)
             {

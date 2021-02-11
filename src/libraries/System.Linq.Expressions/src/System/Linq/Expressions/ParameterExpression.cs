@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -13,12 +12,12 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(ParameterExpressionProxy))]
     public class ParameterExpression : Expression
     {
-        internal ParameterExpression(string name)
+        internal ParameterExpression(string? name)
         {
             Name = name;
         }
 
-        internal static ParameterExpression Make(Type type, string name, bool isByRef)
+        internal static ParameterExpression Make(Type type, string? name, bool isByRef)
         {
             if (isByRef)
             {
@@ -84,7 +83,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// The Name of the parameter or variable.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// Indicates that this <see cref="ParameterExpression"/> is to be treated as a ByRef parameter.
@@ -109,7 +108,7 @@ namespace System.Linq.Expressions
     /// </summary>
     internal sealed class ByRefParameterExpression : TypedParameterExpression
     {
-        internal ByRefParameterExpression(Type type, string name)
+        internal ByRefParameterExpression(Type type, string? name)
             : base(type, name)
         {
         }
@@ -123,7 +122,7 @@ namespace System.Linq.Expressions
     /// </summary>
     internal class TypedParameterExpression : ParameterExpression
     {
-        internal TypedParameterExpression(Type type, string name)
+        internal TypedParameterExpression(Type type, string? name)
             : base(name)
         {
             Type = type;
@@ -138,7 +137,7 @@ namespace System.Linq.Expressions
     /// </summary>
     internal sealed class PrimitiveParameterExpression<T> : ParameterExpression
     {
-        internal PrimitiveParameterExpression(string name)
+        internal PrimitiveParameterExpression(string? name)
             : base(name)
         {
         }
@@ -174,13 +173,13 @@ namespace System.Linq.Expressions
         /// <param name="type">The type of the parameter or variable.</param>
         /// <param name="name">The name of the parameter or variable, used for debugging or pretty printing purpose only.</param>
         /// <returns>A <see cref="ParameterExpression"/> node with the specified name and type.</returns>
-        public static ParameterExpression Parameter(Type type, string name)
+        public static ParameterExpression Parameter(Type type, string? name)
         {
             Validate(type, allowByRef: true);
             bool byref = type.IsByRef;
             if (byref)
             {
-                type = type.GetElementType();
+                type = type.GetElementType()!;
             }
 
             return ParameterExpression.Make(type, name, byref);
@@ -192,7 +191,7 @@ namespace System.Linq.Expressions
         /// <param name="type">The type of the parameter or variable.</param>
         /// <param name="name">The name of the parameter or variable, used for debugging or pretty printing purpose only.</param>
         /// <returns>A <see cref="ParameterExpression"/> node with the specified name and type.</returns>
-        public static ParameterExpression Variable(Type type, string name)
+        public static ParameterExpression Variable(Type type, string? name)
         {
             Validate(type, allowByRef: false);
             return ParameterExpression.Make(type, name, isByRef: false);

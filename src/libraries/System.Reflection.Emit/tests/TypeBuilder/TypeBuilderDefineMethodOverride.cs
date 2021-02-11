@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Xunit;
@@ -168,6 +167,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineMethodOverride_NothingToOverride_ThrowsTypeLoadExceptionOnCreation()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -180,6 +180,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData(typeof(GenericInterface<>), nameof(GenericInterface<string>.Method))]
         [InlineData(typeof(DefineMethodOverrideInterface), nameof(DefineMethodOverrideInterface.M))]
         public void DefineMethodOverride_ClassDoesNotImplementOrInheritMethod_ThrowsTypeLoadExceptionOnCreation(Type methodType, string methodName)
@@ -196,6 +197,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineMethodOverride_BodyAndDeclarationTheSame_ThrowsTypeLoadExceptionOnCreation()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -210,6 +212,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineMethodOverride_CalledTwiceWithDifferentBodies_ThrowsTypeLoadExceptionOnCreation()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -232,6 +235,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData(typeof(int), new Type[0])]
         [InlineData(typeof(int), new Type[] { typeof(int), typeof(int) })]
         [InlineData(typeof(int), new Type[] { typeof(string), typeof(string) })]

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices.Tests.Common;
@@ -10,7 +9,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class GetIDispatchForObjectTests
     {
-        public static IEnumerable<object[]> GetIUnknownForObject_ComObject_TestData()
+        public static IEnumerable<object[]> GetIDispatchForObject_ComObject_TestData()
         {
             yield return new object[] { new ComImportObject() };
 
@@ -26,6 +25,27 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new NonDualComObjectEmpty() };
             yield return new object[] { new AutoDispatchComObjectEmpty() };
             yield return new object[] { new AutoDualComObjectEmpty() };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [MemberData(nameof(GetIDispatchForObject_ComObject_TestData))]
+        public void GetIDispatchForObject_DispatchObject_Success(object obj)
+        {
+            IntPtr ptr = Marshal.GetIDispatchForObject(obj);
+            try
+            {
+                Assert.NotEqual(IntPtr.Zero, ptr);
+            }
+            finally
+            {
+                Marshal.Release(ptr);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof (PlatformDetection.IsNotWindowsNanoServer))]
+        public void GetIDispatchForObject_ManagedIInspectableObject_Fail()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetIDispatchForObject(new IInspectableManagedObject()));
         }
     }
 }

@@ -1,0 +1,32 @@
+<Project>
+  <Target Name="FindPythonWindows"
+          Condition="$([MSBuild]::IsOSPlatform(Windows)) and '$(PYTHON)' == ''"
+          Returns="$(PYTHON)">
+    <PropertyGroup>
+      <_PythonLocationScript>-c "import sys; sys.stdout.write(sys.executable)"</_PythonLocationScript>
+    </PropertyGroup>
+    <Exec Command="py -3 $(_PythonLocationScript) 2&gt; nul || python3 $(_PythonLocationScript) 2&gt; nul || python $(_PythonLocationScript) 2&gt; nul"
+          StandardOutputImportance="Low"
+          EchoOff="true"
+          ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
+    </Exec>
+    <PropertyGroup>
+      <PYTHON>"$(PYTHON)"</PYTHON>
+    </PropertyGroup>
+  </Target>
+  <Target Name="FindPythonUnix"
+          Condition="!$([MSBuild]::IsOSPlatform(Windows)) and '$(PYTHON)' == ''"
+          Returns="$(PYTHON)">
+    <Exec Command="command -v python3 || command -v python || command -v py"
+          StandardOutputImportance="Low"
+          EchoOff="true"
+          ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
+    </Exec>
+    <PropertyGroup>
+      <PYTHON>"$(PYTHON)"</PYTHON>
+    </PropertyGroup>
+  </Target>
+  <Target Name="FindPython" DependsOnTargets="FindPythonWindows;FindPythonUnix" />
+</Project>

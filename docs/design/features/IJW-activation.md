@@ -8,7 +8,7 @@ To support any C++/CLI users that wish to use .NET Core, the runtime and hosting
 * Load the appropriate version of .NET Core for the assembly if a .NET Core instance is not running, or validate that the currently running .NET Core instance can satisfy the assemblies requirements.
 * Load the (already-in-memory) assembly into the runtime.
 * Patch the vtfixup table tokens to point to JIT stubs.
-  
+
 ## Design
 
 IJW activation has a variety of hard problems associated with it, mainly with loading in mixed mode assemblies that are not the application.
@@ -19,7 +19,7 @@ IJW applications are much easier in that they are not loaded under the loader-lo
 
 ### .NET Framework IJW Activation
 
-When targetting .NET Framework, mixed mode assemblies are linked to the shim library `mscoree.dll` or `mscoreei.dll`. See the document on [COM Activation](COM-activation.md#.NET-Framework-Class-COM-Activation) for more information on the history of `mscoree.dll` and `mscoreei.dll`. C++/CLI executables are wired up to call `mscoreei.dll`'s `_CorExeMain` method on start which starts the runtime, patching the vtfixup table and calling the managed entry point. If the C++/CLI executable has a native entry point, a managed P/Invoke signature pointing to that native function in the image is emitted into the assembly as the assembly entry point.
+When targeting .NET Framework, mixed mode assemblies are linked to the shim library `mscoree.dll` or `mscoreei.dll`. See the document on [COM Activation](COM-activation.md#NET-Framework-Class-COM-Activation) for more information on the history of `mscoree.dll` and `mscoreei.dll`. C++/CLI executables are wired up to call `mscoreei.dll`'s `_CorExeMain` method on start which starts the runtime, patching the vtfixup table and calling the managed entry point. If the C++/CLI executable has a native entry point, a managed P/Invoke signature pointing to that native function in the image is emitted into the assembly as the assembly entry point.
 
 If the assembly is a library, the library's native initialization function (what calls `DllMain` in a fully native DLL load scenario), calls into `mscoreei.dll`'s `_CorDllMain`. This `_CorDllMain` function patches the vtfixup table to have pointers to stubs that will start the runtime when called. Additionally, the runtime will call back into `mscoree.dll` when patching the vtfixup table with JIT stubs to check if the value in the table is a token or a stub to ensure that it patches the correct JIT stub in place.
 

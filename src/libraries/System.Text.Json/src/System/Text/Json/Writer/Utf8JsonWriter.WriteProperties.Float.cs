@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
@@ -22,10 +21,8 @@ namespace System.Text.Json
         /// Writes the <see cref="float"/> using the default <see cref="StandardFormat"/> (that is, 'G').
         /// </remarks>
         public void WriteNumber(JsonEncodedText propertyName, float value)
-            => WriteNumberHelper(propertyName.EncodedUtf8Bytes, value);
-
-        private void WriteNumberHelper(ReadOnlySpan<byte> utf8PropertyName, float value)
         {
+            ReadOnlySpan<byte> utf8PropertyName = propertyName.EncodedUtf8Bytes;
             Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             JsonWriterHelper.ValidateSingle(value);
@@ -146,7 +143,7 @@ namespace System.Text.Json
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < propertyName.Length);
 
-            char[] propertyArray = null;
+            char[]? propertyArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndexProp);
 
@@ -169,7 +166,7 @@ namespace System.Text.Json
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
             Debug.Assert(firstEscapeIndexProp >= 0 && firstEscapeIndexProp < utf8PropertyName.Length);
 
-            byte[] propertyArray = null;
+            byte[]? propertyArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndexProp);
 
@@ -365,6 +362,14 @@ namespace System.Text.Json
             bool result = TryFormatSingle(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
             BytesPending += bytesWritten;
+        }
+
+        internal void WritePropertyName(float value)
+        {
+            Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatSingleLength];
+            bool result = TryFormatSingle(value, utf8PropertyName, out int bytesWritten);
+            Debug.Assert(result);
+            WritePropertyNameUnescaped(utf8PropertyName.Slice(0, bytesWritten));
         }
     }
 }

@@ -1,18 +1,18 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper
     {
-        public static bool TryGetUnescapedBase64Bytes(ReadOnlySpan<byte> utf8Source, int idx, out byte[] bytes)
+        public static bool TryGetUnescapedBase64Bytes(ReadOnlySpan<byte> utf8Source, int idx, [NotNullWhen(true)] out byte[]? bytes)
         {
-            byte[] unescapedArray = null;
+            byte[]? unescapedArray = null;
 
             Span<byte> utf8Unescaped = utf8Source.Length <= JsonConstants.StackallocThreshold ?
                 stackalloc byte[utf8Source.Length] :
@@ -24,28 +24,29 @@ namespace System.Text.Json
             utf8Unescaped = utf8Unescaped.Slice(0, written);
             Debug.Assert(!utf8Unescaped.IsEmpty);
 
-            bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes);
+            bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes!);
 
             if (unescapedArray != null)
             {
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
             }
-
             return result;
         }
 
         // Reject any invalid UTF-8 data rather than silently replacing.
         public static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        // TODO: Similar to escaping, replace the unescaping logic with publicly shipping APIs from https://github.com/dotnet/corefx/issues/33509
+        // TODO: Similar to escaping, replace the unescaping logic with publicly shipping APIs from https://github.com/dotnet/runtime/issues/27919
         public static string GetUnescapedString(ReadOnlySpan<byte> utf8Source, int idx)
         {
-            byte[] unescapedArray = null;
+            // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
+            int length = utf8Source.Length;
+            byte[]? pooledName = null;
 
-            Span<byte> utf8Unescaped = utf8Source.Length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[utf8Source.Length] :
-                (unescapedArray = ArrayPool<byte>.Shared.Rent(utf8Source.Length));
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (pooledName = ArrayPool<byte>.Shared.Rent(length));
 
             Unescape(utf8Source, utf8Unescaped, idx, out int written);
             Debug.Assert(written > 0);
@@ -55,20 +56,45 @@ namespace System.Text.Json
 
             string utf8String = TranscodeHelper(utf8Unescaped);
 
-            if (unescapedArray != null)
+            if (pooledName != null)
             {
                 utf8Unescaped.Clear();
-                ArrayPool<byte>.Shared.Return(unescapedArray);
+                ArrayPool<byte>.Shared.Return(pooledName);
             }
 
             return utf8String;
+        }
+
+        public static ReadOnlySpan<byte> GetUnescapedSpan(ReadOnlySpan<byte> utf8Source, int idx)
+        {
+            // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
+            int length = utf8Source.Length;
+            byte[]? pooledName = null;
+
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (pooledName = ArrayPool<byte>.Shared.Rent(length));
+
+            Unescape(utf8Source, utf8Unescaped, idx, out int written);
+            Debug.Assert(written > 0);
+
+            ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written).ToArray();
+            Debug.Assert(!propertyName.IsEmpty);
+
+            if (pooledName != null)
+            {
+                new Span<byte>(pooledName, 0, written).Clear();
+                ArrayPool<byte>.Shared.Return(pooledName);
+            }
+
+            return propertyName;
         }
 
         public static bool UnescapeAndCompare(ReadOnlySpan<byte> utf8Source, ReadOnlySpan<byte> other)
         {
             Debug.Assert(utf8Source.Length >= other.Length && utf8Source.Length / JsonConstants.MaxExpansionFactorWhileEscaping <= other.Length);
 
-            byte[] unescapedArray = null;
+            byte[]? unescapedArray = null;
 
             Span<byte> utf8Unescaped = utf8Source.Length <= JsonConstants.StackallocThreshold ?
                 stackalloc byte[utf8Source.Length] :
@@ -96,8 +122,8 @@ namespace System.Text.Json
             Debug.Assert(!utf8Source.IsSingleSegment);
             Debug.Assert(utf8Source.Length >= other.Length && utf8Source.Length / JsonConstants.MaxExpansionFactorWhileEscaping <= other.Length);
 
-            byte[] escapedArray = null;
-            byte[] unescapedArray = null;
+            byte[]? escapedArray = null;
+            byte[]? unescapedArray = null;
 
             int length = checked((int)utf8Source.Length);
 
@@ -132,7 +158,7 @@ namespace System.Text.Json
             return result;
         }
 
-        public static bool TryDecodeBase64InPlace(Span<byte> utf8Unescaped, out byte[] bytes)
+        public static bool TryDecodeBase64InPlace(Span<byte> utf8Unescaped, [NotNullWhen(true)] out byte[]? bytes)
         {
             OperationStatus status = Base64.DecodeFromUtf8InPlace(utf8Unescaped, out int bytesWritten);
             if (status != OperationStatus.Done)
@@ -144,9 +170,9 @@ namespace System.Text.Json
             return true;
         }
 
-        public static bool TryDecodeBase64(ReadOnlySpan<byte> utf8Unescaped, out byte[] bytes)
+        public static bool TryDecodeBase64(ReadOnlySpan<byte> utf8Unescaped, [NotNullWhen(true)] out byte[]? bytes)
         {
-            byte[] pooledArray = null;
+            byte[]? pooledArray = null;
 
             Span<byte> byteSpan = utf8Unescaped.Length <= JsonConstants.StackallocThreshold ?
                 stackalloc byte[utf8Unescaped.Length] :

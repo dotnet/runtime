@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Globalization
@@ -39,12 +39,12 @@ namespace System.Globalization
             m_SortId = customVersion;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is SortVersion otherVersion && Equals(otherVersion);
         }
 
-        public bool Equals(SortVersion? other)
+        public bool Equals([NotNullWhen(true)] SortVersion? other)
         {
             if (other == null)
             {
@@ -67,7 +67,7 @@ namespace System.Globalization
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
                 return (left is null) ? true : false;
             }
 

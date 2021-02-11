@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -13,6 +12,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpResponseStreamTests : IDisposable
     {
@@ -278,8 +278,8 @@ namespace System.Net.Tests
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => outputStream.Write(new byte[2], offset, 0));
-                await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("offset", () => outputStream.WriteAsync(new byte[2], offset, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => outputStream.Write(new byte[2], offset, 0));
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => outputStream.WriteAsync(new byte[2], offset, 0));
             }
         }
 
@@ -292,17 +292,17 @@ namespace System.Net.Tests
             using (HttpListenerResponse response = await _helper.GetResponse())
             using (Stream outputStream = response.OutputStream)
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("size", () => outputStream.Write(new byte[2], offset, size));
-                await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("size", () => outputStream.WriteAsync(new byte[2], offset, size));
+                Assert.Throws<ArgumentOutOfRangeException>(() => outputStream.Write(new byte[2], offset, size));
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => outputStream.WriteAsync(new byte[2], offset, size));
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         public async Task Write_TooMuch_ThrowsProtocolViolationException()
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)
@@ -325,12 +325,12 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         public async Task Write_TooLittleAsynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)
@@ -351,12 +351,12 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         public async Task Write_TooLittleSynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)
@@ -377,8 +377,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(20246)] // CI hanging frequently
-        [ActiveIssue(19534, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21940")] // CI hanging frequently
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -416,8 +415,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(20246)] // CI hanging frequently
-        [ActiveIssue(19534, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21940")] // CI hanging frequently
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -456,11 +454,11 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(19534, TestPlatforms.OSX)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21022", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21590", TestPlatforms.OSX)]
         public async Task Write_ContentToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -496,11 +494,11 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(19534, TestPlatforms.OSX)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21022", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21590", TestPlatforms.OSX)]
         public async Task Write_ContentToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -549,6 +547,7 @@ namespace System.Net.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses Socket.Begin/EndSend, which doesn't fail in this case
         [Fact]
         public async Task EndWrite_InvalidAsyncResult_ThrowsArgumentException()
         {
@@ -564,6 +563,7 @@ namespace System.Net.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses Socket.Begin/EndSend, which doesn't fail in this case
         [Fact]
         public async Task EndWrite_CalledTwice_ThrowsInvalidOperationException()
         {

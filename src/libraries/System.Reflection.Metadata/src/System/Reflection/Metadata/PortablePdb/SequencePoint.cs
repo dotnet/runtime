@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection.Internal;
@@ -48,7 +47,7 @@ namespace System.Reflection.Metadata
                    Hash.Combine(EndLine, EndColumn)))));
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is SequencePoint && Equals((SequencePoint)obj);
         }

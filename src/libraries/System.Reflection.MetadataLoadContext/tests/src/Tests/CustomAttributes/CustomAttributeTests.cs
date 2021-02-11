@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Collections.Generic;
@@ -81,7 +80,7 @@ namespace System.Reflection.Tests
                 Assert.Null(cat.Value);
                 if (parameterType == typeof(object))
                 {
-                    // Why "string?" That's what NETFX has always put here for this corner case.
+                    // Why "string?" That's what .NET Framework has always put here for this corner case.
                     Assert.Equal(typeof(string).Project(), cat.ArgumentType);
                 }
                 else
@@ -190,12 +189,11 @@ namespace System.Reflection.Tests
             }
         }
 
-        // @todo: https://github.com/dotnet/corefxlab/issues/2460
         // This test only exists to provide code coverage for the fast-path AttributeType implementation while we're stuck in a netstandard-only build
         // configuration. It should be removed once both of these conditions are true:
         //
         //  -  We have an official on-going build and CI of a netcore configuration of System.Reflection.MetadataLoadContext.
-        //  -  That build is consuming corefx contracts where CustomAttributeData.AttributeType is virtual (see https://github.com/dotnet/corefx/issues/31614)
+        //  -  That build is consuming corefx contracts where CustomAttributeData.AttributeType is virtual (see https://github.com/dotnet/runtime/issues/27071)
         //
         // Once these conditions are satisfied, it is no longer necessary to resort to Reflection to invoke the fast-path AttributeType code.
         // Invoking CustomAttributeData.AttributeType the normal way will do the trick.

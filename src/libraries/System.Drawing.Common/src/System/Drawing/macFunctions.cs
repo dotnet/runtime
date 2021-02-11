@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.carbonFunctions.cs
 //
@@ -39,7 +40,7 @@ namespace System.Drawing
     {
         internal static readonly Hashtable contextReference = new Hashtable();
         internal static readonly object lockobj = new object();
-        internal static readonly Delegate hwnd_delegate = GetHwndDelegate();
+        internal static readonly Delegate? hwnd_delegate = GetHwndDelegate();
 
 #if DEBUG_CLIPPING
         internal static float red = 1.0f;
@@ -48,17 +49,17 @@ namespace System.Drawing
         internal static int debug_threshold = 1;
 #endif
 
-        private static Delegate GetHwndDelegate()
+        private static Delegate? GetHwndDelegate()
         {
 #if !NETSTANDARD1_6
             foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 if (string.Equals(asm.GetName().Name, "System.Windows.Forms"))
                 {
-                    Type driver_type = asm.GetType("System.Windows.Forms.XplatUICarbon");
+                    Type? driver_type = asm.GetType("System.Windows.Forms.XplatUICarbon");
                     if (driver_type != null)
                     {
-                        return (Delegate)driver_type.GetTypeInfo().GetField("HwndDelegate", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+                        return (Delegate?)driver_type.GetField("HwndDelegate", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null);
                     }
                 }
             }
@@ -68,13 +69,12 @@ namespace System.Drawing
 
         internal static CocoaContext GetCGContextForNSView(IntPtr handle)
         {
-            IntPtr graphicsContext = objc_msgSend(objc_getClass("NSGraphicsContext"), sel_registerName("currentContext"));
-            IntPtr ctx = objc_msgSend(graphicsContext, sel_registerName("graphicsPort"));
-            Rect bounds = default;
+            IntPtr graphicsContext = intptr_objc_msgSend(objc_getClass("NSGraphicsContext"), sel_registerName("currentContext"));
+            IntPtr ctx = intptr_objc_msgSend(graphicsContext, sel_registerName("graphicsPort"));
 
             CGContextSaveGState(ctx);
 
-            objc_msgSend_stret(ref bounds, handle, sel_registerName("bounds"));
+            Rect_objc_msgSend_stret(out Rect bounds, handle, sel_registerName("bounds"));
 
             var isFlipped = bool_objc_msgSend(handle, sel_registerName("isFlipped"));
             if (isFlipped)
@@ -130,7 +130,7 @@ namespace System.Drawing
 
             CGContextSaveGState(context);
 
-            Rectangle[] clip_rectangles = (Rectangle[])hwnd_delegate.DynamicInvoke(new object[] { handle });
+            Rectangle[]? clip_rectangles = (Rectangle[]?)hwnd_delegate!.DynamicInvoke(new object[] { handle });
             if (clip_rectangles != null && clip_rectangles.Length > 0)
             {
                 int length = clip_rectangles.Length;
@@ -210,13 +210,12 @@ namespace System.Drawing
         #region Cocoa Methods
         [DllImport("libobjc.dylib")]
         public static extern IntPtr objc_getClass(string className);
-        [DllImport("libobjc.dylib")]
-        public static extern IntPtr objc_msgSend(IntPtr basePtr, IntPtr selector, string argument);
-        [DllImport("libobjc.dylib")]
-        public static extern IntPtr objc_msgSend(IntPtr basePtr, IntPtr selector);
-        [DllImport("libobjc.dylib")]
-        public static extern void objc_msgSend_stret(ref Rect arect, IntPtr basePtr, IntPtr selector);
         [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
+        public static extern IntPtr intptr_objc_msgSend(IntPtr basePtr, IntPtr selector);
+        [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend_stret")]
+        public static extern void Rect_objc_msgSend_stret(out Rect arect, IntPtr basePtr, IntPtr selector);
+        [DllImport("libobjc.dylib", EntryPoint = "objc_msgSend")]
+        [return:MarshalAs(UnmanagedType.U1)]
         public static extern bool bool_objc_msgSend(IntPtr handle, IntPtr selector);
         [DllImport("libobjc.dylib")]
         public static extern IntPtr sel_registerName(string selectorName);

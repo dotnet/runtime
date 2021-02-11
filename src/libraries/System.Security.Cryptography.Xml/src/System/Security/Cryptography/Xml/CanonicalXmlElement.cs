@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using System.Text;
@@ -66,7 +65,7 @@ namespace System.Security.Cryptography.Xml
             {
                 anc.GetNamespacesToRender(this, attrListToRender, nsListToRender, nsLocallyDeclared);
 
-                strBuilder.Append("<" + Name);
+                strBuilder.Append('<').Append(Name);
                 foreach (object attr in nsListToRender.GetKeyList())
                 {
                     (attr as CanonicalXmlAttribute).Write(strBuilder, docPos, anc);
@@ -75,7 +74,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     (attr as CanonicalXmlAttribute).Write(strBuilder, docPos, anc);
                 }
-                strBuilder.Append(">");
+                strBuilder.Append('>');
             }
 
             anc.EnterElementContext();

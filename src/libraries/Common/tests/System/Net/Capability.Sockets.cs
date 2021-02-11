@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -9,7 +8,6 @@ namespace System.Net.Test.Common
 {
     public static partial class Capability
     {
-        // TODO: Using RtlGetVersion is temporary until issue #4741 gets resolved.
         [DllImport("ntdll", CharSet = CharSet.Unicode)]
         private static extern int RtlGetVersion(ref RTL_OSVERSIONINFOW lpVersionInformation);
 

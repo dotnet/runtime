@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -41,12 +40,11 @@ namespace System.Collections.Generic
         RightLeft
     }
 
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "by design name choice")]
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public partial class SortedSet<T> : ISet<T>, ICollection<T>, ICollection, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
+    public partial class SortedSet<T> : ISet<T>, ICollection<T>, ICollection, IReadOnlyCollection<T>, IReadOnlySet<T>, ISerializable, IDeserializationCallback
     {
         #region Local variables/constants
 
@@ -148,8 +146,8 @@ namespace System.Collections.Generic
 
         private void RemoveAllElements(IEnumerable<T> collection)
         {
-            T min = Min;
-            T max = Max;
+            T? min = Min;
+            T? max = Max;
             foreach (T item in collection)
             {
                 if (!(comparer.Compare(item, min) < 0 || comparer.Compare(item, max) > 0) && Contains(item))
@@ -757,9 +755,9 @@ namespace System.Collections.Generic
             return -1;
         }
 
-        internal Node? FindRange([AllowNull] T from, [AllowNull]  T to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
+        internal Node? FindRange(T? from, T? to) => FindRange(from, to, lowerBoundActive: true, upperBoundActive: true);
 
-        internal Node? FindRange([AllowNull] T from, [AllowNull] T to, bool lowerBoundActive, bool upperBoundActive)
+        internal Node? FindRange(T? from, T? to, bool lowerBoundActive, bool upperBoundActive)
         {
             Node? current = root;
             while (current != null)
@@ -806,7 +804,7 @@ namespace System.Collections.Generic
         /// <param name="set2">The second set.</param>
         /// <param name="comparer">The fallback comparer to use if the sets do not have equal comparers.</param>
         /// <returns><c>true</c> if the sets have equal contents; otherwise, <c>false</c>.</returns>
-        internal static bool SortedSetEquals(SortedSet<T> set1, SortedSet<T> set2, IComparer<T> comparer)
+        internal static bool SortedSetEquals(SortedSet<T>? set1, SortedSet<T>? set2, IComparer<T> comparer)
         {
             if (set1 == null)
             {
@@ -1033,7 +1031,7 @@ namespace System.Collections.Generic
                 Enumerator mine = this.GetEnumerator();
                 Enumerator theirs = asSorted.GetEnumerator();
                 bool mineEnded = !mine.MoveNext(), theirsEnded = !theirs.MoveNext();
-                T max = Max;
+                T? max = Max;
 
                 while (!mineEnded && !theirsEnded && Comparer.Compare(theirs.Current, max) <= 0)
                 {
@@ -1111,8 +1109,8 @@ namespace System.Collections.Generic
                 // Outside range, no point in doing anything
                 if (comparer.Compare(asSorted.Max, Min) >= 0 && comparer.Compare(asSorted.Min, Max) <= 0)
                 {
-                    T min = Min;
-                    T max = Max;
+                    T? min = Min;
+                    T? max = Max;
                     foreach (T item in other)
                     {
                         if (comparer.Compare(item, min) < 0)
@@ -1506,17 +1504,15 @@ namespace System.Collections.Generic
 
         #region ISorted members
 
-        [MaybeNull]
-        public T Min => MinInternal;
+        public T? Min => MinInternal;
 
-        [MaybeNull]
-        internal virtual T MinInternal
+        internal virtual T? MinInternal
         {
             get
             {
                 if (root == null)
                 {
-                    return default(T)!;
+                    return default;
                 }
 
                 Node current = root;
@@ -1529,17 +1525,15 @@ namespace System.Collections.Generic
             }
         }
 
-        [MaybeNull]
-        public T Max => MaxInternal;
+        public T? Max => MaxInternal;
 
-        [MaybeNull]
-        internal virtual T MaxInternal
+        internal virtual T? MaxInternal
         {
             get
             {
                 if (root == null)
                 {
-                    return default(T)!;
+                    return default;
                 }
 
                 Node current = root;
@@ -1561,7 +1555,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public virtual SortedSet<T> GetViewBetween([AllowNull] T lowerValue, [AllowNull] T upperValue)
+        public virtual SortedSet<T> GetViewBetween(T? lowerValue, T? upperValue)
         {
             if (Comparer.Compare(lowerValue, upperValue) > 0)
             {
@@ -1899,7 +1893,6 @@ namespace System.Collections.Generic
 #endif
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
             private readonly SortedSet<T> _tree;
@@ -2077,7 +2070,7 @@ namespace System.Collections.Generic
                 actualValue = node.Item;
                 return true;
             }
-            actualValue = default(T)!;
+            actualValue = default;
             return false;
         }
 

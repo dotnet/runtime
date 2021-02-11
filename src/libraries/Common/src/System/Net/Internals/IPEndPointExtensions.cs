@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -39,14 +38,13 @@ namespace System.Net.Sockets
 
                 return socketAddress.GetIPEndPoint();
             }
+            else if (family == AddressFamily.Unknown)
+            {
+                return thisObj;
+            }
 
             System.Net.SocketAddress address = GetNetSocketAddress(socketAddress);
             return thisObj.Create(address);
-        }
-
-        internal static IPEndPoint Snapshot(this IPEndPoint thisObj)
-        {
-            return new IPEndPoint(thisObj.Address.Snapshot(), thisObj.Port);
         }
 
         private static Internals.SocketAddress GetInternalSocketAddress(System.Net.SocketAddress address)
@@ -60,7 +58,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        private static System.Net.SocketAddress GetNetSocketAddress(Internals.SocketAddress address)
+        internal static System.Net.SocketAddress GetNetSocketAddress(Internals.SocketAddress address)
         {
             var result = new System.Net.SocketAddress(address.Family, address.Size);
             for (int index = 0; index < address.Size; index++)

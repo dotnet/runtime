@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection;
@@ -100,6 +99,7 @@ namespace System.Linq.Expressions.Tests
                 .DefineType("TestType");
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14920", TestRuntimes.Mono)]
         public void NoAccessorIndexedProperty()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -174,6 +174,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14927", TestRuntimes.Mono)]
         public void IndexedPropertyGetReturnsWrongType()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -326,6 +327,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14927", TestRuntimes.Mono)]
         public void IndexedPropertySetterValueTypeNotMatchPropertyType()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();

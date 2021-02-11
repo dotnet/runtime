@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -54,9 +53,9 @@ namespace System.Linq.Expressions
         /// Gets the name of the lambda expression.
         /// </summary>
         /// <remarks>Used for debugging purposes.</remarks>
-        public string Name => NameCore;
+        public string? Name => NameCore;
 
-        internal virtual string NameCore => null;
+        internal virtual string? NameCore => null;
 
         /// <summary>
         /// Gets the body of the lambda expression.
@@ -76,31 +75,64 @@ namespace System.Linq.Expressions
 
         internal virtual bool TailCallCore => false;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ReadOnlyCollection<ParameterExpression> GetOrMakeParameters()
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         ParameterExpression IParameterProvider.GetParameter(int index) => GetParameter(index);
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ParameterExpression GetParameter(int index)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         int IParameterProvider.ParameterCount => ParameterCount;
 
-        [ExcludeFromCodeCoverage] // Unreachable
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual int ParameterCount
         {
             get
             {
                 throw ContractUtils.Unreachable;
             }
+        }
+
+        /// <summary>
+        /// Gets the Compile() MethodInfo on the specified LambdaExpression type.
+        /// </summary>
+        /// <remarks>
+        /// Note that Expression{TDelegate} defines a 'new' Compile() method that hides the base
+        /// LambdaExpression.Compile() method.
+        /// </remarks>
+        internal static MethodInfo GetCompileMethod(Type lambdaExpressionType)
+        {
+            Debug.Assert(lambdaExpressionType.IsAssignableTo(typeof(LambdaExpression)));
+
+            if (lambdaExpressionType == typeof(LambdaExpression))
+            {
+                // use a hard-coded type directly so the method doesn't get trimmed
+                return typeof(LambdaExpression).GetMethod("Compile", Type.EmptyTypes)!;
+            }
+
+            return GetDerivedCompileMethod(lambdaExpressionType);
+        }
+
+        [DynamicDependency("Compile()", typeof(Expression<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The 'Compile' method will be preserved by the DynamicDependency.")]
+        private static MethodInfo GetDerivedCompileMethod(Type lambdaExpressionType)
+        {
+            Debug.Assert(lambdaExpressionType.IsAssignableTo(typeof(LambdaExpression)) && lambdaExpressionType != typeof(LambdaExpression));
+
+            MethodInfo result = lambdaExpressionType.GetMethod("Compile", Type.EmptyTypes)!;
+            Debug.Assert(result.DeclaringType!.IsGenericType && result.DeclaringType.GetGenericTypeDefinition() == typeof(Expression<>));
+
+            return result;
         }
 
         /// <summary>
@@ -220,13 +252,13 @@ namespace System.Linq.Expressions
         /// <param name="body">The <see cref="LambdaExpression.Body" /> property of the result.</param>
         /// <param name="parameters">The <see cref="LambdaExpression.Parameters" /> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public Expression<TDelegate> Update(Expression body, IEnumerable<ParameterExpression> parameters)
+        public Expression<TDelegate> Update(Expression body, IEnumerable<ParameterExpression>? parameters)
         {
             if (body == Body)
             {
                 // Ensure parameters is safe to enumerate twice.
                 // (If this means a second call to ToReadOnly it will return quickly).
-                ICollection<ParameterExpression> pars;
+                ICollection<ParameterExpression>? pars;
                 if (parameters == null)
                 {
                     pars = null;
@@ -249,14 +281,14 @@ namespace System.Linq.Expressions
             return Lambda<TDelegate>(body, Name, TailCall, parameters);
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
-        internal virtual bool SameParameters(ICollection<ParameterExpression> parameters)
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
+        internal virtual bool SameParameters(ICollection<ParameterExpression>? parameters)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
-        internal virtual Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
+        internal virtual Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
             throw ContractUtils.Unreachable;
         }
@@ -275,7 +307,7 @@ namespace System.Linq.Expressions
             return spiller.Rewrite(this);
         }
 
-        internal static Expression<TDelegate> Create(Expression body, string name, bool tailCall, IReadOnlyList<ParameterExpression> parameters)
+        internal static Expression<TDelegate> Create(Expression body, string? name, bool tailCall, IReadOnlyList<ParameterExpression> parameters)
         {
             if (name == null && !tailCall)
             {
@@ -308,7 +340,7 @@ namespace System.Linq.Expressions
     // Separate expression creation class to hide the CreateExpressionFunc function from users reflecting on Expression<T>
     public class ExpressionCreator<TDelegate>
     {
-        public static LambdaExpression CreateExpressionFunc(Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
+        public static Expression<TDelegate> CreateExpressionFunc(Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {
             if (name == null && !tailCall)
             {
@@ -336,7 +368,7 @@ namespace System.Linq.Expressions
 
         internal override int ParameterCount => 0;
 
-        internal override bool SameParameters(ICollection<ParameterExpression> parameters) =>
+        internal override bool SameParameters(ICollection<ParameterExpression>? parameters) =>
             parameters == null || parameters.Count == 0;
 
         internal override ParameterExpression GetParameter(int index)
@@ -346,7 +378,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => EmptyReadOnlyCollection<ParameterExpression>.Instance;
 
-        internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
+        internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
             Debug.Assert(body != null);
             Debug.Assert(parameters == null || parameters.Length == 0);
@@ -374,7 +406,7 @@ namespace System.Linq.Expressions
                 _ => throw Error.ArgumentOutOfRange(nameof(index)),
             };
 
-        internal override bool SameParameters(ICollection<ParameterExpression> parameters)
+        internal override bool SameParameters(ICollection<ParameterExpression>? parameters)
         {
             if (parameters != null && parameters.Count == 1)
             {
@@ -390,7 +422,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ExpressionUtils.ReturnReadOnly(this, ref _par0);
 
-        internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
+        internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
             Debug.Assert(body != null);
             Debug.Assert(parameters == null || parameters.Length == 1);
@@ -426,12 +458,11 @@ namespace System.Linq.Expressions
                 _ => throw Error.ArgumentOutOfRange(nameof(index)),
             };
 
-        internal override bool SameParameters(ICollection<ParameterExpression> parameters)
+        internal override bool SameParameters(ICollection<ParameterExpression>? parameters)
         {
             if (parameters != null && parameters.Count == 2)
             {
-                ReadOnlyCollection<ParameterExpression> alreadyCollection = _par0 as ReadOnlyCollection<ParameterExpression>;
-                if (alreadyCollection != null)
+                if (_par0 is ReadOnlyCollection<ParameterExpression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(parameters, alreadyCollection);
                 }
@@ -453,7 +484,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ExpressionUtils.ReturnReadOnly(this, ref _par0);
 
-        internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
+        internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
             Debug.Assert(body != null);
             Debug.Assert(parameters == null || parameters.Length == 2);
@@ -492,12 +523,11 @@ namespace System.Linq.Expressions
                 _ => throw Error.ArgumentOutOfRange(nameof(index)),
             };
 
-        internal override bool SameParameters(ICollection<ParameterExpression> parameters)
+        internal override bool SameParameters(ICollection<ParameterExpression>? parameters)
         {
             if (parameters != null && parameters.Count == 3)
             {
-                ReadOnlyCollection<ParameterExpression> alreadyCollection = _par0 as ReadOnlyCollection<ParameterExpression>;
-                if (alreadyCollection != null)
+                if (_par0 is ReadOnlyCollection<ParameterExpression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(parameters, alreadyCollection);
                 }
@@ -522,7 +552,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ExpressionUtils.ReturnReadOnly(this, ref _par0);
 
-        internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
+        internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
             Debug.Assert(body != null);
             Debug.Assert(parameters == null || parameters.Length == 3);
@@ -550,12 +580,12 @@ namespace System.Linq.Expressions
 
         internal override ParameterExpression GetParameter(int index) => _parameters[index];
 
-        internal override bool SameParameters(ICollection<ParameterExpression> parameters) =>
+        internal override bool SameParameters(ICollection<ParameterExpression>? parameters) =>
             ExpressionUtils.SameElements(parameters, _parameters);
 
         internal override ReadOnlyCollection<ParameterExpression> GetOrMakeParameters() => ExpressionUtils.ReturnReadOnly(ref _parameters);
 
-        internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[] parameters)
+        internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
             Debug.Assert(body != null);
             Debug.Assert(parameters == null || parameters.Length == _parameters.Count);
@@ -566,14 +596,14 @@ namespace System.Linq.Expressions
 
     internal sealed class FullExpression<TDelegate> : ExpressionN<TDelegate>
     {
-        public FullExpression(Expression body, string name, bool tailCall, IReadOnlyList<ParameterExpression> parameters)
+        public FullExpression(Expression body, string? name, bool tailCall, IReadOnlyList<ParameterExpression> parameters)
             : base(body, parameters)
         {
             NameCore = name;
             TailCallCore = tailCall;
         }
 
-        internal override string NameCore { get; }
+        internal override string? NameCore { get; }
         internal override bool TailCallCore { get; }
     }
 
@@ -583,31 +613,31 @@ namespace System.Linq.Expressions
         /// Creates an Expression{T} given the delegate type. Caches the
         /// factory method to speed up repeated creations for the same T.
         /// </summary>
-        internal static LambdaExpression CreateLambda(Type delegateType, Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
+        internal static LambdaExpression CreateLambda(Type delegateType, Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {
             // Get or create a delegate to the public Expression.Lambda<T>
             // method and call that will be used for creating instances of this
             // delegate type
-            Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression> fastPath;
-            CacheDict<Type, Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>> factories = s_lambdaFactories;
+            Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>? fastPath;
+            CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? factories = s_lambdaFactories;
             if (factories == null)
             {
-                s_lambdaFactories = factories = new CacheDict<Type, Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>(50);
+                s_lambdaFactories = factories = new CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>(50);
             }
 
             if (!factories.TryGetValue(delegateType, out fastPath))
             {
 #if FEATURE_COMPILE
-                MethodInfo create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic);
+                MethodInfo create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!;
 #else
-                MethodInfo create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public);
+                MethodInfo create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public)!;
 #endif
                 if (delegateType.IsCollectible)
                 {
-                    return (LambdaExpression)create.Invoke(null, new object[] { body, name, tailCall, parameters });
+                    return (LambdaExpression)create.Invoke(null, new object?[] { body, name, tailCall, parameters })!;
                 }
 
-                factories[delegateType] = fastPath = (Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>)create.CreateDelegate(typeof(Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
+                factories[delegateType] = fastPath = (Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>)create.CreateDelegate(typeof(Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
             }
 
             return fastPath(body, name, tailCall, parameters);
@@ -620,9 +650,9 @@ namespace System.Linq.Expressions
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="LambdaExpression.Body"/> property equal to.</param>
         /// <param name="parameters">An array that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, params ParameterExpression[] parameters)
+        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, params ParameterExpression[]? parameters)
         {
-            return Lambda<TDelegate>(body, false, (IEnumerable<ParameterExpression>)parameters);
+            return Lambda<TDelegate>(body, false, (IEnumerable<ParameterExpression>?)parameters);
         }
 
         /// <summary>
@@ -633,9 +663,9 @@ namespace System.Linq.Expressions
         /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression.</param>
         /// <param name="parameters">An array that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, bool tailCall, params ParameterExpression[] parameters)
+        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, bool tailCall, params ParameterExpression[]? parameters)
         {
-            return Lambda<TDelegate>(body, tailCall, (IEnumerable<ParameterExpression>)parameters);
+            return Lambda<TDelegate>(body, tailCall, (IEnumerable<ParameterExpression>?)parameters);
         }
 
         /// <summary>
@@ -645,7 +675,7 @@ namespace System.Linq.Expressions
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="LambdaExpression.Body"/> property equal to.</param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, IEnumerable<ParameterExpression> parameters)
+        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, IEnumerable<ParameterExpression>? parameters)
         {
             return Lambda<TDelegate>(body, null, false, parameters);
         }
@@ -658,7 +688,7 @@ namespace System.Linq.Expressions
         /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression.</param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, bool tailCall, IEnumerable<ParameterExpression> parameters)
+        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, bool tailCall, IEnumerable<ParameterExpression>? parameters)
         {
             return Lambda<TDelegate>(body, null, tailCall, parameters);
         }
@@ -671,7 +701,7 @@ namespace System.Linq.Expressions
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <param name="name">The name of the lambda. Used for generating debugging info.</param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, string name, IEnumerable<ParameterExpression> parameters)
+        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, string? name, IEnumerable<ParameterExpression>? parameters)
         {
             return Lambda<TDelegate>(body, name, false, parameters);
         }
@@ -685,11 +715,15 @@ namespace System.Linq.Expressions
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression.</param>
         /// <returns>An <see cref="Expression{TDelegate}"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, string name, bool tailCall, IEnumerable<ParameterExpression> parameters)
+        public static Expression<TDelegate> Lambda<TDelegate>(Expression body, string? name, bool tailCall, IEnumerable<ParameterExpression>? parameters)
         {
             ReadOnlyCollection<ParameterExpression> parameterList = parameters.ToReadOnly();
             ValidateLambdaArgs(typeof(TDelegate), ref body, parameterList, nameof(TDelegate));
-            return (Expression<TDelegate>)CreateLambda(typeof(TDelegate), body, name, tailCall, parameterList);
+#if FEATURE_COMPILE
+            return Expression<TDelegate>.Create(body, name, tailCall, parameterList);
+#else
+            return ExpressionCreator<TDelegate>.CreateExpressionFunc(body, name, tailCall, parameterList);
+#endif
         }
 
         /// <summary>
@@ -698,9 +732,9 @@ namespace System.Linq.Expressions
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="LambdaExpression.Body"/> property equal to.</param>
         /// <param name="parameters">An array that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Expression body, params ParameterExpression[] parameters)
+        public static LambdaExpression Lambda(Expression body, params ParameterExpression[]? parameters)
         {
-            return Lambda(body, false, (IEnumerable<ParameterExpression>)parameters);
+            return Lambda(body, false, (IEnumerable<ParameterExpression>?)parameters);
         }
 
         /// <summary>
@@ -710,9 +744,9 @@ namespace System.Linq.Expressions
         /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression.</param>
         /// <param name="parameters">An array that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Expression body, bool tailCall, params ParameterExpression[] parameters)
+        public static LambdaExpression Lambda(Expression body, bool tailCall, params ParameterExpression[]? parameters)
         {
-            return Lambda(body, tailCall, (IEnumerable<ParameterExpression>)parameters);
+            return Lambda(body, tailCall, (IEnumerable<ParameterExpression>?)parameters);
         }
 
         /// <summary>
@@ -721,7 +755,7 @@ namespace System.Linq.Expressions
         /// <param name="body">An <see cref="Expression"/> to set the <see cref="LambdaExpression.Body"/> property equal to.</param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Expression body, IEnumerable<ParameterExpression> parameters)
+        public static LambdaExpression Lambda(Expression body, IEnumerable<ParameterExpression>? parameters)
         {
             return Lambda(body, null, false, parameters);
         }
@@ -733,7 +767,7 @@ namespace System.Linq.Expressions
         /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression.</param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Expression body, bool tailCall, IEnumerable<ParameterExpression> parameters)
+        public static LambdaExpression Lambda(Expression body, bool tailCall, IEnumerable<ParameterExpression>? parameters)
         {
             return Lambda(body, null, tailCall, parameters);
         }
@@ -745,7 +779,7 @@ namespace System.Linq.Expressions
         /// <param name="parameters">An array that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <param name="delegateType">A <see cref="Type"/> representing the delegate signature for the lambda.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Type delegateType, Expression body, params ParameterExpression[] parameters)
+        public static LambdaExpression Lambda(Type delegateType, Expression body, params ParameterExpression[]? parameters)
         {
             return Lambda(delegateType, body, null, false, parameters);
         }
@@ -758,7 +792,7 @@ namespace System.Linq.Expressions
         /// <param name="parameters">An array that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <param name="delegateType">A <see cref="Type"/> representing the delegate signature for the lambda.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Type delegateType, Expression body, bool tailCall, params ParameterExpression[] parameters)
+        public static LambdaExpression Lambda(Type delegateType, Expression body, bool tailCall, params ParameterExpression[]? parameters)
         {
             return Lambda(delegateType, body, null, tailCall, parameters);
         }
@@ -770,7 +804,7 @@ namespace System.Linq.Expressions
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <param name="delegateType">A <see cref="Type"/> representing the delegate signature for the lambda.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Type delegateType, Expression body, IEnumerable<ParameterExpression> parameters)
+        public static LambdaExpression Lambda(Type delegateType, Expression body, IEnumerable<ParameterExpression>? parameters)
         {
             return Lambda(delegateType, body, null, false, parameters);
         }
@@ -783,7 +817,7 @@ namespace System.Linq.Expressions
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <param name="delegateType">A <see cref="Type"/> representing the delegate signature for the lambda.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Type delegateType, Expression body, bool tailCall, IEnumerable<ParameterExpression> parameters)
+        public static LambdaExpression Lambda(Type delegateType, Expression body, bool tailCall, IEnumerable<ParameterExpression>? parameters)
         {
             return Lambda(delegateType, body, null, tailCall, parameters);
         }
@@ -795,7 +829,7 @@ namespace System.Linq.Expressions
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <param name="name">The name for the lambda. Used for emitting debug information.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Expression body, string name, IEnumerable<ParameterExpression> parameters)
+        public static LambdaExpression Lambda(Expression body, string? name, IEnumerable<ParameterExpression>? parameters)
         {
             return Lambda(body, name, false, parameters);
         }
@@ -808,7 +842,7 @@ namespace System.Linq.Expressions
         /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression.</param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Expression body, string name, bool tailCall, IEnumerable<ParameterExpression> parameters)
+        public static LambdaExpression Lambda(Expression body, string? name, bool tailCall, IEnumerable<ParameterExpression>? parameters)
         {
             ContractUtils.RequiresNotNull(body, nameof(body));
 
@@ -845,7 +879,7 @@ namespace System.Linq.Expressions
         /// <param name="name">The name for the lambda. Used for emitting debug information.</param>
         /// <param name="delegateType">A <see cref="Type"/> representing the delegate signature for the lambda.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Type delegateType, Expression body, string name, IEnumerable<ParameterExpression> parameters)
+        public static LambdaExpression Lambda(Type delegateType, Expression body, string? name, IEnumerable<ParameterExpression>? parameters)
         {
             ReadOnlyCollection<ParameterExpression> paramList = parameters.ToReadOnly();
             ValidateLambdaArgs(delegateType, ref body, paramList, nameof(delegateType));
@@ -862,7 +896,7 @@ namespace System.Linq.Expressions
         /// <param name="tailCall">A <see cref="bool"/> that indicates if tail call optimization will be applied when compiling the created expression.</param>
         /// <param name="parameters">An <see cref="IEnumerable{T}"/> that contains <see cref="ParameterExpression"/> objects to use to populate the <see cref="LambdaExpression.Parameters"/> collection.</param>
         /// <returns>A <see cref="LambdaExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.Lambda"/> and the <see cref="LambdaExpression.Body"/> and <see cref="LambdaExpression.Parameters"/> properties set to the specified values.</returns>
-        public static LambdaExpression Lambda(Type delegateType, Expression body, string name, bool tailCall, IEnumerable<ParameterExpression> parameters)
+        public static LambdaExpression Lambda(Type delegateType, Expression body, string? name, bool tailCall, IEnumerable<ParameterExpression>? parameters)
         {
             ReadOnlyCollection<ParameterExpression> paramList = parameters.ToReadOnly();
             ValidateLambdaArgs(delegateType, ref body, paramList, nameof(delegateType));
@@ -883,7 +917,7 @@ namespace System.Linq.Expressions
             TypeUtils.ValidateType(delegateType, nameof(delegateType), allowByRef: true, allowPointer: true);
 
             CacheDict<Type, MethodInfo> ldc = s_lambdaDelegateCache;
-            if (!ldc.TryGetValue(delegateType, out MethodInfo mi))
+            if (!ldc.TryGetValue(delegateType, out MethodInfo? mi))
             {
                 mi = delegateType.GetInvokeMethod();
                 if (!delegateType.IsCollectible)
@@ -914,7 +948,7 @@ namespace System.Linq.Expressions
                             //We cannot pass a parameter of T& to a delegate that takes T or any non-ByRef type.
                             throw Error.ParameterExpressionNotValidAsDelegate(pex.Type.MakeByRefType(), pType);
                         }
-                        pType = pType.GetElementType();
+                        pType = pType.GetElementType()!;
                     }
                     if (!TypeUtils.AreReferenceAssignable(pex.Type, pType))
                     {
@@ -947,7 +981,7 @@ namespace System.Linq.Expressions
             PointerOrVoid
         }
 
-        private static TryGetFuncActionArgsResult ValidateTryGetFuncActionArgs(Type[] typeArgs)
+        private static TryGetFuncActionArgsResult ValidateTryGetFuncActionArgs(Type[]? typeArgs)
         {
             if (typeArgs == null)
             {
@@ -982,7 +1016,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="typeArgs">An array of <see cref="System.Type"/> objects that specify the type arguments for the System.Func delegate type.</param>
         /// <returns>The type of a System.Func delegate that has the specified type arguments.</returns>
-        public static Type GetFuncType(params Type[] typeArgs)
+        public static Type GetFuncType(params Type[]? typeArgs)
         {
             switch (ValidateTryGetFuncActionArgs(typeArgs))
             {
@@ -1011,7 +1045,7 @@ namespace System.Linq.Expressions
         /// <param name="typeArgs">An array of <see cref="System.Type"/> objects that specify the type arguments for the System.Func delegate type.</param>
         /// <param name="funcType">When this method returns, contains the generic System.Func delegate type that has specific type arguments. Contains null if there is no generic System.Func delegate that matches the <paramref name="typeArgs"/>.This parameter is passed uninitialized.</param>
         /// <returns>true if generic System.Func delegate type was created for specific <paramref name="typeArgs"/>; false otherwise.</returns>
-        public static bool TryGetFuncType(Type[] typeArgs, out Type funcType)
+        public static bool TryGetFuncType(Type[] typeArgs, [NotNullWhen(true)] out Type? funcType)
         {
             if (ValidateTryGetFuncActionArgs(typeArgs) == TryGetFuncActionArgsResult.Valid)
             {
@@ -1027,7 +1061,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="typeArgs">An array of <see cref="System.Type"/> objects that specify the type arguments for the System.Action delegate type.</param>
         /// <returns>The type of a System.Action delegate that has the specified type arguments.</returns>
-        public static Type GetActionType(params Type[] typeArgs)
+        public static Type GetActionType(params Type[]? typeArgs)
         {
             switch (ValidateTryGetFuncActionArgs(typeArgs))
             {
@@ -1055,7 +1089,7 @@ namespace System.Linq.Expressions
         /// <param name="typeArgs">An array of <see cref="System.Type"/> objects that specify the type arguments for the System.Action delegate type.</param>
         /// <param name="actionType">When this method returns, contains the generic System.Action delegate type that has specific type arguments. Contains null if there is no generic System.Action delegate that matches the <paramref name="typeArgs"/>.This parameter is passed uninitialized.</param>
         /// <returns>true if generic System.Action delegate type was created for specific <paramref name="typeArgs"/>; false otherwise.</returns>
-        public static bool TryGetActionType(Type[] typeArgs, out Type actionType)
+        public static bool TryGetActionType(Type[] typeArgs, [NotNullWhen(true)] out Type? actionType)
         {
             if (ValidateTryGetFuncActionArgs(typeArgs) == TryGetFuncActionArgsResult.Valid)
             {

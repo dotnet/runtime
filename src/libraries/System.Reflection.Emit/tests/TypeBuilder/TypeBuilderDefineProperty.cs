@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -30,6 +29,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(TestData))]
         public void DefineProperty(string name, PropertyAttributes attributes, Type returnType, Type[] parameterTypes, string expectedName, PropertyAttributes expectedPropertyAttributes)
         {
@@ -137,6 +137,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineProperty_OpenGenericReturnType_ThrowsBadImageFormatExceptionGettingCreatedPropertyType()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -148,6 +149,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineProperty_NullParameterType_ThrowsArgumentNullException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -155,6 +157,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineProperty_OpenGenericParameterType_ThrowsBadImageFormatExceptionGettingCreatedPropertyType()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -166,6 +169,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineProperty_DynamicPropertyTypeNotCreated_ThrowsTypeLoadException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -182,6 +186,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineProperty_DynamicParameterTypeNotCreated_ThrowsTypeLoadException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -198,6 +203,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineProperty_CalledMultipleTimes_Works()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);

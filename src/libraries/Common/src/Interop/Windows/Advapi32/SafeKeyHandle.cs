@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
@@ -21,9 +20,9 @@ namespace System.Security.Cryptography
     {
         private int _keySpec;
         private bool _fPublicOnly;
-        private SafeProvHandle _parent;
+        private SafeProvHandle? _parent;
 
-        private SafeKeyHandle() : base(true)
+        public SafeKeyHandle() : base(true)
         {
             SetHandle(IntPtr.Zero);
             _keySpec = 0;
@@ -89,7 +88,7 @@ namespace System.Security.Cryptography
             bool successfullyFreed = Interop.Advapi32.CryptDestroyKey(handle);
             Debug.Assert(successfullyFreed);
 
-            SafeProvHandle parent = _parent;
+            SafeProvHandle? parent = _parent;
             _parent = null;
             parent?.DangerousRelease();
 

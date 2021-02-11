@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This file is one of a group of files (AesCng.cs, TripleDESCng.cs) that are almost identical except
@@ -67,7 +66,7 @@ namespace System.Security.Cryptography
             return _core.CreateDecryptor();
         }
 
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV)
+        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return _core.CreateDecryptor(rgbKey, rgbIV);
         }
@@ -78,7 +77,7 @@ namespace System.Security.Cryptography
             return _core.CreateEncryptor();
         }
 
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV)
+        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return _core.CreateEncryptor(rgbKey, rgbIV);
         }
@@ -106,9 +105,21 @@ namespace System.Security.Cryptography
             return false;
         }
 
+        int ICngSymmetricAlgorithm.GetPaddingSize()
+        {
+            return this.GetPaddingSize();
+        }
+
         SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
         {
-            return AesBCryptModes.GetSharedHandle(Mode);
+            try
+            {
+                return AesBCryptModes.GetSharedHandle(Mode, FeedbackSize / 8);
+            }
+            catch (NotSupportedException)
+            {
+                throw new CryptographicException(SR.Cryptography_InvalidCipherMode);
+            }
         }
 
         string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()

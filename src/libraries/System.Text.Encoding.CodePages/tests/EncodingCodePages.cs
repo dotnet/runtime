@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -171,6 +170,7 @@ namespace System.Text.Tests
             yield return new object[] { 1251, "windows-1251", "windows-1251" };
             yield return new object[] { 1251, "windows-1251", "x-cp1251" };
             yield return new object[] { 1252, "windows-1252", "windows-1252" };
+            yield return new object[] { 1252, "windows-1252", "cp1252" };
             yield return new object[] { 1252, "windows-1252", "x-ansi" };
             yield return new object[] { 1253, "windows-1253", "windows-1253" };
             yield return new object[] { 1254, "windows-1254", "windows-1254" };
@@ -447,8 +447,13 @@ namespace System.Text.Tests
             yield return Map(1200, "utf-16");
             yield return Map(12000, "utf-32");
             yield return Map(20127, "us-ascii");
-            yield return Map(65000, "utf-7");
             yield return Map(65001, "utf-8");
+
+            if (!PlatformDetection.IsNetCore)
+            {
+                // Encoding.GetEncodings() doesn't include UTF-7 in the result set as of .NET 5.0
+                yield return Map(65000, "utf-7");
+            }
         }
 
         private static KeyValuePair<int, string> Map(int codePage, string webName)
@@ -468,7 +473,7 @@ namespace System.Text.Tests
 
             if (defaultEncoding.CodePage == Encoding.UTF8.CodePage)
             {
-                // if the default encoding is not UTF8 that means either we are running on the full framework
+                // if the default encoding is not UTF8 that means either we are running on the .NET Framework
                 // or the encoding provider is registered throw the call Encoding.RegisterProvider.
                 // at that time we shouldn't expect exceptions when creating the following encodings.
                 foreach (object[] mapping in CodePageInfo())
@@ -477,7 +482,7 @@ namespace System.Text.Tests
                     AssertExtensions.Throws<ArgumentException>("name", () => Encoding.GetEncoding((string)mapping[2]));
                 }
 
-                // Currently the class EncodingInfo isn't present in corefx, so this checks none of the code pages are present.
+                // Currently the class EncodingInfo isn't present in .NET Core, so this checks none of the code pages are present.
                 // When it is, comment out this line and remove the previous foreach/assert.
                 // Assert.Equal(CrossplatformDefaultEncodings, Encoding.GetEncodings().OrderBy(i => i.CodePage).Select(i => Map(i.CodePage, i.WebName)));
 
@@ -502,7 +507,7 @@ namespace System.Text.Tests
             }
             // Adding the code page provider should keep the originals, too.
             ValidateDefaultEncodings();
-            // Currently the class EncodingInfo isn't present in corefx, so this checks the complete list
+            // Currently the class EncodingInfo isn't present in .NET Core, so this checks the complete list
             // When it is, comment out this line and remove the previous foreach/assert.
             // Assert.Equal(CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1])).OrderBy(i => i.Key)),
             //               Encoding.GetEncodings().OrderBy(i => i.CodePage).Select(i => Map(i.CodePage, i.WebName)));
@@ -658,14 +663,18 @@ namespace System.Text.Tests
             "\u00f0\u00f1\u00f2\u00f3\u00f4\u00f5\u00f6\u00f7\u00f8\u00f9\u00fa\u00fb\u00fc\u00fd\u00fe\u00ff";
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            Encoding win1252 = Encoding.GetEncoding("windows-1252", EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
-            byte[] enc = new byte[256];
-            for (int j = 0; j < 256; j++)
-            {
-                enc[j] = (byte)j;
-            }
 
-            Assert.Equal(s1252Result, win1252.GetString(enc));
+            foreach (string codePageName in new string [] { "windows-1252", "cp1252"})
+            {
+                Encoding win1252 = Encoding.GetEncoding(codePageName, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+                byte[] enc = new byte[256];
+                for (int j = 0; j < 256; j++)
+                {
+                    enc[j] = (byte)j;
+                }
+
+                Assert.Equal(s1252Result, win1252.GetString(enc));
+            }
         }
     }
 

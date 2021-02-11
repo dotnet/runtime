@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -9,8 +8,11 @@ namespace System.Text.RegularExpressions.Tests
 {
     public class RegexSplitTests
     {
-        public static IEnumerable<object[]> Split_NonCompiled_TestData()
+        public static IEnumerable<object[]> Split_TestData()
         {
+            yield return new object[] { "", "", RegexOptions.None, 0, 0, new string[] { "", "" } };
+            yield return new object[] { "123", "abc", RegexOptions.None, 3, 0, new string[] { "abc" } };
+
             yield return new object[] { "    ", "word0    word1    word2    word3", RegexOptions.None, 32, 0, new string[] { "word0", "word1", "word2", "word3" } };
 
             yield return new object[] { ":", "kkk:lll:mmm:nnn:ooo", RegexOptions.None, 19, 0, new string[] { "kkk", "lll", "mmm", "nnn", "ooo" } };
@@ -27,6 +29,9 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "a(?<dot1>.)c(.)e", "123abcde456aBCDe789", RegexOptions.IgnoreCase, 19, 0, new string[] { "123", "d", "b", "456", "D", "B", "789" } };
 
             // RightToLeft
+            yield return new object[] { "", "", RegexOptions.RightToLeft, 0, 0, new string[] { "", "" } };
+            yield return new object[] { "123", "abc", RegexOptions.RightToLeft, 3, 0, new string[] { "abc" } };
+
             yield return new object[] { "a(.)c(.)e", "123abcde456aBCDe789", RegexOptions.RightToLeft, 19, 19, new string[] { "123", "d", "b", "456aBCDe789" } };
             yield return new object[] { "a(.)c(.)e", "123abcde456aBCDe789", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 19, 19, new string[] { "123", "d", "b", "456", "D", "B", "789" } };
 
@@ -47,15 +52,18 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"\d", "1a2b3c4d5e6f7g8h9i0k", RegexOptions.RightToLeft, 10, 20, new string[] { "1a", "b", "c", "d", "e", "f", "g", "h", "i", "k" } };
             yield return new object[] { @"\d", "1a2b3c4d5e6f7g8h9i0k", RegexOptions.RightToLeft, 2, 20, new string[] { "1a2b3c4d5e6f7g8h9i", "k" } };
             yield return new object[] { @"\d", "1a2b3c4d5e6f7g8h9i0k", RegexOptions.RightToLeft, 1, 20, new string[] { "1a2b3c4d5e6f7g8h9i0k" } };
+
+            // Anchors
+            yield return new object[] { @"(?<=\G..)(?=..)", "aabbccdd", RegexOptions.None, 8, 0, new string[] { "aa", "bb", "cc", "dd" } };
         }
 
         [Theory]
-        [MemberData(nameof(Split_NonCompiled_TestData))]
-        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Split_NonCompiled_TestData), 2, MemberType = typeof(RegexCompilationHelper))]
+        [MemberData(nameof(Split_TestData))]
+        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Split_TestData), 2, MemberType = typeof(RegexCompilationHelper))]
         public void Split(string pattern, string input, RegexOptions options, int count, int start, string[] expected)
         {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, start);
-            bool isDefaultCount = RegexHelpers.IsDefaultStart(input, options, count);
+            bool isDefaultCount = RegexHelpers.IsDefaultCount(input, options, count);
             if (options == RegexOptions.None)
             {
                 // Use Split(string), Split(string, string), Split(string, int) or Split(string, int, int)

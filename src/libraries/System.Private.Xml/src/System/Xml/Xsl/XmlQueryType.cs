@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -168,7 +168,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Strongly-typed Equals that returns true if this type and "that" type are equivalent.
         /// </summary>
-        public bool Equals(XmlQueryType that)
+        public bool Equals([NotNullWhen(true)] XmlQueryType? that)
         {
             if (that == null)
                 return false;
@@ -228,10 +228,10 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Overload == operator to call Equals rather than do reference equality.
         /// </summary>
-        public static bool operator ==(XmlQueryType left, XmlQueryType right)
+        public static bool operator ==(XmlQueryType? left, XmlQueryType? right)
         {
-            if ((object)left == null)
-                return ((object)right == null);
+            if (left is null)
+                return right is null;
 
             return left.Equals(right);
         }
@@ -239,10 +239,10 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Overload != operator to call Equals rather than do reference inequality.
         /// </summary>
-        public static bool operator !=(XmlQueryType left, XmlQueryType right)
+        public static bool operator !=(XmlQueryType? left, XmlQueryType? right)
         {
-            if ((object)left == null)
-                return ((object)right != null);
+            if (left is null)
+                return right is not null;
 
             return !left.Equals(right);
         }
@@ -319,9 +319,9 @@ namespace System.Xml.Xsl
         /// <summary>
         /// True if "obj" is an XmlQueryType, and this type is the exact same static type.
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            XmlQueryType that = obj as XmlQueryType;
+            XmlQueryType? that = obj as XmlQueryType;
 
             if (that == null)
                 return false;
@@ -337,7 +337,7 @@ namespace System.Xml.Xsl
             if (_hashCode == 0)
             {
                 int hash;
-                XmlSchemaType schemaType;
+                XmlSchemaType? schemaType;
 
                 hash = (int)TypeCode;
                 schemaType = SchemaType;
@@ -406,7 +406,7 @@ namespace System.Xml.Xsl
                 for (int i = 0; i < Count; i++)
                 {
                     if (i != 0)
-                        sb.Append("|");
+                        sb.Append('|');
                     sb.Append(this[i].TypeCode.ToString());
                 }
 

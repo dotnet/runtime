@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Data.Common
 {
@@ -19,7 +18,7 @@ namespace System.Data.Common
             {
                 if (!_canCreateDataAdapter.HasValue)
                 {
-                    using (DbDataAdapter adapter = CreateDataAdapter())
+                    using (DbDataAdapter? adapter = CreateDataAdapter())
                     {
                         _canCreateDataAdapter = adapter != null;
                     }
@@ -35,7 +34,7 @@ namespace System.Data.Common
             {
                 if (!_canCreateCommandBuilder.HasValue)
                 {
-                    using (DbCommandBuilder builder = CreateCommandBuilder())
+                    using (DbCommandBuilder? builder = CreateCommandBuilder())
                     {
                         _canCreateCommandBuilder = builder != null;
                     }
@@ -45,18 +44,18 @@ namespace System.Data.Common
             }
         }
 
-        public virtual DbCommand CreateCommand() => null;
+        public virtual DbCommand? CreateCommand() => null;
 
-        public virtual DbCommandBuilder CreateCommandBuilder() => null;
+        public virtual DbCommandBuilder? CreateCommandBuilder() => null;
 
-        public virtual DbConnection CreateConnection() => null;
+        public virtual DbConnection? CreateConnection() => null;
 
-        public virtual DbConnectionStringBuilder CreateConnectionStringBuilder() => null;
+        public virtual DbConnectionStringBuilder? CreateConnectionStringBuilder() => null;
 
-        public virtual DbDataAdapter CreateDataAdapter() => null;
+        public virtual DbDataAdapter? CreateDataAdapter() => null;
 
-        public virtual DbParameter CreateParameter() => null;
+        public virtual DbParameter? CreateParameter() => null;
 
-        public virtual DbDataSourceEnumerator CreateDataSourceEnumerator() => null;
+        public virtual DbDataSourceEnumerator? CreateDataSourceEnumerator() => null;
     }
 }

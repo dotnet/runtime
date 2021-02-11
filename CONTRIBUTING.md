@@ -5,7 +5,7 @@ You can contribute to .NET Runtime with issues and PRs. Simply filing issues for
 
 ## Contribution "Bar"
 
-Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Core roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
+Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
 
 Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. The .NET Core codebase is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET, too. We may revert changes if they are found to be breaking.
 
@@ -33,7 +33,7 @@ Please do not:
 * **DON'T** submit PRs that alter licensing related files or headers. If you believe there's a problem with them, file an issue and we'll be happy to discuss it.
 * **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](docs/project/api-review-process.md).
 
-## Managed Code Compatibility
+## Breaking Changes
 
 Contributions must maintain [API signature](docs/coding-guidelines/breaking-changes.md#bucket-1-public-contract) and behavioral compatibility. Contributions that include [breaking changes](docs/coding-guidelines/breaking-changes.md) will be rejected. Please file an issue to discuss your idea or change if you believe that it may affect managed code compatibility.
 
@@ -48,21 +48,24 @@ We use and recommend the following workflow:
     - If your change adds a new API, follow the [API Review Process](docs/project/api-review-process.md).
     - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
 2. Create a personal fork of the repository on GitHub (if you don't already have one).
-3. Create a branch off of master (`git checkout -b mybranch`).
+3. In your fork, create a branch off of master (`git checkout -b mybranch`).
     - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue.
     - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
-4. Make and commit your changes.
+4. Make and commit your changes to your branch.
+    - [Workflow Instructions](docs/workflow/README.md) explains how to build and test.
     - Please follow our [Commit Messages](#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
 6. Build the repository with your changes.
     - Make sure that the builds are clean.
     - Make sure that the tests are all passing, including your new tests.
-7. Create a pull request (PR) against the upstream repository's **master** branch.
-    - Push your changes to your fork on GitHub (if you haven't already).
-
-Note: It is OK for your PR to include a large number of commits. Once your change is accepted, you will be asked to squash your commits into one or some appropriately small number of commits before your PR is merged.
-
-Note: It is OK to create your PR as "[WIP]" on the upstream repo before the implementation is done. This can be useful if you'd like to start the feedback process concurrent with your implementation. State that this is the case in the initial PR comment.
+7. Create a pull request (PR) against the dotnet/runtime repository's **master** branch.
+    - State in the description what issue or improvement your change is addressing.
+    - Check if all the Continuous Integration checks are passing.
+8. Wait for feedback or approval of your changes from the [area owners](docs/area-owners.md).
+    - Details about the pull request [review procedure](docs/pr-guide.md).
+9. When area owners have signed off, and all checks are green, your PR will be merged.
+    - The next official build will automatically include your change.
+    - You can delete the branch you used for making the change.
 
 ## Up for Grabs
 
@@ -102,10 +105,9 @@ The following file header is the used for .NET Core. Please use it for new files
 ```
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 ```
 
-- See [class.cpp](./src/coreclr/src/vm/class.cpp) for an example of the header in a C++ file.
+- See [class.cpp](./src/coreclr/vm/class.cpp) for an example of the header in a C++ file.
 - See [List.cs](./src/libraries/System.Private.CoreLib/src/System/Collections/Generic/List.cs) for an example of the header in a C# file.
 
 ## PR - CI Process
@@ -157,6 +159,6 @@ See [IdnMapping.cs](./src/libraries/System.Private.CoreLib/src/System/Globalizat
 
 ### Porting Files from Other Projects
 
-There are many good algorithms implemented in other languages that would benefit the .NET Core project. The rules for porting a Java file to C# , for example, are the same as would be used for copying the same file, as described above.
+There are many good algorithms implemented in other languages that would benefit the .NET Core project. The rules for porting a Java file to C#, for example, are the same as would be used for copying the same file, as described above.
 
 [Clean-room](https://en.wikipedia.org/wiki/Clean_room_design) implementations of existing algorithms that are not permissively licensed will generally not be accepted. If you want to create or nominate such an implementation, please create an issue to discuss the idea.

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Text;
 
 namespace System.Net.Test.Common
 {
@@ -19,8 +19,7 @@ namespace System.Net.Test.Common
         GoAway = 7,
         WindowUpdate = 8,
         Continuation = 9,
-
-        Last = 9
+        AltSvc = 10
     }
 
     [Flags]
@@ -345,9 +344,9 @@ namespace System.Net.Test.Common
 
     public class PingFrame : Frame
     {
-        public byte[] Data;
+        public long Data;
 
-        public PingFrame(byte[] data, FrameFlags flags, int streamId) :
+        public PingFrame(long data, FrameFlags flags, int streamId) :
             base(8, FrameType.Ping, flags, streamId)
         {
             Data = data;
@@ -355,7 +354,7 @@ namespace System.Net.Test.Common
 
         public static PingFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
         {
-            byte[] data = buffer.ToArray();
+            long data = BinaryPrimitives.ReadInt64BigEndian(buffer);
 
             return new PingFrame(data, header.Flags, header.StreamId);
         }
@@ -365,12 +364,12 @@ namespace System.Net.Test.Common
             base.WriteTo(buffer);
             buffer = buffer.Slice(Frame.FrameHeaderLength, 8);
 
-            Data.CopyTo(buffer);
+            BinaryPrimitives.WriteInt64BigEndian(buffer, Data);
         }
 
         public override string ToString()
         {
-            return base.ToString() + $"\nOpaque Data: {string.Join(", ", Data)}";
+            return base.ToString() + $"\nOpaque Data: {Data:X16}";
         }
     }
 
@@ -515,5 +514,47 @@ namespace System.Net.Test.Common
         {
             return base.ToString() + $"\nLastStreamId: {LastStreamId}\nErrorCode: {ErrorCode}";
         }
+    }
+
+    public class AltSvcFrame : Frame
+    {
+        public string Origin;
+        public string AltSvc;
+
+        /// <summary>
+        /// ALTSVC frame, defined in https://tools.ietf.org/html/rfc7838#section-4
+        /// </summary>
+        /// <param name="origin">
+        /// Origin in format &lt;scheme&gt;://&lt;hostname&gt;:&lt;port&gt;.
+        /// Defined by https://tools.ietf.org/html/rfc6454#section-6.2.
+        /// </param>
+        /// <param name="altSvc">
+        /// An Alt-Svc header value as defined by https://tools.ietf.org/html/rfc7838#section-3
+        /// E.g. "h3=contoso.com:12345"
+        /// </param>
+        public AltSvcFrame(string origin, string altSvc, int streamId)
+            : base(2 + origin.Length + altSvc.Length, FrameType.AltSvc, FrameFlags.None, streamId)
+        {
+            Origin = origin;
+            AltSvc = altSvc;
+        }
+
+        public override void WriteTo(Span<byte> buffer)
+        {
+            base.WriteTo(buffer);
+            buffer = buffer.Slice(Frame.FrameHeaderLength);
+
+            BinaryPrimitives.WriteUInt16BigEndian(buffer, checked((ushort)Origin.Length));
+            buffer = buffer.Slice(2);
+
+            var tmpBuffer = Encoding.ASCII.GetBytes(Origin);
+            tmpBuffer.CopyTo(buffer);
+            buffer = buffer.Slice(Origin.Length);
+
+            tmpBuffer = Encoding.ASCII.GetBytes(AltSvc);
+            tmpBuffer.CopyTo(buffer);
+        }
+
+        public override string ToString() => $"{base.ToString()}\n{nameof(Origin)}: {Origin}\n{nameof(AltSvc)}: {AltSvc}";
     }
 }

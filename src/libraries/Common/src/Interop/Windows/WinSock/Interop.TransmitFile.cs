@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Net.Sockets;
@@ -14,7 +13,7 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.Mswsock, SetLastError = true)]
         internal static extern unsafe bool TransmitFile(
             SafeHandle socket,
-            SafeHandle fileHandle,
+            SafeHandle? fileHandle,
             int numberOfBytesToWrite,
             int numberOfBytesPerSend,
             NativeOverlapped* overlapped,

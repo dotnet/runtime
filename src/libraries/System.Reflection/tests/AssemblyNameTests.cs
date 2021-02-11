@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -35,6 +34,21 @@ namespace System.Reflection.Tests
             yield return new object[] { "\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B", "\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B\uD83D\uDC3B" };
         }
 
+        public static IEnumerable<object[]> Names_TestDataRequiresEscaping()
+        {
+            yield return new object[] { " name ", "\" name \"" };
+            yield return new object[] { "na,me", "na\\,me" };
+            yield return new object[] { "na=me", "na\\=me" };
+            yield return new object[] { "na\\me", "na\\\\me" };
+            yield return new object[] { "na\'me", "\"na\\'me\"" };
+            yield return new object[] { "na\"me", "\"na\\\"me\"" };
+            yield return new object[] { "na\tme", "na\\tme" };
+            yield return new object[] { "na\0me", "na\0me" };
+            yield return new object[] { "na\bme", "na\bme" };
+            yield return new object[] { "name\r", "\"name\\r\"" };
+            yield return new object[] { "name\n", "\"name\\n\"" };
+        }
+
         [Fact]
         public void Ctor_Empty()
         {
@@ -45,6 +59,8 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Names_TestData))]
+        [InlineData(" name ", "name")]
+        [InlineData("\tname\t", "name")]
         public void Ctor_String(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName(name);
@@ -61,6 +77,17 @@ namespace System.Reflection.Tests
         [InlineData("           ", typeof(FileLoadException))]
         [InlineData("  \t \r \n ", typeof(FileLoadException))]
         public void Ctor_String_Invalid(string assemblyName, Type exceptionType)
+        {
+            Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
+        }
+
+        [Theory]
+        [InlineData("na,me", typeof(FileLoadException))]
+        [InlineData("na=me", typeof(FileLoadException))]
+        [InlineData("na\'me", typeof(FileLoadException))]
+        [InlineData("na\"me", typeof(FileLoadException))]
+        [ActiveIssue ("https://github.com/dotnet/runtime/issues/45032", TestRuntimes.Mono)]
+        public void Ctor_String_Invalid_Issue(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
         }
@@ -241,10 +268,11 @@ namespace System.Reflection.Tests
             }
 
             Assembly a = typeof(AssemblyNameTests).Assembly;
-            Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(a.Location).ToString());
+            Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34492", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void GetAssemblyName_LockedFile()
         {
             using (var tempFile = new TempFile(Path.GetTempFileName(), 100))
@@ -354,11 +382,32 @@ namespace System.Reflection.Tests
         [MemberData(nameof(Names_TestData))]
         [InlineData(null, null)]
         [InlineData("", "")]
+        [InlineData(" name ", " name ")]
+        [InlineData("\tname\t", "\tname\t")]
         public void Name_Set(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
             assemblyName.Name = name;
             Assert.Equal(expectedName, assemblyName.Name);
+        }
+
+        [Theory]
+        [MemberData(nameof(Names_TestData))]
+        [MemberData(nameof(Names_TestDataRequiresEscaping))]
+        [InlineData(null, "")]
+        public void Name_Set_FullName(string name, string expectedName)
+        {
+            AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
+            assemblyName.Name = name;
+            Assert.Equal(expectedName, assemblyName.FullName);
+        }
+
+        [Fact]
+        public void Name_Set_FullName_Invalid()
+        {
+            AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
+            assemblyName.Name = "";
+            Assert.Throws<FileLoadException>(() => assemblyName.FullName);
         }
 
         [Fact]
@@ -389,6 +438,14 @@ namespace System.Reflection.Tests
             AssemblyName assemblyName = new AssemblyName("MyAssemblyName, Version=1.0.0.0");
             assemblyName.SetPublicKey(TheKey);
             Assert.Equal("MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b03f5f7f11d50a3a", assemblyName.FullName);
+        }
+
+        [Fact]
+        public static void Name_WithNullPublicKey()
+        {
+            AssemblyName assemblyName = new AssemblyName("noname,PublicKeyToken=null");
+            Assert.Equal(0, assemblyName.GetPublicKeyToken().Length);
+            Assert.Equal("noname, PublicKeyToken=null", assemblyName.FullName);
         }
 
         public static IEnumerable<object[]> Version_TestData()
@@ -535,7 +592,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue(33249)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/27817")]
         public static void Constructor_String_LoadVersionTest()
         {
             string assemblyNamePrefix = "System.Reflection.Tests.Assembly_";
@@ -576,7 +633,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData("Foo")]
         [InlineData("Hi There")]
-        public void ToString(string name)
+        public void ToStringTest(string name)
         {
             var assemblyName = new AssemblyName(name);
             Assert.StartsWith(name, assemblyName.ToString());

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // The BigNumber class implements methods for formatting and parsing
 // big numeric values. To format and parse numeric values, applications should
@@ -409,21 +408,8 @@ namespace System.Numerics
             for (int i = len - 1; i > -1; i--)
             {
                 char c = number.digits[i];
-
-                byte b;
-                if (c >= '0' && c <= '9')
-                {
-                    b = (byte)(c - '0');
-                }
-                else if (c >= 'A' && c <= 'F')
-                {
-                    b = (byte)((c - 'A') + 10);
-                }
-                else
-                {
-                    Debug.Assert(c >= 'a' && c <= 'f');
-                    b = (byte)((c - 'a') + 10);
-                }
+                int b = HexConverter.FromChar(c);
+                Debug.Assert(b != 0xFF);
                 if (i == 0 && (b & 0x08) == 0x08)
                     isNegative = true;
 
@@ -434,7 +420,7 @@ namespace System.Numerics
                 }
                 else
                 {
-                    bits[bitIndex] = isNegative ? (byte)(b | 0xF0) : (b);
+                    bits[bitIndex] = (byte)(isNegative ? (b | 0xF0) : (b));
                 }
                 shift = !shift;
             }
@@ -490,9 +476,12 @@ namespace System.Numerics
                     n = format[i++] - '0';
                     while (i < format.Length && format[i] >= '0' && format[i] <= '9')
                     {
-                        n = n * 10 + (format[i++] - '0');
-                        if (n >= 10)
-                            break;
+                        int temp = n * 10 + (format[i++] - '0');
+                        if (temp < n)
+                        {
+                            throw new FormatException(SR.Argument_BadFormatSpecifier);
+                        }
+                        n = temp;
                     }
                 }
                 if (i >= format.Length || format[i] == '\0')
@@ -519,8 +508,7 @@ namespace System.Numerics
             }
             bits = bits.Slice(0, bytesWrittenOrNeeded);
 
-            Span<char> stackSpace = stackalloc char[128]; // each byte is typically two chars
-            var sb = new ValueStringBuilder(stackSpace);
+            var sb = new ValueStringBuilder(stackalloc char[128]); // each byte is typically two chars
 
             int cur = bits.Length - 1;
             if (cur > -1)
@@ -729,8 +717,7 @@ namespace System.Numerics
                 int precision = 29;
                 int scale = cchMax - ichDst;
 
-                Span<char> stackSpace = stackalloc char[128]; // arbitrary stack cut-off
-                var sb = new ValueStringBuilder(stackSpace);
+                var sb = new ValueStringBuilder(stackalloc char[128]); // arbitrary stack cut-off
                 FormatProvider.FormatBigInteger(ref sb, precision, scale, sign, formatSpan, info, rgch, ichDst);
 
                 if (targetSpan)

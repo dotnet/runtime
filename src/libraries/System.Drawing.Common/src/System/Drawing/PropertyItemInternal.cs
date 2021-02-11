@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Drawing.Imaging
 {
@@ -50,7 +49,7 @@ namespace System.Drawing.Imaging
             propItemInternal.len = 0;
             propItemInternal.type = propItem.Type;
 
-            byte[] propItemValue = propItem.Value;
+            byte[]? propItemValue = propItem.Value;
             if (propItemValue != null)
             {
                 int length = propItemValue.Length;
@@ -68,11 +67,11 @@ namespace System.Drawing.Imaging
 
             for (int i = 0; i < count; i++)
             {
-                PropertyItemInternal propcopy = null;
+                PropertyItemInternal? propcopy = null;
                 try
                 {
                     propcopy = (PropertyItemInternal)Marshal.PtrToStructure(propdata,
-                                                  typeof(PropertyItemInternal));
+                                                  typeof(PropertyItemInternal))!;
 
                     props[i] = new PropertyItem();
                     props[i].Id = propcopy.id;
@@ -98,7 +97,7 @@ namespace System.Drawing.Imaging
             return props;
         }
 
-        public byte[] Value
+        public byte[]? Value
         {
             get
             {

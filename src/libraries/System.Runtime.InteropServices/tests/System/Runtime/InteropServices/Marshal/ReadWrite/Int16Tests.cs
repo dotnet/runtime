@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Reflection.Emit;
@@ -44,6 +43,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.WriteInt16 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt16_BlittableObject_Roundtrips()
         {
             int offset1 = Marshal.OffsetOf<BlittableStruct>(nameof(BlittableStruct.value1)).ToInt32();
@@ -65,6 +65,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.WriteInt16 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt16_StructWithReferenceTypes_ReturnsExpected()
         {
             int pointerOffset = Marshal.OffsetOf<StructWithReferenceTypes>(nameof(StructWithReferenceTypes.pointerValue)).ToInt32();
@@ -89,6 +90,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadInt16 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadInt16_BlittableObject_ReturnsExpected()
         {
             int offset1 = Marshal.OffsetOf<BlittableStruct>(nameof(BlittableStruct.value1)).ToInt32();
@@ -105,6 +107,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadInt16 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadInt16_StructWithReferenceTypes_ReturnsExpected()
         {
             int pointerOffset = Marshal.OffsetOf<StructWithReferenceTypes>(nameof(StructWithReferenceTypes.pointerValue)).ToInt32();
@@ -123,6 +126,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadInt16_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadInt16(IntPtr.Zero));
@@ -130,12 +134,14 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadInt16 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadInt16_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.ReadInt16(null, 2));
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadInt16 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadInt16_NotReadable_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
@@ -148,6 +154,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt16_ZeroPointer_ThrowsException()
         {
             AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt16(IntPtr.Zero, 0));
@@ -155,12 +162,14 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.WriteInt16 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt16_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.WriteInt16(null, 2, 0));
         }
 
         [Fact]
+        [SkipOnMono("Marshal.WriteInt16 will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteInt16_NotReadable_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);

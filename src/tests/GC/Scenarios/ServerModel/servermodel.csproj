@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestExecutionArguments>/numrequests:100</CLRTestExecutionArguments>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <HeapVerifyIncompatible Condition="'$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">true</HeapVerifyIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="cache.cs" />
+    <Compile Include="parameters.cs" />
+    <Compile Include="request.cs" />
+    <Compile Include="server.cs" />
+    <Compile Include="servermodel.cs" />
+    <Compile Include="settings.cs" />
+  </ItemGroup>
+</Project>

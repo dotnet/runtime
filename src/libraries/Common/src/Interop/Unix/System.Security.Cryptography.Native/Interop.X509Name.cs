@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -19,7 +18,7 @@ internal static partial class Interop
             int loc);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
-        private static extern int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, byte[] buf, int cBuf);
+        private static extern int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, byte[]? buf, int cBuf);
 
         internal static X500DistinguishedName LoadX500Name(SafeSharedX509NameHandle namePtr)
         {
@@ -49,7 +48,7 @@ namespace Microsoft.Win32.SafeHandles
     /// </summary>
     internal sealed class SafeSharedX509NameHandle : SafeInteriorHandle
     {
-        private SafeSharedX509NameHandle() :
+        public SafeSharedX509NameHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -61,7 +60,7 @@ namespace Microsoft.Win32.SafeHandles
     /// </summary>
     internal sealed class SafeSharedX509NameStackHandle : SafeInteriorHandle
     {
-        private SafeSharedX509NameStackHandle() :
+        public SafeSharedX509NameStackHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

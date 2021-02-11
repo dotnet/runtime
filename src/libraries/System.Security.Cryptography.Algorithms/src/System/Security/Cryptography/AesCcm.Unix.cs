@@ -1,8 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
@@ -11,6 +11,7 @@ namespace System.Security.Cryptography
     {
         private byte[] _key;
 
+        [MemberNotNull(nameof(_key))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
             // OpenSSL does not allow setting nonce length after setting the key
@@ -100,7 +101,7 @@ namespace System.Security.Cryptography
 
                 if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext, out int plaintextBytesWritten, ciphertext))
                 {
-                    plaintext.Fill(0);
+                    plaintext.Clear();
                     throw new CryptographicException(SR.Cryptography_AuthTagMismatch);
                 }
 

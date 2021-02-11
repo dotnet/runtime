@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -11,31 +10,46 @@ namespace System.Text
         [Conditional("DEBUG")]
         internal static void AssertIsHighSurrogateCodePoint(uint codePoint)
         {
-            Debug.Assert(UnicodeUtility.IsHighSurrogateCodePoint(codePoint), $"The value {ToHexString(codePoint)} is not a valid UTF-16 high surrogate code point.");
+            if (!UnicodeUtility.IsHighSurrogateCodePoint(codePoint))
+            {
+                Debug.Fail($"The value {ToHexString(codePoint)} is not a valid UTF-16 high surrogate code point.");
+            }
         }
 
         [Conditional("DEBUG")]
         internal static void AssertIsLowSurrogateCodePoint(uint codePoint)
         {
-            Debug.Assert(UnicodeUtility.IsLowSurrogateCodePoint(codePoint), $"The value {ToHexString(codePoint)} is not a valid UTF-16 low surrogate code point.");
+            if (!UnicodeUtility.IsLowSurrogateCodePoint(codePoint))
+            {
+                Debug.Fail($"The value {ToHexString(codePoint)} is not a valid UTF-16 low surrogate code point.");
+            }
         }
 
         [Conditional("DEBUG")]
         internal static void AssertIsValidCodePoint(uint codePoint)
         {
-            Debug.Assert(UnicodeUtility.IsValidCodePoint(codePoint), $"The value {ToHexString(codePoint)} is not a valid Unicode code point.");
+            if (!UnicodeUtility.IsValidCodePoint(codePoint))
+            {
+                Debug.Fail($"The value {ToHexString(codePoint)} is not a valid Unicode code point.");
+            }
         }
 
         [Conditional("DEBUG")]
         internal static void AssertIsValidScalar(uint scalarValue)
         {
-            Debug.Assert(UnicodeUtility.IsValidUnicodeScalar(scalarValue), $"The value {ToHexString(scalarValue)} is not a valid Unicode scalar value.");
+            if (!UnicodeUtility.IsValidUnicodeScalar(scalarValue))
+            {
+                Debug.Fail($"The value {ToHexString(scalarValue)} is not a valid Unicode scalar value.");
+            }
         }
 
         [Conditional("DEBUG")]
         internal static void AssertIsValidSupplementaryPlaneScalar(uint scalarValue)
         {
-            Debug.Assert(UnicodeUtility.IsValidUnicodeScalar(scalarValue) && !UnicodeUtility.IsBmpCodePoint(scalarValue), $"The value {ToHexString(scalarValue)} is not a valid supplementary plane Unicode scalar value.");
+            if (!UnicodeUtility.IsValidUnicodeScalar(scalarValue) || UnicodeUtility.IsBmpCodePoint(scalarValue))
+            {
+                Debug.Fail($"The value {ToHexString(scalarValue)} is not a valid supplementary plane Unicode scalar value.");
+            }
         }
 
         /// <summary>

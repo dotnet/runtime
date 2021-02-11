@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -14,6 +14,7 @@ namespace System.Security.Cryptography
     /// phase to be skipped, and the master key to be used directly as the pseudorandom key.
     /// See <a href="https://tools.ietf.org/html/rfc5869">RFC5869</a> for more information.
     /// </remarks>
+    [UnsupportedOSPlatform("browser")]
     public static class HKDF
     {
         /// <summary>
@@ -24,7 +25,7 @@ namespace System.Security.Cryptography
         /// <param name="ikm">The input keying material.</param>
         /// <param name="salt">The optional salt value (a non-secret random value). If not provided it defaults to a byte array of <see cref="HashLength"/> zeros.</param>
         /// <returns>The pseudo random key (prk).</returns>
-        public static byte[] Extract(HashAlgorithmName hashAlgorithmName, byte[] ikm, byte[] salt = null)
+        public static byte[] Extract(HashAlgorithmName hashAlgorithmName, byte[] ikm, byte[]? salt = null)
         {
             if (ikm == null)
                 throw new ArgumentNullException(nameof(ikm));
@@ -83,7 +84,7 @@ namespace System.Security.Cryptography
         /// <param name="outputLength">The length of the output keying material.</param>
         /// <param name="info">The optional context and application specific information.</param>
         /// <returns>The output keying material.</returns>
-        public static byte[] Expand(HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[] info = null)
+        public static byte[] Expand(HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[]? info = null)
         {
             if (prk == null)
                 throw new ArgumentNullException(nameof(prk));
@@ -173,7 +174,7 @@ namespace System.Security.Cryptography
         /// <param name="salt">The optional salt value (a non-secret random value). If not provided it defaults to a byte array of <see cref="HashLength"/> zeros.</param>
         /// <param name="info">The optional context and application specific information.</param>
         /// <returns>The output keying material.</returns>
-        public static byte[] DeriveKey(HashAlgorithmName hashAlgorithmName, byte[] ikm, int outputLength, byte[] salt = null, byte[] info = null)
+        public static byte[] DeriveKey(HashAlgorithmName hashAlgorithmName, byte[] ikm, int outputLength, byte[]? salt = null, byte[]? info = null)
         {
             if (ikm == null)
                 throw new ArgumentNullException(nameof(ikm));

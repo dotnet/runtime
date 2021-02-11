@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Linq;
@@ -10,12 +9,26 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
     public class UnixDomainSocketTest
     {
-        [PlatformSpecific(~TestPlatforms.Windows)] // Windows doesn't currently support ConnectEx with domain sockets
+        private readonly ITestOutputHelper _log;
+        private static Random _random = new Random();
+
+        public UnixDomainSocketTest(ITestOutputHelper output)
+        {
+            _log = output;
+        }
+
+        [Fact]
+        public void OSSupportsUnixDomainSockets_ReturnsCorrectValue()
+        {
+            Assert.Equal(PlatformSupportsUnixDomainSockets, Socket.OSSupportsUnixDomainSockets);
+        }
+
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
         {
@@ -45,9 +58,9 @@ namespace System.Net.Sockets.Tests
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = endPoint;
-                args.Completed += (s, e) => ((TaskCompletionSource<bool>)e.UserToken).SetResult(true);
+                args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
 
-                var complete = new TaskCompletionSource<bool>();
+                var complete = new TaskCompletionSource();
                 args.UserToken = complete;
 
                 using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -80,9 +93,9 @@ namespace System.Net.Sockets.Tests
             {
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = endPoint;
-                args.Completed += (s, e) => ((TaskCompletionSource<bool>)e.UserToken).SetResult(true);
+                args.Completed += (s, e) => ((TaskCompletionSource)e.UserToken).SetResult();
 
-                var complete = new TaskCompletionSource<bool>();
+                var complete = new TaskCompletionSource();
                 args.UserToken = complete;
 
                 using (Socket sock = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -94,7 +107,7 @@ namespace System.Net.Sockets.Tests
                     }
 
                     Assert.Equal(
-                        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SocketError.InvalidArgument : SocketError.AddressNotAvailable,
+                        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
                         args.SocketError);
                 }
             }
@@ -130,6 +143,56 @@ namespace System.Net.Sockets.Tests
                             data[0] = 0;
 
                             Assert.Equal(1, client.Receive(data));
+                            Assert.Equal(i, data[0]);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                try { File.Delete(path); }
+                catch { }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        public void Socket_SendReceive_Clone_Success()
+        {
+            string path = GetRandomNonExistingFilePath();
+            var endPoint = new UnixDomainSocketEndPoint(path);
+            try
+            {
+                using var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                using var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                {
+                    server.Bind(endPoint);
+                    server.Listen(1);
+                    client.Connect(endPoint);
+
+                    using (Socket accepted = server.Accept())
+                    {
+                        using var clientClone = new Socket(client.SafeHandle);
+                        using var acceptedClone = new Socket(accepted.SafeHandle);
+
+                        _log.WriteLine($"accepted: LocalEndPoint={accepted.LocalEndPoint} RemoteEndPoint={accepted.RemoteEndPoint}");
+                        _log.WriteLine($"acceptedClone: LocalEndPoint={acceptedClone.LocalEndPoint} RemoteEndPoint={acceptedClone.RemoteEndPoint}");
+
+                        Assert.True(clientClone.Connected);
+                        Assert.True(acceptedClone.Connected);
+                        Assert.Equal(client.LocalEndPoint.ToString(), clientClone.LocalEndPoint.ToString());
+                        Assert.Equal(client.RemoteEndPoint.ToString(), clientClone.RemoteEndPoint.ToString());
+                        Assert.Equal(accepted.LocalEndPoint.ToString(), acceptedClone.LocalEndPoint.ToString());
+                        Assert.Equal(accepted.RemoteEndPoint.ToString(), acceptedClone.RemoteEndPoint.ToString());
+
+                        var data = new byte[1];
+                        for (int i = 0; i < 10; i++)
+                        {
+                            data[0] = (byte)i;
+
+                            acceptedClone.Send(data);
+                            data[0] = 0;
+
+                            Assert.Equal(1, clientClone.Receive(data));
                             Assert.Equal(i, data[0]);
                         }
                     }
@@ -179,7 +242,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(29742, TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
         [InlineData(5000, 1, 1)]
         [InlineData(500, 18, 21)]
@@ -243,7 +306,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue(29742, TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ConcurrentSendReceive(bool forceNonBlocking)
@@ -420,6 +483,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(IsSubWindows10))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_CreateUnixDomainSocket_Throws_OnWindows()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => new UnixDomainSocketEndPoint(null));
@@ -433,7 +497,8 @@ namespace System.Net.Sockets.Tests
             string result;
             do
             {
-                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                // get random name and append random number of characters to get variable name length.
+                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', _random.Next(1, 32)));
             }
             while (File.Exists(result));
 
@@ -446,17 +511,13 @@ namespace System.Net.Sockets.Tests
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    // UDS support added in April 2018 Update
-                    if (!PlatformDetection.IsWindows10Version1803OrGreater || PlatformDetection.IsWindowsNanoServer)
+                    try
                     {
-                        return false;
+                        using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Tcp);
                     }
-
-                    // TODO: Windows 10 April 2018 Update doesn't support UDS in 32-bit processes on 64-bit OSes,
-                    // allowing the socket call to succeed but then failing in bind. Remove this check once it's supported.
-                    if (!Environment.Is64BitProcess && Environment.Is64BitOperatingSystem)
+                    catch (SocketException se)
                     {
-                        return false;
+                        return se.SocketErrorCode != SocketError.AddressFamilyNotSupported;
                     }
                 }
 

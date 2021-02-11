@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Internal;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
@@ -305,7 +305,7 @@ namespace System.Drawing
             {
                 // If we don't actually have an object that is LOGFONT in size, trying to pass
                 // it to GDI+ is likely to cause an AV.
-                throw new ArgumentException();
+                throw new ArgumentException(null, nameof(lf));
             }
 
             // Now that we know the marshalled size is the same as LOGFONT, copy in the data
@@ -361,7 +361,8 @@ namespace System.Drawing
             GC.SuppressFinalize(_fontFamily);
         }
 
-        private static string StripVerticalName(string familyName)
+        [return: NotNullIfNotNull("familyName")]
+        private static string? StripVerticalName(string? familyName)
         {
             if (familyName?.Length > 1 && familyName[0] == '@')
             {

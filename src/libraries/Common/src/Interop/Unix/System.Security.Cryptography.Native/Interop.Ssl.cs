@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -17,8 +16,6 @@ internal static partial class Interop
         internal const int OPENSSL_NPN_NEGOTIATED = 1;
         internal const int SSL_TLSEXT_ERR_ALERT_FATAL = 2;
         internal const int SSL_TLSEXT_ERR_NOACK = 3;
-
-        internal delegate int SslCtxSetVerifyCallback(int preverify_ok, IntPtr x509_ctx);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureLibSslInitialized")]
         internal static extern void EnsureLibSslInitialized();
@@ -57,7 +54,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
         internal static extern void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
 
-        internal static byte[] SslGetAlpnSelected(SafeSslHandle ssl)
+        internal static byte[]? SslGetAlpnSelected(SafeSslHandle ssl)
         {
             IntPtr protocol;
             int len;
@@ -71,10 +68,10 @@ internal static partial class Interop
             return result;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite")]
-        internal static extern unsafe int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite", SetLastError = true)]
+        internal static extern int SslWrite(SafeSslHandle ssl, ref byte buf, int num);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslRead", SetLastError = true)]
         internal static extern unsafe int SslRead(SafeSslHandle ssl, byte* buf, int num);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslRenegotiatePending")]
@@ -90,7 +87,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static extern void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
         internal static extern int SslDoHandshake(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslStateOK")]
@@ -102,7 +99,7 @@ internal static partial class Interop
         internal static extern unsafe int BioWrite(SafeBioHandle b, byte* data, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
-        internal static extern unsafe int BioWrite(SafeBioHandle b, ref byte data, int len);
+        internal static extern int BioWrite(SafeBioHandle b, ref byte data, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertificate")]
         internal static extern SafeX509Handle SslGetPeerCertificate(SafeSslHandle ssl);
@@ -133,9 +130,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOpenSslCipherSuiteName")]
         private static extern IntPtr GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
 
-        internal static string GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
+        internal static string? GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
         {
-            string ret = Marshal.PtrToStringAnsi(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
+            string? ret = Marshal.PtrToStringAnsi(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
             isTls12OrLower = isTls12OrLowerInt != 0;
             return ret;
         }
@@ -178,7 +175,26 @@ internal static partial class Interop
             // Don't include the first item (the cert whose private key we have)
             for (int i = 1; i < stop; i++)
             {
-                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain.ChainElements[i].Certificate.Handle);
+                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain.ChainElements[i].Certificate!.Handle);
+                Crypto.CheckValidOpenSslHandle(dupCertHandle);
+                if (!SslAddExtraChainCert(sslContext, dupCertHandle))
+                {
+                    Crypto.ErrClearError();
+                    dupCertHandle.Dispose(); // we still own the safe handle; clean it up
+                    return false;
+                }
+                dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
+            }
+
+            return true;
+        }
+
+        internal static bool AddExtraChainCertificates(SafeSslHandle sslContext, X509Certificate2[] chain)
+        {
+            // send pre-computed list of intermediates.
+            for (int i = 0; i < chain.Length; i++)
+            {
+                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain[i].Handle);
                 Crypto.CheckValidOpenSslHandle(dupCertHandle);
                 if (!SslAddExtraChainCert(sslContext, dupCertHandle))
                 {
@@ -219,10 +235,10 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeSslHandle : SafeHandle
     {
-        private SafeBioHandle _readBio;
-        private SafeBioHandle _writeBio;
+        private SafeBioHandle? _readBio;
+        private SafeBioHandle? _writeBio;
         private bool _isServer;
-        private bool _handshakeCompleted = false;
+        private bool _handshakeCompleted;
 
         public GCHandle AlpnHandle;
 
@@ -231,7 +247,7 @@ namespace Microsoft.Win32.SafeHandles
             get { return _isServer; }
         }
 
-        public SafeBioHandle InputBio
+        public SafeBioHandle? InputBio
         {
             get
             {
@@ -239,7 +255,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public SafeBioHandle OutputBio
+        public SafeBioHandle? OutputBio
         {
             get
             {
@@ -351,7 +367,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private SafeSslHandle() : base(IntPtr.Zero, true)
+        public SafeSslHandle() : base(IntPtr.Zero, true)
         {
         }
 

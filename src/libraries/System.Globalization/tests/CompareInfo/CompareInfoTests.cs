@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Text;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -40,7 +42,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(CompareInfo compare1, object value, bool expected)
+        public void EqualsTest(CompareInfo compare1, object value, bool expected)
         {
             Assert.Equal(expected, compare1.Equals(value));
             if (value is CompareInfo)
@@ -55,20 +57,15 @@ namespace System.Globalization.Tests
             new object[] { "abc", CompareOptions.Ordinal, "ABC", CompareOptions.Ordinal, false },
             new object[] { "abc", CompareOptions.Ordinal, "abc", CompareOptions.Ordinal, true },
             new object[] { "abc", CompareOptions.None, "abc", CompareOptions.None, true },
+            new object[] { "", CompareOptions.None, "\u200c", CompareOptions.None, true }, // see comment at bottom of SortKey_TestData
         };
 
         [Theory]
         [MemberData(nameof(GetHashCodeTestData))]
-        public void GetHashCode(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
+        public void GetHashCodeTest(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
         {
             CompareInfo invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
             Assert.Equal(expected, invariantCompare.GetHashCode(source1, options1).Equals(invariantCompare.GetHashCode(source2, options2)));
-        }
-
-        [Fact]
-        public void GetHashCode_EmptyString()
-        {
-            Assert.Equal(0, CultureInfo.InvariantCulture.CompareInfo.GetHashCode("", CompareOptions.None));
         }
 
         [Fact]
@@ -76,7 +73,7 @@ namespace System.Globalization.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode(null, CompareOptions.None));
 
-            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.StringSort));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.Ordinal | CompareOptions.IgnoreSymbols));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", (CompareOptions)(-1)));
         }
@@ -85,7 +82,7 @@ namespace System.Globalization.Tests
         [InlineData("", "CompareInfo - ")]
         [InlineData("en-US", "CompareInfo - en-US")]
         [InlineData("EN-US", "CompareInfo - en-US")]
-        public void ToString(string name, string expected)
+        public void ToStringTest(string name, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).CompareInfo.ToString());
         }
@@ -100,18 +97,33 @@ namespace System.Globalization.Tests
             yield return new object[] { "tr-TR"  , 0x041f };
         }
 
-        // On Windows, hiragana characters sort after katakana.
+        // On NLS, hiragana characters sort after katakana.
         // On ICU, it is the opposite
-        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsWindows ? 1 : -1;
+        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsNlsGlobalization ? 1 : -1;
 
-        // On Windows, all halfwidth characters sort before fullwidth characters.
+        // On NLS, all halfwidth characters sort before fullwidth characters.
         // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
         // sort before the corresponding characters that are in the block U+FF00-U+FFEF
-        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsWindows ? -1 : 1;
+        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsNlsGlobalization ? -1 : 1;
 
+        private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
 
+        public static IEnumerable<object[]> SortKey_Kana_TestData()
+        {
+            CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
+            yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "\u3060", "\uFF80\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9\u30B9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E\uFF7D", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "\u30C7", "\uFF83\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "\u30C7\u30BF", "\uFF83\uFF9E\uFF80", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "\uFF83\uFF9E\uFF70\uFF80\uFF8D\uFF9E\uFF70\uFF7D", "\u3067\u30FC\u305F\u3079\u30FC\u3059", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
+            yield return new object[] { s_invariantCompare, "\u3060", "\uFF80\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
+        }
         public static IEnumerable<object[]> SortKey_TestData()
         {
             CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
@@ -134,8 +146,6 @@ namespace System.Globalization.Tests
 
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u30D6\u30D9\u30DC", ignoreKanaIgnoreWidthIgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\u30DC", ignoreKanaIgnoreWidthIgnoreCase, 0 };
-            yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
-            yield return new object[] { s_invariantCompare, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\uFF8E\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u3070\u30DC\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\uFF8E\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u3070\u30DC\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u3079\uFF8E\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, -1 };
@@ -149,16 +159,9 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "ABCDE", "\uFF43D", ignoreKanaIgnoreWidthIgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "ABCDE", "c", ignoreKanaIgnoreWidthIgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u3060", "\u305F", ignoreKanaIgnoreWidthIgnoreCase, 1 };
-            yield return new object[] { s_invariantCompare, "\u3060", "\uFF80\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u3060", "\u30C0", ignoreKanaIgnoreWidthIgnoreCase, 0 };
-
-            yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9\u30B9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E\uFF7D", ignoreKanaIgnoreWidthIgnoreCase, 0 };
-            yield return new object[] { s_invariantCompare, "\u30C7", "\uFF83\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
-            yield return new object[] { s_invariantCompare, "\u30C7\u30BF", "\uFF83\uFF9E\uFF80", ignoreKanaIgnoreWidthIgnoreCase, 0 };
-            yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u30BF", "\uFF80", ignoreKanaIgnoreWidthIgnoreCase, 0 };
 
-            yield return new object[] { s_invariantCompare, "\uFF83\uFF9E\uFF70\uFF80\uFF8D\uFF9E\uFF70\uFF7D", "\u3067\u30FC\u305F\u3079\u30FC\u3059", ignoreKanaIgnoreWidthIgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u68EE\u9D0E\u5916", "\u68EE\u9DD7\u5916", ignoreKanaIgnoreWidthIgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u68EE\u9DD7\u5916", "\u68EE\u9DD7\u5916", ignoreKanaIgnoreWidthIgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u2019\u2019\u2019\u2019", "''''", ignoreKanaIgnoreWidthIgnoreCase, 1 };
@@ -182,8 +185,14 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u30FC", "\u2010", ignoreKanaIgnoreWidthIgnoreCase, 1 };
 
             yield return new object[] { s_invariantCompare, "/", "\uFF0F", ignoreKanaIgnoreWidthIgnoreCase, 0 };
-            yield return new object[] { s_invariantCompare, "'", "\uFF07", ignoreKanaIgnoreWidthIgnoreCase, PlatformDetection.IsWindows7 ? -1 : 0};
             yield return new object[] { s_invariantCompare, "\"", "\uFF02", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+
+            if (!PlatformDetection.IsWindows7)
+            {
+                // For the below string, LCMapStringEx and CompareStringEx on Windows 7 return inconsistent results.
+                // We'll only run this test case on Win8+ or on non-Windows machines.
+                yield return new object[] { s_invariantCompare, "'", "\uFF07", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            }
 
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A1", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A2", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
@@ -203,7 +212,6 @@ namespace System.Globalization.Tests
 
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u30D6\u30D9\u30DC", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\u30DC", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
-            yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
 
             yield return new object[] { s_invariantCompare, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\uFF8E\uFF9E", CompareOptions.None, -1 };
@@ -219,7 +227,6 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "ABCDE", "\uFF43D", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "ABCDE", "c", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "\u3060", "\u305F", CompareOptions.None, 1 };
-            yield return new object[] { s_invariantCompare, "\u3060", "\uFF80\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3060", "\u30C0", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u68EE\u9D0E\u5916", "\u68EE\u9DD7\u5916", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "\u68EE\u9DD7\u5916", "\u68EE\u9DD7\u5916", CompareOptions.None, 0 };
@@ -296,11 +303,17 @@ namespace System.Globalization.Tests
 
             // Spanish
             yield return new object[] { new CultureInfo("es-ES").CompareInfo, "llegar", "lugar", CompareOptions.None, -1 };
+
+            // Zero-weight code points
+            // In both NLS (Windows) and ICU the code point U+200C ZERO WIDTH NON-JOINER has a zero weight,
+            // so it's compared as equal to the empty string. This means that we can't special-case GetHashCode("")
+            // and return a fixed value; we actually need to call the underlying OS or ICU API to calculate the sort key.
+            yield return new object[] { s_invariantCompare, "", "\u200c", CompareOptions.None, 0 };
         }
 
         public static IEnumerable<object[]> IndexOf_TestData()
         {
-            yield return new object[] { s_invariantCompare, "foo", "", 0,  0, 0 };
+            yield return new object[] { s_invariantCompare, "foo", "", 0, 0, 1 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, 0 };
             yield return new object[] { s_invariantCompare, "Hello", "l", 0,  2, -1 };
             yield return new object[] { s_invariantCompare, "Hello", "l", 3,  3, 3 };
@@ -311,10 +324,14 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> IsSortable_TestData()
         {
-            yield return new object[] { "", false, false };
-            yield return new object[] { "abcdefg",  false, true };
-            yield return new object[] { "\uD800\uDC00", true,  true };
-            yield return new object[] { "\uD800\uD800", true,  false };
+            yield return new object[] { "", false };
+            yield return new object[] { "abcdefg", true };
+            yield return new object[] { "\uD800\uDC00", true };
+
+            // VS test runner for xunit doesn't handle ill-formed UTF-16 strings properly.
+            // We'll send this one through as an array to avoid U+FFFD substitution.
+
+            yield return new object[] { new char[] { '\uD800', '\uD800' }, false };
         }
 
         [Theory]
@@ -336,16 +353,68 @@ namespace System.Globalization.Tests
             Assert.Equal(lcid, ci.LCID);
         }
 
+        [ConditionalTheory(typeof(CompareInfoCompareTests), nameof(CompareInfoCompareTests.IsNotWindowsKanaRegressedVersion))]
+        [MemberData(nameof(SortKey_Kana_TestData))]
+        public void SortKeyKanaTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
+        {
+            SortKeyTest(compareInfo, string1, string2, options, expected);
+        }
+
+
+        [DllImport("kernel32", CharSet = CharSet.Unicode)]
+        private static extern int CompareStringEx(string lpLocaleName, uint dwCmpFlags, string lpString1, int cchCount1, string lpString2, int cchCount2, IntPtr lpVersionInformation, IntPtr lpReserved, int lParam);
+        private const int NORM_LINGUISTIC_CASING = 0x08000000;       // use linguistic rules for casing
+
+        private static bool WindowsVersionHasTheCompareStringRegression =>
+                    PlatformDetection.IsNlsGlobalization && CompareStringEx("", NORM_LINGUISTIC_CASING, "", 0, "\u200C", 1, IntPtr.Zero, IntPtr.Zero, 0) != 2;
+
         [Theory]
         [MemberData(nameof(SortKey_TestData))]
-        public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
+        public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
             SortKey sk1 = compareInfo.GetSortKey(string1, options);
             SortKey sk2 = compareInfo.GetSortKey(string2, options);
 
-            Assert.Equal(expected, SortKey.Compare(sk1, sk2));
+            Assert.Equal(expectedSign, Math.Sign(SortKey.Compare(sk1, sk2)));
+            Assert.Equal(expectedSign == 0, sk1.Equals(sk2));
+
+            if (!WindowsVersionHasTheCompareStringRegression)
+            {
+                Assert.Equal(Math.Sign(compareInfo.Compare(string1, string2, options)), Math.Sign(SortKey.Compare(sk1, sk2)));
+            }
+
+            Assert.Equal(compareInfo.GetHashCode(string1, options), sk1.GetHashCode());
+            Assert.Equal(compareInfo.GetHashCode(string2, options), sk2.GetHashCode());
+
             Assert.Equal(string1, sk1.OriginalString);
             Assert.Equal(string2, sk2.OriginalString);
+
+            // Now try the span-based versions - use BoundedMemory to detect buffer overruns
+
+            RunSpanSortKeyTest(compareInfo, string1, options, sk1.KeyData);
+            RunSpanSortKeyTest(compareInfo, string2, options, sk2.KeyData);
+
+            unsafe static void RunSpanSortKeyTest(CompareInfo compareInfo, ReadOnlySpan<char> source, CompareOptions options, byte[] expectedSortKey)
+            {
+                using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData(source);
+                sourceBoundedMemory.MakeReadonly();
+
+                Assert.Equal(expectedSortKey.Length, compareInfo.GetSortKeyLength(sourceBoundedMemory.Span, options));
+
+                using BoundedMemory<byte> sortKeyBoundedMemory = BoundedMemory.Allocate<byte>(expectedSortKey.Length);
+
+                // First try with a destination which is too small - should result in an error
+
+                Assert.Throws<ArgumentException>("destination", () => compareInfo.GetSortKey(sourceBoundedMemory.Span, sortKeyBoundedMemory.Span.Slice(1), options));
+
+                // Next, try with a destination which is perfectly sized - should succeed
+
+                Span<byte> sortKeyBoundedSpan = sortKeyBoundedMemory.Span;
+                sortKeyBoundedSpan.Clear();
+
+                Assert.Equal(expectedSortKey.Length, compareInfo.GetSortKey(sourceBoundedMemory.Span, sortKeyBoundedSpan, options));
+                Assert.Equal(expectedSortKey, sortKeyBoundedSpan[0..expectedSortKey.Length].ToArray());
+            }
         }
 
         [Fact]
@@ -378,6 +447,9 @@ namespace System.Globalization.Tests
             Assert.Equal(sk4.GetHashCode(), sk5.GetHashCode());
             Assert.Equal(sk4.KeyData, sk5.KeyData);
 
+            Assert.False(sk1.Equals(null));
+            Assert.True(sk1.Equals(sk1));
+
             AssertExtensions.Throws<ArgumentNullException>("source", () => ci.GetSortKey(null));
             AssertExtensions.Throws<ArgumentException>("options", () => ci.GetSortKey(s1, CompareOptions.Ordinal));
         }
@@ -387,13 +459,13 @@ namespace System.Globalization.Tests
         public void IndexOfTest(CompareInfo compareInfo, string source, string value, int startIndex, int indexOfExpected, int lastIndexOfExpected)
         {
             Assert.Equal(indexOfExpected, compareInfo.IndexOf(source, value, startIndex));
-            if (value.Length > 0)
+            if (value.Length == 1)
             {
                 Assert.Equal(indexOfExpected, compareInfo.IndexOf(source, value[0], startIndex));
             }
 
             Assert.Equal(lastIndexOfExpected, compareInfo.LastIndexOf(source, value, startIndex));
-            if (value.Length > 0)
+            if (value.Length == 1)
             {
                 Assert.Equal(lastIndexOfExpected, compareInfo.LastIndexOf(source, value[0], startIndex));
             }
@@ -401,13 +473,22 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IsSortable_TestData))]
-        public void IsSortableTest(string source, bool hasSurrogate, bool expected)
+        public void IsSortableTest(object sourceObj, bool expected)
         {
+            string source = sourceObj as string ?? new string((char[])sourceObj);
             Assert.Equal(expected, CompareInfo.IsSortable(source));
 
-            bool charExpectedResults = hasSurrogate ? false : expected;
+            // Now test the span version - use BoundedMemory to detect buffer overruns
+
+            using BoundedMemory<char> sourceBoundedMemory = BoundedMemory.AllocateFromExistingData<char>(source);
+            sourceBoundedMemory.MakeReadonly();
+            Assert.Equal(expected, CompareInfo.IsSortable(sourceBoundedMemory.Span));
+
+            // If the string as a whole is sortable, then all chars which aren't standalone
+            // surrogate halves must also be sortable.
+
             foreach (char c in source)
-                Assert.Equal(charExpectedResults, CompareInfo.IsSortable(c));
+                Assert.Equal(expected && !char.IsSurrogate(c), CompareInfo.IsSortable(c));
         }
 
         [Fact]
@@ -439,15 +520,19 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void GetHashCode_EmptySpan()
+        public void GetHashCode_NullAndEmptySpan()
         {
-            Assert.Equal(0, CultureInfo.InvariantCulture.CompareInfo.GetHashCode(ReadOnlySpan<char>.Empty, CompareOptions.None));
+            // Ensure that null spans and non-null empty spans produce the same hash code.
+
+            int hashCodeOfNullSpan = CultureInfo.InvariantCulture.CompareInfo.GetHashCode(ReadOnlySpan<char>.Empty, CompareOptions.None);
+            int hashCodeOfNotNullEmptySpan = CultureInfo.InvariantCulture.CompareInfo.GetHashCode("".AsSpan(), CompareOptions.None);
+            Assert.Equal(hashCodeOfNullSpan, hashCodeOfNotNullEmptySpan);
         }
 
         [Fact]
         public void GetHashCode_Span_Invalid()
         {
-            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.StringSort));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.Ordinal | CompareOptions.IgnoreSymbols));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), (CompareOptions)(-1)));
         }

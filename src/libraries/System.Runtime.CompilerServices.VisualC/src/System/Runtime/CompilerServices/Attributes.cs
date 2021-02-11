@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // We need to add an InternalsVisibleToAttribute here to mscorlib since we need to expose some of these types via type forwards in mscorlib
 // since tooling expects some types to live there and not in System.Runtime.CompilerServices.VisualC, but we don't want to expose
@@ -37,23 +36,6 @@ namespace System.Runtime.CompilerServices
         internal AssemblyAttributesGoHereSM()
         {
         }
-    }
-
-    // Types used in Custom Modifier to specify calling conventions.
-    public class CallConvCdecl
-    {
-    }
-
-    public class CallConvStdcall
-    {
-    }
-
-    public class CallConvThiscall
-    {
-    }
-
-    public class CallConvFastcall
-    {
     }
 
     [AttributeUsage(AttributeTargets.All)]
@@ -119,6 +101,12 @@ namespace System.Runtime.CompilerServices
     public sealed class NativeCppClassAttribute : Attribute
     {
         public NativeCppClassAttribute() { }
+    }
+
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=true)]
+    public sealed class CppInlineNamespaceAttribute : Attribute
+    {
+        public CppInlineNamespaceAttribute(string dottedName) {}
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]

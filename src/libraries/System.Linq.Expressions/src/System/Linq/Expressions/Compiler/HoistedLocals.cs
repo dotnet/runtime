@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -46,7 +45,7 @@ namespace System.Linq.Expressions.Compiler
     internal sealed class HoistedLocals
     {
         // The parent locals, if any
-        internal readonly HoistedLocals Parent;
+        internal readonly HoistedLocals? Parent;
 
         // A mapping of hoisted variables to their indexes in the array
         internal readonly ReadOnlyDictionary<Expression, int> Indexes;
@@ -57,7 +56,7 @@ namespace System.Linq.Expressions.Compiler
         // A virtual variable for accessing this locals array
         internal readonly ParameterExpression SelfVariable;
 
-        internal HoistedLocals(HoistedLocals parent, ReadOnlyCollection<ParameterExpression> vars)
+        internal HoistedLocals(HoistedLocals? parent, ReadOnlyCollection<ParameterExpression> vars)
         {
             if (parent != null)
             {
@@ -77,11 +76,11 @@ namespace System.Linq.Expressions.Compiler
             Indexes = new ReadOnlyDictionary<Expression, int>(indexes);
         }
 
-        internal ParameterExpression ParentVariable => Parent?.SelfVariable;
+        internal ParameterExpression? ParentVariable => Parent?.SelfVariable;
 
         internal static object[] GetParent(object[] locals)
         {
-            return ((StrongBox<object[]>)locals[0]).Value;
+            return ((StrongBox<object[]>)locals[0]).Value!;
         }
     }
 }

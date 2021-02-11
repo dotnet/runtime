@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -25,6 +24,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(CallingConventions_TestData))]
         public void GetArrayMethod_ValidArrayValues_VoidReturnType(CallingConventions callingConvention)
         {
@@ -33,6 +33,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(CallingConventions_TestData))]
         public void GetArrayMethod_ValidArrayValues_ValueReturnType(CallingConventions callingConvention)
         {
@@ -41,6 +42,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(CallingConventions_TestData))]
         public void GetArrayMethod_ValidArrayValues_ReferenceReturnType(CallingConventions callingConvention)
         {
@@ -49,6 +51,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(CallingConventions_TestData))]
         public void GetArrayMethod_ValidArrayValues_ValueParameterType(CallingConventions callingConvention)
         {
@@ -59,6 +62,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(CallingConventions_TestData))]
         public void GetArrayMethod_ValidArrayValues_ReferenceParameterType(CallingConventions callingConvention)
         {
@@ -69,6 +73,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(CallingConventions_TestData))]
         public void GetArrayMethod_JaggedArray(CallingConventions callingConvention)
         {
@@ -79,6 +84,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(CallingConventions_TestData))]
         public void GetArrayMethod_MultiDimensionalArray(CallingConventions callingConvention)
         {
@@ -89,6 +95,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(CallingConventions_TestData))]
         public void GetArrayMethod_NullParameters(CallingConventions callingConvention)
         {
@@ -97,6 +104,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData(typeof(ModuleBuilderGetArrayMethod))]
         [InlineData(typeof(int))]
         [InlineData(typeof(Array))]
@@ -108,6 +116,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void GetArrayMethod_InvalidArgument_ThrowsArgumentException()
         {
             ModuleBuilder module = Helpers.DynamicModule();

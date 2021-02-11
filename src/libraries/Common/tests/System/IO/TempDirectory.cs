@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 
@@ -10,7 +9,7 @@ namespace System.IO
     /// Represents a temporary directory.  Creating an instance creates a directory at the specified path,
     /// and disposing the instance deletes the directory.
     /// </summary>
-    public sealed class TempDirectory : IDisposable
+    public class TempDirectory : IDisposable
     {
         public const int MaxNameLength = 255;
 
@@ -41,7 +40,7 @@ namespace System.IO
 
         public string GenerateRandomFilePath() => IO.Path.Combine(Path, IO.Path.GetRandomFileName());
 
-        private void DeleteDirectory()
+        protected virtual void DeleteDirectory()
         {
             try { Directory.Delete(Path, recursive: true); }
             catch { /* Ignore exceptions on disposal paths */ }

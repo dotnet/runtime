@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -14,7 +13,7 @@ namespace System.Net.NetworkInformation
     {
         private static readonly object s_globalLock = new object();
 
-        public static event NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged
+        public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add
             {
@@ -26,7 +25,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public static event NetworkAddressChangedEventHandler NetworkAddressChanged
+        public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
             add
             {
@@ -41,11 +40,11 @@ namespace System.Net.NetworkInformation
         internal static class AvailabilityChangeListener
         {
             private static readonly NetworkAddressChangedEventHandler s_addressChange = ChangedAddress;
-            private static volatile bool s_isAvailable = false;
+            private static volatile bool s_isAvailable;
 
-            private static void ChangedAddress(object sender, EventArgs eventArgs)
+            private static void ChangedAddress(object? sender, EventArgs eventArgs)
             {
-                Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext> availabilityChangedSubscribers = null;
+                Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>? availabilityChangedSubscribers = null;
 
                 lock (s_globalLock)
                 {
@@ -58,7 +57,7 @@ namespace System.Net.NetworkInformation
 
                         if (s_availabilityChangedSubscribers.Count > 0)
                         {
-                            availabilityChangedSubscribers = new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext>(s_availabilityChangedSubscribers);
+                            availabilityChangedSubscribers = new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>(s_availabilityChangedSubscribers);
                         }
                     }
                 }
@@ -70,11 +69,11 @@ namespace System.Net.NetworkInformation
                     NetworkAvailabilityEventArgs args = isAvailable ? s_availableEventArgs : s_notAvailableEventArgs;
                     ContextCallback callbackContext = isAvailable ? s_runHandlerAvailable : s_runHandlerNotAvailable;
 
-                    foreach (KeyValuePair<NetworkAvailabilityChangedEventHandler, ExecutionContext>
+                    foreach (KeyValuePair<NetworkAvailabilityChangedEventHandler, ExecutionContext?>
                         subscriber in availabilityChangedSubscribers)
                     {
                         NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
-                        ExecutionContext ec = subscriber.Value;
+                        ExecutionContext? ec = subscriber.Value;
 
                         if (ec == null) // Flow supressed
                         {
@@ -88,7 +87,7 @@ namespace System.Net.NetworkInformation
                 }
             }
 
-            internal static void Start(NetworkAvailabilityChangedEventHandler caller)
+            internal static void Start(NetworkAvailabilityChangedEventHandler? caller)
             {
                 if (caller != null)
                 {
@@ -105,7 +104,7 @@ namespace System.Net.NetworkInformation
                 }
             }
 
-            internal static void Stop(NetworkAvailabilityChangedEventHandler caller)
+            internal static void Stop(NetworkAvailabilityChangedEventHandler? caller)
             {
                 if (caller != null)
                 {
@@ -122,20 +121,20 @@ namespace System.Net.NetworkInformation
         }
 
         // Helper class for detecting address change events.
-        internal static unsafe class AddressChangeListener
+        internal static class AddressChangeListener
         {
             // Need to keep the reference so it isn't GC'd before the native call executes.
-            private static bool s_isListening = false;
-            private static bool s_isPending = false;
-            private static Socket s_ipv4Socket = null;
-            private static Socket s_ipv6Socket = null;
-            private static WaitHandle s_ipv4WaitHandle = null;
-            private static WaitHandle s_ipv6WaitHandle = null;
+            private static bool s_isListening;
+            private static bool s_isPending;
+            private static Socket? s_ipv4Socket;
+            private static Socket? s_ipv6Socket;
+            private static WaitHandle? s_ipv4WaitHandle;
+            private static WaitHandle? s_ipv6WaitHandle;
 
             // Callback fired when an address change occurs.
-            private static void AddressChangedCallback(object stateObject, bool signaled)
+            private static void AddressChangedCallback(object? stateObject, bool signaled)
             {
-                Dictionary<NetworkAddressChangedEventHandler, ExecutionContext> addressChangedSubscribers = null;
+                Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>? addressChangedSubscribers = null;
 
                 lock (s_globalLock)
                 {
@@ -152,28 +151,28 @@ namespace System.Net.NetworkInformation
                     // Need to copy the array so the callback can call start and stop
                     if (s_addressChangedSubscribers.Count > 0)
                     {
-                        addressChangedSubscribers = new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext>(s_addressChangedSubscribers);
+                        addressChangedSubscribers = new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>(s_addressChangedSubscribers);
                     }
 
                     try
                     {
                         //wait for the next address change
-                        StartHelper(null, false, (StartIPOptions)stateObject);
+                        StartHelper(null, false, (StartIPOptions)stateObject!);
                     }
                     catch (NetworkInformationException nie)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Error(null, nie);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, nie);
                     }
                 }
 
                 // Release the lock before calling into user callback.
                 if (addressChangedSubscribers != null)
                 {
-                    foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext>
+                    foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext?>
                         subscriber in addressChangedSubscribers)
                     {
                         NetworkAddressChangedEventHandler handler = subscriber.Key;
-                        ExecutionContext ec = subscriber.Value;
+                        ExecutionContext? ec = subscriber.Value;
 
                         if (ec == null) // Flow supressed
                         {
@@ -187,17 +186,17 @@ namespace System.Net.NetworkInformation
                 }
             }
 
-            internal static void Start(NetworkAddressChangedEventHandler caller)
+            internal static void Start(NetworkAddressChangedEventHandler? caller)
             {
                 StartHelper(caller, true, StartIPOptions.Both);
             }
 
-            internal static void UnsafeStart(NetworkAddressChangedEventHandler caller)
+            internal static void UnsafeStart(NetworkAddressChangedEventHandler? caller)
             {
                 StartHelper(caller, false, StartIPOptions.Both);
             }
 
-            private static void StartHelper(NetworkAddressChangedEventHandler caller, bool captureContext, StartIPOptions startIPOptions)
+            private static void StartHelper(NetworkAddressChangedEventHandler? caller, bool captureContext, StartIPOptions startIPOptions)
             {
                 lock (s_globalLock)
                 {
@@ -233,14 +232,14 @@ namespace System.Net.NetworkInformation
                         if (Socket.OSSupportsIPv4 && (startIPOptions & StartIPOptions.StartIPv4) != 0)
                         {
                             ThreadPool.RegisterWaitForSingleObject(
-                                s_ipv4WaitHandle,
+                                s_ipv4WaitHandle!,
                                 new WaitOrTimerCallback(AddressChangedCallback),
                                 StartIPOptions.StartIPv4,
                                 -1,
                                 true);
 
                             SocketError errorCode = Interop.Winsock.WSAIoctl_Blocking(
-                                s_ipv4Socket.SafeHandle,
+                                s_ipv4Socket!.SafeHandle,
                                 (int)IOControlCode.AddressListChange,
                                 null, 0, null, 0,
                                 out int length,
@@ -257,7 +256,7 @@ namespace System.Net.NetworkInformation
 
                             errorCode = Interop.Winsock.WSAEventSelect(
                                 s_ipv4Socket.SafeHandle,
-                                s_ipv4WaitHandle.GetSafeWaitHandle(),
+                                s_ipv4WaitHandle!.GetSafeWaitHandle(),
                                 Interop.Winsock.AsyncEventBits.FdAddressListChange);
 
                             if (errorCode != SocketError.Success)
@@ -269,14 +268,14 @@ namespace System.Net.NetworkInformation
                         if (Socket.OSSupportsIPv6 && (startIPOptions & StartIPOptions.StartIPv6) != 0)
                         {
                             ThreadPool.RegisterWaitForSingleObject(
-                                s_ipv6WaitHandle,
+                                s_ipv6WaitHandle!,
                                 new WaitOrTimerCallback(AddressChangedCallback),
                                 StartIPOptions.StartIPv6,
                                 -1,
                                 true);
 
                             SocketError errorCode = Interop.Winsock.WSAIoctl_Blocking(
-                                s_ipv6Socket.SafeHandle,
+                                s_ipv6Socket!.SafeHandle,
                                 (int)IOControlCode.AddressListChange,
                                 null, 0, null, 0,
                                 out int length,
@@ -293,7 +292,7 @@ namespace System.Net.NetworkInformation
 
                             errorCode = Interop.Winsock.WSAEventSelect(
                                 s_ipv6Socket.SafeHandle,
-                                s_ipv6WaitHandle.GetSafeWaitHandle(),
+                                s_ipv6WaitHandle!.GetSafeWaitHandle(),
                                 Interop.Winsock.AsyncEventBits.FdAddressListChange);
 
                             if (errorCode != SocketError.Success)
@@ -308,7 +307,7 @@ namespace System.Net.NetworkInformation
                 }
             }
 
-            internal static void Stop(NetworkAddressChangedEventHandler caller)
+            internal static void Stop(NetworkAddressChangedEventHandler? caller)
             {
                 if (caller != null)
                 {

@@ -1,21 +1,23 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Xunit;
-using System.Linq;
 
 namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslClientAuthenticationOptionsTest
+    public abstract class SslClientAuthenticationOptionsTestBase
     {
+        protected abstract bool TestAuthenticateAsync { get; }
+
         [Fact]
         public async Task ClientOptions_ServerOptions_NotMutatedDuringAuthentication()
         {
@@ -41,10 +43,11 @@ namespace System.Net.Security.Tests
                 SslProtocols serverSslProtocols = SslProtocols.Tls11 | SslProtocols.Tls12;
                 EncryptionPolicy serverEncryption = EncryptionPolicy.AllowNoEncryption;
                 RemoteCertificateValidationCallback serverRemoteCallback = new RemoteCertificateValidationCallback(delegate { return true; });
+                SslStreamCertificateContext certificateContext = SslStreamCertificateContext.Create(serverCert, null, false);
 
-                var network = new VirtualNetwork();
-                using (var client = new SslStream(new VirtualNetworkStream(network, isServer: false)))
-                using (var server = new SslStream(new VirtualNetworkStream(network, isServer: true)))
+                (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+                using (var client = new SslStream(stream1))
+                using (var server = new SslStream(stream2))
                 {
                     // Create client options
                     var clientOptions = new SslClientAuthenticationOptions
@@ -70,12 +73,13 @@ namespace System.Net.Security.Tests
                         EnabledSslProtocols = serverSslProtocols,
                         EncryptionPolicy = serverEncryption,
                         RemoteCertificateValidationCallback = serverRemoteCallback,
-                        ServerCertificate = serverCert
+                        ServerCertificate = serverCert,
+                        ServerCertificateContext = certificateContext,
                     };
 
                     // Authenticate
-                    Task clientTask = client.AuthenticateAsClientAsync(clientOptions, default);
-                    Task serverTask = server.AuthenticateAsServerAsync(serverOptions, default);
+                    Task clientTask = client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
+                    Task serverTask = server.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
                     await new[] { clientTask, serverTask }.WhenAllOrAnyFailed();
 
                     // Validate that client options are unchanged
@@ -101,8 +105,19 @@ namespace System.Net.Security.Tests
                     Assert.Equal(serverEncryption, serverOptions.EncryptionPolicy);
                     Assert.Same(serverRemoteCallback, serverOptions.RemoteCertificateValidationCallback);
                     Assert.Same(serverCert, serverOptions.ServerCertificate);
+                    Assert.Same(certificateContext, serverOptions.ServerCertificateContext);
                 }
             }
         }
+    }
+
+    public sealed class SslClientAuthenticationOptionsTestBase_Sync : SslClientAuthenticationOptionsTestBase
+    {
+        protected override bool TestAuthenticateAsync => false;
+    }
+
+    public sealed class SslClientAuthenticationOptionsTestBase_Async : SslClientAuthenticationOptionsTestBase
+    {
+        protected override bool TestAuthenticateAsync => true;
     }
 }

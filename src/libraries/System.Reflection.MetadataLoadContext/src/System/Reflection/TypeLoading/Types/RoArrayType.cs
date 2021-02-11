@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,7 +34,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override int GetArrayRank() => _rank;
 
-        protected sealed override RoType ComputeBaseTypeWithoutDesktopQuirk() => Loader.GetCoreType(CoreType.Array);
+        protected sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => Loader.GetCoreType(CoreType.Array);
 
         protected sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces()
         {
@@ -45,7 +44,7 @@ namespace System.Reflection.TypeLoading
             RoType[] typeArguments = { GetRoElementType() };
             foreach (CoreType coreType in s_typesImplementedByArray)
             {
-                RoType ifc = Loader.TryGetCoreType(coreType);
+                RoType? ifc = Loader.TryGetCoreType(coreType);
                 if (ifc != null)
                 {
                     // All of our types are from a fixed list so we know they're supposed be generic interfaces taking one type parameter.
@@ -69,7 +68,7 @@ namespace System.Reflection.TypeLoading
 
         protected sealed override TypeAttributes ComputeAttributeFlags() => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
 
-        internal sealed override IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter filter)
+        internal sealed override IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter? filter)
         {
             if (filter == null || filter.Matches(ConstructorInfo.ConstructorName))
             {
@@ -122,7 +121,7 @@ namespace System.Reflection.TypeLoading
                         }
                         yield return new RoSyntheticConstructor(this, uniquifier++, parameterTypes);
                         parameterCount++;
-                        elementType = elementType.GetRoElementType();
+                        elementType = elementType.GetRoElementType()!;
                     }
                 }
 
@@ -148,7 +147,7 @@ namespace System.Reflection.TypeLoading
             }
         }
 
-        internal sealed override IEnumerable<MethodInfo> GetMethodsCore(NameFilter filter, Type reflectedType)
+        internal sealed override IEnumerable<MethodInfo> GetMethodsCore(NameFilter? filter, Type reflectedType)
         {
             int rank = _rank;
 

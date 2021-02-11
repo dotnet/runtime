@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RestorePackages>true</RestorePackages>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- There are arch-specific versions of this test to allow it to be compiled for all targets -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm' and '$(TargetArchitecture)' != 'armel'">true</CLRTestTargetUnsupported>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Note arm happens to have the same class layout as 64 bit targets on this test -->
+    <Compile Include="64sizeof32.il" />
+  </ItemGroup>
+</Project>

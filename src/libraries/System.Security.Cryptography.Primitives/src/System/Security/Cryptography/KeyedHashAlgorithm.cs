@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -10,13 +10,15 @@ namespace System.Security.Cryptography
     {
         protected KeyedHashAlgorithm() { }
 
+        [Obsolete(Obsoletions.DefaultCryptoAlgorithmsMessage, DiagnosticId = Obsoletions.DefaultCryptoAlgorithmsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static new KeyedHashAlgorithm Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
+        [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static new KeyedHashAlgorithm? Create(string algName) =>
             (KeyedHashAlgorithm?)CryptoConfigForwarder.CreateFromName(algName);
 
-        public virtual byte[]? Key
+        public virtual byte[] Key
         {
             get
             {
@@ -38,11 +40,11 @@ namespace System.Security.Cryptography
                 {
                     Array.Clear(KeyValue, 0, KeyValue.Length);
                 }
-                KeyValue = null;
+                KeyValue = null!;
             }
             base.Dispose(disposing);
         }
 
-        protected byte[]? KeyValue = null;
+        protected byte[] KeyValue = null!;
     }
 }

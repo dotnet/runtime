@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -254,7 +253,7 @@ namespace System.Linq.Parallel
         // just enumerate the key-set from the hash-table, retrieving groupings of key-elements.
         //
 
-        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref IGrouping<TGroupKey, TElement> currentElement, ref TOrderKey currentKey)
+        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref IGrouping<TGroupKey, TElement> currentElement, [AllowNull] ref TOrderKey currentKey)
         {
             Debug.Assert(_source != null);
 
@@ -329,7 +328,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceKeyUnused))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    CancellationState.ThrowIfCanceled(_cancellationToken);
+                    _cancellationToken.ThrowIfCancellationRequested();;
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
@@ -391,7 +390,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceKeyUnused))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    CancellationState.ThrowIfCanceled(_cancellationToken);
+                    _cancellationToken.ThrowIfCancellationRequested();;
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
@@ -460,7 +459,7 @@ namespace System.Linq.Parallel
         // just enumerate the key-set from the hash-table, retrieving groupings of key-elements.
         //
 
-        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref IGrouping<TGroupKey, TElement> currentElement, ref TOrderKey currentKey)
+        internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref IGrouping<TGroupKey, TElement> currentElement, [AllowNull] ref TOrderKey currentKey)
         {
             Debug.Assert(_source != null);
             Debug.Assert(_keySelector != null);
@@ -558,7 +557,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceOrderKey))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    CancellationState.ThrowIfCanceled(_cancellationToken);
+                    _cancellationToken.ThrowIfCancellationRequested();;
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);
@@ -633,7 +632,7 @@ namespace System.Linq.Parallel
             while (_source.MoveNext(ref sourceElement, ref sourceOrderKey))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    CancellationState.ThrowIfCanceled(_cancellationToken);
+                    _cancellationToken.ThrowIfCancellationRequested();;
 
                 // Generate a key and place it into the hashtable.
                 Wrapper<TGroupKey> key = new Wrapper<TGroupKey>(sourceElement.Second);

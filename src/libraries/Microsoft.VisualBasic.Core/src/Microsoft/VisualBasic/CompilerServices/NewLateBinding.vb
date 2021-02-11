@@ -1,22 +1,14 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
-Imports System.Collections
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.Dynamic
-Imports System.Globalization
 Imports System.Reflection
-Imports System.Runtime.InteropServices
 
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
 Imports Microsoft.VisualBasic.CompilerServices.OverloadResolution
-Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
-Imports Microsoft.VisualBasic.CompilerServices.Utils
-Imports Microsoft.VisualBasic.CompilerServices.ReflectionExtensions
-Imports System.Runtime.Versioning
 
 #Const NEW_BINDER = True
 #Const BINDING_LOG = False
@@ -283,7 +275,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     failure = ResolutionFailure.InvalidArgument
 
                     If reportErrors Then
-                        Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNamedArgs))
+                        Throw New ArgumentException(SR.Argument_InvalidNamedArgs)
                     End If
 
                     Return Nothing
@@ -409,7 +401,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             If members(0).MemberType = MemberTypes.Field Then
                 If typeArguments.Length > 0 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                    Throw New ArgumentException(SR.Argument_InvalidValue)
                 End If
 
                 Dim fieldValue As Object = baseReference.GetFieldValue(DirectCast(members(0), FieldInfo))
@@ -424,7 +416,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             If argumentNames.Length > arguments.Length OrElse
                (copyBack IsNot Nothing AndAlso copyBack.Length <> arguments.Length) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             Dim failure As OverloadResolution.ResolutionFailure
@@ -465,7 +457,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     'For backwards compatibility, throw a missing member exception if the intermediate result is Nothing.
                     If result Is Nothing Then
                         Throw New MissingMemberException(
-                                GetResourceString(
+                                SR.Format(
                                     SR.IntermediateLateBoundNothingResult1,
                                     targetProcedure.ToString,
                                     baseReference.VBFriendlyName))
@@ -621,7 +613,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 'This is an array lookup and assignment o(a) = v.
 
                 If argumentNames.Length > 0 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNamedArgs))
+                    Throw New ArgumentException(SR.Argument_InvalidNamedArgs)
                 End If
 
                 baseReference.SetArrayValue(arguments)
@@ -629,12 +621,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
 
             If argumentNames.Length > arguments.Length Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             If arguments.Length < 1 Then
                 'We're binding to a Set, we must have at least the Value argument.
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             Dim methodName As String = ""
@@ -660,7 +652,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 If rValueBase AndAlso baseReference.IsValueType Then
                     Throw New Exception(
-                            GetResourceString(
+                            SR.Format(
                                 SR.RValueBaseForValueType,
                                 baseReference.VBFriendlyName,
                                 baseReference.VBFriendlyName))
@@ -815,7 +807,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 ByVal RValueBase As Boolean)
 
             ObjectLateSetComplex(
-                Instance, Nothing, MemberName, Arguments, New String() {},
+                Instance, Nothing, MemberName, Arguments, Array.Empty(Of String)(),
                 NoTypeArguments, OptimisticSet, RValueBase)
         End Sub 'FallbackSetComplex
 
@@ -915,13 +907,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If members(0).MemberType = MemberTypes.Field Then
 
                 If TypeArguments.Length > 0 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                    Throw New ArgumentException(SR.Argument_InvalidValue)
                 End If
 
                 If Arguments.Length = 1 Then
                     If RValueBase AndAlso baseReference.IsValueType Then
                         Throw New Exception(
-                                GetResourceString(
+                                SR.Format(
                                     SR.RValueBaseForValueType,
                                     baseReference.VBFriendlyName,
                                     baseReference.VBFriendlyName))
@@ -940,7 +932,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             invocationFlags = BindingFlagsSetProperty
 
             If ArgumentNames.Length > Arguments.Length Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                Throw New ArgumentException(SR.Argument_InvalidValue)
             End If
 
             Dim failure As OverloadResolution.ResolutionFailure
@@ -963,7 +955,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 If failure = OverloadResolution.ResolutionFailure.None Then
                     If RValueBase AndAlso baseReference.IsValueType Then
                         Throw New Exception(
-                                GetResourceString(
+                                SR.Format(
                                     SR.RValueBaseForValueType,
                                     baseReference.VBFriendlyName,
                                     baseReference.VBFriendlyName))
@@ -999,7 +991,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     'For backwards compatibility, throw a missing member exception if the intermediate result is Nothing.
                     If result Is Nothing Then
                         Throw New MissingMemberException(
-                                GetResourceString(
+                                SR.Format(
                                     SR.IntermediateLateBoundNothingResult1,
                                     targetProcedure.ToString,
                                     baseReference.VBFriendlyName))
@@ -1136,7 +1128,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 failure = ResolutionFailure.InvalidArgument
 
                 If reportErrors Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                    Throw New ArgumentException(SR.Argument_InvalidValue)
                 End If
 
                 Return Nothing
@@ -1147,7 +1139,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 If reportErrors Then
                     'If we're binding to a Set, we must have at least the Value argument.
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                    Throw New ArgumentException(SR.Argument_InvalidValue)
                 End If
 
                 Return Nothing
@@ -1201,11 +1193,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If HasFlag(flags, BindingFlagsSetProperty) Then
                 Debug.Assert(targetProcedure.AsProperty.GetSetMethod Is Nothing, "expected error condition")
                 Return New MissingMemberException(
-                    GetResourceString(SR.NoSetProperty1, targetProcedure.AsProperty.Name))
+                    SR.Format(SR.NoSetProperty1, targetProcedure.AsProperty.Name))
             Else
                 Debug.Assert(targetProcedure.AsProperty.GetGetMethod Is Nothing, "expected error condition")
                 Return New MissingMemberException(
-                    GetResourceString(SR.NoGetProperty1, targetProcedure.AsProperty.Name))
+                    SR.Format(SR.NoGetProperty1, targetProcedure.AsProperty.Name))
             End If
         End Function
 
@@ -1238,7 +1230,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 If reportErrors Then
                     'This expression is not a procedure, but occurs as the target of a procedure call.
                     Throw New ArgumentException(
-                        GetResourceString(SR.ExpressionNotProcedure, methodName, baseReference.VBFriendlyName))
+                        SR.Format(SR.ExpressionNotProcedure, methodName, baseReference.VBFriendlyName))
                 End If
                 Return Nothing
             End If
@@ -1256,7 +1248,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                     If reportErrors Then
                         Throw New InvalidCastException(
-                            GetResourceString(SR.PropertySetMissingArgument1, methodName))
+                            SR.Format(SR.PropertySetMissingArgument1, methodName))
                     End If
 
                     Return Nothing
@@ -1317,7 +1309,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             errorMessage &= vbCrLf & "    " & errorString
                         Next
 
-                        errorMessage = GetResourceString(SR.MatchArgumentFailure2, resolutionResult.ToString, errorMessage)
+                        errorMessage = SR.Format(SR.MatchArgumentFailure2, resolutionResult.ToString, errorMessage)
                         'We are missing a member which can match the arguments, so throw a missing member exception.
                         'The InvalidCastException is thrown only for back compat.  It would
                         'be nice if the latebinder had its own set of exceptions to throw.
@@ -1348,7 +1340,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     If reportErrors Then
                         'Methods can't be targets of assignments.
                         Throw New MissingMemberException(
-                            GetResourceString(SR.MethodAssignment1, resolutionResult.AsMethod.Name))
+                            SR.Format(SR.MethodAssignment1, resolutionResult.AsMethod.Name))
                     End If
                     Return Nothing
                 End If
@@ -1393,7 +1385,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             errorMessage &= vbCrLf & "    " & errorString
                         Next
 
-                        errorMessage = GetResourceString(SR.MatchArgumentFailure2, resolutionResult.ToString, errorMessage)
+                        errorMessage = SR.Format(SR.MatchArgumentFailure2, resolutionResult.ToString, errorMessage)
                         'The selected member can't handle the type of the Value argument, so this is an argument exception.
                         'The InvalidCastException is thrown only for back compat.  It would
                         'be nice if the latebinder had its own set of exceptions to throw.

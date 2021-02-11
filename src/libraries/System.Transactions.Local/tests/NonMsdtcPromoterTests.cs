@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection;
@@ -298,23 +297,6 @@ namespace System.Transactions.Tests
                     throw new ApplicationException(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
                 }
             }
-
-            // TODO #9582: Uncomment once IFormatter and BinaryFormatter are available in .NET Core
-            //try
-            //{
-            //    MemoryStream txStream = new MemoryStream();
-            //    IFormatter formatter = new BinaryFormatter();
-            //    formatter.Serialize(txStream, tx);
-            //    throw new ApplicationException("Serialize of transaction unexpectedly succeeded.");
-            //}
-            //catch (TransactionPromotionException ex)
-            //{
-            //    if (TxPromoterType(tx) != expectedPromoterType)
-            //    {
-            //        Trace(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
-            //        throw new ApplicationException(string.Format("Exception {0} occurred, but transaction has an unexpected PromoterType of {1}", ex.ToString(), TxPromoterType(tx)));
-            //    }
-            //}
         }
 
         private static bool PromotedTokensMatch(byte[] one, byte[] two)
@@ -2166,7 +2148,7 @@ namespace System.Transactions.Tests
         /// PSPE Non-MSDTC Blocking Clone Completed After Commit.
         /// </summary>
         [OuterLoop] // long delay
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcBlockingCloneCompletedAfterCommit(bool promote)
@@ -2179,7 +2161,7 @@ namespace System.Transactions.Tests
         /// PSPE Non-MSDTC Timeout.
         /// </summary>
         [OuterLoop] // long timeout
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcTimeout(bool promote)
@@ -2233,7 +2215,7 @@ namespace System.Transactions.Tests
         /// <summary>
         /// PSPE Non-MSDTC Completed Event.
         /// </summary>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void PSPENonMsdtcCompletedEvent(bool promote)

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
@@ -94,7 +94,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return genericSpecialization;
         }
 
-        public static IEnumerable<Type> CreateTypeSpecializations(this Type[] types, Type[] specializationTypes)
+        [return: NotNullIfNotNull("types")]
+        public static IEnumerable<Type>? CreateTypeSpecializations(this Type[]? types, Type[] specializationTypes)
         {
             if (types == null)
             {
@@ -138,12 +139,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         }
 
-        public static bool CanSpecialize(Type type, IEnumerable<Type> constraints, GenericParameterAttributes attributes)
+        public static bool CanSpecialize(Type? type, IEnumerable<Type>? constraints, GenericParameterAttributes attributes)
         {
-            return CanSpecialize(type, constraints) && CanSpecialize(type, attributes);
+            return CanSpecialize(type, constraints) && CanSpecialize(type!, attributes);
         }
 
-        public static bool CanSpecialize(Type type, IEnumerable<Type> constraintTypes)
+        public static bool CanSpecialize(Type? type, IEnumerable<Type>? constraintTypes)
         {
             if (constraintTypes == null)
             {

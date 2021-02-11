@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Don't override IsAlwaysNormalized because it is just a Unicode Transformation and could be confused.
 //
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -37,9 +37,9 @@ namespace System.Text
         internal static readonly UTF32Encoding s_default = new UTF32Encoding(bigEndian: false, byteOrderMark: true);
         internal static readonly UTF32Encoding s_bigEndianDefault = new UTF32Encoding(bigEndian: true, byteOrderMark: true);
 
-        private readonly bool _emitUTF32ByteOrderMark = false;
-        private readonly bool _isThrowException = false;
-        private readonly bool _bigEndian = false;
+        private readonly bool _emitUTF32ByteOrderMark;
+        private readonly bool _isThrowException;
+        private readonly bool _bigEndian;
 
         public UTF32Encoding() : this(false, true)
         {
@@ -120,7 +120,9 @@ namespace System.Text
         {
             // Validate input
             if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
 
             fixed (char* pChars = s)
                 return GetByteCount(pChars, s.Length, null);
@@ -1046,17 +1048,17 @@ namespace System.Text
             return (int)(chars - charStart);
         }
 
-        private uint GetSurrogate(char cHigh, char cLow)
+        private static uint GetSurrogate(char cHigh, char cLow)
         {
             return (((uint)cHigh - 0xD800) * 0x400) + ((uint)cLow - 0xDC00) + 0x10000;
         }
 
-        private char GetHighSurrogate(uint iChar)
+        private static char GetHighSurrogate(uint iChar)
         {
             return (char)((iChar - 0x10000) / 0x400 + 0xD800);
         }
 
-        private char GetLowSurrogate(uint iChar)
+        private static char GetLowSurrogate(uint iChar)
         {
             return (char)((iChar - 0x10000) % 0x400 + 0xDC00);
         }
@@ -1144,7 +1146,7 @@ namespace System.Text
             _bigEndian ? (ReadOnlySpan<byte>)new byte[4] { 0x00, 0x00, 0xFE, 0xFF } : // uses C# compiler's optimization for static byte[] data
             (ReadOnlySpan<byte>)new byte[4] { 0xFF, 0xFE, 0x00, 0x00 };
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is UTF32Encoding that)
             {
@@ -1167,8 +1169,8 @@ namespace System.Text
         private sealed class UTF32Decoder : DecoderNLS
         {
             // Need a place to store any extra bytes we may have picked up
-            internal int iChar = 0;
-            internal int readByteCount = 0;
+            internal int iChar;
+            internal int readByteCount;
 
             public UTF32Decoder(UTF32Encoding encoding) : base(encoding)
             {

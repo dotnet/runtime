@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Globalization
 {
@@ -11,19 +10,11 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 
-            string? strDefault = CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
-            if (strDefault == null)
-            {
-                strDefault = CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
+            string? strDefault = UserDefaultLocaleName;
 
-                if (strDefault == null)
-                {
-                    // If system default doesn't work, use invariant
-                    return CultureInfo.InvariantCulture;
-                }
-            }
-
-            return GetCultureByName(strDefault);
+            return strDefault != null ?
+                GetCultureByName(strDefault) :
+                CultureInfo.InvariantCulture;
         }
 
         private static unsafe CultureInfo GetUserDefaultUICulture()
@@ -37,23 +28,25 @@ namespace System.Globalization
 
             if (Interop.Kernel32.GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &langCount, null, &bufLen) != Interop.BOOL.FALSE)
             {
-                char[] languages = new char[bufLen];
+                Span<char> languages = bufLen <= 256 ? stackalloc char[(int)bufLen] : new char[bufLen];
                 fixed (char* pLanguages = languages)
                 {
                     if (Interop.Kernel32.GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &langCount, pLanguages, &bufLen) != Interop.BOOL.FALSE)
                     {
-                        int index = 0;
-                        while (languages[index] != (char)0 && index < languages.Length)
-                        {
-                            index++;
-                        }
-
-                        return GetCultureByName(new string(languages, 0, index));
+                        return GetCultureByName(languages.ToString());
                     }
                 }
             }
 
             return InitializeUserDefaultCulture();
         }
+
+        internal static string? UserDefaultLocaleName { get; set; } = GetUserDefaultLocaleName();
+
+        private static string? GetUserDefaultLocaleName() =>
+            GlobalizationMode.Invariant ?
+                CultureInfo.InvariantCulture.Name :
+                CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME) ??
+                CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_SYSTEM_DEFAULT, Interop.Kernel32.LOCALE_SNAME);
     }
 }

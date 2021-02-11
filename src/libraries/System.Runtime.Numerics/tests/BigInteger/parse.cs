@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,7 +17,7 @@ namespace System.Numerics.Tests
         private static readonly Random s_random = new Random(100);
 
         // Invariant culture is commonly used for (de-)serialization and similar to en-US
-        // Ukrainian (Ukraine) added to catch regressions (issue #1642)
+        // Ukrainian (Ukraine) added to catch regressions (https://github.com/dotnet/runtime/issues/14545)
         // Current cultue to get additional value out of glob/loc test runs
         public static IEnumerable<object[]> Cultures
         {
@@ -128,6 +127,8 @@ namespace System.Numerics.Tests
             VerifyFormatParse("123&4567^ <", NumberStyles.Any, nfi, new BigInteger(-1234567));
         }
 
+        private static bool NoGrouping(int[] sizes) => sizes.Length == 0 || (sizes.Length == 1 && sizes[0] == 0);
+
         private static void VerifyDefaultParse(Random random)
         {
             // BasicTests
@@ -220,7 +221,14 @@ namespace System.Numerics.Tests
                 sizes = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSizes;
                 seperator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
                 digits = GenerateGroups(sizes, seperator, random);
-                VerifyFailParseToString(digits, typeof(FormatException));
+                if (NoGrouping(sizes))
+                {
+                    VerifyParseToString(digits);
+                }
+                else
+                {
+                    VerifyFailParseToString(digits, typeof(FormatException));
+                }
             }
 
             // Exponent
@@ -342,7 +350,7 @@ namespace System.Numerics.Tests
                 sizes = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSizes;
                 seperator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
                 digits = GenerateGroups(sizes, seperator, random);
-                VerifyParseToString(digits, ns, ((ns & NumberStyles.AllowThousands) != 0));
+                VerifyParseToString(digits, ns, NoGrouping(sizes) || ((ns & NumberStyles.AllowThousands) != 0));
             }
 
             // Exponent
@@ -727,6 +735,11 @@ namespace System.Numerics.Tests
             int total;
             int num_digits = random.Next(10, 100);
             string digits = string.Empty;
+
+            if (NoGrouping(sizes))
+            {
+                return GetDigitSequence(1, 100, random);
+            }
 
             total = 0;
             total_sizes.Add(0);

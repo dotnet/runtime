@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -14,7 +13,7 @@ namespace Microsoft.Win32.SafeHandles
         private static readonly bool s_captureTrace =
             Environment.GetEnvironmentVariable("DEBUG_SAFEX509HANDLE_FINALIZATION") != null;
 
-        private readonly StackTrace _stacktrace =
+        private readonly StackTrace? _stacktrace =
             s_captureTrace ? new StackTrace(fNeedFileInfo: true) : null;
 
         ~SafeX509Handle()
@@ -28,7 +27,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal static readonly SafeX509Handle InvalidHandle = new SafeX509Handle();
 
-        private SafeX509Handle() :
+        public SafeX509Handle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -48,7 +47,7 @@ namespace Microsoft.Win32.SafeHandles
 
     internal sealed class SafeX509CrlHandle : SafeHandle
     {
-        private SafeX509CrlHandle() :
+        public SafeX509CrlHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -68,7 +67,7 @@ namespace Microsoft.Win32.SafeHandles
 
     internal sealed class SafeX509StoreHandle : SafeHandle
     {
-        private SafeX509StoreHandle() :
+        public SafeX509StoreHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

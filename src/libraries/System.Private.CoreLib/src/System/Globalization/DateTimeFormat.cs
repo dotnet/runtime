@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -125,7 +124,7 @@ namespace System
     class DateTimeFormat
     {
         internal const int MaxSecondsFractionDigits = 7;
-        internal static readonly TimeSpan NullOffset = TimeSpan.MinValue;
+        internal const long NullOffset = long.MinValue;
 
         internal static char[] allStandardFormats =
         {
@@ -653,8 +652,8 @@ namespace System
                         if (isJapaneseCalendar &&
                             !LocalAppContextSwitches.FormatJapaneseFirstYearAsANumber &&
                             year == 1 &&
-                            ((i + tokenLen < format.Length && format[i + tokenLen] == DateTimeFormatInfoScanner.CJKYearSuff[0]) ||
-                            (i + tokenLen < format.Length - 1 && format[i + tokenLen] == '\'' && format[i + tokenLen + 1] == DateTimeFormatInfoScanner.CJKYearSuff[0])))
+                            ((i + tokenLen < format.Length && format[i + tokenLen] == DateTimeFormatInfoScanner.CJKYearSuff) ||
+                            (i + tokenLen < format.Length - 1 && format[i + tokenLen] == '\'' && format[i + tokenLen + 1] == DateTimeFormatInfoScanner.CJKYearSuff)))
                         {
                             // We are formatting a Japanese date with year equals 1 and the year number is followed by the year sign \u5e74
                             // In Japanese dates, the first year in the era is not formatted as a number 1 instead it is formatted as \u5143 which means
@@ -778,7 +777,7 @@ namespace System
         private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, int tokenLen, bool timeOnly, StringBuilder result)
         {
             // See if the instance already has an offset
-            bool dateTimeFormat = (offset == NullOffset);
+            bool dateTimeFormat = (offset.Ticks == NullOffset);
             if (dateTimeFormat)
             {
                 // No offset. The instance is a DateTime and the output should be the local time zone
@@ -791,14 +790,14 @@ namespace System
                 }
                 else if (dateTime.Kind == DateTimeKind.Utc)
                 {
-                    offset = TimeSpan.Zero;
+                    offset = default; // TimeSpan.Zero
                 }
                 else
                 {
                     offset = TimeZoneInfo.GetLocalUtcOffset(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime);
                 }
             }
-            if (offset >= TimeSpan.Zero)
+            if (offset.Ticks >= 0)
             {
                 result.Append('+');
             }
@@ -833,7 +832,7 @@ namespace System
             // For DateTime it should round-trip the Kind value and preserve the time zone.
             // DateTimeOffset instance, it should do so by using the internal time zone.
 
-            if (offset == NullOffset)
+            if (offset.Ticks == NullOffset)
             {
                 // source is a date time, so behavior depends on the kind.
                 switch (dateTime.Kind)
@@ -845,14 +844,14 @@ namespace System
                         break;
                     case DateTimeKind.Utc:
                         // The 'Z' constant is a marker for a UTC date
-                        result.Append("Z");
+                        result.Append('Z');
                         return;
                     default:
                         // If the kind is unspecified, we output nothing here
                         return;
                 }
             }
-            if (offset >= TimeSpan.Zero)
+            if (offset.Ticks >= 0)
             {
                 result.Append('+');
             }
@@ -940,7 +939,7 @@ namespace System
         // This method also convert the dateTime if necessary (e.g. when the format is in Universal time),
         // and change dtfi if necessary (e.g. when the format should use invariant culture).
         //
-        private static string ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTime dateTime, ref DateTimeFormatInfo dtfi, ref TimeSpan offset)
+        private static string ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTime dateTime, ref DateTimeFormatInfo dtfi, TimeSpan offset)
         {
             switch (format[0])
             {
@@ -951,7 +950,7 @@ namespace System
                 case 'r':
                 case 'R':       // RFC 1123 Standard
                 case 'u':       // Universal time in sortable format.
-                    if (offset != NullOffset)
+                    if (offset.Ticks != NullOffset)
                     {
                         // Convert to UTC invariants mean this will be in range
                         dateTime -= offset;
@@ -962,7 +961,7 @@ namespace System
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
                 case 'U':       // Universal time in culture dependent format.
-                    if (offset != NullOffset)
+                    if (offset.Ticks != NullOffset)
                     {
                         // This format is not supported by DateTimeOffset
                         throw new FormatException(SR.Format_InvalidString);
@@ -984,7 +983,7 @@ namespace System
 
         internal static string Format(DateTime dateTime, string? format, IFormatProvider? provider)
         {
-            return Format(dateTime, format, provider, NullOffset);
+            return Format(dateTime, format, provider, new TimeSpan(NullOffset));
         }
 
         internal static string Format(DateTime dateTime, string? format, IFormatProvider? provider, TimeSpan offset)
@@ -1019,7 +1018,7 @@ namespace System
         }
 
         internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
-            TryFormat(dateTime, destination, out charsWritten, format, provider, NullOffset);
+            TryFormat(dateTime, destination, out charsWritten, format, provider, new TimeSpan(NullOffset));
 
         internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider, TimeSpan offset)
         {
@@ -1093,7 +1092,7 @@ namespace System
                             break;
                     }
                 }
-                if (offset == NullOffset)
+                if (offset.Ticks == NullOffset)
                 {
                     // Default DateTime.ToString case.
                     format = timeOnlySpecialCase ? "s" : "G";
@@ -1107,7 +1106,7 @@ namespace System
 
             if (format.Length == 1)
             {
-                format = ExpandPredefinedFormat(format, ref dateTime, ref dtfi, ref offset);
+                format = ExpandPredefinedFormat(format, ref dateTime, ref dtfi, offset);
             }
 
             return FormatCustomized(dateTime, format, dtfi, offset, result: null);
@@ -1126,7 +1125,7 @@ namespace System
             int charsRequired = MinimumBytesNeeded;
             DateTimeKind kind = DateTimeKind.Local;
 
-            if (offset == NullOffset)
+            if (offset.Ticks == NullOffset)
             {
                 kind = dateTime.Kind;
                 if (kind == DateTimeKind.Local)
@@ -1154,38 +1153,45 @@ namespace System
             // Hoist most of the bounds checks on destination.
             { _ = destination[MinimumBytesNeeded - 1]; }
 
-            WriteFourDecimalDigits((uint)dateTime.Year, destination, 0);
+            dateTime.GetDate(out int year, out int month, out int day);
+            dateTime.GetTimePrecise(out int hour, out int minute, out int second, out int tick);
+
+            WriteFourDecimalDigits((uint)year, destination, 0);
             destination[4] = '-';
-            WriteTwoDecimalDigits((uint)dateTime.Month, destination, 5);
+            WriteTwoDecimalDigits((uint)month, destination, 5);
             destination[7] = '-';
-            WriteTwoDecimalDigits((uint)dateTime.Day, destination, 8);
+            WriteTwoDecimalDigits((uint)day, destination, 8);
             destination[10] = 'T';
-            WriteTwoDecimalDigits((uint)dateTime.Hour, destination, 11);
+            WriteTwoDecimalDigits((uint)hour, destination, 11);
             destination[13] = ':';
-            WriteTwoDecimalDigits((uint)dateTime.Minute, destination, 14);
+            WriteTwoDecimalDigits((uint)minute, destination, 14);
             destination[16] = ':';
-            WriteTwoDecimalDigits((uint)dateTime.Second, destination, 17);
+            WriteTwoDecimalDigits((uint)second, destination, 17);
             destination[19] = '.';
-            WriteDigits((uint)((ulong)dateTime.Ticks % (ulong)TimeSpan.TicksPerSecond), destination.Slice(20, 7));
+            WriteDigits((uint)tick, destination.Slice(20, 7));
 
             if (kind == DateTimeKind.Local)
             {
+                int offsetTotalMinutes = (int)(offset.Ticks / TimeSpan.TicksPerMinute);
+
                 char sign;
-                if (offset < default(TimeSpan) /* a "const" version of TimeSpan.Zero */)
+                if (offsetTotalMinutes < 0)
                 {
                     sign = '-';
-                    offset = TimeSpan.FromTicks(-offset.Ticks);
+                    offsetTotalMinutes = -offsetTotalMinutes;
                 }
                 else
                 {
                     sign = '+';
                 }
 
+                int offsetHours = Math.DivRem(offsetTotalMinutes, 60, out int offsetMinutes);
+
                 // Writing the value backward allows the JIT to optimize by
                 // performing a single bounds check against buffer.
-                WriteTwoDecimalDigits((uint)offset.Minutes, destination, 31);
+                WriteTwoDecimalDigits((uint)offsetMinutes, destination, 31);
                 destination[30] = ':';
-                WriteTwoDecimalDigits((uint)offset.Hours, destination, 28);
+                WriteTwoDecimalDigits((uint)offsetHours, destination, 28);
                 destination[27] = sign;
             }
             else if (kind == DateTimeKind.Utc)
@@ -1210,13 +1216,14 @@ namespace System
                 return false;
             }
 
-            if (offset != NullOffset)
+            if (offset.Ticks != NullOffset)
             {
                 // Convert to UTC invariants.
                 dateTime -= offset;
             }
 
-            dateTime.GetDatePart(out int year, out int month, out int day);
+            dateTime.GetDate(out int year, out int month, out int day);
+            dateTime.GetTime(out int hour, out int minute, out int second);
 
             string dayAbbrev = InvariantAbbreviatedDayNames[(int)dateTime.DayOfWeek];
             Debug.Assert(dayAbbrev.Length == 3);
@@ -1237,11 +1244,11 @@ namespace System
             destination[11] = ' ';
             WriteFourDecimalDigits((uint)year, destination, 12);
             destination[16] = ' ';
-            WriteTwoDecimalDigits((uint)dateTime.Hour, destination, 17);
+            WriteTwoDecimalDigits((uint)hour, destination, 17);
             destination[19] = ':';
-            WriteTwoDecimalDigits((uint)dateTime.Minute, destination, 20);
+            WriteTwoDecimalDigits((uint)minute, destination, 20);
             destination[22] = ':';
-            WriteTwoDecimalDigits((uint)dateTime.Second, destination, 23);
+            WriteTwoDecimalDigits((uint)second, destination, 23);
             destination[25] = ' ';
             destination[26] = 'G';
             destination[27] = 'M';

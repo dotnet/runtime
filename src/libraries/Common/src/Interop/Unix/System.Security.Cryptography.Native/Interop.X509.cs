@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -218,7 +217,7 @@ internal static partial class Interop
 
         internal static string GetX509VerifyCertErrorString(X509VerifyStatusCode n)
         {
-            return Marshal.PtrToStringAnsi(X509VerifyCertErrorString(n));
+            return Marshal.PtrToStringAnsi(X509VerifyCertErrorString(n))!;
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509VerifyCertErrorString")]

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,9 +13,9 @@ namespace System.Net.NetworkInformation
         protected NetworkInterfaceType _networkInterfaceType = NetworkInterfaceType.Unknown;
         internal PhysicalAddress _physicalAddress = PhysicalAddress.None;
         internal List<UnixUnicastIPAddressInformation> _unicastAddresses = new List<UnixUnicastIPAddressInformation>();
-        internal List<IPAddress> _multicastAddresses;
+        internal List<IPAddress>? _multicastAddresses;
         // If this is an ipv6 device, contains the Scope ID.
-        protected uint? _ipv6ScopeId = null;
+        protected uint? _ipv6ScopeId;
 
         protected UnixNetworkInterface(string name)
         {
@@ -63,7 +62,7 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Returns a list of all Unicast addresses of the interface's IP Addresses.
         /// </summary>
-        public List<IPAddress> MulticastAddresess { get { return _multicastAddresses; } }
+        public List<IPAddress>? MulticastAddresess { get { return _multicastAddresses; } }
 
         // Adds any IPAddress to this interface's List of addresses.
         protected void AddAddress(IPAddress ipAddress, int prefix)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -360,7 +359,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
+        // Regression test for the PLINQ version of https://github.com/dotnet/runtime/issues/14793 - comparer returning max/min value.
         public static void OrderBy_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = 0;
@@ -375,7 +374,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
+        // Regression test for the PLINQ version of https://github.com/dotnet/runtime/issues/14793 - comparer returning max/min value.
         public static void OrderByDescending_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = count - 1;
@@ -504,7 +503,7 @@ namespace System.Linq.Parallel.Tests
         // On CTP-M1, this would deadlock for DOP=7,9,11,... on 4-core, but works for DOP=1..6 and 8,10,12, ...
         //
         // In this test, every call to the key-selector delegate throws.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(OrderByThreadedData), new[] { 1, 2, 16, 128, 1024 }, new[] { 1, 2, 4, 7, 8, 31, 32 })]
         public static void OrderBy_ThreadedDeadlock(Labeled<ParallelQuery<int>> labeled, int count, int degree)
         {
@@ -516,7 +515,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         // Heavily exercises OrderBy, but only throws one user delegate exception to simulate an occasional failure.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(OrderByThreadedData), new[] { 1, 2, 16, 128, 1024 }, new[] { 1, 2, 4, 7, 8, 31, 32 })]
         public static void OrderBy_ThreadedDeadlock_SingleException(Labeled<ParallelQuery<int>> labeled, int count, int degree)
         {
@@ -950,7 +949,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
+        // Regression test for the PLINQ version of https://github.com/dotnet/runtime/issues/14793 - comparer returning max/min value.
         public static void ThenBy_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = 0;
@@ -965,7 +964,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
+        // Regression test for the PLINQ version of https://github.com/dotnet/runtime/issues/14793 - comparer returning max/min value.
         public static void ThenByDescending_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = count - 1;

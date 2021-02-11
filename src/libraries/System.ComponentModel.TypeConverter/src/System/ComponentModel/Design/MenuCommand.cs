@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Specialized;
@@ -157,7 +156,6 @@ namespace System.ComponentModel.Design
         /// Provides notification and is called in response to
         /// a <see cref='System.ComponentModel.Design.MenuCommand.CommandChanged'/> event.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")] // Safe: FullTrust LinkDemand to instantiate an object of this class.
         protected virtual void OnCommandChanged(EventArgs e) => CommandChanged?.Invoke(this, e);
 
         /// <summary>

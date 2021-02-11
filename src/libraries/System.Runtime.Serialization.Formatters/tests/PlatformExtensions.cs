@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 using System.Collections.Generic;
@@ -28,7 +27,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             int index;
 
             // .NET Framework
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 // Check if a specialized blob for >=netfx472 build 3260 is present and return if found.
                 if (IsNetFxPatchedVersion(3260))
@@ -48,7 +47,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     return index;
 
                 // If no newer blob for >=netfx471 is present use existing one.
-                // If no netfx blob is present then -1 will be returned.
+                // If no .NET Framework blob is present then -1 will be returned.
                 return blobList.FindIndex(b => b.Platform == TargetFrameworkMoniker.netfx461);
             }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.InteropServices;
@@ -19,21 +18,21 @@ internal static partial class Interop
         [ComImport,
             Guid("0000000C-0000-0000-C000-000000000046"),
             InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        internal unsafe interface IStream
+        internal interface IStream
         {
             // pcbRead is optional so it must be a pointer
-            void Read(byte* pv, uint cb, uint* pcbRead);
+            unsafe void Read(byte* pv, uint cb, uint* pcbRead);
 
             // pcbWritten is optional so it must be a pointer
-            void Write(byte* pv, uint cb, uint* pcbWritten);
+            unsafe void Write(byte* pv, uint cb, uint* pcbWritten);
 
             // SeekOrgin matches the native values, plibNewPosition is optional
-            void Seek(long dlibMove, SeekOrigin dwOrigin, ulong* plibNewPosition);
+            unsafe void Seek(long dlibMove, SeekOrigin dwOrigin, ulong* plibNewPosition);
 
             void SetSize(ulong libNewSize);
 
             // pcbRead and pcbWritten are optional
-            void CopyTo(
+            unsafe void CopyTo(
                 IStream pstm,
                 ulong cb,
                 ulong* pcbRead,

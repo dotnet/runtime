@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Text;
@@ -43,8 +42,6 @@ namespace System.Net.Mime
         internal const char EndSquareBracket = ']';
         internal const char Comma = ',';
         internal const char Dot = '.';
-
-        private static readonly char[] s_colonSeparator = new char[] { ':' };
 
         // NOTE: See RFC 2822 for more detail.  By default, every value in the array is false and only
         // those values which are allowed in that particular set are then set to true.  The numbers
@@ -189,12 +186,12 @@ namespace System.Net.Mime
                 throw new FormatException(SR.InvalidHeaderName);
         }
 
-        internal static string ReadQuotedString(string data, ref int offset, StringBuilder builder)
+        internal static string? ReadQuotedString(string data, ref int offset, StringBuilder? builder)
         {
             return ReadQuotedString(data, ref offset, builder, false, false);
         }
 
-        internal static string ReadQuotedString(string data, ref int offset, StringBuilder builder, bool doesntRequireQuotes, bool permitUnicodeInDisplayName)
+        internal static string? ReadQuotedString(string data, ref int offset, StringBuilder? builder, bool doesntRequireQuotes, bool permitUnicodeInDisplayName)
         {
             // assume first char is the opening quote
             if (!doesntRequireQuotes)
@@ -246,7 +243,7 @@ namespace System.Net.Mime
             throw new FormatException(SR.MailHeaderFieldMalformedHeader);
         }
 
-        internal static string ReadParameterAttribute(string data, ref int offset, StringBuilder builder)
+        internal static string? ReadParameterAttribute(string data, ref int offset, StringBuilder? builder)
         {
             if (!SkipCFWS(data, ref offset))
                 return null; //
@@ -254,7 +251,7 @@ namespace System.Net.Mime
             return ReadToken(data, ref offset, null);
         }
 
-        internal static string ReadToken(string data, ref int offset, StringBuilder builder)
+        internal static string ReadToken(string data, ref int offset, StringBuilder? builder)
         {
             int start = offset;
             for (; offset < data.Length; offset++)
@@ -269,7 +266,7 @@ namespace System.Net.Mime
                 }
             }
 
-            if (start == offset)
+            if (start == offset && offset < data.Length)
             {
                 throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
             }
@@ -277,9 +274,9 @@ namespace System.Net.Mime
             return data.Substring(start, offset - start);
         }
 
-        private static readonly string[] s_months = new string[] { null, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+        private static readonly string?[] s_months = new string?[] { null, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
-        internal static string GetDateTimeString(DateTime value, StringBuilder builder)
+        internal static string? GetDateTimeString(DateTime value, StringBuilder? builder)
         {
             StringBuilder localBuilder = (builder != null ? builder : new StringBuilder());
             localBuilder.Append(value.Day);
@@ -316,7 +313,7 @@ namespace System.Net.Mime
                 localBuilder.Append(' ');
             }
 
-            string[] offsetFields = offset.Split(s_colonSeparator);
+            string[] offsetFields = offset.Split(':');
             localBuilder.Append(offsetFields[0]);
             localBuilder.Append(offsetFields[1]);
             return (builder != null ? null : localBuilder.ToString());

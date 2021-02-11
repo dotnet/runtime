@@ -1,0 +1,13 @@
+# Use one list of platforms to create build jobs for multiple templates. Avoids
+# platform list duplication.
+parameters:
+  jobTemplates: []
+  platforms: []
+
+jobs:
+
+- ${{ each job in parameters.jobTemplates }}:
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      platforms: ${{ parameters.platforms }}
+      ${{ insert }}: ${{ job }}

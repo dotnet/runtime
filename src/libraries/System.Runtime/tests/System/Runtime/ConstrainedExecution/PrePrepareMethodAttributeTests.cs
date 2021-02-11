@@ -1,12 +1,12 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using Xunit;
 
 namespace System.Runtime.ConstrainedExecution.Tests
 {
+#pragma warning disable SYSLIB0004 // Obsolete: CER
     public class PrePrepareMethodAttributeTests
     {
         public sealed class ConstrainedType
@@ -35,4 +35,5 @@ namespace System.Runtime.ConstrainedExecution.Tests
                 typeof(ConstrainedType).GetConstructors()[0].GetCustomAttribute<PrePrepareMethodAttribute>());
         }
     }
+#pragma warning restore SYSLIB0004 // Obsolete: CER
 }

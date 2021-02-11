@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -362,7 +360,7 @@ namespace System.Text.Unicode
             Debug.Assert(char.IsHighSurrogate(highSurrogate));
             Debug.Assert(char.IsLowSurrogate(lowSurrogate));
 
-            // See http://www.unicode.org/versions/Unicode6.2.0/ch03.pdf, Table 3.5 for the
+            // See https://www.unicode.org/versions/Unicode6.2.0/ch03.pdf, Table 3.5 for the
             // details of this conversion. We don't use Char.ConvertToUtf32 because its exception
             // handling shows up on the hot path, and our caller has already sanitized the inputs.
             return (lowSurrogate & 0x3ff) | (((highSurrogate & 0x3ff) + (1 << 6)) << 10);
@@ -372,7 +370,7 @@ namespace System.Text.Unicode
         {
             Debug.Assert(0x10000 <= scalar && scalar <= UNICODE_LAST_CODEPOINT);
 
-            // See http://www.unicode.org/versions/Unicode6.2.0/ch03.pdf, Table 3.5 for the
+            // See https://www.unicode.org/versions/Unicode6.2.0/ch03.pdf, Table 3.5 for the
             // details of this conversion. We don't use Char.ConvertFromUtf32 because its exception
             // handling shows up on the hot path, it allocates temporary strings (which we don't want),
             // and our caller has already sanitized the inputs.
@@ -392,7 +390,7 @@ namespace System.Text.Unicode
         {
             Debug.Assert(scalar <= UNICODE_LAST_CODEPOINT);
 
-            // See http://www.unicode.org/versions/Unicode6.2.0/ch03.pdf, Table 3.6 for the
+            // See https://www.unicode.org/versions/Unicode6.2.0/ch03.pdf, Table 3.6 for the
             // details of this conversion. We don't use UTF8Encoding since we're encoding
             // a scalar code point, not a UTF16 character sequence.
             if (scalar <= 0x7f)

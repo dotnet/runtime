@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Security.Cryptography
@@ -21,42 +20,44 @@ namespace System.Security.Cryptography
         public override System.Security.Cryptography.CipherMode Mode { get { throw null; } set { } }
         public override System.Security.Cryptography.PaddingMode Padding { get { throw null; } set { } }
         public override System.Security.Cryptography.ICryptoTransform CreateDecryptor() { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     public sealed partial class CspKeyContainerInfo
     {
         public CspKeyContainerInfo(System.Security.Cryptography.CspParameters parameters) { }
         public bool Accessible { get { throw null; } }
         public bool Exportable { get { throw null; } }
         public bool HardwareDevice { get { throw null; } }
-        public string KeyContainerName { get { throw null; } }
+        public string? KeyContainerName { get { throw null; } }
         public System.Security.Cryptography.KeyNumber KeyNumber { get { throw null; } }
         public bool MachineKeyStore { get { throw null; } }
         public bool Protected { get { throw null; } }
-        public string ProviderName { get { throw null; } }
+        public string? ProviderName { get { throw null; } }
         public int ProviderType { get { throw null; } }
         public bool RandomlyGenerated { get { throw null; } }
         public bool Removable { get { throw null; } }
         public string UniqueKeyContainerName { get { throw null; } }
     }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     public sealed partial class CspParameters
     {
-        public string KeyContainerName;
+        public string? KeyContainerName;
         public int KeyNumber;
-        public string ProviderName;
+        public string? ProviderName;
         public int ProviderType;
         public CspParameters() { }
         public CspParameters(int dwTypeIn) { }
-        public CspParameters(int dwTypeIn, string strProviderNameIn) { }
-        public CspParameters(int dwTypeIn, string strProviderNameIn, string strContainerNameIn) { }
+        public CspParameters(int dwTypeIn, string? strProviderNameIn) { }
+        public CspParameters(int dwTypeIn, string? strProviderNameIn, string? strContainerNameIn) { }
         public System.Security.Cryptography.CspProviderFlags Flags { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
-        public System.Security.SecureString KeyPassword { get { throw null; } set { } }
+        public System.Security.SecureString? KeyPassword { get { throw null; } set { } }
         public System.IntPtr ParentWindowHandle { get { throw null; } set { } }
     }
     [System.FlagsAttribute]
@@ -77,9 +78,9 @@ namespace System.Security.Cryptography
     {
         public DESCryptoServiceProvider() { }
         public override System.Security.Cryptography.ICryptoTransform CreateDecryptor() { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
@@ -87,10 +88,13 @@ namespace System.Security.Cryptography
     {
         public DSACryptoServiceProvider() { }
         public DSACryptoServiceProvider(int dwKeySize) { }
-        public DSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters parameters) { }
-        public DSACryptoServiceProvider(System.Security.Cryptography.CspParameters parameters) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public DSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters? parameters) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public DSACryptoServiceProvider(System.Security.Cryptography.CspParameters? parameters) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
-        public override string KeyExchangeAlgorithm { get { throw null; } }
+        public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override int KeySize { get { throw null; } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public bool PersistKeyInCsp { get { throw null; } set { } }
@@ -108,9 +112,9 @@ namespace System.Security.Cryptography
         public byte[] SignData(byte[] buffer) { throw null; }
         public byte[] SignData(byte[] buffer, int offset, int count) { throw null; }
         public byte[] SignData(System.IO.Stream inputStream) { throw null; }
-        public byte[] SignHash(byte[] rgbHash, string str) { throw null; }
+        public byte[] SignHash(byte[] rgbHash, string? str) { throw null; }
         public bool VerifyData(byte[] rgbData, byte[] rgbSignature) { throw null; }
-        public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { throw null; }
+        public bool VerifyHash(byte[] rgbHash, string? str, byte[] rgbSignature) { throw null; }
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) { throw null; }
     }
     public partial interface ICspAsymmetricAlgorithm
@@ -138,23 +142,26 @@ namespace System.Security.Cryptography
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class PasswordDeriveBytes : System.Security.Cryptography.DeriveBytes
     {
-        public PasswordDeriveBytes(byte[] password, byte[] salt) { }
-        public PasswordDeriveBytes(byte[] password, byte[] salt, System.Security.Cryptography.CspParameters cspParams) { }
-        public PasswordDeriveBytes(byte[] password, byte[] salt, string hashName, int iterations) { }
-        public PasswordDeriveBytes(byte[] password, byte[] salt, string hashName, int iterations, System.Security.Cryptography.CspParameters cspParams) { }
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt) { }
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, System.Security.Cryptography.CspParameters cspParams) { }
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, string strHashName, int iterations) { }
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, string strHashName, int iterations, System.Security.Cryptography.CspParameters cspParams) { }
-        public string HashName { get { throw null; } set { } }
+        public PasswordDeriveBytes(byte[] password, byte[]? salt) { }
+        public PasswordDeriveBytes(byte[] password, byte[]? salt, System.Security.Cryptography.CspParameters? cspParams) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
+        public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
+        public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations, System.Security.Cryptography.CspParameters? cspParams) { }
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt) { }
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, System.Security.Cryptography.CspParameters? cspParams) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")]
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations, System.Security.Cryptography.CspParameters? cspParams) { }
+        public string HashName { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The hash implementation might be removed. Ensure the referenced hash algorithm is not trimmed.")] set { } }
         public int IterationCount { get { throw null; } set { } }
-        public byte[] Salt { get { throw null; } set { } }
-        public byte[] CryptDeriveKey(string algname, string alghashname, int keySize, byte[] rgbIV) { throw null; }
+        public byte[]? Salt { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
-#pragma warning disable 0809
         [System.ObsoleteAttribute("Rfc2898DeriveBytes replaces PasswordDeriveBytes for deriving key material from a password and is preferred in new applications.")]
         public override byte[] GetBytes(int cb) { throw null; }
-#pragma warning restore 0809
         public override void Reset() { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -162,9 +169,9 @@ namespace System.Security.Cryptography
     {
         public RC2CryptoServiceProvider() { }
         public override int EffectiveKeySize { get { throw null; } set { } }
-        public bool UseSalt { get { throw null; } set { } }
-        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public bool UseSalt { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override void GenerateIV() { }
         public override void GenerateKey() { }
     }
@@ -173,7 +180,7 @@ namespace System.Security.Cryptography
     {
         public RNGCryptoServiceProvider() { }
         public RNGCryptoServiceProvider(byte[] rgb) { }
-        public RNGCryptoServiceProvider(System.Security.Cryptography.CspParameters cspParams) { }
+        public RNGCryptoServiceProvider(System.Security.Cryptography.CspParameters? cspParams) { }
         public RNGCryptoServiceProvider(string str) { }
         protected override void Dispose(bool disposing) { }
         public override void GetBytes(byte[] data) { }
@@ -186,10 +193,13 @@ namespace System.Security.Cryptography
     {
         public RSACryptoServiceProvider() { }
         public RSACryptoServiceProvider(int dwKeySize) { }
-        public RSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters parameters) { }
-        public RSACryptoServiceProvider(System.Security.Cryptography.CspParameters parameters) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public RSACryptoServiceProvider(int dwKeySize, System.Security.Cryptography.CspParameters? parameters) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public RSACryptoServiceProvider(System.Security.Cryptography.CspParameters? parameters) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Security.Cryptography.CspKeyContainerInfo CspKeyContainerInfo { get { throw null; } }
-        public override string KeyExchangeAlgorithm { get { throw null; } }
+        public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override int KeySize { get { throw null; } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public bool PersistKeyInCsp { get { throw null; } set { } }
@@ -213,7 +223,7 @@ namespace System.Security.Cryptography
         public byte[] SignData(byte[] buffer, object halg) { throw null; }
         public byte[] SignData(System.IO.Stream inputStream, object halg) { throw null; }
         public override byte[] SignHash(byte[] hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
-        public byte[] SignHash(byte[] rgbHash, string str) { throw null; }
+        public byte[] SignHash(byte[] rgbHash, string? str) { throw null; }
         public bool VerifyData(byte[] buffer, object halg, byte[] signature) { throw null; }
         public override bool VerifyHash(byte[] hash, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
         public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature) { throw null; }
@@ -276,9 +286,9 @@ namespace System.Security.Cryptography
         public override System.Security.Cryptography.CipherMode Mode { get { throw null; } set { } }
         public override System.Security.Cryptography.PaddingMode Padding { get { throw null; } set { } }
         public override System.Security.Cryptography.ICryptoTransform CreateDecryptor() { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override void GenerateIV() { }
         public override void GenerateKey() { }

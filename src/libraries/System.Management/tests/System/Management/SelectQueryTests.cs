@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Management;
 using Xunit;
@@ -10,6 +9,7 @@ namespace System.Management.Tests
     public class SelectQueryTests
     {
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Select_Win32_LogicalDisk_ClassName()
         {
             var query = new SelectQuery("Win32_LogicalDisk");
@@ -29,6 +29,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Select_Win32_LogicalDisk_ClassName_Condition()
         {
             var query = new SelectQuery("Win32_LogicalDisk", "DriveType=3");
@@ -47,6 +48,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalTheory(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(WmiTestHelper.ScopeRoots), MemberType = typeof(WmiTestHelper))]
         public void Select_All_Win32_LogicalDisk_Wql(string scopeRoot)
         {

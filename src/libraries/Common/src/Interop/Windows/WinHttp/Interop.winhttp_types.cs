@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -129,8 +128,10 @@ internal partial class Interop
         public const uint WINHTTP_AUTH_TARGET_PROXY = 0x00000001;
 
         public const uint WINHTTP_OPTION_USERNAME = 0x1000;
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="It is property descriptor, not secret value.")]
         public const uint WINHTTP_OPTION_PASSWORD = 0x1001;
         public const uint WINHTTP_OPTION_PROXY_USERNAME = 0x1002;
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="It is property descriptor, not secret value.")]
         public const uint WINHTTP_OPTION_PROXY_PASSWORD = 0x1003;
 
         public const uint WINHTTP_OPTION_SERVER_SPN_USED = 106;
@@ -148,9 +149,12 @@ internal partial class Interop
 
         public const uint WINHTTP_OPTION_ASSURED_NON_BLOCKING_CALLBACKS = 111;
 
+        public const uint WINHTTP_OPTION_ENABLE_HTTP2_PLUS_CLIENT_CERT = 161;
         public const uint WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL = 133;
         public const uint WINHTTP_OPTION_HTTP_PROTOCOL_USED = 134;
         public const uint WINHTTP_PROTOCOL_FLAG_HTTP2 = 0x1;
+        public const uint WINHTTP_HTTP2_PLUS_CLIENT_CERT_FLAG = 0x1;
+        public const uint WINHTTP_OPTION_DISABLE_STREAM_QUEUE = 139;
 
         public const uint WINHTTP_OPTION_UPGRADE_TO_WEB_SOCKET = 114;
         public const uint WINHTTP_OPTION_WEB_SOCKET_CLOSE_TIMEOUT = 115;
@@ -158,6 +162,8 @@ internal partial class Interop
 
         public const uint WINHTTP_OPTION_WEB_SOCKET_RECEIVE_BUFFER_SIZE = 122;
         public const uint WINHTTP_OPTION_WEB_SOCKET_SEND_BUFFER_SIZE = 123;
+
+        public const uint WINHTTP_OPTION_TCP_KEEPALIVE = 152;
 
         public enum WINHTTP_WEB_SOCKET_BUFFER_TYPE
         {
@@ -239,7 +245,7 @@ internal partial class Interop
             public uint Flags;
             public uint AutoDetectFlags;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string AutoConfigUrl;
+            public string? AutoConfigUrl;
             public IntPtr Reserved1;
             public uint Reserved2;
             [MarshalAs(UnmanagedType.Bool)]
@@ -269,6 +275,15 @@ internal partial class Interop
         {
             public IntPtr dwResult;
             public uint dwError;
+        }
+
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct tcp_keepalive
+        {
+            public uint onoff;
+            public uint keepalivetime;
+            public uint keepaliveinterval;
         }
 
         public const uint API_RECEIVE_RESPONSE = 1;

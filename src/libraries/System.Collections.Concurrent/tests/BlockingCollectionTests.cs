@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,7 +15,7 @@ namespace System.Collections.Concurrent.Tests
     /// <summary>The class that contains the unit tests of the BlockingCollection.</summary>
     public class BlockingCollectionTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestBasicScenarios()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>(3);
@@ -54,7 +53,7 @@ namespace System.Collections.Concurrent.Tests
         /// BlockingCollection throws InvalidOperationException when calling CompleteAdding even after adding and taking all elements
         /// </summary>
         /// <returns></returns>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestBugFix544259()
         {
             int count = 8;
@@ -89,7 +88,7 @@ namespace System.Collections.Concurrent.Tests
         // Since the change to wait as part of CTS.Dispose, the ODE no longer occurs
         // but we keep the test as a good example of how cleanup of linkedCTS must be carefully handled
         // to prevent users of the source CTS mistakenly calling methods on disposed targets.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestBugFix626345()
         {
             const int noOfProducers = 1;
@@ -153,7 +152,7 @@ namespace System.Collections.Concurrent.Tests
         /// <summary>
         /// Making sure if TryTakeFromAny succeeds, it returns the correct index
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestBugFix914998()
         {
             var producer1 = new BlockingCollection<int>();
@@ -253,7 +252,7 @@ namespace System.Collections.Concurrent.Tests
         /// present in the collection.</summary>
         /// <param name="numOfThreads">Number of producer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements added per thread.</param>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(2, 1024)]
         [InlineData(8, 512)]
         public static void TestConcurrentAdd(int numOfThreads, int numOfElementsPerThread)
@@ -292,7 +291,7 @@ namespace System.Collections.Concurrent.Tests
         /// are consumed by consumers with no element lost nor consumed more than once.</summary>
         /// <param name="threads">Total number of producer and consumer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements to Add/Take per thread.</param>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(8, 1024)]
         public static void TestConcurrentAddTake(int numOfThreads, int numOfElementsPerThread)
         {
@@ -535,7 +534,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(0, counter);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Test7_ConcurrentAdd_CompleteAdding()
         {
             BlockingCollection<ushort> blockingCollection = ConstructBlockingCollection<ushort>();
@@ -742,7 +741,7 @@ namespace System.Collections.Concurrent.Tests
         /// are consumed by consumers with no element lost nor consumed more than once.</summary>
         /// <param name="threads">Total number of producer and consumer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements to Add/Take per thread.</param>
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(4, 2048, 2, 64)]
         [OuterLoop]
         private static void TestConcurrentAddAnyTakeAny(int numOfThreads, int numOfElementsPerThread, int numOfCollections, int boundOfCollections)
@@ -966,6 +965,44 @@ namespace System.Collections.Concurrent.Tests
             });
         }
 
+        [Fact]
+        public static void Test_WithNullEntries()
+        {
+            BlockingCollection<string> collection = new BlockingCollection<string>()
+            {
+                "hello",
+                null,
+                "goodbye"
+            };
+
+            Assert.Equal("hello", collection.Take());
+            Assert.Null(collection.Take());
+            Assert.Equal("goodbye", collection.Take());
+            Assert.False(collection.TryTake(out _));
+        }
+
+        [Fact]
+        public static void Test_LargeSize()
+        {
+            Assert.Equal(0, BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(63), 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(64), 1));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34360", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void Test_LargeSize_STA()
+        {
+            Thread t = new Thread(() =>
+            {
+                Assert.Equal(0, BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(62), 1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => BlockingCollection<int>.TryAddToAny(ConstructBlockingCollectionArray<int>(63), 1));
+            });
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
+            t.Join();
+        }
+
         #region Helper Methods / Classes
 
         /// <summary>Initializes an array of blocking collections (if its not null) such that all are full except one in case
@@ -1146,6 +1183,15 @@ namespace System.Collections.Concurrent.Tests
                 blockingCollection = new BlockingCollection<T>(concurrentCollection, boundedCapacity);
             }
             return blockingCollection;
+        }
+
+        /// <summary>Constructs and returns an array of blocking collections.</summary>
+        private static BlockingCollection<T>[] ConstructBlockingCollectionArray<T>(int length)
+        {
+            var blockingCollections = new BlockingCollection<T>[length];
+            for (int i = 0; i < blockingCollections.Length; i++)
+                blockingCollections[i] = new BlockingCollection<T>();
+            return blockingCollections;
         }
 
         /// <summary>Verifies that the elements in sortedElementsInCollection are a sequence from start to end.</summary>

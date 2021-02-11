@@ -1,9 +1,7 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
-Imports System.Globalization
 
 Imports Microsoft.VisualBasic.CompilerServices.Utils
 
@@ -31,7 +29,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return CShort(DoubleType.Parse(Value))
 
             Catch e As FormatException
-                Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromStringTo, Left(Value, 32), "Short"), e)
+                Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromStringTo, Left(Value, 32), "Short"), e)
             End Try
 
         End Function
@@ -114,7 +112,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     ' Fall through to error
             End Select
 ThrowInvalidCast:
-            Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(Value), "Short"))
+            Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(Value), "Short"))
 
         End Function
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /**
 This testcase attempts to delete some directories in a mounted volume
@@ -22,7 +21,7 @@ public class Directory_Delete_MountVolume
     private static bool s_pass = true;
 
     [Fact]
-    [ActiveIssue(1221)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
     [PlatformSpecific(TestPlatforms.Windows)] // testing volumes / mounts / drive letters
     public static void RunTest()
     {

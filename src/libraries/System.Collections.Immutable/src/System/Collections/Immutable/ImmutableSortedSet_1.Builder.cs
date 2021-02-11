@@ -1,18 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Immutable
 {
     /// <content>
     /// Contains the inner <see cref="ImmutableSortedSet{T}.Builder"/> class.
     /// </content>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableSortedSet<T>
     {
         /// <summary>
@@ -29,8 +26,6 @@ namespace System.Collections.Immutable
         /// Instance members of this class are <em>not</em> thread-safe.
         /// </para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
-        [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableSortedSetBuilderDebuggerProxy<>))]
         public sealed class Builder : ISortKeyCollection<T>, IReadOnlyCollection<T>, ISet<T>, ICollection
@@ -128,8 +123,7 @@ namespace System.Collections.Immutable
             /// Gets the maximum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The maximum value in the set.</value>
-            [MaybeNull]
-            public T Max
+            public T? Max
             {
                 get { return _root.Max; }
             }
@@ -138,8 +132,7 @@ namespace System.Collections.Immutable
             /// Gets the minimum value in the collection, as defined by the comparer.
             /// </summary>
             /// <value>The minimum value in the set.</value>
-            [MaybeNull]
-            public T Min
+            public T? Min
             {
                 get { return _root.Min; }
             }
@@ -434,7 +427,6 @@ namespace System.Collections.Immutable
             /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}.Builder"/>
             /// in reverse order.
             /// </returns>
-            [Pure]
             public IEnumerable<T> Reverse()
             {
                 return new ReverseEnumerable(_root);
@@ -459,6 +451,25 @@ namespace System.Collections.Immutable
                 }
 
                 return _immutable;
+            }
+
+            /// <summary>
+            /// Searches the set for a given value and returns the equal value it finds, if any.
+            /// </summary>
+            /// <param name="equalValue">The value for which to search.</param>
+            /// <param name="actualValue">The value from the set that the search found, or the original value if the search yielded no match.</param>
+            /// <returns>A value indicating whether the search was successful.</returns>
+            public bool TryGetValue(T equalValue, out T actualValue)
+            {
+                Node searchResult = _root.Search(equalValue, _comparer);
+                if (!searchResult.IsEmpty)
+                {
+                    actualValue = searchResult.Key;
+                    return true;
+                }
+
+                actualValue = equalValue;
+                return false;
             }
 
             #region ICollection members

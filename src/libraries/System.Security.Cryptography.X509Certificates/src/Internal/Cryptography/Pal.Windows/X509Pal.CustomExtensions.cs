@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -178,7 +177,7 @@ namespace Internal.Cryptography.Pal
                         for (int i = 0; i < count; i++)
                         {
                             IntPtr oidValuePointer = pEnhKeyUsage->rgpszUsageIdentifier[i];
-                            string oidValue = Marshal.PtrToStringAnsi(oidValuePointer);
+                            string oidValue = Marshal.PtrToStringAnsi(oidValuePointer)!;
                             Oid oid = new Oid(oidValue);
                             localUsages.Add(oid);
                         }
@@ -189,7 +188,7 @@ namespace Internal.Cryptography.Pal
             usages = localUsages;
         }
 
-        public byte[] EncodeX509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier)
+        public byte[] EncodeX509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier)
         {
             unsafe
             {
@@ -205,7 +204,7 @@ namespace Internal.Cryptography.Pal
         {
             unsafe
             {
-                byte[] localSubjectKeyIdentifier = null;
+                byte[] localSubjectKeyIdentifier = null!;
                 encoded.DecodeObject(
                     Oids.SubjectKeyIdentifier,
                     delegate (void* pvDecoded, int cbDecoded)

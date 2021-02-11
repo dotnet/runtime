@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -105,7 +104,7 @@ namespace System.IO.Tests
         public void PathAlreadyExistsAsDirectory()
         {
             string path = GetTestFilePath();
-            DirectoryInfo testDir = Directory.CreateDirectory(path);
+            Directory.CreateDirectory(path);
 
             Assert.False(Exists(IOServices.RemoveTrailingSlash(path)));
             Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
@@ -194,7 +193,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void TrailingWhiteSpace_NotTrimmed(string component)
         {
-            // In CoreFX we don't trim anything other than space (' ')
+            // In .NET Core we don't trim anything other than space (' ')
             string path = GetTestFilePath() + component;
             FileInfo testFile = new FileInfo(path);
             testFile.Create().Dispose();
@@ -248,7 +247,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Uses P/Invokes
         public void FalseForNonRegularFile()
         {
             string fileName = GetTestFilePath();

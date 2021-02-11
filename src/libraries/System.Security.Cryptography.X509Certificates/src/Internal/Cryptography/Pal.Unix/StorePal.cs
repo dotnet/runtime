@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -19,11 +18,11 @@ namespace Internal.Cryptography.Pal
             throw new PlatformNotSupportedException();
         }
 
-        public static ILoaderPal FromBlob(byte[] rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        public static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
-            ICertificatePal singleCert;
+            ICertificatePal? singleCert;
 
             if (OpenSslX509CertificateReader.TryReadX509Der(rawData, out singleCert) ||
                 OpenSslX509CertificateReader.TryReadX509Pem(rawData, out singleCert))
@@ -35,8 +34,8 @@ namespace Internal.Cryptography.Pal
                 return SingleCertToLoaderPal(singleCert);
             }
 
-            List<ICertificatePal> certPals;
-            Exception openSslException;
+            List<ICertificatePal>? certPals;
+            Exception? openSslException;
 
             if (PkcsFormatReader.TryReadPkcs7Der(rawData, out certPals) ||
                 PkcsFormatReader.TryReadPkcs7Pem(rawData, out certPals) ||
@@ -66,7 +65,7 @@ namespace Internal.Cryptography.Pal
             int bioPosition = Interop.Crypto.BioTell(bio);
             Debug.Assert(bioPosition >= 0);
 
-            ICertificatePal singleCert;
+            ICertificatePal? singleCert;
 
             if (OpenSslX509CertificateReader.TryReadX509Pem(bio, out singleCert))
             {
@@ -84,7 +83,7 @@ namespace Internal.Cryptography.Pal
             // Rewind, try again.
             OpenSslX509CertificateReader.RewindBio(bio, bioPosition);
 
-            List<ICertificatePal> certPals;
+            List<ICertificatePal>? certPals;
 
             if (PkcsFormatReader.TryReadPkcs7Pem(bio, out certPals))
             {
@@ -103,7 +102,7 @@ namespace Internal.Cryptography.Pal
             OpenSslX509CertificateReader.RewindBio(bio, bioPosition);
 
             // Capture the exception so in case of failure, the call to BioSeek does not override it.
-            Exception openSslException;
+            Exception? openSslException;
             byte[] data = File.ReadAllBytes(fileName);
             if (PkcsFormatReader.TryReadPkcs12(data, password, out certPals, out openSslException))
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -23,10 +22,10 @@ namespace System.Net.NetworkInformation
 
         internal class LinuxNetworkInterfaceSystemProperties
         {
-            internal string[] IPv4Routes;
-            internal string[] IPv6Routes;
-            internal string DnsSuffix;
-            internal IPAddressCollection DnsAddresses;
+            internal string[]? IPv4Routes;
+            internal string[]? IPv6Routes;
+            internal string? DnsSuffix;
+            internal IPAddressCollection? DnsAddresses;
 
             internal LinuxNetworkInterfaceSystemProperties()
             {
@@ -82,12 +81,17 @@ namespace System.Net.NetworkInformation
 
                 for (int i = 0; i < interfaceCount; i++)
                 {
-                    var lni = new LinuxNetworkInterface(Marshal.PtrToStringAnsi((IntPtr)nii->Name), nii->InterfaceIndex, systemProperties);
+                    var lni = new LinuxNetworkInterface(Marshal.PtrToStringAnsi((IntPtr)nii->Name)!, nii->InterfaceIndex, systemProperties);
                     lni._interfaceType = (NetworkInterfaceType)nii->HardwareType;
                     lni._speed = nii->Speed;
                     lni._operationalStatus = (OperationalStatus)nii->OperationalState;
                     lni._mtu = nii->Mtu;
                     lni._supportsMulticast = nii->SupportsMulticast != 0;
+
+                    if (nii->NumAddressBytes > 0)
+                    {
+                        lni._physicalAddress = new PhysicalAddress(new ReadOnlySpan<byte>(nii->AddressBytes, nii->NumAddressBytes).ToArray());
+                    }
 
                     interfaces[i] = lni;
                     interfacesByIndex.Add(nii->InterfaceIndex, lni);
@@ -102,7 +106,7 @@ namespace System.Net.NetworkInformation
                         address.ScopeId = ai->InterfaceIndex;
                     }
 
-                    if (interfacesByIndex.TryGetValue(ai->InterfaceIndex, out LinuxNetworkInterface lni))
+                    if (interfacesByIndex.TryGetValue(ai->InterfaceIndex, out LinuxNetworkInterface? lni))
                     {
                         lni.AddAddress(address, ai->PrefixLength);
                     }

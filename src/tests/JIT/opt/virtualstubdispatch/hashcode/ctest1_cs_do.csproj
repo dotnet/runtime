@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
+    <DebugType>Full</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ctest1.cs" />
+    <ProjectReference Include="cderived1.csproj" />
+    <ProjectReference Include="cderived2.csproj" />
+    <ProjectReference Include="cderived3.csproj" />
+    <ProjectReference Include="cderived4.csproj" />
+    <ProjectReference Include="cderived5.csproj" />
+    <ProjectReference Include="cderived6.csproj" />
+    <ProjectReference Include="cderived7.csproj" />
+    <ProjectReference Include="cderived8.csproj" />
+    <ProjectReference Include="cderived9.csproj" />
+    <ProjectReference Include="cderived10.csproj" />
+    <ProjectReference Include="cderived11.csproj" />
+    <ProjectReference Include="cderived12.csproj" />
+    <ProjectReference Include="cderived13.csproj" />
+    <ProjectReference Include="cderived14.csproj" />
+    <ProjectReference Include="cderived15.csproj" />
+    <ProjectReference Include="cderived16.csproj" />
+    <ProjectReference Include="cderived17.csproj" />
+    <ProjectReference Include="cderived18.csproj" />
+    <ProjectReference Include="cderived19.csproj" />
+    <ProjectReference Include="cderived20.csproj" />
+  </ItemGroup>
+</Project>

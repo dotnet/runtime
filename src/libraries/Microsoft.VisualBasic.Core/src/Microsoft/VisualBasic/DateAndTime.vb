@@ -1,9 +1,9 @@
 ﻿' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Globalization
+Imports System.Runtime.Versioning
 Imports Microsoft.VisualBasic.CompilerServices
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
@@ -21,6 +21,7 @@ Namespace Microsoft.VisualBasic
             Get
                 Return DateTime.Today
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As DateTime)
                 SetDate(Value)
             End Set
@@ -39,6 +40,7 @@ Namespace Microsoft.VisualBasic
                 'Truncate to the nearest second
                 Return New DateTime(Ticks - Ticks Mod TimeSpan.TicksPerSecond)
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As DateTime)
                 SetTime(Value)
             End Set
@@ -50,6 +52,7 @@ Namespace Microsoft.VisualBasic
             Get
                 Return (New DateTime(DateTime.Now.TimeOfDay.Ticks)).ToString("HH:mm:ss", GetInvariantCultureInfo())
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As String)
                 Dim dt As Date
 
@@ -59,10 +62,8 @@ Namespace Microsoft.VisualBasic
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
-                    Throw VbMakeException(New InvalidCastException(GetResourceString(SR.InvalidCast_FromStringTo, Left(Value, 32), "Date")), vbErrors.IllegalFuncCall)
+                    Throw VbMakeException(New InvalidCastException(SR.Format(SR.InvalidCast_FromStringTo, Left(Value, 32), "Date")), vbErrors.IllegalFuncCall)
                 End Try
 
                 SetTime(dt)
@@ -70,7 +71,7 @@ Namespace Microsoft.VisualBasic
         End Property
 
         Private Function IsDBCSCulture() As Boolean
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             'This function is apparently trying to determine a different default for East Asian systems.
             If System.Runtime.InteropServices.Marshal.SystemMaxDBCSCharSize = 1 Then
                 Return False
@@ -96,6 +97,7 @@ Namespace Microsoft.VisualBasic
                     Return DateTime.Today.ToString("MM\-dd\-yyyy", GetInvariantCultureInfo())
                 End If
             End Get
+            <SupportedOSPlatform("windows")>
             Set(ByVal Value As String)
                 Dim NewDate As Date
 
@@ -110,10 +112,8 @@ Namespace Microsoft.VisualBasic
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
-                    Throw VbMakeException(New InvalidCastException(GetResourceString(SR.InvalidCast_FromStringTo, Left(Value, 32), "Date")), vbErrors.IllegalFuncCall)
+                    Throw VbMakeException(New InvalidCastException(SR.Format(SR.InvalidCast_FromStringTo, Left(Value, 32), "Date")), vbErrors.IllegalFuncCall)
                 End Try
 
                 SetDate(NewDate)
@@ -166,7 +166,7 @@ Namespace Microsoft.VisualBasic
                     Return DateValue.AddMonths(lNumber * 3)
             End Select
 
-            Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Interval"))
+            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Interval"))
         End Function
 
         Public Function DateDiff(ByVal Interval As DateInterval,
@@ -208,7 +208,7 @@ Namespace Microsoft.VisualBasic
                     Return (cal.GetYear(Date2) - cal.GetYear(Date1)) * 4 + (cal.GetMonth(Date2) - 1) \ 3 - (cal.GetMonth(Date1) - 1) \ 3
             End Select
 
-            Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Interval"))
+            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Interval"))
         End Function
 
         Private Function GetDayOfWeek(ByVal dt As Date, ByVal weekdayFirst As FirstDayOfWeek) As Integer
@@ -272,7 +272,7 @@ Namespace Microsoft.VisualBasic
                     Return CurrentCalendar.GetDayOfYear(DateValue)
             End Select
 
-            Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Interval"))
+            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Interval"))
         End Function
 
         Public Function DateAdd(ByVal Interval As String,
@@ -287,10 +287,8 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
-                Throw New InvalidCastException(GetResourceString(SR.Argument_InvalidDateValue1, "DateValue"))
+                Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "DateValue"))
             End Try
 
             Return DateAdd(DateIntervalFromString(Interval), Number, dt1)
@@ -310,10 +308,8 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
-                Throw New InvalidCastException(GetResourceString(SR.Argument_InvalidDateValue1, "Date1"))
+                Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "Date1"))
             End Try
             Try
                 dt2 = CDate(Date2)
@@ -321,10 +317,8 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
-                Throw New InvalidCastException(GetResourceString(SR.Argument_InvalidDateValue1, "Date2"))
+                Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "Date2"))
             End Try
 
             Return DateDiff(DateIntervalFromString(Interval), dt1, dt2, DayOfWeek, WeekOfYear)
@@ -342,10 +336,8 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
-                Throw New InvalidCastException(GetResourceString(SR.Argument_InvalidDateValue1, "DateValue"))
+                Throw New InvalidCastException(SR.Format(SR.Argument_InvalidDateValue1, "DateValue"))
             End Try
 
             Return DatePart(DateIntervalFromString(Interval), dt1, DayOfWeek, WeekOfYear)
@@ -378,7 +370,7 @@ Namespace Microsoft.VisualBasic
                 Case "Q"
                     Return DateInterval.Quarter
                 Case Else
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Interval"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Interval"))
             End Select
         End Function
 
@@ -417,10 +409,8 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
-                Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Year")), vbErrors.IllegalFuncCall)
+                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Year")), vbErrors.IllegalFuncCall)
             End Try
 
             Try
@@ -429,10 +419,8 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
-                Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Month")), vbErrors.IllegalFuncCall)
+                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Month")), vbErrors.IllegalFuncCall)
             End Try
 
             Try
@@ -441,10 +429,8 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
-                Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Day")), vbErrors.IllegalFuncCall)
+                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Day")), vbErrors.IllegalFuncCall)
             End Try
 
             Return Result
@@ -508,7 +494,7 @@ Namespace Microsoft.VisualBasic
                 DayOfWeek = CType(DateTimeFormatInfo.CurrentInfo.FirstDayOfWeek + 1, FirstDayOfWeek)
 
             ElseIf (DayOfWeek < FirstDayOfWeek.Sunday) OrElse (DayOfWeek > FirstDayOfWeek.Saturday) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "DayOfWeek"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "DayOfWeek"))
             End If
 
             'Get the day from the date
@@ -526,7 +512,7 @@ Namespace Microsoft.VisualBasic
             Dim Result As String
 
             If Month < 1 OrElse Month > 13 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Month"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Month"))
             End If
 
             If Abbreviate Then
@@ -536,7 +522,7 @@ Namespace Microsoft.VisualBasic
             End If
 
             If Result.Length = 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Month"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Month"))
             End If
 
             Return Result
@@ -547,11 +533,11 @@ Namespace Microsoft.VisualBasic
             Dim Result As String
 
             If (Weekday < 1) OrElse (Weekday > 7) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Weekday"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Weekday"))
             End If
 
             If (FirstDayOfWeekValue < 0) OrElse (FirstDayOfWeekValue > 7) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "FirstDayOfWeekValue"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "FirstDayOfWeekValue"))
             End If
 
             dtfi = CType(GetCultureInfo().GetFormat(GetType(System.Globalization.DateTimeFormatInfo)), DateTimeFormatInfo)  'Returns a read-only object
@@ -570,14 +556,12 @@ Namespace Microsoft.VisualBasic
                 Throw ex
             Catch ex As OutOfMemoryException
                 Throw ex
-            Catch ex As System.Threading.ThreadAbortException
-                Throw ex
             Catch
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Weekday"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Weekday"))
             End Try
 
             If Result.Length = 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Weekday"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Weekday"))
             End If
 
             Return Result

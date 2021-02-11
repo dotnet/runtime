@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Drawing
 {
@@ -136,7 +136,7 @@ namespace System.Drawing
         /// Specifies whether this <see cref='System.Drawing.Point'/> contains the same coordinates as the specified
         /// <see cref='object'/>.
         /// </summary>
-        public override readonly bool Equals(object? obj) => obj is Point && Equals((Point)obj);
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is Point && Equals((Point)obj);
 
         public readonly bool Equals(Point other) => this == other;
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -36,7 +35,7 @@ namespace System.Net.Http
                 // required extension.
                 if (!foundEku)
                 {
-                    X509EnhancedKeyUsageExtension enhancedUsageExt = extension as X509EnhancedKeyUsageExtension;
+                    X509EnhancedKeyUsageExtension? enhancedUsageExt = extension as X509EnhancedKeyUsageExtension;
                     if (enhancedUsageExt != null)
                     {
                         foundEku = true;
@@ -56,7 +55,7 @@ namespace System.Net.Http
                 // No point going over it if we have already established that our cert has digital signature
                 if (!foundKeyUsages)
                 {
-                    X509KeyUsageExtension usageExt = extension as X509KeyUsageExtension;
+                    X509KeyUsageExtension? usageExt = extension as X509KeyUsageExtension;
                     if (usageExt != null)
                     {
                         foundKeyUsages = true;
@@ -73,7 +72,7 @@ namespace System.Net.Http
             return isClientAuth && isDigitalSignature;
         }
 
-        internal static X509Chain BuildNewChain(X509Certificate2 certificate, bool includeClientApplicationPolicy)
+        internal static X509Chain? BuildNewChain(X509Certificate2 certificate, bool includeClientApplicationPolicy)
         {
             var chain = new X509Chain();
             chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
@@ -100,8 +99,8 @@ namespace System.Net.Http
         /// </summary>
         internal static bool TryFindClientCertificate(this X509Certificate2Collection certificates,
                                                       ISet<string> allowedIssuers,
-                                                      out X509Certificate2 clientCertificate,
-                                                      out X509Chain clientCertChain)
+                                                      out X509Certificate2? clientCertificate,
+                                                      out X509Chain? clientCertChain)
         {
             clientCertificate = null;
             clientCertChain = null;
@@ -124,7 +123,7 @@ namespace System.Net.Http
                             return true;
                         }
 
-                        X509Chain chain = BuildNewChain(cert, includeClientApplicationPolicy: true);
+                        X509Chain? chain = BuildNewChain(cert, includeClientApplicationPolicy: true);
                         if (chain == null)
                         {
                             continue;
@@ -142,7 +141,7 @@ namespace System.Net.Http
 
                         if (chain.ChainElements.Count > 0 && isComplete)
                         {
-                            X509Certificate2 trustAnchor = chain.ChainElements[chain.ChainElements.Count - 1].Certificate;
+                            X509Certificate2 trustAnchor = chain.ChainElements[chain.ChainElements.Count - 1].Certificate!;
                             if (allowedIssuers.Contains(trustAnchor.SubjectName.Name))
                             {
                                 clientCertificate = cert;

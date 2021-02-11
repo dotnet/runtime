@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -207,12 +206,10 @@ namespace System.Text
             charsUsed = _encoding.GetChars(bytes, byteCount, chars, charCount, this);
             bytesUsed = _bytesUsed;
 
-            // Per MSDN, "The completed output parameter indicates whether all the data in the input
-            // buffer was converted and stored in the output buffer." That means we've successfully
-            // consumed all the input _and_ there's no pending state or fallback data remaining to be output.
+            // See comment in EncoderNLS.Convert for the details of the logic below.
 
             completed = (bytesUsed == byteCount)
-                && !this.HasState
+                && (!flush || !this.HasState)
                 && (_fallbackBuffer is null || _fallbackBuffer.Remaining == 0);
         }
 

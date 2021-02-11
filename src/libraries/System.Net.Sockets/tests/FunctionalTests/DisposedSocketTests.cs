@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -520,6 +519,12 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void SetRawSocketOption_Throws_ObjectDisposed()
+        {
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetRawSocketOption(0, 0, new byte[0]));
+        }
+
+        [Fact]
         public void GetSocketOption_Int_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, 4));
@@ -535,6 +540,12 @@ namespace System.Net.Sockets.Tests
         public void GetSocketOption_Object_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger));
+        }
+
+        [Fact]
+        public void GetRawSocketOption_Throws_ObjectDisposed()
+        {
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetRawSocketOption(0, 0, new byte[0]));
         }
 
         [Fact]
@@ -748,6 +759,22 @@ namespace System.Net.Sockets.Tests
                 GC.WaitForPendingFinalizers();
                 Assert.Equal(0, handles.Count(h => h.IsAlive));
             });
+        }
+
+        [Fact]
+        public void SocketWithDanglingReferenceDoesntHangFinalizerThread()
+        {
+            CreateSocketWithDanglingReference();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CreateSocketWithDanglingReference()
+        {
+            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            bool dummy = false;
+            socket.SafeHandle.DangerousAddRef(ref dummy);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

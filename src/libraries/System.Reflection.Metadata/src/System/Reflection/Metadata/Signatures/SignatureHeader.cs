@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 
@@ -40,7 +39,8 @@ namespace System.Reflection.Metadata
             {
                 int callingConventionOrKind = _rawValue & CallingConventionOrKindMask;
 
-                if (callingConventionOrKind > maxCallingConvention)
+                if (callingConventionOrKind > maxCallingConvention
+                    && callingConventionOrKind != (int)SignatureCallingConvention.Unmanaged)
                 {
                     return SignatureCallingConvention.Default;
                 }
@@ -55,7 +55,8 @@ namespace System.Reflection.Metadata
             {
                 int callingConventionOrKind = _rawValue & CallingConventionOrKindMask;
 
-                if (callingConventionOrKind <= maxCallingConvention)
+                if (callingConventionOrKind <= maxCallingConvention
+                    || callingConventionOrKind == (int)SignatureCallingConvention.Unmanaged)
                 {
                     return SignatureKind.Method;
                 }
@@ -84,7 +85,7 @@ namespace System.Reflection.Metadata
             get { return (_rawValue & (byte)SignatureAttributes.Generic) != 0; }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is SignatureHeader && Equals((SignatureHeader)obj);
         }

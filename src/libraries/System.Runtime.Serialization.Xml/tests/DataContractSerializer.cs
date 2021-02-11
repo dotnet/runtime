@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using SerializationTypes;
 using System;
@@ -792,6 +791,33 @@ public static partial class DataContractSerializerTests
 
         Assert.True(y.RO1.Count == 1);
         Assert.True((char)y.RO1[0] == 'x');
+    }
+	
+    [Fact]
+    public static void DCS_EnumerableMemberConcreteTypeWithoutDefaultContructor()
+    {
+        TypeWithEnumerableMembers x = new TypeWithEnumerableMembers
+        {
+            F1 = new MyEnumerable('a', 45),
+            F2 = new List<string> { "a", "b", "c" }.OrderBy(x => x),
+            P1 = new MyEnumerable("x", "y"),
+            P2 = Enumerable.Empty<int>()
+        };
+
+        var dcs = new DataContractSerializer(typeof(TypeWithEnumerableMembers));
+
+        string baseline = @"<TypeWithEnumerableMembers xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><F1 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:char"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">97</a:anyType><a:anyType i:type=""b:int"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">45</a:anyType></F1><F2 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">a</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">b</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">c</a:anyType></F2><P1 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">x</a:anyType><a:anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">y</a:anyType></P1><P2 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><RO1 xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/></TypeWithEnumerableMembers>";
+        using (MemoryStream ms = new MemoryStream())
+        {
+            dcs.WriteObject(ms, x);
+            ms.Position = 0;
+
+            string actualOutput = new StreamReader(ms).ReadToEnd();
+
+            Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
+            Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
+                Environment.NewLine, result.ErrorMessage, x, baseline, actualOutput));
+        }
     }
 
     [Fact]
@@ -3490,31 +3516,6 @@ public static partial class DataContractSerializerTests
         TestObjectWithDifferentPayload(valueSampleICollectionTExplicitWithCDCContainsPrivateDC, netcorePayloadSampleICollectionTExplicitWithCDCContainsPrivateDC, desktopPayloadSampleICollectionTExplicitWithCDCContainsPrivateDC, setting);
     }
 
-    /// <summary>
-    /// This case is a part of DCS_BasicPerSerializerRoundTripAndCompare_SampleTypes, but in these scenarios it was not support in current version.
-    /// </summary>
-    [Fact]
-    [ActiveIssue("Not support")]
-    public static void DCS_BasicPerSerializerRoundTripAndCompare_SampleTypes_Notsupport()
-    {
-        TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.ArrayListWithCDCFilledWithMixedTypes(true), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data z:Id=""i1"" i:type=""a:SerializationTestTypes.ArrayListWithCDCFilledWithMixedTypes***"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.ArrayListWithCDCFilledWithMixedTypes***""><List xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><b:anyType z:Id=""i2"" i:type=""c:SerializationTestTypes.PublicDC***"" xmlns:c=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicDC***""><Data>55cb1688-dec7-4106-a6d8-7e57590cb20a</Data></b:anyType><b:anyType z:Id=""i3"" i:type=""c:SerializationTestTypes.PublicDCClassPublicDM***"" xmlns:c=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicDCClassPublicDM***""><Data>No change</Data></b:anyType><b:anyType z:Id=""i4"" i:type=""c:SerializationTestTypes.PublicDCClassPrivateDM_DerivedDCClassPublic***"" xmlns:c=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicDCClassPrivateDM_DerivedDCClassPublic***""><_data/></b:anyType><b:anyType z:Id=""i5"" i:type=""PrivateDCClassPublicDM_DerivedDCClassPrivate""><Data>Data</Data></b:anyType><b:anyType z:Id=""i6"" i:type=""PrivateDCClassPrivateDM""><_data>No change</_data></b:anyType><b:anyType z:Id=""i7"" i:type=""PrivateCallBackSample_IDeserializationCallback""><Data>Data</Data></b:anyType><b:anyType z:Id=""i8"" i:type=""PrivateCallBackSample_OnDeserialized""><Data>Data</Data></b:anyType><b:anyType z:Id=""i9"" i:type=""PrivateCallBackSample_OnSerialized""><Data>Data</Data></b:anyType><b:anyType i:type=""PrivateDCStruct""><Data>2147483647</Data></b:anyType><b:anyType i:type=""c:SerializationTestTypes.PrivateDefaultCtorIXmlSerializables***"" xmlns:c=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PrivateDefaultCtorIXmlSerializables***"">68656C6C6F20776F726C64</b:anyType><b:anyType i:type=""PrivateIXmlSerializables"">68656C6C6F20776F726C64</b:anyType><b:anyType z:Id=""i10"" i:type=""c:SerializationTestTypes.Derived_Override_Prop_GetPrivate_Private***"" xmlns:c=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.Derived_Override_Prop_GetPrivate_Private***""><Data>No change</Data><Data>No change</Data></b:anyType><b:anyType i:type=""c:SerializationTestTypes.DerivedFromPriC***"" xmlns:c=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.DerivedFromPriC***""><a>0</a><b i:nil=""true""/><c>100</c><d>100</d></b:anyType></List></_data><_data2 z:Ref=""i1"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""/></ObjectContainer>");
-
-        TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.CollectionBaseWithCDCFilledWithMixedTypes(true), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data z:Id=""i1"" i:type=""a:SerializationTestTypes.CollectionBaseWithCDCFilledWithMixedTypes***"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.CollectionBaseWithCDCFilledWithMixedTypes***""><anyType z:Id=""i2"" i:type=""b:SerializationTestTypes.PublicDC***"" xmlns:b=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicDC***""><Data>55cb1688-dec7-4106-a6d8-7e57590cb20a</Data></anyType><anyType z:Id=""i3"" i:type=""b:SerializationTestTypes.PublicDCClassPublicDM***"" xmlns:b=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicDCClassPublicDM***""><Data>No change</Data></anyType><anyType z:Id=""i4"" i:type=""b:SerializationTestTypes.PublicDCClassPrivateDM_DerivedDCClassPublic***"" xmlns:b=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicDCClassPrivateDM_DerivedDCClassPublic***""><_data/></anyType><anyType z:Id=""i5"" i:type=""PrivateDCClassPublicDM_DerivedDCClassPrivate""><Data>Data</Data></anyType><anyType z:Id=""i6"" i:type=""PrivateDCClassPrivateDM""><_data>No change</_data></anyType><anyType z:Id=""i7"" i:type=""PrivateCallBackSample_IDeserializationCallback""><Data>Data</Data></anyType><anyType z:Id=""i8"" i:type=""PrivateCallBackSample_OnDeserialized""><Data>Data</Data></anyType><anyType z:Id=""i9"" i:type=""PrivateCallBackSample_OnSerialized""><Data>Data</Data></anyType><anyType i:type=""PrivateDCStruct""><Data>2147483647</Data></anyType><anyType i:type=""b:SerializationTestTypes.PrivateDefaultCtorIXmlSerializables***"" xmlns:b=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PrivateDefaultCtorIXmlSerializables***"">68656C6C6F20776F726C64</anyType><anyType i:type=""PrivateIXmlSerializables"">68656C6C6F20776F726C64</anyType><anyType z:Id=""i10"" i:type=""b:SerializationTestTypes.Derived_Override_Prop_GetPrivate_Private***"" xmlns:b=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.Derived_Override_Prop_GetPrivate_Private***""><Data>No change</Data><Data>No change</Data></anyType><anyType i:type=""b:SerializationTestTypes.DerivedFromPriC***"" xmlns:b=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.DerivedFromPriC***""><a>0</a><b i:nil=""true""/><c>100</c><d>100</d></anyType></_data><_data2 z:Ref=""i1"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""/></ObjectContainer>");
-
-        TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.DCHashtableContainerMixedTypes(true), "", skipStringCompare: true);
-
-        TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.IReadWriteXmlWriteBinHex_EqualityDefined(), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data i:type=""a:SerializationTestTypes.IReadWriteXmlWriteBinHex_EqualityDefined***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.IReadWriteXmlWriteBinHex_EqualityDefined***"">68656C6C6F20776F726C64</_data><_data2 i:type=""a:SerializationTestTypes.IReadWriteXmlWriteBinHex_EqualityDefined***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.IReadWriteXmlWriteBinHex_EqualityDefined***"">68656C6C6F20776F726C64</_data2></ObjectContainer>");
-
-        TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.PrivateDefaultCtorIXmlSerializables(true), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data i:type=""a:SerializationTestTypes.PrivateDefaultCtorIXmlSerializables***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PrivateDefaultCtorIXmlSerializables***"">68656C6C6F20776F726C64</_data><_data2 i:type=""a:SerializationTestTypes.PrivateDefaultCtorIXmlSerializables***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PrivateDefaultCtorIXmlSerializables***"">68656C6C6F20776F726C64</_data2></ObjectContainer>");
-
-        TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.PublicIXmlSerializablesWithPublicSchemaProvider(), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data i:type=""a:SerializationTestTypes.PublicIXmlSerializablesWithPublicSchemaProvider***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicIXmlSerializablesWithPublicSchemaProvider***"">68656C6C6F20776F726C64</_data><_data2 i:type=""a:SerializationTestTypes.PublicIXmlSerializablesWithPublicSchemaProvider***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicIXmlSerializablesWithPublicSchemaProvider***"">68656C6C6F20776F726C64</_data2></ObjectContainer>");
-
-        TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.PublicExplicitIXmlSerializablesWithPublicSchemaProvider(), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data i:type=""a:SerializationTestTypes.PublicExplicitIXmlSerializablesWithPublicSchemaProvider***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicExplicitIXmlSerializablesWithPublicSchemaProvider***"">68656C6C6F20776F726C64</_data><_data2 i:type=""a:SerializationTestTypes.PublicExplicitIXmlSerializablesWithPublicSchemaProvider***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicExplicitIXmlSerializablesWithPublicSchemaProvider***"">68656C6C6F20776F726C64</_data2></ObjectContainer>");
-
-        TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.PublicIXmlSerializablesWithPrivateSchemaProvider(), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data i:type=""a:SerializationTestTypes.PublicIXmlSerializablesWithPrivateSchemaProvider***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicIXmlSerializablesWithPrivateSchemaProvider***"">68656C6C6F20776F726C64</_data><_data2 i:type=""a:SerializationTestTypes.PublicIXmlSerializablesWithPrivateSchemaProvider***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.PublicIXmlSerializablesWithPrivateSchemaProvider***"">68656C6C6F20776F726C64</_data2></ObjectContainer>");
-
-    }
-
     [Fact]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_Collections()
     {
@@ -4058,7 +4059,7 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(actual);
     }
 
-    [ActiveIssue(33317, TestPlatforms.OSX)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/1417", TestPlatforms.OSX)]
     [Fact]
     public static void DCS_DeeplyLinkedData()
     {

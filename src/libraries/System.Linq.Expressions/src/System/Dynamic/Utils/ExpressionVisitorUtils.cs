@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq.Expressions;
 
@@ -8,9 +7,9 @@ namespace System.Dynamic.Utils
 {
     internal static class ExpressionVisitorUtils
     {
-        public static Expression[] VisitBlockExpressions(ExpressionVisitor visitor, BlockExpression block)
+        public static Expression[]? VisitBlockExpressions(ExpressionVisitor visitor, BlockExpression block)
         {
-            Expression[] newNodes = null;
+            Expression[]? newNodes = null;
             for (int i = 0, n = block.ExpressionCount; i < n; i++)
             {
                 Expression curNode = block.GetExpression(i);
@@ -33,9 +32,9 @@ namespace System.Dynamic.Utils
             return newNodes;
         }
 
-        public static ParameterExpression[] VisitParameters(ExpressionVisitor visitor, IParameterProvider nodes, string callerName)
+        public static ParameterExpression[]? VisitParameters(ExpressionVisitor visitor, IParameterProvider nodes, string? callerName)
         {
-            ParameterExpression[] newNodes = null;
+            ParameterExpression[]? newNodes = null;
             for (int i = 0, n = nodes.ParameterCount; i < n; i++)
             {
                 ParameterExpression curNode = nodes.GetParameter(i);
@@ -58,9 +57,9 @@ namespace System.Dynamic.Utils
             return newNodes;
         }
 
-        public static Expression[] VisitArguments(ExpressionVisitor visitor, IArgumentProvider nodes)
+        public static Expression[]? VisitArguments(ExpressionVisitor visitor, IArgumentProvider nodes)
         {
-            Expression[] newNodes = null;
+            Expression[]? newNodes = null;
             for (int i = 0, n = nodes.ArgumentCount; i < n; i++)
             {
                 Expression curNode = nodes.GetArgument(i);

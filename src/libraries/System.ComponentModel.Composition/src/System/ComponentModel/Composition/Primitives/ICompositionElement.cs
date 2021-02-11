@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.ComponentModel.Composition.Primitives
 {
@@ -35,7 +34,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <see cref="ICompositionElement"/> originated, or <see langword="null"/>
         ///     if the <see cref="ICompositionElement"/> is the root composition element.
         /// </value>
-        ICompositionElement Origin
+        ICompositionElement? Origin
         {
             get;
         }

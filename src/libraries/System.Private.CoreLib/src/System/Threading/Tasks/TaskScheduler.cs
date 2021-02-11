@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -601,7 +600,7 @@ namespace System.Threading.Tasks
         public override int MaximumConcurrencyLevel => 1;
 
         // preallocated SendOrPostCallback delegate
-        private static readonly SendOrPostCallback s_postCallback = s =>
+        private static readonly SendOrPostCallback s_postCallback = static s =>
         {
             Debug.Assert(s is Task);
             ((Task)s).ExecuteEntry(); // with double-execute check because SC could be buggy
@@ -620,15 +619,15 @@ namespace System.Threading.Tasks
     /// </remarks>
     public class UnobservedTaskExceptionEventArgs : EventArgs
     {
-        private readonly AggregateException? m_exception;
-        internal bool m_observed = false;
+        private readonly AggregateException m_exception;
+        internal bool m_observed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UnobservedTaskExceptionEventArgs"/> class
         /// with the unobserved exception.
         /// </summary>
         /// <param name="exception">The Exception that has gone unobserved.</param>
-        public UnobservedTaskExceptionEventArgs(AggregateException? exception) { m_exception = exception; }
+        public UnobservedTaskExceptionEventArgs(AggregateException exception) { m_exception = exception; }
 
         /// <summary>
         /// Marks the <see cref="Exception"/> as "observed," thus preventing it
@@ -644,6 +643,6 @@ namespace System.Threading.Tasks
         /// <summary>
         /// The Exception that went unobserved.
         /// </summary>
-        public AggregateException? Exception => m_exception;
+        public AggregateException Exception => m_exception;
     }
 }

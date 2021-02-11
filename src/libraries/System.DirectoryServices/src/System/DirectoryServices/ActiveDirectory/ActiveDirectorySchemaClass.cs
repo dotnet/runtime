@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.ComponentModel;
@@ -15,36 +14,36 @@ namespace System.DirectoryServices.ActiveDirectory
     public class ActiveDirectorySchemaClass : IDisposable
     {
         // private variables
-        private DirectoryEntry _classEntry = null;
-        private DirectoryEntry _schemaEntry = null;
-        private DirectoryEntry _abstractClassEntry = null;
-        private readonly NativeComInterfaces.IAdsClass _iadsClass = null;
-        private readonly DirectoryContext _context = null;
-        internal bool isBound = false;
-        private bool _disposed = false;
-        private ActiveDirectorySchema _schema = null;
-        private bool _propertiesFromSchemaContainerInitialized = false;
-        private bool _isDefunctOnServer = false;
-        private Hashtable _propertyValuesFromServer = null;
+        private DirectoryEntry _classEntry;
+        private DirectoryEntry _schemaEntry;
+        private DirectoryEntry _abstractClassEntry;
+        private readonly NativeComInterfaces.IAdsClass _iadsClass;
+        private readonly DirectoryContext _context;
+        internal bool isBound;
+        private bool _disposed;
+        private ActiveDirectorySchema _schema;
+        private bool _propertiesFromSchemaContainerInitialized;
+        private bool _isDefunctOnServer;
+        private Hashtable _propertyValuesFromServer;
 
         // private variables for all the properties of this class
-        private readonly string _ldapDisplayName = null;
-        private string _commonName = null;
-        private string _oid = null;
-        private string _description = null;
-        private bool _descriptionInitialized = false;
-        private bool _isDefunct = false;
-        private ActiveDirectorySchemaClassCollection _possibleSuperiors = null;
-        private ActiveDirectorySchemaClassCollection _auxiliaryClasses = null;
-        private ReadOnlyActiveDirectorySchemaClassCollection _possibleInferiors = null;
-        private ActiveDirectorySchemaPropertyCollection _mandatoryProperties = null;
-        private ActiveDirectorySchemaPropertyCollection _optionalProperties = null;
-        private ActiveDirectorySchemaClass _subClassOf = null;
+        private readonly string _ldapDisplayName;
+        private string _commonName;
+        private string _oid;
+        private string _description;
+        private bool _descriptionInitialized;
+        private bool _isDefunct;
+        private ActiveDirectorySchemaClassCollection _possibleSuperiors;
+        private ActiveDirectorySchemaClassCollection _auxiliaryClasses;
+        private ReadOnlyActiveDirectorySchemaClassCollection _possibleInferiors;
+        private ActiveDirectorySchemaPropertyCollection _mandatoryProperties;
+        private ActiveDirectorySchemaPropertyCollection _optionalProperties;
+        private ActiveDirectorySchemaClass _subClassOf;
         private SchemaClassType _type = SchemaClassType.Structural;
-        private bool _typeInitialized = false;
-        private byte[] _schemaGuidBinaryForm = null;
-        private string _defaultSDSddlForm = null;
-        private bool _defaultSDSddlFormInitialized = false;
+        private bool _typeInitialized;
+        private byte[] _schemaGuidBinaryForm;
+        private string _defaultSDSddlForm;
+        private bool _defaultSDSddlFormInitialized;
 
         #region constructors
         public ActiveDirectorySchemaClass(DirectoryContext context, string ldapDisplayName)
@@ -998,8 +997,6 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 CheckIfDisposed();
 
-                Guid schemaGuid = Guid.Empty;
-
                 if (isBound)
                 {
                     if (_schemaGuidBinaryForm == null)
@@ -1091,7 +1088,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InitializePropertiesFromSchemaContainer();
 
             Debug.Assert(_propertyValuesFromServer != null);
-            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLower(CultureInfo.InvariantCulture)];
+            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLowerInvariant()];
 
             Debug.Assert(values != null);
             if (values.Count < 1 && mustExist)
@@ -1116,7 +1113,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InitializePropertiesFromSchemaContainer();
 
             Debug.Assert(_propertyValuesFromServer != null);
-            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLower(CultureInfo.InvariantCulture)];
+            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLowerInvariant()];
 
             Debug.Assert(values != null);
             return values;
@@ -1178,7 +1175,7 @@ namespace System.DirectoryServices.ActiveDirectory
             str.Append("(&(");
             str.Append(PropertyManager.ObjectCategory);
             str.Append("=classSchema)");
-            str.Append("(");
+            str.Append('(');
             if (!isDefunctOnServer)
             {
                 str.Append(PropertyManager.LdapDisplayName);
@@ -1187,16 +1184,16 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 str.Append(PropertyManager.Cn);
             }
-            str.Append("=");
+            str.Append('=');
             str.Append(Utils.GetEscapedFilterValue(name));
-            str.Append(")");
+            str.Append(')');
             if (!isDefunctOnServer)
             {
                 str.Append("(!(");
             }
             else
             {
-                str.Append("(");
+                str.Append('(');
             }
             str.Append(PropertyManager.IsDefunct);
             if (!isDefunctOnServer)
@@ -1325,15 +1322,15 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 foreach (string ldapDisplayName in ldapDisplayNames)
                 {
-                    str.Append("(");
+                    str.Append('(');
                     str.Append(PropertyManager.LdapDisplayName);
-                    str.Append("=");
+                    str.Append('=');
                     str.Append(Utils.GetEscapedFilterValue(ldapDisplayName));
-                    str.Append(")");
+                    str.Append(')');
                 }
                 if (ldapDisplayNames.Count > 1)
                 {
-                    str.Append(")");
+                    str.Append(')');
                 }
 
                 string filter = "(&(" + PropertyManager.ObjectCategory + "=classSchema)" + str.ToString() + "(!(" + PropertyManager.IsDefunct + "=TRUE)))";
@@ -1403,15 +1400,15 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 foreach (string ldapDisplayName in ldapDisplayNames)
                 {
-                    str.Append("(");
+                    str.Append('(');
                     str.Append(PropertyManager.LdapDisplayName);
-                    str.Append("=");
+                    str.Append('=');
                     str.Append(Utils.GetEscapedFilterValue(ldapDisplayName));
-                    str.Append(")");
+                    str.Append(')');
                 }
                 if (ldapDisplayNames.Count > 1)
                 {
-                    str.Append(")");
+                    str.Append(')');
                 }
 
                 string filter = "(&(" + PropertyManager.ObjectCategory + "=attributeSchema)" + str.ToString() + "(!(" + PropertyManager.IsDefunct + "=TRUE)))";

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
@@ -15,7 +14,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     public abstract partial class DecryptTests
     {
         private bool _useExplicitPrivateKey;
-        public static bool SupportsIndefiniteLengthEncoding { get; } = !PlatformDetection.IsFullFramework;
+        public static bool SupportsIndefiniteLengthEncoding { get; } = !PlatformDetection.IsNetFramework;
 
         public DecryptTests(bool useExplicitPrivateKey)
         {
@@ -116,9 +115,9 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 "650304012A0410280AC7A629BFC9FD6FB24F8A42F094B4"
             ).HexToByteArray();
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
-                // On NetFx when Array.Empty should be returned an array of 6 zeros is
+                // On .NET Framework when Array.Empty should be returned an array of 6 zeros is
                 // returned instead.
                 content = new byte[6];
             }

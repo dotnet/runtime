@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
@@ -69,7 +68,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is DocumentHandle && ((DocumentHandle)obj)._rowId == _rowId;
         }
@@ -152,7 +151,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is MethodDebugInformationHandle && ((MethodDebugInformationHandle)obj)._rowId == _rowId;
         }
@@ -247,7 +246,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is LocalScopeHandle && ((LocalScopeHandle)obj)._rowId == _rowId;
         }
@@ -330,7 +329,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is LocalVariableHandle && ((LocalVariableHandle)obj)._rowId == _rowId;
         }
@@ -413,7 +412,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is LocalConstantHandle && ((LocalConstantHandle)obj)._rowId == _rowId;
         }
@@ -496,7 +495,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ImportScopeHandle && ((ImportScopeHandle)obj)._rowId == _rowId;
         }
@@ -579,7 +578,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is CustomDebugInformationHandle && ((CustomDebugInformationHandle)obj)._rowId == _rowId;
         }

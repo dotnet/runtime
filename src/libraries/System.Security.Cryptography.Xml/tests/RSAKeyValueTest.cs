@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information
-//
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // RSAKeyValueTest.cs - Test Cases for RSAKeyValue
 //
 // Author:
 //  Sebastien Pouliot (spouliot@motus.com)
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Xml;
@@ -115,15 +112,15 @@ namespace System.Security.Cryptography.Xml.Tests
 
             RSAKeyValue rsa = new RSAKeyValue();
 
-            // FormatException exception because desktop does not
+            // FormatException exception because .NET Framework does not
             // check if Convert.FromBase64String throws
-            // Related to: https://github.com/dotnet/corefx/issues/18690
+            // Related to: https://github.com/dotnet/runtime/issues/21236
             try
             {
                 rsa.LoadXml(xmlDocument.DocumentElement);
             }
             catch (CryptographicException) { }
-            catch (FormatException) when (PlatformDetection.IsFullFramework) { }
+            catch (FormatException) when (PlatformDetection.IsNetFramework) { }
         }
 
         public static object[][] LoadXml_InvalidXml_Source()

@@ -1,10 +1,7 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
-Imports System.Diagnostics
-Imports System.Globalization
 
 Imports Microsoft.VisualBasic.CompilerServices.StringType
 Imports Microsoft.VisualBasic.CompilerServices.Utils
@@ -1012,8 +1009,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         Throw ex
                     Catch ex As OutOfMemoryException
                         Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
-                        Throw ex
                     Catch
                         DecimalResult = -conv.ToDecimal(Nothing)
                         GoTo DecimalExit
@@ -1033,8 +1028,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Catch ex As StackOverflowException
                         Throw ex
                     Catch ex As OutOfMemoryException
-                        Throw ex
-                    Catch ex As System.Threading.ThreadAbortException
                         Throw ex
                     Catch
                         DoubleResult = -conv.ToDouble(Nothing)
@@ -2094,8 +2087,6 @@ DecimalExit:
             Catch ex As StackOverflowException
                 Throw ex
             Catch ex As OutOfMemoryException
-                Throw ex
-            Catch ex As System.Threading.ThreadAbortException
                 Throw ex
             Catch 'e As OverflowException
                 Return CDec(i1) - CDec(i2)
@@ -3286,8 +3277,6 @@ DecimalExit:
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
                     Throw GetNoValidOperatorException(conv1, conv2)
                 End Try
@@ -3303,8 +3292,6 @@ DecimalExit:
                 Catch ex As StackOverflowException
                     Throw ex
                 Catch ex As OutOfMemoryException
-                    Throw ex
-                Catch ex As System.Threading.ThreadAbortException
                     Throw ex
                 Catch
                     Throw GetNoValidOperatorException(conv1, conv2)
@@ -3522,7 +3509,7 @@ DecimalExit:
 
             End Select
 
-            Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(obj), VBFriendlyName(TypeFromTypeCode(toType))))
+            Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(obj), VBFriendlyName(TypeFromTypeCode(toType))))
 
         End Function
 
@@ -3572,7 +3559,7 @@ DecimalExit:
                     If (ObjString IsNot Nothing) AndAlso (toType Is GetType(Char())) Then
                         Return CharArrayType.FromString(ObjString)
                     Else
-                        Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(fromType), VBFriendlyName(toType)))
+                        Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(fromType), VBFriendlyName(toType)))
                     End If
                 End If
             Else
@@ -3588,7 +3575,7 @@ CheckForEnumAndExit:
         End Function
 
         Private Shared Function GetNoValidOperatorException(ByVal Operand As Object) As Exception
-            Return New InvalidCastException(GetResourceString(SR.NoValidOperator_OneOperand, VBFriendlyName(Operand)))
+            Return New InvalidCastException(SR.Format(SR.NoValidOperator_OneOperand, VBFriendlyName(Operand)))
         End Function
 
         Private Shared Function GetNoValidOperatorException(ByVal Left As Object, ByVal Right As Object) As Exception
@@ -3604,9 +3591,9 @@ CheckForEnumAndExit:
 
                 If LeftString IsNot Nothing Then
                     Substitution1 =
-                        GetResourceString(SR.NoValidOperator_StringType1, Strings.Left(LeftString, MAX_INSERTION_SIZE))
+                        SR.Format(SR.NoValidOperator_StringType1, Strings.Left(LeftString, MAX_INSERTION_SIZE))
                 Else
-                    Substitution1 = GetResourceString(SR.NoValidOperator_NonStringType1, VBFriendlyName(Left))
+                    Substitution1 = SR.Format(SR.NoValidOperator_NonStringType1, VBFriendlyName(Left))
                 End If
             End If
 
@@ -3617,13 +3604,13 @@ CheckForEnumAndExit:
 
                 If RightString IsNot Nothing Then
                     Substitution2 =
-                        GetResourceString(SR.NoValidOperator_StringType1, Strings.Left(RightString, MAX_INSERTION_SIZE))
+                        SR.Format(SR.NoValidOperator_StringType1, Strings.Left(RightString, MAX_INSERTION_SIZE))
                 Else
-                    Substitution2 = GetResourceString(SR.NoValidOperator_NonStringType1, VBFriendlyName(Right))
+                    Substitution2 = SR.Format(SR.NoValidOperator_NonStringType1, VBFriendlyName(Right))
                 End If
             End If
 
-            Return New InvalidCastException(GetResourceString(SR.NoValidOperator_TwoOperands, Substitution1, Substitution2))
+            Return New InvalidCastException(SR.Format(SR.NoValidOperator_TwoOperands, Substitution1, Substitution2))
         End Function
 
         '**

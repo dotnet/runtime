@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -41,7 +41,7 @@ namespace System.Globalization
 
         internal static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(value != null);
             Debug.Assert(startIndex >= 0 && startIndex < source.Length);
 
@@ -72,7 +72,7 @@ namespace System.Globalization
 
             if (valueCount == 0)
             {
-                return fromBeginning ? 0 : sourceCount - 1;
+                return fromBeginning ? 0 : sourceCount;
             }
 
             if (sourceCount < valueCount)
@@ -85,10 +85,10 @@ namespace System.Globalization
                 lastSourceStart = sourceCount - valueCount;
                 if (ignoreCase)
                 {
-                    char firstValueChar = InvariantToUpper(value[0]);
+                    char firstValueChar = InvariantCaseFold(value[0]);
                     for (ctrSource = 0; ctrSource <= lastSourceStart; ctrSource++)
                     {
-                        sourceChar = InvariantToUpper(source[ctrSource]);
+                        sourceChar = InvariantCaseFold(source[ctrSource]);
                         if (sourceChar != firstValueChar)
                         {
                             continue;
@@ -96,8 +96,8 @@ namespace System.Globalization
 
                         for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
                         {
-                            sourceChar = InvariantToUpper(source[ctrSource + ctrValue]);
-                            valueChar = InvariantToUpper(value[ctrValue]);
+                            sourceChar = InvariantCaseFold(source[ctrSource + ctrValue]);
+                            valueChar = InvariantCaseFold(value[ctrValue]);
 
                             if (sourceChar != valueChar)
                             {
@@ -145,18 +145,18 @@ namespace System.Globalization
                 lastSourceStart = sourceCount - valueCount;
                 if (ignoreCase)
                 {
-                    char firstValueChar = InvariantToUpper(value[0]);
+                    char firstValueChar = InvariantCaseFold(value[0]);
                     for (ctrSource = lastSourceStart; ctrSource >= 0; ctrSource--)
                     {
-                        sourceChar = InvariantToUpper(source[ctrSource]);
+                        sourceChar = InvariantCaseFold(source[ctrSource]);
                         if (sourceChar != firstValueChar)
                         {
                             continue;
                         }
                         for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
                         {
-                            sourceChar = InvariantToUpper(source[ctrSource + ctrValue]);
-                            valueChar = InvariantToUpper(value[ctrValue]);
+                            sourceChar = InvariantCaseFold(source[ctrSource + ctrValue]);
+                            valueChar = InvariantCaseFold(value[ctrValue]);
 
                             if (sourceChar != valueChar)
                             {
@@ -203,16 +203,21 @@ namespace System.Globalization
             return -1;
         }
 
-        private static char InvariantToUpper(char c)
+        private static char InvariantCaseFold(char c)
         {
+            // If we ever make Invariant mode support more than just simple ASCII-range case folding,
+            // then we should update this method to perform proper case folding instead of an
+            // uppercase conversion. For now it only understands the ASCII range and reflects all
+            // non-ASCII values unchanged.
+
             return (uint)(c - 'a') <= (uint)('z' - 'a') ? (char)(c - 0x20) : c;
         }
 
-        private unsafe SortKey InvariantCreateSortKey(string source, CompareOptions options)
+        private SortKey InvariantCreateSortKey(string source, CompareOptions options)
         {
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
 
-            if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
+            if ((options & ValidCompareMaskOffFlags) != 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
@@ -227,23 +232,88 @@ namespace System.Globalization
                 // In the invariant mode, all string comparisons are done as ordinal so when generating the sort keys we generate it according to this fact
                 keyData = new byte[source.Length * sizeof(char)];
 
-                fixed (char* pChar = source) fixed (byte* pByte = keyData)
+                if ((options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0)
                 {
-                    if ((options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0)
-                    {
-                        short* pShort = (short*)pByte;
-                        for (int i = 0; i < source.Length; i++)
-                        {
-                            pShort[i] = (short)InvariantToUpper(source[i]);
-                        }
-                    }
-                    else
-                    {
-                        Buffer.MemoryCopy(pChar, pByte, keyData.Length, keyData.Length);
-                    }
+                    InvariantCreateSortKeyOrdinalIgnoreCase(source, keyData);
+                }
+                else
+                {
+                    InvariantCreateSortKeyOrdinal(source, keyData);
                 }
             }
-            return new SortKey(Name, source, options, keyData);
+
+            return new SortKey(this, source, options, keyData);
+        }
+
+        private static void InvariantCreateSortKeyOrdinal(ReadOnlySpan<char> source, Span<byte> sortKey)
+        {
+            Debug.Assert(sortKey.Length >= source.Length * sizeof(char));
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                // convert machine-endian to big-endian
+                BinaryPrimitives.WriteUInt16BigEndian(sortKey, (ushort)source[i]);
+                sortKey = sortKey.Slice(sizeof(ushort));
+            }
+        }
+
+        private static void InvariantCreateSortKeyOrdinalIgnoreCase(ReadOnlySpan<char> source, Span<byte> sortKey)
+        {
+            Debug.Assert(sortKey.Length >= source.Length * sizeof(char));
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                // convert machine-endian to big-endian
+                BinaryPrimitives.WriteUInt16BigEndian(sortKey, (ushort)InvariantCaseFold(source[i]));
+                sortKey = sortKey.Slice(sizeof(ushort));
+            }
+        }
+
+        private static int InvariantGetSortKey(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options)
+        {
+            Debug.Assert(GlobalizationMode.Invariant);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            // Make sure the destination buffer is large enough to hold the source projection.
+            // Using unsigned arithmetic below also checks for buffer overflow since the incoming
+            // length is always a non-negative signed integer.
+
+            if ((uint)destination.Length < (uint)source.Length * sizeof(char))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            if ((options & CompareOptions.IgnoreCase) == 0)
+            {
+                InvariantCreateSortKeyOrdinal(source, destination);
+            }
+            else
+            {
+                InvariantCreateSortKeyOrdinalIgnoreCase(source, destination);
+            }
+
+            return source.Length * sizeof(char);
+        }
+
+        private static int InvariantGetSortKeyLength(ReadOnlySpan<char> source, CompareOptions options)
+        {
+            Debug.Assert(GlobalizationMode.Invariant);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            // In invariant mode, sort keys are simply a byte projection of the source input,
+            // optionally with casing modifications. We need to make sure we don't overflow
+            // while computing the length.
+
+            int byteLength = source.Length * sizeof(char);
+
+            if (byteLength < 0)
+            {
+                throw new ArgumentException(
+                    paramName: nameof(source),
+                    message: SR.ArgumentOutOfRange_GetByteCountOverflow);
+            }
+
+            return byteLength;
         }
     }
 }

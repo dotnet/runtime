@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -82,10 +81,10 @@ namespace System.Drawing
         /// <summary>
         /// Returns a BufferedGraphics that is matched for the specified target HDC object.
         /// </summary>
-        private BufferedGraphics AllocBufferInTempManager(Graphics targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
+        private BufferedGraphics AllocBufferInTempManager(Graphics? targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
         {
-            BufferedGraphicsContext tempContext = null;
-            BufferedGraphics tempBuffer = null;
+            BufferedGraphicsContext? tempContext = null;
+            BufferedGraphics? tempBuffer = null;
 
             try
             {

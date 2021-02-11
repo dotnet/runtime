@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +13,7 @@ namespace System.Reflection.Tests
 {
     public static partial class CustomAttributeTests
     {
+        [ActiveIssue("https://github.com/mono/mono/issues/15340", TestRuntimes.Mono)]
         [Fact]
         public static void TestDllImportPseudoCustomAttribute()
         {
@@ -47,6 +47,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15340", TestRuntimes.Mono)]
         [MemberData(nameof(MarshalAsTheoryData))]
         public static void TestMarshalAsPseudoCustomAttribute(string fieldName, MarshalAsAttribute expected)
         {

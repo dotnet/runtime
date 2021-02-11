@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
-    public readonly struct ConsoleKeyInfo
+    public readonly struct ConsoleKeyInfo : IEquatable<ConsoleKeyInfo>
     {
         private readonly char _keyChar;
         private readonly ConsoleKey _key;
@@ -47,9 +48,9 @@ namespace System
             get { return _mods; }
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
-            return value is ConsoleKeyInfo && Equals((ConsoleKeyInfo)value);
+            return value is ConsoleKeyInfo info && Equals(info);
         }
 
         public bool Equals(ConsoleKeyInfo obj)

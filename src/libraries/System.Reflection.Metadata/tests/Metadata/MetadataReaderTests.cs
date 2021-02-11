@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -2661,6 +2660,21 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void GetMethodDebugInformation_InvalidHandle()
+        {
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
+            {
+                var reader = provider.GetMetadataReader();
+                var mdi = reader.GetMethodDebugInformation(default(MethodDebugInformationHandle));
+
+                Assert.Throws<BadImageFormatException>(() => mdi.SequencePointsBlob);
+                Assert.Throws<BadImageFormatException>(() => mdi.Document);
+                Assert.Throws<BadImageFormatException>(() => mdi.LocalSignature);
+                Assert.Throws<BadImageFormatException>(() => mdi.GetSequencePoints());
+            }
+        }
+
+        [Fact]
         public void GetCustomDebugInformation()
         {
             using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
@@ -2864,7 +2878,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(handle.RowId, assemblyRef.RowId);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CanReadFromSameMemoryMappedPEReaderInParallel()
         {
             // See http://roslyn.codeplex.com/workitem/299

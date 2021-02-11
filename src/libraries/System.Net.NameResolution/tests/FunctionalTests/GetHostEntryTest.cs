@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -13,15 +13,15 @@ namespace System.Net.NameResolution.Tests
 {
     public class GetHostEntryTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task Dns_GetHostEntryAsync_IPAddress_Ok()
         {
             IPAddress localIPAddress = await TestSettings.GetLocalIPAddress();
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
 
-        [ActiveIssue(37362, TestPlatforms.OSX)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(32797)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
@@ -32,7 +32,7 @@ namespace System.Net.NameResolution.Tests
             }
             catch (Exception ex) when (hostName == "")
             {
-                // Additional data for debugging sporadic CI failures #24355
+                // Additional data for debugging sporadic CI failures https://github.com/dotnet/runtime/issues/1488
                 string actualHostName = Dns.GetHostName();
                 string etcHosts = "";
                 Exception getHostEntryException = null;
@@ -69,8 +69,8 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ActiveIssue(37362, TestPlatforms.OSX)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(32797)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName) =>
@@ -132,7 +132,7 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostEntry, Dns.EndGetHostEntry, address.ToString(), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task DnsGetHostEntry_MachineName_AllVariationsMatch()
         {
             IPHostEntry syncResult = Dns.GetHostEntry(TestSettings.LocalHost);
@@ -205,7 +205,7 @@ namespace System.Net.NameResolution.Tests
             Assert.All(entry.AddressList, addr => Assert.True(IPAddress.IsLoopback(addr), "Not a loopback address: " + addr));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -228,6 +228,56 @@ namespace System.Net.NameResolution.Tests
 
             Assert.Equal(ipEntry.HostName, stringEntry.HostName);
             Assert.Equal(ipEntry.AddressList, stringEntry.AddressList);
+        }
+
+        [OuterLoop]
+        [Theory]
+        [MemberData(nameof(AddressFamilySpecificTestData))]
+        public async Task DnsGetHostEntry_LocalHost_AddressFamilySpecific(bool useAsync, string host, AddressFamily addressFamily)
+        {
+            IPHostEntry entry =
+                useAsync ? await Dns.GetHostEntryAsync(host, addressFamily) :
+                Dns.GetHostEntry(host, addressFamily);
+
+            Assert.All(entry.AddressList, address => Assert.Equal(addressFamily, address.AddressFamily));
+        }
+
+        public static TheoryData<bool, string, AddressFamily> AddressFamilySpecificTestData =>
+            new TheoryData<bool, string, AddressFamily>()
+            {
+                // async, hostname, af
+                { false, TestSettings.IPv4Host, AddressFamily.InterNetwork },
+                { false, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 },
+                { true, TestSettings.IPv4Host, AddressFamily.InterNetwork },
+                { true, TestSettings.IPv6Host, AddressFamily.InterNetworkV6 }
+            };
+
+        [Fact]
+        public async Task DnsGetHostEntry_PreCancelledToken_Throws()
+        {
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Dns.GetHostEntryAsync(TestSettings.LocalHost, cts.Token));
+            Assert.Equal(cts.Token, oce.CancellationToken);
+        }
+
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
+        [Fact]
+        public async Task DnsGetHostEntry_PostCancelledToken_Throws()
+        {
+            using var cts = new CancellationTokenSource();
+
+            Task task = Dns.GetHostEntryAsync(TestSettings.UncachedHost, cts.Token);
+
+            // This test might flake if the cancellation token takes too long to trigger:
+            // It's a race between the DNS server getting back to us and the cancellation processing.
+            cts.Cancel();
+
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -180,7 +179,7 @@ internal static class Utils
             //</GenericBase2OfSimpleBaseDerivedSimpleBaseDerived2RkuXKXCQ>
 
             // Note the incorrect padding in the end of GenericBase2OfSimpleBaseDerivedSimpleBaseDerived2RkuXKXCQ
-            // The difference is MD5 hashcode applied to the Type.FullName and is because full typeName in desktop and CoreCLR returns different value.
+            // The difference is MD5 hashcode applied to the Type.FullName and is because full typeName in .NET Framework and CoreCLR returns different value.
 
             // Hack for the above reason.
             int deskIdx, coreCLRIdx;

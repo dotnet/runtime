@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -100,10 +99,11 @@ namespace System.Reflection
         /// <summary>
         /// Create a new MetadataLoadContext object.
         /// </summary>
+        /// <param name="resolver">A <see cref="MetadataAssemblyResolver"/> instance.</param>
         /// <param name="coreAssemblyName">
         /// The name of the assembly that contains the core types such as System.Object. Typically, this would be "mscorlib".
         /// </param>
-        public MetadataLoadContext(MetadataAssemblyResolver resolver, string coreAssemblyName = null)
+        public MetadataLoadContext(MetadataAssemblyResolver resolver, string? coreAssemblyName = null)
         {
             if (resolver == null)
                 throw new ArgumentNullException(nameof(resolver));
@@ -251,7 +251,7 @@ namespace System.Reflection
         ///   type, the necessary constructor or any of the parameter types of the constructor, the MetadataLoadContext will not throw. It will omit the pseudo-custom
         ///   attribute from the list of returned attributes.
         /// </summary>
-        public Assembly CoreAssembly
+        public Assembly? CoreAssembly
         {
             get
             {

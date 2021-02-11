@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -18,7 +17,7 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
@@ -40,7 +39,7 @@ namespace System.Net.Http
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
@@ -90,21 +89,21 @@ namespace System.Net.Http
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                ValidateCopyToArgs(this, destination, bufferSize);
+                ValidateCopyToArguments(destination, bufferSize);
 
                 if (cancellationToken.IsCancellationRequested)
                 {
                     return Task.FromCanceled(cancellationToken);
                 }
 
-                HttpConnection connection = _connection;
+                HttpConnection? connection = _connection;
                 if (connection == null)
                 {
                     // null if response body fully consumed
                     return Task.CompletedTask;
                 }
 
-                Task copyTask = connection.CopyToUntilEofAsync(destination, bufferSize, cancellationToken);
+                Task copyTask = connection.CopyToUntilEofAsync(destination, async: true, bufferSize, cancellationToken);
                 if (copyTask.IsCompletedSuccessfully)
                 {
                     Finish(connection);

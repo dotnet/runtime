@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -118,7 +117,7 @@ namespace Microsoft.Win32.RegistryTests
         {
             // ExpandEnvironmentStrings is converting "C:\Program Files (Arm)" to "C:\Program Files (x86)".
             if (envVariableName == "ProgramFiles" && PlatformDetection.IsArmProcess)
-                return; // see https://github.com/dotnet/corefx/issues/28856
+                return; // see https://github.com/dotnet/runtime/issues/25778
 
             string value = "%" + envVariableName + "%";
             Registry.SetValue(TestRegistryKey.Name, valueName, value);

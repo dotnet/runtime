@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Drawing
 {
-    [SuppressMessage("Microsoft.Design", "CA1008:EnumsShouldHaveZeroValue")]
     [TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
 #if NETCOREAPP2_0
     internal
@@ -23,7 +21,7 @@ namespace System.Drawing
 
         // 0 - reserved for "not a known color"
 
-        // "System" colors
+        // "System" colors, Part 1
         ActiveBorder = 1,
         ActiveCaption,
         ActiveCaptionText,
@@ -51,7 +49,7 @@ namespace System.Drawing
         WindowFrame,
         WindowText,
 
-        // "Web" Colors
+        // "Web" Colors, Part 1
         Transparent,
         AliceBlue,
         AntiqueWhite,
@@ -194,14 +192,16 @@ namespace System.Drawing
         Yellow,
         YellowGreen,
 
-        // New system color additions in Visual Studio 2005 (.NET Framework 2.0)
-
+        // "System" colors, Part 2
         ButtonFace,
         ButtonHighlight,
         ButtonShadow,
         GradientActiveCaption,
         GradientInactiveCaption,
         MenuBar,
-        MenuHighlight
+        MenuHighlight,
+
+        // "Web" colors, Part 2
+        RebeccaPurple,
     }
 }

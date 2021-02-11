@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -13,7 +12,7 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeMemoryMappedFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         /// <summary>Counter used to produce a unique handle value.</summary>
-        private static long s_counter = 0;
+        private static long s_counter;
 
         /// <summary>
         /// The underlying FileStream.  May be null.  We hold onto the stream rather than just
@@ -75,15 +74,8 @@ namespace Microsoft.Win32.SafeHandles
             base.Dispose(disposing);
         }
 
-        protected override unsafe bool ReleaseHandle()
-        {
-            // Nothing to clean up.  We unlinked immediately after creating the backing store.
-            return true;
-        }
+        protected override bool ReleaseHandle() => true; // Nothing to clean up.  We unlinked immediately after creating the backing store.
 
-        public override bool IsInvalid
-        {
-            get { return (long)handle <= 0; }
-        }
+        public override bool IsInvalid => (long)handle <= 0;
     }
 }

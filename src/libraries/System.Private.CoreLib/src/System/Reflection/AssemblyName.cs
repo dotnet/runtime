@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Configuration.Assemblies;
 using System.Runtime.Serialization;
@@ -213,6 +212,9 @@ namespace System.Reflection
             {
                 if (this.Name == null)
                     return string.Empty;
+                if (this.Name == string.Empty)
+                    throw new System.IO.FileLoadException();
+
                 // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
                 byte[]? pkt = _publicKeyToken ?? ComputePublicKeyToken();
                 return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags, ContentType);
@@ -272,7 +274,7 @@ namespace System.Reflection
             return new string(dest, 0, position);
         }
 
-        // This implementation of EscapeString has been copied from System.Private.Uri from corefx repo
+        // This implementation of EscapeString has been copied from System.Private.Uri from the runtime repo
         // - forceX characters are always escaped if found
         // - rsvd character will remain unescaped
         //
@@ -340,7 +342,7 @@ namespace System.Reflection
                         // Means we don't reEncode '%' but check for the possible escaped sequence
                         dest = EnsureDestinationSize(pStr, dest, i, c_EncodedCharsPerByte,
                             c_MaxAsciiCharsReallocate * c_EncodedCharsPerByte, ref destPos, prevInputPos);
-                        if (i + 2 < end && EscapedAscii(pStr[i + 1], pStr[i + 2]) != c_DummyChar)
+                        if (i + 2 < end && HexConverter.IsHexChar(pStr[i + 1]) && HexConverter.IsHexChar(pStr[i + 2]))
                         {
                             // leave it escaped
                             dest[destPos++] = '%';
@@ -399,39 +401,8 @@ namespace System.Reflection
         internal static void EscapeAsciiChar(char ch, char[] to, ref int pos)
         {
             to[pos++] = '%';
-            to[pos++] = s_hexUpperChars[(ch & 0xf0) >> 4];
-            to[pos++] = s_hexUpperChars[ch & 0xf];
-        }
-
-        internal static char EscapedAscii(char digit, char next)
-        {
-            if (!(((digit >= '0') && (digit <= '9'))
-                || ((digit >= 'A') && (digit <= 'F'))
-                || ((digit >= 'a') && (digit <= 'f'))))
-            {
-                return c_DummyChar;
-            }
-
-            int res = (digit <= '9')
-                ? ((int)digit - (int)'0')
-                : (((digit <= 'F')
-                ? ((int)digit - (int)'A')
-                : ((int)digit - (int)'a'))
-                   + 10);
-
-            if (!(((next >= '0') && (next <= '9'))
-                || ((next >= 'A') && (next <= 'F'))
-                || ((next >= 'a') && (next <= 'f'))))
-            {
-                return c_DummyChar;
-            }
-
-            return (char)((res << 4) + ((next <= '9')
-                    ? ((int)next - (int)'0')
-                    : (((next <= 'F')
-                        ? ((int)next - (int)'A')
-                        : ((int)next - (int)'a'))
-                       + 10)));
+            to[pos++] = HexConverter.ToCharUpper(ch >> 4);
+            to[pos++] = HexConverter.ToCharUpper(ch);
         }
 
         private static bool IsReservedUnreservedOrHash(char c)
@@ -464,9 +435,6 @@ namespace System.Reflection
             return IsAsciiLetter(character) || (character >= '0' && character <= '9');
         }
 
-        private static readonly char[] s_hexUpperChars = {
-                                   '0', '1', '2', '3', '4', '5', '6', '7',
-                                   '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
         internal const char c_DummyChar = (char)0xFFFF;     // An Invalid Unicode character used as a dummy char passed into the parameter
         private const short c_MaxAsciiCharsReallocate = 40;
         private const short c_MaxUnicodeCharsReallocate = 40;

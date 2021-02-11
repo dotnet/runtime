@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -40,7 +39,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override int MetadataToken => _handle.GetToken();
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(object? obj)
         {
             if (!(obj is EcmaField other))
                 return false;
@@ -68,15 +67,15 @@ namespace System.Reflection.TypeLoading.Ecma
 
         private Type[] GetCustomModifiers(bool isRequired)
         {
-            RoType type = FieldDefinition.DecodeSignature(new EcmaModifiedTypeProvider(_module), TypeContext);
+            RoType type = FieldDefinition.DecodeSignature(new EcmaModifiedTypeProvider(_module), TypeContext)!;
             return type.ExtractCustomModifiers(isRequired);
         }
 
-        protected sealed override object ComputeRawConstantValue() => FieldDefinition.GetDefaultValue().ToRawObject(Reader);
+        protected sealed override object? ComputeRawConstantValue() => FieldDefinition.GetDefaultValue().ToRawObject(Reader);
 
         public sealed override string ToString()
         {
-            string disposedString = Loader.GetDisposedString();
+            string? disposedString = Loader.GetDisposedString();
             if (disposedString != null)
                 return disposedString;
 

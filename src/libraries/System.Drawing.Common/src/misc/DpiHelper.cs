@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Configuration;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -15,7 +15,7 @@ namespace System.Windows.Forms
     internal static class DpiHelper
     {
         private const double LogicalDpi = 96.0;
-        private static bool s_isInitialized = false;
+        private static bool s_isInitialized;
         /// <summary>
         /// The primary screen's (device) current horizontal DPI
         /// </summary>
@@ -26,8 +26,8 @@ namespace System.Windows.Forms
         /// </summary>
         private static double s_deviceDpiY = LogicalDpi;
 
-        private static double s_logicalToDeviceUnitsScalingFactorX = 0.0;
-        private static double s_logicalToDeviceUnitsScalingFactorY = 0.0;
+        private static double s_logicalToDeviceUnitsScalingFactorX;
+        private static double s_logicalToDeviceUnitsScalingFactorY;
         private static InterpolationMode s_interpolationMode = InterpolationMode.Invalid;
 
         private static void Initialize()
@@ -194,7 +194,8 @@ namespace System.Windows.Forms
         /// </summary>
         /// <param name="logicalImage">The image to scale from logical units to device units</param>
         /// <param name="targetImageSize">The size to scale image to</param>
-        public static Bitmap CreateResizedBitmap(Bitmap logicalImage, Size targetImageSize)
+        [return: NotNullIfNotNull("logicalImage")]
+        public static Bitmap? CreateResizedBitmap(Bitmap? logicalImage, Size targetImageSize)
         {
             if (logicalImage == null)
             {
@@ -210,7 +211,7 @@ namespace System.Windows.Forms
         /// Note: this method should be called only inside an if (DpiHelper.IsScalingRequired) clause
         /// </summary>
         /// <param name="logicalBitmap">The image to scale from logical units to device units</param>
-        public static void ScaleBitmapLogicalToDevice(ref Bitmap logicalBitmap)
+        public static void ScaleBitmapLogicalToDevice([NotNullIfNotNull("logicalBitmap")]ref Bitmap? logicalBitmap)
         {
             if (logicalBitmap == null)
             {

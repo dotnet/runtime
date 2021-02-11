@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace System.Text
 {
     public sealed class EncoderExceptionFallback : EncoderFallback
     {
+        internal static readonly EncoderExceptionFallback s_default = new EncoderExceptionFallback();
+
         // Construction
         public EncoderExceptionFallback()
         {
@@ -19,7 +21,7 @@ namespace System.Text
         // Maximum number of characters that this instance of this fallback could return
         public override int MaxCharCount => 0;
 
-        public override bool Equals(object? value) =>
+        public override bool Equals([NotNullWhen(true)] object? value) =>
             value is EncoderExceptionFallback;
 
         public override int GetHashCode() => 654;

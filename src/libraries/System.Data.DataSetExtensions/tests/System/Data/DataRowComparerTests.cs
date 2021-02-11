@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -288,7 +287,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix applied only for dotnet Core, full framework throws NullReferenceException")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix applied only for .NET Core, .NET Framework throws NullReferenceException")]
         public void Equals_NullStringValueInStringArray_CanBeCompared()
         {
             var table = new DataTable("Table");

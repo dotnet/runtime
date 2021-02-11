@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
@@ -29,11 +28,11 @@ namespace System.ComponentModel.Composition.Hosting
                 _catalogExportProvider = catalogExportProvider;
             }
 
-            protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition)
+            protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
             {
                 List<Export> exports = new List<Export>();
 
-                ImportDefinition queryImport = TranslateImport(definition);
+                ImportDefinition? queryImport = TranslateImport(definition);
                 if (queryImport == null)
                 {
                     return exports;
@@ -56,7 +55,7 @@ namespace System.ComponentModel.Composition.Hosting
                                 // the RevertActions need to operate before we Dispose the child container
                                 using (var localAtomicComposition = new AtomicComposition(atomicComposition))
                                 {
-                                    isChildPartRejected = container.CatalogExportProvider.DetermineRejection(partDefinitionAndExportDefinition.Item1, localAtomicComposition);
+                                    isChildPartRejected = container.CatalogExportProvider!.DetermineRejection(partDefinitionAndExportDefinition.Item1, localAtomicComposition);
                                 }
                             }
                         }
@@ -79,12 +78,12 @@ namespace System.ComponentModel.Composition.Hosting
 
             internal CompositionContainer CreateChildContainer(ComposablePartCatalog childCatalog)
             {
-                return new CompositionContainer(childCatalog, _catalogExportProvider._compositionOptions, _catalogExportProvider._sourceProvider);
+                return new CompositionContainer(childCatalog, _catalogExportProvider._compositionOptions, _catalogExportProvider._sourceProvider!);
             }
 
-            private static ImportDefinition TranslateImport(ImportDefinition definition)
+            private static ImportDefinition? TranslateImport(ImportDefinition definition)
             {
-                IPartCreatorImportDefinition factoryDefinition = definition as IPartCreatorImportDefinition;
+                IPartCreatorImportDefinition? factoryDefinition = definition as IPartCreatorImportDefinition;
                 if (factoryDefinition == null)
                 {
                     return null;
@@ -94,7 +93,7 @@ namespace System.ComponentModel.Composition.Hosting
                 // We will always create a new child CatalogEP to satsify the request, so from the perspecitive of the caller, the policy should
                 // always be NonShared (or Any). From teh perspective of the callee, it's the otehr way around.
                 ContractBasedImportDefinition productImportDefinition = factoryDefinition.ProductImportDefinition;
-                ImportDefinition result = null;
+                ImportDefinition? result = null;
 
                 switch (productImportDefinition.RequiredCreationPolicy)
                 {

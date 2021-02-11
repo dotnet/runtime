@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Xml;
@@ -21,7 +20,6 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", MessageId = "2#", Justification = "The Uri represents a unique category and not a network location")]
         public SyndicationPerson(string email, string name, string uri)
         {
             Name = name;
@@ -50,7 +48,6 @@ namespace System.ServiceModel.Syndication
 
         public string Name { get; set; }
 
-        [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings", Scope = "property", Justification = "The Uri represents a unique category and not a network location")]
         public string Uri { get; set; }
 
         public virtual SyndicationPerson Clone() => new SyndicationPerson(this);

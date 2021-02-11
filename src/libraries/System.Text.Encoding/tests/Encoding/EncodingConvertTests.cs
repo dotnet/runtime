@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -16,25 +15,25 @@ namespace System.Text.Tests
         [InlineData("\uD800\uDC00")]
         public void Convert(string source)
         {
+            static void convert(Encoding srcEncoding, Encoding dstEncoding, byte[] bytes, int index, int count, byte[] expected)
+            {
+                if (index == 0 && count == bytes.Length)
+                {
+                    Assert.Equal(expected, Encoding.Convert(srcEncoding, dstEncoding, bytes));
+                }
+                Assert.Equal(expected, Encoding.Convert(srcEncoding, dstEncoding, bytes, index, count));
+            }
+
             Encoding[] encodings = new Encoding[] { Encoding.UTF8, Encoding.Unicode, Encoding.BigEndianUnicode };
             foreach (Encoding srcEncoding in encodings)
             {
                 foreach (Encoding dstEncoding in encodings)
                 {
                     byte[] bytes = srcEncoding.GetBytes(source);
-                    Convert(srcEncoding, dstEncoding, bytes, 0, bytes.Length, dstEncoding.GetBytes(source));
-                    Convert(srcEncoding, dstEncoding, bytes, 0, 0, new byte[0]);
+                    convert(srcEncoding, dstEncoding, bytes, 0, bytes.Length, dstEncoding.GetBytes(source));
+                    convert(srcEncoding, dstEncoding, bytes, 0, 0, new byte[0]);
                 }
             }
-        }
-
-        private static void Convert(Encoding srcEncoding, Encoding dstEncoding, byte[] bytes, int index, int count, byte[] expected)
-        {
-            if (index == 0 && count == bytes.Length)
-            {
-                Assert.Equal(expected, Encoding.Convert(srcEncoding, dstEncoding, bytes));
-            }
-            Assert.Equal(expected, Encoding.Convert(srcEncoding, dstEncoding, bytes, index, count));
         }
 
         [Fact]

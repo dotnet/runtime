@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Security.AccessControl;
@@ -55,7 +54,7 @@ namespace System.IO.Pipes
 
             for (int i = 0; i < rules.Count; i++)
             {
-                PipeAccessRule fsrule = rules[i] as PipeAccessRule;
+                PipeAccessRule? fsrule = rules[i] as PipeAccessRule;
 
                 if ((fsrule != null) && (fsrule.PipeAccessRights == rule.PipeAccessRights)
                         && (fsrule.IdentityReference == rule.IdentityReference)
@@ -97,7 +96,7 @@ namespace System.IO.Pipes
 
             for (int i = 0; i < rules.Count; i++)
             {
-                PipeAccessRule fsrule = rules[i] as PipeAccessRule;
+                PipeAccessRule? fsrule = rules[i] as PipeAccessRule;
 
                 if ((fsrule != null) && (fsrule.PipeAccessRights == rule.PipeAccessRights)
                     && (fsrule.IdentityReference == rule.IdentityReference)

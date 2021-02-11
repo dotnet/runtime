@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
@@ -612,7 +611,7 @@ namespace System.Xml.Schema
             int[] days = leapYear ? DaysToMonth366 : DaysToMonth365;
             // All months have less than 32 days, so n >> 5 is a good conservative
             // estimate for the month
-            month = n >> 5 + 1;
+            month = (n >> 5) + 1;
             // m = 1-based month number
             while (n >= days[month])
                 month++;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using Microsoft.Internal;
@@ -56,12 +55,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return ReflectionItemType.Field; }
         }
 
-        public override object GetValue(object instance)
+        public override object? GetValue(object? instance)
         {
             return UndelyingField.SafeGetValue(instance);
         }
 
-        public override void SetValue(object instance, object value)
+        public override void SetValue(object? instance, object? value)
         {
             UndelyingField.SafeSetValue(instance, value);
         }

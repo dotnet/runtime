@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Serialization;
 
 namespace System.Xml.Schema
 {
     public class XmlSchemaAttribute : XmlSchemaAnnotated
     {
-        private string _defaultValue;
-        private string _fixedValue;
-        private string _name;
+        private string? _defaultValue;
+        private string? _fixedValue;
+        private string? _name;
 
         private XmlSchemaForm _form = XmlSchemaForm.None;
         private XmlSchemaUse _use = XmlSchemaUse.None;
@@ -21,14 +21,14 @@ namespace System.Xml.Schema
         private XmlQualifiedName _typeName = XmlQualifiedName.Empty;
         private XmlQualifiedName _qualifiedName = XmlQualifiedName.Empty;
 
-        private XmlSchemaSimpleType _type;
-        private XmlSchemaSimpleType _attributeType;
+        private XmlSchemaSimpleType? _type;
+        private XmlSchemaSimpleType? _attributeType;
 
-        private SchemaAttDef _attDef;
+        private SchemaAttDef? _attDef;
 
         [XmlAttribute("default")]
         [DefaultValue(null)]
-        public string DefaultValue
+        public string? DefaultValue
         {
             get { return _defaultValue; }
             set { _defaultValue = value; }
@@ -36,7 +36,7 @@ namespace System.Xml.Schema
 
         [XmlAttribute("fixed")]
         [DefaultValue(null)]
-        public string FixedValue
+        public string? FixedValue
         {
             get { return _fixedValue; }
             set { _fixedValue = value; }
@@ -50,7 +50,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("name")]
-        public string Name
+        public string? Name
         {
             get { return _name; }
             set { _name = value; }
@@ -71,7 +71,7 @@ namespace System.Xml.Schema
         }
 
         [XmlElement("simpleType")]
-        public XmlSchemaSimpleType SchemaType
+        public XmlSchemaSimpleType? SchemaType
         {
             get { return _type; }
             set { _type = value; }
@@ -92,7 +92,7 @@ namespace System.Xml.Schema
 
         [XmlIgnore]
         [Obsolete("This property has been deprecated. Please use AttributeSchemaType property that returns a strongly typed attribute type. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public object AttributeType
+        public object? AttributeType
         {
             get
             {
@@ -108,12 +108,13 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        public XmlSchemaSimpleType AttributeSchemaType
+        public XmlSchemaSimpleType? AttributeSchemaType
         {
             get { return _attributeType; }
         }
 
-        internal XmlReader Validate(XmlReader reader, XmlResolver resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
+        [return: NotNullIfNotNull("schemaSet")]
+        internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
             if (schemaSet != null)
             {
@@ -127,7 +128,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal XmlSchemaDatatype Datatype
+        internal XmlSchemaDatatype? Datatype
         {
             get
             {
@@ -144,12 +145,12 @@ namespace System.Xml.Schema
             _qualifiedName = value;
         }
 
-        internal void SetAttributeType(XmlSchemaSimpleType value)
+        internal void SetAttributeType(XmlSchemaSimpleType? value)
         {
             _attributeType = value;
         }
 
-        internal SchemaAttDef AttDef
+        internal SchemaAttDef? AttDef
         {
             get { return _attDef; }
             set { _attDef = value; }
@@ -161,7 +162,7 @@ namespace System.Xml.Schema
         }
 
         [XmlIgnore]
-        internal override string NameAttribute
+        internal override string? NameAttribute
         {
             get { return Name; }
             set { Name = value; }

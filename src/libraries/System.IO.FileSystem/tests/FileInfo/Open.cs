@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -13,7 +12,6 @@ namespace System.IO.Tests
             return new FileInfo(path).Open(mode);
         }
 
-        [Theory, MemberData(nameof(StreamSpecifiers))]
         public override void FileModeAppend(string streamSpecifier)
         {
             using (FileStream fs = CreateFileStream(GetTestFilePath() + streamSpecifier, FileMode.Append))
@@ -23,7 +21,6 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory, MemberData(nameof(StreamSpecifiers))]
         public override void FileModeAppendExisting(string streamSpecifier)
         {
             string fileName = GetTestFilePath() + streamSpecifier;

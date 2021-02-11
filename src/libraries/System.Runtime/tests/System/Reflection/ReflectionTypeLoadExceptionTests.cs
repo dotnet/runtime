@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -28,8 +27,8 @@ namespace System.Reflection.Tests
             ReflectionTypeLoadException rtle = new ReflectionTypeLoadException(null, null, "Null arguments");
             Assert.NotNull(rtle.ToString());
             Assert.NotNull(rtle.Message);
-            Assert.Null(rtle.LoaderExceptions);
-            Assert.Null(rtle.Types);
+            Assert.Empty(rtle.LoaderExceptions);
+            Assert.Empty(rtle.Types);
         }
     }
 }

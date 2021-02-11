@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 
@@ -530,9 +529,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <see cref="Enum"/> (encoded as the underlying integer value).
         /// </param>
         /// <exception cref="ArgumentException">Unexpected constant type.</exception>
-        public void Constant(object value)
+        public void Constant(object? value)
         {
-            string str = value as string;
+            string? str = value as string;
             if (str != null || value == null)
             {
                 String(str);
@@ -548,7 +547,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="serializedTypeName">The name of the type, or null.</param>
         /// <exception cref="ArgumentException"><paramref name="serializedTypeName"/> is empty.</exception>
-        public void SystemType(string serializedTypeName)
+        public void SystemType(string? serializedTypeName)
         {
             if (serializedTypeName != null && serializedTypeName.Length == 0)
             {
@@ -558,7 +557,7 @@ namespace System.Reflection.Metadata.Ecma335
             String(serializedTypeName);
         }
 
-        private void String(string value)
+        private void String(string? value)
         {
             Builder.WriteSerializedString(value);
         }
@@ -916,7 +915,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void Type(EntityHandle type, bool isValueType)
         {
             // Get the coded index before we start writing anything (might throw argument exception):
-            // Note: We don't allow TypeSpec as per https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
+            // Note: We don't allow TypeSpec as per https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
             int codedIndex = CodedIndex.TypeDefOrRef(type);
 
             ClassOrValue(isValueType);
@@ -979,7 +978,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             // Get the coded index before we start writing anything (might throw argument exception):
-            // Note: We don't allow TypeSpec as per https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
+            // Note: We don't allow TypeSpec as per https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
             int codedIndex = CodedIndex.TypeDefOrRef(genericType);
 
             Builder.WriteByte((byte)SignatureTypeCode.GenericTypeInstance);

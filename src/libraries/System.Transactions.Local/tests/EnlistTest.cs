@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -153,7 +152,7 @@ namespace System.Transactions.Tests
         /* We support only 1 durable with 2PC
          * On .net, this becomes a distributed transaction
          */
-        [ActiveIssue(13532)] //Distributed transactions are not supported.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/715")] //Distributed transactions are not supported.
         [Fact]
         public void Vol0_Dur1_2PC()
         {
@@ -458,7 +457,7 @@ namespace System.Transactions.Tests
          * > 1 durable, On .net this becomes a distributed transaction
          * We don't support this in mono yet.
          */
-        [ActiveIssue(13532)] //Distributed transactions are not supported.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/715")] //Distributed transactions are not supported.
         [Fact]
         public void Vol0_Dur2()
         {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -9,7 +8,7 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ReplicationCursorCollection : ReadOnlyCollectionBase
     {
-        private readonly DirectoryServer _server = null;
+        private readonly DirectoryServer _server;
 
         internal ReplicationCursorCollection(DirectoryServer server)
         {
@@ -56,7 +55,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (advanced)
                 {
-                    addr = IntPtr.Add(info, Marshal.SizeOf(typeof(int)) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_CURSOR_3)));
+                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_CURSOR_3)));
                     DS_REPL_CURSOR_3 cursor = new DS_REPL_CURSOR_3();
                     Marshal.PtrToStructure(addr, cursor);
 
@@ -70,7 +69,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    addr = IntPtr.Add(info, Marshal.SizeOf(typeof(int)) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_CURSOR)));
+                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_CURSOR)));
                     DS_REPL_CURSOR cursor = new DS_REPL_CURSOR();
                     Marshal.PtrToStructure(addr, cursor);
 

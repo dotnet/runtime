@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Reflection;
@@ -224,6 +223,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14925", TestRuntimes.Mono)]
         public void ExpressionsUnwrapeExternallyThrownRuntimeWrappedException(bool useInterpreter)
         {
             ParameterExpression exRWE = Expression.Variable(typeof(RuntimeWrappedException));
@@ -258,7 +258,7 @@ namespace System.Linq.Expressions.Tests
                 ModuleBuilder module = assembly.DefineDynamicModule("Name");
                 TypeBuilder type = module.DefineType("Type");
                 MethodBuilder throwingMethod = type.DefineMethod(
-                    "WillThrow", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Array.Empty<Type>());
+                    "WillThrow", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
                 ILGenerator ilGen = throwingMethod.GetILGenerator();
                 ilGen.Emit(OpCodes.Ldstr, "An Exceptional Exception!");
                 ilGen.Emit(OpCodes.Throw);
@@ -887,7 +887,7 @@ namespace System.Linq.Expressions.Tests
             */
 
             ConstantExpression builder = Expression.Constant(sb);
-            Type[] noTypes = Array.Empty<Type>();
+            Type[] noTypes = Type.EmptyTypes;
             TryExpression tryExp = Expression.TryCatch(
                 Expression.TryFinally(
                     Expression.Block(
@@ -911,7 +911,7 @@ namespace System.Linq.Expressions.Tests
         {
             StringBuilder sb = new StringBuilder();
             ConstantExpression builder = Expression.Constant(sb);
-            Type[] noTypes = Array.Empty<Type>();
+            Type[] noTypes = Type.EmptyTypes;
             TryExpression tryExp = Expression.TryCatch(
                 Expression.TryFault(
                     Expression.Block(
@@ -931,6 +931,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14924", TestRuntimes.Mono)]
         public void ExceptionThrownInFilter(bool useInterpreter)
         {
             // An exception in a filter should be eaten and the filter fail.
@@ -975,7 +976,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, func());
         }
 
-        [Fact, ActiveIssue(15719)]
+        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/20083")]
         public void TryFinallyWithinFilterCompiled()
         {
             TryFinallyWithinFilter(false);
@@ -984,7 +985,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void TryFinallyWithinFilterCompiledProhibited()
         {
-            // Ideally we can change this behaviour (see issue 15719 above),
+            // Ideally we can change this behaviour (see https://github.com/dotnet/runtime/issues/20083),
             // but for now, check correct exception thrown.
 
             TryExpression tryExp = Expression.TryCatch(
@@ -1036,7 +1037,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, func());
         }
 
-        [Fact, ActiveIssue(15719)]
+        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/20083")]
         public void TryCatchWithinFilterCompiled()
         {
             TryCatchWithinFilter(false);
@@ -1066,7 +1067,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, func());
         }
 
-        [Fact, ActiveIssue(15719)]
+        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/20083")]
         public void TryCatchThrowingWithinFilterCompiled()
         {
             TryCatchThrowingWithinFilter(false);

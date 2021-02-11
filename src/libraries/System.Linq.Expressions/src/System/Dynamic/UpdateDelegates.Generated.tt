@@ -6,7 +6,6 @@
 <#@ output extension=".cs" #>
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -160,7 +159,6 @@ for (int i = 1; i <= 10; i++)
         }
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
         internal static TRet NoMatch<#=i#><<#=genericParameters#>>(<#=parameters#>)
         {
             site._match = false;
@@ -316,7 +314,6 @@ for (int i = 1; i <= 10; i++)
         }
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
         internal static void NoMatchVoid<#=i#><<#=genericParameters#>>(<#=parameters#>)
         {
             site._match = false;

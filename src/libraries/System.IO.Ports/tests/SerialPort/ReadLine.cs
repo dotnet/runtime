@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO.PortsTests;
@@ -624,7 +623,7 @@ namespace System.IO.Ports.Tests
             byte[] bytesToWrite = com1.Encoding.GetBytes(charsToWrite);
 
             com2.Write(bytesToWrite, 0, 1);
-            // Write one byte at the begining because we are going to read this to buffer the rest of the data
+            // Write one byte at the beginning because we are going to read this to buffer the rest of the data
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
             TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length + 1);

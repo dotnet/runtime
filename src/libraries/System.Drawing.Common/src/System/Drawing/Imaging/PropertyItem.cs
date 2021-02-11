@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Drawing.Imaging
 {
@@ -13,7 +12,7 @@ namespace System.Drawing.Imaging
         private int _id;
         private int _len;
         private short _type;
-        private byte[] _value;
+        private byte[]? _value;
 
         internal PropertyItem()
         {
@@ -46,7 +45,7 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Contains the property value.
         /// </summary>
-        public byte[] Value
+        public byte[]? Value
         {
             get { return _value; }
             set { _value = value; }

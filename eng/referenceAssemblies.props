@@ -1,17 +1,15 @@
 <Project>
-  <PropertyGroup>
-    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly>
+  <PropertyGroup Condition="'$(BuildAllProjects)' == 'true' and
+                            !$(BuildTargetFramework.StartsWith('netstandard')) and
+                            !$(BuildTargetFramework.StartsWith('net4'))">
+    <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
+    <AdditionalBuildTargetFrameworks Condition="!$(BuildTargetFramework.StartsWith('netcoreapp2.0'))">$(AdditionalBuildTargetFrameworks);netstandard2.1</AdditionalBuildTargetFrameworks>
 
-    <!-- Create a common root output directory for all reference assemblies -->
-    <ReferenceAssemblyOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(MSBuildProjectName)'))</ReferenceAssemblyOutputPath>
+    <!-- Reference assemblies are special and don't initialize fields or have empty finalizers, etc. -->
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsReferenceAssembly)' == 'true'">
-    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(ReferenceAssemblyOutputPath)', 'ref'))</BaseOutputPath>
-    <OutputPath>$(BaseOutputPath)$(Configuration)</OutputPath>
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'ref'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)</IntermediateOutputPath>
-
+  <PropertyGroup>
     <!-- disable warnings about unused fields -->
     <NoWarn>$(NoWarn);CS0169;CS0649;CS8618</NoWarn>
 
@@ -25,7 +23,7 @@
     <NoWarn>$(NoWarn);CS8617</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsReferenceAssembly)' == 'true'">
+  <ItemGroup>
     <!-- All reference assemblies should have the 0x70 flag which prevents them from loading
          and the ReferenceAssemblyAttribute. -->
     <AssemblyInfoLines Include="[assembly:System.Runtime.CompilerServices.ReferenceAssembly]" />

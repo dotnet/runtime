@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -123,6 +122,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(uint))]
         [InlineData(typeof(ulong))]
         [InlineData(typeof(Uri))]
+        [InlineData(typeof(Version))]
         public static void PrimitivesShouldFailWithArrayOrObjectAssignment(Type primitiveType)
         {
             // This test lines up with the built in JsonConverters
@@ -313,6 +313,26 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadVersion()
+        {
+            Version version;
+
+            version = JsonSerializer.Deserialize<Version>(@"""1.2""");
+            Assert.Equal(new Version(1, 2), version);
+
+            version = JsonSerializer.Deserialize<Version>(@"""1.2.3""");
+            Assert.Equal(new Version(1, 2, 3), version);
+
+            version = JsonSerializer.Deserialize<Version>(@"""1.2.3.4""");
+            Assert.Equal(new Version(1, 2, 3, 4), version);
+
+            version = JsonSerializer.Deserialize<Version>("null");
+            Assert.Null(version);
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Version>(@""""""));
+        }
+
+        [Fact]
         public static void ReadPrimitiveUri()
         {
             Uri uri = JsonSerializer.Deserialize<Uri>(@"""https://domain/path""");
@@ -343,7 +363,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static void AssertFloatingPointBehavior<T>(T netcoreExpectedValue, Func<T> testCode)
         {
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<JsonException>(() => testCode());
             }
@@ -355,7 +375,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static void AssertFloatingPointBehavior<T>(T netfxExpectedValue, T netcoreExpectedValue, Func<T> testCode)
         {
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Equal(netfxExpectedValue, testCode());
             }

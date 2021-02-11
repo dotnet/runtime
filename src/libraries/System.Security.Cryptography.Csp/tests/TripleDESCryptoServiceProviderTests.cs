@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.Csp.Tests;
 using Test.Cryptography;
@@ -20,6 +19,7 @@ namespace System.Security.Cryptography.Encryption.TripleDES.Tests
             {
                 Assert.Equal(64, alg.BlockSize);
                 Assert.Equal(192, alg.KeySize);
+                Assert.Equal(8, alg.FeedbackSize);
                 Assert.Equal(CipherMode.CBC, alg.Mode);
                 Assert.Equal(PaddingMode.PKCS7, alg.Padding);
             }

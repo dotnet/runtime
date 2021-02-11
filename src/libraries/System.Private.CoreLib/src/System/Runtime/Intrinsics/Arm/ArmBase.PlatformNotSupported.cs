@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable IDE0060 // unused parameters
 using System.Runtime.CompilerServices;
@@ -11,7 +10,12 @@ namespace System.Runtime.Intrinsics.Arm
     /// This class provides access to the ARM base hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public abstract class ArmBase
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    abstract class ArmBase
     {
         internal ArmBase() { }
 
@@ -42,6 +46,16 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: CLZ Xd, Xn
             /// </summary>
             public static int LeadingZeroCount(ulong value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: SMULH Xd, Xn, Xm
+            /// </summary>
+            public static long MultiplyHigh(long left, long right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: UMULH Xd, Xn, Xm
+            /// </summary>
+            public static ulong MultiplyHigh(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   A64: RBIT Xd, Xn

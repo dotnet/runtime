@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -22,7 +21,7 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public EnvelopedCms(ContentInfo contentInfo)
-            : this(contentInfo, new AlgorithmIdentifier(Oid.FromOidValue(Oids.Aes256Cbc, OidGroup.EncryptionAlgorithm)))
+            : this(contentInfo, new AlgorithmIdentifier(Oids.Aes256CbcOid.CopyOid()))
         {
         }
 
@@ -33,7 +32,7 @@ namespace System.Security.Cryptography.Pkcs
             if (encryptionAlgorithm == null)
                 throw new ArgumentNullException(nameof(encryptionAlgorithm));
 
-            Version = 0;  // It makes little sense to ask for a version before you've decoded, but since the desktop returns 0 in that case, we will too.
+            Version = 0;  // It makes little sense to ask for a version before you've decoded, but since the .NET Framework returns 0 in that case, we will too.
             ContentInfo = contentInfo;
             ContentEncryptionAlgorithm = encryptionAlgorithm;
             Certificates = new X509Certificate2Collection();
@@ -72,6 +71,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     case LastCall.Decode:
                     case LastCall.Decrypt:
+                        Debug.Assert(_decryptorPal != null);
                         return _decryptorPal.RecipientInfos;
 
                     default:
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Pkcs
             if (recipients == null)
                 throw new ArgumentNullException(nameof(recipients));
 
-            // Desktop compat note: Unlike the desktop, we don't provide a free UI to select the recipient. The app must give it to us programmatically.
+            // .NET Framework compat note: Unlike the desktop, we don't provide a free UI to select the recipient. The app must give it to us programmatically.
             if (recipients.Count == 0)
                 throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoRecipients);
 
@@ -129,6 +129,20 @@ namespace System.Security.Cryptography.Pkcs
             if (encodedMessage == null)
                 throw new ArgumentNullException(nameof(encodedMessage));
 
+            Decode(new ReadOnlySpan<byte>(encodedMessage));
+        }
+
+        /// <summary>
+        ///   Decodes the provided data as a CMS/PKCS#7 EnvelopedData message.
+        /// </summary>
+        /// <param name="encodedMessage">
+        ///   The data to decode.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   The <paramref name="encodedMessage"/> parameter was not successfully decoded.
+        /// </exception>
+        public void Decode(ReadOnlySpan<byte> encodedMessage)
+        {
             if (_decryptorPal != null)
             {
                 _decryptorPal.Dispose();
@@ -147,7 +161,7 @@ namespace System.Security.Cryptography.Pkcs
             Certificates = originatorCerts;
             UnprotectedAttributes = unprotectedAttributes;
 
-            // Desktop compat: Encode() after a Decode() returns you the same thing that ContentInfo.Content does.
+            // .NET Framework compat: Encode() after a Decode() returns you the same thing that ContentInfo.Content does.
             _encodedMessage = contentInfo.Content.CloneByteArray();
 
             _lastCall = LastCall.Decode;
@@ -188,7 +202,7 @@ namespace System.Security.Cryptography.Pkcs
             DecryptContent(RecipientInfos, extraStore);
         }
 
-        public void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm privateKey)
+        public void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm? privateKey)
         {
             if (recipientInfo == null)
                 throw new ArgumentNullException(nameof(recipientInfo));
@@ -196,21 +210,21 @@ namespace System.Security.Cryptography.Pkcs
             CheckStateForDecryption();
 
             X509Certificate2Collection extraStore = new X509Certificate2Collection();
-            ContentInfo contentInfo = _decryptorPal.TryDecrypt(
+            ContentInfo? contentInfo = _decryptorPal!.TryDecrypt(
                 recipientInfo,
                 null,
                 privateKey,
                 Certificates,
                 extraStore,
-                out Exception exception);
+                out Exception? exception);
 
             if (exception != null)
                 throw exception;
 
-            SetContentInfo(contentInfo);
+            SetContentInfo(contentInfo!);
         }
 
-        private void DecryptContent(RecipientInfoCollection recipientInfos, X509Certificate2Collection extraStore)
+        private void DecryptContent(RecipientInfoCollection recipientInfos, X509Certificate2Collection? extraStore)
         {
             CheckStateForDecryption();
             extraStore = extraStore ?? new X509Certificate2Collection();
@@ -221,18 +235,18 @@ namespace System.Security.Cryptography.Pkcs
 
             X509Certificate2Collection originatorCerts = Certificates;
 
-            ContentInfo newContentInfo = null;
-            Exception exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
+            ContentInfo? newContentInfo = null;
+            Exception? exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
             foreach (RecipientInfo recipientInfo in recipientInfos)
             {
-                X509Certificate2 cert = certs.TryFindMatchingCertificate(recipientInfo.RecipientIdentifier);
+                X509Certificate2? cert = certs.TryFindMatchingCertificate(recipientInfo.RecipientIdentifier);
                 if (cert == null)
                 {
                     exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
                     continue;
                 }
 
-                newContentInfo = _decryptorPal.TryDecrypt(
+                newContentInfo = _decryptorPal!.TryDecrypt(
                     recipientInfo,
                     cert,
                     null,
@@ -249,7 +263,7 @@ namespace System.Security.Cryptography.Pkcs
             if (exception != null)
                 throw exception;
 
-            SetContentInfo(newContentInfo);
+            SetContentInfo(newContentInfo!);
         }
 
         private void CheckStateForDecryption()
@@ -278,7 +292,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             ContentInfo = contentInfo;
 
-            // Desktop compat: Encode() after a Decrypt() returns you the same thing that ContentInfo.Content does.
+            // .NET Framework compat: Encode() after a Decrypt() returns you the same thing that ContentInfo.Content does.
             _encodedMessage = contentInfo.Content.CloneByteArray();
 
             _lastCall = LastCall.Decrypt;
@@ -288,8 +302,8 @@ namespace System.Security.Cryptography.Pkcs
         // Instance fields
         //
 
-        private DecryptorPal _decryptorPal;
-        private byte[] _encodedMessage;
+        private DecryptorPal? _decryptorPal;
+        private byte[]? _encodedMessage;
         private LastCall _lastCall;
 
         private enum LastCall

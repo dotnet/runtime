@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -14,6 +13,7 @@ public partial class CancelKeyPressTests
     private const int WaitFailTestTimeoutSeconds = 30;
 
     [Fact]
+    [PlatformSpecific(~TestPlatforms.Browser)]
     public static void CanAddAndRemoveHandler()
     {
         ConsoleCancelEventHandler handler = (sender, e) =>
@@ -26,7 +26,7 @@ public partial class CancelKeyPressTests
         Console.CancelKeyPress -= handler;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     public void CanAddAndRemoveHandler_Remote()
     {
         // xunit registers a CancelKeyPress handler at the beginning of the test run and never

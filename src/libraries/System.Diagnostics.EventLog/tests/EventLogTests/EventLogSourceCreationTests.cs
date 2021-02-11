@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Diagnostics.Tests
 {
     public class EventLogSourceCreationTests
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36135")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckSourceExistenceAndDeletion()
         {
@@ -27,6 +28,7 @@ namespace System.Diagnostics.Tests
             Assert.False(EventLog.SourceExists(source));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36135")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void LogNameWithSame8FirstChars_NetCore()
@@ -53,6 +55,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36135")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public void LogNameWithSame8FirstChars_NetFramework()
@@ -141,6 +144,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentNullException>(() => EventLog.CreateEventSource(null));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36135")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void SourceAlreadyExistsWhenCreatingSource()
         {

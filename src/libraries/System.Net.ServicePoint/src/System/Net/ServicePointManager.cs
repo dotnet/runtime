@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.Net
@@ -18,7 +17,7 @@ namespace System.Net
         private static readonly ConcurrentDictionary<string, WeakReference<ServicePoint>> s_servicePointTable = new ConcurrentDictionary<string, WeakReference<ServicePoint>>();
         private static SecurityProtocolType s_securityProtocolType = SecurityProtocolType.SystemDefault;
         private static int s_connectionLimit = 2;
-        private static int s_maxServicePoints = 0;
+        private static int s_maxServicePoints;
         private static int s_maxServicePointIdleTime = 100 * 1000;
         private static int s_dnsRefreshTimeout = 2 * 60 * 1000;
 
@@ -36,8 +35,12 @@ namespace System.Net
 
         private static void ValidateSecurityProtocol(SecurityProtocolType value)
         {
-            SecurityProtocolType allowed = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
-            if ((value & ~allowed) != 0)
+            const SecurityProtocolType Allowed =
+#pragma warning disable CA5364 // Do Not Use Deprecated Security Protocols
+                SecurityProtocolType.Tls | SecurityProtocolType.Tls11 |
+#pragma warning restore CA5364
+                SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
+            if ((value & ~Allowed) != 0)
             {
                 throw new NotSupportedException(SR.net_securityprotocolnotsupported);
             }
@@ -94,19 +97,23 @@ namespace System.Net
             set { s_dnsRefreshTimeout = Math.Max(-1, value); }
         }
 
-        public static RemoteCertificateValidationCallback ServerCertificateValidationCallback { get; set; }
+        public static RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get; set; }
 
         public static bool ReusePort { get; set; }
 
         public static bool CheckCertificateRevocationList { get; set; }
 
+        [UnsupportedOSPlatform("browser")]
         public static EncryptionPolicy EncryptionPolicy { get; } = EncryptionPolicy.RequireEncryption;
 
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(Uri address) => FindServicePoint(address, null);
 
-        public static ServicePoint FindServicePoint(string uriString, IWebProxy proxy) => FindServicePoint(new Uri(uriString), proxy);
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        public static ServicePoint FindServicePoint(string uriString, IWebProxy? proxy) => FindServicePoint(new Uri(uriString), proxy);
 
-        public static ServicePoint FindServicePoint(Uri address, IWebProxy proxy)
+        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        public static ServicePoint FindServicePoint(Uri address, IWebProxy? proxy)
         {
             if (address == null)
             {
@@ -120,13 +127,13 @@ namespace System.Net
             string tableKey = MakeQueryString(address, isProxyServicePoint);
 
             // Get an existing service point or create a new one
-            ServicePoint sp; // outside of loop to keep references alive from one iteration to the next
+            ServicePoint? sp; // outside of loop to keep references alive from one iteration to the next
             while (true)
             {
                 // The table maps lookup key to a weak reference to a service point.  If the table
                 // contains a weak ref for the key and that weak ref points to a valid ServicePoint,
                 // simply return it (after updating its last used time).
-                WeakReference<ServicePoint> wr;
+                WeakReference<ServicePoint>? wr;
                 if (s_servicePointTable.TryGetValue(tableKey, out wr) && wr.TryGetTarget(out sp))
                 {
                     sp.IdleSince = DateTime.Now;
@@ -170,13 +177,13 @@ namespace System.Net
             }
         }
 
-        private static bool ProxyAddressIfNecessary(ref Uri address, IWebProxy proxy)
+        private static bool ProxyAddressIfNecessary(ref Uri address, IWebProxy? proxy)
         {
             if (proxy != null && !address.IsLoopback)
             {
                 try
                 {
-                    Uri proxyAddress = proxy.GetProxy(address);
+                    Uri? proxyAddress = proxy.GetProxy(address);
                     if (proxyAddress != null)
                     {
                         if (proxyAddress.Scheme != Uri.UriSchemeHttp)

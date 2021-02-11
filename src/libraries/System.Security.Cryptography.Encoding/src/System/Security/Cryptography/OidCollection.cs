@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using Internal.Cryptography;
@@ -41,12 +40,12 @@ namespace System.Security.Cryptography
         }
 
         // Indexer using an OID friendly name or value.
-        public Oid this[string oid]
+        public Oid? this[string oid]
         {
             get
             {
                 // If we were passed the friendly name, retrieve the value String.
-                string oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
+                string? oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
                 if (oidValue == null)
                 {
                     oidValue = oid;

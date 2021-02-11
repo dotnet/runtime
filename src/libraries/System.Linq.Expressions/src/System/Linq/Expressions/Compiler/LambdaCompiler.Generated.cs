@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Dynamic.Utils;
@@ -11,7 +10,6 @@ namespace System.Linq.Expressions.Compiler
     {
         private readonly StackGuard _guard = new StackGuard();
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1505:AvoidUnmaintainableCode"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitExpression(Expression node, CompilationFlags flags)
         {
             // When compiling deep trees, we run the risk of triggering a terminating StackOverflowException,

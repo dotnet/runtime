@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection.Runtime.TypeInfos;
@@ -21,7 +20,7 @@ namespace System.Reflection.TypeLoading
 
             if (toTypeInfo.IsGenericTypeDefinition)
             {
-                // Asking whether something can cast to a generic type definition is arguably meaningless. The desktop CLR Reflection layer converts all
+                // Asking whether something can cast to a generic type definition is arguably meaningless. The .NET Framework CLR Reflection layer converts all
                 // generic type definitions to generic type instantiations closed over the formal generic type parameters. The .NET Native framework
                 // keeps the two separate. Fortunately, under either interpretation, returning "false" unless the two types are identical is still a
                 // defensible behavior. To avoid having the rest of the code deal with the differing interpretations, we'll short-circuit this now.
@@ -30,7 +29,7 @@ namespace System.Reflection.TypeLoading
 
             if (fromTypeInfo.IsGenericTypeDefinition)
             {
-                // The desktop CLR Reflection layer converts all generic type definitions to generic type instantiations closed over the formal
+                // The .NET Framework CLR Reflection layer converts all generic type definitions to generic type instantiations closed over the formal
                 // generic type parameters. The .NET Native framework keeps the two separate. For the purpose of IsAssignableFrom(),
                 // it makes sense to unify the two for the sake of backward compat. We'll just make the transform here so that the rest of code
                 // doesn't need to know about this quirk.
@@ -40,7 +39,7 @@ namespace System.Reflection.TypeLoading
             if (fromTypeInfo.CanCastTo(toTypeInfo, coreTypes))
                 return true;
 
-            // Desktop compat: IsAssignableFrom() considers T as assignable to Nullable<T> (but does not check if T is a generic parameter.)
+            // .NET Framework compat: IsAssignableFrom() considers T as assignable to Nullable<T> (but does not check if T is a generic parameter.)
             if (!fromTypeInfo.IsGenericParameter)
             {
                 if (toTypeInfo.IsConstructedGenericType && toTypeInfo.GetGenericTypeDefinition() == coreTypes[CoreType.NullableT])
@@ -84,8 +83,8 @@ namespace System.Reflection.TypeLoading
                     }
                 }
 
-                Type toElementTypeInfo = toTypeInfo.GetElementType();
-                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                Type toElementTypeInfo = toTypeInfo.GetElementType()!;
+                Type fromElementTypeInfo = fromTypeInfo.GetElementType()!;
                 return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, coreTypes);
             }
 
@@ -94,8 +93,8 @@ namespace System.Reflection.TypeLoading
                 if (!toTypeInfo.IsByRef)
                     return false;
 
-                Type toElementTypeInfo = toTypeInfo.GetElementType();
-                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                Type toElementTypeInfo = toTypeInfo.GetElementType()!;
+                Type fromElementTypeInfo = fromTypeInfo.GetElementType()!;
                 return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, coreTypes);
             }
 
@@ -110,8 +109,8 @@ namespace System.Reflection.TypeLoading
                 if (!toTypeInfo.IsPointer)
                     return false;
 
-                Type toElementTypeInfo = toTypeInfo.GetElementType();
-                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                Type toElementTypeInfo = toTypeInfo.GetElementType()!;
+                Type fromElementTypeInfo = fromTypeInfo.GetElementType()!;
                 return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, coreTypes);
             }
 
@@ -166,7 +165,7 @@ namespace System.Reflection.TypeLoading
                 Type walk = fromTypeInfo;
                 while (true)
                 {
-                    Type baseType = walk.BaseType;
+                    Type? baseType = walk.BaseType;
                     if (baseType == null)
                         return false;
                     walk = baseType;
@@ -236,7 +235,7 @@ namespace System.Reflection.TypeLoading
         //    A and B are both integers or enums and have the same reduced type (i.e. represent the same-sized integer, ignoring signed/unsigned differences.)
         //        "char" is not interchangable with short/ushort. "bool" is not interchangable with byte/sbyte.
         //
-        // For desktop compat, A& and A* follow the same rules.
+        // For .NET Framework compat, A& and A* follow the same rules.
         //
         private static bool IsElementTypeCompatibleWith(this Type fromTypeInfo, Type toTypeInfo, CoreTypes coreTypes)
         {
@@ -344,7 +343,7 @@ namespace System.Reflection.TypeLoading
                 Type toElementTypeInfo = toTypeGenericTypeArguments[0];
 
                 Type toTypeGenericTypeDefinition = toTypeInfo.GetGenericTypeDefinition();
-                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                Type? fromElementTypeInfo = fromTypeInfo.GetElementType();
                 foreach (Type ifc in fromTypeInfo.GetInterfaces())
                 {
                     if (ifc.IsConstructedGenericType)
@@ -352,7 +351,7 @@ namespace System.Reflection.TypeLoading
                         Type ifcGenericTypeDefinition = ifc.GetGenericTypeDefinition();
                         if (ifcGenericTypeDefinition.Equals(toTypeGenericTypeDefinition))
                         {
-                            if (fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, coreTypes))
+                            if (fromElementTypeInfo!.IsElementTypeCompatibleWith(toElementTypeInfo, coreTypes))
                                 return true;
                         }
                     }

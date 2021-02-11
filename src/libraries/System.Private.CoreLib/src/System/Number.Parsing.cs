@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -42,17 +41,8 @@ namespace System
         private const int SingleMaxExponent = 39;
         private const int SingleMinExponent = -45;
 
-        /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
-        internal static ReadOnlySpan<byte> CharToHexLookup => new byte[]
-        {
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 15
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 31
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 47
-            0x0,  0x1,  0x2,  0x3,  0x4,  0x5,  0x6,  0x7,  0x8,  0x9,  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 63
-            0xFF, 0xA,  0xB,  0xC,  0xD,  0xE,  0xF,  0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 79
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 95
-            0xFF, 0xa,  0xb,  0xc,  0xd,  0xe,  0xf // 102
-        };
+        private const int HalfMaxExponent = 5;
+        private const int HalfMinExponent = -8;
 
         private static unsafe bool TryNumberToInt32(ref NumberBuffer number, ref int value)
         {
@@ -305,7 +295,7 @@ namespace System
                 // "-Kr 1231.47" is legal but "- 1231.47" is not.
                 if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && info.NumberNegativePattern != 2)))
                 {
-                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchChars(p, strEnd, info.NegativeSign)) != null && (number.IsNegative = true))))
+                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchNegativeSignChars(p, strEnd, info)) != null && (number.IsNegative = true))))
                     {
                         state |= StateSign;
                         p = next - 1;
@@ -403,7 +393,7 @@ namespace System
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                     }
-                    else if ((next = MatchChars(p, strEnd, info._negativeSign)) != null)
+                    else if ((next = MatchNegativeSignChars(p, strEnd, info)) != null)
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                         negExp = true;
@@ -440,7 +430,7 @@ namespace System
                 {
                     if (!IsWhite(ch) || (styles & NumberStyles.AllowTrailingWhite) == 0)
                     {
-                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchChars(p, strEnd, info.NegativeSign)) != null) && (number.IsNegative = true))))
+                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchNegativeSignChars(p, strEnd, info)) != null) && (number.IsNegative = true))))
                         {
                             state |= StateSign;
                             p = next - 1;
@@ -564,6 +554,14 @@ namespace System
                             goto FalseExit;
                         num = value[index];
                     }
+                }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    sign = -1;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
                 }
                 else
                 {
@@ -735,6 +733,14 @@ namespace System
                             goto FalseExit;
                         num = value[index];
                     }
+                }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    sign = -1;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
                 }
                 else
                 {
@@ -980,6 +986,14 @@ namespace System
                         num = value[index];
                     }
                 }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    overflow = true;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
+                }
                 else
                 {
                     value = value.Slice(index);
@@ -1106,7 +1120,7 @@ namespace System
         }
 
         /// <summary>Parses uint limited to styles that make up NumberStyles.HexNumber.</summary>
-        private static ParsingStatus TryParseUInt32HexNumberStyle(ReadOnlySpan<char> value, NumberStyles styles, out uint result)
+        internal static ParsingStatus TryParseUInt32HexNumberStyle(ReadOnlySpan<char> value, NumberStyles styles, out uint result)
         {
             Debug.Assert((styles & ~NumberStyles.HexNumber) == 0, "Only handles subsets of HexNumber format");
 
@@ -1131,9 +1145,8 @@ namespace System
 
             bool overflow = false;
             uint answer = 0;
-            ReadOnlySpan<byte> charToHexLookup = CharToHexLookup;
 
-            if ((uint)num < (uint)charToHexLookup.Length && charToHexLookup[num] != 0xFF)
+            if (HexConverter.IsHexChar(num))
             {
                 // Skip past leading zeros.
                 if (num == '0')
@@ -1145,12 +1158,12 @@ namespace System
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
-                    if ((uint)num >= (uint)charToHexLookup.Length || charToHexLookup[num] == 0xFF)
+                    if (!HexConverter.IsHexChar(num))
                         goto HasTrailingChars;
                 }
 
                 // Parse up through 8 digits, as no overflow is possible
-                answer = charToHexLookup[num]; // first digit
+                answer = (uint)HexConverter.FromChar(num); // first digit
                 index++;
                 for (int i = 0; i < 7; i++) // next 7 digits can't overflow
                 {
@@ -1158,8 +1171,8 @@ namespace System
                         goto DoneAtEnd;
                     num = value[index];
 
-                    uint numValue;
-                    if ((uint)num >= (uint)charToHexLookup.Length || (numValue = charToHexLookup[num]) == 0xFF)
+                    uint numValue = (uint)HexConverter.FromChar(num);
+                    if (numValue == 0xFF)
                         goto HasTrailingChars;
                     index++;
                     answer = 16 * answer + numValue;
@@ -1169,7 +1182,7 @@ namespace System
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEnd;
                 num = value[index];
-                if ((uint)num >= (uint)charToHexLookup.Length || charToHexLookup[num] == 0xFF)
+                if (!HexConverter.IsHexChar(num))
                     goto HasTrailingChars;
 
                 // At this point, we're either overflowing or hitting a formatting error.
@@ -1180,7 +1193,7 @@ namespace System
                     if ((uint)index >= (uint)value.Length)
                         goto OverflowExit;
                     num = value[index];
-                } while ((uint)num < (uint)charToHexLookup.Length && charToHexLookup[num] != 0xFF);
+                } while (HexConverter.IsHexChar(num));
                 overflow = true;
                 goto HasTrailingChars;
             }
@@ -1308,6 +1321,14 @@ namespace System
                             goto FalseExit;
                         num = value[index];
                     }
+                }
+                else if (info.AllowHyphenDuringParsing && num == '-')
+                {
+                    overflow = true;
+                    index++;
+                    if ((uint)index >= (uint)value.Length)
+                        goto FalseExit;
+                    num = value[index];
                 }
                 else
                 {
@@ -1460,9 +1481,8 @@ namespace System
 
             bool overflow = false;
             ulong answer = 0;
-            ReadOnlySpan<byte> charToHexLookup = CharToHexLookup;
 
-            if ((uint)num < (uint)charToHexLookup.Length && charToHexLookup[num] != 0xFF)
+            if (HexConverter.IsHexChar(num))
             {
                 // Skip past leading zeros.
                 if (num == '0')
@@ -1474,12 +1494,12 @@ namespace System
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
-                    if ((uint)num >= (uint)charToHexLookup.Length || charToHexLookup[num] == 0xFF)
+                    if (!HexConverter.IsHexChar(num))
                         goto HasTrailingChars;
                 }
 
                 // Parse up through 16 digits, as no overflow is possible
-                answer = charToHexLookup[num]; // first digit
+                answer = (uint)HexConverter.FromChar(num); // first digit
                 index++;
                 for (int i = 0; i < 15; i++) // next 15 digits can't overflow
                 {
@@ -1487,8 +1507,8 @@ namespace System
                         goto DoneAtEnd;
                     num = value[index];
 
-                    uint numValue;
-                    if ((uint)num >= (uint)charToHexLookup.Length || (numValue = charToHexLookup[num]) == 0xFF)
+                    uint numValue = (uint)HexConverter.FromChar(num);
+                    if (numValue == 0xFF)
                         goto HasTrailingChars;
                     index++;
                     answer = 16 * answer + numValue;
@@ -1498,7 +1518,7 @@ namespace System
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEnd;
                 num = value[index];
-                if ((uint)num >= (uint)charToHexLookup.Length || charToHexLookup[num] == 0xFF)
+                if (!HexConverter.IsHexChar(num))
                     goto HasTrailingChars;
 
                 // At this point, we're either overflowing or hitting a formatting error.
@@ -1509,7 +1529,7 @@ namespace System
                     if ((uint)index >= (uint)value.Length)
                         goto OverflowExit;
                     num = value[index];
-                } while ((uint)num < (uint)charToHexLookup.Length && charToHexLookup[num] != 0xFF);
+                } while (HexConverter.IsHexChar(num));
                 overflow = true;
                 goto HasTrailingChars;
             }
@@ -1707,6 +1727,16 @@ namespace System
             return result;
         }
 
+        internal static Half ParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        {
+            if (!TryParseHalf(value, styles, info, out Half result))
+            {
+                ThrowOverflowOrFormatException(ParsingStatus.Failed);
+            }
+
+            return result;
+        }
+
         internal static unsafe ParsingStatus TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
         {
             byte* pDigits = stackalloc byte[DecimalNumberBufferLength];
@@ -1726,6 +1756,8 @@ namespace System
 
             return ParsingStatus.OK;
         }
+
+        internal static bool SpanStartsWith(ReadOnlySpan<char> span, char c) => !span.IsEmpty && span[0] == c;
 
         internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
         {
@@ -1770,8 +1802,8 @@ namespace System
                         return false;
                     }
                 }
-                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                        valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                else if ((valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) && valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol)) ||
+                        (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol)))
                 {
                     result = double.NaN;
                 }
@@ -1784,6 +1816,78 @@ namespace System
             else
             {
                 result = NumberToDouble(ref number);
+            }
+
+            return true;
+        }
+
+        internal static unsafe bool TryParseHalf(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Half result)
+        {
+            byte* pDigits = stackalloc byte[HalfNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, HalfNumberBufferLength);
+
+            if (!TryStringToNumber(value, styles, ref number, info))
+            {
+                ReadOnlySpan<char> valueTrim = value.Trim();
+
+                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
+                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
+                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
+                //
+                // Additionally, since some cultures ("wo") actually define `PositiveInfinitySymbol`
+                // to include `PositiveSign`, we need to check whether `PositiveInfinitySymbol` fits
+                // that case so that we don't start parsing things like `++infini`.
+
+                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                {
+                    result = Half.PositiveInfinity;
+                }
+                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
+                {
+                    result = Half.NegativeInfinity;
+                }
+                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = Half.NaN;
+                }
+                else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    valueTrim = valueTrim.Slice(info.PositiveSign.Length);
+
+                    if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                    {
+                        result = Half.PositiveInfinity;
+                    }
+                    else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                    {
+                        result = Half.NaN;
+                    }
+                    else
+                    {
+                        result = (Half)0;
+                        return false;
+                    }
+                }
+                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = Half.NaN;
+                }
+                else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = Half.NaN;
+                }
+                else
+                {
+                    result = (Half)0;
+                    return false; // We really failed
+                }
+            }
+            else
+            {
+                result = NumberToHalf(ref number);
             }
 
             return true;
@@ -1842,6 +1946,11 @@ namespace System
                 {
                     result = float.NaN;
                 }
+                else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = float.NaN;
+                }
                 else
                 {
                     result = 0;
@@ -1890,6 +1999,18 @@ namespace System
 
         private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe char* MatchNegativeSignChars(char* p, char* pEnd, NumberFormatInfo info)
+        {
+            char *ret = MatchChars(p, pEnd, info.NegativeSign);
+            if (ret == null && info.AllowHyphenDuringParsing && p < pEnd && *p == '-')
+            {
+                ret = p + 1;
+            }
+
+            return ret;
+        }
+
         private static unsafe char* MatchChars(char* p, char* pEnd, string value)
         {
             Debug.Assert(p != null && pEnd != null && p <= pEnd && value != null);
@@ -1919,7 +2040,7 @@ namespace System
             return null;
         }
 
-        // Ternary op is a workaround for https://github.com/dotnet/coreclr/issues/914
+        // Ternary op is a workaround for https://github.com/dotnet/runtime/issues/4207
         private static bool IsWhite(int ch) => ch == 0x20 || (uint)(ch - 0x09) <= (0x0D - 0x09) ? true : false;
 
         private static bool IsDigit(int ch) => ((uint)ch - '0') <= 9;
@@ -1992,11 +2113,33 @@ namespace System
             }
             else
             {
-                ulong bits = NumberToFloatingPointBits(ref number, in FloatingPointInfo.Double);
+                ulong bits = NumberToDoubleFloatingPointBits(ref number, in FloatingPointInfo.Double);
                 result = BitConverter.Int64BitsToDouble((long)(bits));
             }
 
             return number.IsNegative ? -result : result;
+        }
+
+        internal static Half NumberToHalf(ref NumberBuffer number)
+        {
+            number.CheckConsistency();
+            Half result;
+
+            if ((number.DigitsCount == 0) || (number.Scale < HalfMinExponent))
+            {
+                result = default;
+            }
+            else if (number.Scale > HalfMaxExponent)
+            {
+                result = Half.PositiveInfinity;
+            }
+            else
+            {
+                ushort bits = NumberToHalfFloatingPointBits(ref number, in FloatingPointInfo.Half);
+                result = new Half(bits);
+            }
+
+            return number.IsNegative ? Half.Negate(result) : result;
         }
 
         internal static float NumberToSingle(ref NumberBuffer number)
@@ -2014,7 +2157,7 @@ namespace System
             }
             else
             {
-                uint bits = (uint)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Single));
+                uint bits = NumberToSingleFloatingPointBits(ref number, in FloatingPointInfo.Single);
                 result = BitConverter.Int32BitsToSingle((int)(bits));
             }
 

@@ -4,10 +4,11 @@
     <BinPlaceSatelliteAssemblies>true</BinPlaceSatelliteAssemblies>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MissingManifestResourceExceptionTests.cs" />
+    <Compile Include="TrimCompatibilityTests.cs" />
     <Compile Include="NeutralResourcesLanguageAttributeTests.cs" />
     <Compile Include="ResourceManagerTests.cs" />
     <Compile Include="Resources\TestResx.Designer.cs">
@@ -18,9 +19,8 @@
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
     <Compile Include="MissingSatelliteAssemblyException.cs" />
     <Compile Include="ResourceSetTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs">
-      <Link>Common\System\Drawing\Helpers.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
+             Link="Common\System\Drawing\Helpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\TestResx.netstandard17.resources">
@@ -44,18 +44,24 @@
     <EmbeddedResource Include="Resources\TestResx.es-MX.resx"/>
     <EmbeddedResource Include="Resources\TestResx.fr-FR.resx"/>
     <EmbeddedResource Include="Resources\TestClassWithoutNeutralResources.fr.resx"/>
-    <None Include="Resources\TestResx.netstandard17.resources"
+    <EmbeddedResource Include="Resources\CustomReader.resx" />
+    <Content Include="Resources\TestResx.netstandard17.resources"
           Link="%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
           Visible="false" />
-    <None Include="Resources\bitmap.bmp"
+    <Content Include="Resources\bitmap.bmp"
           Link="%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
           Visible="false" />
-    <None Include="Resources\icon.ico"
+    <Content Include="Resources\icon.ico"
           Link="%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest"
-          Visible="false" />          
+          Visible="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
+    <!--Reference to System.Resources.Extensions is required in order to be able to embed a resource that requires a custom reader-->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Resources.Extensions\src\System.Resources.Extensions.csproj" />
   </ItemGroup>
   <!--
     MSBuild on .NET Core doesn't support non-string resources. See https://github.com/Microsoft/msbuild/issues/2221

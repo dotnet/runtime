@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -10,7 +9,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Tests for the constructors of AnonymousPipeServerStream
     /// </summary>
-    public class AnonymousPipeTest_CreateServer : AnonymousPipeTestBase
+    public class AnonymousPipeTest_CreateServer
     {
         [Fact]
         public static void InOutPipeDirection_Throws_NotSupportedException()

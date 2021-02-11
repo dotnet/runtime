@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -14,9 +13,8 @@ namespace System.IO.Pipes
     public abstract partial class PipeStream : Stream
     {
         internal const string AnonymousPipeName = "anonymous";
-        private static readonly Task<int> s_zeroTask = Task.FromResult(0);
 
-        private SafePipeHandle _handle;
+        private SafePipeHandle? _handle;
         private bool _canRead;
         private bool _canWrite;
         private bool _isAsync;
@@ -94,7 +92,7 @@ namespace System.IO.Pipes
         // Once a PipeStream has a handle ready, it should call this method to set up the PipeStream.  If
         // the pipe is in a connected state already, it should also set the IsConnected (protected) property.
         // This method may also be called to uninitialize a handle, setting it to null.
-        protected void InitializeHandle(SafePipeHandle handle, bool isExposed, bool isAsync)
+        protected void InitializeHandle(SafePipeHandle? handle, bool isExposed, bool isAsync)
         {
             if (isAsync && handle != null)
             {
@@ -116,7 +114,7 @@ namespace System.IO.Pipes
                 return ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
             }
 
-            CheckReadWriteArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             if (!CanRead)
             {
                 throw Error.GetReadNotSupported();
@@ -144,7 +142,7 @@ namespace System.IO.Pipes
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            CheckReadWriteArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             if (!CanRead)
             {
                 throw Error.GetReadNotSupported();
@@ -165,7 +163,7 @@ namespace System.IO.Pipes
             if (count == 0)
             {
                 UpdateMessageCompletion(false);
-                return s_zeroTask;
+                return Task.FromResult(0);
             }
 
             return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
@@ -185,7 +183,7 @@ namespace System.IO.Pipes
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
             CheckReadOperations();
@@ -199,7 +197,7 @@ namespace System.IO.Pipes
             return ReadAsyncCore(buffer, cancellationToken);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (_isAsync)
                 return TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
@@ -223,7 +221,7 @@ namespace System.IO.Pipes
                 return;
             }
 
-            CheckReadWriteArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             if (!CanWrite)
             {
                 throw Error.GetWriteNotSupported();
@@ -252,7 +250,7 @@ namespace System.IO.Pipes
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            CheckReadWriteArgs(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             if (!CanWrite)
             {
                 throw Error.GetWriteNotSupported();
@@ -292,7 +290,7 @@ namespace System.IO.Pipes
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask(Task.FromCanceled<int>(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             CheckWriteOperations();
@@ -305,7 +303,7 @@ namespace System.IO.Pipes
             return new ValueTask(WriteAsyncCore(buffer, cancellationToken));
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (_isAsync)
                 return TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
@@ -319,18 +317,6 @@ namespace System.IO.Pipes
                 TaskToApm.End(asyncResult);
             else
                 base.EndWrite(asyncResult);
-        }
-
-        private void CheckReadWriteArgs(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
         }
 
         [Conditional("DEBUG")]
@@ -353,15 +339,12 @@ namespace System.IO.Pipes
             Write(new ReadOnlySpan<byte>(&value, 1));
         }
 
-        // Does nothing on PipeStreams.  We cannot call Interop.FlushFileBuffers here because we can deadlock
-        // if the other end of the pipe is no longer interested in reading from the pipe.
         public override void Flush()
         {
             CheckWriteOperations();
-            if (!CanWrite)
-            {
-                throw Error.GetWriteNotSupported();
-            }
+
+            // Does nothing on PipeStreams.  We cannot call Interop.FlushFileBuffers here because we can deadlock
+            // if the other end of the pipe is no longer interested in reading from the pipe.
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
@@ -424,7 +407,6 @@ namespace System.IO.Pipes
         // message, otherwise it is set to true.
         public bool IsMessageComplete
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 // omitting pipe broken exception to allow reader to finish getting message
@@ -465,7 +447,6 @@ namespace System.IO.Pipes
 
         public SafePipeHandle SafePipeHandle
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 if (_handle == null)
@@ -482,7 +463,7 @@ namespace System.IO.Pipes
             }
         }
 
-        internal SafePipeHandle InternalHandle
+        internal SafePipeHandle? InternalHandle
         {
             get
             {

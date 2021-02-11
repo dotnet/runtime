@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -12,9 +11,9 @@ namespace System.Net.Security
 {
     internal sealed class SafeDeleteNegoContext : SafeDeleteContext
     {
-        private SafeGssCredHandle _acceptorCredential;
-        private SafeGssNameHandle _targetName;
-        private SafeGssContextHandle _context;
+        private SafeGssCredHandle? _acceptorCredential;
+        private SafeGssNameHandle? _targetName;
+        private SafeGssContextHandle? _context;
         private bool _isNtlmUsed;
 
         public SafeGssCredHandle AcceptorCredential
@@ -26,7 +25,7 @@ namespace System.Net.Security
             }
         }
 
-        public SafeGssNameHandle TargetName
+        public SafeGssNameHandle? TargetName
         {
             get { return _targetName; }
         }
@@ -37,7 +36,7 @@ namespace System.Net.Security
             get { return _isNtlmUsed; }
         }
 
-        public SafeGssContextHandle GssContext
+        public SafeGssContextHandle? GssContext
         {
             get { return _context; }
         }

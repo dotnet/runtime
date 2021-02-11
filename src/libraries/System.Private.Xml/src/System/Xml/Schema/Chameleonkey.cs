@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Collections;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Xml.Serialization;
 
 namespace System.Xml.Schema
 {
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Xml.Serialization;
-
     // Case insensitive file name key for use in a hashtable.
 
     internal class ChameleonKey
@@ -18,7 +18,7 @@ namespace System.Xml.Schema
         // Original schema (used for reference equality only)
         //   stored only when the chameleonLocation is an empty URI in which case the location
         //   is not a good enough identification of the schema
-        internal XmlSchema originalSchema;
+        internal XmlSchema? originalSchema;
         private int _hashCode;
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace System.Xml.Schema
         public ChameleonKey(string ns, XmlSchema originalSchema)
         {
             targetNS = ns;
-            chameleonLocation = originalSchema.BaseUri;
+            chameleonLocation = originalSchema.BaseUri!;
             if (chameleonLocation.OriginalString.Length == 0)
             {
                 // Only store the original schema when the location is empty URI
@@ -50,13 +50,13 @@ namespace System.Xml.Schema
             return _hashCode;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (Ref.ReferenceEquals(this, obj))
             {
                 return true;
             }
-            ChameleonKey cKey = obj as ChameleonKey;
+            ChameleonKey? cKey = obj as ChameleonKey;
             if (cKey != null)
             {
                 // We want to compare the target NS and the schema location.

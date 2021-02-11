@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Globalization
 {
@@ -102,7 +101,7 @@ namespace System.Globalization
         internal Calendar m_Cal;
 
         internal EraInfo[] m_EraInfo;
-        internal int[]? m_eras = null;
+        internal int[]? m_eras;
 
         // Construct an instance of gregorian calendar.
         internal GregorianCalendarHelper(Calendar cal, EraInfo[] eraInfo)
@@ -211,7 +210,7 @@ namespace System.Globalization
 
         // Returns a given date part of this DateTime. This method is used
         // to compute the year, day-of-year, month, or day part.
-        internal virtual int GetDatePart(long ticks, int part)
+        internal int GetDatePart(long ticks, int part)
         {
             CheckTicksRange(ticks);
             // n = number of days since 1/1/0001
@@ -444,7 +443,7 @@ namespace System.Globalization
             year = GetGregorianYear(year, era);
             if (month < 1 || month > 12)
             {
-                throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_Month);
+                ThrowHelper.ThrowArgumentOutOfRange_Month(month);
             }
             int[] days = ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365);
             return days[month] - days[month - 1];
@@ -624,7 +623,7 @@ namespace System.Globalization
             return new DateTime(ticks);
         }
 
-        public virtual int GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
+        public int GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
         {
             CheckTicksRange(time.Ticks);
             // Use GregorianCalendar to get around the problem that the implmentation in Calendar.GetWeekOfYear()

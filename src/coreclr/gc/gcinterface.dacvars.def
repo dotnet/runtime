@@ -1,0 +1,66 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// This file contains the defintions of all DAC variables that the G
+// exports and that the DAC uses to interface with the GC.
+//
+// This interface has a strict semantic versioning. The following changes require
+// a bump to the major version number:
+//   1. Changing the type of any of these variables,
+//   2. Changing the type layouts of any of the types in gcinterface.dac.h,
+//      (dac_generation, dac_heap_segment, dac_finalize_queue)
+//   3. Changing the semantic meaning of any of these variables, such that the DAC's
+//      use of them is no longer correct,
+//
+// The following change requires a bump to the minor version number:
+//   1. Adding additional DAC variables.
+//
+// Minor version mismatches are tolerated by the DAC, at the risk of a possibly
+// degraded debugging experience.
+// Major version mismatches are not tolerated by the DAC and will be rejected upon load.
+
+#ifndef GC_DAC_VAR
+ #define GC_DAC_VAR(type, name)
+#endif // GC_DAC_VAR
+
+#ifndef GC_DAC_ARRAY_VAR
+ #define GC_DAC_ARRAY_VAR(type, name) GC_DAC_VAR(type*, name)
+#endif // GC_DAC_ARRAY_VAR
+
+#ifndef GC_DAC_PTR_VAR
+ #define GC_DAC_PTR_VAR(type, name) GC_DAC_VAR(type*, name)
+#endif // GC_DAC_PTR_VAR
+
+// This sequence of macros defines the specific variables that are exposed by the
+// GC to the DAC.
+GC_DAC_VAR        (uint8_t,               build_variant)
+GC_DAC_VAR        (bool,                  built_with_svr)
+GC_DAC_ARRAY_VAR  (size_t,                gc_global_mechanisms)
+GC_DAC_ARRAY_VAR  (dac_generation,        generation_table)
+GC_DAC_VAR        (uint32_t,              max_gen)
+GC_DAC_PTR_VAR    (uint32_t,              mark_array)
+GC_DAC_VAR        (c_gc_state,            current_c_gc_state)
+GC_DAC_PTR_VAR    (dac_heap_segment,      ephemeral_heap_segment)
+GC_DAC_PTR_VAR    (dac_heap_segment,      saved_sweep_ephemeral_seg)
+GC_DAC_PTR_VAR    (uint8_t,               saved_sweep_ephemeral_start)
+GC_DAC_PTR_VAR    (uint8_t,               background_saved_lowest_address)
+GC_DAC_PTR_VAR    (uint8_t,               background_saved_highest_address)
+GC_DAC_PTR_VAR    (uint8_t,               alloc_allocated)
+GC_DAC_PTR_VAR    (uint8_t,               next_sweep_obj)
+GC_DAC_VAR        (oom_history,           oom_info)
+GC_DAC_PTR_VAR    (dac_finalize_queue,    finalize_queue)
+GC_DAC_PTR_VAR    (uint8_t*,              internal_root_array)
+GC_DAC_VAR        (size_t,                internal_root_array_index)
+GC_DAC_VAR        (BOOL,                  heap_analyze_success)
+GC_DAC_VAR        (int,                   n_heaps)
+GC_DAC_PTR_VAR    (dac_gc_heap*,          g_heaps)
+GC_DAC_VAR        (int32_t,               gc_structures_invalid_cnt)
+GC_DAC_ARRAY_VAR  (size_t,                interesting_data_per_heap)
+GC_DAC_ARRAY_VAR  (size_t,                compact_reasons_per_heap)
+GC_DAC_ARRAY_VAR  (size_t,                expand_mechanisms_per_heap)
+GC_DAC_ARRAY_VAR  (size_t,                interesting_mechanism_bits_per_heap)
+GC_DAC_VAR        (dac_handle_table_map,  handle_table_map)
+
+#undef GC_DAC_VAR
+#undef GC_DAC_ARRAY_VAR
+#undef GC_DAC_PTR_VAR

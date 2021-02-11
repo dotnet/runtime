@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -93,7 +92,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValue_Char()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<char> span = new Span<char>(new char[] { '0', '1', '2', '3', '4', '5' });
             Span<char> value = new Span<char>(new char[] { '2' });
             int index = span.IndexOf(value);
@@ -103,7 +101,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValueAtVeryEnd_Char()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<char> span = new Span<char>(new char[] { '0', '1', '2', '3', '4', '5' });
             Span<char> value = new Span<char>(new char[] { '5' });
             int index = span.IndexOf(value);
@@ -113,7 +110,6 @@ namespace System.SpanTests
         [Fact]
         public static void IndexOfSequenceLengthOneValueJustPasttVeryEnd_Char()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<char> span = new Span<char>(new char[] { '0', '1', '2', '3', '4', '5' }, 0, 5);
             Span<char> value = new Span<char>(new char[] { '5' });
             int index = span.IndexOf(value);

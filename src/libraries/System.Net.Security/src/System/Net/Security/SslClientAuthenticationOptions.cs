@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -22,15 +21,15 @@ namespace System.Net.Security
             set => _allowRenegotiation = value;
         }
 
-        public LocalCertificateSelectionCallback LocalCertificateSelectionCallback { get; set; }
+        public LocalCertificateSelectionCallback? LocalCertificateSelectionCallback { get; set; }
 
-        public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; set; }
+        public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get; set; }
 
-        public List<SslApplicationProtocol> ApplicationProtocols { get; set; }
+        public List<SslApplicationProtocol>? ApplicationProtocols { get; set; }
 
-        public string TargetHost { get; set; }
+        public string? TargetHost { get; set; }
 
-        public X509CertificateCollection ClientCertificates { get; set; }
+        public X509CertificateCollection? ClientCertificates { get; set; }
 
         public X509RevocationMode CertificateRevocationCheckMode
         {
@@ -71,6 +70,6 @@ namespace System.Net.Security
         /// When set to null operating system default will be used.
         /// Use extreme caution when changing this setting.
         /// </summary>
-        public CipherSuitesPolicy CipherSuitesPolicy { get; set; }
+        public CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
     }
 }

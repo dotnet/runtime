@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -25,8 +24,8 @@ namespace System.Xml.Xsl.IlGen
         /// Check environment variable in order to determine whether to write out trace files.  This really should be a
         /// check of the configuration file, but System.Xml does not yet have a good tracing story.
         /// </summary>
-        private static volatile string s_dirName = null;
-        private static volatile bool s_alreadyCheckedEnabled = false;
+        private static volatile string? s_dirName;
+        private static volatile bool s_alreadyCheckedEnabled;
 
         /// <summary>
         /// True if tracing has been enabled (environment variable set).
@@ -72,7 +71,7 @@ namespace System.Xml.Xsl.IlGen
         /// If tracing is enabled, this method will open a TextWriter over "fileName" and return it.  Otherwise,
         /// null will be returned.
         /// </summary>
-        public static TextWriter GetTraceWriter(string fileName)
+        public static TextWriter? GetTraceWriter(string fileName)
         {
             if (!IsEnabled)
                 return null;
@@ -166,7 +165,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Serialize rewritten Qil tree to writer "w".
         /// </summary>
-        private static void WriteQilRewrite(QilExpression qil, XmlWriter w, string rewriteName)
+        private static void WriteQilRewrite(QilExpression qil, XmlWriter w, string? rewriteName)
         {
             w.WriteStartElement("Diff");
             if (rewriteName != null)
@@ -180,22 +179,22 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         private static string OptimizationToString(int opt)
         {
-            string s = Enum.GetName(typeof(XmlILOptimization), opt);
+            string s = Enum.GetName(typeof(XmlILOptimization), opt)!;
             if (s.StartsWith("Introduce", StringComparison.Ordinal))
             {
-                return s.Substring(9) + " introduction";
+                return string.Concat(s.AsSpan(9), " introduction");
             }
             else if (s.StartsWith("Eliminate", StringComparison.Ordinal))
             {
-                return s.Substring(9) + " elimination";
+                return string.Concat(s.AsSpan(9), " elimination");
             }
             else if (s.StartsWith("Commute", StringComparison.Ordinal))
             {
-                return s.Substring(7) + " commutation";
+                return string.Concat(s.AsSpan(7), " commutation");
             }
             else if (s.StartsWith("Fold", StringComparison.Ordinal))
             {
-                return s.Substring(4) + " folding";
+                return string.Concat(s.AsSpan(4), " folding");
             }
             else if (s.StartsWith("Misc", StringComparison.Ordinal))
             {

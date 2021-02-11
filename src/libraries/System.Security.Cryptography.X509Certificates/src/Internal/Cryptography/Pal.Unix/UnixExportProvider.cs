@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Buffers;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -23,8 +23,8 @@ namespace Internal.Cryptography.Pal
         internal static readonly PbeParameters s_windowsPbe =
             new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2000);
 
-        protected ICertificatePalCore _singleCertPal;
-        protected X509Certificate2Collection _certs;
+        protected ICertificatePalCore? _singleCertPal;
+        protected X509Certificate2Collection? _certs;
 
         internal UnixExportProvider(ICertificatePalCore singleCertPal)
         {
@@ -47,7 +47,7 @@ namespace Internal.Cryptography.Pal
 
         protected abstract byte[] ExportPkcs8(ICertificatePalCore certificatePal, ReadOnlySpan<char> password);
 
-        public byte[] Export(X509ContentType contentType, SafePasswordHandle password)
+        public byte[]? Export(X509ContentType contentType, SafePasswordHandle password)
         {
             Debug.Assert(password != null);
             switch (contentType)
@@ -66,7 +66,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private byte[] ExportX509Der()
+        private byte[]? ExportX509Der()
         {
             if (_singleCertPal != null)
             {
@@ -77,7 +77,7 @@ namespace Internal.Cryptography.Pal
             // X509ContentType.Cert returns the equivalent of FirstOrDefault(),
             // so anything past _certs[0] is ignored, and an empty collection is
             // null (not an Exception)
-            if (_certs.Count == 0)
+            if (_certs!.Count == 0)
             {
                 return null;
             }
@@ -127,7 +127,7 @@ namespace Internal.Cryptography.Pal
                 }
                 else
                 {
-                    foreach (X509Certificate2 cert in _certs)
+                    foreach (X509Certificate2 cert in _certs!)
                     {
                         BuildBags(
                             cert.Pal,
@@ -155,7 +155,6 @@ namespace Internal.Cryptography.Pal
             finally
             {
                 password.DangerousRelease();
-                tmpWriter.Dispose();
                 certAttrs.AsSpan(0, certCount).Clear();
                 certBags.AsSpan(0, certCount).Clear();
                 keyBags.AsSpan(0, certCount).Clear();
@@ -197,25 +196,23 @@ namespace Internal.Cryptography.Pal
                 attrBytes[1] = sizeof(int);
                 MemoryMarshal.Write(attrBytes.AsSpan(2), ref keyIdx);
 
+                AttributeAsn attribute = new AttributeAsn
+                {
+                    AttrType = Oids.LocalKeyId,
+                    AttrValues = new ReadOnlyMemory<byte>[]
+                    {
+                        attrBytes,
+                    }
+                };
                 keyBags[keyIdx] = new SafeBagAsn
                 {
                     BagId = Oids.Pkcs12ShroudedKeyBag,
                     BagValue = ExportPkcs8(certPal, passwordSpan),
-                    BagAttributes = new[]
-                    {
-                        new AttributeAsn
-                        {
-                            AttrType = new Oid(Oids.LocalKeyId, null),
-                            AttrValues = new ReadOnlyMemory<byte>[]
-                            {
-                                attrBytes,
-                            }
-                        }
-                    }
+                    BagAttributes = new[] { attribute }
                 };
 
                 // Reuse the attribute between the cert and the key.
-                certAttrs[certIdx] = keyBags[keyIdx].BagAttributes[0];
+                certAttrs[certIdx] = attribute;
                 keyIdx++;
             }
 
@@ -231,9 +228,9 @@ namespace Internal.Cryptography.Pal
             int certIdx,
             ReadOnlySpan<char> passwordSpan)
         {
-            string encryptionAlgorithmOid = null;
+            string? encryptionAlgorithmOid = null;
             bool certsIsPkcs12Encryption = false;
-            string certsHmacOid = null;
+            string? certsHmacOid = null;
 
             ArraySegment<byte> encodedKeyContents = default;
             ArraySegment<byte> encodedCertContents = default;
@@ -269,8 +266,8 @@ namespace Internal.Cryptography.Pal
                     encodedKeyContents,
                     encodedCertContents,
                     certsIsPkcs12Encryption,
-                    certsHmacOid,
-                    encryptionAlgorithmOid,
+                    certsHmacOid!,
+                    encryptionAlgorithmOid!,
                     salt,
                     certContentsIv);
             }
@@ -291,18 +288,25 @@ namespace Internal.Cryptography.Pal
         private static ArraySegment<byte> EncodeKeys(AsnWriter tmpWriter, SafeBagAsn[] keyBags, int keyCount)
         {
             Debug.Assert(tmpWriter.GetEncodedLength() == 0);
-            tmpWriter.PushSequence();
 
-            for (int i = 0; i < keyCount; i++)
+            using (tmpWriter.PushSequence())
             {
-                keyBags[i].Encode(tmpWriter);
+                for (int i = 0; i < keyCount; i++)
+                {
+                    keyBags[i].Encode(tmpWriter);
+                }
             }
 
-            tmpWriter.PopSequence();
-            ReadOnlySpan<byte> encodedKeys = tmpWriter.EncodeAsSpan();
-            int length = encodedKeys.Length;
+            int length = tmpWriter.GetEncodedLength();
             byte[] keyBuf = CryptoPool.Rent(length);
-            encodedKeys.CopyTo(keyBuf);
+
+            if (!tmpWriter.TryEncode(keyBuf, out length))
+            {
+                Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                throw new InvalidOperationException();
+            }
+
+            // Explicitly clear the internal buffer before it goes out of scope.
             tmpWriter.Reset();
 
             return new ArraySegment<byte>(keyBuf, 0, length);
@@ -346,7 +350,7 @@ namespace Internal.Cryptography.Pal
                     // }
                     tmpWriter.PushSequence();
 
-                    tmpWriter.WriteObjectIdentifier(Oids.Pkcs12CertBag);
+                    tmpWriter.WriteObjectIdentifierForCrypto(Oids.Pkcs12CertBag);
 
                     tmpWriter.PushSequence(s_contextSpecific0);
                     certBags[i].Encode(tmpWriter);
@@ -363,12 +367,11 @@ namespace Internal.Cryptography.Pal
                 }
 
                 tmpWriter.PopSequence();
-                ReadOnlySpan<byte> contentsSpan = tmpWriter.EncodeAsSpan();
 
                 // The padding applied will add at most a block to the output,
                 // so ask for contentsSpan.Length + the number of bytes in a cipher block.
                 int cipherBlockBytes = cipher.BlockSize >> 3;
-                int requestedSize = checked(contentsSpan.Length + cipherBlockBytes);
+                int requestedSize = checked(tmpWriter.GetEncodedLength() + cipherBlockBytes);
                 byte[] certContents = CryptoPool.Rent(requestedSize);
 
                 int encryptedLength = PasswordBasedEncryption.Encrypt(
@@ -376,7 +379,7 @@ namespace Internal.Cryptography.Pal
                     ReadOnlySpan<byte>.Empty,
                     cipher,
                     isPkcs12,
-                    contentsSpan,
+                    tmpWriter,
                     s_windowsPbe,
                     salt,
                     certContents,
@@ -444,7 +447,7 @@ namespace Internal.Cryptography.Pal
                                 hmacOid,
                                 certContentsIv);
 
-                            tmpWriter.WriteOctetString(s_contextSpecific0, encodedCertContents.Span);
+                            tmpWriter.WriteOctetString(encodedCertContents.Span, s_contextSpecific0);
                             tmpWriter.PopSequence();
                         }
 
@@ -458,12 +461,18 @@ namespace Internal.Cryptography.Pal
 
             tmpWriter.PopSequence();
 
-            ReadOnlySpan<byte> authSafeSpan = tmpWriter.EncodeAsSpan();
-            byte[] authSafe = CryptoPool.Rent(authSafeSpan.Length);
-            authSafeSpan.CopyTo(authSafe);
+            int authSafeLength = tmpWriter.GetEncodedLength();
+            byte[] authSafe = CryptoPool.Rent(authSafeLength);
+
+            if (!tmpWriter.TryEncode(authSafe, out authSafeLength))
+            {
+                Debug.Fail("TryEncode failed with a pre-allocated buffer");
+                throw new InvalidOperationException();
+            }
+
             tmpWriter.Reset();
 
-            return new ArraySegment<byte>(authSafe, 0, authSafeSpan.Length);
+            return new ArraySegment<byte>(authSafe, 0, authSafeLength);
         }
 
         private static unsafe byte[] MacAndEncode(

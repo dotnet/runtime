@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -39,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             protected set { _type = value; }
         }
 
-        [ExcludeFromCodeCoverage] // Should only be called through override.
+        [ExcludeFromCodeCoverage(Justification = "Should only be called through override")]
         public virtual object Object
         {
             get

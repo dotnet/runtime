@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
-// SmtpClientTest.cs - NUnit Test Cases for System.Net.Mail.SmtpClient
+// SmtpClientTest.cs - Unit Test Cases for System.Net.Mail.SmtpClient
 //
 // Authors:
 //   John Luke (john.luke@gmail.com)
@@ -19,6 +19,7 @@ using Xunit;
 
 namespace System.Net.Mail.Tests
 {
+    [PlatformSpecific(~TestPlatforms.Browser)]  // SmtpClient is not supported on Browser
     public class SmtpClientTest : FileCleanupTestBase
     {
         private SmtpClient _smtp;
@@ -293,7 +294,7 @@ namespace System.Net.Mail.Tests
         {
             using var server = new LoopbackSmtpServer();
             using SmtpClient client = server.CreateClient();
-            client.Credentials = new NetworkCredential("Foo", "Bar");
+            client.Credentials = new NetworkCredential("foo", "bar");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
 
             client.Send(msg);
@@ -303,13 +304,13 @@ namespace System.Net.Mail.Tests
             Assert.Equal("hello", server.Message.Subject);
             Assert.Equal("howdydoo", server.Message.Body);
             Assert.Equal(GetClientDomain(), server.ClientDomain);
-            Assert.Equal("Foo", server.Username);
-            Assert.Equal("Bar", server.Password);
+            Assert.Equal("foo", server.Username);
+            Assert.Equal("bar", server.Password);
             Assert.Equal("LOGIN", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
-        [ActiveIssue(40711)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/31719")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and may not time out for low values")]
         [PlatformSpecific(~TestPlatforms.OSX)] // on OSX, not all synchronous operations (e.g. connect) can be aborted by closing the socket.
         public void TestZeroTimeout()
@@ -340,7 +341,8 @@ namespace System.Net.Mail.Tests
         [InlineData("howdydoo")]
         [InlineData("")]
         [InlineData(null)]
-        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
+        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", RuntimeConfiguration.Checked)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131", TestRuntimes.Mono)] // System.Net.Tests are flaky and/or long running
         public async Task TestMailDeliveryAsync(string body)
         {
             using var server = new LoopbackSmtpServer();
@@ -357,7 +359,9 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // NTLM support required, see https://github.com/dotnet/corefx/issues/28961
+        [PlatformSpecific(TestPlatforms.Windows)] // NTLM support required, see https://github.com/dotnet/runtime/issues/25827
+        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", RuntimeConfiguration.Checked)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131", TestRuntimes.Mono)] // System.Net.Tests are flaky and/or long running
         public async Task TestCredentialsCopyInAsyncContext()
         {
             using var server = new LoopbackSmtpServer();
@@ -485,5 +489,39 @@ namespace System.Net.Mail.Tests
         }
 
         private static string GetClientDomain() => IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendMail_SendQUITOnDispose(bool asyncSend)
+        {
+            bool quitMessageReceived = false;
+            using ManualResetEventSlim quitReceived = new ManualResetEventSlim();
+            using var server = new LoopbackSmtpServer();
+            server.OnQuitReceived += _ =>
+            {
+                quitMessageReceived = true;
+                quitReceived.Set();
+            };
+
+            using (SmtpClient client = server.CreateClient())
+            {
+                client.Credentials = new NetworkCredential("Foo", "Bar");
+                MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+                if (asyncSend)
+                {
+                    await client.SendMailAsync(msg).TimeoutAfter((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
+                }
+                else
+                {
+                    client.Send(msg);
+                }
+                Assert.False(quitMessageReceived, "QUIT received");
+            }
+
+            // There is a latency between send/receive.
+            quitReceived.Wait(TimeSpan.FromSeconds(30));
+            Assert.True(quitMessageReceived, "QUIT message not received");
+        }
     }
 }

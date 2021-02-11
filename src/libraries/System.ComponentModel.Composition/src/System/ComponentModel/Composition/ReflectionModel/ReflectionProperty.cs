@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using Microsoft.Internal;
@@ -17,10 +16,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
     internal class ReflectionProperty : ReflectionWritableMember
     {
-        private readonly MethodInfo _getMethod;
-        private readonly MethodInfo _setMethod;
+        private readonly MethodInfo? _getMethod;
+        private readonly MethodInfo? _setMethod;
 
-        public ReflectionProperty(MethodInfo getMethod, MethodInfo setMethod)
+        public ReflectionProperty(MethodInfo? getMethod, MethodInfo? setMethod)
         {
             if (getMethod == null && setMethod == null)
             {
@@ -33,7 +32,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public override MemberInfo UnderlyingMember
         {
-            get { return UnderlyingGetMethod ?? UnderlyingSetMethod; }
+            get { return UnderlyingGetMethod ?? UnderlyingSetMethod!; }
         }
 
         public override bool CanRead
@@ -46,12 +45,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return UnderlyingSetMethod != null; }
         }
 
-        public MethodInfo UnderlyingGetMethod
+        public MethodInfo? UnderlyingGetMethod
         {
             get { return _getMethod; }
         }
 
-        public MethodInfo UnderlyingSetMethod
+        public MethodInfo? UnderlyingSetMethod
         {
             get { return _setMethod; }
         }
@@ -60,7 +59,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                MethodInfo method = UnderlyingGetMethod ?? UnderlyingSetMethod;
+                MethodInfo method = UnderlyingGetMethod ?? UnderlyingSetMethod!;
 
                 string name = method.Name;
 
@@ -84,7 +83,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                MethodInfo method = UnderlyingGetMethod ?? UnderlyingSetMethod;
+                MethodInfo method = UnderlyingGetMethod ?? UnderlyingSetMethod!;
 
                 return !method.IsStatic;
             }
@@ -99,7 +98,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     return UnderlyingGetMethod.ReturnType;
                 }
 
-                ParameterInfo[] parameters = UnderlyingSetMethod.GetParameters();
+                ParameterInfo[] parameters = UnderlyingSetMethod!.GetParameters();
 
                 if (parameters.Length == 0)
                 {
@@ -114,23 +113,23 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return ReflectionItemType.Property; }
         }
 
-        public override object GetValue(object instance)
+        public override object? GetValue(object? instance)
         {
             if (_getMethod == null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
 
-            return UnderlyingGetMethod.SafeInvoke(instance);
+            return UnderlyingGetMethod!.SafeInvoke(instance);
         }
 
-        public override void SetValue(object instance, object value)
+        public override void SetValue(object? instance, object? value)
         {
             if (_setMethod == null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
-            UnderlyingSetMethod.SafeInvoke(instance, value);
+            UnderlyingSetMethod!.SafeInvoke(instance, value);
         }
 
     }

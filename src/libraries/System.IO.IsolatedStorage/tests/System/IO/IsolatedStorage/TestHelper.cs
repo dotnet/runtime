@@ -1,11 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.IO.IsolatedStorage
@@ -32,9 +30,9 @@ namespace System.IO.IsolatedStorage
             // Application scope doesn't go under a random dir
             s_roots.Add(Path.Combine(userRoot, hash));
 
-            // https://github.com/dotnet/corefx/issues/12628
-            // https://github.com/dotnet/corefx/issues/19839
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            // https://github.com/dotnet/runtime/issues/2092
+            // https://github.com/dotnet/runtime/issues/21742
+            if (OperatingSystem.IsWindows()
                 && !PlatformDetection.IsInAppContainer)
             {
                 s_roots.Add(Helper.GetDataDirectory(IsolatedStorageScope.Machine));
@@ -49,7 +47,7 @@ namespace System.IO.IsolatedStorage
         /// </summary>
         public static string GetUserRootDirectory(this IsolatedStorageFile isf)
         {
-            // CoreFX and NetFX use the same internal property
+            // .NET Core and .NET Framework use the same internal property
             return (string)s_rootDirectoryProperty.GetValue(isf);
         }
 

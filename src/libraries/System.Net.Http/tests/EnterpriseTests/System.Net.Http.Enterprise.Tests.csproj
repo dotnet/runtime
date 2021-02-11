@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HttpClientAuthenticationTest.cs" />
 
-    <Compile Include="$(CommonTestPath)System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs">
-      <Link>Common\System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs"
+             Link="Common\System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs" />
   </ItemGroup>
 </Project>

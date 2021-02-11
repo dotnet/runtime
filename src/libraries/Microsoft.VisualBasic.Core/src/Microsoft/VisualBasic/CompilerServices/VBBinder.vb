@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Diagnostics
@@ -47,7 +46,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private m_CachedMember As MemberInfo
 
         Private Sub ThrowInvalidCast(ByVal ArgType As System.Type, ByVal ParmType As System.Type, ByVal ParmIndex As Integer)
-            Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromToArg4, CalledMethodName(), CStr(ParmIndex + 1), VBFriendlyName(ArgType), VBFriendlyName(ParmType)))
+            Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromToArg4, CalledMethodName(), CStr(ParmIndex + 1), VBFriendlyName(ArgType), VBFriendlyName(ParmType)))
         End Sub
 
         'Flags to indicate if parameter was passed
@@ -301,7 +300,7 @@ CleanupAndExit:
 
                                 If StrComp(names(NameIndex), Parameters(ParmIndex).Name, CompareMethod.Text) = 0 Then
                                     If ParmIndex = ParamArrayIndex AndAlso SelectedCount = 1 Then
-                                        Throw VbMakeExceptionEx(vbErrors.NamedArgsNotSupported, GetResourceString(SR.NamedArgumentOnParamArray))
+                                        Throw VbMakeExceptionEx(vbErrors.NamedArgsNotSupported, SR.NamedArgumentOnParamArray)
                                     Else
                                         If ParmIndex = ParamArrayIndex Then
                                             'Matched against a paramarray, force into the removal code below
@@ -323,7 +322,7 @@ CleanupAndExit:
                                     '   i.e.  MissingMethod, MissingField, MissingMember
                                     'This is the last possible matching member
                                     ' so throw an exception that the name doesn't match
-                                    Throw New MissingMemberException(GetResourceString(SR.Argument_InvalidNamedArg2, names(NameIndex), CalledMethodName()))
+                                    Throw New MissingMemberException(SR.Format(SR.Argument_InvalidNamedArg2, names(NameIndex), CalledMethodName()))
                                 End If
 
                                 match(MethodIndex) = Nothing
@@ -392,7 +391,7 @@ CleanupAndExit:
                     If (ParamArrayIndex = PARAMARRAY_NONE) AndAlso (args.Length > Parameters.Length) Then
                         'If we have too many arguments, we don't match any function
                         If SelectedCount = 1 Then
-                            Throw New MissingMemberException(GetResourceString(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, IsPropertySet))))
+                            Throw New MissingMemberException(SR.Format(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, IsPropertySet))))
                         End If
 
                         'Clear this entry
@@ -422,7 +421,7 @@ CleanupAndExit:
                         If (j <> LengthOfNonParamArrayArguments) Then
                             'Not enough arguments to call this method, so remove it
                             If SelectedCount = 1 Then
-                                Throw New MissingMemberException(GetResourceString(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, IsPropertySet))))
+                                Throw New MissingMemberException(SR.Format(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, IsPropertySet))))
                             End If
                             match(MethodIndex) = Nothing
                             SelectedCount -= 1
@@ -568,7 +567,7 @@ CleanupAndExit:
                                 GoTo NextParm7
                             Else
                                 If SelectedCount = 1 Then
-                                    Throw New MissingMemberException(GetResourceString(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, IsPropertySet))))
+                                    Throw New MissingMemberException(SR.Format(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, IsPropertySet))))
                                 End If
                                 GoTo ClearMethod7
                             End If
@@ -748,7 +747,7 @@ ClearMethod7:
                     If InitialMemberCount = 1 Then
                         ThrowInvalidCast(ArgType, ParmType, ParmIndex)
                     Else
-                        Throw New AmbiguousMatchException(GetResourceString(SR.AmbiguousMatch_NarrowingConversion1, CalledMethodName()))
+                        Throw New AmbiguousMatchException(SR.Format(SR.AmbiguousMatch_NarrowingConversion1, CalledMethodName()))
                     End If
                 End If
                 match(MethodIndex) = Nothing
@@ -912,7 +911,7 @@ NextMethod8:
             Next
 
             If (SelectedCount = 0) Then
-                Throw New MissingMemberException(GetResourceString(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, IsPropertySet))))
+                Throw New MissingMemberException(SR.Format(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, IsPropertySet))))
             End If
 
             state = New VBBinderState
@@ -1084,15 +1083,15 @@ NextMethod8:
 
                     Select Case LowestScore
                         Case BindScore.Exact
-                            Throw New AmbiguousMatchException(GetResourceString(SR.AmbiguousCall_ExactMatch2, CalledMethodName(), Msg))
+                            Throw New AmbiguousMatchException(SR.Format(SR.AmbiguousCall_ExactMatch2, CalledMethodName(), Msg))
 
                         Case BindScore.Widening0, BindScore.Widening1
-                            Throw New AmbiguousMatchException(GetResourceString(SR.AmbiguousCall_WideningConversion2, CalledMethodName(), Msg))
+                            Throw New AmbiguousMatchException(SR.Format(SR.AmbiguousCall_WideningConversion2, CalledMethodName(), Msg))
 
                         Case Else
                             'BindScore.Narrowing
                             'BindScore.Unknown
-                            Throw New AmbiguousMatchException(GetResourceString(SR.AmbiguousCall2, CalledMethodName(), Msg))
+                            Throw New AmbiguousMatchException(SR.Format(SR.AmbiguousCall2, CalledMethodName(), Msg))
                     End Select
                 End If
 
@@ -1239,7 +1238,7 @@ NextMethod8:
             '
             Debug.Assert(Not SelectedMatch Is Nothing, "Should have already thrown an exception")
             If SelectedMatch Is Nothing Then
-                Throw New MissingMemberException(GetResourceString(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, IsPropertySet))))
+                Throw New MissingMemberException(SR.Format(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, IsPropertySet))))
             End If
             Return SelectedMatch
 
@@ -1762,7 +1761,7 @@ NextMethod8:
                     Return ObjectType.CTypeHelper(value, typ)
                 End If
             Catch ex As Exception
-                Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(value), VBFriendlyName(typ)))
+                Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(value), VBFriendlyName(typ)))
             End Try
         End Function
 
@@ -1905,7 +1904,7 @@ NextMethod8:
                     If StrComp(names(i), pars(j).Name, CompareMethod.Text) = 0 Then
 
                         If paramOrder(j) <> -1 Then
-                            Return New ArgumentException(GetResourceString(SR.NamedArgumentAlreadyUsed1, pars(j).Name))
+                            Return New ArgumentException(SR.Format(SR.NamedArgumentAlreadyUsed1, pars(j).Name))
                         End If
 
                         paramOrder(j) = i
@@ -1920,7 +1919,7 @@ NextMethod8:
                 ' method must not match what we sent.
                 If (j > LastNonSetIndex) Then
                     'Should no longer hit this, since we removed all these cases in a previous step
-                    Return New MissingMemberException(GetResourceString(SR.Argument_InvalidNamedArg2, names(i), CalledMethodName()))
+                    Return New MissingMemberException(SR.Format(SR.Argument_InvalidNamedArg2, names(i), CalledMethodName()))
                 End If
 
             Next i
@@ -1952,7 +1951,7 @@ NextMethod8:
                     'END: SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY SECURITY
                     '
                 Catch ex As MissingMemberException
-                    Throw New MissingMemberException(GetResourceString(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType)))
+                    Throw New MissingMemberException(SR.Format(SR.MissingMember_MemberNotFoundOnType2, name, VBFriendlyName(objType)))
                 End Try
             End If
 
@@ -1964,7 +1963,9 @@ NextMethod8:
                 For i As Integer = 0 To namedParameters.GetUpperBound(0)
                     If (namedParameters(i) Is Nothing) Then
                         Diagnostics.Debug.Assert(False, "Should never be reached")
+#Disable Warning CA2208 ' Instantiate argument exceptions correctly
                         Throw New ArgumentException
+#Enable Warning CA2208 ' Instantiate argument exceptions correctly
                     End If
                 Next i
             End If
@@ -1979,7 +1980,7 @@ NextMethod8:
                 If (objType Is objIReflect) Then
                     name = GetDefaultMemberName(objType)
                     If (name Is Nothing) Then
-                        Throw New MissingMemberException(GetResourceString(SR.MissingMember_NoDefaultMemberFound1, VBFriendlyName(objType)))
+                        Throw New MissingMemberException(SR.Format(SR.MissingMember_NoDefaultMemberFound1, VBFriendlyName(objType)))
                     End If
                 Else
                     ' IReflect case, we pass in empty string so that user implementation can return default members determined at run time
@@ -1992,13 +1993,13 @@ NextMethod8:
 
             p = GetMethodsByName(objType, objIReflect, name, invokeAttr)
             If (args Is Nothing) Then
-                args = New Object() {}
+                args = Array.Empty(Of Object)()
             End If
 
             Dim binderState As Object = Nothing
             invokeMethod = Me.BindToMethod(invokeAttr, p, args, Nothing, Nothing, namedParameters, binderState)
             If (invokeMethod Is Nothing) Then
-                Throw New MissingMemberException(GetResourceString(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, (invokeAttr And BindingFlags.SetProperty) <> 0))))
+                Throw New MissingMemberException(SR.Format(SR.NoMethodTakingXArguments2, CalledMethodName(), CStr(GetPropArgCount(args, (invokeAttr And BindingFlags.SetProperty) <> 0))))
             End If
 
             '
@@ -2212,7 +2213,7 @@ NextMethod8:
                     Next j
 
                     If RemovedCount = mi.Length - 1 Then
-                        Throw New ArgumentException(GetResourceString(SR.Argument_IllegalNestedType2, name, VBFriendlyName(objType)))
+                        Throw New ArgumentException(SR.Format(SR.Argument_IllegalNestedType2, name, VBFriendlyName(objType)))
                     End If
                     mi(MemberIndex) = Nothing 'Remove the nested class, since we cannot use it
                     RemovedCount += 1

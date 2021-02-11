@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,7 +10,7 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class CertCollectionLoader : ILoaderPal
     {
-        private List<ICertificatePal> _certs;
+        private List<ICertificatePal>? _certs;
 
         internal CertCollectionLoader(List<ICertificatePal> certs)
         {
@@ -28,7 +27,7 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(collection != null);
 
-            List<ICertificatePal> localCerts = Interlocked.Exchange(ref _certs, null);
+            List<ICertificatePal>? localCerts = Interlocked.Exchange(ref _certs, null);
             Debug.Assert(localCerts != null);
 
             foreach (ICertificatePal certPal in localCerts)

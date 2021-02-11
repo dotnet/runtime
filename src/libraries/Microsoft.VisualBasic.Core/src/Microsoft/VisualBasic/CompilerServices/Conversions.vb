@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.ComponentModel
@@ -1919,8 +1918,6 @@ MisMatch:
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As Threading.ThreadAbortException
-                    Throw ex
                 Catch Ex As Exception
                     Return False
                 End Try
@@ -2638,7 +2635,7 @@ MisMatch:
 
                 ElseIf Result = ConversionClass.Ambiguous Then
                     Throw New InvalidCastException(
-                        GetResourceString(
+                        SR.Format(
                             SR.AmbiguousCast2,
                             VBFriendlyName(SourceType),
                             VBFriendlyName(TargetType)))
@@ -2647,7 +2644,7 @@ MisMatch:
             End If
 
             Throw New InvalidCastException(
-                GetResourceString(
+                SR.Format(
                     SR.InvalidCast_FromTo,
                     VBFriendlyName(SourceType),
                     VBFriendlyName(TargetType)))

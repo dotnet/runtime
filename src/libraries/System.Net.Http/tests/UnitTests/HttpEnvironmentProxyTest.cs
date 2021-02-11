@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,6 +15,8 @@ namespace System.Net.Http.Tests
         private readonly ITestOutputHelper _output;
         private static readonly Uri fooHttp = new Uri("http://foo.com");
         private static readonly Uri fooHttps = new Uri("https://foo.com");
+        private static readonly Uri fooWs = new Uri("ws://foo.com");
+        private static readonly Uri fooWss = new Uri("wss://foo.com");
 
         // This will clean specific environmental variables
         // to be sure they do not interfere with the test.
@@ -39,7 +40,7 @@ namespace System.Net.Http.Tests
             CleanEnv();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HttpProxy_EnvironmentProxy_Loaded()
         {
             RemoteExecutor.Invoke(() =>
@@ -61,6 +62,11 @@ namespace System.Net.Http.Tests
                 u = p.GetProxy(fooHttps);
                 Assert.True(u != null && u.Host == "1.1.1.1");
 
+                u = p.GetProxy(fooWs);
+                Assert.True(u != null && u.Host == "1.1.1.1");
+                u = p.GetProxy(fooWss);
+                Assert.True(u != null && u.Host == "1.1.1.1");
+
                 Environment.SetEnvironmentVariable("http_proxy", "http://1.1.1.2:3001");
                 Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
@@ -70,6 +76,11 @@ namespace System.Net.Http.Tests
                 u = p.GetProxy(fooHttp);
                 Assert.True(u != null && u.Host == "1.1.1.2" && u.Port == 3001);
                 u = p.GetProxy(fooHttps);
+                Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
+
+                u = p.GetProxy(fooWs);
+                Assert.True(u != null && u.Host == "1.1.1.2" && u.Port == 3001);
+                u = p.GetProxy(fooWss);
                 Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
 
                 // Set https to invalid strings and use only IP & port for http.
@@ -83,12 +94,20 @@ namespace System.Net.Http.Tests
                 u = p.GetProxy(fooHttps);
                 Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
 
+                u = p.GetProxy(fooWs);
+                Assert.True(u != null && u.Host == "1.1.1.3" && u.Port == 3003);
+                u = p.GetProxy(fooWss);
+                Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
+
                 // Try valid URI with unsupported protocol. It will be ignored
                 // to mimic curl behavior.
                 Environment.SetEnvironmentVariable("https_proxy", "socks5://1.1.1.4:3004");
                 Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
                 u = p.GetProxy(fooHttps);
+                Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
+
+                u = p.GetProxy(fooWss);
                 Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
 
                 // Set https to valid URI but different from http.
@@ -100,10 +119,15 @@ namespace System.Net.Http.Tests
                 Assert.True(u != null && u.Host == "1.1.1.3" && u.Port == 3003);
                 u = p.GetProxy(fooHttps);
                 Assert.True(u != null && u.Host == "1.1.1.5" && u.Port == 3005);
+
+                u = p.GetProxy(fooWs);
+                Assert.True(u != null && u.Host == "1.1.1.3" && u.Port == 3003);
+                u = p.GetProxy(fooWss);
+                Assert.True(u != null && u.Host == "1.1.1.5" && u.Port == 3005);
             }).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("1.1.1.5", "1.1.1.5", "80", null, null)]
         [InlineData("http://1.1.1.5:3005", "1.1.1.5", "3005", null, null)]
         [InlineData("http://foo@1.1.1.5", "1.1.1.5", "80", "foo", "")]
@@ -153,7 +177,7 @@ namespace System.Net.Http.Tests
             }, _input, _host, _port, _user ?? "null", _password ?? "null").Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HttpProxy_CredentialParsing_Basic()
         {
             RemoteExecutor.Invoke(() =>
@@ -185,7 +209,7 @@ namespace System.Net.Http.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HttpProxy_Exceptions_Match()
         {
             RemoteExecutor.Invoke(() =>
@@ -213,7 +237,7 @@ namespace System.Net.Http.Tests
             yield return new object[] { "HTTP_PROXY", "NO_PROXY" };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpProxyNoProxyEnvVarMemberData))]
         public void HttpProxy_TryCreate_CaseInsensitiveVariables(string proxyEnvVar, string noProxyEnvVar)
         {
@@ -245,7 +269,7 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpProxyCgiEnvVarMemberData))]
         public void HttpProxy_TryCreateAndPossibleCgi_HttpProxyUpperCaseDisabledInCgi(
             string proxyEnvVar, bool cgi, bool expectedProxyUse)

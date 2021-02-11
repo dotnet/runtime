@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization;
 
@@ -28,14 +27,14 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// This constructor is provided in compliance with common NetFx design patterns;
+        /// This constructor is provided in compliance with common .NET Framework design patterns;
         /// developers should prefer using the constructor
         /// <code>public RegexMatchTimeoutException(string input, string pattern, TimeSpan matchTimeout)</code>.
         /// </summary>
         public RegexMatchTimeoutException() { }
 
         /// <summary>
-        /// This constructor is provided in compliance with common NetFx design patterns;
+        /// This constructor is provided in compliance with common .NET Framework design patterns;
         /// developers should prefer using the constructor
         /// <code>public RegexMatchTimeoutException(string input, string pattern, TimeSpan matchTimeout)</code>.
         /// </summary>
@@ -43,7 +42,7 @@ namespace System.Text.RegularExpressions
         public RegexMatchTimeoutException(string message) : base(message) { }
 
         /// <summary>
-        /// This constructor is provided in compliance with common NetFx design patterns;
+        /// This constructor is provided in compliance with common .NET Framework design patterns;
         /// developers should prefer using the constructor
         /// <code>public RegexMatchTimeoutException(string input, string pattern, TimeSpan matchTimeout)</code>.
         /// </summary>

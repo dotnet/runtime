@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -23,10 +22,7 @@ namespace System.Buffers.Binary
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static sbyte ReverseEndianness(sbyte value)
-        {
-            return value;
-        }
+        public static sbyte ReverseEndianness(sbyte value) => value;
 
         /// <summary>
         /// Reverses a primitive value - performs an endianness swap
@@ -55,10 +51,7 @@ namespace System.Buffers.Binary
         /// rather than having to skip byte fields.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static byte ReverseEndianness(byte value)
-        {
-            return value;
-        }
+        public static byte ReverseEndianness(byte value) => value;
 
         /// <summary>
         /// Reverses a primitive value - performs an endianness swap

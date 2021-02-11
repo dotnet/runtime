@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Dynamic.Utils;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -50,7 +50,7 @@ namespace System.Linq.Expressions.Interpreter
 #if !FEATURE_DLG_INVOKE
             return new MethodInfoCallInstruction(info, argumentCount);
 #else
-            if (!info.IsStatic && info.DeclaringType.IsValueType)
+            if (!info.IsStatic && info.DeclaringType!.IsValueType)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
             }
@@ -71,7 +71,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             // see if we've created one w/ a delegate
-            CallInstruction res;
+            CallInstruction? res;
             if (ShouldCache(info))
             {
                 if (s_cache.TryGetValue(info, out res))
@@ -124,32 +124,32 @@ namespace System.Linq.Expressions.Interpreter
 
         private static CallInstruction GetArrayAccessor(MethodInfo info, int argumentCount)
         {
-            Type arrayType = info.DeclaringType;
+            Type arrayType = info.DeclaringType!;
             bool isGetter = info.Name == "Get";
-            MethodInfo alternativeMethod = null;
+            MethodInfo? alternativeMethod = null;
 
             switch (arrayType.GetArrayRank())
             {
                 case 1:
                     alternativeMethod = isGetter ?
-                        arrayType.GetMethod("GetValue", new[] { typeof(int) }) :
+                        typeof(Array).GetMethod("GetValue", new[] { typeof(int) }) :
                         typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter1));
                     break;
 
                 case 2:
                     alternativeMethod = isGetter ?
-                        arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
+                        typeof(Array).GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
                         typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter2));
                     break;
 
                 case 3:
                     alternativeMethod = isGetter ?
-                        arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
+                        typeof(Array).GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
                         typeof(CallInstruction).GetMethod(nameof(ArrayItemSetter3));
                     break;
             }
 
-            if ((object)alternativeMethod == null)
+            if (alternativeMethod is null)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
             }
@@ -182,7 +182,7 @@ namespace System.Linq.Expressions.Interpreter
         /// <summary>
         /// Gets the next type or null if no more types are available.
         /// </summary>
-        private static Type TryGetParameterOrReturnType(MethodInfo target, ParameterInfo[] pi, int index)
+        private static Type? TryGetParameterOrReturnType(MethodInfo target, ParameterInfo[] pi, int index)
         {
             if (!target.IsStatic)
             {
@@ -222,7 +222,7 @@ namespace System.Linq.Expressions.Interpreter
         private static CallInstruction SlowCreate(MethodInfo info, ParameterInfo[] pis)
         {
             List<Type> types = new List<Type>();
-            if (!info.IsStatic) types.Add(info.DeclaringType);
+            if (!info.IsStatic) types.Add(info.DeclaringType!);
             foreach (ParameterInfo pi in pis)
             {
                 types.Add(pi.ParameterType);
@@ -235,7 +235,7 @@ namespace System.Linq.Expressions.Interpreter
 
             try
             {
-                return (CallInstruction)Activator.CreateInstance(GetHelperType(info, arrTypes), info);
+                return (CallInstruction)Activator.CreateInstance(GetHelperType(info, arrTypes), info)!;
             }
             catch (TargetInvocationException e)
             {
@@ -258,13 +258,13 @@ namespace System.Linq.Expressions.Interpreter
         /// over enclosed instance lightLambda, return that instance.
         /// We can interpret LightLambdas directly.
         /// </summary>
-        protected static bool TryGetLightLambdaTarget(object instance, out LightLambda lightLambda)
+        protected static bool TryGetLightLambdaTarget(object? instance, [NotNullWhen(true)] out LightLambda? lightLambda)
         {
             var del = instance as Delegate;
-            if ((object)del != null)
+            if (del is not null)
             {
                 var thunk = del.Target as Func<object[], object>;
-                if ((object)thunk != null)
+                if (thunk is not null)
                 {
                     lightLambda = thunk.Target as LightLambda;
                     if (lightLambda != null)
@@ -278,7 +278,7 @@ namespace System.Linq.Expressions.Interpreter
             return false;
         }
 
-        protected object InterpretLambdaInvoke(LightLambda targetLambda, object[] args)
+        protected object? InterpretLambdaInvoke(LightLambda targetLambda, object?[] args)
         {
             if (ProducedStack > 0)
             {
@@ -310,10 +310,10 @@ namespace System.Linq.Expressions.Interpreter
         {
             int first = frame.StackIndex - _argumentCount;
 
-            object ret;
+            object? ret;
             if (_target.IsStatic)
             {
-                object[] args = GetArgs(frame, first, 0);
+                object?[] args = GetArgs(frame, first, 0);
                 try
                 {
                     ret = _target.Invoke(null, args);
@@ -326,13 +326,12 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                object instance = frame.Data[first];
+                object? instance = frame.Data[first];
                 NullCheck(instance);
 
-                object[] args = GetArgs(frame, first, 1);
+                object?[] args = GetArgs(frame, first, 1);
 
-                LightLambda targetLambda;
-                if (TryGetLightLambdaTarget(instance, out targetLambda))
+                if (TryGetLightLambdaTarget(instance, out LightLambda? targetLambda))
                 {
                     // no need to Invoke, just interpret the lambda body
                     ret = InterpretLambdaInvoke(targetLambda, args);
@@ -364,13 +363,13 @@ namespace System.Linq.Expressions.Interpreter
             return 1;
         }
 
-        protected object[] GetArgs(InterpretedFrame frame, int first, int skip)
+        protected object?[] GetArgs(InterpretedFrame frame, int first, int skip)
         {
             int count = _argumentCount - skip;
 
             if (count > 0)
             {
-                var args = new object[count];
+                var args = new object?[count];
 
                 for (int i = 0; i < args.Length; i++)
                 {
@@ -403,12 +402,12 @@ namespace System.Linq.Expressions.Interpreter
         public sealed override int Run(InterpretedFrame frame)
         {
             int first = frame.StackIndex - _argumentCount;
-            object[] args = null;
-            object instance = null;
+            object?[]? args = null;
+            object? instance = null;
 
             try
             {
-                object ret;
+                object? ret;
                 if (_target.IsStatic)
                 {
                     args = GetArgs(frame, first, 0);
@@ -429,8 +428,7 @@ namespace System.Linq.Expressions.Interpreter
 
                     args = GetArgs(frame, first, 1);
 
-                    LightLambda targetLambda;
-                    if (TryGetLightLambdaTarget(instance, out targetLambda))
+                    if (TryGetLightLambdaTarget(instance, out LightLambda? targetLambda))
                     {
                         // no need to Invoke, just interpret the lambda body
                         ret = InterpretLambdaInvoke(targetLambda, args);

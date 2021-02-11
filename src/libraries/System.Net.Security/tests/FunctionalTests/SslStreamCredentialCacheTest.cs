@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.IO;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -19,12 +19,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_SameCertUsedForClientAndServer_Ok()
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new SslStream(clientStream, true, AllowAnyCertificate))
-            using (var server = new SslStream(serverStream, true, AllowAnyCertificate))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, true, AllowAnyCertificate))
+            using (var server = new SslStream(stream2, true, AllowAnyCertificate))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
                 // Using the same certificate for server and client auth.

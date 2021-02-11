@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Internal;
 
@@ -26,12 +25,12 @@ namespace System.ComponentModel.Composition.Primitives
             get { return _element.DisplayName; }
         }
 
-        public ICompositionElement Origin
+        public ICompositionElement? Origin
         {
             get { return _element.Origin; }
         }
 
-        public object UnderlyingObject
+        public object? UnderlyingObject
         {
             get { return _element.UnderlyingObject; }
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Net;
@@ -689,7 +688,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
                 }
                 NativeMethods.DsUnBind dsUnBind = (NativeMethods.DsUnBind)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsUnBind));
-                int result = dsUnBind(ref dsHandle);
+                _ = dsUnBind(ref dsHandle);
             }
         }
 
@@ -754,7 +753,7 @@ namespace System.DirectoryServices.ActiveDirectory
             str.Append((int)SystemFlag.SystemFlagNtdsDomain);
             str.Append("))(");
             str.Append(PropertyManager.NCName);
-            str.Append("=");
+            str.Append('=');
             str.Append(Utils.GetEscapedFilterValue(partitionName));
             str.Append("))");
 
@@ -782,7 +781,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw ExceptionHelper.GetExceptionFromCOMException(context, e);
             }
 
-            string crossRefDN = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName);
+            _ = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName);
             return res.GetDirectoryEntry();
         }
 
@@ -1107,7 +1106,7 @@ namespace System.DirectoryServices.ActiveDirectory
             foreach (string propertyName in propertiesWithoutRangeRetrieval)
             {
                 // need to convert to lower case since S.DS returns property names in all lower case
-                string lowerCasePropertyName = propertyName.ToLower(CultureInfo.InvariantCulture);
+                string lowerCasePropertyName = propertyName.ToLowerInvariant();
                 propertyNamesWithoutRangeInfo.Add(lowerCasePropertyName);
                 results.Add(lowerCasePropertyName, new ArrayList());
                 // add to the seachers's propertiesToLoad
@@ -1119,7 +1118,7 @@ namespace System.DirectoryServices.ActiveDirectory
             foreach (string propertyName in propertiesWithRangeRetrieval)
             {
                 // need to convert to lower case since S.DS returns property names in all lower case
-                string lowerCasePropertyName = propertyName.ToLower(CultureInfo.InvariantCulture);
+                string lowerCasePropertyName = propertyName.ToLowerInvariant();
                 propertiesStillToLoad.Add(lowerCasePropertyName);
                 results.Add(lowerCasePropertyName, new ArrayList());
             }
@@ -1131,7 +1130,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     string propertyToLoad = propertyName + ";range=" + rangeStart + "-*";
                     searcher.PropertiesToLoad.Add(propertyToLoad);
                     // need to convert to lower case since S.DS returns property names in all lower case
-                    propertyNamesWithRangeInfo.Add(propertyName.ToLower(CultureInfo.InvariantCulture), propertyToLoad);
+                    propertyNamesWithRangeInfo.Add(propertyName.ToLowerInvariant(), propertyToLoad);
                 }
 
                 //clear for the nezxt round
@@ -1294,8 +1293,8 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // extract the property values
-                    ArrayList replicaLocations = (ArrayList)values[PropertyManager.MsDSNCReplicaLocations.ToLower(CultureInfo.InvariantCulture)];
-                    ArrayList roReplicaLocations = (ArrayList)values[PropertyManager.MsDSNCROReplicaLocations.ToLower(CultureInfo.InvariantCulture)];
+                    ArrayList replicaLocations = (ArrayList)values[PropertyManager.MsDSNCReplicaLocations.ToLowerInvariant()];
+                    ArrayList roReplicaLocations = (ArrayList)values[PropertyManager.MsDSNCROReplicaLocations.ToLowerInvariant()];
                     Debug.Assert(replicaLocations != null);
 
                     if (replicaLocations.Count == 0)
@@ -1306,32 +1305,32 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     foreach (string replicaLocation in replicaLocations)
                     {
-                        ntdsaFilter.Append("(");
+                        ntdsaFilter.Append('(');
                         ntdsaFilter.Append(PropertyManager.DistinguishedName);
-                        ntdsaFilter.Append("=");
+                        ntdsaFilter.Append('=');
                         ntdsaFilter.Append(Utils.GetEscapedFilterValue(replicaLocation));
-                        ntdsaFilter.Append(")");
+                        ntdsaFilter.Append(')');
 
-                        serverFilter.Append("(");
+                        serverFilter.Append('(');
                         serverFilter.Append(PropertyManager.DistinguishedName);
-                        serverFilter.Append("=");
+                        serverFilter.Append('=');
                         serverFilter.Append(Utils.GetEscapedFilterValue(Utils.GetPartialDN(replicaLocation, 1)));
-                        serverFilter.Append(")");
+                        serverFilter.Append(')');
                     }
 
                     foreach (string roReplicaLocation in roReplicaLocations)
                     {
-                        roNtdsaFilter.Append("(");
+                        roNtdsaFilter.Append('(');
                         roNtdsaFilter.Append(PropertyManager.DistinguishedName);
-                        roNtdsaFilter.Append("=");
+                        roNtdsaFilter.Append('=');
                         roNtdsaFilter.Append(Utils.GetEscapedFilterValue(roReplicaLocation));
-                        roNtdsaFilter.Append(")");
+                        roNtdsaFilter.Append(')');
 
-                        roServerFilter.Append("(");
+                        roServerFilter.Append('(');
                         roServerFilter.Append(PropertyManager.DistinguishedName);
-                        roServerFilter.Append("=");
+                        roServerFilter.Append('=');
                         roServerFilter.Append(Utils.GetEscapedFilterValue(Utils.GetPartialDN(roReplicaLocation, 1)));
-                        roServerFilter.Append(")");
+                        roServerFilter.Append(')');
                     }
                 }
                 catch (COMException e)
@@ -1446,8 +1445,6 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                     }
                 }
-
-                string[] propertiesToLoad2 = new string[5];
 
                 ADSearcher searcher2 = new ADSearcher(searchRootEntry, filter2, Array.Empty<string>(), SearchScope.Subtree);
                 SearchResultCollection resCol = null;
@@ -1592,6 +1589,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if (needToContinueRangeRetrieval)
                     {
+                        StringBuilder str = new StringBuilder(20);
                         // Now continue with range retrieval if necessary for msDS-HasInstantiatedNCs
                         do
                         {
@@ -1600,7 +1598,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             // this should be greater than 0, since needToContinueRangeRetrieval is true
                             Debug.Assert(ntdsaNamesForRangeRetrieval.Count > 0);
 
-                            StringBuilder str = new StringBuilder(20);
+                            str.Clear();
                             if (ntdsaNamesForRangeRetrieval.Count > 1)
                             {
                                 str.Append("(|");
@@ -1608,16 +1606,16 @@ namespace System.DirectoryServices.ActiveDirectory
 
                             foreach (string name in ntdsaNamesForRangeRetrieval)
                             {
-                                str.Append("(");
+                                str.Append('(');
                                 str.Append(PropertyManager.NCName);
-                                str.Append("=");
+                                str.Append('=');
                                 str.Append(Utils.GetEscapedFilterValue(name));
-                                str.Append(")");
+                                str.Append(')');
                             }
 
                             if (ntdsaNamesForRangeRetrieval.Count > 1)
                             {
-                                str.Append(")");
+                                str.Append(')');
                             }
 
                             // Clear it for the next round of range retrieval
@@ -1935,10 +1933,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             //extract IPv6 port number if any
-            bool isBrace = serverName.StartsWith("[");
+            bool isBrace = serverName.StartsWith("[", StringComparison.Ordinal);
             if (isBrace == true)
             {
-                if (serverName.EndsWith("]"))
+                if (serverName.EndsWith("]", StringComparison.Ordinal))
                 {
                     //[IPv6]
                     serverName = serverName.Substring(1, serverName.Length - 2); //2 for []
@@ -1977,7 +1975,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return serverName;
         }
 
-        private static string s_NTAuthorityString = null;
+        private static string s_NTAuthorityString;
 
         internal static string GetNtAuthorityString()
         {

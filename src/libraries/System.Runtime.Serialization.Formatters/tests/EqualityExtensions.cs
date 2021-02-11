@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -8,7 +7,6 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
-using System.Data.SqlClient;
 using System.Data.SqlTypes;
 using System.DirectoryServices.ActiveDirectory;
 using System.Drawing;
@@ -20,7 +18,6 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Security;
 using System.Threading;
 using Xunit;
@@ -816,7 +813,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         private static Tuple<Dictionary<int, Graph<int>>, List<List<int>>> FlattenGraph(Graph<int> n)
         {
             // ref -> id
-            var nodes = new Dictionary<Graph<int>, int>(new ReferenceComparer<Graph<int>>());
+            var nodes = new Dictionary<Graph<int>, int>(ReferenceEqualityComparer.Instance);
             GetIdsForGraphDFS(n, nodes);
 
             // id -> list of ids
@@ -1137,8 +1134,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // Different by design for those exceptions
             if (!((@this is SecurityException ||
                 @this is XmlSyntaxException ||
-                @this is ThreadAbortException ||
-                @this is SqlException) && !isSamePlatform))
+                @this is ThreadAbortException) && !isSamePlatform))
             {
                 if (!(@this is ActiveDirectoryServerDownException ||
                     @this is SocketException ||
@@ -1148,11 +1144,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 }
             }
 
-            // Different by design for those exceptions
-            if (!(@this is SqlException))
-            {
-                Assert.Equal(@this.Source, other.Source);
-            }
+            Assert.Equal(@this.Source, other.Source);
 
             Assert.Equal(@this.HelpLink, other.HelpLink);
 
@@ -1162,7 +1154,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 CheckEquals(@this.InnerException, other.InnerException, isSamePlatform);
             }
 
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 // Different by design for those exceptions
                 if (!((@this is NetworkInformationException || @this is SocketException) && !isSamePlatform))
@@ -1177,7 +1169,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     @this is ThreadAbortException) && !isSamePlatform))
                 {
                     if (!(@this is ActiveDirectoryServerDownException ||
-                        @this is SqlException ||
                         @this is NetworkInformationException ||
                         @this is SocketException))
                     {
@@ -1262,19 +1253,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.NotNull(other);
             Assert.Equal(@this.Width, other.Width);
             Assert.Equal(@this.Height, other.Height);
-        }
-
-        public class ReferenceComparer<T> : IEqualityComparer<T> where T : class
-        {
-            public bool Equals(T x, T y)
-            {
-                return ReferenceEquals(x, y);
-            }
-
-            public int GetHashCode(T x)
-            {
-                return RuntimeHelpers.GetHashCode(x);
-            }
         }
     }
 }

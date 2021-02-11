@@ -1,7 +1,7 @@
 # Enterprise Scenario Testing
 
 ## What Are Enterprise Scenarios?
-There are many definitions for enterprise scenarios. But generally in terms of how .NET Core networking APIs are used, enterprise scenarios are those networking scenarios that are fundamentally used by businesses (a.k.a enterprises) compared with consumers. As such, they use networking components, protocols, and security authentication mechanisms that are not used by most consumers using their home networking and Internet connections. 
+There are many definitions for enterprise scenarios. But generally in terms of how .NET Core networking APIs are used, enterprise scenarios are those networking scenarios that are fundamentally used by businesses (a.k.a enterprises) compared with consumers. As such, they use networking components, protocols, and security authentication mechanisms that are not used by most consumers using their home networking and Internet connections.
 
 ## Networking Components of Enterprise Scenarios
 Enterprise scenarios typically see the following kinds of components/protocols/security:
@@ -49,7 +49,7 @@ Now build the repo as you would on a regular dev machine:
 
 ```bash
 cd /repo
-./libraries.sh
+./build.sh --subset libs
 ```
 
 Now you can run the enterprise tests. Currently, there are tests for System.Net.Http and System.Net.Security. You can run them in the same way you already run tests in the repo.
@@ -59,7 +59,7 @@ Now you can run the enterprise tests. Currently, there are tests for System.Net.
 
 ```bash
 cd /repo/src/libraries/System.Net.Http/tests/EnterpriseTests
-/repo/.dotnet/dotnet msbuild /t:rebuildandtest
+/repo/dotnet.sh build /t:test
 ```
 
 You can exit from the container bash shell:

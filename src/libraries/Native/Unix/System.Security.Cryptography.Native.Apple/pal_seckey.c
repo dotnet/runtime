@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "pal_seckey.h"
 #include "pal_utilities.h"
 
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 int32_t AppleCryptoNative_SecKeyExport(
     SecKeyRef pKey, int32_t exportPrivate, CFStringRef cfExportPassphrase, CFDataRef* ppDataOut, int32_t* pOSStatus)
 {
@@ -128,6 +128,7 @@ cleanup:
     CFRelease(cfData);
     return ret;
 }
+#endif
 
 uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey)
 {
@@ -139,6 +140,7 @@ uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey)
     return SecKeyGetBlockSize(publicKey);
 }
 
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type)
 {
     SecExternalFormat dataFormat = kSecFormatOpenSSL;
@@ -182,10 +184,19 @@ OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type)
                 CFRetain(outItem);
                 *key = (SecKeyRef)CONST_CAST(void *, outItem);
 
-                return noErr;
+                goto cleanup;
             }
         }
     }
 
-    return errSecBadReq;
+    status = errSecBadReq;
+
+cleanup:
+    if (outItems != NULL)
+    {
+        CFRelease(outItems);
+    }
+
+    return status;
 }
+#endif

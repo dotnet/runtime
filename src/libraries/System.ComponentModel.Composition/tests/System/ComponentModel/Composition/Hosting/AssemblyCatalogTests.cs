@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Factories;
 using System.ComponentModel.Composition.Hosting;
@@ -37,10 +36,12 @@ namespace System.ComponentModel.Composition
 
     public class AssemblyCatalogTestsHelper
     {
+#pragma warning disable SYSLIB0012
         protected string GetAttributedAssemblyCodeBase()
         {
             return Assembly.GetExecutingAssembly().CodeBase;
         }
+#pragma warning restore SYSLIB0012
 
         protected Assembly GetAttributedAssembly()
         {
@@ -75,7 +76,9 @@ namespace System.ComponentModel.Composition
 
             foreach (var e in expectations)
             {
+#pragma warning disable SYSLIB0012
                 var catalog = catalogCreator(e.CodeBase);
+#pragma warning restore SYSLIB0012
 
                 Assert.Same(e, catalog.Assembly);
             }
@@ -169,7 +172,7 @@ namespace System.ComponentModel.Composition
         //  Test cases for AssemblyCatalog(string codebase) constructor
         //=========================================================================================================================================
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor1_ValueAsCodebaseArgument_ShouldSetAssemblyProperty()
         {
             AssemblyCatalogConstructorTests.Constructor_ValueAsCodebaseArgument_ShouldSetAssemblyProperty((s) =>
@@ -216,7 +219,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)] // Also see https://github.com/dotnet/corefx/issues/27269
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")] // Also see https://github.com/dotnet/runtime/issues/25099
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Constructor1_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO_Core()
         {
@@ -227,7 +230,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor1_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad((s) =>
@@ -237,7 +240,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor1_TooLongFileNameAsCodeBaseArgument_ShouldThrowPathTooLong()
         {
             AssemblyCatalogConstructorTests.Constructor_TooLongFileNameAsCodeBaseArgument_ShouldThrowPathTooLong((s) =>
@@ -247,7 +250,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // fault segmentation - AnyUnix
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // fault segmentation - AnyUnix
         public void Constructor1_NonAssemblyFileNameAsCodeBaseArgument_ShouldThrowBadImageFormat()
         {
             AssemblyCatalogConstructorTests.Constructor_NonAssemblyFileNameAsCodeBaseArgument_ShouldThrowBadImageFormat((s) =>
@@ -266,7 +269,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor1_ShouldSetOriginToNull()
         {
             var catalog = (ICompositionElement)new AssemblyCatalog(GetAttributedAssemblyCodeBase());
@@ -279,7 +282,7 @@ namespace System.ComponentModel.Composition
         //=========================================================================================================================================
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor2_ValueAsCodebaseArgument_ShouldSetAssemblyProperty()
         {
             AssemblyCatalogConstructorTests.Constructor_ValueAsCodebaseArgument_ShouldSetAssemblyProperty((s) =>
@@ -326,7 +329,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)] // Also see https://github.com/dotnet/corefx/issues/27269
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")] // Also see https://github.com/dotnet/runtime/issues/25099
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Constructor2_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument()
         {
@@ -337,7 +340,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor2_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad((s) =>
@@ -347,7 +350,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor2_TooLongFileNameAsCodeBaseArgument_ShouldThrowPathTooLong()
         {
             AssemblyCatalogConstructorTests.Constructor_TooLongFileNameAsCodeBaseArgument_ShouldThrowPathTooLong((s) =>
@@ -357,7 +360,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // fault segmentation - AnyUnix
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // fault segmentation - AnyUnix
         public void Constructor2_NonAssemblyFileNameAsCodeBaseArgument_ShouldThrowBadImageFormat()
         {
             AssemblyCatalogConstructorTests.Constructor_NonAssemblyFileNameAsCodeBaseArgument_ShouldThrowBadImageFormat((s) =>
@@ -388,7 +391,7 @@ namespace System.ComponentModel.Composition
         //  Test cases for AssemblyCatalog(string codebase, ICompositionElement definitonOrigin) constructor
         //=========================================================================================================================================
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor3_ValueAsCodebaseArgument_ShouldSetAssemblyProperty()
         {
             AssemblyCatalogConstructorTests.Constructor_ValueAsCodebaseArgument_ShouldSetAssemblyProperty((s) =>
@@ -435,7 +438,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)] // // Also see https://github.com/dotnet/corefx/issues/27269
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")] // // Also see https://github.com/dotnet/runtime/issues/25099
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Constructor3_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO_Core()
         {
@@ -446,7 +449,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor3_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad((s) =>
@@ -456,7 +459,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor3_TooLongFileNameAsCodeBaseArgument_ShouldThrowPathTooLong()
         {
             AssemblyCatalogConstructorTests.Constructor_TooLongFileNameAsCodeBaseArgument_ShouldThrowPathTooLong((s) =>
@@ -466,7 +469,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // fault segmentation - AnyUnix
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // fault segmentation - AnyUnix
         public void Constructor3_NonAssemblyFileNameAsCodeBaseArgument_ShouldThrowBadImageFormat()
         {
             AssemblyCatalogConstructorTests.Constructor_NonAssemblyFileNameAsCodeBaseArgument_ShouldThrowBadImageFormat((s) =>
@@ -543,7 +546,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)] // Also see https://github.com/dotnet/corefx/issues/27269
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")] // Also see https://github.com/dotnet/runtime/issues/25099
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Constructor4_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO_Core()
         {
@@ -554,7 +557,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor4_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad()
         {
             AssemblyCatalogConstructorTests.Constructor_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad((s) =>
@@ -564,7 +567,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor4_TooLongFileNameAsCodeBaseArgument_ShouldThrowPathTooLong()
         {
             AssemblyCatalogConstructorTests.Constructor_TooLongFileNameAsCodeBaseArgument_ShouldThrowPathTooLong((s) =>
@@ -574,7 +577,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // fault segmentation - AnyUnix
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // fault segmentation - AnyUnix
         public void Constructor4_NonAssemblyFileNameAsCodeBaseArgument_ShouldThrowBadImageFormat()
         {
             AssemblyCatalogConstructorTests.Constructor_NonAssemblyFileNameAsCodeBaseArgument_ShouldThrowBadImageFormat((s) =>
@@ -613,7 +616,7 @@ namespace System.ComponentModel.Composition
         //  Test cases for AssemblyCatalog(string codebase, ICompositionElement definitonOrigin) constructor
         //=========================================================================================================================================
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor7_ValueAsAssemblyArgument_ShouldSetAssemblyProperty()
         {
             AssemblyCatalogConstructorTests.Constructor_ValueAsCodebaseArgument_ShouldSetAssemblyProperty((a) =>
@@ -647,7 +650,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor6_NullReflectionContextArgument_ShouldThrowArgumentNull()
         {
             AssemblyCatalogConstructorTests.Constructor_NullReflectionContextArgument_ShouldThrowArgumentNull((rc) =>
@@ -657,7 +660,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor7_NullDefinitionOriginArgument_ShouldThrowArgumentNull()
         {
             AssemblyCatalogConstructorTests.Constructor_NullDefinitionOriginArgument_ShouldThrowArgumentNull((dO) =>
@@ -695,6 +698,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
+#pragma warning disable SYSLIB0012
         [Fact]
         public void Constructor8_NullDefinitionOriginArgument_ShouldThrowArgumentNull()
         {
@@ -703,13 +707,14 @@ namespace System.ComponentModel.Composition
                 return new AssemblyCatalog(GetAttributedAssembly().CodeBase, new AssemblyCatalogTestsReflectionContext(), dO);
             });
         }
+#pragma warning restore SYSLIB0012
 
         //=========================================================================================================================================
         //  Test cases for Assemblies decorated with the CatalogDiscoveryAttribute
         //=========================================================================================================================================
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void DiscoverCatalogUsingReflectionContextCatalogDiscoveryAttribute()
         {
             var catalog = new AssemblyCatalog(typeof(TestAssemblyOne).Assembly);
@@ -722,7 +727,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void DiscoverCatalogUsingDerivedReflectionContextCatalogDiscoveryAttribute()
         {
             var catalog = new AssemblyCatalog(typeof(TestAssemblyTwo).Assembly);
@@ -735,7 +740,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void DiscoverCatalogUsingNoDefaultConstructorReflectionContextCatalogDiscoveryAttribute_ShouldThrowArgumentException()
         {
             AssertExtensions.Throws<MissingMethodException>(() =>
@@ -746,7 +751,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void DiscoverCatalogUsingDerivedReflectionContextCatalogDiscoveryAttribute_ShouldThrowArgumentException()
         {
 
@@ -819,7 +824,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void GetExports_NullAsConstraintArgument_ShouldThrowArgumentNull()
         {
             var catalog = CreateAssemblyCatalog();
@@ -845,7 +850,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void Parts()
         {
             var catalog = new AssemblyCatalog(typeof(AssemblyCatalogTests).Assembly);
@@ -854,7 +859,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void Parts_ShouldSetDefinitionOriginToCatalogItself()
         {
             var catalog = CreateAssemblyCatalog();
@@ -867,7 +872,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void AddAssemblyUsingFile()
         {
             var catalog = new AssemblyCatalog(typeof(AssemblyCatalogTests).Assembly.Location);
@@ -877,7 +882,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void TwoTypesWithSameSimpleName()
         {
             var catalog = new AssemblyCatalog(typeof(AssemblyCatalogTests).Assembly);
@@ -895,7 +900,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void GettingFunctionExports()
         {
             var catalog = new AssemblyCatalog(typeof(AssemblyCatalogTests).Assembly);
@@ -906,7 +911,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void AnExportOfAnInstanceThatFailsToCompose()
         {
             var catalog = new AssemblyCatalog(typeof(AssemblyCatalogTests).Assembly);
@@ -922,7 +927,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void SharedPartCreation()
         {
             var catalog = new AssemblyCatalog(typeof(AssemblyCatalogTests).Assembly);
@@ -940,7 +945,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void NonSharedPartCreation()
         {
             var catalog = new AssemblyCatalog(typeof(AssemblyCatalogTests).Assembly);
@@ -958,7 +963,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void RecursiveNonSharedPartCreation()
         {
             var catalog = new AssemblyCatalog(typeof(AssemblyCatalogTests).Assembly);
@@ -996,7 +1001,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // typeof(System.Reflection.ReflectionTypeLoadException)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // typeof(System.Reflection.ReflectionTypeLoadException)
         public void RecursiveNonSharedPartCreationDisableSilentRejection()
         {
             var catalog = new AssemblyCatalog(typeof(AssemblyCatalogTests).Assembly);
@@ -1034,7 +1039,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void TryToDiscoverExportWithGenericParameter()
         {
             var catalog = new AssemblyCatalog(typeof(AssemblyCatalogTests).Assembly);

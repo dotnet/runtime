@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -35,12 +34,12 @@ namespace System.Security.AccessControl
 
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
-        internal readonly CommonSecurityDescriptor _securityDescriptor;
+        internal readonly CommonSecurityDescriptor _securityDescriptor = null!;
 
-        private bool _ownerModified = false;
-        private bool _groupModified = false;
-        private bool _saclModified = false;
-        private bool _daclModified = false;
+        private bool _ownerModified;
+        private bool _groupModified;
+        private bool _saclModified;
+        private bool _daclModified;
 
         // only these SACL control flags will be automatically carry forward
         // when update with new security descriptor.
@@ -94,19 +93,19 @@ namespace System.Security.AccessControl
             if ((includeSections & AccessControlSections.Owner) != 0)
             {
                 _ownerModified = true;
-                _securityDescriptor.Owner = newOne.Owner;
+                _securityDescriptor.Owner = newOne!.Owner;
             }
 
             if ((includeSections & AccessControlSections.Group) != 0)
             {
                 _groupModified = true;
-                _securityDescriptor.Group = newOne.Group;
+                _securityDescriptor.Group = newOne!.Group;
             }
 
             if ((includeSections & AccessControlSections.Audit) != 0)
             {
                 _saclModified = true;
-                if (newOne.SystemAcl != null)
+                if (newOne!.SystemAcl != null)
                 {
                     _securityDescriptor.SystemAcl = new SystemAcl(IsContainer, IsDS, newOne.SystemAcl, true);
                 }
@@ -121,7 +120,7 @@ namespace System.Security.AccessControl
             if ((includeSections & AccessControlSections.Access) != 0)
             {
                 _daclModified = true;
-                if (newOne.DiscretionaryAcl != null)
+                if (newOne!.DiscretionaryAcl != null)
                 {
                     _securityDescriptor.DiscretionaryAcl = new DiscretionaryAcl(IsContainer, IsDS, newOne.DiscretionaryAcl, true);
                 }
@@ -288,7 +287,7 @@ namespace System.Security.AccessControl
         //
         protected virtual void Persist(bool enableOwnershipPrivilege, string name, AccessControlSections includeSections)
         {
-            Privilege ownerPrivilege = null;
+            Privilege? ownerPrivilege = null;
 
             try
             {
@@ -343,7 +342,7 @@ namespace System.Security.AccessControl
         // Sets and retrieves the owner of this object
         //
 
-        public IdentityReference GetOwner(System.Type targetType)
+        public IdentityReference? GetOwner(System.Type targetType)
         {
             ReadLock();
 
@@ -386,7 +385,7 @@ namespace System.Security.AccessControl
         // Sets and retrieves the group of this object
         //
 
-        public IdentityReference GetGroup(System.Type targetType)
+        public IdentityReference? GetGroup(System.Type targetType)
         {
             ReadLock();
 
@@ -436,7 +435,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                _securityDescriptor.PurgeAccessControl(identity.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier);
+                _securityDescriptor.PurgeAccessControl((SecurityIdentifier)identity.Translate(typeof(SecurityIdentifier)));
                 _daclModified = true;
             }
             finally
@@ -456,7 +455,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                _securityDescriptor.PurgeAudit(identity.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier);
+                _securityDescriptor.PurgeAudit((SecurityIdentifier)identity.Translate(typeof(SecurityIdentifier)));
                 _saclModified = true;
             }
             finally
@@ -598,7 +597,7 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(includeSections));
+                    nameof(includeSections));
             }
 
             WriteLock();
@@ -647,7 +646,7 @@ nameof(includeSections));
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(includeSections));
+                    nameof(includeSections));
             }
 
             WriteLock();
@@ -676,11 +675,11 @@ nameof(includeSections));
                 throw new ArgumentNullException(nameof(rule));
             }
 
-            if (!this.AccessRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()))
+            if (!this.AccessRuleType.IsAssignableFrom(rule.GetType()))
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAccessRuleType,
-nameof(rule));
+                    nameof(rule));
             }
 
             WriteLock();
@@ -702,11 +701,11 @@ nameof(rule));
                 throw new ArgumentNullException(nameof(rule));
             }
 
-            if (!this.AuditRuleType.GetTypeInfo().IsAssignableFrom(rule.GetType().GetTypeInfo()))
+            if (!this.AuditRuleType.IsAssignableFrom(rule.GetType()))
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAuditRuleType,
-nameof(rule));
+                    nameof(rule));
             }
 
             WriteLock();

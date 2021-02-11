@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 
@@ -35,7 +34,7 @@ namespace System.Reflection
                 ConcurrentBag<IDisposable> disposables = _disposables;
                 if (disposables != null)
                 {
-                    _disposables = null;
+                    _disposables = null!;
 
                     foreach (IDisposable disposable in disposables)
                     {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
@@ -13,8 +12,8 @@ namespace System.Xml.Schema
         internal const int PUBLIC = 1;
 
         private readonly XmlQualifiedName _name;
-        private string _systemLiteral;   // System literal
-        private string _pubid;    // pubid literal
+        private string? _systemLiteral;   // System literal
+        private string? _pubid;    // pubid literal
 
         internal SchemaNotation(XmlQualifiedName name)
         {
@@ -26,13 +25,13 @@ namespace System.Xml.Schema
             get { return _name; }
         }
 
-        internal string SystemLiteral
+        internal string? SystemLiteral
         {
             get { return _systemLiteral; }
             set { _systemLiteral = value; }
         }
 
-        internal string Pubid
+        internal string? Pubid
         {
             get { return _pubid; }
             set { _pubid = value; }

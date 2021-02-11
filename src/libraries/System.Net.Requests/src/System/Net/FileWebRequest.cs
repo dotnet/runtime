@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
@@ -14,9 +13,9 @@ namespace System.Net
         private readonly WebHeaderCollection _headers = new WebHeaderCollection();
         private string _method = WebRequestMethods.File.DownloadFile;
         private FileAccess _fileAccess = FileAccess.Read;
-        private ManualResetEventSlim _blockReaderUntilRequestStreamDisposed;
-        private WebResponse _response;
-        private WebFileStream _stream;
+        private ManualResetEventSlim? _blockReaderUntilRequestStreamDisposed;
+        private WebResponse? _response;
+        private WebFileStream? _stream;
         private readonly Uri _uri;
         private long _contentLength;
         private int _timeout = DefaultTimeoutMilliseconds;
@@ -26,6 +25,7 @@ namespace System.Net
         private bool _syncHint;
         private int _aborted;
 
+#pragma warning disable SYSLIB0014
         internal FileWebRequest(Uri uri)
         {
             if (uri.Scheme != (object)Uri.UriSchemeFile)
@@ -41,6 +41,7 @@ namespace System.Net
         {
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore SYSLIB0014
 
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             GetObjectData(serializationInfo, streamingContext);
@@ -52,7 +53,7 @@ namespace System.Net
 
         internal bool Aborted => _aborted != 0;
 
-        public override string ConnectionGroupName { get; set; }
+        public override string? ConnectionGroupName { get; set; }
 
         public override long ContentLength
         {
@@ -67,13 +68,13 @@ namespace System.Net
             }
         }
 
-        public override string ContentType
+        public override string? ContentType
         {
             get { return _headers["Content-Type"]; }
             set { _headers["Content-Type"] = value; }
         }
 
-        public override ICredentials Credentials { get; set; }
+        public override ICredentials? Credentials { get; set; }
 
         public override WebHeaderCollection Headers => _headers;
 
@@ -92,7 +93,7 @@ namespace System.Net
 
         public override bool PreAuthenticate { get; set; }
 
-        public override IWebProxy Proxy { get; set; }
+        public override IWebProxy? Proxy { get; set; }
 
         public override int Timeout
         {
@@ -155,10 +156,10 @@ namespace System.Net
             catch (Exception e) { throw new WebException(e.Message, e); }
         }
 
-        public override IAsyncResult BeginGetRequestStream(AsyncCallback callback, object state)
+        public override IAsyncResult BeginGetRequestStream(AsyncCallback? callback, object? state)
         {
             CheckAndMarkAsyncGetRequestStreamPending();
-            Task<Stream> t = Task.Factory.StartNew(s => ((FileWebRequest)s).CreateWriteStream(),
+            Task<Stream> t = Task.Factory.StartNew(s => ((FileWebRequest)s!).CreateWriteStream(),
                 this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             return TaskToApm.Begin(t, callback, state);
         }
@@ -168,7 +169,7 @@ namespace System.Net
             CheckAndMarkAsyncGetRequestStreamPending();
             return Task.Factory.StartNew(s =>
             {
-                FileWebRequest thisRef = (FileWebRequest)s;
+                FileWebRequest thisRef = (FileWebRequest)s!;
                 Stream writeStream = thisRef.CreateWriteStream();
                 thisRef._writePending = false;
                 return writeStream;
@@ -216,10 +217,10 @@ namespace System.Net
             }
         }
 
-        public override IAsyncResult BeginGetResponse(AsyncCallback callback, object state)
+        public override IAsyncResult BeginGetResponse(AsyncCallback? callback, object? state)
         {
             CheckAndMarkAsyncGetResponsePending();
-            Task<WebResponse> t = Task.Factory.StartNew(s => ((FileWebRequest)s).CreateResponse(),
+            Task<WebResponse> t = Task.Factory.StartNew(s => ((FileWebRequest)s!).CreateResponse(),
                  this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             return TaskToApm.Begin(t, callback, state);
         }
@@ -229,7 +230,7 @@ namespace System.Net
             CheckAndMarkAsyncGetResponsePending();
             return Task.Factory.StartNew(s =>
             {
-                var thisRef = (FileWebRequest)s;
+                var thisRef = (FileWebRequest)s!;
                 WebResponse response = thisRef.CreateResponse();
                 _readPending = false;
                 return response;
@@ -366,7 +367,7 @@ namespace System.Net
             }
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             CheckAborted();
             try
@@ -393,7 +394,7 @@ namespace System.Net
             }
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             CheckAborted();
             try

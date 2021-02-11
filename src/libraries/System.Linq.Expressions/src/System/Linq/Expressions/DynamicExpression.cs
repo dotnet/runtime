@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -36,6 +35,9 @@ namespace System.Linq.Expressions
         /// Reduces the dynamic expression node to a simpler expression.
         /// </summary>
         /// <returns>The reduced expression.</returns>
+        [DynamicDependency("Target", typeof(CallSite<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The field will be preserved by the DynamicDependency")]
         public override Expression Reduce()
         {
             var site = Expression.Constant(CallSite.Create(DelegateType, Binder));
@@ -135,7 +137,7 @@ namespace System.Linq.Expressions
         /// </summary>
         public ReadOnlyCollection<Expression> Arguments => GetOrMakeArguments();
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             throw ContractUtils.Unreachable;
@@ -146,8 +148,7 @@ namespace System.Linq.Expressions
         /// </summary>
         protected internal override Expression Accept(ExpressionVisitor visitor)
         {
-            var dynVisitor = visitor as DynamicExpressionVisitor;
-            if (dynVisitor != null)
+            if (visitor is DynamicExpressionVisitor dynVisitor)
             {
                 return dynVisitor.VisitDynamic(this);
             }
@@ -162,7 +163,7 @@ namespace System.Linq.Expressions
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
         /// subclass of DynamicExpression which is being used.
         /// </summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual DynamicExpression Rewrite(Expression[] args)
         {
             throw ContractUtils.Unreachable;
@@ -175,9 +176,9 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="arguments">The <see cref="Arguments" /> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public DynamicExpression Update(IEnumerable<Expression> arguments)
+        public DynamicExpression Update(IEnumerable<Expression>? arguments)
         {
-            ICollection<Expression> args;
+            ICollection<Expression>? args;
             if (arguments == null)
             {
                 args = null;
@@ -199,21 +200,21 @@ namespace System.Linq.Expressions
             return ExpressionExtension.MakeDynamic(DelegateType, Binder, arguments);
         }
 
-        [ExcludeFromCodeCoverage] // Unreachable
-        internal virtual bool SameArguments(ICollection<Expression> arguments)
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
+        internal virtual bool SameArguments(ICollection<Expression>? arguments)
         {
             throw ContractUtils.Unreachable;
         }
 
         #region IArgumentProvider Members
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         Expression IArgumentProvider.GetArgument(int index)
         {
             throw ContractUtils.Unreachable;
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         int IArgumentProvider.ArgumentCount
         {
             get { throw ContractUtils.Unreachable; }
@@ -368,7 +369,7 @@ namespace System.Linq.Expressions
         /// <see cref="Binder">Binder</see>, and
         /// <see cref="Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static new DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression> arguments)
+        public static new DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression>? arguments)
         {
             return ExpressionExtension.MakeDynamic(delegateType, binder, arguments);
         }
@@ -386,7 +387,7 @@ namespace System.Linq.Expressions
         /// <see cref="Binder">Binder</see>, and
         /// <see cref="Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static new DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[] arguments)
+        public static new DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[]? arguments)
         {
             return ExpressionExtension.MakeDynamic(delegateType, binder, arguments);
         }
@@ -493,7 +494,7 @@ namespace System.Linq.Expressions
 
         Expression IArgumentProvider.GetArgument(int index) => _arguments[index];
 
-        internal override bool SameArguments(ICollection<Expression> arguments) =>
+        internal override bool SameArguments(ICollection<Expression>? arguments) =>
             ExpressionUtils.SameElements(arguments, _arguments);
 
         int IArgumentProvider.ArgumentCount => _arguments.Count;
@@ -542,7 +543,7 @@ namespace System.Linq.Expressions
 
         int IArgumentProvider.ArgumentCount => 1;
 
-        internal override bool SameArguments(ICollection<Expression> arguments)
+        internal override bool SameArguments(ICollection<Expression>? arguments)
         {
             if (arguments != null && arguments.Count == 1)
             {
@@ -602,12 +603,11 @@ namespace System.Linq.Expressions
 
         int IArgumentProvider.ArgumentCount => 2;
 
-        internal override bool SameArguments(ICollection<Expression> arguments)
+        internal override bool SameArguments(ICollection<Expression>? arguments)
         {
             if (arguments != null && arguments.Count == 2)
             {
-                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
-                if (alreadyCollection != null)
+                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(arguments, alreadyCollection);
                 }
@@ -674,12 +674,11 @@ namespace System.Linq.Expressions
 
         int IArgumentProvider.ArgumentCount => 3;
 
-        internal override bool SameArguments(ICollection<Expression> arguments)
+        internal override bool SameArguments(ICollection<Expression>? arguments)
         {
             if (arguments != null && arguments.Count == 3)
             {
-                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
-                if (alreadyCollection != null)
+                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(arguments, alreadyCollection);
                 }
@@ -752,12 +751,11 @@ namespace System.Linq.Expressions
 
         int IArgumentProvider.ArgumentCount => 4;
 
-        internal override bool SameArguments(ICollection<Expression> arguments)
+        internal override bool SameArguments(ICollection<Expression>? arguments)
         {
             if (arguments != null && arguments.Count == 4)
             {
-                ReadOnlyCollection<Expression> alreadyCollection = _arg0 as ReadOnlyCollection<Expression>;
-                if (alreadyCollection != null)
+                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(arguments, alreadyCollection);
                 }
@@ -825,9 +823,9 @@ namespace System.Linq.Expressions
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[] arguments)
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[]? arguments)
         {
-            return MakeDynamic(delegateType, binder, (IEnumerable<Expression>)arguments);
+            return MakeDynamic(delegateType, binder, (IEnumerable<Expression>?)arguments);
         }
 
         /// <summary>
@@ -843,7 +841,7 @@ namespace System.Linq.Expressions
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression> arguments)
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression>? arguments)
         {
             IReadOnlyList<Expression> argumentList = arguments as IReadOnlyList<Expression> ?? arguments.ToReadOnly();
             switch (argumentList.Count)

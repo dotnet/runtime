@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -14,13 +14,25 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class OpenSslX509Encoder : ManagedX509ExtensionProcessor, IX509Pal
     {
-        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
+        public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
         {
-            if (oid.Value == Oids.EcPublicKey && certificatePal != null)
-            {
-                return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
-            }
+            if (certificatePal is null)
+                throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
 
+            return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
+        }
+
+        public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
+        {
+            if (certificatePal is null)
+                throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+
+            return ((OpenSslX509CertificateReader)certificatePal).GetECDiffieHellmanPublicKey();
+        }
+
+
+        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
+        {
             switch (oid.Value)
             {
                 case Oids.Rsa:
@@ -29,7 +41,7 @@ namespace Internal.Cryptography.Pal
                     return BuildDsaPublicKey(encodedKeyValue, encodedParameters);
             }
 
-            // NotSupportedException is what desktop and CoreFx-Windows throw in this situation.
+            // NotSupportedException is thrown by .NET Framework and .NET Core on Windows.
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }
 
@@ -52,10 +64,10 @@ namespace Internal.Cryptography.Pal
                 multiLine);
         }
 
-        public X509ContentType GetCertContentType(byte[] rawData)
+        public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
         {
             {
-                ICertificatePal certPal;
+                ICertificatePal? certPal;
 
                 if (OpenSslX509CertificateReader.TryReadX509Der(rawData, out certPal) ||
                     OpenSslX509CertificateReader.TryReadX509Pem(rawData, out certPal))
@@ -72,7 +84,7 @@ namespace Internal.Cryptography.Pal
             }
 
             {
-                OpenSslPkcs12Reader pfx;
+                OpenSslPkcs12Reader? pfx;
 
                 if (OpenSslPkcs12Reader.TryRead(rawData, out pfx))
                 {
@@ -98,7 +110,7 @@ namespace Internal.Cryptography.Pal
 
                 // X509ContentType.Cert
                 {
-                    ICertificatePal certPal;
+                    ICertificatePal? certPal;
 
                     if (OpenSslX509CertificateReader.TryReadX509Der(fileBio, out certPal))
                     {
@@ -139,7 +151,7 @@ namespace Internal.Cryptography.Pal
 
             // X509ContentType.Pkcs12 (aka PFX)
             {
-                OpenSslPkcs12Reader pkcs12Reader;
+                OpenSslPkcs12Reader? pkcs12Reader;
 
                 if (OpenSslPkcs12Reader.TryRead(File.ReadAllBytes(fileName), out pkcs12Reader))
                 {
@@ -271,24 +283,23 @@ namespace Internal.Cryptography.Pal
         {
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
             {
-                Algorithm = new AlgorithmIdentifierAsn { Algorithm = new Oid(Oids.Dsa, null), Parameters = encodedParameters },
+                Algorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Dsa, Parameters = encodedParameters },
                 SubjectPublicKey = encodedKeyValue,
             };
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            spki.Encode(writer);
+
+            DSA dsa = new DSAOpenSsl();
+            try
             {
-                spki.Encode(writer);
-                DSA dsa = new DSAOpenSsl();
-                try
-                {
-                    dsa.ImportSubjectPublicKeyInfo(writer.EncodeAsSpan(), out _);
-                    return dsa;
-                }
-                catch (Exception)
-                {
-                    dsa.Dispose();
-                    throw;
-                }
+                dsa.ImportSubjectPublicKeyInfo(writer.Encode(), out _);
+                return dsa;
+            }
+            catch (Exception)
+            {
+                dsa.Dispose();
+                throw;
             }
         }
     }

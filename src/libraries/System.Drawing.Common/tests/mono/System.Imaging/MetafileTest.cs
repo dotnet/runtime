@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 //
 // Metafile class unit tests
 //
@@ -38,7 +38,7 @@ using Xunit;
 
 namespace MonoTests.System.Drawing.Imaging
 {
-
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class MetafileTest
     {
 
@@ -204,6 +204,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class MetafileFulltrustTest
     {
         private void CheckEmptyHeader(Metafile mf, EmfType type)
@@ -369,27 +370,6 @@ namespace MonoTests.System.Drawing.Imaging
                 mf.Dispose();
                 Assert.Equal(size, new FileInfo(filename).Length);
             }
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
-        public void CreateFilename_SingleGraphics_EmfOnly()
-        {
-            CreateFilename(EmfType.EmfOnly, true);
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
-        public void CreateFilename_SingleGraphics_EmfPlusDual()
-        {
-            CreateFilename(EmfType.EmfPlusDual, true);
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
-        public void CreateFilename_SingleGraphics_EmfPlusOnly()
-        {
-            CreateFilename(EmfType.EmfPlusOnly, true);
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -30,7 +29,7 @@ typedef struct
 * number for any other failure.
 *
 */
-DLLEXPORT int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen);
+PALEXPORT int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen);
 
 /**
 * Gets a password structure for the given user name.
@@ -39,7 +38,7 @@ DLLEXPORT int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, i
 * Returns 0 for success, -1 if no entry found, positive error
 * number for any other failure.
 */
-DLLEXPORT int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen);
+PALEXPORT int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen);
 
 /**
 * Gets and returns the effective user's identity.
@@ -47,7 +46,7 @@ DLLEXPORT int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* bu
 *
 * Always succeeds.
 */
-DLLEXPORT uint32_t SystemNative_GetEUid(void);
+PALEXPORT uint32_t SystemNative_GetEUid(void);
 
 /**
 * Gets and returns the effective group's identity.
@@ -55,7 +54,7 @@ DLLEXPORT uint32_t SystemNative_GetEUid(void);
 *
 * Always succeeds.
 */
-DLLEXPORT uint32_t SystemNative_GetEGid(void);
+PALEXPORT uint32_t SystemNative_GetEGid(void);
 
 /**
 * Sets the effective user ID of the calling process
@@ -63,7 +62,7 @@ DLLEXPORT uint32_t SystemNative_GetEGid(void);
 *
 * Returns 0 for success. On error, -1 is returned and errno is set.
 */
-DLLEXPORT int32_t SystemNative_SetEUid(uint32_t euid);
+PALEXPORT int32_t SystemNative_SetEUid(uint32_t euid);
 
 /**
 * Gets the list of groups to which a user belongs.
@@ -73,7 +72,7 @@ DLLEXPORT int32_t SystemNative_SetEUid(uint32_t euid);
 * If the buffer is too small, -1 is returned and ngroups contains the required size.
 * On error, -1 is returned and errno is set.
 */
-DLLEXPORT int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* groups, int32_t* ngroups);
+PALEXPORT int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* groups, int32_t* ngroups);
 
 /**
 * Gets and returns the real user's identity.
@@ -81,4 +80,4 @@ DLLEXPORT int32_t SystemNative_GetGroupList(const char* name, uint32_t group, ui
 *
 * Always succeeds.
 */
-DLLEXPORT uint32_t SystemNative_GetUid(void);
+PALEXPORT uint32_t SystemNative_GetUid(void);

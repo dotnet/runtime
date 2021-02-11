@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Threading;
@@ -20,14 +19,13 @@ namespace System.ComponentModel
             get => (Volatile.Read(ref _data) & bit) == bit;
             set
             {
-                while (true)
+                if (value)
                 {
-                    int oldValue = _data;
-                    int newValue = value ? oldValue | bit : oldValue &= ~bit;
-                    if (Interlocked.CompareExchange(ref _data, newValue, oldValue) == oldValue)
-                    {
-                        break;
-                    }
+                    Interlocked.Or(ref _data, bit);
+                }
+                else
+                {
+                    Interlocked.And(ref _data, ~bit);
                 }
             }
         }

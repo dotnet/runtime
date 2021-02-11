@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 using System.Threading;
@@ -24,21 +23,6 @@ namespace System.Net.Sockets.Tests
 #pragma warning disable 0618 // Supports* are obsoleted
             Assert.Equal(Socket.SupportsIPv6, Socket.OSSupportsIPv6);
 #pragma warning restore
-        }
-
-        [Fact]
-        public void UseOnlyOverlappedIO_AlwaysFalse()
-        {
-            using (var s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Equal(AddressFamily.InterNetwork, s.AddressFamily);
-                Assert.Equal(SocketType.Stream, s.SocketType);
-                Assert.Equal(ProtocolType.Tcp, s.ProtocolType);
-
-                Assert.False(s.UseOnlyOverlappedIO);
-                s.UseOnlyOverlappedIO = true;
-                Assert.False(s.UseOnlyOverlappedIO);
-            }
         }
 
         [Fact]
@@ -80,7 +64,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void IOControl_SIOCATMARK_Unix_Success()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -127,7 +111,7 @@ namespace System.Net.Sockets.Tests
 
                         // OOB data read, read pointer at mark.
                         Assert.Equal(4, client.IOControl(IOControlCode.OobDataRead, null, siocatmarkResult));
-                        Assert.Equal(PlatformDetection.IsOSX ? 0 : 1, BitConverter.ToInt32(siocatmarkResult, 0));
+                        Assert.Equal(PlatformDetection.IsOSXLike ? 0 : 1, BitConverter.ToInt32(siocatmarkResult, 0));
                     }
                 }
             }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Numerics;
 using System.Collections;
@@ -10,7 +9,7 @@ namespace System.Data.Common
 {
     internal sealed class BigIntegerStorage : DataStorage
     {
-        private BigInteger[] _values;
+        private BigInteger[] _values = default!; // Late-initialized
 
         internal BigIntegerStorage(DataColumn column) :
             base(column, typeof(BigInteger), BigInteger.Zero, StorageType.BigInteger)
@@ -39,7 +38,7 @@ namespace System.Data.Common
             return valueNo1.CompareTo(valueNo2);
         }
 
-        public override int CompareValueTo(int recordNo, object value)
+        public override int CompareValueTo(int recordNo, object? value)
         {
             Debug.Assert(0 <= recordNo, "Invalid record");
             Debug.Assert(null != value, "null value");
@@ -92,7 +91,7 @@ namespace System.Data.Common
             else { throw ExceptionBuilder.ConvertFailed(typeof(System.Numerics.BigInteger), type); }
         }
 
-        public override object ConvertValue(object value)
+        public override object ConvertValue(object? value)
         {
             if (_nullValue != value)
             {

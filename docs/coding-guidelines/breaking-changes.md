@@ -1,6 +1,6 @@
 # Breaking Changes
 
-We take compatibility in .NET Framework and .NET Core extremely seriously.
+We take compatibility in .NET Framework and .NET Core extremely seriously. We use the [breaking change process](../project/breaking-change-process.md) to manage and consider potential breaking changes.
 
 Although .NET Core can be deployed app local, we are engineering it such that
 portable libraries can target it and still run on .NET Framework as well. This
@@ -97,7 +97,7 @@ more latitude here in .NET Core.
 
 For buckets #2 and #3 we apply a risk-benefit analysis. It doesn't matter if the
 old behavior is "wrong", we still need to think through the implications. This
-can result in one of the following outcomes: 
+can result in one of the following outcomes:
 
 * **Accepted with compat switch**. Depending on the estimated customer impact,
   we may decide to add a compat switch that allows consumers to bring back the

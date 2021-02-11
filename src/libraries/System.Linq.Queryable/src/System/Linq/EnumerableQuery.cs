@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -11,27 +10,27 @@ namespace System.Linq
     public abstract class EnumerableQuery
     {
         internal abstract Expression Expression { get; }
-        internal abstract IEnumerable Enumerable { get; }
+        internal abstract IEnumerable? Enumerable { get; }
 
         internal EnumerableQuery() { }
 
         internal static IQueryable Create(Type elementType, IEnumerable sequence)
         {
             Type seqType = typeof(EnumerableQuery<>).MakeGenericType(elementType);
-            return (IQueryable)Activator.CreateInstance(seqType, sequence);
+            return (IQueryable)Activator.CreateInstance(seqType, sequence)!;
         }
 
         internal static IQueryable Create(Type elementType, Expression expression)
         {
             Type seqType = typeof(EnumerableQuery<>).MakeGenericType(elementType);
-            return (IQueryable)Activator.CreateInstance(seqType, expression);
+            return (IQueryable)Activator.CreateInstance(seqType, expression)!;
         }
     }
 
     public class EnumerableQuery<T> : EnumerableQuery, IOrderedQueryable<T>, IQueryProvider
     {
         private readonly Expression _expression;
-        private IEnumerable<T> _enumerable;
+        private IEnumerable<T>? _enumerable;
 
         IQueryProvider IQueryable.Provider => this;
 
@@ -48,7 +47,7 @@ namespace System.Linq
 
         internal override Expression Expression => _expression;
 
-        internal override IEnumerable Enumerable => _enumerable;
+        internal override IEnumerable? Enumerable => _enumerable;
 
         Expression IQueryable.Expression => _expression;
 
@@ -58,7 +57,7 @@ namespace System.Linq
         {
             if (expression == null)
                 throw Error.ArgumentNull(nameof(expression));
-            Type iqType = TypeHelper.FindGenericType(typeof(IQueryable<>), expression.Type);
+            Type? iqType = TypeHelper.FindGenericType(typeof(IQueryable<>), expression.Type);
             if (iqType == null)
                 throw Error.ArgumentNotValid(nameof(expression));
             return Create(iqType.GetGenericArguments()[0], expression);
@@ -75,7 +74,7 @@ namespace System.Linq
             return new EnumerableQuery<TElement>(expression);
         }
 
-        object IQueryProvider.Execute(Expression expression)
+        object? IQueryProvider.Execute(Expression expression)
         {
             if (expression == null)
                 throw Error.ArgumentNull(nameof(expression));
@@ -101,7 +100,7 @@ namespace System.Linq
             {
                 EnumerableRewriter rewriter = new EnumerableRewriter();
                 Expression body = rewriter.Visit(_expression);
-                Expression<Func<IEnumerable<T>>> f = Expression.Lambda<Func<IEnumerable<T>>>(body, (IEnumerable<ParameterExpression>)null);
+                Expression<Func<IEnumerable<T>>> f = Expression.Lambda<Func<IEnumerable<T>>>(body, (IEnumerable<ParameterExpression>?)null);
                 IEnumerable<T> enumerable = f.Compile()();
                 if (enumerable == this)
                     throw Error.EnumeratingNullEnumerableExpression();
@@ -110,10 +109,9 @@ namespace System.Linq
             return _enumerable.GetEnumerator();
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
-            ConstantExpression c = _expression as ConstantExpression;
-            if (c != null && c.Value == this)
+            if (_expression is ConstantExpression c && c.Value == this)
             {
                 if (_enumerable != null)
                     return _enumerable.ToString();

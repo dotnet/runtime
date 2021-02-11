@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -8,7 +9,7 @@ namespace System.Xml
     {
         private long _idLow;
         private long _idHigh;
-        private string _s;
+        private string? _s;
         private const int guidLength = 16;
         private const int uuidLength = 45;
 
@@ -48,8 +49,6 @@ namespace System.Xml
             /* 112-127 */
                               0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100,
         };
-
-        private const string val2char = "0123456789abcdef";
 
         public UniqueId() : this(Guid.NewGuid())
         {
@@ -137,10 +136,10 @@ namespace System.Xml
             return char2val[ch1] | char2val[0x80 + ch2];
         }
 
-        private unsafe void UnsafeEncode(char* val2char, byte b, char* pch)
+        private static unsafe void UnsafeEncode(byte b, char* pch)
         {
-            pch[0] = val2char[b >> 4];
-            pch[1] = val2char[b & 0x0F];
+            pch[0] = HexConverter.ToCharLower(b >> 4);
+            pch[1] = HexConverter.ToCharLower(b);
         }
 
         public bool IsGuid => ((_idLow | _idHigh) != 0);
@@ -241,26 +240,22 @@ namespace System.Xml
                     pch[27] = '-';
                     pch[32] = '-';
 
-                    fixed (char* ps = val2char)
-                    {
-                        char* _val2char = ps;
-                        UnsafeEncode(_val2char, bytes[0], &pch[15]);
-                        UnsafeEncode(_val2char, bytes[1], &pch[13]);
-                        UnsafeEncode(_val2char, bytes[2], &pch[11]);
-                        UnsafeEncode(_val2char, bytes[3], &pch[9]);
-                        UnsafeEncode(_val2char, bytes[4], &pch[20]);
-                        UnsafeEncode(_val2char, bytes[5], &pch[18]);
-                        UnsafeEncode(_val2char, bytes[6], &pch[25]);
-                        UnsafeEncode(_val2char, bytes[7], &pch[23]);
-                        UnsafeEncode(_val2char, bytes[8], &pch[28]);
-                        UnsafeEncode(_val2char, bytes[9], &pch[30]);
-                        UnsafeEncode(_val2char, bytes[10], &pch[33]);
-                        UnsafeEncode(_val2char, bytes[11], &pch[35]);
-                        UnsafeEncode(_val2char, bytes[12], &pch[37]);
-                        UnsafeEncode(_val2char, bytes[13], &pch[39]);
-                        UnsafeEncode(_val2char, bytes[14], &pch[41]);
-                        UnsafeEncode(_val2char, bytes[15], &pch[43]);
-                    }
+                    UnsafeEncode(bytes[0], &pch[15]);
+                    UnsafeEncode(bytes[1], &pch[13]);
+                    UnsafeEncode(bytes[2], &pch[11]);
+                    UnsafeEncode(bytes[3], &pch[9]);
+                    UnsafeEncode(bytes[4], &pch[20]);
+                    UnsafeEncode(bytes[5], &pch[18]);
+                    UnsafeEncode(bytes[6], &pch[25]);
+                    UnsafeEncode(bytes[7], &pch[23]);
+                    UnsafeEncode(bytes[8], &pch[28]);
+                    UnsafeEncode(bytes[9], &pch[30]);
+                    UnsafeEncode(bytes[10], &pch[33]);
+                    UnsafeEncode(bytes[11], &pch[35]);
+                    UnsafeEncode(bytes[12], &pch[37]);
+                    UnsafeEncode(bytes[13], &pch[39]);
+                    UnsafeEncode(bytes[14], &pch[41]);
+                    UnsafeEncode(bytes[15], &pch[43]);
                 }
             }
 
@@ -317,12 +312,12 @@ namespace System.Xml
             return _s;
         }
 
-        public static bool operator ==(UniqueId id1, UniqueId id2)
+        public static bool operator ==(UniqueId? id1, UniqueId? id2)
         {
             if (object.ReferenceEquals(id1, id2))
                 return true;
 
-            if (object.ReferenceEquals(id1, null) || object.ReferenceEquals(id2, null))
+            if (id1 is null || id2 is null)
                 return false;
 
 #pragma warning suppress 56506 // Microsoft, checks for whether id1 and id2 are null done above.
@@ -334,12 +329,12 @@ namespace System.Xml
             return id1.ToString() == id2.ToString();
         }
 
-        public static bool operator !=(UniqueId id1, UniqueId id2)
+        public static bool operator !=(UniqueId? id1, UniqueId? id2)
         {
             return !(id1 == id2);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return this == (obj as UniqueId);
         }

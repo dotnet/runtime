@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -84,7 +83,6 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(CommonSecurityDescriptor_GetBinaryForm_TestData))]
-        [ActiveIssue(16919)]
         public static void TestGetBinaryForm(bool isContainer, bool isDS, string sddl, string verifierSddl, int offset)
         {
             CommonSecurityDescriptor commonSecurityDescriptor = null;

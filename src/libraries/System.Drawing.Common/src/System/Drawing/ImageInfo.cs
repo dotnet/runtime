@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Drawing.Imaging;
@@ -25,7 +24,7 @@ namespace System.Drawing
             private readonly int _frameCount;
             private bool _frameDirty;
             private readonly bool _animated;
-            private EventHandler _onFrameChangedHandler;
+            private EventHandler? _onFrameChangedHandler;
             private readonly int[] _frameDelay;
             private int _frameTimer;
 
@@ -33,12 +32,13 @@ namespace System.Drawing
             {
                 _image = image;
                 _animated = ImageAnimator.CanAnimate(image);
+                _frameDelay = null!; // guaranteed to be initialized by the final check
 
                 if (_animated)
                 {
                     _frameCount = image.GetFrameCount(FrameDimension.Time);
 
-                    PropertyItem frameDelayItem = image.GetPropertyItem(PropertyTagFrameDelay);
+                    PropertyItem? frameDelayItem = image.GetPropertyItem(PropertyTagFrameDelay);
 
                     // If the image does not have a frame delay, we just return 0.
                     //
@@ -46,7 +46,7 @@ namespace System.Drawing
                     {
                         // Convert the frame delay from byte[] to int
                         //
-                        byte[] values = frameDelayItem.Value;
+                        byte[] values = frameDelayItem.Value!;
                         Debug.Assert(values.Length == 4 * FrameCount, "PropertyItem has invalid value byte array");
                         _frameDelay = new int[FrameCount];
                         for (int i = 0; i < FrameCount; ++i)
@@ -116,7 +116,7 @@ namespace System.Drawing
                 }
             }
 
-            public EventHandler FrameChangedHandler
+            public EventHandler? FrameChangedHandler
             {
                 get
                 {
@@ -144,7 +144,7 @@ namespace System.Drawing
             /// </summary>
             public int FrameDelay(int frame)
             {
-                return _frameDelay[frame];
+                return _frameDelay![frame];
             }
 
             internal int FrameTimer

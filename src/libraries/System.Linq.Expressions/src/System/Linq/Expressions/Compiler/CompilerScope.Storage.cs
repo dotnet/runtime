@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Reflection.Emit;
@@ -111,8 +110,9 @@ namespace System.Linq.Expressions.Compiler
             {
                 _array = array;
                 _index = index;
-                _boxType = typeof(StrongBox<>).MakeGenericType(variable.Type);
-                _boxValueField = _boxType.GetField("Value");
+                Type boxType = typeof(StrongBox<>).MakeGenericType(variable.Type);
+                _boxValueField = boxType.GetField("Value")!;
+                _boxType = boxType;
             }
 
             internal override void EmitLoad()
@@ -162,7 +162,7 @@ namespace System.Linq.Expressions.Compiler
                 : base(compiler, variable)
             {
                 Type boxType = typeof(StrongBox<>).MakeGenericType(variable.Type);
-                _boxValueField = boxType.GetField("Value");
+                _boxValueField = boxType.GetField("Value")!;
 
                 // Set name if DebugInfoGenerator support is brought back.
                 _boxLocal = compiler.GetLocal(boxType);

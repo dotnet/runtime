@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
-#include "pal_compiler.h"
+#pragma once
+
 #include "pal_locale.h"
+#include "pal_compiler.h"
 
 // Enum that corresponds to managed enum CultureData.LocaleNumberData.
 // The numeric values of the enum members match their Win32 counterparts.
@@ -34,11 +35,11 @@ typedef enum
     WeekRule_FirstFourDayWeek = 2
 } CalendarWeekRule;
 
-DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoInt(const UChar* localeName,
+PALEXPORT int32_t GlobalizationNative_GetLocaleInfoInt(const UChar* localeName,
                                                        LocaleNumberData localeNumberData,
                                                        int32_t* value);
 
-DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(const UChar* localeName,
+PALEXPORT int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(const UChar* localeName,
                                                                  LocaleNumberData localeGroupingData,
                                                                  int32_t* primaryGroupSize,
                                                                  int32_t* secondaryGroupSize);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include <set>
 #include <functional>
@@ -281,10 +280,13 @@ void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& 
  *   -- When servicing directories are looked up, look up only if the deps file marks the entry as serviceable.
  *   -- When a deps json based probe is performed, the deps entry's package name and version must match.
  *   -- When looking into a published dir, for rid specific assets lookup rid split folders; for non-rid assets lookup the layout dir.
+ * The path to the resolved file is returned in candidate out parameter
+ * If the candidate is embedded within the single-file bundle (rather than an actual file on disk), found_in_bundle will be set to true.
  */
-bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, int fx_level, pal::string_t* candidate)
+bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, int fx_level, pal::string_t* candidate, bool & found_in_bundle)
 {
     candidate->clear();
+    found_in_bundle = false;
 
     for (const auto& config : m_probes)
     {
@@ -316,8 +318,9 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 // If the deps json has the package name and version, then someone has already done rid selection and
                 // put the right asset in the dir. So checking just package name and version would suffice.
                 // No need to check further for the exact asset relative sub path.
-                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, candidate))
+                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, false, candidate, found_in_bundle))
                 {
+                    assert(!found_in_bundle);
                     trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
                     return true;
                 }
@@ -334,7 +337,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             {
                 if (entry.is_rid_specific)
                 {
-                    if (entry.to_rel_path(deps_dir, candidate))
+                    if (entry.to_rel_path(deps_dir, true, false, candidate))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -343,7 +346,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 else
                 {
                     // Non-rid assets, lookup in the published dir.
-                    if (entry.to_dir_path(deps_dir, candidate))
+                    if (entry.to_dir_path(deps_dir, true, candidate, found_in_bundle))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -353,7 +356,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
             trace::verbose(_X("    Skipping... not found in deps dir '%s'"), deps_dir.c_str());
         }
-        else if (entry.to_full_path(probe_dir, candidate))
+        else if (entry.to_full_path(probe_dir, config.only_serviceable_assets, candidate))
         {
             trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
             return true;
@@ -414,7 +417,6 @@ bool deps_resolver_t::resolve_tpa_list(
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies)
 {
-    const std::vector<deps_entry_t> empty(0);
     name_to_resolved_asset_map_t items;
 
     auto process_entry = [&](const pal::string_t& deps_dir, const deps_entry_t& entry, int fx_level) -> bool
@@ -438,10 +440,17 @@ bool deps_resolver_t::resolve_tpa_list(
         name_to_resolved_asset_map_t::iterator existing = items.find(entry.asset.name);
         if (existing == items.end())
         {
-            if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path))
+            bool found_in_bundle = false;
+            if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path, found_in_bundle))
             {
-                deps_resolved_asset_t resolved_asset(entry.asset, resolved_path);
-                add_tpa_asset(resolved_asset, &items);
+                // Assemblies loaded directly from the bundle are not added to the TPA list.
+                // The runtime directly probes the bundle-manifest using a host-callback.
+                if (!found_in_bundle)
+                {
+                    deps_resolved_asset_t resolved_asset(entry.asset, resolved_path);
+                    add_tpa_asset(resolved_asset, &items);
+                }
+
                 return true;
             }
 
@@ -469,7 +478,8 @@ bool deps_resolver_t::resolve_tpa_list(
             if (entry.asset.assembly_version > existing_entry->asset.assembly_version ||
                 (entry.asset.assembly_version == existing_entry->asset.assembly_version && entry.asset.file_version >= existing_entry->asset.file_version))
             {
-                if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path))
+                bool found_in_bundle = false;
+                if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path, found_in_bundle))
                 {
                     // If the path is the same, then no need to replace
                     if (resolved_path != existing_entry->resolved_path)
@@ -481,9 +491,12 @@ bool deps_resolver_t::resolve_tpa_list(
                         existing_entry = nullptr;
                         items.erase(existing);
 
-                        deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
-                        deps_resolved_asset_t resolved_asset(asset, resolved_path);
-                        add_tpa_asset(resolved_asset, &items);
+                        if (!found_in_bundle)
+                        {
+                            deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
+                            deps_resolved_asset_t resolved_asset(asset, resolved_path);
+                            add_tpa_asset(resolved_asset, &items);
+                        }
                     }
                 }
                 else if (fx_level != 0)
@@ -506,9 +519,17 @@ bool deps_resolver_t::resolve_tpa_list(
         // First add managed assembly to the TPA.
         // TODO: Remove: the deps should contain the managed DLL.
         // Workaround for: csc.deps.json doesn't have the csc.dll
-        deps_asset_t asset(get_filename_without_ext(m_managed_app), get_filename(m_managed_app), version_t(), version_t());
-        deps_resolved_asset_t resolved_asset(asset, m_managed_app);
-        add_tpa_asset(resolved_asset, &items);
+
+        // If this is a single-file bundle, app.dll is expected to be within the bundle, unless it is explicitly excluded from the bundle.
+        // In all other cases, add its path to the TPA list.
+        pal::string_t managed_app_name = get_filename(m_managed_app);
+        if (!bundle::info_t::is_single_file_bundle() ||
+            bundle::runner_t::app()->probe(managed_app_name) == nullptr)
+        {
+            deps_asset_t asset(get_filename_without_ext(m_managed_app), managed_app_name, version_t(), version_t());
+            deps_resolved_asset_t resolved_asset(asset, m_managed_app);
+            add_tpa_asset(resolved_asset, &items);
+        }
 
         // Add the app's entries
         const auto& deps_entries = get_deps().get_entries(deps_entry_t::asset_types::runtime);
@@ -549,14 +570,17 @@ bool deps_resolver_t::resolve_tpa_list(
     }
 
     // Probe FX deps entries after app assemblies are added.
-    for (size_t i = 1; i < m_fx_definitions.size(); ++i)
+    if (m_is_framework_dependent)
     {
-        const auto& deps_entries = m_is_framework_dependent ? m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime) : empty;
-        for (const auto& entry : deps_entries)
+        for (size_t i = 1; i < m_fx_definitions.size(); ++i)
         {
-            if (!process_entry(m_fx_definitions[i]->get_dir(), entry, i))
+            const auto& deps_entries = m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime);
+            for (const auto& entry : deps_entries)
             {
-                return false;
+                if (!process_entry(m_fx_definitions[i]->get_dir(), entry, i))
+                {
+                    return false;
+                }
             }
         }
     }
@@ -588,12 +612,6 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     if (m_coreclr_path.empty() && ends_with(path, DIR_SEPARATOR + pal::string_t(LIBCORECLR_NAME), false))
     {
         m_coreclr_path = path;
-        m_coreclr_library_version = entry.library_version;
-        return;
-    }
-    if (m_clrjit_path.empty() && ends_with(path, DIR_SEPARATOR + pal::string_t(LIBCLRJIT_NAME), false))
-    {
-        m_clrjit_path = path;
         return;
     }
 }
@@ -711,18 +729,20 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
     }
 }
 
-void deps_resolver_t::get_app_fx_definition_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const
+void deps_resolver_t::get_app_context_deps_files_range(fx_definition_vector_t::iterator *begin, fx_definition_vector_t::iterator *end) const
 {
     assert(begin != nullptr && end != nullptr);
 
     auto begin_iter = m_fx_definitions.begin();
     auto end_iter = m_fx_definitions.end();
 
-    if (m_host_mode == host_mode_t::libhost
+    if ((m_host_mode == host_mode_t::libhost
+        || (bundle::info_t::is_single_file_bundle() && !bundle::runner_t::app()->is_netcoreapp3_compat_mode()))
         && begin_iter != end_iter)
     {
-        // In a libhost scenario the app definition shouldn't be
-        // included in the creation of the application.
+        // Neither in a libhost scenario nor in a bundled app
+        // the deps files should be exposed in the app context
+        // properties.
         assert(begin_iter->get() == &get_app(m_fx_definitions));
         ++begin_iter;
     }
@@ -763,8 +783,6 @@ bool deps_resolver_t::resolve_probe_dirs(
     // Filter out non-serviced assets so the paths can be added after servicing paths.
     pal::string_t non_serviced;
 
-    std::vector<deps_entry_t> empty(0);
-
     pal::string_t candidate;
 
     auto add_package_cache_entry = [&](const deps_entry_t& entry, const pal::string_t& deps_dir, int fx_level) -> bool
@@ -789,10 +807,14 @@ bool deps_resolver_t::resolve_probe_dirs(
         trace::verbose(_X("Processing native/culture for deps entry [%s, %s, %s]"), 
             entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
-        if (probe_deps_entry(entry, deps_dir, fx_level, &candidate))
+        bool found_in_bundle = false;
+        if (probe_deps_entry(entry, deps_dir, fx_level, &candidate, found_in_bundle))
         {
-            init_known_entry_path(entry, candidate);
-            add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
+            if (!found_in_bundle)
+            {
+                init_known_entry_path(entry, candidate);
+                add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
+            }
         }
         else
         {
@@ -826,7 +848,6 @@ bool deps_resolver_t::resolve_probe_dirs(
         add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
 
         (void) library_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
-        (void) library_exists_in_dir(m_app_dir, LIBCLRJIT_NAME, &m_clrjit_path);
     }
 
     // Handle any additional deps.json that were specified.
@@ -853,6 +874,19 @@ bool deps_resolver_t::resolve_probe_dirs(
             {
                 return false;
             }
+        }
+    }
+
+    // If this is a single-file app, add the app's dir to the native search directories.
+    if (bundle::info_t::is_single_file_bundle() && !is_resources)
+    {
+        auto bundle = bundle::runner_t::app();
+        add_unique_path(asset_type, bundle->base_path(), &items, output, &non_serviced, core_servicing);
+
+        // Add the extraction path if it exists.
+        if (pal::directory_exists(bundle->extraction_path()))
+        {
+            add_unique_path(asset_type, bundle->extraction_path(), &items, output, &non_serviced, core_servicing);
         }
     }
 
@@ -892,7 +926,6 @@ bool deps_resolver_t::resolve_probe_paths(probe_paths_t* probe_paths, std::unord
 
     // If we found coreclr and the jit during native path probe, set the paths now.
     probe_paths->coreclr = m_coreclr_path;
-    probe_paths->clrjit = m_clrjit_path;
 
     return true;
 }

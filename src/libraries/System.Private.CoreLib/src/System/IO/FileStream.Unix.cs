@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -143,7 +143,7 @@ namespace System.IO
         private static Interop.Sys.OpenFlags PreOpenConfigurationFromOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {
             // Translate FileMode.  Most of the values map cleanly to one or more options for open.
-            Interop.Sys.OpenFlags flags = default(Interop.Sys.OpenFlags);
+            Interop.Sys.OpenFlags flags = default;
             switch (mode)
             {
                 default:
@@ -268,6 +268,20 @@ namespace System.IO
                         // name will be removed immediately.
                         Interop.Sys.Unlink(_path); // ignore errors; it's valid that the path may no longer exist
                     }
+
+                    // Closing the file handle can fail, e.g. due to out of disk space
+                    // Throw these errors as exceptions when disposing
+                    if (_fileHandle != null && !_fileHandle.IsClosed && disposing)
+                    {
+                        SafeFileHandle.t_lastCloseErrorInfo = null;
+
+                        _fileHandle.Dispose();
+
+                        if (SafeFileHandle.t_lastCloseErrorInfo != null)
+                        {
+                            throw Interop.GetExceptionForIoErrno(SafeFileHandle.t_lastCloseErrorInfo.GetValueOrDefault(), _path, isDirectory: false);
+                        }
+                    }
                 }
             }
             finally
@@ -291,7 +305,7 @@ namespace System.IO
             // override may already exist on a derived type.
             if (_useAsyncIO && _writePos > 0)
             {
-                return new ValueTask(Task.Factory.StartNew(s => ((FileStream)s!).Dispose(), this,
+                return new ValueTask(Task.Factory.StartNew(static s => ((FileStream)s!).Dispose(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
             }
 
@@ -320,7 +334,9 @@ namespace System.IO
 
         private void FlushWriteBufferForWriteByte()
         {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44542
             _asyncState?.Wait();
+#pragma warning restore CA1416
             try { FlushWriteBuffer(); }
             finally { _asyncState?.Release(); }
         }
@@ -336,47 +352,6 @@ namespace System.IO
             }
         }
 
-        /// <summary>Asynchronously clears all buffers for this stream, causing any buffered data to be written to the underlying device.</summary>
-        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-        /// <returns>A task that represents the asynchronous flush operation.</returns>
-        private Task FlushAsyncInternal(CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            if (_fileHandle.IsClosed)
-            {
-                throw Error.GetFileNotOpen();
-            }
-
-            // As with Win32FileStream, flush the buffers synchronously to avoid race conditions.
-            try
-            {
-                FlushInternalBuffer();
-            }
-            catch (Exception e)
-            {
-                return Task.FromException(e);
-            }
-
-            // We then separately flush to disk asynchronously.  This is only
-            // necessary if we support writing; otherwise, we're done.
-            if (CanWrite)
-            {
-                return Task.Factory.StartNew(
-                    state => ((FileStream)state!).FlushOSBuffer(),
-                    this,
-                    cancellationToken,
-                    TaskCreationOptions.DenyChildAttach,
-                    TaskScheduler.Default);
-            }
-            else
-            {
-                return Task.CompletedTask;
-            }
-        }
-
         /// <summary>Sets the length of this stream to the given value.</summary>
         /// <param name="value">The new length of the stream.</param>
         private void SetLengthInternal(long value)
@@ -388,28 +363,14 @@ namespace System.IO
                 throw new IOException(SR.IO_SetLengthAppendTruncate);
             }
 
-            long origPos = _filePosition;
-
             VerifyOSHandlePosition();
-
-            if (_filePosition != value)
-            {
-                SeekCore(_fileHandle, value, SeekOrigin.Begin);
-            }
 
             CheckFileCall(Interop.Sys.FTruncate(_fileHandle, value));
 
-            // Return file pointer to where it was before setting length
-            if (origPos != value)
+            // Set file pointer to end of file
+            if (_filePosition > value)
             {
-                if (origPos < value)
-                {
-                    SeekCore(_fileHandle, origPos, SeekOrigin.Begin);
-                }
-                else
-                {
-                    SeekCore(_fileHandle, 0, SeekOrigin.End);
-                }
+                SeekCore(_fileHandle, 0, SeekOrigin.End);
             }
         }
 
@@ -557,7 +518,7 @@ namespace System.IO
             // Otherwise, issue the whole request asynchronously.
             synchronousResult = 0;
             _asyncState.Memory = destination;
-            return waitTask.ContinueWith((t, s) =>
+            return waitTask.ContinueWith(static (t, s) =>
             {
                 // The options available on Unix for writing asynchronously to an arbitrary file
                 // handle typically amount to just using another thread to do the synchronous write,
@@ -574,7 +535,7 @@ namespace System.IO
                 try
                 {
                     Memory<byte> memory = thisRef._asyncState.Memory;
-                    thisRef._asyncState.Memory = default(Memory<byte>);
+                    thisRef._asyncState.Memory = default;
                     return thisRef.ReadSpan(memory.Span);
                 }
                 finally { thisRef._asyncState.Release(); }
@@ -584,7 +545,9 @@ namespace System.IO
         /// <summary>Reads from the file handle into the buffer, overwriting anything in it.</summary>
         private int FillReadBufferForReadByte()
         {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44542
             _asyncState?.Wait();
+#pragma warning restore CA1416
             try { return ReadNative(_buffer); }
             finally { _asyncState?.Release(); }
         }
@@ -674,7 +637,7 @@ namespace System.IO
             Debug.Assert(_asyncState != null);
 
             if (cancellationToken.IsCancellationRequested)
-                return new ValueTask(Task.FromCanceled(cancellationToken));
+                return ValueTask.FromCanceled(cancellationToken);
 
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
@@ -685,7 +648,7 @@ namespace System.IO
             }
 
             // Serialize operations using the semaphore.
-            Task waitTask = _asyncState.WaitAsync();
+            Task waitTask = _asyncState.WaitAsync(cancellationToken);
 
             // If we got ownership immediately, and if there's enough space in our buffer
             // to buffer the entire write request, then do so and we're done.
@@ -705,7 +668,7 @@ namespace System.IO
                     }
                     catch (Exception exc)
                     {
-                        return new ValueTask(Task.FromException(exc));
+                        return ValueTask.FromException(exc);
                     }
                     finally
                     {
@@ -716,7 +679,7 @@ namespace System.IO
 
             // Otherwise, issue the whole request asynchronously.
             _asyncState.ReadOnlyMemory = source;
-            return new ValueTask(waitTask.ContinueWith((t, s) =>
+            return new ValueTask(waitTask.ContinueWith(static (t, s) =>
             {
                 // The options available on Unix for writing asynchronously to an arbitrary file
                 // handle typically amount to just using another thread to do the synchronous write,
@@ -733,7 +696,7 @@ namespace System.IO
                 try
                 {
                     ReadOnlyMemory<byte> readOnlyMemory = thisRef._asyncState.ReadOnlyMemory;
-                    thisRef._asyncState.ReadOnlyMemory = default(ReadOnlyMemory<byte>);
+                    thisRef._asyncState.ReadOnlyMemory = default;
                     thisRef.WriteSpan(readOnlyMemory.Span);
                 }
                 finally { thisRef._asyncState.Release(); }

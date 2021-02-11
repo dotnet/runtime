@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
@@ -69,7 +68,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ModuleDefinitionHandle && ((ModuleDefinitionHandle)obj)._rowId == _rowId;
         }
@@ -152,7 +151,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is AssemblyDefinitionHandle && ((AssemblyDefinitionHandle)obj)._rowId == _rowId;
         }
@@ -235,7 +234,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is InterfaceImplementationHandle && ((InterfaceImplementationHandle)obj)._rowId == _rowId;
         }
@@ -318,7 +317,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is MethodDefinitionHandle && ((MethodDefinitionHandle)obj)._rowId == _rowId;
         }
@@ -413,7 +412,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is MethodImplementationHandle && ((MethodImplementationHandle)obj)._rowId == _rowId;
         }
@@ -496,7 +495,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is MethodSpecificationHandle && ((MethodSpecificationHandle)obj)._rowId == _rowId;
         }
@@ -579,7 +578,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is TypeDefinitionHandle && ((TypeDefinitionHandle)obj)._rowId == _rowId;
         }
@@ -662,7 +661,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ExportedTypeHandle && ((ExportedTypeHandle)obj)._rowId == _rowId;
         }
@@ -745,7 +744,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is TypeReferenceHandle && ((TypeReferenceHandle)obj)._rowId == _rowId;
         }
@@ -828,7 +827,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is TypeSpecificationHandle && ((TypeSpecificationHandle)obj)._rowId == _rowId;
         }
@@ -911,7 +910,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is MemberReferenceHandle && ((MemberReferenceHandle)obj)._rowId == _rowId;
         }
@@ -994,7 +993,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is FieldDefinitionHandle && ((FieldDefinitionHandle)obj)._rowId == _rowId;
         }
@@ -1077,7 +1076,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is EventDefinitionHandle && ((EventDefinitionHandle)obj)._rowId == _rowId;
         }
@@ -1160,7 +1159,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is PropertyDefinitionHandle && ((PropertyDefinitionHandle)obj)._rowId == _rowId;
         }
@@ -1243,7 +1242,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is StandaloneSignatureHandle && ((StandaloneSignatureHandle)obj)._rowId == _rowId;
         }
@@ -1326,7 +1325,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ParameterHandle && ((ParameterHandle)obj)._rowId == _rowId;
         }
@@ -1409,7 +1408,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is GenericParameterHandle && ((GenericParameterHandle)obj)._rowId == _rowId;
         }
@@ -1492,7 +1491,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is GenericParameterConstraintHandle && ((GenericParameterConstraintHandle)obj)._rowId == _rowId;
         }
@@ -1575,7 +1574,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ModuleReferenceHandle && ((ModuleReferenceHandle)obj)._rowId == _rowId;
         }
@@ -1693,7 +1692,7 @@ namespace System.Reflection.Metadata
             return left._value == right._value;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is AssemblyReferenceHandle && ((AssemblyReferenceHandle)obj)._value == _value;
         }
@@ -1776,7 +1775,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is CustomAttributeHandle && ((CustomAttributeHandle)obj)._rowId == _rowId;
         }
@@ -1859,7 +1858,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is DeclarativeSecurityAttributeHandle && ((DeclarativeSecurityAttributeHandle)obj)._rowId == _rowId;
         }
@@ -1942,7 +1941,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ConstantHandle && ((ConstantHandle)obj)._rowId == _rowId;
         }
@@ -2025,7 +2024,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ManifestResourceHandle && ((ManifestResourceHandle)obj)._rowId == _rowId;
         }
@@ -2108,7 +2107,7 @@ namespace System.Reflection.Metadata
             return left._rowId == right._rowId;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is AssemblyFileHandle && ((AssemblyFileHandle)obj)._rowId == _rowId;
         }
@@ -2185,7 +2184,7 @@ namespace System.Reflection.Metadata
             return left._offset == right._offset;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is UserStringHandle && ((UserStringHandle)obj)._offset == _offset;
         }
@@ -2401,7 +2400,7 @@ namespace System.Reflection.Metadata
             get { return (StringKind)(_value >> HeapHandleType.OffsetBitCount); }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is StringHandle && Equals((StringHandle)obj);
         }
@@ -2519,7 +2518,7 @@ namespace System.Reflection.Metadata
             return StringHandle.FromOffset(GetHeapOffset());
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is NamespaceDefinitionHandle && Equals((NamespaceDefinitionHandle)obj);
         }
@@ -2650,7 +2649,7 @@ namespace System.Reflection.Metadata
             get { return unchecked((ushort)(_value >> 8)); }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is BlobHandle && Equals((BlobHandle)obj);
         }
@@ -2718,7 +2717,7 @@ namespace System.Reflection.Metadata
             get { return _index; }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is GuidHandle && Equals((GuidHandle)obj);
         }

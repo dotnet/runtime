@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.ComponentModel;
@@ -11,21 +10,23 @@ namespace System.Data
     /// Represents a restriction on a set of columns in which all values must be unique.
     /// </summary>
     [DefaultProperty("ConstraintName")]
+    [Editor("Microsoft.VSDesigner.Data.Design.UniqueConstraintEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+            "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class UniqueConstraint : Constraint
     {
         private DataKey _key;
-        private Index _constraintIndex;
-        internal bool _bPrimaryKey = false;
+        private Index? _constraintIndex;
+        internal bool _bPrimaryKey;
 
         // Design time serialization
-        internal string _constraintName = null;
-        internal string[] _columnNames = null;
+        internal string? _constraintName;
+        internal string[]? _columnNames;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.UniqueConstraint'/> with the specified name and
         /// <see cref='System.Data.DataColumn'/>.
         /// </summary>
-        public UniqueConstraint(string name, DataColumn column)
+        public UniqueConstraint(string? name, DataColumn column)
         {
             DataColumn[] columns = new DataColumn[1];
             columns[0] = column;
@@ -46,7 +47,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.UniqueConstraint'/> with the specified name and array
         ///    of <see cref='System.Data.DataColumn'/> objects.
         /// </summary>
-        public UniqueConstraint(string name, DataColumn[] columns)
+        public UniqueConstraint(string? name, DataColumn[] columns)
         {
             Create(name, columns);
         }
@@ -62,7 +63,7 @@ namespace System.Data
 
         // Construct design time object
         [Browsable(false)]
-        public UniqueConstraint(string name, string[] columnNames, bool isPrimaryKey)
+        public UniqueConstraint(string? name, string[]? columnNames, bool isPrimaryKey)
         {
             _constraintName = name;
             _columnNames = columnNames;
@@ -73,7 +74,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.UniqueConstraint'/> with the specified name and
         /// <see cref='System.Data.DataColumn'/>.
         /// </summary>
-        public UniqueConstraint(string name, DataColumn column, bool isPrimaryKey)
+        public UniqueConstraint(string? name, DataColumn column, bool isPrimaryKey)
         {
             DataColumn[] columns = new DataColumn[1];
             columns[0] = column;
@@ -96,7 +97,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.UniqueConstraint'/> with the specified name and array
         ///    of <see cref='System.Data.DataColumn'/> objects.
         /// </summary>
-        public UniqueConstraint(string name, DataColumn[] columns, bool isPrimaryKey)
+        public UniqueConstraint(string? name, DataColumn[] columns, bool isPrimaryKey)
         {
             _bPrimaryKey = isPrimaryKey;
             Create(name, columns);
@@ -127,7 +128,7 @@ namespace System.Data
             get
             {
                 AssertConstraintAndKeyIndexes();
-                return _constraintIndex;
+                return _constraintIndex!;
             }
         }
 
@@ -190,7 +191,7 @@ namespace System.Data
                 else
                     throw ExceptionBuilder.RemovePrimaryKey(constraints.Table);
             }
-            for (ParentForeignKeyConstraintEnumerator cs = new ParentForeignKeyConstraintEnumerator(Table.DataSet, Table); cs.GetNext();)
+            for (ParentForeignKeyConstraintEnumerator cs = new ParentForeignKeyConstraintEnumerator(Table!.DataSet, Table); cs.GetNext();)
             {
                 ForeignKeyConstraint constraint = cs.GetForeignKeyConstraint();
                 if (!_key.ColumnsEqual(constraint.ParentKey))
@@ -207,7 +208,7 @@ namespace System.Data
 
         internal override bool CanEnableConstraint()
         {
-            if (Table.EnforceConstraints)
+            if (Table!.EnforceConstraints)
                 return ConstraintIndex.CheckUnique();
 
             return true;
@@ -245,7 +246,7 @@ namespace System.Data
 
         internal override void CheckConstraint(DataRow row, DataRowAction action)
         {
-            if (Table.EnforceConstraints &&
+            if (Table!.EnforceConstraints &&
                 (action == DataRowAction.Add ||
                  action == DataRowAction.Change ||
                  (action == DataRowAction.Rollback && row._tempRecord != -1)))
@@ -266,21 +267,21 @@ namespace System.Data
             return _key.ContainsColumn(column);
         }
 
-        internal override Constraint Clone(DataSet destination)
+        internal override Constraint? Clone(DataSet destination)
         {
             return Clone(destination, false);
         }
 
-        internal override Constraint Clone(DataSet destination, bool ignorNSforTableLookup)
+        internal override Constraint? Clone(DataSet destination, bool ignorNSforTableLookup)
         {
             int iDest;
             if (ignorNSforTableLookup)
             {
-                iDest = destination.Tables.IndexOf(Table.TableName);
+                iDest = destination.Tables.IndexOf(Table!.TableName);
             }
             else
             {
-                iDest = destination.Tables.IndexOf(Table.TableName, Table.Namespace, false); // pass false for last param to be backward compatable
+                iDest = destination.Tables.IndexOf(Table!.TableName, Table.Namespace, false); // pass false for last param to be backward compatable
             }
 
             if (iDest < 0)
@@ -310,7 +311,7 @@ namespace System.Data
             return clone;
         }
 
-        internal UniqueConstraint Clone(DataTable table)
+        internal UniqueConstraint? Clone(DataTable table)
         {
             int keys = ColumnsReference.Length;
             DataColumn[] columns = new DataColumn[keys];
@@ -370,7 +371,7 @@ namespace System.Data
             }
         }
 
-        private void Create(string constraintName, DataColumn[] columns)
+        private void Create(string? constraintName, DataColumn[] columns)
         {
             for (int i = 0; i < columns.Length; i++)
             {
@@ -387,7 +388,7 @@ namespace System.Data
         /// <summary>
         /// Compares this constraint to a second to determine if both are identical.
         /// </summary>
-        public override bool Equals(object key2)
+        public override bool Equals(object? key2)
         {
             if (!(key2 is UniqueConstraint))
                 return false;
@@ -424,7 +425,7 @@ namespace System.Data
         /// Gets the table to which this constraint belongs.
         /// </summary>
         [ReadOnly(true)]
-        public override DataTable Table
+        public override DataTable? Table
         {
             get
             {

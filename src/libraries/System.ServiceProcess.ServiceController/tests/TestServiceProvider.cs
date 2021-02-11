@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO.Pipes;
@@ -11,8 +10,12 @@ namespace System.ServiceProcess.Tests
 {
     internal sealed class TestServiceProvider
     {
+        // To view tracing, use DbgView from sysinternals.com;
+        // run it elevated, check "Capture>Global Win32" and "Capture>Win32",
+        // and filter to just messages beginning with "##"
+        internal const bool DebugTracing = false;
+
         private const int readTimeout = 60000;
-        public const string LocalServiceName = "NT AUTHORITY\\LocalService";
 
         private static readonly Lazy<bool> s_runningWithElevatedPrivileges = new Lazy<bool>(
             () => new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator));
@@ -30,6 +33,7 @@ namespace System.ServiceProcess.Tests
             {
                 if (_client == null)
                 {
+                    DebugTrace("TestServiceProvider: Creating client stream");
                     _client = new NamedPipeClientStream(".", TestServiceName, PipeDirection.In);
                 }
                 return _client;
@@ -38,17 +42,18 @@ namespace System.ServiceProcess.Tests
             {
                 if (value == null)
                 {
+                    DebugTrace("TestServiceProvider: Disposing client stream");
                     _client.Dispose();
                     _client = null;
                 }
             }
+
         }
 
         public readonly string TestServiceAssembly = typeof(TestService).Assembly.Location;
         public readonly string TestMachineName;
         public readonly TimeSpan ControlTimeout;
         public readonly string TestServiceName;
-        public readonly string Username;
         public readonly string TestServiceDisplayName;
 
         private readonly TestServiceProvider _dependentServices;
@@ -65,14 +70,13 @@ namespace System.ServiceProcess.Tests
             CreateTestServices();
         }
 
-        public TestServiceProvider(string serviceName, string userName = LocalServiceName)
+        public TestServiceProvider(string serviceName)
         {
             TestMachineName = ".";
             ControlTimeout = TimeSpan.FromSeconds(120);
             TestServiceName = serviceName;
             TestServiceDisplayName = "Test Service " + TestServiceName;
-            Username = userName;
-
+            
             // Create the service
             CreateTestServices();
         }
@@ -95,21 +99,20 @@ namespace System.ServiceProcess.Tests
             testServiceInstaller.ServiceName = TestServiceName;
             testServiceInstaller.DisplayName = TestServiceDisplayName;
             testServiceInstaller.Description = "__Dummy Test Service__";
-            testServiceInstaller.Username = Username;
+            testServiceInstaller.Username = null;
 
             if (_dependentServices != null)
             {
                 testServiceInstaller.ServicesDependedOn = new string[] { _dependentServices.TestServiceName };
             }
 
-            var comparer = PlatformDetection.IsFullFramework ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal; // Full framework upper cases the name
             string processName = Process.GetCurrentProcess().MainModule.FileName;
             string entryPointName = typeof(TestService).Assembly.Location;
             string arguments = TestServiceName;
 
             // if process and entry point aren't the same then we are running hosted so pass
             // in the entrypoint as the first argument
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 arguments = $"\"{entryPointName}\" {arguments}";
             }
@@ -129,6 +132,7 @@ namespace System.ServiceProcess.Tests
             {
                 if (_client != null)
                 {
+                    DebugTrace("TestServiceProvider: Disposing client stream in Dispose()");
                     _client.Dispose();
                     _client = null;
                 }
@@ -145,6 +149,16 @@ namespace System.ServiceProcess.Tests
                 {
                     _dependentServices.DeleteTestServices();
                 }
+            }
+        }
+
+        internal static void DebugTrace(string message)
+        {
+            if (DebugTracing)
+            {
+#pragma warning disable CS0162 // unreachable code
+                Debug.WriteLine("## " + message);
+#pragma warning restore
             }
         }
     }

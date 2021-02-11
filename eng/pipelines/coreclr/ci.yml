@@ -1,12 +1,15 @@
 trigger:
+  batch: true
   branches:
     include:
     - master
+    - release/*.*
   paths:
     include:
     - '*'
     - src/libraries/System.Private.CoreLib/*
     exclude:
+    - .github/*
     - docs/*
     - CODE-OF-CONDUCT.md
     - CONTRIBUTING.md
@@ -21,14 +24,7 @@ trigger:
     - eng/pipelines/libraries/*
     - eng/pipelines/runtime.yml
 
-
-pr: none
-
 jobs:
-#
-# Checkout repository
-#
-- template: /eng/pipelines/common/checkout-job.yml
 
 #
 # Debug builds
@@ -43,9 +39,10 @@ jobs:
     - Linux_musl_arm64
     - Linux_musl_x64
     - Linux_x64
+    - OSX_arm64
     - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - windows_arm
+    - windows_arm64
     jobParameters:
       testGroup: outerloop
 
@@ -71,8 +68,9 @@ jobs:
     - Linux_arm
     - Linux_musl_arm64
     - Linux_x64
+    - OSX_arm64
     - OSX_x64
-    - Windows_NT_x86
+    - windows_x86
     jobParameters:
       testGroup: outerloop
 
@@ -86,23 +84,17 @@ jobs:
     platformGroup: all
     jobParameters:
       isOfficialBuild: false
-      liveCoreClrBuildConfig: checked
+      liveRuntimeBuildConfig: checked
 
 #
 # Checked test builds
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
-    - Linux_arm64
-    - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     testGroup: outerloop
     jobParameters:
       liveLibrariesBuildConfig: Release
@@ -112,7 +104,7 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platformGroup: all
     helixQueueGroup: ci
@@ -126,7 +118,7 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm64
@@ -134,10 +126,10 @@ jobs:
     - Linux_musl_arm64
     - Linux_x64
     - OSX_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - windows_x64
+    - windows_x86
+    - windows_arm
+    - windows_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -154,7 +146,9 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
     buildConfig: release
     platforms:
-    - Linux_arm
+    # Currently failing globally, should be uncommented once the tracking bug gets fixed:
+    # https://github.com/dotnet/runtime/issues/1282
+    # - Linux_arm
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
 
@@ -166,4 +160,5 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
     - Linux_x64
-    - Windows_NT_x64
+    # Issue: https://github.com/dotnet/runtime/issues/40034
+    #- windows_x64

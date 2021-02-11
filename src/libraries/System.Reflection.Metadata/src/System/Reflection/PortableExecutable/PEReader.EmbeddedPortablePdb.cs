@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -73,7 +72,7 @@ namespace System.Reflection.PortableExecutable
         // internal for testing
         internal static unsafe ImmutableArray<byte> DecodeEmbeddedPortablePdbDebugDirectoryData(AbstractMemoryBlock block)
         {
-            byte[] decompressed;
+            byte[]? decompressed;
 
             var headerReader = block.GetReader();
             if (headerReader.ReadUInt32() != PortablePdbVersions.DebugDirectoryEmbeddedSignature)
@@ -125,10 +124,10 @@ namespace System.Reflection.PortableExecutable
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref decompressed);
         }
 
-        partial void TryOpenEmbeddedPortablePdb(DebugDirectoryEntry embeddedPdbEntry, ref bool openedEmbeddedPdb, ref MetadataReaderProvider provider, ref Exception errorToReport)
+        partial void TryOpenEmbeddedPortablePdb(DebugDirectoryEntry embeddedPdbEntry, ref bool openedEmbeddedPdb, ref MetadataReaderProvider? provider, ref Exception? errorToReport)
         {
             provider = null;
-            MetadataReaderProvider candidate = null;
+            MetadataReaderProvider? candidate = null;
 
             try
             {

@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information
-//
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // SignedInfoTest.cs - Test Cases for SignedInfo
 //
 // Author:
@@ -8,9 +8,6 @@
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // Copyright (C) 2005, 2009 Novell, Inc (http://www.novell.com)
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 using System.Xml;
 using Xunit;
@@ -140,7 +137,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(result, el.OuterXml);
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void GetXmlWithSetProperty()
         {
             XmlDocument doc = new XmlDocument();

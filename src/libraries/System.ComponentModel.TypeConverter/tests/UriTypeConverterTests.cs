@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.ComponentModel.Design.Serialization;
@@ -14,7 +13,7 @@ namespace System.ComponentModel.Tests
         private static UriTypeConverter s_converter = new UriTypeConverter();
 
         [Fact]
-        public static void CanConvertFrom_WithContext()
+        public static void CanConvertFrom_WithContext_UriTypeConverter()
         {
             CanConvertFrom_WithContext(new object[3, 2]
                 {
@@ -26,7 +25,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void CanConvertTo_WithContext()
+        public static void CanConvertTo_WithContext_UriTypeConverter()
         {
             CanConvertTo_WithContext(new object[3, 2]
                 {
@@ -38,7 +37,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void ConvertFrom_WithContext()
+        public static void ConvertFrom_WithContext_UriTypeConverter()
         {
             ConvertFrom_WithContext(new object[5, 3]
                 {
@@ -52,7 +51,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public static void ConvertTo_WithContext()
+        public static void ConvertTo_WithContext_UriTypeConverter()
         {
             ConvertTo_WithContext(new object[3, 3]
                 {

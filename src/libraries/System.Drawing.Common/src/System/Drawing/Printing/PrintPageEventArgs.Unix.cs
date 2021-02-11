@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.PrintPageEventArgs.cs
 //
@@ -42,14 +43,14 @@ namespace System.Drawing.Printing
     public class PrintPageEventArgs : EventArgs
     {
         private bool cancel;
-        private Graphics graphics;
+        private Graphics? graphics;
         private bool hasmorePages;
         private Rectangle marginBounds;
         private Rectangle pageBounds;
         private PageSettings pageSettings;
-        private GraphicsPrinter graphics_context;
+        private GraphicsPrinter? graphics_context;
 
-        public PrintPageEventArgs(Graphics graphics, Rectangle marginBounds,
+        public PrintPageEventArgs(Graphics? graphics, Rectangle marginBounds,
             Rectangle pageBounds, PageSettings pageSettings)
         {
             this.graphics = graphics;
@@ -68,7 +69,7 @@ namespace System.Drawing.Printing
                 cancel = value;
             }
         }
-        public Graphics Graphics
+        public Graphics? Graphics
         {
             get
             {
@@ -109,12 +110,12 @@ namespace System.Drawing.Printing
         }
 
         // used in PrintDocument.Print()
-        internal void SetGraphics(Graphics g)
+        internal void SetGraphics(Graphics? g)
         {
             graphics = g;
         }
 
-        internal GraphicsPrinter GraphicsContext
+        internal GraphicsPrinter? GraphicsContext
         {
             get { return graphics_context; }
             set { graphics_context = value; }

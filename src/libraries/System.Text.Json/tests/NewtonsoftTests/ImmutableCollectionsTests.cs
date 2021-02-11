@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Copyright (c) 2007 James Newton-King
 //
@@ -87,7 +86,6 @@ namespace System.Text.Json.Tests
         #endregion
 
         #region Array
-        [ActiveIssue(36643)]
         [Fact]
         public void SerializeArray()
         {
@@ -106,7 +104,6 @@ namespace System.Text.Json.Tests
 ]", json);
         }
 
-        [ActiveIssue(36643)]
         [Fact]
         public void DeserializeArray()
         {
@@ -124,7 +121,6 @@ namespace System.Text.Json.Tests
             Assert.Equal("3", data[2]);
         }
 
-        [ActiveIssue(36643)]
         [Fact]
         public void SerializeDefaultArray()
         {
@@ -330,7 +326,7 @@ namespace System.Text.Json.Tests
         #endregion
 
         #region Dictionary
-        [ActiveIssue(36643)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30524")]
         [Fact]
         public void SerializeDictionary()
         {
@@ -349,7 +345,7 @@ namespace System.Text.Json.Tests
             Assert.Equal("3", (string)a[3]);
         }
 
-        [ActiveIssue(36643)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30524")]
         [Fact]
         public void DeserializeDictionary()
         {
@@ -367,7 +363,7 @@ namespace System.Text.Json.Tests
             Assert.Equal("3", data[3]);
         }
 
-        [ActiveIssue(36643)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30524")]
         [Fact]
         public void DeserializeDictionaryInterface()
         {
@@ -387,7 +383,7 @@ namespace System.Text.Json.Tests
         #endregion
 
         #region SortedDictionary
-        [ActiveIssue(36643)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30524")]
         [Fact]
         public void SerializeSortedDictionary()
         {
@@ -406,7 +402,7 @@ namespace System.Text.Json.Tests
 }", json);
         }
 
-        [ActiveIssue(36643)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30524")]
         [Fact]
         public void DeserializeSortedDictionary()
         {

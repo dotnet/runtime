@@ -1,15 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System.Text.Unicode
 {
-    public static class Utf8
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        static class Utf8
     {
         /*
          * OperationStatus-based APIs for transcoding of chunked data.
@@ -41,7 +49,7 @@ namespace System.Text.Unicode
         /// </remarks>
         public static unsafe OperationStatus FromUtf16(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/coreclr/issues/23437
+            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
 
             _ = source.Length;
             _ = destination.Length;
@@ -132,7 +140,7 @@ namespace System.Text.Unicode
         /// </remarks>
         public static unsafe OperationStatus ToUtf16(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/coreclr/issues/23437
+            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
 
             _ = source.Length;
             _ = destination.Length;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.Caching.Resources;
@@ -92,7 +91,6 @@ namespace System.Runtime.Caching
 
         // The helper routines (OnChangedHelper and DisposeHelper) are used to prevent
         // an infinite loop, where Dispose calls OnChanged and OnChanged calls Dispose.
-        [SuppressMessage("Microsoft.Performance", "CA1816:DisposeMethodsShouldCallSuppressFinalize", Justification = "Grandfathered suppression from original caching code checkin")]
         private void DisposeHelper()
         {
             // if not initialized, return without doing anything.
@@ -202,7 +200,6 @@ namespace System.Runtime.Caching
         // Dispose() will only invoke the Dispose(bool disposing) method of derived classes
         // once, the first time it is called.  Subsequent calls to Dispose() perform no
         // operation.  After Dispose is called, the IsDisposed property will be true.
-        [SuppressMessage("Microsoft.Performance", "CA1816:DisposeMethodsShouldCallSuppressFinalize", Justification = "Grandfathered suppression from original caching code checkin")]
         public void Dispose()
         {
             OnChangedHelper(null);

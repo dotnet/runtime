@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Test.Cryptography;
 using Xunit;
@@ -75,7 +74,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(36330)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29055")]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(PROV_RSA_FULL, KeyNumber.Signature)]
         [InlineData(PROV_RSA_FULL, KeyNumber.Exchange)]

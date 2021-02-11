@@ -10,7 +10,7 @@ We have done a lot of work to combat pinning in GC such as
 
 *  POPO (Promote Only Pinned Objects) which actually breaks up a plug if it includes both pinned and non pinned objects so we don’t end up pinning the whole plug if survived pinned objects are adjacent to non pinned objects that might occupy large amounts of memory.
 
-We also have provided framework utilities like <span style="color:red">`PinnableBufferCache`</span> (which only exists in the full framework) and modified various framework components to use it.
+We also have provided framework utilities like <span style="color:red">`PinnableBufferCache`</span> (which only exists in .NET Framework) and modified various framework components to use it.
 
 With these efforts we were able to mitigate perf problems caused by pinned by a lot. But at the end of the day, due to the nature of “pinning already allocated objects”, we cannot eliminate the situation of interleaved pinned and non pinned objects and that can still cause perf problems for GC. And the long lived scattered pins are the most problematic. They can be separated into 2 categories –
 
@@ -42,7 +42,7 @@ An object allocated on the pinned heap can be referenced by other objects normal
 
 ## API - allocating an array on the pinned heap
 
-For users who want to allocate their objects pinned, we provide [a new API](https://github.com/dotnet/corefx/issues/31787) to allocate such an object. The API declaration is the following:
+For users who want to allocate their objects pinned, we provide [a new API](https://github.com/dotnet/runtime/issues/27146) to allocate such an object. The API declaration is the following:
 
 ```csharp
 class GC
@@ -154,7 +154,7 @@ It might make sense to provide an additional API to allocate an array of these o
 
 **Alignment support**
 
-However, there is another scenario for high perf that could warrant a generational pinned heap which is objects with a specified alignment mostly [for SIMD operations](https://github.com/dotnet/corefx/issues/22790) or aligning on cache lines to avoid false sharing. This scenario doesn’t imply the object always needs to be pinned, however being pinned does mean they would be convenient for interop. For example, matrix multiplication with SIMD where the matrix is also used in native code. It also isn’t clear the object is necessarily long lived, however we do make the assumption that the amount of memory occupied by pinned objects should be small compared to non pinned objects so treating all of them as part of gen2 is acceptable. A different design option would be to allocate these on the normal heap but keep their alignment when compacting but this makes compaction slower.
+However, there is another scenario for high perf that could warrant a generational pinned heap which is objects with a specified alignment mostly [for SIMD operations](https://github.com/dotnet/runtime/issues/22990) or aligning on cache lines to avoid false sharing. This scenario doesn’t imply the object always needs to be pinned, however being pinned does mean they would be convenient for interop. For example, matrix multiplication with SIMD where the matrix is also used in native code. It also isn’t clear the object is necessarily long lived, however we do make the assumption that the amount of memory occupied by pinned objects should be small compared to non pinned objects so treating all of them as part of gen2 is acceptable. A different design option would be to allocate these on the normal heap but keep their alignment when compacting but this makes compaction slower.
 
 For alignment support, we can also limit it to a few specific alignments if it makes the implementation noticeably easier – 16, 32, 64, 128 bytes, and possibly page size (unclear if this is really needed).
 

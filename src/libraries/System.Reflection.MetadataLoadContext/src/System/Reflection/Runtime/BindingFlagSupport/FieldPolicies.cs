@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using RuntimeTypeInfo = System.Reflection.TypeLoading.RoType;
@@ -17,7 +16,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return typeInfo.DeclaredFields;
         }
 
-        public sealed override IEnumerable<FieldInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter filter, RuntimeTypeInfo reflectedType)
+        public sealed override IEnumerable<FieldInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? filter, RuntimeTypeInfo reflectedType)
         {
             return type.GetFieldsCore(filter, reflectedType);
         }
@@ -33,7 +32,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isNewSlot = false;
         }
 
-        public sealed override bool ImplicitlyOverrides(FieldInfo baseMember, FieldInfo derivedMember) => false;
+        public sealed override bool ImplicitlyOverrides(FieldInfo? baseMember, FieldInfo? derivedMember) => false;
 
         public sealed override bool IsSuppressedByMoreDerivedMember(FieldInfo member, FieldInfo[] priorMembers, int startIndex, int endIndex)
         {

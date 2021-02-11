@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization;
 
@@ -17,9 +16,9 @@ namespace System.Security.Authentication
     {
         public AuthenticationException() { }
 
-        public AuthenticationException(string message) : base(message) { }
+        public AuthenticationException(string? message) : base(message) { }
 
-        public AuthenticationException(string message, Exception innerException) : base(message, innerException) { }
+        public AuthenticationException(string? message, Exception? innerException) : base(message, innerException) { }
 
         protected AuthenticationException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
@@ -39,9 +38,9 @@ namespace System.Security.Authentication
     {
         public InvalidCredentialException() { }
 
-        public InvalidCredentialException(string message) : base(message) { }
+        public InvalidCredentialException(string? message) : base(message) { }
 
-        public InvalidCredentialException(string message, Exception innerException) : base(message, innerException) { }
+        public InvalidCredentialException(string? message, Exception? innerException) : base(message, innerException) { }
 
         protected InvalidCredentialException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {

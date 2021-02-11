@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -38,13 +37,13 @@ namespace System.Reflection.Tests
 #endif
 
         //
-        // This is something no app should be doing but it does allow us to get full code coverage even when running tests on NETFX.
-        // NETFX can't directly invoke the Reflection apis added in NetCore, but we do know the underlying MetadataLoadContext Reflection objects
+        // This is something no app should be doing but it does allow us to get full code coverage even when running tests on .NET Framework.
+        // .NET Framework can't directly invoke the Reflection apis added in NetCore, but we do know the underlying MetadataLoadContext Reflection objects
         // implement the full NetCore set even in its NetStandard. We just have to do a little sneaky Reflection to get to it.
         //
         public static T CallUsingReflection<T>(this object _this, string name, Type[] parameterTypes = null, object[] arguments = null)
         {
-            parameterTypes = parameterTypes ?? Array.Empty<Type>();
+            parameterTypes = parameterTypes ?? Type.EmptyTypes;
             arguments = arguments ?? Array.Empty<object>();
             Type implementationType = _this.GetType();
             MethodInfo m = implementationType.GetMethod(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.ExactBinding, null, parameterTypes, null);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using Xunit;
@@ -11,8 +10,8 @@ namespace System.ServiceProcess.Tests
     {
         private const string KeyIsoSvcName = "KEYISO";
 
-        [ActiveIssue(19223)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19223
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21463")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/runtime/issues/21463
         public static void GetServices()
         {
             bool foundKeyIsoSvc = false;
@@ -69,7 +68,7 @@ namespace System.ServiceProcess.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not throw")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not throw")]
         public static void Initialize_GetNames()
         {
             Assert.Throws<InvalidOperationException>(() => new ServiceController().ServiceName);

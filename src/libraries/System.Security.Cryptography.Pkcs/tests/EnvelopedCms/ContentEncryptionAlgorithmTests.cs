@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
@@ -18,7 +17,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void EncryptionAlgorithmRc2_InvalidKeyLength()
         {
-            // For desktop compat, variable key length ciphers throw an error if the key length provided
+            // For .NET Framework compat, variable key length ciphers throw an error if the key length provided
             // is not a multiple of 8.
             AlgorithmIdentifier algorithm = new AlgorithmIdentifier(new Oid(Oids.Rc2), 3);
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -290,7 +289,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void EncryptionAlgorithmAes128_IgnoresKeyLength()
         {
-            // For desktop compat, static key length ciphers ignore the key lengths supplied
+            // For .NET Framework compat, static key length ciphers ignore the key lengths supplied
             AlgorithmIdentifier algorithm = new AlgorithmIdentifier(new Oid(Oids.Aes128), 3);
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
             EnvelopedCms ecms = new EnvelopedCms(contentInfo, algorithm);

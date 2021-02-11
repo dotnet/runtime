@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -13,6 +12,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 
@@ -64,10 +64,10 @@ namespace System.Security.AccessControl
                 {
                     throw new ArgumentException(
                         SR.Arg_MustBeIdentityReferenceType,
-nameof(targetType));
+                        nameof(targetType));
                 }
 
-                CommonAcl acl = null;
+                CommonAcl? acl = null;
 
                 if (access)
                 {
@@ -92,7 +92,7 @@ nameof(targetType));
                     return result;
                 }
 
-                IdentityReferenceCollection irTarget = null;
+                IdentityReferenceCollection? irTarget = null;
 
                 if (targetType != typeof(SecurityIdentifier))
                 {
@@ -109,7 +109,7 @@ nameof(targetType));
                         // A better way would be to have an internal method that would canonicalize the ACL
                         // and call it once, then use the RawAcl.
                         //
-                        CommonAce ace = acl[i] as CommonAce;
+                        CommonAce? ace = acl[i] as CommonAce;
                         if (AceNeedsTranslation(ace, access, includeExplicit, includeInherited))
                         {
                             irSource.Add(ace.SecurityIdentifier);
@@ -132,10 +132,10 @@ nameof(targetType));
                     // and call it once, then use the RawAcl.
                     //
 
-                    CommonAce ace = acl[i] as CommonAce;
+                    CommonAce? ace = acl[i] as CommonAce;
                     if (AceNeedsTranslation(ace, access, includeExplicit, includeInherited))
                     {
-                        IdentityReference iref = (targetType == typeof(SecurityIdentifier)) ? ace.SecurityIdentifier : irTarget[targetIndex++];
+                        IdentityReference iref = (targetType == typeof(SecurityIdentifier)) ? ace.SecurityIdentifier : irTarget![targetIndex++];
 
                         if (access)
                         {
@@ -181,7 +181,7 @@ nameof(targetType));
             }
         }
 
-        private bool AceNeedsTranslation(CommonAce ace, bool isAccessAce, bool includeExplicit, bool includeInherited)
+        private bool AceNeedsTranslation([NotNullWhen(true)] CommonAce? ace, bool isAccessAce, bool includeExplicit, bool includeInherited)
         {
             if (ace == null)
             {
@@ -248,7 +248,7 @@ nameof(targetType));
                     _securityDescriptor.AddControlFlags(ControlFlags.DiscretionaryAclPresent);
                 }
 
-                SecurityIdentifier sid = rule.IdentityReference.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier;
+                SecurityIdentifier sid = (SecurityIdentifier)rule.IdentityReference.Translate(typeof(SecurityIdentifier));
 
                 if (rule.AccessControlType == AccessControlType.Allow)
                 {
@@ -287,7 +287,7 @@ nameof(targetType));
 
                         default:
                             throw new ArgumentOutOfRangeException(
-nameof(modification),
+                                nameof(modification),
                                 SR.ArgumentOutOfRange_Enum);
                     }
                 }
@@ -328,14 +328,14 @@ nameof(modification),
 
                         default:
                             throw new ArgumentOutOfRangeException(
-nameof(modification),
+                                nameof(modification),
                                 SR.ArgumentOutOfRange_Enum);
                     }
                 }
                 else
                 {
                     Debug.Fail("rule.AccessControlType unrecognized");
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)rule.AccessControlType), "rule.AccessControlType");
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)rule.AccessControlType), nameof(rule));
                 }
 
                 modified = result;
@@ -378,7 +378,7 @@ nameof(modification),
                     _securityDescriptor.AddControlFlags(ControlFlags.SystemAclPresent);
                 }
 
-                SecurityIdentifier sid = rule.IdentityReference.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier;
+                SecurityIdentifier sid = (SecurityIdentifier)rule.IdentityReference.Translate(typeof(SecurityIdentifier));
 
                 switch (modification)
                 {
@@ -413,7 +413,7 @@ nameof(modification),
 
                     default:
                         throw new ArgumentOutOfRangeException(
-nameof(modification),
+                            nameof(modification),
                             SR.ArgumentOutOfRange_Enum);
                 }
 

@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_allSrc Include="$(MSBuildThisFileDirectory)*\src\*.csproj"
+             Exclude="@(ProjectExclusions)" />
+    <NonNetCoreAppProject Include="@(_allSrc)"
+                          Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj')" />
+    <NetCoreAppProject Include="$(CoreLibProject);
+                                @(_allSrc);
+                                $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;
+                                $(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj"
+                       Exclude="@(NonNetCoreAppProject)" />
+    <ManualShimProject Include="shims\manual\*.csproj" />
+    <ApiCompatProject Include="shims\ApiCompat.proj"
+                      Condition="'$(DotNetBuildFromSource)' != 'true' and
+                                 '$(BuildingNETCoreAppVertical)' == 'true' and
+                                 '$(RunApiCompat)' != 'false'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="@(NetCoreAppProject)" />
+
+    <!-- Restore only and build before/after. -->
+    <ProjectReference Include="@(NonNetCoreAppProject);
+                               @(ManualShimProject);
+                               @(ApiCompatProject)"
+                      Condition="'$(MSBuildRestoreSessionId)' != ''" />
+  </ItemGroup>
+
+  <Target Name="BuildNonNetCoreAppProjects"
+          AfterTargets="Build">
+    <MSBuild Targets="Build"
+             BuildInParallel="true"
+             Projects="@(NonNetCoreAppProject)"
+             Properties="$(TraversalGlobalProperties)" />
+  </Target>
+
+  <Target Name="BuildManualShims"
+          AfterTargets="BuildNonNetCoreAppProjects"
+          Condition="'@(ManualShimProject)' != ''">
+    <MSBuild Targets="Build"
+             Projects="@(ManualShimProject)"
+             Properties="$(TraversalGlobalProperties)" />
+  </Target>
+
+  <Import Condition="'$(BuildingNetCoreAppVertical)' == 'true'"
+          Project="$(MSBuildThisFileDirectory)\illink-sharedframework.targets" />
+
+  <Target Name="RunApiCompat"
+          Condition="'@(ApiCompatProject)' != ''"
+          AfterTargets="BuildManualShims">
+    <MSBuild Targets="Build"
+             Projects="@(ApiCompatProject)"
+             Properties="$(TraversalGlobalProperties)" />
+  </Target>
+</Project>

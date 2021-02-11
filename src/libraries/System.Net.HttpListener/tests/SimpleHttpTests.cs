@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -13,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class SimpleHttpTests : IDisposable
     {
@@ -167,23 +167,10 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue(39552)]
-        public void ListenerRestart_BeginGetContext_Success()
-        {
-            using (HttpListenerFactory factory = new HttpListenerFactory())
-            {
-                HttpListener listener = factory.GetListener();
-                listener.BeginGetContext((f) => { }, null);
-                listener.Stop();
-                listener.Start();
-                listener.BeginGetContext((f) => { }, null);
-            }
-        }
-
-        [ConditionalFact]
-        [ActiveIssue(39552)]
-        public async Task ListenerRestart_GetContext_Success()
+        [ConditionalTheory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ListenerRestart_Success(bool sync)
         {
             const string Content = "ListenerRestart_GetContext_Success";
             using (HttpListenerFactory factory = new HttpListenerFactory())
@@ -194,7 +181,10 @@ namespace System.Net.Tests
                 _output.WriteLine("Connecting to {0}", factory.ListeningUrl);
                 Task<string> clientTask = client.GetStringAsync(factory.ListeningUrl);
 
-                HttpListenerContext context = listener.GetContext();
+                HttpListenerContext context = sync
+                    ? listener.GetContext()
+                    : listener.EndGetContext(listener.BeginGetContext(ar => { }, null));
+
                 HttpListenerResponse response = context.Response;
                 response.OutputStream.Write(Encoding.UTF8.GetBytes(Content));
                 response.OutputStream.Close();
@@ -209,7 +199,7 @@ namespace System.Net.Tests
                     // This may fail if something else took our port while restarting.
                     listener.Start();
                 }
-                catch (Exception e)
+                catch (HttpListenerException e)
                 {
                     _output.WriteLine(e.Message);
                     // Skip test if we lost race and we are unable to bind on same port again.
@@ -220,7 +210,11 @@ namespace System.Net.Tests
 
                 // Repeat request to be sure listener is working.
                 clientTask = client.GetStringAsync(factory.ListeningUrl);
-                context = listener.GetContext();
+
+                context = sync
+                    ? listener.GetContext()
+                    : listener.EndGetContext(listener.BeginGetContext(ar => { }, null));
+
                 response = context.Response;
                 response.OutputStream.Write(Encoding.UTF8.GetBytes(Content));
                 response.OutputStream.Close();

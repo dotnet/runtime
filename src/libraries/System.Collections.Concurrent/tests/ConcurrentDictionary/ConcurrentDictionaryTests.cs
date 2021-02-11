@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +13,7 @@ namespace System.Collections.Concurrent.Tests
 {
     public class ConcurrentDictionaryTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestBasicScenarios()
         {
             ConcurrentDictionary<int, int> cd = new ConcurrentDictionary<int, int>();
@@ -124,20 +123,16 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentException>(action);
         }
 
-        [Fact]
-        public static void TestAdd1()
-        {
-            TestAdd1(1, 1, 1, 10000);
-            TestAdd1(5, 1, 1, 10000);
-            TestAdd1(1, 1, 2, 5000);
-            TestAdd1(1, 1, 5, 2000);
-            TestAdd1(4, 0, 4, 2000);
-            TestAdd1(16, 31, 4, 2000);
-            TestAdd1(64, 5, 5, 5000);
-            TestAdd1(5, 5, 5, 2500);
-        }
-
-        private static void TestAdd1(int cLevel, int initSize, int threads, int addsPerThread)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(1, 1, 1, 10000)]
+        [InlineData(5, 1, 1, 10000)]
+        [InlineData(1, 1, 2, 5000)]
+        [InlineData(1, 1, 5, 2000)]
+        [InlineData(4, 0, 4, 2000)]
+        [InlineData(16, 31, 4, 2000)]
+        [InlineData(64, 5, 5, 5000)]
+        [InlineData(5, 5, 5, 2500)]
+        public static void TestAdd(int cLevel, int initSize, int threads, int addsPerThread)
         {
             ConcurrentDictionary<int, int> dictConcurrent = new ConcurrentDictionary<int, int>(cLevel, 1);
             IDictionary<int, int> dict = dictConcurrent;
@@ -193,20 +188,16 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(expectedCount, dictConcurrent.ToArray().Length);
         }
 
-        [Fact]
-        public static void TestUpdate1()
-        {
-            TestUpdate1(1, 1, 10000);
-            TestUpdate1(5, 1, 10000);
-            TestUpdate1(1, 2, 5000);
-            TestUpdate1(1, 5, 2001);
-            TestUpdate1(4, 4, 2001);
-            TestUpdate1(15, 5, 2001);
-            TestUpdate1(64, 5, 5000);
-            TestUpdate1(5, 5, 25000);
-        }
-
-        private static void TestUpdate1(int cLevel, int threads, int updatesPerThread)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(1, 1, 10000)]
+        [InlineData(5, 1, 10000)]
+        [InlineData(1, 2, 5000)]
+        [InlineData(1, 5, 2001)]
+        [InlineData(4, 4, 2001)]
+        [InlineData(15, 5, 2001)]
+        [InlineData(64, 5, 5000)]
+        [InlineData(5, 5, 25000)]
+        public static void TestUpdate(int cLevel, int threads, int updatesPerThread)
         {
             IDictionary<int, int> dict = new ConcurrentDictionary<int, int>(cLevel, 1);
 
@@ -261,20 +252,16 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Fact]
-        public static void TestRead1()
-        {
-            TestRead1(1, 1, 10000);
-            TestRead1(5, 1, 10000);
-            TestRead1(1, 2, 5000);
-            TestRead1(1, 5, 2001);
-            TestRead1(4, 4, 2001);
-            TestRead1(15, 5, 2001);
-            TestRead1(64, 5, 5000);
-            TestRead1(5, 5, 25000);
-        }
-
-        private static void TestRead1(int cLevel, int threads, int readsPerThread)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(1, 1, 10000)]
+        [InlineData(5, 1, 10000)]
+        [InlineData(1, 2, 5000)]
+        [InlineData(1, 5, 2001)]
+        [InlineData(4, 4, 2001)]
+        [InlineData(15, 5, 2001)]
+        [InlineData(64, 5, 5000)]
+        [InlineData(5, 5, 25000)]
+        public static void TestRead1(int cLevel, int threads, int readsPerThread)
         {
             IDictionary<int, int> dict = new ConcurrentDictionary<int, int>(cLevel, 1);
 
@@ -309,18 +296,14 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [Fact]
-        public static void TestRemove1()
-        {
-            TestRemove1(1, 1, 10000);
-            TestRemove1(5, 1, 1000);
-            TestRemove1(1, 5, 2001);
-            TestRemove1(4, 4, 2001);
-            TestRemove1(15, 5, 2001);
-            TestRemove1(64, 5, 5000);
-        }
-
-        private static void TestRemove1(int cLevel, int threads, int removesPerThread)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(1, 1, 10000)]
+        [InlineData(5, 1, 1000)]
+        [InlineData(1, 5, 2001)]
+        [InlineData(4, 4, 2001)]
+        [InlineData(15, 5, 2001)]
+        [InlineData(64, 5, 5000)]
+        public static void TestRemove1(int cLevel, int threads, int removesPerThread)
         {
             ConcurrentDictionary<int, int> dict = new ConcurrentDictionary<int, int>(cLevel, 1);
             string methodparameters = string.Format("* TestRemove1(cLevel={0}, threads={1}, removesPerThread={2})", cLevel, threads, removesPerThread);
@@ -381,15 +364,11 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(expectKeys.Count, dict.ToArray().Length);
         }
 
-        [Fact]
-        public static void TestRemove2()
-        {
-            TestRemove2(1);
-            TestRemove2(10);
-            TestRemove2(5000);
-        }
-
-        private static void TestRemove2(int removesPerThread)
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(5000)]
+        public static void TestRemove2(int removesPerThread)
         {
             ConcurrentDictionary<int, int> dict = new ConcurrentDictionary<int, int>();
 
@@ -503,7 +482,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dict.TryRemove(KeyValuePair.Create("KEY", "value")));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestGetOrAdd()
         {
             TestGetOrAddOrUpdate(1, 1, 1, 10000, true);
@@ -516,7 +495,7 @@ namespace System.Collections.Concurrent.Tests
             TestGetOrAddOrUpdate(5, 5, 5, 25000, true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestAddOrUpdate()
         {
             TestGetOrAddOrUpdate(1, 1, 1, 10000, false);
@@ -684,6 +663,24 @@ namespace System.Collections.Concurrent.Tests
 
                 Assert.False(spyKey.ObjectApiUsed);
                 Assert.True(spyKey.IEquatableApiUsed);
+            }
+        }
+
+        [Fact]
+        public static void TestComparerGetter()
+        {
+            AssertComparerBehavior<string>(null);
+            AssertComparerBehavior<string>(EqualityComparer<string>.Default);
+            AssertComparerBehavior<string>(StringComparer.InvariantCulture);
+            AssertComparerBehavior<string>(StringComparer.OrdinalIgnoreCase);
+            AssertComparerBehavior<int>(EqualityComparer<int>.Default);
+            AssertComparerBehavior<bool>(EqualityComparer<bool>.Default);
+
+            void AssertComparerBehavior<T>(IEqualityComparer<T> comparer)
+            {
+                var dc = new ConcurrentDictionary<T, object>(comparer);
+                object expected = comparer ?? EqualityComparer<T>.Default;
+                Assert.Same(expected, dc.Comparer);
             }
         }
 
@@ -971,7 +968,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dictionary.IsEmpty, "TestClear: FAILED.  IsEmpty returned false after Clear");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestTryUpdate()
         {
             var dictionary = new ConcurrentDictionary<string, int>();
@@ -1050,6 +1047,38 @@ namespace System.Collections.Concurrent.Tests
             var dict = new ConcurrentDictionary<int, Struct16>();
             dict.TryAdd(1, new Struct16(1, -1));
             Assert.True(dict.TryUpdate(1, new Struct16(2, -2), new Struct16(1, -1)), "TestTryUpdate:  FAILED.  TryUpdate failed for non atomic values ( > 8 bytes)");
+        }
+
+        [OuterLoop("Runs for several seconds")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void ConcurrentWriteRead_NoTornValues()
+        {
+            var cd = new ConcurrentDictionary<int, KeyValuePair<long, long>>();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            Task.WaitAll(
+                Task.Run(() =>
+                {
+                    for (long i = 0; !cts.IsCancellationRequested; i++)
+                    {
+                        cd[0] = new KeyValuePair<long, long>(i, i);
+                    }
+                }),
+                Task.Run(() =>
+                {
+                    while (!cts.IsCancellationRequested)
+                    {
+                        cd.TryGetValue(0, out KeyValuePair<long, long> item);
+                        try
+                        {
+                            Assert.Equal(item.Key, item.Value);
+                        }
+                        catch
+                        {
+                            cts.Cancel();
+                            throw;
+                        }
+                    }
+                }));
         }
 
         #region Helper Classes and Methods

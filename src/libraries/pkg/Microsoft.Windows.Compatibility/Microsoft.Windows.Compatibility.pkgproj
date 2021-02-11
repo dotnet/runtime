@@ -1,9 +1,10 @@
 ﻿<Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
-    <ServiceModelVersion>4.7.0</ServiceModelVersion>
+    <ServiceModelVersion>4.8.0</ServiceModelVersion>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
+    <PackageDescription>This Windows Compatibility Pack provides access to APIs that were previously available only for .NET Framework. It can be used from both .NET Core as well as .NET Standard.</PackageDescription>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <PrereleaseLibraryPackage>
@@ -22,7 +23,6 @@
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
     <PrereleaseLibraryPackage Include="System.Data.OleDb" />
-    <PrereleaseLibraryPackage Include="System.Data.SqlClient" />
     <PrereleaseLibraryPackage Include="System.Drawing.Common" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.EventLog" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.PerformanceCounter" />
@@ -31,11 +31,9 @@
     <PrereleaseLibraryPackage Include="System.DirectoryServices.Protocols" />
     <PrereleaseLibraryPackage Include="System.IO.FileSystem.AccessControl" />
     <PrereleaseLibraryPackage Include="System.IO.Packaging" />
+    <PrereleaseLibraryPackage Include="System.IO.Pipes.AccessControl" />
     <PrereleaseLibraryPackage Include="System.IO.Ports" />
     <PrereleaseLibraryPackage Include="System.Management" />
-    <PrereleaseLibraryPackage Include="System.Reflection.Emit" />
-    <PrereleaseLibraryPackage Include="System.Reflection.Emit.ILGeneration" />
-    <PrereleaseLibraryPackage Include="System.Reflection.Emit.Lightweight" />
     <PrereleaseLibraryPackage Include="System.Runtime.Caching" />
     <PrereleaseLibraryPackage Include="System.Security.AccessControl" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Cng" />
@@ -46,18 +44,28 @@
     <PrereleaseLibraryPackage Include="System.Security.Principal.Windows" />
     <PrereleaseLibraryPackage Include="System.ServiceModel.Syndication" />
     <PrereleaseLibraryPackage Include="System.ServiceProcess.ServiceController" />
+    <PrereleaseLibraryPackage Include="System.Speech" />
     <PrereleaseLibraryPackage Include="System.Text.Encoding.CodePages" />
     <PrereleaseLibraryPackage Include="System.Threading.AccessControl" />
-    
+
     <NS21PrereleaseLibraryPackage Include="System.ComponentModel.Composition.Registration" />
     <NS21PrereleaseLibraryPackage Include="System.Reflection.Context" />
 
     <!-- Packages we don't build in master anymore -->
-    <LibraryPackage Include="System.IO.Pipes.AccessControl">
-      <Version>4.5.1</Version>
-    </LibraryPackage>
     <LibraryPackage Include="System.Data.DataSetExtensions">
       <Version>4.5.0</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.Data.SqlClient">
+      <Version>4.8.1</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.Reflection.Emit">
+      <Version>4.7.0</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.Reflection.Emit.ILGeneration">
+      <Version>4.7.0</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.Reflection.Emit.Lightweight">
+      <Version>4.7.0</Version>
     </LibraryPackage>
 
     <!-- Service model packages -->
@@ -120,5 +128,5 @@
       <TargetFramework>netstandard2.1</TargetFramework>
     </Dependency>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

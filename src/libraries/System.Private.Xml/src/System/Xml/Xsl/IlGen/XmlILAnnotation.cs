@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Reflection;
@@ -11,14 +10,14 @@ namespace System.Xml.Xsl.IlGen
     /// <summary>
     /// Several annotations are created and attached to Qil nodes during the optimization and code generation phase.
     /// </summary>
-    internal class XmlILAnnotation : ListBase<object>
+    internal class XmlILAnnotation : ListBase<object?>
     {
-        private readonly object _annPrev;
-        private MethodInfo _funcMethod;
+        private readonly object? _annPrev;
+        private MethodInfo? _funcMethod;
         private int _argPos;
-        private IteratorDescriptor _iterInfo;
-        private XmlILConstructInfo _constrInfo;
-        private OptimizerPatterns _optPatt;
+        private IteratorDescriptor? _iterInfo;
+        private XmlILConstructInfo? _constrInfo;
+        private OptimizerPatterns? _optPatt;
 
 
         //-----------------------------------------------
@@ -30,7 +29,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public static XmlILAnnotation Write(QilNode nd)
         {
-            XmlILAnnotation ann = nd.Annotation as XmlILAnnotation;
+            XmlILAnnotation? ann = nd.Annotation as XmlILAnnotation;
 
             if (ann == null)
             {
@@ -41,7 +40,7 @@ namespace System.Xml.Xsl.IlGen
             return ann;
         }
 
-        private XmlILAnnotation(object annPrev)
+        private XmlILAnnotation(object? annPrev)
         {
             _annPrev = annPrev;
         }
@@ -55,7 +54,7 @@ namespace System.Xml.Xsl.IlGen
         /// User-defined functions and global variables and parameters are bound to Clr MethodInfo objects.
         /// Attached to Function, global Let, and global Parameter nodes.
         /// </summary>
-        public MethodInfo FunctionBinding
+        public MethodInfo? FunctionBinding
         {
             get { return _funcMethod; }
             set { _funcMethod = value; }
@@ -76,7 +75,7 @@ namespace System.Xml.Xsl.IlGen
         /// For/Let node is referenced.
         /// Attached to For and Let nodes.
         /// </summary>
-        public IteratorDescriptor CachedIteratorDescriptor
+        public IteratorDescriptor? CachedIteratorDescriptor
         {
             get { return _iterInfo; }
             set { _iterInfo = value; }
@@ -86,7 +85,7 @@ namespace System.Xml.Xsl.IlGen
         /// Contains information about how this expression will be constructed by ILGen.
         /// Attached to any kind of Qil node.
         /// </summary>
-        public XmlILConstructInfo ConstructInfo
+        public XmlILConstructInfo? ConstructInfo
         {
             get { return _constrInfo; }
             set { _constrInfo = value; }
@@ -96,7 +95,7 @@ namespace System.Xml.Xsl.IlGen
         /// Contains patterns that the subtree rooted at this node matches.
         /// Attached to any kind of Qil node.
         /// </summary>
-        public OptimizerPatterns Patterns
+        public OptimizerPatterns? Patterns
         {
             get { return _optPatt; }
             set { _optPatt = value; }
@@ -118,7 +117,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Return the annotation at the specified index.
         /// </summary>
-        public override object this[int index]
+        public override object? this[int index]
         {
             get
             {

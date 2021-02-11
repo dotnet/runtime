@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [SupportedOSPlatform("windows")]
     public sealed class CspKeyContainerInfo
     {
         private readonly CspParameters _parameters;
@@ -48,7 +49,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                object retVal = ReadKeyParameterSilent(Constants.CLR_ACCESSIBLE, throwOnNotFound: false);
+                object? retVal = ReadKeyParameterSilent(Constants.CLR_ACCESSIBLE, throwOnNotFound: false);
 
                 if (retVal == null)
                 {
@@ -73,7 +74,7 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                return (bool)ReadKeyParameterSilent(Constants.CLR_EXPORTABLE);
+                return (bool)ReadKeyParameterSilent(Constants.CLR_EXPORTABLE)!;
             }
         }
 
@@ -91,7 +92,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Get Key container Name
         /// </summary>
-        public string KeyContainerName
+        public string? KeyContainerName
         {
             get
             {
@@ -134,14 +135,14 @@ namespace System.Security.Cryptography
                     return true;
                 }
 
-                return (bool)ReadKeyParameterSilent(Constants.CLR_PROTECTED);
+                return (bool)ReadKeyParameterSilent(Constants.CLR_PROTECTED)!;
             }
         }
 
         /// <summary>
         /// Gets the provider name
         /// </summary>
-        public string ProviderName
+        public string? ProviderName
         {
             get
             {
@@ -189,14 +190,14 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return (string)ReadKeyParameterSilent(Constants.CLR_UNIQUE_CONTAINER);
+                return (string)ReadKeyParameterSilent(Constants.CLR_UNIQUE_CONTAINER)!;
             }
         }
 
         /// <summary>
         /// Read a parameter from the current key using CRYPT_SILENT, to avoid any potential UI prompts.
         /// </summary>
-        private object ReadKeyParameterSilent(int keyParam, bool throwOnNotFound = true)
+        private object? ReadKeyParameterSilent(int keyParam, bool throwOnNotFound = true)
         {
             const uint SilentFlags = (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_SILENT;
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -245,7 +244,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(ArraySegment<int> segment1, object obj, bool expected)
+        public static void EqualsTest(ArraySegment<int> segment1, object obj, bool expected)
         {
             if (obj is ArraySegment<int>)
             {

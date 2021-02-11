@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 // This file defines an internal class used to throw exceptions in BCL code.
@@ -90,10 +89,22 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_TupleIncorrectType(object obj)
+        {
+            throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, obj.GetType()), "other");
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_IndexException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
                                                     ExceptionResource.ArgumentOutOfRange_Index);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_BadComparer(object? comparer)
+        {
+            throw new ArgumentException(SR.Format(SR.Arg_BogusIComparer, comparer));
         }
 
         [DoesNotReturn]
@@ -136,6 +147,12 @@ namespace System
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.year,
                                                     ExceptionResource.ArgumentOutOfRange_Year);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Month(int month)
+        {
+            throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
         }
 
         [DoesNotReturn]
@@ -478,7 +495,7 @@ namespace System
         internal static void IfNullAndNullsAreIllegalThenThrow<T>(object? value, ExceptionArgument argName)
         {
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
-            if (!(default(T)! == null) && value == null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (!(default(T) == null) && value == null)
                 ThrowHelper.ThrowArgumentNullException(argName);
         }
 
@@ -684,6 +701,20 @@ namespace System
                     return "arrayIndex";
                 case ExceptionArgument.year:
                     return "year";
+                case ExceptionArgument.codePoint:
+                    return "codePoint";
+                case ExceptionArgument.str:
+                    return "str";
+                case ExceptionArgument.options:
+                    return "options";
+                case ExceptionArgument.prefix:
+                    return "prefix";
+                case ExceptionArgument.suffix:
+                    return "suffix";
+                case ExceptionArgument.buffer:
+                    return "buffer";
+                case ExceptionArgument.offset:
+                    return "offset";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -724,6 +755,8 @@ namespace System
                     return SR.Arg_RankMultiDimNotSupported;
                 case ExceptionResource.Arg_NonZeroLowerBound:
                     return SR.Arg_NonZeroLowerBound;
+                case ExceptionResource.ArgumentOutOfRange_GetCharCountOverflow:
+                    return SR.ArgumentOutOfRange_GetCharCountOverflow;
                 case ExceptionResource.ArgumentOutOfRange_ListInsert:
                     return SR.ArgumentOutOfRange_ListInsert;
                 case ExceptionResource.ArgumentOutOfRange_NeedNonNegNum:
@@ -798,8 +831,6 @@ namespace System
                     return SR.ArgumentException_OtherNotArrayOfCorrectLength;
                 case ExceptionResource.ArgumentNull_Array:
                     return SR.ArgumentNull_Array;
-                case ExceptionResource.ArgumentNull_SafeHandle:
-                    return SR.ArgumentNull_SafeHandle;
                 case ExceptionResource.ArgumentOutOfRange_EndIndexStartIndex:
                     return SR.ArgumentOutOfRange_EndIndexStartIndex;
                 case ExceptionResource.ArgumentOutOfRange_Enum:
@@ -836,6 +867,8 @@ namespace System
                     return SR.Arg_TypeNotSupported;
                 case ExceptionResource.Argument_SpansMustHaveSameLength:
                     return SR.Argument_SpansMustHaveSameLength;
+                case ExceptionResource.Argument_InvalidFlag:
+                    return SR.Argument_InvalidFlag;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -933,6 +966,13 @@ namespace System
         elementType,
         arrayIndex,
         year,
+        codePoint,
+        str,
+        options,
+        prefix,
+        suffix,
+        buffer,
+        offset,
     }
 
     //
@@ -949,6 +989,7 @@ namespace System
         NotSupported_ReadOnlyCollection,
         Arg_RankMultiDimNotSupported,
         Arg_NonZeroLowerBound,
+        ArgumentOutOfRange_GetCharCountOverflow,
         ArgumentOutOfRange_ListInsert,
         ArgumentOutOfRange_NeedNonNegNum,
         ArgumentOutOfRange_SmallCapacity,
@@ -986,7 +1027,6 @@ namespace System
         Task_WaitMulti_NullTask,
         ArgumentException_OtherNotArrayOfCorrectLength,
         ArgumentNull_Array,
-        ArgumentNull_SafeHandle,
         ArgumentOutOfRange_EndIndexStartIndex,
         ArgumentOutOfRange_Enum,
         ArgumentOutOfRange_HugeArrayNotSupported,
@@ -1005,5 +1045,6 @@ namespace System
         Rank_MultiDimNotSupported,
         Arg_TypeNotSupported,
         Argument_SpansMustHaveSameLength,
+        Argument_InvalidFlag,
     }
 }

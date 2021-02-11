@@ -1,28 +1,28 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.6.2)
+include(CheckCCompilerFlag)
+
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+     # CMake 3.14.5 contains bug fixes for iOS
+     cmake_minimum_required(VERSION 3.14.5)
+ endif()
+cmake_policy(SET CMP0042 NEW)
+
 project(CoreFX C)
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
-    cmake_policy(SET CMP0083 NEW)
-
-    include(CheckPIESupported)
-
-    # All code we build should be compiled as position independent
-    check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES C)
-    if(NOT MSVC AND NOT CMAKE_C_LINK_PIE_SUPPORTED)
-      message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
-                      "PIE link options will not be passed to linker.")
-    endif()
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+include(../../../../eng/native/configurepaths.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(CMAKE_MACOSX_RPATH ON)
+if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+    set(CMAKE_INSTALL_NAME_DIR "@rpath")
+endif()
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-set(CMAKE_SHARED_LIBRARY_PREFIX "")
-set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/../../_version.c")
+set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 
-# We mark the function which needs exporting with DLLEXPORT
+# We mark the function which needs exporting with PALEXPORT
 add_compile_options(-fvisibility=hidden)
 
 add_compile_options(-Wno-format-nonliteral)
@@ -32,65 +32,121 @@ add_compile_options(-Wno-empty-translation-unit)
 add_compile_options(-Wno-cast-align)
 add_compile_options(-Wno-typedef-redefinition)
 add_compile_options(-Wno-c11-extensions)
+add_compile_options(-Wno-unknown-pragmas)
+
+check_c_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+  add_compile_options(-Wimplicit-fallthrough)
+endif()
+
 add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
 add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 add_compile_options(-g)
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     add_compile_options(-Wthread-safety)
     add_compile_options(-Wno-thread-safety-analysis)
+elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
+    add_compile_options(-Wno-stringop-truncation)
 endif()
-add_compile_options(-Werror)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
-    set(CLR_CMAKE_PLATFORM_WASM 1)
-    add_definitions(-D_WASM_)
+# Suppress warnings-as-errors in release branches to reduce servicing churn
+if (PRERELEASE)
+    add_compile_options(-Werror)
+endif()
+
+if(STATIC_LIBS_ONLY)
+    # Suppress exporting of the PAL APIs
+    add_definitions(-DPALEXPORT=EXTERN_C)
+
+    set(STATIC_LIB_DESTINATION lib)
+    set(GEN_SHARED_LIB 0)
+else()
+    set(STATIC_LIB_DESTINATION .)
+    set(GEN_SHARED_LIB 1)
+endif()
+
+if(CLR_CMAKE_TARGET_BROWSER)
     # The emscripten build has additional warnings so -Werror breaks
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wno-unused-function)
     add_compile_options(-Wno-alloca)
     add_compile_options(-Wno-implicit-int-float-conversion)
-else()
-  set(GEN_SHARED_LIB 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 
-if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
-    add_definitions(-DBIT64=1)
-    add_definitions(-D_AMD64_)
-elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL x86 OR CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
-    add_definitions(-DBIT32=1)
-    add_definitions(-D_X86_)
-    add_definitions(-D_FILE_OFFSET_BITS=64)
-elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
-    add_definitions(-DBIT64=1)
-    add_definitions(-D_ARM64_)
-elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
-    add_definitions(-DBIT32=1)
-    add_definitions(-D_ARM_)
-    add_definitions(-D_FILE_OFFSET_BITS=64)
-  if(ARM_SOFTFP)
-    add_compile_options(-mfloat-abi=softfp)
-  endif ()
-    add_compile_options(-mthumb)
-  if (NOT DEFINED CLR_ARM_FPU_TYPE)
-    set(CLR_ARM_FPU_TYPE vfpv3)
-  endif(NOT DEFINED CLR_ARM_FPU_TYPE)
+    set(GEN_SHARED_LIB 0)
+    set(STATIC_LIB_DESTINATION .)
+endif()
 
-    add_compile_options(-mfpu=${CLR_ARM_FPU_TYPE})
-  if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
-    set(CLR_ARM_FPU_CAPABILITY 0x7)
-  endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
-    add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
+if(CLR_CMAKE_TARGET_MACCATALYST)
+    # -target overrides -mmacosx-version-min so suppress warning about that
+    # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
+    add_compile_options(-Wno-overriding-t-option)
+    add_link_options(-Wno-overriding-t-option)
+    if (CLR_CMAKE_TARGET_ARCH_AMD64)
+        add_compile_options(-target x86_64-apple-ios13.5-macabi)
+        add_link_options(-target x86_64-apple-ios13.5-macabi)
+    elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
+        add_compile_options(-target arm64-apple-ios14.2-macabi)
+        add_link_options(-target arm64-apple-ios14.2-macabi)
+    endif()
+endif()
 
-    add_compile_options(-march=armv7-a)
-elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
-    add_definitions(-DBIT32=1)
-    add_definitions(-D_ARM_)
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
+    add_definitions(-DTARGET_64BIT=1)
+    add_definitions(-DTARGET_AMD64)
+elseif (CLR_CMAKE_TARGET_ARCH_I386)
+    add_definitions(-DTARGET_32BIT=1)
+    add_definitions(-DTARGET_X86)
     add_definitions(-D_FILE_OFFSET_BITS=64)
+elseif (CLR_CMAKE_TARGET_ARCH_WASM)
+    add_definitions(-DTARGET_32BIT=1)
+    add_definitions(-DTARGET_WASM)
+elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
+    add_definitions(-DTARGET_64BIT=1)
+    add_definitions(-DTARGET_ARM64)
+elseif (CLR_CMAKE_TARGET_ARCH_MIPS64)
+    add_definitions(-DTARGET_64BIT=1)
+    add_definitions(-DTARGET_MIPS64)
+elseif (CLR_CMAKE_TARGET_ARCH_ARM)
+    add_definitions(-DTARGET_32BIT=1)
+    add_definitions(-DTARGET_ARM)
+    add_definitions(-D_FILE_OFFSET_BITS=64)
+
+    if (CLR_CMAKE_TARGET_ARCH_ARMV7L)
+        if(ARM_SOFTFP)
+            add_compile_options(-mfloat-abi=softfp)
+        endif ()
+
+        add_compile_options(-mthumb)
+        if (NOT DEFINED CLR_ARM_FPU_TYPE)
+            set(CLR_ARM_FPU_TYPE vfpv3)
+        endif(NOT DEFINED CLR_ARM_FPU_TYPE)
+
+        add_compile_options(-mfpu=${CLR_ARM_FPU_TYPE})
+        if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+            set(CLR_ARM_FPU_CAPABILITY 0x7)
+        endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+
+        add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
+        add_compile_options(-march=armv7-a)
+    endif()
 endif ()
 
+if(CLR_CMAKE_TARGET_ANDROID)
+    add_definitions(-DTARGET_ANDROID)
+    if(CROSS_ROOTFS)
+        include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
+    endif()
+endif()
+
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
-if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
-    add_compile_options(-O0)
+
+if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+    if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+        add_compile_options(-O0)
+    elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+        add_compile_options(-O2)
+    endif ()
+
     add_definitions(-DDEBUG)
 
     # obtain settings from running coreclr\enablesanitizers.sh
@@ -107,15 +163,15 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
         message("Undefined Behavior Sanitizer (ubsan) enabled")
       endif ()
 
-      set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS}")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS}")
 
       # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
-      set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
     endif ()
 elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
     # Use O1 option when the clang version is smaller than 3.9
     # Otherwise use O3 option in release build
-    if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l AND DEFINED ENV{CROSSCOMPILE} AND CMAKE_C_COMPILER_VERSION VERSION_LESS 3.9)
+    if (CLR_CMAKE_TARGET_ARCH_ARMV7L AND DEFINED ENV{CROSSCOMPILE} AND CMAKE_C_COMPILER_VERSION VERSION_LESS 3.9)
         add_compile_options (-O1)
     else()
         add_compile_options (-O3)
@@ -125,8 +181,8 @@ else ()
     message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
 endif ()
 
-if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
-elseif (APPLE)
+if(CLR_CMAKE_TARGET_BROWSER)
+elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -135,35 +191,9 @@ else ()
    add_compile_options(-fstack-protector-strong)
 endif ()
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+if (CLR_CMAKE_TARGET_LINUX)
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
 endif ()
-
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
-
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-
-if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-    add_definitions(-D_BSD_SOURCE) # required for getline
-    add_link_options(-fuse-ld=lld)
-endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL SunOS)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
 
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
 # CLR_ADDITIONAL_COMPILER_OPTIONS - used for passing additional arguments to compiler
@@ -171,119 +201,37 @@ endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
 # For example:
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
-if(CLR_CMAKE_PLATFORM_UNIX)
-    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-        add_link_options(-Wl,-bind_at_load)
-    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-        add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-        add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
-    endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+if(CLR_CMAKE_TARGET_UNIX)
+    if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+        if(CLR_CMAKE_TARGET_OSX)
+            add_definitions(-DTARGET_OSX)
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-bind_at_load")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-bind_at_load" )
+        else()
+            add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+            if(CLR_CMAKE_TARGET_SUNOS)
+                add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
+            else()
+                # -z,now is required for full relro.
+                # see https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=sha1 -Wl,-z,relro,-z,now")
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=sha1 -Wl,-z,relro,-z,now" )
+            endif()
+        endif()
+    endif()
+
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
     add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
-endif(CLR_CMAKE_PLATFORM_UNIX)
-
-if (NOT WIN32)
-    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-        # Ensure that dsymutil and strip are present
-        find_program(DSYMUTIL dsymutil)
-        if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
-            message(FATAL_ERROR "dsymutil not found")
-        endif()
-
-        find_program(STRIP strip)
-        if (STRIP STREQUAL "STRIP-NOTFOUND")
-            message(FATAL_ERROR "strip not found")
-        endif()
-    elseif (CLR_CMAKE_PLATFORM_WASM)
-        # No object stripping for WASM
-    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-        # Ensure that objcopy is present
-        if(DEFINED ENV{CROSSCOMPILE})
-            if(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL i686 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
-                find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
-            else()
-                message(FATAL_ERROR "Only AMD64, X86, ARM64 and ARM are supported")
-            endif()
-        else()
-            find_program(OBJCOPY objcopy)
-        endif()
-        if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND" AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
-            message(FATAL_ERROR "objcopy not found")
-        endif()
-    endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-endif ()
-
-
-function(strip_symbols targetName outputFilename)
-    if(CLR_CMAKE_PLATFORM_UNIX)
-        if(STRIP_SYMBOLS)
-
-            # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
-            # generator expression doesn't work correctly returning the wrong path and on
-            # the newer cmake versions the LOCATION property isn't supported anymore.
-            if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
-                set(strip_source_file $<TARGET_FILE:${targetName}>)
-            else()
-                get_property(strip_source_file TARGET ${targetName} PROPERTY LOCATION)
-            endif()
-
-            if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-                set(strip_destination_file ${strip_source_file}.dwarf)
-
-                add_custom_command(
-                    TARGET ${targetName}
-                    POST_BUILD
-                    VERBATIM
-                    COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
-                    COMMAND ${STRIP} -u -r ${strip_source_file}
-                    COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
-                )
-            else(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-                set(strip_destination_file ${strip_source_file}.dbg)
-
-                add_custom_command(
-                    TARGET ${targetName}
-                    POST_BUILD
-                    VERBATIM
-                    COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-                    COMMAND ${OBJCOPY} --strip-unneeded ${strip_source_file}
-                    COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
-                    COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
-                )
-            endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-
-            set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
-        endif(STRIP_SYMBOLS)
-    endif(CLR_CMAKE_PLATFORM_UNIX)
-endfunction()
-
-function(install_library_and_symbols targetName)
-    strip_symbols(${targetName} strip_destination_file)
-
-    # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
-    # generator expression doesn't work correctly returning the wrong path and on
-    # the newer cmake versions the LOCATION property isn't supported anymore.
-    if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
-        set(install_source_file $<TARGET_FILE:${targetName}>)
-    else()
-        get_property(install_source_file TARGET ${targetName} PROPERTY LOCATION)
-    endif()
-
-    install(PROGRAMS ${install_source_file} DESTINATION .)
-    if(WIN32)
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION PDB)
-    else()
-        install(FILES ${strip_destination_file} DESTINATION .)
-    endif()
-endfunction()
+    add_definitions(-DTARGET_UNIX)
+endif(CLR_CMAKE_TARGET_UNIX)
 
 include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (NOT CLR_CMAKE_PLATFORM_WASM)
-	add_subdirectory(System.IO.Ports.Native)
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+    add_subdirectory(System.IO.Ports.Native)
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
@@ -292,12 +240,37 @@ endif()
 
 add_subdirectory(System.Native)
 
-if (NOT CLR_CMAKE_PLATFORM_WASM)
+if(CLR_CMAKE_TARGET_BROWSER)
+    # skip for now
+elseif(CLR_CMAKE_TARGET_MACCATALYST)
+    add_subdirectory(System.Net.Security.Native)
+    # System.Security.Cryptography.Native is intentionally disabled on iOS
+    # it is only used for interacting with OpenSSL which isn't useful there
+elseif(CLR_CMAKE_TARGET_IOS)
+    add_subdirectory(System.Net.Security.Native)
+    # System.Security.Cryptography.Native is intentionally disabled on iOS
+    # it is only used for interacting with OpenSSL which isn't useful there
+elseif(CLR_CMAKE_TARGET_TVOS)
+    #add_subdirectory(System.Net.Security.Native) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+    # System.Security.Cryptography.Native is intentionally disabled on tvOS
+    # it is only used for interacting with OpenSSL which isn't useful there
+elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
+    #add_subdirectory(System.Net.Security.Native) # TODO: reenable
+    if (NOT "$ENV{ANDROID_OPENSSL_AAR}" STREQUAL "")
+        set(PREFER_OPENSSL_ANDROID 1)
+        add_subdirectory(System.Security.Cryptography.Native)
+    endif()
+else()
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
-if(APPLE)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
+endif()
+
+# if ANDROID_OPENSSL_AAR is not set - use Android Native Crypto (it's going to replace openssl eventually)
+if(CLR_CMAKE_TARGET_ANDROID AND NOT PREFER_OPENSSL_ANDROID)
+    add_subdirectory(System.Security.Cryptography.Native.Android)
 endif()

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Diagnostics;
@@ -17,13 +16,13 @@ namespace System.Tests
 
         internal static bool IsSupportedTarget(EnvironmentVariableTarget target)
         {
-            // [ActiveIssue(40226)]
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/30566")]
             if (target == EnvironmentVariableTarget.User && PlatformDetection.IsWindowsNanoServer)
             {
                 return false;
             }
 
-            return target == EnvironmentVariableTarget.Process || RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            return target == EnvironmentVariableTarget.Process || OperatingSystem.IsWindows();
         }
 
         [Fact]
@@ -76,7 +75,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void EnvironmentVariableTooLarge_Throws()
         {
@@ -111,7 +110,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void EnvironmentVariableValueTooLarge_Throws()
         {

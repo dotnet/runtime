@@ -1,14 +1,11 @@
 ﻿' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 Option Explicit On
 Option Strict On
 
 Imports System
 Imports System.ComponentModel
 Imports System.Globalization
-
-Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic.FileIO
 
@@ -123,7 +120,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <returns>The base ToString plus the Line Number</returns>
         ''' <remarks></remarks>
         Public Overrides Function ToString() As String
-            Return MyBase.ToString() & " " & GetResourceString(SR.TextFieldParser_MalformedExtraData, LineNumber.ToString(CultureInfo.InvariantCulture))
+            Return MyBase.ToString() & " " & SR.Format(SR.TextFieldParser_MalformedExtraData, LineNumber.ToString(CultureInfo.InvariantCulture))
         End Function
 
         ' Holds the line number

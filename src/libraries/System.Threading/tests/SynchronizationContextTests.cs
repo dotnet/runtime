@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
 using Xunit;
@@ -9,8 +8,7 @@ namespace System.Threading.Tests
 {
     public static class SynchronizationContextTests
     {
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "SynchronizationContext.Wait(IntPtr[], bool, int) is not implemented on Mono")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WaitTest()
         {
             var tsc = new TestSynchronizationContext();
@@ -37,14 +35,13 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void WaitTest_ChangedInDotNetCore()
         {
             Assert.Throws<ArgumentNullException>(() => TestSynchronizationContext.WaitHelper(null, false, 0));
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "https://bugzilla.xamarin.com/show_bug.cgi?id=60568")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31977", TestRuntimes.Mono)]
         public static void WaitNotificationTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>

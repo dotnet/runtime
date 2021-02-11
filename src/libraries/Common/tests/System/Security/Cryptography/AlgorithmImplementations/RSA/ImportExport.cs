@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Numerics;
@@ -8,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public partial class ImportExport
     {
         public static bool Supports16384 { get; } = TestRsa16384();
@@ -248,7 +248,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             using (RSA rsa = RSAFactory.Create())
             {
-                if (rsa is RSACng && PlatformDetection.IsFullFramework)
+                if (rsa is RSACng && PlatformDetection.IsNetFramework)
                     AssertExtensions.Throws<ArgumentException>(null, () => rsa.ImportParameters(imported));
                 else
                     Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
@@ -265,7 +265,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             using (RSA rsa = RSAFactory.Create())
             {
-                if (rsa is RSACng && PlatformDetection.IsFullFramework)
+                if (rsa is RSACng && PlatformDetection.IsNetFramework)
                     AssertExtensions.Throws<ArgumentException>(null, () => rsa.ImportParameters(imported));
                 else
                     Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
@@ -274,7 +274,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [Fact]
 #if TESTING_CNG_IMPLEMENTATION
-        [ActiveIssue(18882, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21341", TargetFrameworkMonikers.NetFramework)]
 #endif
         public static void ImportNoDP()
         {
@@ -305,7 +305,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Throws<ObjectDisposedException>(() => rsa.ExportParameters(false));
             Assert.Throws<ObjectDisposedException>(() => rsa.ExportParameters(true));
 
-            if (!(PlatformDetection.IsFullFramework && rsa.GetType().Name.EndsWith("Cng")))
+            if (!(PlatformDetection.IsNetFramework && rsa.GetType().Name.EndsWith("Cng")))
             {
                 Assert.Throws<ObjectDisposedException>(() => rsa.ImportParameters(TestData.RSA1024Params));
             }

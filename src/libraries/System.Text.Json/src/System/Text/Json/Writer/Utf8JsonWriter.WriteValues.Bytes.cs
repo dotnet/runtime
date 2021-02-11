@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Text;
 using System.Diagnostics;
@@ -34,7 +33,10 @@ namespace System.Text.Json
 
         private void WriteBase64ByOptions(ReadOnlySpan<byte> bytes)
         {
-            ValidateWritingValue();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingValue();
+            }
 
             if (_options.Indented)
             {
@@ -46,7 +48,7 @@ namespace System.Text.Json
             }
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteBase64Minimized(ReadOnlySpan<byte> bytes)
         {
             int encodingLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
@@ -75,7 +77,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteBase64Indented(ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;

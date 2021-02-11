@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -34,7 +33,7 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// parent scope, if any
         /// </summary>
-        private CompilerScope _parent;
+        private CompilerScope? _parent;
 
         /// <summary>
         /// The expression node for this scope
@@ -66,25 +65,25 @@ namespace System.Linq.Expressions.Compiler
         /// Each variable referenced within this scope, and how often it was referenced
         /// Populated by VariableBinder
         /// </summary>
-        internal Dictionary<ParameterExpression, int> ReferenceCount;
+        internal Dictionary<ParameterExpression, int>? ReferenceCount;
 
         /// <summary>
         /// Scopes whose variables were merged into this one
         ///
         /// Created lazily as we create hundreds of compiler scopes w/o merging scopes when compiling rules.
         /// </summary>
-        internal HashSet<BlockExpression> MergedScopes;
+        internal HashSet<BlockExpression>? MergedScopes;
 
         /// <summary>
         /// The scope's hoisted locals, if any.
         /// Provides storage for variables that are referenced from nested lambdas
         /// </summary>
-        private HoistedLocals _hoistedLocals;
+        private HoistedLocals? _hoistedLocals;
 
         /// <summary>
         /// The closed over hoisted locals
         /// </summary>
-        private HoistedLocals _closureHoistedLocals;
+        private HoistedLocals? _closureHoistedLocals;
 
         /// <summary>
         /// Mutable dictionary that maps non-hoisted variables to either local
@@ -109,7 +108,7 @@ namespace System.Linq.Expressions.Compiler
         /// This scope's hoisted locals, or the closed over locals, if any
         /// Equivalent to: _hoistedLocals ?? _closureHoistedLocals
         /// </summary>
-        internal HoistedLocals NearestHoistedLocals
+        internal HoistedLocals? NearestHoistedLocals
         {
             get { return _hoistedLocals ?? _closureHoistedLocals; }
         }
@@ -119,7 +118,7 @@ namespace System.Linq.Expressions.Compiler
         /// needed, including creating hoisted locals and IL locals for accessing
         /// parent locals
         /// </summary>
-        internal CompilerScope Enter(LambdaCompiler lc, CompilerScope parent)
+        internal CompilerScope Enter(LambdaCompiler lc, CompilerScope? parent)
         {
             SetParent(lc, parent);
 
@@ -143,7 +142,7 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// Frees unnamed locals, clears state associated with this compiler
         /// </summary>
-        internal CompilerScope Exit()
+        internal CompilerScope? Exit()
         {
             // free scope's variables
             if (!IsMethod)
@@ -156,7 +155,7 @@ namespace System.Linq.Expressions.Compiler
 
             // Clear state that is associated with this parent
             // (because the scope can be reused in another context)
-            CompilerScope parent = _parent;
+            CompilerScope? parent = _parent;
             _parent = null;
             _hoistedLocals = null;
             _closureHoistedLocals = null;
@@ -178,7 +177,7 @@ namespace System.Linq.Expressions.Compiler
                 {
                     // For each variable, find what array it's defined on
                     ulong parents = 0;
-                    HoistedLocals locals = NearestHoistedLocals;
+                    HoistedLocals? locals = NearestHoistedLocals;
                     while (!locals.Indexes.ContainsKey(variable))
                     {
                         parents++;
@@ -240,13 +239,12 @@ namespace System.Linq.Expressions.Compiler
         /// Resolve a local variable in this scope or a closed over scope
         /// Throws if the variable is not defined
         /// </summary>
-        private Storage ResolveVariable(ParameterExpression variable, HoistedLocals hoistedLocals)
+        private Storage ResolveVariable(ParameterExpression variable, HoistedLocals? hoistedLocals)
         {
             // Search IL locals and arguments, but only in this lambda
-            for (CompilerScope s = this; s != null; s = s._parent)
+            for (CompilerScope? s = this; s != null; s = s._parent)
             {
-                Storage storage;
-                if (s._locals.TryGetValue(variable, out storage))
+                if (s._locals.TryGetValue(variable, out Storage? storage))
                 {
                     return storage;
                 }
@@ -259,7 +257,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // search hoisted locals
-            for (HoistedLocals h = hoistedLocals; h != null; h = h.Parent)
+            for (HoistedLocals? h = hoistedLocals; h != null; h = h.Parent)
             {
                 int index;
                 if (h.Indexes.TryGetValue(variable, out index))
@@ -283,7 +281,7 @@ namespace System.Linq.Expressions.Compiler
 
         #endregion
 
-        private void SetParent(LambdaCompiler lc, CompilerScope parent)
+        private void SetParent(LambdaCompiler lc, CompilerScope? parent)
         {
             Debug.Assert(_parent == null && parent != this);
             _parent = parent;
@@ -328,18 +326,18 @@ namespace System.Linq.Expressions.Compiler
                 {
                     // array[i] = new StrongBox<T>(argument);
                     lc.EmitLambdaArgument(index);
-                    lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type }));
+                    lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type })!);
                 }
                 else if (v == _hoistedLocals.ParentVariable)
                 {
                     // array[i] = new StrongBox<T>(closure.Locals);
                     ResolveVariable(v, _closureHoistedLocals).EmitLoad();
-                    lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type }));
+                    lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(new Type[] { v.Type })!);
                 }
                 else
                 {
                     // array[i] = new StrongBox<T>();
-                    lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(Type.EmptyTypes));
+                    lc.IL.Emit(OpCodes.Newobj, boxType.GetConstructor(Type.EmptyTypes)!);
                 }
                 // if we want to cache this into a local, do it now
                 if (ShouldCache(v))
@@ -368,8 +366,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 if (ShouldCache(refCount.Key, refCount.Value))
                 {
-                    var storage = ResolveVariable(refCount.Key) as ElementBoxStorage;
-                    if (storage != null)
+                    if (ResolveVariable(refCount.Key) is ElementBoxStorage storage)
                     {
                         storage.EmitLoadBox();
                         CacheBoxToLocal(storage.Compiler, refCount.Key);
@@ -406,7 +403,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         // Creates IL locals for accessing closures
-        private void EmitClosureAccess(LambdaCompiler lc, HoistedLocals locals)
+        private void EmitClosureAccess(LambdaCompiler lc, HoistedLocals? locals)
         {
             if (locals == null)
             {
@@ -470,7 +467,7 @@ namespace System.Linq.Expressions.Compiler
                 yield return param;
             }
 
-            foreach (BlockExpression scope in MergedScopes)
+            foreach (BlockExpression scope in MergedScopes!)
             {
                 foreach (ParameterExpression param in scope.Variables)
                 {
@@ -481,28 +478,25 @@ namespace System.Linq.Expressions.Compiler
 
         private static IReadOnlyList<ParameterExpression> GetVariables(object scope)
         {
-            var lambda = scope as LambdaExpression;
-            if (lambda != null)
+            if (scope is LambdaExpression lambda)
             {
                 return new ParameterList(lambda);
             }
-            var block = scope as BlockExpression;
-            if (block != null)
+            if (scope is BlockExpression block)
             {
                 return block.Variables;
             }
-            return new[] { ((CatchBlock)scope).Variable };
+            return new[] { ((CatchBlock)scope).Variable! };
         }
 
-        private string CurrentLambdaName
+        private string? CurrentLambdaName
         {
             get
             {
-                CompilerScope s = this;
+                CompilerScope? s = this;
                 while (s != null)
                 {
-                    var lambda = s.Node as LambdaExpression;
-                    if (lambda != null)
+                    if (s.Node is LambdaExpression lambda)
                     {
                         return lambda.Name;
                     }
@@ -515,7 +509,7 @@ namespace System.Linq.Expressions.Compiler
 
     internal static class ParameterProviderExtensions
     {
-        public static int IndexOf(this IParameterProvider provider, ParameterExpression parameter)
+        public static int IndexOf(this IParameterProvider provider, ParameterExpression? parameter)
         {
             for (int i = 0, n = provider.ParameterCount; i < n; i++)
             {
@@ -528,7 +522,7 @@ namespace System.Linq.Expressions.Compiler
             return -1;
         }
 
-        public static bool Contains(this IParameterProvider provider, ParameterExpression parameter)
+        public static bool Contains(this IParameterProvider provider, ParameterExpression? parameter)
         {
             return provider.IndexOf(parameter) >= 0;
         }

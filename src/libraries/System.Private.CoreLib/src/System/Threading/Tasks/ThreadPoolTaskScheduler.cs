@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -30,7 +29,7 @@ namespace System.Threading.Tasks
         }
 
         // static delegate for threads allocated to handle LongRunning tasks.
-        private static readonly ParameterizedThreadStart s_longRunningThreadWork = s =>
+        private static readonly ParameterizedThreadStart s_longRunningThreadWork = static s =>
         {
             Debug.Assert(s is Task);
             ((Task)s).ExecuteEntryUnsafe(threadPoolThread: null);
@@ -43,18 +42,21 @@ namespace System.Threading.Tasks
         protected internal override void QueueTask(Task task)
         {
             TaskCreationOptions options = task.Options;
-            if ((options & TaskCreationOptions.LongRunning) != 0)
+            if (Thread.IsThreadStartSupported && (options & TaskCreationOptions.LongRunning) != 0)
             {
                 // Run LongRunning tasks on their own dedicated thread.
-                Thread thread = new Thread(s_longRunningThreadWork);
-                thread.IsBackground = true; // Keep this thread from blocking process shutdown
-                thread.Start(task);
+#pragma warning disable CA1416 // TODO: https://github.com/dotnet/runtime/issues/44922
+                new Thread(s_longRunningThreadWork)
+                {
+                    IsBackground = true,
+                    Name = ".NET Long Running Task"
+                }.UnsafeStart(task);
+#pragma warning restore CA1416
             }
             else
             {
                 // Normal handling for non-LongRunning tasks.
-                bool preferLocal = ((options & TaskCreationOptions.PreferFairness) == 0);
-                ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal);
+                ThreadPool.UnsafeQueueUserWorkItemInternal(task, (options & TaskCreationOptions.PreferFairness) == 0);
             }
         }
 
@@ -96,7 +98,7 @@ namespace System.Threading.Tasks
             return FilterTasksFromWorkItems(ThreadPool.GetQueuedWorkItems());
         }
 
-        private IEnumerable<Task> FilterTasksFromWorkItems(IEnumerable<object> tpwItems)
+        private static IEnumerable<Task> FilterTasksFromWorkItems(IEnumerable<object> tpwItems)
         {
             foreach (object tpwi in tpwItems)
             {

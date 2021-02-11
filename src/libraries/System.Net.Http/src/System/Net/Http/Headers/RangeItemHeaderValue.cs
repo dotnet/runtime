@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Net.Http.Headers
@@ -58,6 +58,7 @@ namespace System.Net.Http.Headers
         {
             if (!_from.HasValue)
             {
+                Debug.Assert(_to != null);
                 return "-" + _to.Value.ToString(NumberFormatInfo.InvariantInfo);
             }
             else if (!_to.HasValue)
@@ -68,9 +69,9 @@ namespace System.Net.Http.Headers
                 _to.Value.ToString(NumberFormatInfo.InvariantInfo);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            RangeItemHeaderValue other = obj as RangeItemHeaderValue;
+            RangeItemHeaderValue? other = obj as RangeItemHeaderValue;
 
             if (other == null)
             {
@@ -94,7 +95,7 @@ namespace System.Net.Http.Headers
 
         // Returns the length of a range list. E.g. "1-2, 3-4, 5-6" adds 3 ranges to 'rangeCollection'. Note that empty
         // list segments are allowed, e.g. ",1-2, , 3-4,,".
-        internal static int GetRangeItemListLength(string input, int startIndex,
+        internal static int GetRangeItemListLength(string? input, int startIndex,
             ICollection<RangeItemHeaderValue> rangeCollection)
         {
             Debug.Assert(rangeCollection != null);
@@ -115,7 +116,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            RangeItemHeaderValue range = null;
+            RangeItemHeaderValue? range;
             while (true)
             {
                 int rangeLength = GetRangeItemLength(input, current, out range);
@@ -125,7 +126,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                rangeCollection.Add(range);
+                rangeCollection.Add(range!);
 
                 current = current + rangeLength;
                 current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, current, true, out separatorFound);
@@ -144,7 +145,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static int GetRangeItemLength(string input, int startIndex, out RangeItemHeaderValue parsedValue)
+        internal static int GetRangeItemLength(string? input, int startIndex, out RangeItemHeaderValue? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 

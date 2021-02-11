@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
     public class RetryConditionHeaderValue : ICloneable
     {
-        private DateTimeOffset? _date;
-        private TimeSpan? _delta;
+        private readonly DateTimeOffset? _date;
+        private readonly TimeSpan? _delta;
 
         public DateTimeOffset? Date
         {
@@ -46,22 +46,19 @@ namespace System.Net.Http.Headers
             _date = source._date;
         }
 
-        private RetryConditionHeaderValue()
-        {
-        }
-
         public override string ToString()
         {
             if (_delta.HasValue)
             {
                 return ((int)_delta.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
             }
+            Debug.Assert(_date != null);
             return HttpDateParser.DateToString(_date.Value);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            RetryConditionHeaderValue other = obj as RetryConditionHeaderValue;
+            RetryConditionHeaderValue? other = obj as RetryConditionHeaderValue;
 
             if (other == null)
             {
@@ -73,6 +70,7 @@ namespace System.Net.Http.Headers
                 return (other._delta != null) && (_delta.Value == other._delta.Value);
             }
 
+            Debug.Assert(_date != null);
             return (other._date != null) && (_date.Value == other._date.Value);
         }
 
@@ -80,34 +78,34 @@ namespace System.Net.Http.Headers
         {
             if (_delta == null)
             {
+                Debug.Assert(_date != null);
                 return _date.Value.GetHashCode();
             }
 
             return _delta.Value.GetHashCode();
         }
 
-        public static RetryConditionHeaderValue Parse(string input)
+        public static RetryConditionHeaderValue Parse(string? input)
         {
             int index = 0;
             return (RetryConditionHeaderValue)GenericHeaderParser.RetryConditionParser.ParseValue(
                 input, null, ref index);
         }
 
-        public static bool TryParse(string input, out RetryConditionHeaderValue parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out RetryConditionHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.RetryConditionParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.RetryConditionParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (RetryConditionHeaderValue)output;
+                parsedValue = (RetryConditionHeaderValue)output!;
                 return true;
             }
             return false;
         }
 
-        internal static int GetRetryConditionLength(string input, int startIndex, out object parsedValue)
+        internal static int GetRetryConditionLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
@@ -155,7 +153,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                if (!HttpDateParser.TryStringToDate(input.AsSpan(current), out date))
+                if (!HttpDateParser.TryParse(input.AsSpan(current), out date))
                 {
                     return 0;
                 }
@@ -164,18 +162,15 @@ namespace System.Net.Http.Headers
                 current = input.Length;
             }
 
-            RetryConditionHeaderValue result = new RetryConditionHeaderValue();
-
             if (deltaSeconds == -1) // we didn't change delta, so we must have found a date.
             {
-                result._date = date;
+                parsedValue = new RetryConditionHeaderValue(date);
             }
             else
             {
-                result._delta = new TimeSpan(0, 0, deltaSeconds);
+                parsedValue = new RetryConditionHeaderValue(new TimeSpan(0, 0, deltaSeconds));
             }
 
-            parsedValue = result;
             return current - startIndex;
         }
 

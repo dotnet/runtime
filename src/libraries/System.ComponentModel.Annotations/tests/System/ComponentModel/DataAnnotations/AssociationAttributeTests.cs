@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
@@ -20,7 +19,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(name, attribute.Name);
             Assert.Equal(thisKey, attribute.ThisKey);
             Assert.Equal(otherKey, attribute.OtherKey);
-            if (PlatformDetection.IsFullFramework && thisKey == null)
+            if (PlatformDetection.IsNetFramework && thisKey == null)
             {
                 Assert.Throws<NullReferenceException>(() => attribute.ThisKeyMembers);
             }
@@ -28,7 +27,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             {
                 Assert.Equal(expectedThisKeyMembers, attribute.ThisKeyMembers);
             }
-            if (PlatformDetection.IsFullFramework && otherKey == null)
+            if (PlatformDetection.IsNetFramework && otherKey == null)
             {
                 Assert.Throws<NullReferenceException>(() => attribute.OtherKeyMembers);
             }

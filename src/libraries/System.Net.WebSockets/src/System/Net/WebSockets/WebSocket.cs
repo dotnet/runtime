@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,16 +14,16 @@ namespace System.Net.WebSockets
     public abstract class WebSocket : IDisposable
     {
         public abstract WebSocketCloseStatus? CloseStatus { get; }
-        public abstract string CloseStatusDescription { get; }
-        public abstract string SubProtocol { get; }
+        public abstract string? CloseStatusDescription { get; }
+        public abstract string? SubProtocol { get; }
         public abstract WebSocketState State { get; }
 
         public abstract void Abort();
         public abstract Task CloseAsync(WebSocketCloseStatus closeStatus,
-            string statusDescription,
+            string? statusDescription,
             CancellationToken cancellationToken);
         public abstract Task CloseOutputAsync(WebSocketCloseStatus closeStatus,
-            string statusDescription,
+            string? statusDescription,
             CancellationToken cancellationToken);
         public abstract void Dispose();
         public abstract Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer,
@@ -134,7 +134,8 @@ namespace System.Net.WebSockets
         /// <param name="subProtocol">The agreed upon sub-protocol that was used when creating the connection.</param>
         /// <param name="keepAliveInterval">The keep-alive interval to use, or <see cref="Timeout.InfiniteTimeSpan"/> to disable keep-alives.</param>
         /// <returns>The created <see cref="WebSocket"/>.</returns>
-        public static WebSocket CreateFromStream(Stream stream, bool isServer, string subProtocol, TimeSpan keepAliveInterval)
+        [UnsupportedOSPlatform("browser")]
+        public static WebSocket CreateFromStream(Stream stream, bool isServer, string? subProtocol, TimeSpan keepAliveInterval)
         {
             if (stream == null)
             {
@@ -168,14 +169,15 @@ namespace System.Net.WebSockets
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static void RegisterPrefixes()
         {
-            // The current WebRequest implementation in corefx does not support upgrading
+            // The current WebRequest implementation in the libraries does not support upgrading
             // web socket connections.  For now, we throw.
             throw new PlatformNotSupportedException();
         }
 
+        [UnsupportedOSPlatform("browser")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static WebSocket CreateClientWebSocket(Stream innerStream,
-            string subProtocol, int receiveBufferSize, int sendBufferSize,
+            string? subProtocol, int receiveBufferSize, int sendBufferSize,
             TimeSpan keepAliveInterval, bool useZeroMaskingKey, ArraySegment<byte> internalBuffer)
         {
             if (innerStream == null)

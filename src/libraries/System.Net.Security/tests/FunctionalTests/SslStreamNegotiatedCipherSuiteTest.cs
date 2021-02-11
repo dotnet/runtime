@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -625,7 +624,6 @@ namespace System.Net.Security.Tests
                     }
                     catch (AuthenticationException) { }
                     catch (Win32Exception) { }
-                    catch (VirtualNetwork.VirtualNetworkConnectionBroken) { }
                     catch (IOException) { }
                 }
 
@@ -667,12 +665,12 @@ namespace System.Net.Security.Tests
                 // Fail if server has failed but client has succeeded
                 Assert.Null(failure);
             }
-            catch (Exception e) when (e is VirtualNetwork.VirtualNetworkConnectionBroken || e is AuthenticationException || e is Win32Exception || e is IOException)
+            catch (Exception e) when (e is AuthenticationException || e is Win32Exception || e is IOException)
             {
                 // Fail if server has succeeded but client has failed
                 Assert.NotNull(failure);
 
-                if (e.GetType() != typeof(VirtualNetwork.VirtualNetworkConnectionBroken) && e.GetType() != typeof(IOException))
+                if (e.GetType() != typeof(IOException))
                 {
                     failure = new AggregateException(new Exception[] { failure, e });
                 }
@@ -715,13 +713,17 @@ namespace System.Net.Security.Tests
                 {
                     // send some bytes, make sure they can talk
                     byte[] data = new byte[] { 1, 2, 3 };
-                    server.WriteAsync(data, 0, data.Length);
-
+                    byte[] receivedData = new byte[1];
+                    Task serverTask = server.WriteAsync(data, 0, data.Length);
                     for (int i = 0; i < data.Length; i++)
                     {
-                        Assert.Equal(data[i], client.ReadByte());
+                        Assert.True(client.ReadAsync(receivedData, 0, 1).Wait(TestConfiguration.PassingTestTimeoutMilliseconds),
+                                                                        $"Read task failed to finish in {TestConfiguration.PassingTestTimeoutMilliseconds}ms.");
+                        Assert.Equal(data[i], receivedData[0]);
                     }
 
+                    Assert.True(serverTask.Wait(TestConfiguration.PassingTestTimeoutMilliseconds),
+                                $"WriteTask failed to finish in {TestConfiguration.PassingTestTimeoutMilliseconds}ms.");
                     return new NegotiatedParams(server, client);
                 }
                 else

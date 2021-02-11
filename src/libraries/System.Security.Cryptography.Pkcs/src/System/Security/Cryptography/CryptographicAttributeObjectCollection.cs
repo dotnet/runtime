@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -29,7 +28,7 @@ namespace System.Security.Cryptography
             if (asnEncodedData == null)
                 throw new ArgumentNullException(nameof(asnEncodedData));
 
-            return Add(new CryptographicAttributeObject(asnEncodedData.Oid, new AsnEncodedDataCollection(asnEncodedData)));
+            return Add(new CryptographicAttributeObject(asnEncodedData.Oid!, new AsnEncodedDataCollection(asnEncodedData)));
         }
 
         public int Add(CryptographicAttributeObject attribute)
@@ -40,7 +39,7 @@ namespace System.Security.Cryptography
             //
             // Merge with existing attribute, if already existed, else add as new.
             //
-            string szOid1 = attribute.Oid.Value;
+            string? szOid1 = attribute.Oid.Value;
             for (int index = 0; index < _list.Count; index++)
             {
                 CryptographicAttributeObject existing = _list[index];
@@ -50,7 +49,7 @@ namespace System.Security.Cryptography
                 if (object.ReferenceEquals(existing.Values, attribute.Values))
                     throw new InvalidOperationException(SR.InvalidOperation_DuplicateItemNotAllowed);
 
-                string szOid2 = existing.Oid.Value;
+                string? szOid2 = existing.Oid.Value;
                 if (string.Equals(szOid1, szOid2, StringComparison.OrdinalIgnoreCase))
                 {
                     //

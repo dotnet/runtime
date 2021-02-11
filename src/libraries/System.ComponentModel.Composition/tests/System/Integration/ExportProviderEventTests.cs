@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Factories;
@@ -105,23 +104,6 @@ namespace System.ComponentModel.Composition
             var eventListener = new ExportProviderListener(container, container);
 
             eventListener.VerifyCatalogRemove(() => aggCat.Catalogs.Remove(catalog), typeof(SampleCatalogExport));
-        }
-
-        [Export]
-        public class SampleCatalogExport2 { }
-
-        [Fact]
-        [ActiveIssue(812029)]
-        public void CatalogMultipleAdds_ShouldFireEvents()
-        {
-            var catalog = new TypeCatalog(typeof(SampleCatalogExport));
-            var aggCat = new AggregateCatalog();
-            var container = ContainerFactory.Create(aggCat);
-            var eventListener = new ExportProviderListener(container, container);
-
-            var otherAggCat = new AggregateCatalog(new TypeCatalog(typeof(SampleCatalogExport)), new TypeCatalog(typeof(SampleCatalogExport2)));
-
-            eventListener.VerifyCatalogAdd(() => aggCat.Catalogs.Add(otherAggCat), typeof(SampleCatalogExport), typeof(SampleCatalogExport2));
         }
 
         [Fact]

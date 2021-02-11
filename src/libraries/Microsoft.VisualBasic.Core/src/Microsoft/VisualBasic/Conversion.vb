@@ -1,6 +1,5 @@
 ' Licensed to the .NET Foundation under one or more agreements.
 ' The .NET Foundation licenses this file to you under the MIT license.
-' See the LICENSE file in the project root for more information.
 
 Imports System
 Imports System.Runtime.Versioning
@@ -58,7 +57,7 @@ Namespace Microsoft.VisualBasic
 
         Public Function ErrorToString(ByVal ErrorNumber As Integer) As String
             If ErrorNumber >= MAX_ERR_NUMBER Then
-                Throw New ArgumentException(GetResourceString(SR.MaxErrNumber))
+                Throw New ArgumentException(SR.MaxErrNumber)
             End If
 
             If ErrorNumber > 0 Then
@@ -117,7 +116,7 @@ Namespace Microsoft.VisualBasic
 
         Public Function Fix(ByVal Number As Object) As Object
             If Number Is Nothing Then
-                Throw New ArgumentNullException(GetResourceString(SR.Argument_InvalidNullValue1, "Number"))
+                Throw New ArgumentNullException(SR.Format(SR.Argument_InvalidNullValue1, "Number"))
             End If
 
             Dim ValueInterface As IConvertible
@@ -163,7 +162,7 @@ Namespace Microsoft.VisualBasic
 
             End If
 
-            Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_NotNumericType2, NameOf(Number), Number.GetType().FullName)), vbErrors.TypeMismatch)
+            Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_NotNumericType2, NameOf(Number), Number.GetType().FullName)), vbErrors.TypeMismatch)
         End Function
 
         Public Function Int(ByVal Number As Short) As Short
@@ -192,7 +191,7 @@ Namespace Microsoft.VisualBasic
 
         Public Function Int(ByVal Number As Object) As Object
             If Number Is Nothing Then
-                Throw New ArgumentNullException(GetResourceString(SR.Argument_InvalidNullValue1, NameOf(Number)))
+                Throw New ArgumentNullException(SR.Format(SR.Argument_InvalidNullValue1, NameOf(Number)))
             End If
 
             Dim ValueInterface As IConvertible
@@ -236,7 +235,7 @@ Namespace Microsoft.VisualBasic
                 End Select
             End If
 
-            Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_NotNumericType2, NameOf(Number), Number.GetType().FullName)), vbErrors.TypeMismatch)
+            Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_NotNumericType2, NameOf(Number), Number.GetType().FullName)), vbErrors.TypeMismatch)
         End Function
 
         '============================================================================
@@ -282,7 +281,7 @@ Namespace Microsoft.VisualBasic
             Dim LongValue As Long
 
             If Number Is Nothing Then
-                Throw New ArgumentNullException(GetResourceString(SR.Argument_InvalidNullValue1, NameOf(Number)))
+                Throw New ArgumentNullException(SR.Format(SR.Argument_InvalidNullValue1, NameOf(Number)))
             End If
 
             Dim ValueInterface As IConvertible
@@ -355,7 +354,7 @@ RangeCheck:
                 End Select
             End If
 
-            Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValueType2, NameOf(Number), VBFriendlyName(Number)))
+            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValueType2, NameOf(Number), VBFriendlyName(Number)))
         End Function
 
         <CLSCompliant(False)>
@@ -398,7 +397,7 @@ RangeCheck:
             Dim LongValue As Long
 
             If Number Is Nothing Then
-                Throw New ArgumentNullException(GetResourceString(SR.Argument_InvalidNullValue1, NameOf(Number)))
+                Throw New ArgumentNullException(SR.Format(SR.Argument_InvalidNullValue1, NameOf(Number)))
             End If
 
             Dim ValueInterface As IConvertible
@@ -466,14 +465,14 @@ RangeCheck:
                 End Select
             End If
 
-            Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValueType2, NameOf(Number), VBFriendlyName(Number)))
+            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValueType2, NameOf(Number), VBFriendlyName(Number)))
         End Function
 
         Public Function Str(ByVal Number As Object) As String
             Dim s As String
 
             If Number Is Nothing Then
-                Throw New ArgumentNullException(GetResourceString(SR.Argument_InvalidNullValue1, NameOf(Number)))
+                Throw New ArgumentNullException(SR.Format(SR.Argument_InvalidNullValue1, NameOf(Number)))
             End If
 
             Dim ValueInterface As IConvertible
@@ -482,7 +481,7 @@ RangeCheck:
             ValueInterface = TryCast(Number, IConvertible)
 
             If ValueInterface Is Nothing Then
-                Throw New InvalidCastException(GetResourceString(SR.ArgumentNotNumeric1, NameOf(Number)))
+                Throw New InvalidCastException(SR.Format(SR.ArgumentNotNumeric1, NameOf(Number)))
             End If
 
             ValueTypeCode = ValueInterface.GetTypeCode()
@@ -520,13 +519,11 @@ RangeCheck:
                             Throw ex
                         Catch ex As OutOfMemoryException
                             Throw ex
-                        Catch ex As System.Threading.ThreadAbortException
-                            Throw ex
                         Catch
                             'Throw our own exception below
                         End Try
                     End If
-                    Throw New InvalidCastException(GetResourceString(SR.ArgumentNotNumeric1, NameOf(Number)))
+                    Throw New InvalidCastException(SR.Format(SR.ArgumentNotNumeric1, NameOf(Number)))
             End Select
 
 FormatAndExit:
@@ -919,10 +916,8 @@ NextOctCharacter:
                     Throw ex
                 Catch ex As OutOfMemoryException
                     Throw ex
-                Catch ex As System.Threading.ThreadAbortException
-                    Throw ex
                 Catch
-                    Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_InvalidValueType2, NameOf(Expression), VBFriendlyName(Expression))), vbErrors.OLENoPropOrMethod)
+                    Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValueType2, NameOf(Expression), VBFriendlyName(Expression))), vbErrors.OLENoPropOrMethod)
                 End Try
 
                 Return Val(sValue)
@@ -933,7 +928,7 @@ NextOctCharacter:
         <ResourceExposure(ResourceScope.None)>
         <ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)>
         Friend Function ParseInputField(ByVal Value As Object, ByVal vtInput As VariantType) As Object
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Dim numprsPtr() As Byte
             Dim vtSuffix As Integer
             Dim cDecMax As Integer

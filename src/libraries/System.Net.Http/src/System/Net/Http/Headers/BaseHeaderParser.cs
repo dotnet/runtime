@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -13,11 +13,21 @@ namespace System.Net.Http.Headers
         {
         }
 
-        protected abstract int GetParsedValueLength(string value, int startIndex, object storeValue,
-            out object parsedValue);
+        /// <summary>
+        /// Parses a full header or a segment of a multi-value header.
+        /// </summary>
+        /// <param name="value">The header value string to parse.</param>
+        /// <param name="startIndex">The index to begin parsing at.</param>
+        /// <param name="storeValue"></param>
+        /// <param name="parsedValue">The resulting value parsed.</param>
+        /// <returns>If a value could be parsed, the number of characters used to parse that value. Otherwise, 0.</returns>
+        protected abstract int GetParsedValueLength(string value, int startIndex, object? storeValue,
+            out object? parsedValue);
 
-        public sealed override bool TryParseValue(string value, object storeValue, ref int index,
-            out object parsedValue)
+#pragma warning disable CS8765 // Doesn't match overriden member nullable attribute on out parameter
+        public sealed override bool TryParseValue(string? value, object? storeValue, ref int index,
+            out object? parsedValue)
+#pragma warning restore CS8765
         {
             parsedValue = null;
 
@@ -49,8 +59,7 @@ namespace System.Net.Http.Headers
                 return SupportsMultipleValues;
             }
 
-            object result = null;
-            int length = GetParsedValueLength(value, current, storeValue, out result);
+            int length = GetParsedValueLength(value, current, storeValue, out object? result);
 
             if (length == 0)
             {
@@ -68,7 +77,7 @@ namespace System.Net.Http.Headers
             }
 
             index = current;
-            parsedValue = result;
+            parsedValue = result!;
             return true;
         }
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,11 +15,14 @@ namespace System.Linq.Expressions
     /// <summary>
     /// The base type for all nodes in Expression Trees.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public abstract partial class Expression
     {
+        internal const string ExpressionRequiresUnreferencedCode = "Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.";
+        internal const string PropertyFromAccessorRequiresUnreferencedCode = "The Property metadata or other accessor may be trimmed.";
+        internal const string GenericMethodRequiresUnreferencedCode = "Calling a generic method cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method. This can be suppressed if the method is not generic.";
+
         private static readonly CacheDict<Type, MethodInfo> s_lambdaDelegateCache = new CacheDict<Type, MethodInfo>(40);
-        private static volatile CacheDict<Type, Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>> s_lambdaFactories;
+        private static volatile CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? s_lambdaFactories;
 
         // For 4.0, many frequently used Expression nodes have had their memory
         // footprint reduced by removing the Type and NodeType fields. This has
@@ -41,7 +43,7 @@ namespace System.Linq.Expressions
             internal readonly Type Type;
         }
 
-        private static ConditionalWeakTable<Expression, ExtensionInfo> s_legacyCtorSupportTable;
+        private static ConditionalWeakTable<Expression, ExtensionInfo>? s_legacyCtorSupportTable;
 
         /// <summary>
         /// Constructs a new instance of <see cref="Expression"/>.
@@ -78,8 +80,7 @@ comparand: null
         {
             get
             {
-                ExtensionInfo extInfo;
-                if (s_legacyCtorSupportTable != null && s_legacyCtorSupportTable.TryGetValue(this, out extInfo))
+                if (s_legacyCtorSupportTable != null && s_legacyCtorSupportTable.TryGetValue(this, out ExtensionInfo? extInfo))
                 {
                     return extInfo.NodeType;
                 }
@@ -93,13 +94,11 @@ comparand: null
         /// <summary>
         /// The <see cref="Type"/> of the value represented by this <see cref="Expression"/>.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public virtual Type Type
         {
             get
             {
-                ExtensionInfo extInfo;
-                if (s_legacyCtorSupportTable != null && s_legacyCtorSupportTable.TryGetValue(this, out extInfo))
+                if (s_legacyCtorSupportTable != null && s_legacyCtorSupportTable.TryGetValue(this, out ExtensionInfo? extInfo))
                 {
                     return extInfo.Type;
                 }
@@ -249,7 +248,7 @@ comparand: null
             switch (expression.NodeType)
             {
                 case ExpressionType.Index:
-                    PropertyInfo indexer = ((IndexExpression)expression).Indexer;
+                    PropertyInfo? indexer = ((IndexExpression)expression).Indexer;
                     if (indexer == null || indexer.CanWrite)
                     {
                         return;
@@ -257,8 +256,7 @@ comparand: null
                     break;
                 case ExpressionType.MemberAccess:
                     MemberInfo member = ((MemberExpression)expression).Member;
-                    PropertyInfo prop = member as PropertyInfo;
-                    if (prop != null)
+                    if (member is PropertyInfo prop)
                     {
                         if (prop.CanWrite)
                         {
@@ -415,7 +413,7 @@ comparand: null
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression> arguments) =>
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable<Expression>? arguments) =>
             DynamicExpression.MakeDynamic(delegateType, binder, arguments);
 
         /// <summary>
@@ -501,7 +499,7 @@ comparand: null
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
         /// </returns>
-        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[] arguments) =>
-            MakeDynamic(delegateType, binder, (IEnumerable<Expression>)arguments);
+        public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, params Expression[]? arguments) =>
+            MakeDynamic(delegateType, binder, (IEnumerable<Expression>?)arguments);
     }
 }

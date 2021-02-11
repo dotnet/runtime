@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -12,7 +11,7 @@ namespace System.Reflection.Internal
     internal sealed class ByteArrayMemoryProvider : MemoryBlockProvider
     {
         private readonly ImmutableArray<byte> _array;
-        private PinnedObject _pinned;
+        private PinnedObject? _pinned;
 
         public ByteArrayMemoryProvider(ImmutableArray<byte> array)
         {
@@ -46,7 +45,7 @@ namespace System.Reflection.Internal
             {
                 if (_pinned == null)
                 {
-                    var newPinned = new PinnedObject(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array));
+                    var newPinned = new PinnedObject(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array)!);
 
                     if (Interlocked.CompareExchange(ref _pinned, newPinned, null) != null)
                     {

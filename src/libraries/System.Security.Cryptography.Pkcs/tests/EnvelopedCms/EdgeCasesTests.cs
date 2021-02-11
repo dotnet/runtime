@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
@@ -107,14 +106,14 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             EnvelopedCms ecms = new EnvelopedCms();
             ecms.Decode(content);
 
-            int expected = PlatformDetection.IsFullFramework ? 6 : 0; // Desktop bug gives 6
+            int expected = PlatformDetection.IsNetFramework ? 6 : 0; // Desktop bug gives 6
             Assert.Equal(expected, ecms.ContentInfo.Content.Length);
             Assert.Equal(Oids.Pkcs7Data, ecms.ContentInfo.ContentType.Value);
         }
 
         [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop rejects zero length content: corefx#18724")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework rejects zero length content: https://github.com/dotnet/runtime/issues/21257")]
         public static void ZeroLengthContent_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(Array.Empty<byte>());
@@ -192,7 +191,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 ContentInfo contentInfo = ecms.ContentInfo;
                 byte[] content = contentInfo.Content;
 
-                int expected = PlatformDetection.IsFullFramework ? 6 : 0; // Desktop bug gives 6
+                int expected = PlatformDetection.IsNetFramework ? 6 : 0; // Desktop bug gives 6
                 Assert.Equal(expected, content.Length);
             }
         }
@@ -307,6 +306,30 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         {
             EnvelopedCms ecms = new EnvelopedCms();
             Assert.Throws<ArgumentNullException>(() => ecms.Decode(null));
+        }
+
+        [Theory]
+#if !NETFRAMEWORK
+        [InlineData(true)]
+#endif
+        [InlineData(false)]
+        public static void EnvelopedCmsEmptyDecode(bool useSpan)
+        {
+            EnvelopedCms cms = new EnvelopedCms();
+
+            if (useSpan)
+            {
+#if !NETFRAMEWORK
+                Assert.ThrowsAny<CryptographicException>(() => cms.Decode(ReadOnlySpan<byte>.Empty));
+#else
+                throw new Xunit.Sdk.XunitException(
+                    "This test should not evaluate for .NET Framework, the API is missing.");
+#endif
+            }
+            else
+            {
+                Assert.ThrowsAny<CryptographicException>(() => cms.Decode(Array.Empty<byte>()));
+            }
         }
 
         [Fact]
@@ -477,12 +500,31 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Throws<ArgumentNullException>(() => ContentInfo.GetContentType(null));
         }
 
-        [Fact]
-        public static void ContentInfoGetContentTypeUnknown()
+        [Theory]
+        [InlineData(false)]
+#if !NETFRAMEWORK
+        [InlineData(true)]
+#endif
+        public static void ContentInfoGetContentTypeUnknown(bool fromSpan)
         {
             byte[] encodedMessage =
                  ("301A06092A864886F70D010700A00D040B48656C6C6F202E4E455421").HexToByteArray();
-            Assert.ThrowsAny<CryptographicException>(() => ContentInfo.GetContentType(encodedMessage));
+
+            if (fromSpan)
+            {
+#if NETFRAMEWORK
+                throw new Xunit.Sdk.XunitException(
+                    "This test should not evaluate for .NET Framework, the API is missing.");
+#else
+                Assert.ThrowsAny<CryptographicException>(
+                    () => ContentInfo.GetContentType(new ReadOnlySpan<byte>(encodedMessage)));
+#endif
+            }
+            else
+            {
+                Assert.ThrowsAny<CryptographicException>(
+                    () => ContentInfo.GetContentType(encodedMessage));
+            }
         }
 
         [Fact]

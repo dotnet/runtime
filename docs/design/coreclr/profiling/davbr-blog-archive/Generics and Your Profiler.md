@@ -7,7 +7,7 @@ If you’re writing a profiler that you expect to run against CLR 2.0 or greater
 
 Let's say a C# developer writes code like this:
 
- 
+
 ```
 class MyClass<S>
 {
@@ -57,8 +57,6 @@ HRESULT GetFunctionInfo2([in] FunctionID funcId,
 
 typeArgs[]: This is the array of **type arguments** to MyClass\<int\>.Foo\<float\>.  So this will be an array of only one element: the ClassID for float.  (The int in MyClass\<int\> is a type argument to MyClass, not to Foo, and you would only see that when you call GetClassIDInfo2 with MyClass\<int\>.)
 
-## 
-
 ## GetClassIDInfo2
 
 OK, someone in parentheses said something about calling GetClassIDInfo2, so let’s do that.  Since we got the ClassID for MyClass\<int\> above, let’s pass it to GetClassIDInfo2 to see what we get:
@@ -85,24 +83,22 @@ typeArgs: This is the array of type arguments used to instantiate classId, which
 
 You may have noticed I ignored this parameter in my description of GetFunctionInfo2.  You can pass NULL if you want, and nothing really bad will happen to you, but you’ll often get some incomplete results: you won’t get very useful typeArgs coming back, and you’ll often see NULL returned in \*pClassId.
 
-To understand why, it’s necessary to understand an internal optimization the CLR uses around sharing code for generics: If two instantiations of the same generic function would result in identical JITted code, then why not have them share one copy of that code?  The CLR chooses to share code if all of the type parameters are instantiated with reference types.  If you want to read more about this, [here’s](http://blogs.msdn.com/carlos/archive/2009/11/09/net-generics-and-code-bloat-or-its-lack-thereof.aspx) a place to go.
+To understand why, it’s necessary to understand an internal optimization the CLR uses around sharing code for generics: If two instantiations of the same generic function would result in identical JITted code, then why not have them share one copy of that code?  The CLR chooses to share code if all of the type parameters are instantiated with reference types.  If you want to read more about this, [here’s](https://docs.microsoft.com/en-us/archive/blogs/carlos/net-generics-and-code-bloat-or-its-lack-thereof) a place to go.
 
 For now, the important point is that, once we’re inside JITted code that is shared across different generic instantiations, how can one know which instantiation is the actual one that caused the current invocation?  Well, in many cases, the CLR may not have that data readily lying around.  However, as a profiler, you can capture this information and pass it back to the CLR when it needs it.  This is done through a COR\_PRF\_FRAME\_INFO.  There are two ways your profiler can get a COR\_PRF\_FRAME\_INFO:
 
-1. Via slow-path Enter/Leave/Tailcall probes 
-2. Via your DoStackSnapshot callback 
+1. Via slow-path Enter/Leave/Tailcall probes
+2. Via your DoStackSnapshot callback
 
 I lied.  #1 is really the only way for your profiler to get a COR\_PRF\_FRAME\_INFO.  #2 may seem like a way—at least the profiling API suggests that the CLR gives your profiler a COR\_PRF\_FRAME\_INFO in the DSS callback—but unfortunately the COR\_PRF\_FRAME\_INFO you get there is pretty useless.  I suspect the COR\_PRF\_FRAME\_INFO parameter was added to the signature of the profiler’s DSS callback function so that it could “light up” at some point in the future when we could work on finding out how to create a sufficiently helpful COR\_PRF\_FRAME\_INFO during stack walks.  However, that day has not yet arrived.  So if you want a COR\_PRF\_FRAME\_INFO, you’ll need to grab it—and use it from—your slow-path Enter/Leave/Tailcall probe.
 
 With a valid COR\_PRF\_FRAME\_INFO, GetFunctionInfo2 will give you helpful, specific ClassIDs in the typeArgs [out] array and pClassId [out] parameter.  If the profiler passes NULL for COR\_PRF\_FRAME\_INFO, here’s what you can expect:
 
-- If you’re using CLR V2, pClassId will point to NULL if the function sits on _any_ generic class (shared or not).  In CLR V4 this got a little better, and you’ll generally only see pClassId point to NULL if the function sits on a “shared” generic class (instantiated with reference types).  
-  - Note: If it’s impossible for the profiler to have a COR\_PRF\_FRAME\_INFO handy to pass to GetFunctionInfo2, and that results in a NULL \*pClassID, the profiler can always use the metadata interfaces to find the mdTypeDef token of the class on which the function resides for the purposes of pretty-printing the class name to the user.  Of course, the profiler will not know the specific instantiating type arguments that were used on the class in that case. 
-- the typeArgs [out] array will contain the ClassID for **System.\_\_Canon** , rather than the actual instantiating type(s), if the function itself is generic and is instantiated with reference type argument(s). 
+- If you’re using CLR V2, pClassId will point to NULL if the function sits on _any_ generic class (shared or not).  In CLR V4 this got a little better, and you’ll generally only see pClassId point to NULL if the function sits on a “shared” generic class (instantiated with reference types).
+  - Note: If it’s impossible for the profiler to have a COR\_PRF\_FRAME\_INFO handy to pass to GetFunctionInfo2, and that results in a NULL \*pClassID, the profiler can always use the metadata interfaces to find the mdTypeDef token of the class on which the function resides for the purposes of pretty-printing the class name to the user.  Of course, the profiler will not know the specific instantiating type arguments that were used on the class in that case.
+- the typeArgs [out] array will contain the ClassID for **System.\_\_Canon** , rather than the actual instantiating type(s), if the function itself is generic and is instantiated with reference type argument(s).
 
 It’s worth noting here that there is a bug in GetFunctionInfo2, in that the [out] pClassId you get for the class containing the function can be wrong with generic virtual functions.  Take a look at [this forum post](http://social.msdn.microsoft.com/Forums/en-US/netfxtoolsdev/thread/ed6f972f-712a-48df-8cce-74f8951503fa/) for more information and a workaround.
-
-## 
 
 ## ClassIDs & FunctionIDs vs. Metadata Tokens
 
@@ -114,20 +110,20 @@ CLR’s generics sharing optimization complicates this somewhat.  You’ll reall
 
 So that covers JIT notifications—what about ClassLoad\* notifications in the same example?  Although the CLR shares _JITted code_ across reference-type instantiations, the CLR still maintains separate loaded _types_ for each generic instantiation of a generic class.  So in the example from the paragraph above you will see separate ClassLoad\* notifications with different ClassIDs for MyClass\<object\> and MyClass\<SomeClassICreated\>.  In fact, you will also see a separate ClassLoad\* notification (with yet another ClassID) for MyClass\<System.\_\_Canon\>.
 
-If you got curious, and ran such a profiler under the debugger, you could use the SOS !dumpmt command with those different ClassIDs to see what you get.  By doing so, you’ll notice something interesting.  !dumpmt shows many values, including “Name”, which will correctly be the specific, fully-instantiated name of the type (different for all three ClassIDs).  !dumpmt also shows a thing called “EEClass”.  And you’ll notice this “EEClass” value is actually the _same_ for all 3 types.  (Remember from this [post](http://blogs.msdn.com/davbr/archive/2007/12/18/debugging-your-profiler-ii-sos-and-ids.aspx) that EEClass is NOT the same thing as ClassID!)  That gives you a little window into some additional data sharing optimizations the CLR uses.  Stuff that remains the same across different generic instantiations of a class can be stored in a single place (the EEClass) and that single place can be referenced by the different generic instantiations of the class.  Note that if you also use a value type as the type argument when instantiating MyClass\<T\> (e.g., MyClass\<int\>), and then run !dumpmt on that ClassID, you’ll see an entirely different EEClass value in the output, as the CLR will not be sharing that subset of type data across generic instantiations that use type arguments that are value types.
+If you got curious, and ran such a profiler under the debugger, you could use the SOS !dumpmt command with those different ClassIDs to see what you get.  By doing so, you’ll notice something interesting.  !dumpmt shows many values, including “Name”, which will correctly be the specific, fully-instantiated name of the type (different for all three ClassIDs).  !dumpmt also shows a thing called “EEClass”.  And you’ll notice this “EEClass” value is actually the _same_ for all 3 types.  (Remember from this [post](https://docs.microsoft.com/en-us/archive/blogs/davbr/debugging-your-profiler-ii-sos-and-ids) that EEClass is NOT the same thing as ClassID!)  That gives you a little window into some additional data sharing optimizations the CLR uses.  Stuff that remains the same across different generic instantiations of a class can be stored in a single place (the EEClass) and that single place can be referenced by the different generic instantiations of the class.  Note that if you also use a value type as the type argument when instantiating MyClass\<T\> (e.g., MyClass\<int\>), and then run !dumpmt on that ClassID, you’ll see an entirely different EEClass value in the output, as the CLR will not be sharing that subset of type data across generic instantiations that use type arguments that are value types.
 
 ## Instrumenting Generic Functions
 
 If your profiler performs IL rewriting, it’s important to understand that it must NOT do instantiation-specific IL rewriting.  Huh?  Let’s take an example.  Suppose you’re profiling code that uses MyClass\<int\>.Foo\<float\> and MyClass\<int\>.Foo\<long\>.  Your profiler will see two JITCompilationStarted callbacks, and will have two opportunities to rewrite the IL.  Your profiler may call GetFunctionInfo2 on those two FunctionIDs and determine that they’re two different instantiations of the same generic function.  You may then be tempted to make use of the fact that one is instantiated with float, and the other with long, and provide different IL for the two different JIT compilations.  The problem with this is that the IL stored in metadata, as well as the IL provided to SetILFunctionBody, is always specified relative to the mdMethodDef.  (Remember, SetILFunctionBody doesn’t take a FunctionID as input; it takes an mdMethodDef.)  And it’s the profiler’s responsibility always to specify the same rewritten IL for any given mdMethodDef no matter how many times it’s JITted.  And a given mdMethodDef can be JITted multiple times due to a number of reasons:
 
-- Two threads simultaneously trying to call the same function for the first time (and thus both trying to JIT that function) 
-- Strange dependency chains involving class constructors (more on this in the MSDN [reference topic](http://msdn.microsoft.com/en-us/library/ms230586.aspx)) 
-- Multiple AppDomains using the same (non-domain-neutral) function 
-- And of course multiple generic instantiations! 
+- Two threads simultaneously trying to call the same function for the first time (and thus both trying to JIT that function)
+- Strange dependency chains involving class constructors (more on this in the MSDN [reference topic](http://msdn.microsoft.com/en-us/library/ms230586.aspx))
+- Multiple AppDomains using the same (non-domain-neutral) function
+- And of course multiple generic instantiations!
 
 Regardless of the reason, the profiler must always rewrite with exactly the same IL.  Otherwise, an invariant in the CLR will have been broken by the profiler, and you will get strange, undefined behavior as a result.  And no one wants that.
 
- 
+
 
 That’s it!  Hopefully this gives you a good idea of how the CLR Profiling API will behave in the face of generic classes and functions, and what is expected of your profiler.
 

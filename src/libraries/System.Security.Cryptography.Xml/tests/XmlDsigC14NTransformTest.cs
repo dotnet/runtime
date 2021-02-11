@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information
-//
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // XmlDsigC14NTransformTest.cs - Test Cases for XmlDsigC14NTransform
 //
 // Author:
@@ -10,9 +10,6 @@
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // (C) 2003 Aleksey Sanin (aleksey@aleksey.com)
 // (C) 2004 Novell (http://www.novell.com)
-//
-// Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Text;
@@ -375,7 +372,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(xml, output);
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16780")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20487")]
+        [Fact]
         public void PrefixlessNamespaceOutput()
         {
             XmlDocument doc = new XmlDocument();

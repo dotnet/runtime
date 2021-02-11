@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="../Directory.Build.targets" />
+
+  <!--
+    Provide default stub targets for packaging tasks, if not defined. Allows freer use of
+    ProjectReferences in pkgproj.
+  -->
+  <Target Name="GetFilesToPackage" />
+</Project>

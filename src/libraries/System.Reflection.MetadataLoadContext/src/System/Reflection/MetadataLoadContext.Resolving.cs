@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -27,11 +26,11 @@ namespace System.Reflection
         {
             Debug.Assert(refName != null);
 
-            RoAssembly assembly = TryResolveAssembly(refName, out Exception e);
-            return assembly ?? throw e;
+            RoAssembly? assembly = TryResolveAssembly(refName, out Exception? e);
+            return assembly ?? throw e!;
         }
 
-        internal RoAssembly TryResolveAssembly(RoAssemblyName refName, out Exception e)
+        internal RoAssembly? TryResolveAssembly(RoAssemblyName refName, out Exception? e)
         {
             e = null;
 
@@ -48,7 +47,7 @@ namespace System.Reflection
         {
             Debug.Assert(refName != null);
 
-            if (_binds.TryGetValue(refName, out RoAssembly prior))
+            if (_binds.TryGetValue(refName, out RoAssembly? prior))
                 return prior;
 
             RoAssembly assembly = TryFindAssemblyByCallingResolveHandler(refName);
@@ -59,7 +58,7 @@ namespace System.Reflection
         {
             Debug.Assert(refName != null);
 
-            Assembly assembly = resolver?.Resolve(this, refName.ToAssemblyName());
+            Assembly? assembly = resolver?.Resolve(this, refName.ToAssemblyName());
 
             if (assembly == null)
                 return new RoExceptionAssembly(new FileNotFoundException(SR.Format(SR.FileNotFoundAssembly, refName.FullName)));

@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,10 +10,8 @@ namespace System.Text.RegularExpressions
     {
         private readonly ICollection<T> _collection;
 
-        public CollectionDebuggerProxy(ICollection<T> collection)
-        {
+        public CollectionDebuggerProxy(ICollection<T> collection) =>
             _collection = collection ?? throw new ArgumentNullException(nameof(collection));
-        }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         public T[] Items

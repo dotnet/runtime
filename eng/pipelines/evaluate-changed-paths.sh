@@ -61,7 +61,7 @@ azure_variable=''
 diff_target=''
 
 while [[ $# > 0 ]]; do
-  opt="$(echo "${1/#--/-}" | awk '{print tolower($0)}')"
+  opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     -help|-h)
       usage
@@ -135,7 +135,7 @@ probePaths() {
   local exclude_path_string=""
   local include_path_string=""
   local found_applying_changes=false
-  
+
   if [[ ${#exclude_paths[@]} -gt 0 ]]; then
     echo ""
     echo "******* Probing $_subset exclude paths *******";
@@ -162,7 +162,7 @@ probePaths() {
       if [[ "$include_path_string" == "" ]]; then
         include_path_string=":$_path"
       else
-        include_path_string="$exclude_path_string :$_path"
+        include_path_string="$include_path_string :$_path"
       fi
     done
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -33,24 +32,24 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override int MetadataToken => _handle.GetToken();
 
-        protected sealed override string ComputeName() => Parameter.Name.GetStringOrNull(Reader);
+        protected sealed override string? ComputeName() => Parameter.Name.GetStringOrNull(Reader);
         protected sealed override ParameterAttributes ComputeAttributes() => Parameter.Attributes;
 
         protected sealed override IEnumerable<CustomAttributeData> GetTrueCustomAttributes() => Parameter.GetCustomAttributes().ToTrueCustomAttributes(GetEcmaModule());
 
         public sealed override bool HasDefaultValue => TryGetRawDefaultValue(out object _);
 
-        public sealed override object RawDefaultValue
+        public sealed override object? RawDefaultValue
         {
             get
             {
-                if (TryGetRawDefaultValue(out object rawDefaultValue))
+                if (TryGetRawDefaultValue(out object? rawDefaultValue))
                     return rawDefaultValue;
                 return IsOptional ? (object)Missing.Value : (object)DBNull.Value;
             }
         }
 
-        private bool TryGetRawDefaultValue(out object rawDefaultValue)
+        private bool TryGetRawDefaultValue(out object? rawDefaultValue)
         {
             rawDefaultValue = null;
             MetadataReader reader = Reader;

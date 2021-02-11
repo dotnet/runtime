@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
@@ -14,14 +13,14 @@ namespace System.ComponentModel.Composition
     {
         // NOTE : these are here as Reflection member search is pretty expensive, and we want that to be done once.
         // Also, making these static would cause this class to fail loading if we rename members of ExportDefinition.
-        private static readonly PropertyInfo _exportDefinitionContractNameProperty = typeof(ExportDefinition).GetProperty("ContractName");
-        private static readonly PropertyInfo _exportDefinitionMetadataProperty = typeof(ExportDefinition).GetProperty("Metadata");
-        private static readonly MethodInfo _metadataContainsKeyMethod = typeof(IDictionary<string, object>).GetMethod("ContainsKey");
-        private static readonly MethodInfo _metadataItemMethod = typeof(IDictionary<string, object>).GetMethod("get_Item");
-        private static readonly MethodInfo _metadataEqualsMethod = typeof(object).GetMethod("Equals", new Type[] { typeof(object) });
-        private static readonly MethodInfo _typeIsInstanceOfTypeMethod = typeof(Type).GetMethod("IsInstanceOfType");
+        private static readonly PropertyInfo _exportDefinitionContractNameProperty = typeof(ExportDefinition).GetProperty("ContractName")!;
+        private static readonly PropertyInfo _exportDefinitionMetadataProperty = typeof(ExportDefinition).GetProperty("Metadata")!;
+        private static readonly MethodInfo _metadataContainsKeyMethod = typeof(IDictionary<string, object>).GetMethod("ContainsKey")!;
+        private static readonly MethodInfo _metadataItemMethod = typeof(IDictionary<string, object>).GetMethod("get_Item")!;
+        private static readonly MethodInfo _metadataEqualsMethod = typeof(object).GetMethod("Equals", new Type[] { typeof(object) })!;
+        private static readonly MethodInfo _typeIsInstanceOfTypeMethod = typeof(Type).GetMethod("IsInstanceOfType")!;
 
-        public static Expression<Func<ExportDefinition, bool>> CreateConstraint(string contractName, string requiredTypeIdentity, IEnumerable<KeyValuePair<string, Type>> requiredMetadata, CreationPolicy requiredCreationPolicy)
+        public static Expression<Func<ExportDefinition, bool>> CreateConstraint(string contractName, string? requiredTypeIdentity, IEnumerable<KeyValuePair<string, Type>> requiredMetadata, CreationPolicy requiredCreationPolicy)
         {
             ParameterExpression parameter = Expression.Parameter(typeof(ExportDefinition), "exportDefinition");
 
@@ -36,7 +35,7 @@ namespace System.ComponentModel.Composition
 
             if (requiredMetadata != null)
             {
-                Expression metadataConstraintBody = ConstraintServices.CreateMetadataConstraintBody(requiredMetadata, parameter);
+                Expression? metadataConstraintBody = ConstraintServices.CreateMetadataConstraintBody(requiredMetadata, parameter);
                 if (metadataConstraintBody != null)
                 {
                     constraintBody = Expression.AndAlso(constraintBody, metadataConstraintBody);
@@ -67,7 +66,7 @@ namespace System.ComponentModel.Composition
                     Expression.Constant(contractName ?? string.Empty, typeof(string)));
         }
 
-        private static Expression CreateMetadataConstraintBody(IEnumerable<KeyValuePair<string, Type>> requiredMetadata, ParameterExpression parameter)
+        private static Expression? CreateMetadataConstraintBody(IEnumerable<KeyValuePair<string, Type>> requiredMetadata, ParameterExpression parameter)
         {
             if (requiredMetadata == null)
             {
@@ -79,7 +78,7 @@ namespace System.ComponentModel.Composition
                 throw new ArgumentNullException(nameof(parameter));
             }
 
-            Expression body = null;
+            Expression? body = null;
             foreach (KeyValuePair<string, Type> requiredMetadataItem in requiredMetadata)
             {
                 // export.Metadata.ContainsKey(<metadataItem>)

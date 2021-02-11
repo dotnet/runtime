@@ -1,65 +1,40 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates.Tests.Common;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
     [OuterLoop("These tests run serially at about 1 second each, and the code shouldn't change that often.")]
-    [ActiveIssue(41974, TestPlatforms.OSX)]
     public static class DynamicRevocationTests
     {
         // The CI machines are doing an awful lot of things at once, be generous with the timeout;
-        private static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(15);
+        internal static readonly TimeSpan s_urlRetrievalLimit = TimeSpan.FromSeconds(15);
 
         private static readonly Oid s_tlsServerOid = new Oid("1.3.6.1.5.5.7.3.1", null);
 
         private static readonly X509ChainStatusFlags ThisOsRevocationStatusUnknown =
+                PlatformDetection.IsOSX ?
+                X509ChainStatusFlags.RevocationStatusUnknown :
                 X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.OfflineRevocation;
 
-        // RHEL6 uses a version of OpenSSL that (empirically) doesn't support designated responders.
-        // (There's a chance that we should be passing in extra stuff, but RHEL6 is the only platform
-        // still on OpenSSL 1.0.0/1.0.1 in 2019, so it seems OpenSSL-related)
-        private static readonly bool s_supportsDesignatedResponder = PlatformDetection.IsNotRedHatFamily6;
-
-        [Flags]
-        public enum PkiOptions
-        {
-            None = 0,
-
-            IssuerRevocationViaCrl = 1 << 0,
-            IssuerRevocationViaOcsp = 1 << 1,
-            EndEntityRevocationViaCrl = 1 << 2,
-            EndEntityRevocationViaOcsp = 1 << 3,
-
-            CrlEverywhere = IssuerRevocationViaCrl | EndEntityRevocationViaCrl,
-            OcspEverywhere = IssuerRevocationViaOcsp | EndEntityRevocationViaOcsp,
-            AllIssuerRevocation = IssuerRevocationViaCrl | IssuerRevocationViaOcsp,
-            AllEndEntityRevocation = EndEntityRevocationViaCrl | EndEntityRevocationViaOcsp,
-            AllRevocation = CrlEverywhere | OcspEverywhere,
-
-            IssuerAuthorityHasDesignatedOcspResponder = 1 << 16,
-            RootAuthorityHasDesignatedOcspResponder = 1 << 17,
-        }
 
         private delegate void RunSimpleTest(
             CertificateAuthority root,
             CertificateAuthority intermediate,
             X509Certificate2 endEntity,
-            ChainHolder chainHolder);
+            ChainHolder chainHolder,
+            RevocationResponder responder);
 
         public static IEnumerable<object[]> AllViableRevocation
         {
             get
             {
-                int designationLimit = s_supportsDesignatedResponder ? 4 : 1;
-
-                for (int designation = 0; designation < designationLimit; designation++)
+                for (int designation = 0; designation < 4; designation++)
                 {
                     PkiOptions designationOptions = (PkiOptions)(designation << 16);
 
@@ -83,6 +58,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                                 continue;
                             }
 
+                            // https://github.com/dotnet/runtime/issues/31249
+                            // not all scenarios are working on macOS.
+                            if (PlatformDetection.IsOSX)
+                            {
+                                if (!endEntityRevocation.HasFlag(PkiOptions.EndEntityRevocationViaOcsp))
+                                {
+                                    continue;
+                                }
+                            }
+
                             yield return new object[] { designationOptions | issuerRevocation | endEntityRevocation };
                         }
                     }
@@ -96,7 +81,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     SimpleRevocationBody(
                         holder,
@@ -109,11 +94,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediate(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
                     {
@@ -138,7 +124,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     intermediate.Revoke(endEntity, now);
@@ -155,11 +141,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        public static void RevokeLeafWithAiaFetchingDisabled(PkiOptions pkiOptions)
+        {
+            SimpleTest(
+                pkiOptions,
+                (root, intermediate, endEntity, holder, responder) =>
+                {
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+                    intermediate.Revoke(endEntity, now);
+                    holder.Chain.ChainPolicy.VerificationTime = now.AddSeconds(1).UtcDateTime;
+                    holder.Chain.ChainPolicy.DisableCertificateDownloads = true;
+
+                    SimpleRevocationBody(
+                        holder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediateAndEndEntity(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
                     {
@@ -183,11 +192,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeRoot(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -219,11 +229,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeRootAndEndEntity(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -253,11 +264,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeRootAndIntermediate(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -288,11 +300,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeEverything(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -330,7 +343,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
 
@@ -358,6 +371,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         using (CertificateAuthority unrelated = new CertificateAuthority(
                             rootReq.CreateSelfSigned(now.AddMinutes(-5), now.AddMonths(1)),
+                            aiaHttpUrl: null,
                             cdpUrl: null,
                             ocspUrl: null))
                         {
@@ -409,11 +423,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [Theory]
         [InlineData(PkiOptions.OcspEverywhere)]
         [InlineData(PkiOptions.IssuerRevocationViaOcsp | PkiOptions.AllEndEntityRevocation)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeEndEntity_RootUnrelatedOcsp(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
 
@@ -441,6 +456,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                         using (CertificateAuthority unrelated = new CertificateAuthority(
                             rootReq.CreateSelfSigned(now.AddMinutes(-5), now.AddMonths(1)),
+                            aiaHttpUrl: null,
                             cdpUrl: null,
                             ocspUrl: null))
                         {
@@ -496,11 +512,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediate_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
             SimpleTest(
                 PkiOptions.OcspEverywhere,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -529,9 +546,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         chain.ChainPolicy.ApplicationPolicy.Add(s_tlsServerOid);
                         leafProblems |= X509ChainStatusFlags.NotValidForUsage;
 
-                        // [ActiveIssue(41969)]
+                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
                         // Linux reports this code at more levels than Windows does.
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        if (OperatingSystem.IsLinux())
                         {
                             issuerExtraProblems |= X509ChainStatusFlags.NotValidForUsage;
                         }
@@ -582,11 +599,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeEndEntity_PolicyErrors_NotTimeValid(bool policyErrors, bool notTimeValid)
         {
             SimpleTest(
                 PkiOptions.OcspEverywhere,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
                     X509Chain chain = holder.Chain;
@@ -612,9 +630,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         chain.ChainPolicy.ApplicationPolicy.Add(s_tlsServerOid);
                         leafProblems |= X509ChainStatusFlags.NotValidForUsage;
 
-                        // [ActiveIssue(41969)]
+                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
                         // Linux reports this code at more levels than Windows does.
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        if (OperatingSystem.IsLinux())
                         {
                             issuerExtraProblems |= X509ChainStatusFlags.NotValidForUsage;
                         }
@@ -663,6 +681,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeEndEntity_RootRevocationOffline(PkiOptions pkiOptions)
         {
             BuildPrivatePki(
@@ -736,6 +755,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void NothingRevoked_RootRevocationOffline(PkiOptions pkiOptions)
         {
             BuildPrivatePki(
@@ -812,7 +832,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     intermediate.CorruptRevocationSignature = true;
 
@@ -822,11 +842,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediateWithInvalidRevocationSignature(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     root.CorruptRevocationSignature = true;
 
@@ -840,7 +861,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     intermediate.CorruptRevocationIssuerName = true;
 
@@ -850,11 +871,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediateWithInvalidRevocationName(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     root.CorruptRevocationIssuerName = true;
 
@@ -868,7 +890,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTime revocationTime = endEntity.NotBefore;
                     holder.Chain.ChainPolicy.VerificationTime = revocationTime.AddSeconds(1);
@@ -887,11 +909,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     DateTime revocationTime = endEntity.NotBefore;
                     holder.Chain.ChainPolicy.VerificationTime = revocationTime.AddSeconds(1);
@@ -917,7 +940,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     intermediate.RevocationExpiration = endEntity.NotBefore;
 
@@ -927,15 +950,159 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void CheckIntermediateWithExpiredRevocation(PkiOptions pkiOptions)
         {
             SimpleTest(
                 pkiOptions,
-                (root, intermediate, endEntity, holder) =>
+                (root, intermediate, endEntity, holder, responder) =>
                 {
                     root.RevocationExpiration = endEntity.NotBefore;
 
                     RunWithInconclusiveIntermediateRevocation(holder, endEntity);
+                });
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        public static void TestRevocationWithNoNextUpdate_NotRevoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, holder, responder) =>
+                {
+                    intermediate.OmitNextUpdateInCrl = true;
+
+                    // Build a chain once to get the no NextUpdate in the CRL
+                    // cache. We don't care about the build result.
+                    holder.Chain.Build(endEntity);
+
+                    SimpleRevocationBody(
+                        holder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: false);
+                });
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
+        public static void TestRevocationWithNoNextUpdate_Revoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, holder, responder) =>
+                {
+                    intermediate.OmitNextUpdateInCrl = true;
+
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+                    intermediate.Revoke(endEntity, now);
+                    holder.Chain.ChainPolicy.VerificationTime = now.AddSeconds(1).UtcDateTime;
+
+                    // Build a chain once to get the no NextUpdate in the CRL
+                    // cache. We don't care about the build result.
+                    holder.Chain.Build(endEntity);
+
+                    SimpleRevocationBody(
+                        holder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
+                });
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] //macOS does not support offline chain building.
+        public static void TestRevocation_Offline_NotRevoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, onlineHolder, responder) =>
+                {
+                    using ChainHolder offlineHolder = new ChainHolder();
+                    X509Chain offlineChain = offlineHolder.Chain;
+                    X509Chain onlineChain = onlineHolder.Chain;
+                    CopyChainPolicy(from: onlineChain, to: offlineChain);
+                    offlineChain.ChainPolicy.RevocationMode = X509RevocationMode.Offline;
+
+                    SimpleRevocationBody(
+                        onlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: false);
+
+                    responder.Stop();
+
+                    SimpleRevocationBody(
+                        offlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: false);
+
+                    // Everything should look just like the online chain:
+                    Assert.Equal(onlineChain.ChainElements.Count, offlineChain.ChainElements.Count);
+
+                    for (int i = 0; i < offlineChain.ChainElements.Count; i++)
+                    {
+                        X509ChainElement onlineElement = onlineChain.ChainElements[i];
+                        X509ChainElement offlineElement = offlineChain.ChainElements[i];
+
+                        Assert.Equal(onlineElement.ChainElementStatus, offlineElement.ChainElementStatus);
+                        Assert.Equal(onlineElement.Certificate, offlineElement.Certificate);
+                    }
+                });
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] //macOS does not support offline chain building.
+        public static void TestRevocation_Offline_Revoked()
+        {
+            SimpleTest(
+                PkiOptions.CrlEverywhere,
+                (root, intermediate, endEntity, onlineHolder, responder) =>
+                {
+                    DateTimeOffset revokeTime = DateTimeOffset.UtcNow;
+                    intermediate.Revoke(endEntity, revokeTime);
+
+                    using ChainHolder offlineHolder = new ChainHolder();
+                    X509Chain offlineChain = offlineHolder.Chain;
+                    X509Chain onlineChain = onlineHolder.Chain;
+                    onlineChain.ChainPolicy.VerificationTime = revokeTime.AddSeconds(1).UtcDateTime;
+
+                    CopyChainPolicy(from: onlineChain, to: offlineChain);
+                    offlineChain.ChainPolicy.RevocationMode = X509RevocationMode.Offline;
+
+                    SimpleRevocationBody(
+                        onlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
+
+                    responder.Stop();
+
+                    SimpleRevocationBody(
+                        offlineHolder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
+
+                    // Everything should look just like the online chain:
+                    Assert.Equal(onlineChain.ChainElements.Count, offlineChain.ChainElements.Count);
+
+                    for (int i = 0; i < offlineChain.ChainElements.Count; i++)
+                    {
+                        X509ChainElement onlineElement = onlineChain.ChainElements[i];
+                        X509ChainElement offlineElement = offlineChain.ChainElements[i];
+
+                        Assert.Equal(onlineElement.ChainElementStatus, offlineElement.ChainElementStatus);
+                        Assert.Equal(onlineElement.Certificate, offlineElement.Certificate);
+                    }
                 });
         }
 
@@ -1236,7 +1403,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
                 chain.ChainPolicy.UrlRetrievalTimeout = s_urlRetrievalLimit;
 
-                callback(root, intermediate, endEntity, holder);
+                callback(root, intermediate, endEntity, holder, responder);
             }
         }
 
@@ -1269,7 +1436,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             }
         }
 
-        private static void BuildPrivatePki(
+        internal static void BuildPrivatePki(
             PkiOptions pkiOptions,
             out RevocationResponder responder,
             out CertificateAuthority rootAuthority,
@@ -1289,77 +1456,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     endEntityRevocationViaCrl || endEntityRevocationViaOcsp,
                 "At least one revocation mode is enabled");
 
-            // All keys created in this method are smaller than recommended,
-            // but they only live for a few seconds (at most),
-            // and never communicate out of process.
-            const int KeySize = 1024;
-
-            using (RSA rootKey = RSA.Create(KeySize))
-            using (RSA intermedKey = RSA.Create(KeySize))
-            using (RSA eeKey = RSA.Create(KeySize))
-            {
-                var rootReq = new CertificateRequest(
-                    BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject),
-                    rootKey,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
-
-                X509BasicConstraintsExtension caConstraints =
-                    new X509BasicConstraintsExtension(true, false, 0, true);
-
-                rootReq.CertificateExtensions.Add(caConstraints);
-                var rootSkid = new X509SubjectKeyIdentifierExtension(rootReq.PublicKey, false);
-                rootReq.CertificateExtensions.Add(
-                    rootSkid);
-
-                DateTimeOffset start = DateTimeOffset.UtcNow;
-                DateTimeOffset end = start.AddMonths(3);
-
-                // Don't dispose this, it's being transferred to the CertificateAuthority
-                X509Certificate2 rootCert = rootReq.CreateSelfSigned(start.AddDays(-2), end.AddDays(2));
-                responder = RevocationResponder.CreateAndListen();
-
-                string cdpUrl = $"{responder.UriPrefix}crl/{rootSkid.SubjectKeyIdentifier}.crl";
-                string ocspUrl = $"{responder.UriPrefix}ocsp/{rootSkid.SubjectKeyIdentifier}";
-
-                rootAuthority = new CertificateAuthority(
-                    rootCert,
-                    issuerRevocationViaCrl ? cdpUrl : null,
-                    issuerRevocationViaOcsp ? ocspUrl : null);
-
-                // Don't dispose this, it's being transferred to the CertificateAuthority
-                X509Certificate2 intermedCert;
-
-                {
-                    X509Certificate2 intermedPub = rootAuthority.CreateSubordinateCA(
-                        BuildSubject("A Revocation Test CA", testName, pkiOptions, pkiOptionsInSubject),
-                        intermedKey);
-
-                    intermedCert = intermedPub.CopyWithPrivateKey(intermedKey);
-                    intermedPub.Dispose();
-                }
-
-                X509SubjectKeyIdentifierExtension intermedSkid =
-                    intermedCert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().Single();
-
-                cdpUrl = $"{responder.UriPrefix}crl/{intermedSkid.SubjectKeyIdentifier}.crl";
-                ocspUrl = $"{responder.UriPrefix}ocsp/{intermedSkid.SubjectKeyIdentifier}";
-
-                intermediateAuthority = new CertificateAuthority(
-                    intermedCert,
-                    endEntityRevocationViaCrl ? cdpUrl : null,
-                    endEntityRevocationViaOcsp ? ocspUrl : null);
-
-                endEntityCert = intermediateAuthority.CreateEndEntity(
-                    BuildSubject("A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
-                    eeKey);
-            }
-
-            if (registerAuthorities)
-            {
-                responder.AddCertificateAuthority(rootAuthority);
-                responder.AddCertificateAuthority(intermediateAuthority);
-            }
+            CertificateAuthority.BuildPrivatePki(pkiOptions, out responder, out rootAuthority, out intermediateAuthority, out endEntityCert, testName, registerAuthorities, pkiOptionsInSubject);
         }
 
         private static string BuildSubject(
@@ -1374,6 +1471,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             }
 
             return $"CN=\"{cn}\", O=\"{testName}\"";
+        }
+
+        private static void CopyChainPolicy(X509Chain from, X509Chain to)
+        {
+            to.ChainPolicy.VerificationFlags = from.ChainPolicy.VerificationFlags;
+            to.ChainPolicy.VerificationTime = from.ChainPolicy.VerificationTime;
+            to.ChainPolicy.RevocationFlag = from.ChainPolicy.RevocationFlag;
+            to.ChainPolicy.TrustMode = from.ChainPolicy.TrustMode;
+            to.ChainPolicy.ExtraStore.AddRange(from.ChainPolicy.ExtraStore);
+            to.ChainPolicy.CustomTrustStore.AddRange(from.ChainPolicy.CustomTrustStore);
         }
     }
 }

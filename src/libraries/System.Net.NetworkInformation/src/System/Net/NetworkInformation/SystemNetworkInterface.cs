@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 
@@ -22,10 +21,10 @@ namespace System.Net.NetworkInformation
         private readonly long _speed;
 
         // Any interface can have two completely different valid indexes for ipv4 and ipv6.
-        private readonly uint _index = 0;
-        private readonly uint _ipv6Index = 0;
+        private readonly uint _index;
+        private readonly uint _ipv6Index;
         private readonly Interop.IpHlpApi.AdapterFlags _adapterFlags;
-        private readonly SystemIPInterfaceProperties _interfaceProperties = null;
+        private readonly SystemIPInterfaceProperties _interfaceProperties;
 
         internal static int InternalLoopbackInterfaceIndex
         {
@@ -72,7 +71,7 @@ namespace System.Net.NetworkInformation
             }
             catch (NetworkInformationException nie)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, nie);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, nie);
             }
 
             return false;
@@ -82,9 +81,8 @@ namespace System.Net.NetworkInformation
         {
             AddressFamily family = AddressFamily.Unspecified;
             uint bufferSize = 0;
-            SafeLocalAllocHandle buffer = null;
 
-            Interop.IpHlpApi.FIXED_INFO fixedInfo = HostInformationPal.GetFixedInfo();
+            ref readonly Interop.IpHlpApi.FIXED_INFO fixedInfo = ref HostInformationPal.FixedInfo;
             List<SystemNetworkInterface> interfaceList = new List<SystemNetworkInterface>();
 
             Interop.IpHlpApi.GetAdaptersAddressesFlags flags =
@@ -93,12 +91,14 @@ namespace System.Net.NetworkInformation
 
             // Figure out the right buffer size for the adapter information.
             uint result = Interop.IpHlpApi.GetAdaptersAddresses(
-                family, (uint)flags, IntPtr.Zero, SafeLocalAllocHandle.Zero, ref bufferSize);
+                family, (uint)flags, IntPtr.Zero, IntPtr.Zero, ref bufferSize);
 
             while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
             {
+
                 // Allocate the buffer and get the adapter info.
-                using (buffer = SafeLocalAllocHandle.LocalAlloc((int)bufferSize))
+                IntPtr buffer = Marshal.AllocHGlobal((int)bufferSize);
+                try
                 {
                     result = Interop.IpHlpApi.GetAdaptersAddresses(
                         family, (uint)flags, IntPtr.Zero, buffer, ref bufferSize);
@@ -107,16 +107,20 @@ namespace System.Net.NetworkInformation
                     if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                     {
                         // Linked list of interfaces.
-                        IntPtr ptr = buffer.DangerousGetHandle();
+                        IntPtr ptr = buffer;
                         while (ptr != IntPtr.Zero)
                         {
                             // Traverse the list, marshal in the native structures, and create new NetworkInterfaces.
                             Interop.IpHlpApi.IpAdapterAddresses adapterAddresses = Marshal.PtrToStructure<Interop.IpHlpApi.IpAdapterAddresses>(ptr);
-                            interfaceList.Add(new SystemNetworkInterface(fixedInfo, adapterAddresses));
+                            interfaceList.Add(new SystemNetworkInterface(in fixedInfo, in adapterAddresses));
 
                             ptr = adapterAddresses.next;
                         }
                     }
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(buffer);
                 }
             }
 
@@ -135,7 +139,7 @@ namespace System.Net.NetworkInformation
             return interfaceList.ToArray();
         }
 
-        internal SystemNetworkInterface(Interop.IpHlpApi.FIXED_INFO fixedInfo, Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
+        internal SystemNetworkInterface(in Interop.IpHlpApi.FIXED_INFO fixedInfo, in Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
         {
             // Store the common API information.
             _id = ipAdapterAddresses.AdapterName;

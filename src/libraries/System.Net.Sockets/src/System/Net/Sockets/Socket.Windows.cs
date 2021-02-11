@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections;
@@ -8,21 +7,170 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Net.Sockets
 {
     public partial class Socket
     {
-        private DynamicWinsockMethods _dynamicWinsockMethods;
+        private static CachedSerializedEndPoint? s_cachedAnyEndPoint;
+        private static CachedSerializedEndPoint? s_cachedAnyV6EndPoint;
+        private static CachedSerializedEndPoint? s_cachedMappedAnyV6EndPoint;
+        private DynamicWinsockMethods? _dynamicWinsockMethods;
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
 
-        private void EnsureDynamicWinsockMethods()
+        private sealed class CachedSerializedEndPoint
         {
-            if (_dynamicWinsockMethods == null)
+            public readonly IPEndPoint IPEndPoint;
+            public readonly Internals.SocketAddress SocketAddress;
+
+            public CachedSerializedEndPoint(IPAddress address)
             {
-                _dynamicWinsockMethods = DynamicWinsockMethods.GetMethods(_addressFamily, _socketType, _protocolType);
+                IPEndPoint = new IPEndPoint(address, 0);
+                SocketAddress = IPEndPointExtensions.Serialize(IPEndPoint);
             }
+        }
+
+        [SupportedOSPlatform("windows")]
+        public Socket(SocketInformation socketInformation)
+        {
+            SocketError errorCode = SocketPal.CreateSocket(socketInformation, out _handle,
+                ref _addressFamily, ref _socketType, ref _protocolType);
+
+            if (errorCode != SocketError.Success)
+            {
+                Debug.Assert(_handle.IsInvalid);
+                _handle = null!;
+
+                if (errorCode == SocketError.InvalidArgument)
+                {
+                    throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
+                }
+
+                // Failed to create the socket, throw.
+                throw new SocketException((int)errorCode);
+            }
+
+            if (_addressFamily != AddressFamily.InterNetwork && _addressFamily != AddressFamily.InterNetworkV6)
+            {
+                _handle.Dispose();
+                _handle = null!;
+                throw new NotSupportedException(SR.net_invalidversion);
+            }
+
+            _isConnected = socketInformation.GetOption(SocketInformationOptions.Connected);
+            _willBlock = !socketInformation.GetOption(SocketInformationOptions.NonBlocking);
+            InternalSetBlocking(_willBlock);
+            _isListening = socketInformation.GetOption(SocketInformationOptions.Listening);
+
+            IPAddress tempAddress = _addressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
+            IPEndPoint ep = new IPEndPoint(tempAddress, 0);
+
+            Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(ep);
+            unsafe
+            {
+                fixed (byte* bufferPtr = socketAddress.Buffer)
+                fixed (int* sizePtr = &socketAddress.InternalSize)
+                {
+                    errorCode = SocketPal.GetSockName(_handle, bufferPtr, sizePtr);
+                }
+            }
+
+            if (errorCode == SocketError.Success)
+            {
+                _rightEndPoint = ep.Create(socketAddress);
+            }
+            else if (errorCode == SocketError.InvalidArgument)
+            {
+                // Socket is not yet bound.
+            }
+            else
+            {
+                _handle.Dispose();
+                _handle = null!;
+                throw new SocketException((int)errorCode);
+            }
+        }
+
+        private unsafe void LoadSocketTypeFromHandle(
+            SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening)
+        {
+            // This can be called without winsock initialized. The handle is not going to be a valid socket handle in that case and the code will throw exception anyway.
+            // Initializing winsock will ensure the error SocketError.NotSocket as opposed to SocketError.NotInitialized.
+            Interop.Winsock.EnsureInitialized();
+
+            Interop.Winsock.WSAPROTOCOL_INFOW info = default;
+            int optionLength = sizeof(Interop.Winsock.WSAPROTOCOL_INFOW);
+
+            // Get the address family, socket type, and protocol type from the socket.
+            if (Interop.Winsock.getsockopt(handle, SocketOptionLevel.Socket, (SocketOptionName)Interop.Winsock.SO_PROTOCOL_INFOW, (byte*)&info, ref optionLength) == SocketError.SocketError)
+            {
+                throw new SocketException((int)SocketPal.GetLastSocketError());
+            }
+
+            addressFamily = info.iAddressFamily;
+            socketType = info.iSocketType;
+            protocolType = info.iProtocol;
+
+            isListening =
+                SocketPal.GetSockOpt(_handle, SocketOptionLevel.Socket, SocketOptionName.AcceptConnection, out int isListeningValue) == SocketError.Success &&
+                isListeningValue != 0;
+
+            // There's no API to retrieve this (WSAIsBlocking isn't supported any more).  Assume it's blocking, but we might be wrong.
+            // This affects the result of querying Socket.Blocking, which will mostly only affect user code that happens to query
+            // that property, though there are a few places we check it internally, e.g. as part of NetworkStream argument validation.
+            blocking = true;
+        }
+
+        [SupportedOSPlatform("windows")]
+        public SocketInformation DuplicateAndClose(int targetProcessId)
+        {
+            ThrowIfDisposed();
+
+            SocketError errorCode = SocketPal.DuplicateSocket(_handle, targetProcessId, out SocketInformation info);
+
+            if (errorCode != SocketError.Success)
+            {
+                throw new SocketException((int)errorCode);
+            }
+
+            info.SetOption(SocketInformationOptions.Connected, Connected);
+            info.SetOption(SocketInformationOptions.NonBlocking, !Blocking);
+            info.SetOption(SocketInformationOptions.Listening, _isListening);
+
+            Close(timeout: -1);
+
+            return info;
+        }
+
+        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
+        {
+            return BeginAccept(acceptSocket: null, receiveSize, callback, state);
+        }
+
+        // This is the truly async version that uses AcceptEx.
+        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
+        {
+            return BeginAcceptCommon(acceptSocket, receiveSize, callback, state);
+        }
+
+        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
+        {
+            Socket socket = EndAccept(out byte[] innerBuffer, out int bytesTransferred, asyncResult);
+            buffer = new byte[bytesTransferred];
+            Buffer.BlockCopy(innerBuffer, 0, buffer, 0, bytesTransferred);
+            return socket;
+        }
+
+        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
+        {
+            return EndAcceptCommon(out buffer!, out bytesTransferred, asyncResult);
+        }
+
+        private DynamicWinsockMethods GetDynamicWinsockMethods()
+        {
+            return _dynamicWinsockMethods ??= DynamicWinsockMethods.GetMethods(_addressFamily, _socketType, _protocolType);
         }
 
         internal unsafe bool AcceptEx(SafeSocketHandle listenSocketHandle,
@@ -34,8 +182,7 @@ namespace System.Net.Sockets
             out int bytesReceived,
             NativeOverlapped* overlapped)
         {
-            EnsureDynamicWinsockMethods();
-            AcceptExDelegate acceptEx = _dynamicWinsockMethods.GetDelegate<AcceptExDelegate>(listenSocketHandle);
+            AcceptExDelegate acceptEx = GetDynamicWinsockMethods().GetAcceptExDelegate(listenSocketHandle);
 
             return acceptEx(listenSocketHandle,
                 acceptSocketHandle,
@@ -56,8 +203,7 @@ namespace System.Net.Sockets
             out IntPtr remoteSocketAddress,
             out int remoteSocketAddressLength)
         {
-            EnsureDynamicWinsockMethods();
-            GetAcceptExSockaddrsDelegate getAcceptExSockaddrs = _dynamicWinsockMethods.GetDelegate<GetAcceptExSockaddrsDelegate>(_handle);
+            GetAcceptExSockaddrsDelegate getAcceptExSockaddrs = GetDynamicWinsockMethods().GetGetAcceptExSockaddrsDelegate(_handle);
 
             getAcceptExSockaddrs(buffer,
                 receiveDataLength,
@@ -71,18 +217,16 @@ namespace System.Net.Sockets
 
         internal unsafe bool DisconnectEx(SafeSocketHandle socketHandle, NativeOverlapped* overlapped, int flags, int reserved)
         {
-            EnsureDynamicWinsockMethods();
-            DisconnectExDelegate disconnectEx = _dynamicWinsockMethods.GetDelegate<DisconnectExDelegate>(socketHandle);
+            DisconnectExDelegate disconnectEx = GetDynamicWinsockMethods().GetDisconnectExDelegate(socketHandle);
 
             return disconnectEx(socketHandle, overlapped, flags, reserved);
         }
 
-        internal bool DisconnectExBlocking(SafeSocketHandle socketHandle, IntPtr overlapped, int flags, int reserved)
+        internal unsafe bool DisconnectExBlocking(SafeSocketHandle socketHandle, int flags, int reserved)
         {
-            EnsureDynamicWinsockMethods();
-            DisconnectExDelegateBlocking disconnectEx_Blocking = _dynamicWinsockMethods.GetDelegate<DisconnectExDelegateBlocking>(socketHandle);
+            DisconnectExDelegate disconnectEx = GetDynamicWinsockMethods().GetDisconnectExDelegate(socketHandle);
 
-            return disconnectEx_Blocking(socketHandle, overlapped, flags, reserved);
+            return disconnectEx(socketHandle, null, flags, reserved);
         }
 
         partial void WildcardBindForConnectIfNecessary(AddressFamily addressFamily)
@@ -94,25 +238,26 @@ namespace System.Net.Sockets
 
             // The socket must be bound before using ConnectEx.
 
-            IPAddress address;
+            CachedSerializedEndPoint csep;
             switch (addressFamily)
             {
                 case AddressFamily.InterNetwork:
-                    address = IsDualMode ? IPAddress.Any.MapToIPv6() : IPAddress.Any;
+                    csep = IsDualMode ?
+                        s_cachedMappedAnyV6EndPoint ??= new CachedSerializedEndPoint(s_IPAddressAnyMapToIPv6) :
+                        s_cachedAnyEndPoint ??= new CachedSerializedEndPoint(IPAddress.Any);
                     break;
 
                 case AddressFamily.InterNetworkV6:
-                    address = IPAddress.IPv6Any;
+                    csep = s_cachedAnyV6EndPoint ??= new CachedSerializedEndPoint(IPAddress.IPv6Any);
                     break;
 
                 default:
                     return;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, address);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, csep.IPEndPoint);
 
-            var endPoint = new IPEndPoint(address, 0);
-            DoBind(endPoint, IPEndPointExtensions.Serialize(endPoint));
+            DoBind(csep.IPEndPoint, csep.SocketAddress);
         }
 
         internal unsafe bool ConnectEx(SafeSocketHandle socketHandle,
@@ -123,37 +268,33 @@ namespace System.Net.Sockets
             out int bytesSent,
             NativeOverlapped* overlapped)
         {
-            EnsureDynamicWinsockMethods();
-            ConnectExDelegate connectEx = _dynamicWinsockMethods.GetDelegate<ConnectExDelegate>(socketHandle);
+            ConnectExDelegate connectEx = GetDynamicWinsockMethods().GetConnectExDelegate(socketHandle);
 
             return connectEx(socketHandle, socketAddress, socketAddressSize, buffer, dataLength, out bytesSent, overlapped);
         }
 
         internal unsafe SocketError WSARecvMsg(SafeSocketHandle socketHandle, IntPtr msg, out int bytesTransferred, NativeOverlapped* overlapped, IntPtr completionRoutine)
         {
-            EnsureDynamicWinsockMethods();
-            WSARecvMsgDelegate recvMsg = _dynamicWinsockMethods.GetDelegate<WSARecvMsgDelegate>(socketHandle);
+            WSARecvMsgDelegate recvMsg = GetDynamicWinsockMethods().GetWSARecvMsgDelegate(socketHandle);
 
             return recvMsg(socketHandle, msg, out bytesTransferred, overlapped, completionRoutine);
         }
 
-        internal SocketError WSARecvMsgBlocking(SafeSocketHandle socketHandle, IntPtr msg, out int bytesTransferred, IntPtr overlapped, IntPtr completionRoutine)
+        internal unsafe SocketError WSARecvMsgBlocking(SafeSocketHandle socketHandle, IntPtr msg, out int bytesTransferred)
         {
-            EnsureDynamicWinsockMethods();
-            WSARecvMsgDelegateBlocking recvMsg_Blocking = _dynamicWinsockMethods.GetDelegate<WSARecvMsgDelegateBlocking>(_handle);
+            WSARecvMsgDelegate recvMsg = GetDynamicWinsockMethods().GetWSARecvMsgDelegate(_handle);
 
-            return recvMsg_Blocking(socketHandle, msg, out bytesTransferred, overlapped, completionRoutine);
+            return recvMsg(socketHandle, msg, out bytesTransferred, null, IntPtr.Zero);
         }
 
         internal unsafe bool TransmitPackets(SafeSocketHandle socketHandle, IntPtr packetArray, int elementCount, int sendSize, NativeOverlapped* overlapped, TransmitFileOptions flags)
         {
-            EnsureDynamicWinsockMethods();
-            TransmitPacketsDelegate transmitPackets = _dynamicWinsockMethods.GetDelegate<TransmitPacketsDelegate>(socketHandle);
+            TransmitPacketsDelegate transmitPackets = GetDynamicWinsockMethods().GetTransmitPacketsDelegate(socketHandle);
 
             return transmitPackets(socketHandle, packetArray, elementCount, sendSize, overlapped, flags);
         }
 
-        internal static void SocketListToFileDescriptorSet(IList socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
+        internal static void SocketListToFileDescriptorSet(IList? socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
         {
             int count;
             if (socketList == null || (count = socketList.Count) == 0)
@@ -168,7 +309,7 @@ namespace System.Net.Sockets
             {
                 if (!(socketList[current] is Socket socket))
                 {
-                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socketList[current].GetType().FullName, typeof(System.Net.Sockets.Socket).FullName), nameof(socketList));
+                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socketList[current]?.GetType().FullName, typeof(System.Net.Sockets.Socket).FullName), nameof(socketList));
                 }
 
                 bool success = false;
@@ -180,7 +321,7 @@ namespace System.Net.Sockets
 
         // Transform the list socketList such that the only sockets left are those
         // with a file descriptor contained in the array "fileDescriptorArray".
-        internal static void SelectFileDescriptor(IList socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
+        internal static void SelectFileDescriptor(IList? socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
         {
             // Walk the list in order.
             //
@@ -210,7 +351,8 @@ namespace System.Net.Sockets
             {
                 for (int currentSocket = 0; currentSocket < count; currentSocket++)
                 {
-                    Socket socket = socketList[currentSocket] as Socket;
+                    Socket? socket = socketList[currentSocket] as Socket;
+                    Debug.Assert(socket != null);
 
                     // Look for the file descriptor in the array.
                     int currentFileDescriptor;
@@ -234,7 +376,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private Socket GetOrCreateAcceptSocket(Socket acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle handle)
+        private Socket GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle handle)
         {
             // If an acceptSocket isn't specified, then we need to create one.
             if (acceptSocket == null)
@@ -250,15 +392,15 @@ namespace System.Net.Sockets
             return acceptSocket;
         }
 
-        private void SendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        private void SendFileInternal(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
             // Open the file, if any
-            FileStream fileStream = OpenFile(fileName);
+            FileStream? fileStream = OpenFile(fileName);
 
             SocketError errorCode;
             using (fileStream)
             {
-                SafeFileHandle fileHandle = fileStream?.SafeFileHandle;
+                SafeFileHandle? fileHandle = fileStream?.SafeFileHandle;
 
                 // This can throw ObjectDisposedException.
                 errorCode = SocketPal.SendFile(_handle, fileHandle, preBuffer, postBuffer, flags);
@@ -280,9 +422,9 @@ namespace System.Net.Sockets
             }
         }
 
-        private IAsyncResult BeginSendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
+        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
-            FileStream fileStream = OpenFile(fileName);
+            FileStream? fileStream = OpenFile(fileName);
 
             TransmitFileAsyncResult asyncResult = new TransmitFileAsyncResult(this, state, callback);
             asyncResult.StartPostingAsyncOp(false);
@@ -303,7 +445,7 @@ namespace System.Net.Sockets
 
         private void EndSendFileInternal(IAsyncResult asyncResult)
         {
-            TransmitFileAsyncResult castedAsyncResult = asyncResult as TransmitFileAsyncResult;
+            TransmitFileAsyncResult? castedAsyncResult = asyncResult as TransmitFileAsyncResult;
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));

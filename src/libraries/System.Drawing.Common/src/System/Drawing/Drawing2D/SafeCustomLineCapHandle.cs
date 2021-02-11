@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -10,7 +9,7 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing.Drawing2D
 {
-    internal class SafeCustomLineCapHandle : SafeHandle
+    internal sealed class SafeCustomLineCapHandle : SafeHandle
     {
         // Create a SafeHandle, informing the base class
         // that this SafeHandle instance "owns" the handle,

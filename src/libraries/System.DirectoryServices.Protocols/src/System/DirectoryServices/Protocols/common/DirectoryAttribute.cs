@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.ComponentModel;
@@ -12,7 +11,7 @@ namespace System.DirectoryServices.Protocols
     public class DirectoryAttribute : CollectionBase
     {
         private string _attributeName = "";
-        internal bool _isSearchResult = false;
+        internal bool _isSearchResult;
         // Does not request Unicode byte order mark prefix be emitted, but turn on error detection.
         private static readonly UTF8Encoding s_utf8EncoderWithErrorDetection = new UTF8Encoding(false, true);
         // No Error detection.
@@ -276,7 +275,7 @@ namespace System.DirectoryServices.Protocols
                     throw new ArgumentNullException(nameof(attributeName));
                 }
 
-                object objectName = attributeName.ToLower(CultureInfo.InvariantCulture);
+                object objectName = attributeName.ToLowerInvariant();
                 return (DirectoryAttribute)InnerHashtable[objectName];
             }
         }
@@ -287,7 +286,7 @@ namespace System.DirectoryServices.Protocols
 
         internal void Add(string name, DirectoryAttribute value)
         {
-            Dictionary.Add(name.ToLower(CultureInfo.InvariantCulture), value);
+            Dictionary.Add(name.ToLowerInvariant(), value);
         }
 
         public bool Contains(string attributeName)
@@ -297,7 +296,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentNullException(nameof(attributeName));
             }
 
-            object objectName = attributeName.ToLower(CultureInfo.InvariantCulture);
+            object objectName = attributeName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
         }
 

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
@@ -29,13 +29,13 @@ namespace Internal.Cryptography.Pal.AnyOS
                 _envelopedData = envelopedDataAsn;
             }
 
-            public override unsafe ContentInfo TryDecrypt(
+            public override unsafe ContentInfo? TryDecrypt(
                 RecipientInfo recipientInfo,
-                X509Certificate2 cert,
-                AsymmetricAlgorithm privateKey,
+                X509Certificate2? cert,
+                AsymmetricAlgorithm? privateKey,
                 X509Certificate2Collection originatorCerts,
                 X509Certificate2Collection extraStore,
-                out Exception exception)
+                out Exception? exception)
             {
                 // When encryptedContent is null Windows seems to decrypt the CEK first,
                 // then return a 0 byte answer.
@@ -44,7 +44,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 if (recipientInfo.Pal is ManagedKeyTransPal ktri)
                 {
-                    RSA key = privateKey as RSA;
+                    RSA? key = privateKey as RSA;
 
                     if (privateKey != null && key == null)
                     {
@@ -52,7 +52,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         return null;
                     }
 
-                    byte[] cek = ktri.DecryptCek(cert, key, out exception);
+                    byte[]? cek = ktri.DecryptCek(cert, key, out exception);
                     // Pin CEK to prevent it from getting copied during heap compaction.
                     fixed (byte* pinnedCek = cek)
                     {
@@ -64,7 +64,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                             }
 
                             return TryDecryptCore(
-                                cek,
+                                cek!,
                                 _envelopedData.EncryptedContentInfo.ContentType,
                                 _envelopedData.EncryptedContentInfo.EncryptedContent,
                                 _envelopedData.EncryptedContentInfo.ContentEncryptionAlgorithm,
@@ -89,12 +89,12 @@ namespace Internal.Cryptography.Pal.AnyOS
                 }
             }
 
-            public static unsafe ContentInfo TryDecryptCore(
+            public static unsafe ContentInfo? TryDecryptCore(
                 byte[] cek,
                 string contentType,
                 ReadOnlyMemory<byte>? content,
                 AlgorithmIdentifierAsn contentEncryptionAlgorithm,
-                out Exception exception)
+                out Exception? exception)
             {
                 if (content == null)
                 {
@@ -105,7 +105,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         Array.Empty<byte>());
                 }
 
-                byte[] decrypted = DecryptContent(content.Value, cek, contentEncryptionAlgorithm, out exception);
+                byte[]? decrypted = DecryptContent(content.Value, cek, contentEncryptionAlgorithm, out exception);
 
                 if (exception != null)
                 {
@@ -117,43 +117,14 @@ namespace Internal.Cryptography.Pal.AnyOS
                 // existing CMS that have the incorrect wrapping, we attempt to remove it.
                 if (contentType == Oids.Pkcs7Data)
                 {
-                    byte[] tmp = null;
-
-                    try
+                    if (decrypted?.Length > 0 && decrypted[0] == 0x04)
                     {
-                        AsnReader reader = new AsnReader(decrypted, AsnEncodingRules.BER);
-
-                        if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
+                        try
                         {
-                            decrypted = contents.ToArray();
+                            decrypted = AsnDecoder.ReadOctetString(decrypted, AsnEncodingRules.BER, out _);
                         }
-                        else
+                        catch (AsnContentException)
                         {
-                            tmp = CryptoPool.Rent(decrypted.Length);
-
-                            if (reader.TryCopyOctetStringBytes(tmp, out int written))
-                            {
-                                Span<byte> innerContents = new Span<byte>(tmp, 0, written);
-                                decrypted = innerContents.ToArray();
-                                innerContents.Clear();
-                            }
-                            else
-                            {
-                                Debug.Fail("Octet string grew during copy");
-                                // If this happens (which requires decrypted was overwritten, which
-                                // shouldn't be possible), just leave decrypted alone.
-                            }
-                        }
-                    }
-                    catch (CryptographicException)
-                    {
-                    }
-                    finally
-                    {
-                        if (tmp != null)
-                        {
-                            // Already cleared
-                            CryptoPool.Return(tmp, clearSize: 0);
                         }
                     }
                 }
@@ -165,35 +136,34 @@ namespace Internal.Cryptography.Pal.AnyOS
                 exception = null;
                 return new ContentInfo(
                     new Oid(contentType),
-                    decrypted);
+                    decrypted!);
             }
 
             private static byte[] GetAsnSequenceWithContentNoValidation(ReadOnlySpan<byte> content)
             {
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
-                {
-                    // Content may be invalid ASN.1 data.
-                    // We will encode it as octet string to bypass validation
-                    writer.WriteOctetString(content);
-                    byte[] encoded = writer.Encode();
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
 
-                    // and replace octet string tag (0x04) with sequence tag (0x30 or constructed 0x10)
-                    Debug.Assert(encoded[0] == 0x04);
-                    encoded[0] = 0x30;
+                // Content may be invalid ASN.1 data.
+                // We will encode it as octet string to bypass validation
+                writer.WriteOctetString(content);
+                byte[] encoded = writer.Encode();
 
-                    return encoded;
-                }
+                // and replace octet string tag (0x04) with sequence tag (0x30 or constructed 0x10)
+                Debug.Assert(encoded[0] == 0x04);
+                encoded[0] = 0x30;
+
+                return encoded;
             }
 
-            private static byte[] DecryptContent(
+            private static byte[]? DecryptContent(
                 ReadOnlyMemory<byte> encryptedContent,
                 byte[] cek,
                 AlgorithmIdentifierAsn contentEncryptionAlgorithm,
-                out Exception exception)
+                out Exception? exception)
             {
                 exception = null;
                 int encryptedContentLength = encryptedContent.Length;
-                byte[] encryptedContentArray = CryptoPool.Rent(encryptedContentLength);
+                byte[]? encryptedContentArray = CryptoPool.Rent(encryptedContentLength);
 
                 try
                 {

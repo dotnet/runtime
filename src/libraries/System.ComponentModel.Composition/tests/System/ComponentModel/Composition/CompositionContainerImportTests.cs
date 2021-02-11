@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Factories;
@@ -184,7 +183,7 @@ namespace System.ComponentModel.Composition
 
         [ConditionalFact(Helpers.ComImportAvailable)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void ImportValueComComponent()
         {
             CTaskScheduler scheduler = new CTaskScheduler();
@@ -210,7 +209,7 @@ namespace System.ComponentModel.Composition
 
         [ConditionalFact(Helpers.ComImportAvailable)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void DelayImportValueComComponent()
         {
             CTaskScheduler scheduler = new CTaskScheduler();

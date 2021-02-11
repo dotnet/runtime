@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
@@ -97,7 +96,7 @@ namespace System.Linq.Parallel.Tests
     /// <summary>
     /// Returns an extreme value from non-equal comparisons.
     /// </summary>
-    /// <remarks>Helper for regression test against PLINQ's version of #2239 .</remarks>
+    /// <remarks>Helper for regression test against PLINQ's version of https://github.com/dotnet/runtime/issues/14793 .</remarks>
     /// <typeparam name="T">The type being compared.</typeparam>
     internal class ExtremeComparer<T> : IComparer<T>
     {

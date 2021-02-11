@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Security.Principal;
@@ -18,7 +17,6 @@ namespace System.Diagnostics.Eventing.Reader
         public abstract byte? Level { get; }
         public abstract int? Task { get; }
 
-        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Opcode", Justification = "matell: Shipped public in 3.5, breaking change to fix now.")]
         public abstract short? Opcode { get; }
         public abstract long? Keywords { get; }
 
@@ -43,7 +41,6 @@ namespace System.Diagnostics.Eventing.Reader
 
         public abstract string LevelDisplayName { get; }
 
-        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Opcode", Justification = "matell: Shipped public in 3.5, breaking change to fix now.")]
         public abstract string OpcodeDisplayName { get; }
         public abstract string TaskDisplayName { get; }
         public abstract IEnumerable<string> KeywordsDisplayNames { get; }

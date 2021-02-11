@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -15,7 +14,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal int Length { get; private set; }
 
-        public SafePasswordHandle(string password)
+        public SafePasswordHandle(string? password)
             : base(ownsHandle: true)
         {
             if (password != null)
@@ -25,7 +24,32 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public SafePasswordHandle(SecureString password)
+        public SafePasswordHandle(ReadOnlySpan<char> password)
+            : base(ownsHandle: true)
+        {
+            // "".AsSpan() is not default, so this is compat for "null tries NULL first".
+            if (password != default)
+            {
+                int spanLen;
+
+                checked
+                {
+                    spanLen = password.Length + 1;
+                    handle = Marshal.AllocHGlobal(spanLen * sizeof(char));
+                }
+
+                unsafe
+                {
+                    Span<char> dest = new Span<char>((void*)handle, spanLen);
+                    password.CopyTo(dest);
+                    dest[password.Length] = '\0';
+                }
+
+                Length = password.Length;
+            }
+        }
+
+        public SafePasswordHandle(SecureString? password)
             : base(ownsHandle: true)
         {
             if (password != null)
@@ -70,7 +94,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeHandleCache<SafePasswordHandle>.GetInvalidHandle(
                 () =>
                 {
-                    var handle = new SafePasswordHandle((string)null);
+                    var handle = new SafePasswordHandle((string?)null);
                     handle.handle = (IntPtr)(-1);
                     return handle;
                 });

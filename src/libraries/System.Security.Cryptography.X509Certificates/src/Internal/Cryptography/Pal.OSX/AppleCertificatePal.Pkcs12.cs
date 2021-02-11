@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -12,8 +11,8 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
-        private static ICertificatePal ImportPkcs12(
-            byte[] rawData,
+        private static AppleCertificatePal ImportPkcs12(
+            ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             bool exportable,
             SafeKeychainHandle keychain)
@@ -23,12 +22,12 @@ namespace Internal.Cryptography.Pal
                 reader.Decrypt(password);
 
                 UnixPkcs12Reader.CertAndKey certAndKey = reader.GetSingleCert();
-                AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert;
+                AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
 
-                SafeSecKeyRefHandle safeSecKeyRefHandle =
+                SafeSecKeyRefHandle? safeSecKeyRefHandle =
                     ApplePkcs12Reader.GetPrivateKey(certAndKey.Key);
 
-                AppleCertificatePal newPal;
+                AppleCertificatePal? newPal;
 
                 using (safeSecKeyRefHandle)
                 {
@@ -58,14 +57,14 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal static ICertificatePal ImportPkcs12NonExportable(
+        internal static AppleCertificatePal ImportPkcs12NonExportable(
             AppleCertificatePal cert,
             SafeSecKeyRefHandle privateKey,
             SafePasswordHandle password,
             SafeKeychainHandle keychain)
         {
             Pkcs12SmallExport exporter = new Pkcs12SmallExport(new TempExportPal(cert), privateKey);
-            byte[] smallPfx = exporter.Export(X509ContentType.Pkcs12, password);
+            byte[] smallPfx = exporter.Export(X509ContentType.Pkcs12, password)!;
 
             SafeSecIdentityHandle identityHandle;
             SafeSecCertificateHandle certHandle = Interop.AppleCrypto.X509ImportCertificate(

@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.Tracing;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
+using Xunit;
+using Xunit.Sdk;
 
 namespace System.Threading.Tasks.Tests
 {
@@ -452,7 +453,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Running tasks with exceptions.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void FaultedTaskExceptions()
         {
             var twa1 = Task.Run(() => { throw new Exception("uh oh"); });
@@ -485,7 +486,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test that OCEs don't result in the unobserved event firing
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationDoesntResultInEventFiring()
         {
             var cts = new CancellationTokenSource();
@@ -521,7 +522,7 @@ namespace System.Threading.Tasks.Tests
             TaskScheduler.UnobservedTaskException -= handler;
         }
 
-        [ActiveIssue(39155)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30122")]
         [Fact]
         public static async Task AsyncMethodsDropsStateMachineAndExecutionContextUponCompletion()
         {
@@ -531,7 +532,7 @@ namespace System.Threading.Tasks.Tests
             // We want to make sure that holding on to the resulting Task doesn't keep
             // that finalizable object alive.
 
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             Task t = null;
 
@@ -543,7 +544,7 @@ namespace System.Threading.Tasks.Tests
                     GC.KeepAlive(s); // keep s referenced by the state machine
                 }
 
-                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult(true) };
+                var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult() };
                 var al = new AsyncLocal<object>() { Value = state }; // ensure the object is stored in ExecutionContext
                 t = YieldOnceAsync(state); // ensure the object is stored in the state machine
                 al.Value = null;
@@ -574,7 +575,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void DroppedIncompleteStateMachine_RaisesIncompleteAsyncMethodEvent()
         {
             RemoteExecutor.Invoke(() =>
@@ -590,7 +591,39 @@ namespace System.Threading.Tasks.Tests
                         GC.WaitForPendingFinalizers();
                     });
 
-                    Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                    // To help diagnose https://github.com/dotnet/runtime/issues/2198
+                    // Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                    var sb = new StringBuilder();
+                    foreach (EventWrittenEventArgs ev in events)
+                    {
+                        if (ev.EventId == 0)
+                        {
+                            sb.AppendLine("Events contained unexpected event:")
+                              .AppendLine($"ActivityId: {ev.ActivityId}")
+                              .AppendLine($"Channel: {ev.Channel}")
+                              .AppendLine($"EventId: {ev.EventId}")
+                              .AppendLine($"EventName: {ev.EventName}")
+                              .AppendLine($"EventSource: {ev.EventSource}")
+                              .AppendLine($"Keywords: {ev.Keywords}")
+                              .AppendLine($"Level: {ev.Level}")
+                              .AppendLine($"Message: {ev.Message}")
+                              .AppendLine($"Opcode: {ev.Opcode}")
+                              .AppendLine($"OSThreadId: {ev.OSThreadId}")
+                              .AppendLine($"Payload: {(ev.Payload != null ? string.Join(", ", ev.Payload) : "(null)")}")
+                              .AppendLine($"PayloadNames: {(ev.PayloadNames != null ? string.Join(", ", ev.PayloadNames) : "(null)")}")
+                              .AppendLine($"RelatedActivityId: {ev.RelatedActivityId}")
+                              .AppendLine($"Tags: {ev.Tags}")
+                              .AppendLine($"Task: {ev.Task}")
+                              .AppendLine($"TimeStamp: {ev.TimeStamp}")
+                              .AppendLine($"Version: {ev.Version}")
+                              .AppendLine();
+                        }
+                    }
+                    if (sb.Length > 0)
+                    {
+                        throw new XunitException(sb.ToString());
+                    }
+
                     EventWrittenEventArgs iam = events.SingleOrDefault(e => e.EventName == "IncompleteAsyncMethod");
                     Assert.NotNull(iam);
                     Assert.NotNull(iam.Payload);
@@ -616,7 +649,7 @@ namespace System.Threading.Tasks.Tests
         {
             int local1 = 42;
             string local2 = "stored data";
-            await new TaskCompletionSource<bool>().Task; // await will never complete
+            await new TaskCompletionSource().Task; // await will never complete
             GC.KeepAlive(local1);
             GC.KeepAlive(local2);
         }

@@ -1,6 +1,5 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
-# See the LICENSE file in the project root for more information.
 
 # Usage:
 #
@@ -14,7 +13,7 @@
 
 function BuildAndTestBinary
 {
-    $output = (msbuild /t:rebuild,test /p:OuterLoop=true)
+    $output = (msbuild /t:test /p:OuterLoop=true)
     if ($lastexitcode -ne 0)
     {
         throw "Build/test failed."

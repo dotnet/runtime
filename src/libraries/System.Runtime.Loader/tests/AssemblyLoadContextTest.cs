@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 using System;
@@ -79,6 +78,7 @@ namespace System.Runtime.Loader.Tests
             var asm = loadContext.LoadFromAssemblyName(asmName);
 
             Assert.NotNull(asm);
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(asm));
             Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
         }
 
@@ -92,6 +92,7 @@ namespace System.Runtime.Loader.Tests
             var asm = loadContext.LoadFromAssemblyName(asmName);
 
             Assert.NotNull(asm);
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(asm));
             Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
         }
 
@@ -106,9 +107,10 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Corelib does not exist on disc for Browser builds
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
-            var asmName = typeof(ISet<>).Assembly.GetName();
+            var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
             asmName.CodeBase = null;
             var loadContext = new CustomTPALoadContext();
 
@@ -119,6 +121,23 @@ namespace System.Runtime.Loader.Tests
             var loadedContext = AssemblyLoadContext.GetLoadContext(asm);
             Assert.NotNull(loadedContext);
             Assert.Same(loadContext, loadedContext);
+        }
+
+        [Fact]
+        public static void LoadFromAssemblyName_FallbackToDefaultContext()
+        {
+            var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
+            asmName.CodeBase = null;
+            var loadContext = new AssemblyLoadContext("FallbackToDefaultContextTest");
+
+            // This should not have any special handlers, so it should just find the version in the default context
+            var asm = loadContext.LoadFromAssemblyName(asmName);
+            Assert.NotNull(asm);
+            var loadedContext = AssemblyLoadContext.GetLoadContext(asm);
+            Assert.NotNull(loadedContext);
+            Assert.Same(AssemblyLoadContext.Default, loadedContext);
+            Assert.NotEqual(loadContext, loadedContext);
+            Assert.Same(typeof(System.Linq.Enumerable).Assembly, asm);
         }
 
         [Fact]
@@ -137,10 +156,11 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void GetLoadContextTest_ValidTrustedPlatformAssembly()
         {
-            var asm = typeof(ISet<>).GetTypeInfo().Assembly;
+            var asm = typeof(System.Linq.Enumerable).GetTypeInfo().Assembly;
             var context = AssemblyLoadContext.GetLoadContext(asm);
 
             Assert.NotNull(context);
+            Assert.Same(AssemblyLoadContext.Default, context);
         }
 
         [Fact]

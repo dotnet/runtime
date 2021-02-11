@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -23,7 +22,7 @@ namespace System.IO
     /// this gives better throughput; benchmarks showed about 12-15% better.
     public class UnmanagedMemoryAccessor : IDisposable
     {
-        private SafeBuffer _buffer = null!; // initialized in helper called by ctor
+        private SafeBuffer _buffer = null!; // initialized in helper called by ctor, but also not initialized by protected ctor
         private long _offset;
         private long _capacity;
         private FileAccess _access;
@@ -33,7 +32,6 @@ namespace System.IO
 
         protected UnmanagedMemoryAccessor()
         {
-            _isOpen = false;
         }
 
         public UnmanagedMemoryAccessor(SafeBuffer buffer, long offset, long capacity)

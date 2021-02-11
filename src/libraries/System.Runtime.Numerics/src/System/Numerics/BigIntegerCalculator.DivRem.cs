@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Security;
@@ -84,9 +83,7 @@ namespace System.Numerics
             // Switching to unsafe pointers helps sparing
             // some nasty index calculations...
 
-            // NOTE: left will get overwritten, we need a local copy
-
-            uint[] localLeft = CreateCopy(left);
+            uint[] localLeft = left.AsSpan().ToArray(); // left will get overwritten, we need a local copy
             uint[] bits = new uint[left.Length - right.Length + 1];
 
             fixed (uint* l = &localLeft[0], r = &right[0], b = &bits[0])
@@ -111,9 +108,18 @@ namespace System.Numerics
 
             // Same as above, but only returning the quotient.
 
-            // NOTE: left will get overwritten, we need a local copy
+            // left will get overwritten, we need a local copy
+            Span<uint> localLeft = stackalloc uint[0];
+            if (left.Length <= BigInteger.StackallocUInt32Limit)
+            {
+                localLeft = stackalloc uint[BigInteger.StackallocUInt32Limit].Slice(0, left.Length);
+                left.AsSpan().CopyTo(localLeft);
+            }
+            else
+            {
+                localLeft = left.AsSpan().ToArray();
+            }
 
-            uint[] localLeft = CreateCopy(left);
             uint[] bits = new uint[left.Length - right.Length + 1];
 
             fixed (uint* l = &localLeft[0], r = &right[0], b = &bits[0])
@@ -136,9 +142,7 @@ namespace System.Numerics
 
             // Same as above, but only returning the remainder.
 
-            // NOTE: left will get overwritten, we need a local copy
-
-            uint[] localLeft = CreateCopy(left);
+            uint[] localLeft = left.AsSpan().ToArray(); // left will get overwritten, we need a local copy
 
             fixed (uint* l = &localLeft[0], r = &right[0])
             {
@@ -311,16 +315,6 @@ namespace System.Numerics
                 return true;
 
             return false;
-        }
-
-        private static uint[] CreateCopy(uint[] value)
-        {
-            Debug.Assert(value != null);
-            Debug.Assert(value.Length != 0);
-
-            uint[] bits = new uint[value.Length];
-            Array.Copy(value, bits, bits.Length);
-            return bits;
         }
 
         private static int LeadingZeros(uint value)

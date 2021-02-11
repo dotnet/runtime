@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using Internal.Cryptography;
+using System.Buffers.Binary;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [UnsupportedOSPlatform("browser")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract class DES : SymmetricAlgorithm
     {
@@ -24,9 +27,10 @@ namespace System.Security.Cryptography
             return new DesImplementation();
         }
 
-        public static new DES Create(string algName)
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
+        public static new DES? Create(string algName)
         {
-            return (DES)CryptoConfig.CreateFromName(algName);
+            return (DES?)CryptoConfig.CreateFromName(algName);
         }
 
         public override byte[] Key
@@ -65,7 +69,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);
 
             byte[] rgbOddParityKey = rgbKey.FixupKeyParity();
-            ulong key = QuadWordFromBigEndian(rgbOddParityKey);
+            ulong key = BinaryPrimitives.ReadUInt64BigEndian(rgbOddParityKey);
             if ((key == 0x0101010101010101) ||
                 (key == 0xfefefefefefefefe) ||
                 (key == 0x1f1f1f1f0e0e0e0e) ||
@@ -83,7 +87,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);
 
             byte[] rgbOddParityKey = rgbKey.FixupKeyParity();
-            ulong key = QuadWordFromBigEndian(rgbOddParityKey);
+            ulong key = BinaryPrimitives.ReadUInt64BigEndian(rgbOddParityKey);
             if ((key == 0x01fe01fe01fe01fe) ||
                 (key == 0xfe01fe01fe01fe01) ||
                 (key == 0x1fe01fe00ef10ef1) ||
@@ -103,23 +107,12 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        private static bool IsLegalKeySize(byte[] rgbKey)
+        private static bool IsLegalKeySize(byte[]? rgbKey)
         {
             if (rgbKey != null && rgbKey.Length == 8)
                 return true;
 
             return false;
-        }
-
-        private static ulong QuadWordFromBigEndian(byte[] block)
-        {
-            ulong x = (
-                (((ulong)block[0]) << 56) | (((ulong)block[1]) << 48) |
-                (((ulong)block[2]) << 40) | (((ulong)block[3]) << 32) |
-                (((ulong)block[4]) << 24) | (((ulong)block[5]) << 16) |
-                (((ulong)block[6]) << 8) | ((ulong)block[7])
-                );
-            return x;
         }
 
         private static readonly KeySizes[] s_legalBlockSizes =

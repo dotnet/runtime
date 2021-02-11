@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -143,7 +142,7 @@ namespace Tests.System.IO
 
         public static TheoryData<string, int, int> GetRootLength_Data => new TheoryData<string, int, int>
         {
-            { @"C:\git\corefx", 3, 7 },
+            { @"C:\git\runtime", 3, 7 },
             { @"C:\git\.\", 3, 7 },
             { @"C:\git\..\", 3, 7 },
             { @"C:\git\..\..\", 3, 7 },
@@ -162,7 +161,7 @@ namespace Tests.System.IO
             { @"C:git\", 2, 10},
             { @"C:git\\", 2, 10},
             { @"C:git", 2, 9},
-            { @"C:git\corefx", 2, 10},
+            { @"C:git\runtime", 2, 10},
             { @"C:git\.\", 2, 10},
             { @"C:git\\.\", 2, 10},
             { @"C:git\..\", 2, 10},
@@ -198,8 +197,8 @@ namespace Tests.System.IO
         {
             // Historically we've never included the separator after a UNC with GetPathRoot()
             // We'll continue to do so.
-            { @"a\b\git\corefx", 3},
-            { @"Server\Share\git\corefx", 12},
+            { @"a\b\git\runtime", 3},
+            { @"Server\Share\git\runtime", 12},
             { @"Server\Share\git\.\", 12},
             { @"Server\Share\git\..\", 12},
             { @"Server\Share\git\..\..\", 12},
@@ -215,8 +214,8 @@ namespace Tests.System.IO
             // We expect paths to be well formed up to the root. If you have "\\Server\\Share"
             // instead of "\\Server\Share", all bets are off. We'll test them here to make
             // sure we don't choke.
-            { @"\a\b\git\corefx", 2},
-            { @"a\\b\git\corefx", 2},
+            { @"\a\b\git\runtime", 2},
+            { @"a\\b\git\runtime", 2},
         };
 
         [Theory,

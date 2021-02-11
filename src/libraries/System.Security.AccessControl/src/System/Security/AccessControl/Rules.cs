@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -64,7 +63,7 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Arg_MustBeIdentityReferenceType,
-nameof(identity));
+                    nameof(identity));
             }
 
             _identity = identity;
@@ -345,7 +344,7 @@ nameof(identity));
 
         #region Public methods
 
-        public void AddRule(AuthorizationRule rule)
+        public void AddRule(AuthorizationRule? rule)
         {
             InnerList.Add(rule);
         }
@@ -363,7 +362,7 @@ nameof(identity));
 
         #region Public properties
 
-        public AuthorizationRule this[int index]
+        public AuthorizationRule? this[int index]
         {
             get { return InnerList[index] as AuthorizationRule; }
         }

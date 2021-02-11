@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Text;
@@ -108,9 +107,9 @@ namespace System.Buffers.Tests
                 _written += bytes;
             }
 
-            public Memory<byte> GetMemory(int sizeHint = 0) => _buffer.AsMemory().Slice(_written);
+            public Memory<byte> GetMemory(int sizeHint = 0) => _buffer.AsMemory(_written);
 
-            public Span<byte> GetSpan(int sizeHint) => _buffer.AsSpan().Slice(_written);
+            public Span<byte> GetSpan(int sizeHint) => _buffer.AsSpan(_written);
 
             public override string ToString()
             {

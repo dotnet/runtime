@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading;
 
-// The CODEDOM check is here to support frameworks that may not have fully
-// incorporated all of corefx, but want to use System.Configuration.ConfigurationManager.
-// TempFileCollection was moved in corefx.
+// The CODEDOM check is here to support versions of the framework that may not have fully
+// incorporated all of .NET Core, but want to use System.Configuration.ConfigurationManager.
+// TempFileCollection was moved around in .NET Core.
 #if CODEDOM
 using System.CodeDom.Compiler;
 #else

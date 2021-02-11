@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -23,7 +22,7 @@ namespace BasicEventSourceTests
         /// Tests bTraceListener path.
         /// </summary>
         [Fact]
-        [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_Manifest_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -37,7 +36,7 @@ namespace BasicEventSourceTests
         /// Tests bTraceListener path using events instead of virtual callbacks.
         /// </summary>
         [Fact]
-        [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_Manifest_EventListener_UseEvents()
         {
             Listener listener = new EventListenerListener(true);
@@ -49,7 +48,7 @@ namespace BasicEventSourceTests
         /// Tests both the ETW and TraceListener paths.
         /// </summary>
         [Fact]
-        [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_SelfDescribing_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -64,7 +63,7 @@ namespace BasicEventSourceTests
         /// instead of virtual callbacks.
         /// </summary>
         [Fact]
-        [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_SelfDescribing_EventListener_UseEvents()
         {
             Listener listener = new EventListenerListener(true);

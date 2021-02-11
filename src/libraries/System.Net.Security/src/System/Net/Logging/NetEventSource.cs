@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
@@ -14,9 +13,9 @@ namespace System.Net
         /// <param name="buffer">The buffer to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void DumpBuffer(object thisOrContextObject, ReadOnlyMemory<byte> buffer, [CallerMemberName] string memberName = null)
+        public static void DumpBuffer(object thisOrContextObject, ReadOnlyMemory<byte> buffer, [CallerMemberName] string? memberName = null)
         {
-            if (IsEnabled)
+            if (Log.IsEnabled())
             {
                 int count = Math.Min(buffer.Length, MaxDumpSize);
 

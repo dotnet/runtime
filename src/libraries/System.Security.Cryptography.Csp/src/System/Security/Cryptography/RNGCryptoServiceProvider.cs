@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 
@@ -11,11 +10,11 @@ namespace System.Security.Cryptography
     {
         private readonly RandomNumberGenerator _impl;
 
-        public RNGCryptoServiceProvider() : this((CspParameters)null) { }
-        public RNGCryptoServiceProvider(string str) : this((CspParameters)null) { }
-        public RNGCryptoServiceProvider(byte[] rgb) : this((CspParameters)null) { }
+        public RNGCryptoServiceProvider() : this((CspParameters?)null) { }
+        public RNGCryptoServiceProvider(string str) : this((CspParameters?)null) { }
+        public RNGCryptoServiceProvider(byte[] rgb) : this((CspParameters?)null) { }
 
-        public RNGCryptoServiceProvider(CspParameters cspParams)
+        public RNGCryptoServiceProvider(CspParameters? cspParams)
         {
             if (cspParams != null)
                 throw new PlatformNotSupportedException();

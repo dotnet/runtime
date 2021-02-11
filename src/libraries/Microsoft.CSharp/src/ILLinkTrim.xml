@@ -1,8 +1,0 @@
-<linker>
-  <assembly fullname="Microsoft.CSharp">
-    <!-- Required by the Expression Evaluator -->
-    <type fullname="Microsoft.CSharp.RuntimeBinder.DynamicMetaObjectProviderDebugView"/>
-    <!-- Required by the Expression Evaluator -->
-    <type fullname="Microsoft.CSharp.RuntimeBinder.DynamicMetaObjectProviderDebugView/DynamicDebugViewEmptyException"/>
-  </assembly>
-</linker>

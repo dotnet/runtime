@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Data.Common;
@@ -93,7 +92,7 @@ namespace System.Data.OleDb
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_BadStatus_ParamAcc, index.ToString(CultureInfo.InvariantCulture), status.ToString()));
         }
-        internal static Exception NoProviderSupportForParameters(string provider, Exception inner)
+        internal static Exception NoProviderSupportForParameters(string provider, Exception? inner)
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_NoProviderSupportForParameters, provider), inner);
         }
@@ -175,7 +174,7 @@ namespace System.Data.OleDb
         {
             return ADP.Argument(SR.Format(SR.OleDb_SchemaRowsetsNotSupported, "IDBSchemaRowset", provider));
         }
-        internal static OleDbException NoErrorInformation(string provider, OleDbHResult hr, Exception inner)
+        internal static OleDbException NoErrorInformation(string? provider, OleDbHResult hr, Exception? inner)
         {
             OleDbException e;
             if (!ADP.IsEmpty(provider))
@@ -189,7 +188,7 @@ namespace System.Data.OleDb
             ADP.TraceExceptionAsReturnValue(e);
             return e;
         }
-        internal static InvalidOperationException MDACNotAvailable(Exception inner)
+        internal static InvalidOperationException MDACNotAvailable(Exception? inner)
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_MDACNotAvailable), inner);
         }
@@ -197,7 +196,7 @@ namespace System.Data.OleDb
         {
             return ADP.Argument(SR.Format(SR.OleDb_MSDASQLNotSupported));
         }
-        internal static InvalidOperationException CommandTextNotSupported(string provider, Exception inner)
+        internal static InvalidOperationException CommandTextNotSupported(string provider, Exception? inner)
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_CommandTextNotSupported, provider), inner);
         }
@@ -205,12 +204,12 @@ namespace System.Data.OleDb
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_PossiblePromptNotUserInteractive));
         }
-        internal static InvalidOperationException ProviderUnavailable(string provider, Exception inner)
+        internal static InvalidOperationException ProviderUnavailable(string provider, Exception? inner)
         {
             //return new OleDbException(SR.Format(SR.OleDb_ProviderUnavailable, provider), (int)OleDbHResult.CO_E_CLASSSTRING, inner);
             return ADP.DataAdapter(SR.Format(SR.OleDb_ProviderUnavailable, provider), inner);
         }
-        internal static InvalidOperationException TransactionsNotSupported(string provider, Exception inner)
+        internal static InvalidOperationException TransactionsNotSupported(string provider, Exception? inner)
         {
             return ADP.DataAdapter(SR.Format(SR.OleDb_TransactionsNotSupported, provider), inner);
         }
@@ -558,22 +557,24 @@ namespace System.Data.OleDb
         internal static readonly IntPtr DB_NULL_HCHAPTER = ADP.PtrZero;
         internal static readonly IntPtr DB_NULL_HROW = ADP.PtrZero;
 
+        internal static readonly bool IsRunningOnX86 = RuntimeInformation.ProcessArchitecture == Architecture.X86;
+
         /*internal static readonly int SizeOf_tagDBPARAMINFO = Marshal.SizeOf(typeof(tagDBPARAMINFO));*/
         internal static readonly int SizeOf_tagDBBINDING = Marshal.SizeOf(typeof(tagDBBINDING));
         internal static readonly int SizeOf_tagDBCOLUMNINFO = Marshal.SizeOf(typeof(tagDBCOLUMNINFO));
         internal static readonly int SizeOf_tagDBLITERALINFO = Marshal.SizeOf(typeof(tagDBLITERALINFO));
         internal static readonly int SizeOf_tagDBPROPSET = Marshal.SizeOf(typeof(tagDBPROPSET));
-        internal static readonly int SizeOf_tagDBPROP = Marshal.SizeOf(typeof(tagDBPROP));
+        internal static readonly int SizeOf_tagDBPROP = IsRunningOnX86 ? Marshal.SizeOf(typeof(tagDBPROP_x86)) : Marshal.SizeOf(typeof(tagDBPROP));
         internal static readonly int SizeOf_tagDBPROPINFOSET = Marshal.SizeOf(typeof(tagDBPROPINFOSET));
-        internal static readonly int SizeOf_tagDBPROPINFO = Marshal.SizeOf(typeof(tagDBPROPINFO));
+        internal static readonly int SizeOf_tagDBPROPINFO = IsRunningOnX86 ? Marshal.SizeOf(typeof(tagDBPROPINFO_x86)) : Marshal.SizeOf(typeof(tagDBPROPINFO));
         internal static readonly int SizeOf_tagDBPROPIDSET = Marshal.SizeOf(typeof(tagDBPROPIDSET));
         internal static readonly int SizeOf_Guid = Marshal.SizeOf(typeof(Guid));
         internal static readonly int SizeOf_Variant = 8 + (2 * ADP.PtrSize); // 16 on 32bit, 24 on 64bit
 
-        internal static readonly int OffsetOf_tagDBPROP_Status = Marshal.OffsetOf(typeof(tagDBPROP), "dwStatus").ToInt32();
-        internal static readonly int OffsetOf_tagDBPROP_Value = Marshal.OffsetOf(typeof(tagDBPROP), "vValue").ToInt32();
+        internal static readonly int OffsetOf_tagDBPROP_Status = IsRunningOnX86 ? Marshal.OffsetOf(typeof(tagDBPROP_x86), "dwStatus").ToInt32() : Marshal.OffsetOf(typeof(tagDBPROP), "dwStatus").ToInt32();
+        internal static readonly int OffsetOf_tagDBPROP_Value = IsRunningOnX86 ? Marshal.OffsetOf(typeof(tagDBPROP_x86), "vValue").ToInt32() : Marshal.OffsetOf(typeof(tagDBPROP), "vValue").ToInt32();
         internal static readonly int OffsetOf_tagDBPROPSET_Properties = Marshal.OffsetOf(typeof(tagDBPROPSET), "rgProperties").ToInt32();
-        internal static readonly int OffsetOf_tagDBPROPINFO_Value = Marshal.OffsetOf(typeof(tagDBPROPINFO), "vValue").ToInt32();
+        internal static readonly int OffsetOf_tagDBPROPINFO_Value = IsRunningOnX86 ? Marshal.OffsetOf(typeof(tagDBPROPINFO_x86), "vValue").ToInt32() : Marshal.OffsetOf(typeof(tagDBPROPINFO), "vValue").ToInt32();
         internal static readonly int OffsetOf_tagDBPROPIDSET_PropertySet = Marshal.OffsetOf(typeof(tagDBPROPIDSET), "guidPropertySet").ToInt32();
         internal static readonly int OffsetOf_tagDBLITERALINFO_it = Marshal.OffsetOf(typeof(tagDBLITERALINFO), "it").ToInt32();
         internal static readonly int OffsetOf_tagDBBINDING_obValue = Marshal.OffsetOf(typeof(tagDBBINDING), "obValue").ToInt32();
@@ -698,7 +699,7 @@ namespace System.Data.OleDb
             }
             builder.Append("(0x");
             builder.Append(((int)hr).ToString("X8", CultureInfo.InvariantCulture));
-            builder.Append(")");
+            builder.Append(')');
             return builder.ToString();
         }
 
@@ -706,7 +707,7 @@ namespace System.Data.OleDb
         private static readonly Hashtable g_wlookpup = new Hashtable();
         internal static string WLookup(short id)
         {
-            string value = (string)g_wlookpup[id];
+            string? value = (string?)g_wlookpup[id];
             if (null == value)
             {
                 value = "0x" + ((short)id).ToString("X2", CultureInfo.InvariantCulture) + " " + ((short)id);

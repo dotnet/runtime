@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Reflection.TypeLoading
 {
@@ -14,11 +13,11 @@ namespace System.Reflection.TypeLoading
     internal sealed class AssemblyNameData
     {
         public AssemblyNameFlags Flags;
-        public string Name;
-        public Version Version;
-        public string CultureName;
-        public byte[] PublicKey;
-        public byte[] PublicKeyToken;
+        public string? Name;
+        public Version? Version;
+        public string? CultureName;
+        public byte[]? PublicKey;
+        public byte[]? PublicKeyToken;
         public AssemblyContentType ContentType;
         public AssemblyHashAlgorithm HashAlgorithm;
         public ProcessorArchitecture ProcessorArchitecture;

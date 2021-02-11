@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Numerics;
-using System.Security.Cryptography.Asn1;
+using System.Formats.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -44,13 +42,11 @@ namespace System.Security.Cryptography.X509Certificates
                     SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.PushSequence();
-                writer.WriteObjectIdentifier(oid);
-                writer.PopSequence();
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.PushSequence();
+            writer.WriteObjectIdentifier(oid);
+            writer.PopSequence();
+            return writer.Encode();
         }
 
         public override byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
@@ -68,12 +64,12 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new InvalidOperationException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
-            string curveOid = ecParameters.Curve.Oid.Value;
+            string? curveOid = ecParameters.Curve.Oid.Value;
             byte[] curveOidEncoded;
 
             if (string.IsNullOrEmpty(curveOid))
             {
-                string friendlyName = ecParameters.Curve.Oid.FriendlyName;
+                string friendlyName = ecParameters.Curve.Oid.FriendlyName!;
 
                 // Translate the three curves that were supported Windows 7-8.1, but emit no Oid.Value;
                 // otherwise just wash the friendly name back through Oid to see if we can get a value.
@@ -86,13 +82,11 @@ namespace System.Security.Cryptography.X509Certificates
                 };
             }
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.WriteObjectIdentifier(curveOid);
-                curveOidEncoded = writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteObjectIdentifier(curveOid!);
+            curveOidEncoded = writer.Encode();
 
-            Debug.Assert(ecParameters.Q.X.Length == ecParameters.Q.Y.Length);
+            Debug.Assert(ecParameters.Q.X!.Length == ecParameters.Q.Y!.Length);
             byte[] uncompressedPoint = new byte[1 + ecParameters.Q.X.Length + ecParameters.Q.Y.Length];
 
             // Uncompressed point (0x04)
@@ -101,7 +95,7 @@ namespace System.Security.Cryptography.X509Certificates
             Buffer.BlockCopy(ecParameters.Q.X, 0, uncompressedPoint, 1, ecParameters.Q.X.Length);
             Buffer.BlockCopy(ecParameters.Q.Y, 0, uncompressedPoint, 1 + ecParameters.Q.X.Length, ecParameters.Q.Y.Length);
 
-            Oid ecPublicKey = new Oid(Oids.EcPublicKey);
+            Oid ecPublicKey = Oids.EcPublicKeyOid;
 
             return new PublicKey(
                 ecPublicKey,

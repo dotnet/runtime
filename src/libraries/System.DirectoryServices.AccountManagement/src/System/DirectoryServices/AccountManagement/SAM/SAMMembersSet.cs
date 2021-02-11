@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -26,7 +25,6 @@ namespace System.DirectoryServices.AccountManagement
                                     ctxBase.Path);
 
             _storeCtx = storeCtx;
-            _ctxBase = ctxBase;
 
             _group = group;
             _originalGroup = group;
@@ -101,8 +99,6 @@ namespace System.DirectoryServices.AccountManagement
             {
                 needToRetry = false;
 
-                object[] nativeMembers = new object[1];
-
                 bool f = _membersEnumerator.MoveNext();
 
                 if (f) // got a value
@@ -154,7 +150,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         // Build the "WinNT://machineName/" portion of the new path
                         adsPath.Append(_storeCtx.MachineUserSuppliedName);
-                        adsPath.Append("/");
+                        adsPath.Append('/');
 
                         // Build the "WinNT://machineName/foo" portion of the new path
                         int cElements = pathName.GetNumElements();
@@ -166,7 +162,7 @@ namespace System.DirectoryServices.AccountManagement
                         for (int i = cElements - 2; i >= 0; i--)
                         {
                             adsPath.Append(pathName.GetElement(i));
-                            adsPath.Append("/");
+                            adsPath.Append('/');
                         }
 
                         adsPath.Remove(adsPath.Length - 1, 1);  // remove the trailing "/"
@@ -407,17 +403,15 @@ namespace System.DirectoryServices.AccountManagement
             bool isLocal = false;
 
             // Ask the OS to resolve the SID to its target.
-            int accountUsage = 0;
-            string name;
             string domainName;
 
             int err = Utils.LookupSid(
                                 _storeCtx.MachineUserSuppliedName,
                                 _storeCtx.Credentials,
                                 sid,
-                                out name,
+                                out _,
                                 out domainName,
-                                out accountUsage);
+                                out _);
 
             if (err != 0)
             {
@@ -574,10 +568,9 @@ namespace System.DirectoryServices.AccountManagement
 
         private readonly bool _recursive;
 
-        private bool _disposed = false;
+        private bool _disposed;
 
         private readonly SAMStoreCtx _storeCtx;
-        private readonly DirectoryEntry _ctxBase;
 
         private bool _atBeginning = true;
 
@@ -588,8 +581,8 @@ namespace System.DirectoryServices.AccountManagement
 
         private List<string> _groupsToVisit = new List<string>();
 
-        private DirectoryEntry _current = null; // current member of the group (if enumerating local group and found a real principal)
-        private Principal _currentFakePrincipal = null;  // current member of the group (if enumerating local group and found a fake pricipal)
+        private DirectoryEntry _current; // current member of the group (if enumerating local group and found a real principal)
+        private Principal _currentFakePrincipal;  // current member of the group (if enumerating local group and found a fake pricipal)
 
         private UnsafeNativeMethods.IADsGroup _group;            // the group whose membership we're currently enumerating over
         private readonly UnsafeNativeMethods.IADsGroup _originalGroup;    // the group whose membership we started off with (before recursing)
@@ -598,10 +591,10 @@ namespace System.DirectoryServices.AccountManagement
 
         // foreign
         private List<DirectoryEntry> _foreignMembers = new List<DirectoryEntry>();
-        private Principal _currentForeign = null; // current member of the group (if enumerating foreign principal)
+        private Principal _currentForeign; // current member of the group (if enumerating foreign principal)
 
         private List<GroupPrincipal> _foreignGroups = new List<GroupPrincipal>();
-        private ResultSet _foreignResultSet = null; // current foreign group's ResultSet (if enumerating via proxy to foreign group)
+        private ResultSet _foreignResultSet; // current foreign group's ResultSet (if enumerating via proxy to foreign group)
     }
 
     internal class SAMMembersSetBookmark : ResultSetBookmark

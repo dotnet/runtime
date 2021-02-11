@@ -1,15 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Security.Cryptography
 {
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+        Target = "M:System.Security.Cryptography.CryptoConfigForwarder.#cctor",
+        Justification = "The cctor caches the RequiresUnreferencedCode call in a delegate, and usage of that delegate is marked with RequiresUnreferencedCode.")]
     internal static class CryptoConfigForwarder
     {
+        internal const string CreateFromNameUnreferencedCodeMessage = "The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.";
+
         private static readonly Func<string, object?> s_createFromName = BindCreateFromName();
 
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         private static Func<string, object?> BindCreateFromName()
         {
             const string CryptoConfigTypeName =
@@ -25,9 +31,10 @@ namespace System.Security.Cryptography
                 throw new MissingMethodException(t.FullName, CreateFromNameMethodName);
             }
 
-            return (Func<string, object?>)createFromName.CreateDelegate(typeof(Func<string, object?>));
+            return createFromName.CreateDelegate<Func<string, object?>>();
         }
 
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         internal static object? CreateFromName(string name) => s_createFromName(name);
 
         internal static HashAlgorithm CreateDefaultHashAlgorithm() =>

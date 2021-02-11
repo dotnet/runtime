@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
@@ -24,4 +23,4 @@ typedef enum
     TcpState_DeleteTcb
 } TcpState;
 
-DLLEXPORT int32_t SystemNative_MapTcpState(int32_t tcpState);
+PALEXPORT int32_t SystemNative_MapTcpState(int32_t tcpState);

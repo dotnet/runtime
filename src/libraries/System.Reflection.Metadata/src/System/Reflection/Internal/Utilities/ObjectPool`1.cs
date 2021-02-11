@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 
@@ -27,7 +26,7 @@ namespace System.Reflection.Internal
     {
         private struct Element
         {
-            internal T Value;
+            internal T? Value;
         }
 
         // storage for the pool objects.
@@ -66,7 +65,7 @@ namespace System.Reflection.Internal
         internal T Allocate()
         {
             var items = _items;
-            T inst;
+            T? inst;
 
             for (int i = 0; i < items.Length; i++)
             {

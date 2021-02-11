@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -54,7 +53,7 @@ namespace System.ComponentModel.Tests
                 CultureInfo.InvariantCulture,
                 "{0} ({1})",
                 typeof(Win32Exception).ToString(),
-                PlatformDetection.IsFullFramework ? $"0x{E_FAIL:X8}" : error.ToString(CultureInfo.InvariantCulture));
+                PlatformDetection.IsNetFramework ? $"0x{E_FAIL:X8}" : error.ToString(CultureInfo.InvariantCulture));
 
             Exception innerException = new FormatException();
 

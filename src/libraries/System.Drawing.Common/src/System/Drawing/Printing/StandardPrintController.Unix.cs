@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Drawing.StandardPrintController.cs
 //
@@ -46,7 +47,7 @@ namespace System.Drawing.Printing
 
         public override void OnEndPage(PrintDocument document, PrintPageEventArgs e)
         {
-            PrintingServices.EndPage(e.GraphicsContext);
+            PrintingServices.EndPage(e.GraphicsContext!);
         }
 
         public override void OnStartPrint(PrintDocument document, PrintEventArgs e)
@@ -58,12 +59,12 @@ namespace System.Drawing.Printing
 
         public override void OnEndPrint(PrintDocument document, PrintEventArgs e)
         {
-            PrintingServices.EndDoc(e.GraphicsContext);
+            PrintingServices.EndDoc(e.GraphicsContext!);
         }
 
-        public override Graphics OnStartPage(PrintDocument document, PrintPageEventArgs e)
+        public override Graphics? OnStartPage(PrintDocument document, PrintPageEventArgs e)
         {
-            PrintingServices.StartPage(e.GraphicsContext);
+            PrintingServices.StartPage(e.GraphicsContext!);
             return e.Graphics;
         }
     }

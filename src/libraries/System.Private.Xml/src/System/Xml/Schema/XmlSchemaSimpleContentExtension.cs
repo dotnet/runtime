@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Schema
 {
@@ -9,7 +8,7 @@ namespace System.Xml.Schema
     public class XmlSchemaSimpleContentExtension : XmlSchemaContent
     {
         private XmlSchemaObjectCollection _attributes = new XmlSchemaObjectCollection();
-        private XmlSchemaAnyAttribute _anyAttribute;
+        private XmlSchemaAnyAttribute? _anyAttribute;
         private XmlQualifiedName _baseTypeName = XmlQualifiedName.Empty;
 
         [XmlAttribute("base")]
@@ -27,7 +26,7 @@ namespace System.Xml.Schema
         }
 
         [XmlElement("anyAttribute")]
-        public XmlSchemaAnyAttribute AnyAttribute
+        public XmlSchemaAnyAttribute? AnyAttribute
         {
             get { return _anyAttribute; }
             set { _anyAttribute = value; }

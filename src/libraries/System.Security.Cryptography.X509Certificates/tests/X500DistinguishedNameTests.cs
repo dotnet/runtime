@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using Test.Cryptography;
@@ -21,15 +20,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("", dn.Decode(X500DistinguishedNameFlags.None));
         }
 
-        [Fact]
-        public static void PrintMultiComponentRdn()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void PrintMultiComponentRdn(bool fromSpan)
         {
             byte[] encoded = (
                 "30223120300C060355040313054A616D65733010060355040A13094D6963726F" +
                 "736F6674").HexToByteArray();
 
             const string expected = "CN=James + O=Microsoft";
-            X500DistinguishedName dn = new X500DistinguishedName(encoded);
+            X500DistinguishedName dn;
+
+            if (fromSpan)
+            {
+                dn = new X500DistinguishedName(new ReadOnlySpan<byte>(encoded));
+            }
+            else
+            {
+                dn = new X500DistinguishedName(encoded);
+                byte[] readBack = dn.RawData;
+                Assert.NotSame(readBack, encoded);
+                Assert.Equal(readBack, encoded);
+            }
 
             Assert.Equal(expected, dn.Decode(X500DistinguishedNameFlags.None));
 
@@ -199,6 +212,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 "30283117301506052901020203120C313233203635342037383930310D300B0603550403130454657374".HexToByteArray());
 
             Assert.Equal("OID.1.1.1.2.2.3=123 654 7890, CN=Test", dn.Decode(X500DistinguishedNameFlags.None));
+        }
+
+        [Fact]
+        public static void OrganizationUnitMultiValueWithIncorrectlySortedDerSet()
+        {
+            X500DistinguishedName dn = new X500DistinguishedName(
+                "301C311A300B060355040B13047A7A7A7A300B060355040B130461616161".HexToByteArray());
+
+            Assert.Equal("OU=zzzz + OU=aaaa", dn.Decode(X500DistinguishedNameFlags.None));
         }
 
         public static readonly object[][] WhitespaceBeforeCases =
@@ -431,7 +453,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         public static readonly object[][] T61Cases =
         {
-            // https://github.com/dotnet/corefx/issues/27466
+            // https://github.com/dotnet/runtime/issues/25195
             new object[]
             {
                 "CN=GrapeCity inc., OU=Tools Development, O=GrapeCity inc., " +

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Mail;
 using System.Text;
@@ -18,14 +18,14 @@ namespace System.Net.Mime
         private const string FileNameKey = "filename";
         private const string SizeKey = "size";
 
-        private TrackingValidationObjectDictionary _parameters;
+        private TrackingValidationObjectDictionary? _parameters;
         private string _disposition;
         private string _dispositionType;
         private bool _isChanged;
         private bool _isPersisted;
 
         private static readonly TrackingValidationObjectDictionary.ValidateAndParseValue s_dateParser =
-                new TrackingValidationObjectDictionary.ValidateAndParseValue(v => new SmtpDateTime(v.ToString()));
+                new TrackingValidationObjectDictionary.ValidateAndParseValue(v => new SmtpDateTime(v.ToString()!));
         // this will throw a FormatException if the value supplied is not a valid SmtpDateTime
 
         private static readonly TrackingValidationObjectDictionary.ValidateAndParseValue s_longParser =
@@ -67,7 +67,7 @@ namespace System.Net.Mime
 
         internal DateTime GetDateParameter(string parameterName)
         {
-            SmtpDateTime dateValue = ((TrackingValidationObjectDictionary)Parameters).InternalGet(parameterName) as SmtpDateTime;
+            SmtpDateTime? dateValue = ((TrackingValidationObjectDictionary)Parameters).InternalGet(parameterName) as SmtpDateTime;
             return dateValue == null ? DateTime.MinValue : dateValue.Date;
         }
 
@@ -83,7 +83,7 @@ namespace System.Net.Mime
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-                if (value == string.Empty)
+                if (value.Length == 0)
                 {
                     throw new ArgumentException(SR.net_emptystringset, nameof(value));
                 }
@@ -93,12 +93,12 @@ namespace System.Net.Mime
             }
         }
 
-        public StringDictionary Parameters => _parameters ?? (_parameters = new TrackingValidationObjectDictionary(s_validators));
+        public StringDictionary Parameters => _parameters ??= new TrackingValidationObjectDictionary(s_validators);
 
         /// <summary>
         /// Gets the value of the Filename parameter.
         /// </summary>
-        public string FileName
+        public string? FileName
         {
             get { return Parameters[FileNameKey]; }
             set
@@ -170,7 +170,7 @@ namespace System.Net.Mime
         {
             get
             {
-                object sizeValue = ((TrackingValidationObjectDictionary)Parameters).InternalGet(SizeKey);
+                object? sizeValue = ((TrackingValidationObjectDictionary)Parameters).InternalGet(SizeKey);
                 return sizeValue == null ? -1 : (long)sizeValue;
             }
             set
@@ -185,7 +185,7 @@ namespace System.Net.Mime
             // via the headers.
             _disposition = contentDisposition;
             ParseValue();
-            headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentDisposition), ToString());
+            headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentDisposition)!, ToString());
             _isPersisted = true;
         }
 
@@ -193,7 +193,7 @@ namespace System.Net.Mime
         {
             if (IsChanged || !_isPersisted || forcePersist)
             {
-                headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentDisposition), ToString());
+                headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentDisposition)!, ToString());
                 _isPersisted = true;
             }
         }
@@ -206,7 +206,7 @@ namespace System.Net.Mime
             {
                 _disposition = Encode(false); // Legacy wire-safe format
                 _isChanged = false;
-                _parameters.IsChanged = false;
+                _parameters!.IsChanged = false;
                 _isPersisted = false;
             }
             return _disposition;
@@ -224,7 +224,7 @@ namespace System.Net.Mime
                 EncodeToBuffer(key, builder, allowUnicode);
 
                 builder.Append('=');
-                EncodeToBuffer(_parameters[key], builder, allowUnicode);
+                EncodeToBuffer(_parameters![key]!, builder, allowUnicode);
             }
 
             return builder.ToString();
@@ -232,7 +232,7 @@ namespace System.Net.Mime
 
         private static void EncodeToBuffer(string value, StringBuilder builder, bool allowUnicode)
         {
-            Encoding encoding = MimeBasePart.DecodeEncoding(value);
+            Encoding? encoding = MimeBasePart.DecodeEncoding(value);
             if (encoding != null) // Manually encoded elsewhere, pass through
             {
                 builder.Append('"').Append(value).Append('"');
@@ -250,7 +250,7 @@ namespace System.Net.Mime
             }
         }
 
-        public override bool Equals(object rparam)
+        public override bool Equals([NotNullWhen(true)] object? rparam)
         {
             return rparam == null ?
                 false :
@@ -259,6 +259,7 @@ namespace System.Net.Mime
 
         public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
 
+        [MemberNotNull(nameof(_dispositionType))]
         private void ParseValue()
         {
             int offset = 0;
@@ -298,8 +299,8 @@ namespace System.Net.Mime
                         break;
                     }
 
-                    string paramAttribute = MailBnfHelper.ReadParameterAttribute(_disposition, ref offset, null);
-                    string paramValue;
+                    string? paramAttribute = MailBnfHelper.ReadParameterAttribute(_disposition, ref offset, null);
+                    string? paramValue;
 
                     // verify the next character after the parameter is correct
                     if (_disposition[offset++] != '=')

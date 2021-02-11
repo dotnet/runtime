@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -29,14 +29,14 @@ namespace Internal.Cryptography.Pal
         private const ulong X509_R_CERT_ALREADY_IN_HASH_TABLE = 0x0B07D065;
 
         [ThreadStatic]
-        private static HashAlgorithm ts_urlHash;
+        private static HashAlgorithm? ts_urlHash;
 
         public static void AddCrlForCertificate(
             SafeX509Handle cert,
             SafeX509StoreHandle store,
             X509RevocationMode revocationMode,
             DateTime verificationTime,
-            ref TimeSpan remainingDownloadTime)
+            TimeSpan downloadTimeout)
         {
             // In Offline mode, accept any cached CRL we have.
             // "CRL is Expired" is a better match for Offline than "Could not find CRL"
@@ -45,7 +45,7 @@ namespace Internal.Cryptography.Pal
                 verificationTime = DateTime.MinValue;
             }
 
-            string url = GetCdpUrl(cert);
+            string? url = GetCdpUrl(cert);
 
             if (url == null)
             {
@@ -59,14 +59,13 @@ namespace Internal.Cryptography.Pal
                 return;
             }
 
-            // Don't do any work if we're over limit or prohibited from fetching new CRLs
-            if (remainingDownloadTime <= TimeSpan.Zero ||
-                revocationMode != X509RevocationMode.Online)
+            // Don't do any work if we're prohibited from fetching new CRLs
+            if (revocationMode != X509RevocationMode.Online)
             {
                 return;
             }
 
-            DownloadAndAddCrl(url, crlFileName, store, ref remainingDownloadTime);
+            DownloadAndAddCrl(url, crlFileName, store, downloadTimeout);
         }
 
         private static bool AddCachedCrl(string crlFileName, SafeX509StoreHandle store, DateTime verificationTime)
@@ -96,8 +95,30 @@ namespace Internal.Cryptography.Pal
                     // at least it can fail without using the network.
                     //
                     // If crl.NextUpdate is in the past, try downloading a newer version.
-                    DateTime nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(
-                        Interop.Crypto.GetX509CrlNextUpdate(crl));
+                    IntPtr nextUpdatePtr = Interop.Crypto.GetX509CrlNextUpdate(crl);
+                    DateTime nextUpdate;
+
+                    // If there is no crl.NextUpdate, this indicates that the CA is not providing
+                    // any more updates to the CRL, or they made a mistake not providing a NextUpdate.
+                    // We'll cache it for a few days to cover the case it was a mistake.
+                    if (nextUpdatePtr == IntPtr.Zero)
+                    {
+                        try
+                        {
+                            nextUpdate = File.GetLastWriteTime(crlFile).AddDays(3);
+                        }
+                        catch
+                        {
+                            // We couldn't determine when the CRL was last written to,
+                            // so consider it expired.
+                            Debug.Fail("Failed to get the last write time of the CRL file");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        nextUpdate = OpenSslX509CertificateReader.ExtractValidityDateTime(nextUpdatePtr);
+                    }
 
                     // OpenSSL is going to convert our input time to universal, so we should be in Local or
                     // Unspecified (local-assumed).
@@ -134,11 +155,11 @@ namespace Internal.Cryptography.Pal
             string url,
             string crlFileName,
             SafeX509StoreHandle store,
-            ref TimeSpan remainingDownloadTime)
+            TimeSpan downloadTimeout)
         {
             // X509_STORE_add_crl will increase the refcount on the CRL object, so we should still
             // dispose our copy.
-            using (SafeX509CrlHandle crl = CertificateAssetDownloader.DownloadCrl(url, ref remainingDownloadTime))
+            using (SafeX509CrlHandle? crl = CertificateAssetDownloader.DownloadCrl(url, downloadTimeout))
             {
                 // null is a valid return (e.g. no remainingDownloadTime)
                 if (crl != null && !crl.IsInvalid)
@@ -232,7 +253,7 @@ namespace Internal.Cryptography.Pal
             return Path.Combine(s_crlDir, localFileName);
         }
 
-        private static string GetCdpUrl(SafeX509Handle cert)
+        private static string? GetCdpUrl(SafeX509Handle cert)
         {
             ArraySegment<byte> crlDistributionPoints =
                 OpenSslX509CertificateReader.FindFirstExtension(cert, Oids.CrlDistributionPoints);
@@ -244,13 +265,13 @@ namespace Internal.Cryptography.Pal
 
             try
             {
-                AsnReader reader = new AsnReader(crlDistributionPoints, AsnEncodingRules.DER);
-                AsnReader sequenceReader = reader.ReadSequence();
+                AsnValueReader reader = new AsnValueReader(crlDistributionPoints, AsnEncodingRules.DER);
+                AsnValueReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 while (sequenceReader.HasData)
                 {
-                    DistributionPointAsn.Decode(sequenceReader, out DistributionPointAsn distributionPoint);
+                    DistributionPointAsn.Decode(ref sequenceReader, crlDistributionPoints, out DistributionPointAsn distributionPoint);
 
                     // Only distributionPoint is supported
                     // Only fullName is supported, nameRelativeToCRLIssuer is for LDAP-based lookup.
@@ -260,7 +281,7 @@ namespace Internal.Cryptography.Pal
                         foreach (GeneralNameAsn name in distributionPoint.DistributionPoint.Value.FullName)
                         {
                             if (name.Uri != null &&
-                                Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri uri) &&
+                                Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri? uri) &&
                                 uri.Scheme == "http")
                             {
                                 return name.Uri;
@@ -270,6 +291,10 @@ namespace Internal.Cryptography.Pal
                 }
             }
             catch (CryptographicException)
+            {
+                // Treat any ASN errors as if the extension was missing.
+            }
+            catch (AsnContentException)
             {
                 // Treat any ASN errors as if the extension was missing.
             }

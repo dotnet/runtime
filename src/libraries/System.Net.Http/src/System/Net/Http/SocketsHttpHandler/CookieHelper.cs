@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Http.Headers;
 using System.Diagnostics;
@@ -12,12 +11,12 @@ namespace System.Net.Http
     {
         public static void ProcessReceivedCookies(HttpResponseMessage response, CookieContainer cookieContainer)
         {
-            IEnumerable<string> values;
-            if (response.Headers.TryGetValues(KnownHeaders.SetCookie.Descriptor, out values))
+            if (response.Headers.TryGetValues(KnownHeaders.SetCookie.Descriptor, out IEnumerable<string>? values))
             {
                 // The header values are always a string[]
                 var valuesArray = (string[])values;
                 Debug.Assert(valuesArray.Length > 0, "No values for header??");
+                Debug.Assert(response.RequestMessage != null && response.RequestMessage.RequestUri != null);
 
                 Uri requestUri = response.RequestMessage.RequestUri;
                 for (int i = 0; i < valuesArray.Length; i++)
@@ -29,7 +28,7 @@ namespace System.Net.Http
                     catch (CookieException)
                     {
                         // Ignore invalid Set-Cookie header and continue processing.
-                        if (NetEventSource.IsEnabled)
+                        if (NetEventSource.Log.IsEnabled())
                         {
                             NetEventSource.Error(response, $"Invalid Set-Cookie '{valuesArray[i]}' ignored.");
                         }

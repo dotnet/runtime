@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Transactions
 {
@@ -11,7 +12,7 @@ namespace System.Transactions
     /// </summary>
     internal readonly struct TransactionTraceIdentifier : IEquatable<TransactionTraceIdentifier>
     {
-        public static readonly TransactionTraceIdentifier Empty = default;
+        public static TransactionTraceIdentifier Empty => default;
 
         public TransactionTraceIdentifier(string transactionIdentifier, int cloneIdentifier)
         {
@@ -34,7 +35,7 @@ namespace System.Transactions
 
         public override int GetHashCode() => base.GetHashCode();  // Don't have anything better to do.
 
-        public override bool Equals(object? obj) => obj is TransactionTraceIdentifier transactionTraceId && Equals(transactionTraceId);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is TransactionTraceIdentifier transactionTraceId && Equals(transactionTraceId);
 
         public bool Equals(TransactionTraceIdentifier other) =>
             _cloneIdentifier == other._cloneIdentifier &&

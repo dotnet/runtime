@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.ObjectModel;
@@ -10,6 +9,9 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Runtime.Versioning;
+using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
@@ -19,18 +21,19 @@ namespace System.Diagnostics
     ///       processes. Enables you to start and stop system processes.
     ///    </para>
     /// </devdoc>
+    [Designer("System.Diagnostics.Design.ProcessDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class Process : Component
     {
         private bool _haveProcessId;
         private int _processId;
         private bool _haveProcessHandle;
-        private SafeProcessHandle _processHandle;
+        private SafeProcessHandle? _processHandle;
         private bool _isRemoteMachine;
         private string _machineName;
-        private ProcessInfo _processInfo;
+        private ProcessInfo? _processInfo;
 
-        private ProcessThreadCollection _threads;
-        private ProcessModuleCollection _modules;
+        private ProcessThreadCollection? _threads;
+        private ProcessModuleCollection? _modules;
 
         private bool _haveWorkingSetLimits;
         private IntPtr _minWorkingSet;
@@ -42,11 +45,11 @@ namespace System.Diagnostics
         private bool _havePriorityClass;
         private ProcessPriorityClass _priorityClass;
 
-        private ProcessStartInfo _startInfo;
+        private ProcessStartInfo? _startInfo;
 
         private bool _watchForExit;
         private bool _watchingForExit;
-        private EventHandler _onExited;
+        private EventHandler? _onExited;
         private bool _exited;
         private int _exitCode;
 
@@ -58,11 +61,11 @@ namespace System.Diagnostics
         private bool _havePriorityBoostEnabled;
 
         private bool _raisedOnExited;
-        private RegisteredWaitHandle _registeredWaitHandle;
-        private WaitHandle _waitHandle;
-        private StreamReader _standardOutput;
-        private StreamWriter _standardInput;
-        private StreamReader _standardError;
+        private RegisteredWaitHandle? _registeredWaitHandle;
+        private WaitHandle? _waitHandle;
+        private StreamReader? _standardOutput;
+        private StreamWriter? _standardInput;
+        private StreamReader? _standardError;
         private bool _disposed;
 
         private bool _standardInputAccessed;
@@ -71,16 +74,16 @@ namespace System.Diagnostics
         private StreamReadMode _errorStreamReadMode;
 
         // Support for asynchronously reading streams
-        public event DataReceivedEventHandler OutputDataReceived;
-        public event DataReceivedEventHandler ErrorDataReceived;
+        public event DataReceivedEventHandler? OutputDataReceived;
+        public event DataReceivedEventHandler? ErrorDataReceived;
 
         // Abstract the stream details
-        internal AsyncStreamReader _output;
-        internal AsyncStreamReader _error;
+        internal AsyncStreamReader? _output;
+        internal AsyncStreamReader? _error;
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 
-        private static int s_cachedSerializationSwitch = 0;
+        private static int s_cachedSerializationSwitch;
 
         /// <devdoc>
         ///    <para>
@@ -103,7 +106,7 @@ namespace System.Diagnostics
             _errorStreamReadMode = StreamReadMode.Undefined;
         }
 
-        private Process(string machineName, bool isRemoteMachine, int processId, ProcessInfo processInfo)
+        private Process(string machineName, bool isRemoteMachine, int processId, ProcessInfo? processInfo)
         {
             GC.SuppressFinalize(this);
             _processInfo = processInfo;
@@ -146,7 +149,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.BasePriority;
+                return _processInfo!.BasePriority;
             }
         }
 
@@ -251,12 +254,10 @@ namespace System.Diagnostics
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the maximum allowable working set for the associated
-        ///       process.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the maximum allowable working set for the associated process.
+        /// </summary>
+        /// <remarks>On macOS and FreeBSD, setting the value works only for the current process.</remarks>
         public IntPtr MaxWorkingSet
         {
             get
@@ -264,18 +265,19 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("freebsd")]
             set
             {
                 SetWorkingSetLimits(null, value);
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the minimum allowable working set for the associated
-        ///       process.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the minimum allowable working set for the associated process.
+        /// </summary>
+        /// <remarks>On macOS and FreeBSD, setting the value works only for the current process.</remarks>
         public IntPtr MinWorkingSet
         {
             get
@@ -283,6 +285,9 @@ namespace System.Diagnostics
                 EnsureWorkingSetLimits();
                 return _minWorkingSet;
             }
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("freebsd")]
             set
             {
                 SetWorkingSetLimits(value, null);
@@ -307,17 +312,17 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PoolNonPagedBytes;
+                return _processInfo!.PoolNonPagedBytes;
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int NonpagedSystemMemorySize
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.PoolNonPagedBytes);
+                return unchecked((int)_processInfo!.PoolNonPagedBytes);
             }
         }
 
@@ -327,17 +332,17 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PageFileBytes;
+                return _processInfo!.PageFileBytes;
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PagedMemorySize
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.PageFileBytes);
+                return unchecked((int)_processInfo!.PageFileBytes);
             }
         }
 
@@ -347,17 +352,17 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PoolPagedBytes;
+                return _processInfo!.PoolPagedBytes;
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PagedSystemMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PagedSystemMemorySize
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.PoolPagedBytes);
+                return unchecked((int)_processInfo!.PoolPagedBytes);
             }
         }
 
@@ -367,17 +372,17 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PageFileBytesPeak;
+                return _processInfo!.PageFileBytesPeak;
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PeakPagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakPagedMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PeakPagedMemorySize
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.PageFileBytesPeak);
+                return unchecked((int)_processInfo!.PageFileBytesPeak);
             }
         }
 
@@ -386,17 +391,17 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.WorkingSetPeak;
+                return _processInfo!.WorkingSetPeak;
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PeakWorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakWorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PeakWorkingSet
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.WorkingSetPeak);
+                return unchecked((int)_processInfo!.WorkingSetPeak);
             }
         }
 
@@ -405,17 +410,17 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.VirtualBytesPeak;
+                return _processInfo!.VirtualBytesPeak;
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PeakVirtualMemorySize
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.VirtualBytesPeak);
+                return unchecked((int)_processInfo!.VirtualBytesPeak);
             }
         }
 
@@ -480,17 +485,17 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PrivateBytes;
+                return _processInfo!.PrivateBytes;
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.PrivateMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.PrivateMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int PrivateMemorySize
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.PrivateBytes);
+                return unchecked((int)_processInfo!.PrivateBytes);
             }
         }
 
@@ -505,7 +510,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.ProcessName;
+                return _processInfo!.ProcessName;
             }
         }
 
@@ -539,7 +544,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.SessionId;
+                return _processInfo!.SessionId;
             }
         }
 
@@ -592,7 +597,7 @@ namespace System.Diagnostics
                 if (_threads == null)
                 {
                     EnsureState(State.HaveProcessInfo);
-                    int count = _processInfo._threadInfoList.Count;
+                    int count = _processInfo!._threadInfoList.Count;
                     ProcessThread[] newThreadsArray = new ProcessThread[count];
                     for (int i = 0; i < count; i++)
                     {
@@ -612,7 +617,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveProcessInfo);
                 EnsureHandleCountPopulated();
-                return _processInfo.HandleCount;
+                return _processInfo!.HandleCount;
             }
         }
 
@@ -623,17 +628,17 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.VirtualBytes;
+                return _processInfo!.VirtualBytes;
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int VirtualMemorySize
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.VirtualBytes);
+                return unchecked((int)_processInfo!.VirtualBytes);
             }
         }
 
@@ -743,17 +748,17 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.WorkingSet;
+                return _processInfo!.WorkingSet;
             }
         }
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.WorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [ObsoleteAttribute("This property has been deprecated because the type of the property can't represent all valid results. Please use System.Diagnostics.Process.WorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int WorkingSet
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.WorkingSet);
+                return unchecked((int)_processInfo!.WorkingSet);
             }
         }
 
@@ -773,7 +778,7 @@ namespace System.Diagnostics
         ///     This is called from the threadpool when a process exits.
         /// </devdoc>
         /// <internalonly/>
-        private void CompletionCallback(object waitHandleContext, bool wasSignaled)
+        private void CompletionCallback(object? waitHandleContext, bool wasSignaled)
         {
             Debug.Assert(waitHandleContext != null, "Process.CompletionCallback called with no waitHandleContext");
             lock (this)
@@ -823,7 +828,7 @@ namespace System.Diagnostics
             return WaitForInputIdleCore(milliseconds);
         }
 
-        public ISynchronizeInvoke SynchronizingObject { get; set; }
+        public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
         /// <devdoc>
         ///    <para>
@@ -845,7 +850,7 @@ namespace System.Diagnostics
 
                 if (_haveProcessHandle)
                 {
-                    _processHandle.Dispose();
+                    _processHandle!.Dispose();
                     _processHandle = null;
                     _haveProcessHandle = false;
                 }
@@ -918,7 +923,7 @@ namespace System.Diagnostics
                 {
                     if (_haveProcessHandle)
                     {
-                        SetProcessId(ProcessManager.GetProcessIdFromHandle(_processHandle));
+                        SetProcessId(ProcessManager.GetProcessIdFromHandle(_processHandle!));
                     }
                     else
                     {
@@ -1025,7 +1030,7 @@ namespace System.Diagnostics
         ///       local computer. These process resources share the specified process name.
         ///    </para>
         /// </devdoc>
-        public static Process[] GetProcessesByName(string processName)
+        public static Process[] GetProcessesByName(string? processName)
         {
             return GetProcessesByName(processName, ".");
         }
@@ -1069,7 +1074,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process GetCurrentProcess()
         {
-            return new Process(".", false, GetCurrentProcessId(), null);
+            return new Process(".", false, Environment.ProcessId, null);
         }
 
         /// <devdoc>
@@ -1079,10 +1084,17 @@ namespace System.Diagnostics
         /// </devdoc>
         protected void OnExited()
         {
-            EventHandler exited = _onExited;
+            EventHandler? exited = _onExited;
             if (exited != null)
             {
-                exited(this, EventArgs.Empty);
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
+                {
+                    syncObj.BeginInvoke(exited, new object[] { this, EventArgs.Empty });
+                }
+                else
+                {
+                    exited(this, EventArgs.Empty);
+                }
             }
         }
 
@@ -1116,7 +1128,9 @@ namespace System.Diagnostics
         public void Refresh()
         {
             _processInfo = null;
+            _threads?.Dispose();
             _threads = null;
+            _modules?.Dispose();
             _modules = null;
             _exited = false;
             _haveWorkingSetLimits = false;
@@ -1143,7 +1157,7 @@ namespace System.Diagnostics
 
                 SetProcessHandle(GetProcessHandle());
             }
-            return _processHandle;
+            return _processHandle!;
         }
 
         /// <devdoc>
@@ -1204,7 +1218,7 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
             }
-            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.ArgumentList.Count > 0)
+            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.HasArgumentList)
             {
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
             }
@@ -1229,7 +1243,10 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process Start(string fileName)
         {
-            return Start(new ProcessStartInfo(fileName));
+            // the underlying Start method can only return null on Windows platforms,
+            // when the ProcessStartInfo.UseShellExecute property is set to true.
+            // We can thus safely assert non-nullability for tihs overload.
+            return Start(new ProcessStartInfo(fileName))!;
         }
 
         /// <devdoc>
@@ -1242,7 +1259,29 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process Start(string fileName, string arguments)
         {
-            return Start(new ProcessStartInfo(fileName, arguments));
+            // the underlying Start method can only return null on Windows platforms,
+            // when the ProcessStartInfo.UseShellExecute property is set to true.
+            // We can thus safely assert non-nullability for tihs overload.
+            return Start(new ProcessStartInfo(fileName, arguments))!;
+        }
+
+        /// <summary>
+        /// Starts a process resource by specifying the name of an application and a set of command line arguments
+        /// </summary>
+        public static Process Start(string fileName, IEnumerable<string> arguments)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+            if (arguments == null)
+                throw new ArgumentNullException(nameof(arguments));
+
+            var startInfo = new ProcessStartInfo(fileName);
+            foreach (string argument in arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            return Start(startInfo)!;
         }
 
         /// <devdoc>
@@ -1253,7 +1292,7 @@ namespace System.Diagnostics
         ///       component.
         ///    </para>
         /// </devdoc>
-        public static Process Start(ProcessStartInfo startInfo)
+        public static Process? Start(ProcessStartInfo startInfo)
         {
             Process process = new Process();
             if (startInfo == null)
@@ -1273,8 +1312,8 @@ namespace System.Diagnostics
         {
             if (_watchingForExit)
             {
-                RegisteredWaitHandle rwh = null;
-                WaitHandle wh = null;
+                RegisteredWaitHandle? rwh = null;
+                WaitHandle? wh = null;
 
                 lock (this)
                 {
@@ -1338,6 +1377,128 @@ namespace System.Diagnostics
                 RaiseOnExited();
             }
             return exited;
+        }
+
+        /// <summary>
+        /// Instructs the Process component to wait for the associated process to exit, or
+        /// for the <paramref name="cancellationToken"/> to be canceled.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method will set <see cref="EnableRaisingEvents"/> to <see langword="true" />.
+        /// </remarks>
+        /// <returns>
+        /// A task that will complete when the process has exited, cancellation has been requested,
+        /// or an error occurs.
+        /// </returns>
+        public async Task WaitForExitAsync(CancellationToken cancellationToken = default)
+        {
+            // Because the process has already started by the time this method is called,
+            // we're in a race against the process to set up our exit handlers before the process
+            // exits. As a result, there are several different flows that must be handled:
+            //
+            // CASE 1: WE ENABLE EVENTS
+            // This is the "happy path". In this case we enable events.
+            //
+            // CASE 1.1: PROCESS EXITS OR IS CANCELED AFTER REGISTERING HANDLER
+            // This case continues the "happy path". The process exits or waiting is canceled after
+            // registering the handler and no special cases are needed.
+            //
+            // CASE 1.2: PROCESS EXITS BEFORE REGISTERING HANDLER
+            // It's possible that the process can exit after we enable events but before we reigster
+            // the handler. In that case we must check for exit after registering the handler.
+            //
+            //
+            // CASE 2: PROCESS EXITS BEFORE ENABLING EVENTS
+            // The process may exit before we attempt to enable events. In that case EnableRaisingEvents
+            // will throw an exception like this:
+            //     System.InvalidOperationException : Cannot process request because the process (42) has exited.
+            // In this case we catch the InvalidOperationException. If the process has exited, our work
+            // is done and we return. If for any reason (now or in the future) enabling events fails
+            // and the process has not exited, bubble the exception up to the user.
+            //
+            //
+            // CASE 3: USER ALREADY ENABLED EVENTS
+            // In this case the user has already enabled raising events. Re-enabling events is a no-op
+            // as the value hasn't changed. However, no-op also means that if the process has already
+            // exited, EnableRaisingEvents won't throw an exception.
+            //
+            // CASE 3.1: PROCESS EXITS OR IS CANCELED AFTER REGISTERING HANDLER
+            // (See CASE 1.1)
+            //
+            // CASE 3.2: PROCESS EXITS BEFORE REGISTERING HANDLER
+            // (See CASE 1.2)
+
+            if (!Associated)
+            {
+                throw new InvalidOperationException(SR.NoAssociatedProcess);
+            }
+
+            if (!HasExited)
+            {
+                // Early out for cancellation before doing more expensive work
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            try
+            {
+                // CASE 1: We enable events
+                // CASE 2: Process exits before enabling events (and throws an exception)
+                // CASE 3: User already enabled events (no-op)
+                EnableRaisingEvents = true;
+            }
+            catch (InvalidOperationException)
+            {
+                // CASE 2: If the process has exited, our work is done, otherwise bubble the
+                // exception up to the user
+                if (HasExited)
+                {
+                    await WaitUntilOutputEOF().ConfigureAwait(false);
+                    return;
+                }
+
+                throw;
+            }
+
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            EventHandler handler = (_, _) => tcs.TrySetResult();
+            Exited += handler;
+
+            try
+            {
+                if (HasExited)
+                {
+                    // CASE 1.2 & CASE 3.2: Handle race where the process exits before registering the handler
+                }
+                else
+                {
+                    // CASE 1.1 & CASE 3.1: Process exits or is canceled here
+                    using (cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((TaskCompletionSource)s!).TrySetCanceled(cancellationToken), tcs))
+                    {
+                        await tcs.Task.ConfigureAwait(false);
+                    }
+                }
+
+                // Wait until output streams have been drained
+                await WaitUntilOutputEOF().ConfigureAwait(false);
+            }
+            finally
+            {
+                Exited -= handler;
+            }
+
+            async ValueTask WaitUntilOutputEOF()
+            {
+                if (_output != null)
+                {
+                    await _output.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                if (_error != null)
+                {
+                    await _error.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                }
+            }
         }
 
         /// <devdoc>
@@ -1457,35 +1618,40 @@ namespace System.Diagnostics
             _pendingErrorRead = false;
         }
 
-        internal void OutputReadNotifyUser(string data)
+        internal void OutputReadNotifyUser(string? data)
         {
             // To avoid race between remove handler and raising the event
-            DataReceivedEventHandler outputDataReceived = OutputDataReceived;
+            DataReceivedEventHandler? outputDataReceived = OutputDataReceived;
             if (outputDataReceived != null)
             {
+                // Call back to user informing data is available
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
-                outputDataReceived(this, e);  // Call back to user informing data is available
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
+                {
+                    syncObj.Invoke(outputDataReceived, new object[] { this, e });
+                }
+                else
+                {
+                    outputDataReceived(this, e);
+                }
             }
         }
 
-        internal void ErrorReadNotifyUser(string data)
+        internal void ErrorReadNotifyUser(string? data)
         {
             // To avoid race between remove handler and raising the event
-            DataReceivedEventHandler errorDataReceived = ErrorDataReceived;
+            DataReceivedEventHandler? errorDataReceived = ErrorDataReceived;
             if (errorDataReceived != null)
             {
+                // Call back to user informing data is available.
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
-                errorDataReceived(this, e); // Call back to user informing data is available.
-            }
-        }
-
-        private static void AppendArguments(StringBuilder stringBuilder, Collection<string> argumentList)
-        {
-            if (argumentList.Count > 0)
-            {
-                foreach (string argument in argumentList)
+                if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
                 {
-                    PasteArguments.AppendArgument(stringBuilder, argument);
+                    syncObj.Invoke(errorDataReceived, new object[] { this, e });
+                }
+                else
+                {
+                    errorDataReceived(this, e);
                 }
             }
         }

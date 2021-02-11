@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -36,8 +35,8 @@ namespace System.Net.Http.Headers
     {
         private readonly HeaderDescriptor _descriptor;
         private readonly HttpHeaders _store;
-        private readonly T _specialValue;
-        private readonly Action<HttpHeaderValueCollection<T>, T> _validator;
+        private readonly T? _specialValue;
+        private readonly Action<HttpHeaderValueCollection<T>, T>? _validator;
 
         public int Count
         {
@@ -78,8 +77,8 @@ namespace System.Net.Http.Headers
         {
         }
 
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T specialValue,
-            Action<HttpHeaderValueCollection<T>, T> validator)
+        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T? specialValue,
+            Action<HttpHeaderValueCollection<T>, T>? validator)
         {
             Debug.Assert(descriptor.Name != null);
             Debug.Assert(store != null);
@@ -96,12 +95,12 @@ namespace System.Net.Http.Headers
             _store.AddParsedValue(_descriptor, item);
         }
 
-        public void ParseAdd(string input)
+        public void ParseAdd(string? input)
         {
             _store.Add(_descriptor, input);
         }
 
-        public bool TryParseAdd(string input)
+        public bool TryParseAdd(string? input)
         {
             return _store.TryParseAndAddValue(_descriptor, input);
         }
@@ -129,14 +128,14 @@ namespace System.Net.Http.Headers
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             }
 
-            object storeValue = _store.GetParsedValues(_descriptor);
+            object? storeValue = _store.GetParsedValues(_descriptor);
 
             if (storeValue == null)
             {
                 return;
             }
 
-            List<object> storeValues = storeValue as List<object>;
+            List<object>? storeValues = storeValue as List<object>;
 
             if (storeValues == null)
             {
@@ -147,7 +146,7 @@ namespace System.Net.Http.Headers
                 {
                     throw new ArgumentException(SR.net_http_copyto_array_too_small);
                 }
-                array[arrayIndex] = storeValue as T;
+                array[arrayIndex] = (T)storeValue;
             }
             else
             {
@@ -165,27 +164,26 @@ namespace System.Net.Http.Headers
 
         public IEnumerator<T> GetEnumerator()
         {
-            object storeValue = _store.GetParsedValues(_descriptor);
+            object? storeValue = _store.GetParsedValues(_descriptor);
+            return storeValue is null ?
+                ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator() : // use singleton empty array enumerator
+                Iterate(storeValue);
 
-            if (storeValue == null)
+            static IEnumerator<T> Iterate(object storeValue)
             {
-                yield break;
-            }
-
-            List<object> storeValues = storeValue as List<object>;
-
-            if (storeValues == null)
-            {
-                Debug.Assert(storeValue is T);
-                yield return storeValue as T;
-            }
-            else
-            {
-                // We have multiple values. Iterate through the values and return them.
-                foreach (object item in storeValues)
+                if (storeValue is List<object> storeValues)
                 {
-                    Debug.Assert(item is T);
-                    yield return item as T;
+                    // We have multiple values. Iterate through the values and return them.
+                    foreach (object item in storeValues)
+                    {
+                        Debug.Assert(item is T);
+                        yield return (T)item;
+                    }
+                }
+                else
+                {
+                    Debug.Assert(storeValue is T);
+                    yield return (T)storeValue;
                 }
             }
         }
@@ -245,14 +243,14 @@ namespace System.Net.Http.Headers
         {
             // This is an O(n) operation.
 
-            object storeValue = _store.GetParsedValues(_descriptor);
+            object? storeValue = _store.GetParsedValues(_descriptor);
 
             if (storeValue == null)
             {
                 return 0;
             }
 
-            List<object> storeValues = storeValue as List<object>;
+            List<object>? storeValues = storeValue as List<object>;
 
             if (storeValues == null)
             {

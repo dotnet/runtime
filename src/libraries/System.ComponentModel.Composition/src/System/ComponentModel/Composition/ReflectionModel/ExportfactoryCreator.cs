@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Primitives;
 using System.Reflection;
@@ -9,8 +8,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
 {
     internal sealed partial class ExportFactoryCreator
     {
-        private static readonly MethodInfo _createStronglyTypedExportFactoryOfT = typeof(ExportFactoryCreator).GetMethod("CreateStronglyTypedExportFactoryOfT", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly MethodInfo _createStronglyTypedExportFactoryOfTM = typeof(ExportFactoryCreator).GetMethod("CreateStronglyTypedExportFactoryOfTM", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly MethodInfo _createStronglyTypedExportFactoryOfT = typeof(ExportFactoryCreator).GetMethod("CreateStronglyTypedExportFactoryOfT", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private static readonly MethodInfo _createStronglyTypedExportFactoryOfTM = typeof(ExportFactoryCreator).GetMethod("CreateStronglyTypedExportFactoryOfTM", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         private readonly Type _exportFactoryType;
 
@@ -24,9 +23,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
             _exportFactoryType = exportFactoryType;
         }
 
-        public Func<Export, object> CreateStronglyTypedExportFactoryFactory(Type exportType, Type metadataViewType)
+        public Func<Export, object> CreateStronglyTypedExportFactoryFactory(Type exportType, Type? metadataViewType)
         {
-            MethodInfo genericMethod = null;
+            MethodInfo genericMethod;
             if (metadataViewType == null)
             {
                 genericMethod = _createStronglyTypedExportFactoryOfT.MakeGenericMethod(exportType);
@@ -57,7 +56,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             var instance = Activator.CreateInstance(constructed, args);
 
-            return instance;
+            return instance!;
         }
 
         private object CreateStronglyTypedExportFactoryOfTM<T, M>(Export export)
@@ -69,11 +68,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             Func<Tuple<T, Action>> exportLifetimeContextCreator = () => lifetimeContext.GetExportLifetimeContextFromExport<T>(export);
             var metadataView = AttributedModelServices.GetMetadataView<M>(export.Metadata);
-            object[] args = { exportLifetimeContextCreator, metadataView };
+            object?[] args = { exportLifetimeContextCreator, metadataView };
 
             var instance = Activator.CreateInstance(constructed, args);
 
-            return instance;
+            return instance!;
         }
 
     }

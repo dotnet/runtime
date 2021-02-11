@@ -1,18 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Internal.Runtime.CompilerServices;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
-using nint = System.Int64;
-#else
-using nint = System.Int32;
-#endif
 
 namespace System.Runtime.InteropServices
 {
@@ -125,7 +118,7 @@ namespace System.Runtime.InteropServices
 
             // Get the address.
 
-            object target = InternalGet(GetHandleValue(handle));
+            object? target = InternalGet(GetHandleValue(handle));
             if (target is null)
             {
                 return default;
@@ -170,7 +163,7 @@ namespace System.Runtime.InteropServices
 
         public override int GetHashCode() => _handle.GetHashCode();
 
-        public override bool Equals(object? o) => o is GCHandle && _handle == ((GCHandle)o)._handle;
+        public override bool Equals([NotNullWhen(true)] object? o) => o is GCHandle && _handle == ((GCHandle)o)._handle;
 
         public static bool operator ==(GCHandle a, GCHandle b) => a._handle == b._handle;
 

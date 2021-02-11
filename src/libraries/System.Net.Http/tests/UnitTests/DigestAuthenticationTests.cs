@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Net.Http;
@@ -9,6 +8,7 @@ using Xunit;
 
 namespace System.Net.Http.Tests
 {
+    [SkipOnMono("System.Security.Cryptography is not supported on Browser, see https://github.com/dotnet/runtime/pull/38379", TestPlatforms.Browser)]
     public class DigestAuthenticationTests
     {
         private static readonly List<string> s_keyListWithCountTwo = new List<string> { "key1", "key2" };
@@ -81,6 +81,8 @@ namespace System.Net.Http.Tests
             yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", qop=\"auth\", stale=false, opaque=\"qMRqWgAAAAAA\"", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)(?=.*qop=)(?=.*nc=)(?=.*cnonce=)(?=.*opaque=)", "(algorithm=)", 9 };
             yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", stale=false, opaque=\"qMRqWgAAAAAA\"", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)(?=.*opaque=)", "(algorithm=)", 6 };
             yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", stale=false, algorithm=MD5-sess, qop=\"auth\"", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)(?=.*qop=)(?=.*nc=)(?=.*cnonce=)(?=.*algorithm=)", null, 9 };
+            yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", opaque=\"qMRqWgAAAAAA\", stale=false, algorithm=MD5-sess, qop=\"auth\"", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)(?=.*qop=)(?=.*nc=)(?=.*cnonce=)(?=.*algorithm=)(?=.*opaque=)", null, 10 };
+            yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", opaque=\"\", stale=false, algorithm=MD5, qop=\"auth\"", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)(?=.*qop=)(?=.*nc=)(?=.*cnonce=)(?=.*algorithm=)(?=.*opaque=)", null, 10 };
         }
 
         [Theory]

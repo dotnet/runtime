@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -24,8 +23,9 @@ namespace System.Net.Security
                 s_tlsLookup.Count == LookupCount,
                 $"Lookup dictionary was of size {s_tlsLookup.Count} instead of {LookupCount}");
 
-            foreach (TlsCipherSuite val in Enum.GetValues(typeof(TlsCipherSuite)))
+            foreach (object? value in Enum.GetValues(typeof(TlsCipherSuite)))
             {
+                TlsCipherSuite val = (TlsCipherSuite)value!;
                 Debug.Assert(s_tlsLookup.ContainsKey(val), $"No mapping found for {val} ({(int)val})");
             }
         }

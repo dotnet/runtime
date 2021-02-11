@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -13,11 +12,11 @@ namespace Internal.Cryptography
     {
         private readonly bool _encrypting;
         private SafeKeyHandle _hKey;
-        private byte[] _currentIv;  // CNG mutates this with the updated IV for the next stage on each Encrypt/Decrypt call.
-                                    // The base IV holds a copy of the original IV for Reset(), until it is cleared by Dispose().
+        private byte[]? _currentIv;  // CNG mutates this with the updated IV for the next stage on each Encrypt/Decrypt call.
+                                     // The base IV holds a copy of the original IV for Reset(), until it is cleared by Dispose().
 
-        public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, byte[] key, bool ownsParentHandle, byte[] iv, bool encrypting)
-            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
+        public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, int paddingSizeInBytes, byte[] key, bool ownsParentHandle, byte[]? iv, bool encrypting)
+            : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             Debug.Assert(algorithm != null);
 
@@ -28,7 +27,7 @@ namespace Internal.Cryptography
                 _currentIv = new byte[IV.Length];
             }
 
-            _hKey = algorithm.BCryptImportKey(key);
+            _hKey = Interop.BCrypt.BCryptImportKey(algorithm, key);
 
             if (ownsParentHandle)
             {
@@ -43,13 +42,13 @@ namespace Internal.Cryptography
             if (disposing)
             {
                 SafeKeyHandle hKey = _hKey;
-                _hKey = null;
+                _hKey = null!;
                 if (hKey != null)
                 {
                     hKey.Dispose();
                 }
 
-                byte[] currentIv = _currentIv;
+                byte[]? currentIv = _currentIv;
                 _currentIv = null;
                 if (currentIv != null)
                 {
@@ -60,28 +59,23 @@ namespace Internal.Cryptography
             base.Dispose(disposing);
         }
 
-        public override int Transform(byte[] input, int inputOffset, int count, byte[] output, int outputOffset)
+        public override int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count > 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
-            Debug.Assert(output != null);
-            Debug.Assert(outputOffset >= 0);
-            Debug.Assert(output.Length - outputOffset >= count);
+            Debug.Assert(input.Length > 0);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
             int numBytesWritten;
+
             if (_encrypting)
             {
-                numBytesWritten = _hKey.BCryptEncrypt(input, inputOffset, count, _currentIv, output, outputOffset, output.Length - outputOffset);
+                numBytesWritten = Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, output);
             }
             else
             {
-                numBytesWritten = _hKey.BCryptDecrypt(input, inputOffset, count, _currentIv, output, outputOffset, output.Length - outputOffset);
+                numBytesWritten = Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, output);
             }
 
-            if (numBytesWritten != count)
+            if (numBytesWritten != input.Length)
             {
                 // CNG gives us no way to tell BCryptDecrypt() that we're decrypting the final block, nor is it performing any
                 // padding /depadding for us. So there's no excuse for a provider to hold back output for "future calls." Though
@@ -92,30 +86,27 @@ namespace Internal.Cryptography
             return numBytesWritten;
         }
 
-        public override byte[] TransformFinal(byte[] input, int inputOffset, int count)
+        public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(inputOffset >= 0);
-            Debug.Assert(count >= 0);
-            Debug.Assert((count % BlockSizeInBytes) == 0);
-            Debug.Assert(input.Length - inputOffset >= count);
+            Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
-            byte[] output = new byte[count];
-            if (count != 0)
+            int numBytesWritten = 0;
+
+            if (input.Length != 0)
             {
-                int numBytesWritten = Transform(input, inputOffset, count, output, 0);
-                Debug.Assert(numBytesWritten == count);  // Our implementation of Transform() guarantees this. See comment above.
+                numBytesWritten = Transform(input, output);
+                Debug.Assert(numBytesWritten == input.Length);  // Our implementation of Transform() guarantees this. See comment above.
             }
 
             Reset();
-            return output;
+            return numBytesWritten;
         }
 
         private void Reset()
         {
             if (IV != null)
             {
-                Buffer.BlockCopy(IV, 0, _currentIv, 0, IV.Length);
+                Buffer.BlockCopy(IV, 0, _currentIv!, 0, IV.Length);
             }
         }
     }

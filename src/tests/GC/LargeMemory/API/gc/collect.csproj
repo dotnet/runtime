@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestExecutionArguments>2048</CLRTestExecutionArguments>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="collect.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../largeobject.csproj" />
+    <ProjectReference Include="../../memcheck.csproj" />
+  </ItemGroup>
+</Project>

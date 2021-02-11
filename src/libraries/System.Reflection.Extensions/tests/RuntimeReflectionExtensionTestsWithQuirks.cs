@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -8,7 +7,7 @@ using Xunit;
 //
 // About the "desktopQuirk"
 //
-//   On the desktop CLR, GetRuntimeProperties() and GetRuntimeEvents() behave inconsistently from the other
+//   On the .NET Framework, GetRuntimeProperties() and GetRuntimeEvents() behave inconsistently from the other
 //   GetRuntime*() apis in that they suppress hidden instance properties and events from base classes.
 //
 //   On .NET Native, the GetRuntime*() apis all behave consistently (i.e. the results include hidden instance

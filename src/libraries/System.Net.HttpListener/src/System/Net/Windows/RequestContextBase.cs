@@ -1,9 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Net
 {
@@ -12,7 +12,7 @@ namespace System.Net
         private Interop.HttpApi.HTTP_REQUEST* _memoryBlob;
         private Interop.HttpApi.HTTP_REQUEST* _originalBlobAddress;
         private IntPtr _backingBuffer = IntPtr.Zero;
-        private int _backingBufferLength = 0;
+        private int _backingBufferLength;
 
         // Must call this from derived class' constructors.
         protected void BaseConstruction(Interop.HttpApi.HTTP_REQUEST* requestBlob)
@@ -49,10 +49,10 @@ namespace System.Net
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_backingBuffer != IntPtr.Zero)
+            IntPtr backingBuffer = Interlocked.Exchange(ref _backingBuffer, IntPtr.Zero);
+            if (backingBuffer != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(_backingBuffer);
-                _backingBuffer = IntPtr.Zero;
+                Marshal.FreeHGlobal(backingBuffer);
             }
         }
 

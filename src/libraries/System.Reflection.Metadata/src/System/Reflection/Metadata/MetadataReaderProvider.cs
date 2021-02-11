@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -24,11 +23,11 @@ namespace System.Reflection.Metadata
     {
         // Either we have a provider and create metadata block lazily or
         // we have no provider and metadata block is created in the ctor.
-        private MemoryBlockProvider _blockProviderOpt;
-        private AbstractMemoryBlock _lazyMetadataBlock;
+        private MemoryBlockProvider? _blockProviderOpt;
+        private AbstractMemoryBlock? _lazyMetadataBlock;
 
         // cached reader
-        private MetadataReader _lazyMetadataReader;
+        private MetadataReader? _lazyMetadataReader;
         private readonly object _metadataReaderGuard = new object();
 
         private MetadataReaderProvider(AbstractMemoryBlock metadataBlock)
@@ -243,13 +242,13 @@ namespace System.Reflection.Metadata
         /// <exception cref="PlatformNotSupportedException">The current platform is big-endian.</exception>
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         /// <exception cref="ObjectDisposedException">Provider has been disposed.</exception>
-        public unsafe MetadataReader GetMetadataReader(MetadataReaderOptions options = MetadataReaderOptions.Default, MetadataStringDecoder utf8Decoder = null)
+        public unsafe MetadataReader GetMetadataReader(MetadataReaderOptions options = MetadataReaderOptions.Default, MetadataStringDecoder? utf8Decoder = null)
         {
             var cachedReader = _lazyMetadataReader;
 
             if (CanReuseReader(cachedReader, options, utf8Decoder))
             {
-                return cachedReader;
+                return cachedReader!;
             }
 
             // If multiple threads attempt to open a metadata reader with the same options and decoder
@@ -262,7 +261,7 @@ namespace System.Reflection.Metadata
 
                 if (CanReuseReader(cachedReader, options, utf8Decoder))
                 {
-                    return cachedReader;
+                    return cachedReader!;
                 }
 
                 AbstractMemoryBlock metadata = GetMetadataBlock();
@@ -272,7 +271,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        private static bool CanReuseReader(MetadataReader reader, MetadataReaderOptions options, MetadataStringDecoder utf8DecoderOpt)
+        private static bool CanReuseReader(MetadataReader? reader, MetadataReaderOptions options, MetadataStringDecoder? utf8DecoderOpt)
         {
             return reader != null && reader.Options == options && ReferenceEquals(reader.UTF8Decoder, utf8DecoderOpt ?? MetadataStringDecoder.DefaultUTF8);
         }

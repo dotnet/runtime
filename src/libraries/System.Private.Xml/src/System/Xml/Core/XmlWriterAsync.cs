@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
 
@@ -18,7 +17,7 @@ namespace System.Xml
 {
     // Represents a writer that provides fast non-cached forward-only way of generating XML streams containing XML documents
     // that conform to the W3C Extensible Markup Language (XML) 1.0 specification and the Namespaces in XML specification.
-    public abstract partial class XmlWriter : IDisposable
+    public abstract partial class XmlWriter : IDisposable, IAsyncDisposable
     {
         // Write methods
         // Writes out the XML declaration with the version "1.0".
@@ -44,14 +43,14 @@ namespace System.Xml
 
         // Writes out the DOCTYPE declaration with the specified name and optional attributes.
 
-        public virtual Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public virtual Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             throw new NotImplementedException();
         }
 
         // Writes out the specified start tag and associates it with the given namespace and prefix.
 
-        public virtual Task WriteStartElementAsync(string prefix, string localName, string ns)
+        public virtual Task WriteStartElementAsync(string? prefix, string localName, string? ns)
         {
             throw new NotImplementedException();
         }
@@ -70,9 +69,8 @@ namespace System.Xml
             throw new NotImplementedException();
         }
 
-        // Writes out the attribute with the specified LocalName, value, and NamespaceURI.
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
-        public Task WriteAttributeStringAsync(string prefix, string localName, string ns, string value)
+        public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string? value)
         {
             Task task = WriteStartAttributeAsync(prefix, localName, ns);
             if (task.IsSuccess())
@@ -85,7 +83,7 @@ namespace System.Xml
             }
         }
 
-        private async Task WriteAttributeStringAsyncHelper(Task task, string value)
+        private async Task WriteAttributeStringAsyncHelper(Task task, string? value)
         {
             await task.ConfigureAwait(false);
             await WriteStringAsync(value).ConfigureAwait(false);
@@ -94,7 +92,7 @@ namespace System.Xml
 
         // Writes the start of an attribute.
 
-        protected internal virtual Task WriteStartAttributeAsync(string prefix, string localName, string ns)
+        protected internal virtual Task WriteStartAttributeAsync(string? prefix, string localName, string? ns)
         {
             throw new NotImplementedException();
         }
@@ -108,21 +106,21 @@ namespace System.Xml
 
         // Writes out a <![CDATA[...]]>; block containing the specified text.
 
-        public virtual Task WriteCDataAsync(string text)
+        public virtual Task WriteCDataAsync(string? text)
         {
             throw new NotImplementedException();
         }
 
         // Writes out a comment <!--...-->; containing the specified text.
 
-        public virtual Task WriteCommentAsync(string text)
+        public virtual Task WriteCommentAsync(string? text)
         {
             throw new NotImplementedException();
         }
 
         // Writes out a processing instruction with a space between the name and text as follows: <?name text?>
 
-        public virtual Task WriteProcessingInstructionAsync(string name, string text)
+        public virtual Task WriteProcessingInstructionAsync(string name, string? text)
         {
             throw new NotImplementedException();
         }
@@ -143,14 +141,14 @@ namespace System.Xml
 
         // Writes out the given whitespace.
 
-        public virtual Task WriteWhitespaceAsync(string ws)
+        public virtual Task WriteWhitespaceAsync(string? ws)
         {
             throw new NotImplementedException();
         }
 
         // Writes out the specified text content.
 
-        public virtual Task WriteStringAsync(string text)
+        public virtual Task WriteStringAsync(string? text)
         {
             throw new NotImplementedException();
         }
@@ -224,11 +222,11 @@ namespace System.Xml
         }
 
         // Writes out the specified namespace-qualified name by looking up the prefix that is in scope for the given namespace.
-        public virtual async Task WriteQualifiedNameAsync(string localName, string ns)
+        public virtual async Task WriteQualifiedNameAsync(string localName, string? ns)
         {
             if (ns != null && ns.Length > 0)
             {
-                string prefix = LookupPrefix(ns);
+                string? prefix = LookupPrefix(ns);
                 if (prefix == null)
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
@@ -467,7 +465,7 @@ namespace System.Xml
                         {
                             do
                             {
-                                IXmlSchemaInfo schemaInfo = navigator.SchemaInfo;
+                                IXmlSchemaInfo? schemaInfo = navigator.SchemaInfo;
                                 if (defattr || (schemaInfo == null || !schemaInfo.IsDefault))
                                 {
                                     await WriteStartAttributeAsync(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI).ConfigureAwait(false);
@@ -568,7 +566,7 @@ namespace System.Xml
         // Element Helper Methods
 
         // Writes out an attribute with the specified name, namespace URI, and string value.
-        public async Task WriteElementStringAsync(string prefix, string localName, string ns, string value)
+        public async Task WriteElementStringAsync(string? prefix, string localName, string? ns, string value)
         {
             await WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(false);
             if (null != value && 0 != value.Length)
@@ -598,6 +596,22 @@ namespace System.Xml
             {
                 await WriteAttributeStringAsync("xmlns", prefix, XmlReservedNs.NsXmlNs, ns).ConfigureAwait(false);
             }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsyncCore().ConfigureAwait(false);
+            Dispose(false);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual ValueTask DisposeAsyncCore()
+        {
+            if (WriteState != WriteState.Closed)
+            {
+                Dispose(true);
+            }
+            return default;
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -51,7 +50,7 @@ namespace System.Reflection.TypeLoading
             return sig;
         }
 
-        public sealed override MethodBody GetMethodBody() => null;
+        public sealed override MethodBody? GetMethodBody() => null;
 
         protected sealed override MethodSig<string> ComputeMethodSigStrings()
         {
@@ -67,7 +66,7 @@ namespace System.Reflection.TypeLoading
 
         protected sealed override MethodSig<RoType> ComputeCustomModifiers() => new MethodSig<RoType>(_parameterTypes.Length);
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(object? obj)
         {
             if (!(obj is RoSyntheticMethod other))
                 return false;

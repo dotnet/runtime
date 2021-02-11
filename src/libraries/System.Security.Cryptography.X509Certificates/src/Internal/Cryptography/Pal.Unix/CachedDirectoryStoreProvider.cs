@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -21,7 +20,7 @@ namespace Internal.Cryptography.Pal
         private readonly Stopwatch _recheckStopwatch = new Stopwatch();
         private readonly DirectoryInfo _storeDirectoryInfo;
 
-        private SafeX509StackHandle _nativeCollection;
+        private SafeX509StackHandle? _nativeCollection;
         private DateTime _loadLastWrite;
 
         internal CachedDirectoryStoreProvider(string storeName)
@@ -32,7 +31,7 @@ namespace Internal.Cryptography.Pal
 
         internal SafeX509StackHandle GetNativeCollection()
         {
-            SafeX509StackHandle ret = _nativeCollection;
+            SafeX509StackHandle? ret = _nativeCollection;
 
             TimeSpan elapsed = _recheckStopwatch.Elapsed;
 

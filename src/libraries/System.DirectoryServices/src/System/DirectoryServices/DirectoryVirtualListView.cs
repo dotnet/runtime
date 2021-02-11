@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 
@@ -8,12 +7,12 @@ namespace System.DirectoryServices
 {
     public class DirectoryVirtualListView
     {
-        private int _beforeCount = 0;
-        private int _afterCount = 0;
-        private int _offset = 0;
+        private int _beforeCount;
+        private int _afterCount;
+        private int _offset;
         private string _target = "";
-        private int _approximateTotal = 0;
-        private int _targetPercentage = 0;
+        private int _approximateTotal;
+        private int _targetPercentage;
 
         public DirectoryVirtualListView()
         {

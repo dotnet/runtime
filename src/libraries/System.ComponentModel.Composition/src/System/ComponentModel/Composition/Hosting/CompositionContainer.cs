@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,18 +14,18 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class CompositionContainer : ExportProvider, ICompositionService, IDisposable
     {
         private readonly CompositionOptions _compositionOptions;
-        private ImportEngine _importEngine;
+        private ImportEngine? _importEngine;
         private ComposablePartExportProvider _partExportProvider;
         private ExportProvider _rootProvider;
-        private IDisposable _disposableRootProvider;
-        private CatalogExportProvider _catalogExportProvider;
+        private IDisposable? _disposableRootProvider;
+        private CatalogExportProvider? _catalogExportProvider;
         private ExportProvider _localExportProvider;
-        private IDisposable _disposableLocalExportProvider;
-        private ExportProvider _ancestorExportProvider;
-        private IDisposable _disposableAncestorExportProvider;
+        private IDisposable? _disposableLocalExportProvider;
+        private ExportProvider? _ancestorExportProvider;
+        private IDisposable? _disposableAncestorExportProvider;
 
         private readonly ReadOnlyCollection<ExportProvider> _providers;
-        private volatile bool _isDisposed = false;
+        private volatile bool _isDisposed;
         private readonly object _lock = new object();
         private static readonly ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(Array.Empty<ExportProvider>());
 
@@ -34,7 +33,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class.
         /// </summary>
         public CompositionContainer()
-            : this((ComposablePartCatalog)null)
+            : this((ComposablePartCatalog?)null)
         {
         }
 
@@ -51,8 +50,8 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="providers"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        public CompositionContainer(params ExportProvider[] providers) :
-            this((ComposablePartCatalog)null, providers)
+        public CompositionContainer(params ExportProvider[]? providers) :
+            this((ComposablePartCatalog?)null, providers)
         {
         }
 
@@ -72,8 +71,8 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="providers"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        public CompositionContainer(CompositionOptions compositionOptions, params ExportProvider[] providers) :
-            this((ComposablePartCatalog)null, compositionOptions, providers)
+        public CompositionContainer(CompositionOptions compositionOptions, params ExportProvider[]? providers) :
+            this((ComposablePartCatalog?)null, compositionOptions, providers)
         {
         }
 
@@ -81,6 +80,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class
         ///     with the specified catalog and export providers.
         /// </summary>
+        /// <param name="catalog">A catalog that provides <see cref="Export"/> objects to the <see cref="CompositionContainer"/>.</param>
         /// <param name="providers">
         ///     A <see cref="Array"/> of <see cref="ExportProvider"/> objects which provide
         ///     the <see cref="CompositionContainer"/> access to <see cref="Export"/> objects,
@@ -90,7 +90,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="providers"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        public CompositionContainer(ComposablePartCatalog catalog, params ExportProvider[] providers) :
+        public CompositionContainer(ComposablePartCatalog? catalog, params ExportProvider[]? providers) :
             this(catalog, false, providers)
         {
         }
@@ -99,6 +99,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class
         ///     with the specified catalog and export providers.
         /// </summary>
+        /// <param name="catalog">A catalog that provides <see cref="Export"/> objects to the <see cref="CompositionContainer"/>.</param>
         /// <param name="isThreadSafe">
         ///     <see cref="bool"/> indicates whether container instances are threadsafe.
         /// </param>
@@ -111,7 +112,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="providers"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        public CompositionContainer(ComposablePartCatalog catalog, bool isThreadSafe, params ExportProvider[] providers)
+        public CompositionContainer(ComposablePartCatalog? catalog, bool isThreadSafe, params ExportProvider[]? providers)
             : this(catalog, isThreadSafe ? CompositionOptions.IsThreadSafe : CompositionOptions.Default, providers)
         {
         }
@@ -120,6 +121,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class
         ///     with the specified catalog and export providers.
         /// </summary>
+        /// <param name="catalog">A catalog that provides <see cref="Export"/> objects to the <see cref="CompositionContainer"/>.</param>
         /// <param name="compositionOptions">
         ///     <see cref="CompositionOptions"/> enumeration with flags controlling the composition.
         /// </param>
@@ -132,7 +134,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="providers"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        public CompositionContainer(ComposablePartCatalog catalog, CompositionOptions compositionOptions, params ExportProvider[] providers)
+        public CompositionContainer(ComposablePartCatalog? catalog, CompositionOptions compositionOptions, params ExportProvider[]? providers)
         {
             if (compositionOptions > (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService))
             {
@@ -196,7 +198,7 @@ namespace System.ComponentModel.Composition.Hosting
                 int customProviderStartIndex = 1;
                 if (catalog != null)
                 {
-                    rootProviders[1] = _catalogExportProvider;
+                    rootProviders[1] = _catalogExportProvider!;
                     customProviderStartIndex = 2;
                 }
 
@@ -245,7 +247,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ObjectDisposedException">
         ///     The <see cref="CompositionContainer"/> has been disposed of.
         /// </exception>
-        public ComposablePartCatalog Catalog
+        public ComposablePartCatalog? Catalog
         {
             get
             {
@@ -255,7 +257,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal CatalogExportProvider CatalogExportProvider
+        internal CatalogExportProvider? CatalogExportProvider
         {
             get
             {
@@ -307,34 +309,34 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (!_isDisposed)
                 {
-                    ExportProvider rootProvider = null;
-                    IDisposable disposableAncestorExportProvider = null;
-                    IDisposable disposableLocalExportProvider = null;
-                    IDisposable disposableRootProvider = null;
-                    ComposablePartExportProvider partExportProvider = null;
-                    CatalogExportProvider catalogExportProvider = null;
-                    ImportEngine importEngine = null;
+                    ExportProvider? rootProvider = null;
+                    IDisposable? disposableAncestorExportProvider = null;
+                    IDisposable? disposableLocalExportProvider = null;
+                    IDisposable? disposableRootProvider = null;
+                    ComposablePartExportProvider? partExportProvider = null;
+                    CatalogExportProvider? catalogExportProvider = null;
+                    ImportEngine? importEngine = null;
 
                     lock (_lock)
                     {
                         if (!_isDisposed)
                         {
                             rootProvider = _rootProvider;
-                            _rootProvider = null;
+                            _rootProvider = null!;
 
                             disposableRootProvider = _disposableRootProvider;
                             _disposableRootProvider = null;
 
                             disposableLocalExportProvider = _disposableLocalExportProvider;
                             _disposableLocalExportProvider = null;
-                            _localExportProvider = null;
+                            _localExportProvider = null!;
 
                             disposableAncestorExportProvider = _disposableAncestorExportProvider;
                             _disposableAncestorExportProvider = null;
                             _ancestorExportProvider = null;
 
                             partExportProvider = _partExportProvider;
-                            _partExportProvider = null;
+                            _partExportProvider = null!;
 
                             catalogExportProvider = _catalogExportProvider;
                             _catalogExportProvider = null;
@@ -413,14 +415,11 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="export"/> is <see langword="null"/>.
         /// </exception>
-        [SuppressMessage("Microsoft.Performance", "CA1822")]
         public void ReleaseExport(Export export)
         {
             Requires.NotNull(export, nameof(export));
 
-            IDisposable dependency = export as IDisposable;
-
-            if (dependency != null)
+            if (export is IDisposable dependency)
             {
                 dependency.Dispose();
             }
@@ -445,14 +444,11 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="export"/> is <see langword="null"/>.
         /// </exception>
-        [SuppressMessage("Microsoft.Performance", "CA1822")]
         public void ReleaseExport<T>(Lazy<T> export)
         {
             Requires.NotNull(export, nameof(export));
 
-            IDisposable dependency = export as IDisposable;
-
-            if (dependency != null)
+            if (export is IDisposable dependency)
             {
                 dependency.Dispose();
             }
@@ -490,7 +486,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="exports"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public void ReleaseExports<T>(IEnumerable<Lazy<T>> exports)
         {
             Requires.NotNullOrNullElements(exports, nameof(exports));
@@ -512,7 +507,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="exports"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public void ReleaseExports<T, TMetadataView>(IEnumerable<Lazy<T, TMetadataView>> exports)
         {
             Requires.NotNullOrNullElements(exports, nameof(exports));
@@ -546,7 +540,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             if (_importEngine == null)
             {
-                ImportEngine importEngine = new ImportEngine(this, _compositionOptions);
+                ImportEngine? importEngine = new ImportEngine(this, _compositionOptions);
 
                 lock (_lock)
                 {
@@ -565,12 +559,12 @@ namespace System.ComponentModel.Composition.Hosting
             _importEngine.SatisfyImportsOnce(part);
         }
 
-        internal void OnExportsChangedInternal(object sender, ExportsChangeEventArgs e)
+        internal void OnExportsChangedInternal(object? sender, ExportsChangeEventArgs e)
         {
             OnExportsChanged(e);
         }
 
-        internal void OnExportsChangingInternal(object sender, ExportsChangeEventArgs e)
+        internal void OnExportsChangingInternal(object? sender, ExportsChangeEventArgs e)
         {
             OnExportsChanging(e);
         }
@@ -580,6 +574,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         /// <param name="definition">The <see cref="ImportDefinition"/> that defines the conditions of the
         /// <see cref="Export"/> to get.</param>
+        /// <param name="atomicComposition">The transactional container for the composition.</param>
         /// <returns></returns>
         /// <result>
         /// An <see cref="IEnumerable{T}"/> of <see cref="Export"/> objects that match
@@ -594,19 +589,18 @@ namespace System.ComponentModel.Composition.Hosting
         /// it should return an empty <see cref="IEnumerable{T}"/> of <see cref="Export"/>.
         /// </note>
         /// </remarks>
-        protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition)
+        protected override IEnumerable<Export>? GetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
         {
             ThrowIfDisposed();
 
-            IEnumerable<Export> exports = null;
+            IEnumerable<Export>? exports = null;
 
-            object source;
-            if (!definition.Metadata.TryGetValue(CompositionConstants.ImportSourceMetadataName, out source))
+            if (!definition.Metadata.TryGetValue(CompositionConstants.ImportSourceMetadataName, out object? source))
             {
                 source = ImportSource.Any;
             }
 
-            switch ((ImportSource)source)
+            switch ((ImportSource)source!)
             {
                 case ImportSource.Any:
                     if (_rootProvider == null)

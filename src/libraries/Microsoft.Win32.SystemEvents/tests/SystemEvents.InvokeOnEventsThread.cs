@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -14,8 +13,8 @@ namespace Microsoft.Win32.SystemEventsTests
 {
     public class InvokeOnEventsThreadTests : SystemEventsTest
     {
-        [ActiveIssue(38661, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29941", TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void InvokeOnEventsThreadRunsAsynchronously()
         {
             var invoked = new AutoResetEvent(false);
@@ -23,14 +22,14 @@ namespace Microsoft.Win32.SystemEventsTests
             Assert.True(invoked.WaitOne(PostMessageWait));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void InvokeOnEventsThreadRunsOnSameThreadAsOtherEvents()
         {
             int expectedThreadId = -1, actualThreadId = -1;
             var invoked = new AutoResetEvent(false);
             EventHandler handler = (sender, args) =>
             {
-                expectedThreadId = Thread.CurrentThread.ManagedThreadId;
+                expectedThreadId = Environment.CurrentManagedThreadId;
             };
 
             try
@@ -42,7 +41,7 @@ namespace Microsoft.Win32.SystemEventsTests
 
                 SystemEvents.InvokeOnEventsThread(new Action(() =>
                 {
-                    actualThreadId = Thread.CurrentThread.ManagedThreadId;
+                    actualThreadId = Environment.CurrentManagedThreadId;
                     invoked.Set();
                 }));
                 Assert.True(invoked.WaitOne(PostMessageWait));

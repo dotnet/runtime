@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Net.Security
@@ -51,7 +51,7 @@ namespace System.Net.Security
         public bool Equals(SslApplicationProtocol other) =>
             ((ReadOnlySpan<byte>)_readOnlyProtocol).SequenceEqual(other._readOnlyProtocol);
 
-        public override bool Equals(object obj) => obj is SslApplicationProtocol protocol && Equals(protocol);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is SslApplicationProtocol protocol && Equals(protocol);
 
         public override int GetHashCode()
         {
@@ -92,14 +92,12 @@ namespace System.Net.Security
                     byte b = arr[index++];
                     byteChars[i] = '0';
                     byteChars[i + 1] = 'x';
-                    byteChars[i + 2] = GetHexValue(Math.DivRem(b, 16, out int rem));
-                    byteChars[i + 3] = GetHexValue(rem);
+                    byteChars[i + 2] = HexConverter.ToCharLower(b >> 4);
+                    byteChars[i + 3] = HexConverter.ToCharLower(b);
                     byteChars[i + 4] = ' ';
                 }
 
                 return new string(byteChars, 0, byteChars.Length - 1);
-
-                static char GetHexValue(int i) => (char)(i < 10 ? i + '0' : i - 10 + 'a');
             }
         }
 

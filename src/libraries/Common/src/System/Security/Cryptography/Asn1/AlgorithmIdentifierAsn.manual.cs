@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -30,7 +29,7 @@ namespace System.Security.Cryptography.Asn1
                 return true;
             }
 
-            return Parameters.Value.Span.SequenceEqual(other.Parameters.Value.Span);
+            return Parameters!.Value.Span.SequenceEqual(other.Parameters!.Value.Span);
         }
 
         internal bool HasNullEquivalentParameters()

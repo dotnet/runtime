@@ -12,8 +12,7 @@ variables:
   - template: variables.yml
 
 jobs:
-  - template: /eng/pipelines/common/checkout-job.yml
-  
+
   #
   # CoreCLR Build
   #
@@ -23,8 +22,8 @@ jobs:
       buildConfig: release
       platforms:
       - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
-        - Windows_NT_x64
-        - Windows_NT_x86
+        - windows_x64
+        - windows_x86
       - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
         - Linux_x64
         - Linux_musl_x64
@@ -45,9 +44,9 @@ jobs:
       buildConfig: Release
       platforms:
       - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
-        - Windows_NT_x86
+        - windows_x86
         - ${{ if eq(variables['isFullMatrix'], true) }}:
-          - Windows_NT_x64
+          - windows_x64
       - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
         - ${{ if eq(variables['isFullMatrix'], true) }}:
           - Linux_x64
@@ -61,10 +60,9 @@ jobs:
       jobParameters:
         isOfficialBuild: ${{ variables['isOfficialBuild'] }}
         isFullMatrix: ${{ variables['isFullMatrix'] }}
-        framework: netcoreapp
         runTests: true
         testScope: outerloop
-        liveCoreClrBuildConfig: release
+        liveRuntimeBuildConfig: release
   
   - ${{ if eq(variables['isFullMatrix'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -73,7 +71,7 @@ jobs:
         buildConfig: Debug
         platforms:
         - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
-          - Windows_NT_x86
+          - windows_x64
         - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
           - Linux_x64
           - Linux_musl_x64
@@ -83,10 +81,9 @@ jobs:
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}
           isFullMatrix: ${{ variables['isFullMatrix'] }}
-          framework: netcoreapp
           runTests: true
           testScope: outerloop
-          liveCoreClrBuildConfig: release
+          liveRuntimeBuildConfig: release
 
   - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -94,13 +91,13 @@ jobs:
         jobTemplate: /eng/pipelines/libraries/build-job.yml
         buildConfig: Release
         platforms:
-        - Windows_NT_x86
+        - windows_x86
         - ${{ if eq(variables['isFullMatrix'], true) }}:
-          - Windows_NT_x64
+          - windows_x64
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}
           isFullMatrix: ${{ variables['isFullMatrix'] }}
-          framework: netfx
+          framework: net48
           runTests: true
           testScope: outerloop

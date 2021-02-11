@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +16,6 @@ namespace System.Dynamic
         /// <summary>
         /// Represents an empty array of type <see cref="DynamicMetaObject"/>. This field is read-only.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly DynamicMetaObject[] EmptyMetaObjects = Array.Empty<DynamicMetaObject>();
 
         /// <summary>
@@ -63,7 +61,7 @@ namespace System.Dynamic
         /// <summary>
         /// The runtime value represented by this <see cref="DynamicMetaObject"/>.
         /// </summary>
-        public object Value => HasValue ? _value : null;
+        public object? Value => HasValue ? _value : null;
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="DynamicMetaObject"/> has the runtime value.
@@ -73,7 +71,7 @@ namespace System.Dynamic
         /// <summary>
         /// Gets the <see cref="Type"/> of the runtime value or null if the <see cref="DynamicMetaObject"/> has no value associated with it.
         /// </summary>
-        public Type RuntimeType
+        public Type? RuntimeType
         {
             get
             {
@@ -246,7 +244,6 @@ namespace System.Dynamic
         /// Returns the enumeration of all dynamic member names.
         /// </summary>
         /// <returns>The list of dynamic member names.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public virtual IEnumerable<string> GetDynamicMemberNames() => Array.Empty<string>();
 
         /// <summary>
@@ -285,8 +282,7 @@ namespace System.Dynamic
         {
             ContractUtils.RequiresNotNull(expression, nameof(expression));
 
-            IDynamicMetaObjectProvider ido = value as IDynamicMetaObjectProvider;
-            if (ido != null)
+            if (value is IDynamicMetaObjectProvider ido)
             {
                 var idoMetaObject = ido.GetMetaObject(expression);
 

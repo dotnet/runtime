@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography.Rsa.Tests;
 using Xunit;
@@ -309,11 +308,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [Fact]
         public static void SignHash_DefaultAlgorithm_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(TestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
 
             using (var rsa = new RSACryptoServiceProvider())
             {
@@ -325,11 +320,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [Fact]
         public static void VerifyHash_DefaultAlgorithm_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(TestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
 
             using (var rsa = new RSACryptoServiceProvider())
             {
@@ -387,11 +378,7 @@ namespace System.Security.Cryptography.Csp.Tests
         [Fact]
         public static void SignData_VerifyHash_CaseInsensitive_Success()
         {
-            byte[] hashVal;
-            using (SHA1 sha1 = SHA1.Create())
-            {
-                hashVal = sha1.ComputeHash(TestData.HelloBytes);
-            }
+            byte[] hashVal = SHA1.HashData(TestData.HelloBytes);
 
             using (var rsa = new RSACryptoServiceProvider())
             {

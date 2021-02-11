@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Xml.Xsl.XsltOld
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Xml;
     using System.Xml.XPath;
 
     internal class TemplateLookupAction : Action
     {
-        protected XmlQualifiedName mode;
-        protected Stylesheet importsOf;
+        protected XmlQualifiedName? mode;
+        protected Stylesheet? importsOf;
 
-        internal void Initialize(XmlQualifiedName mode, Stylesheet importsOf)
+        internal void Initialize(XmlQualifiedName? mode, Stylesheet? importsOf)
         {
             this.mode = mode;
             this.importsOf = importsOf;
@@ -25,25 +25,25 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(processor != null && frame != null);
             Debug.Assert(frame.State == Initialized);
 
-            Action action = null;
+            Action? action = null;
 
             if (this.mode != null)
             {
                 action = importsOf == null
-                    ? processor.Stylesheet.FindTemplate(processor, frame.Node, this.mode)
-                    : importsOf.FindTemplateImports(processor, frame.Node, this.mode);
+                    ? processor.Stylesheet.FindTemplate(processor, frame.Node!, this.mode)
+                    : importsOf.FindTemplateImports(processor, frame.Node!, this.mode);
             }
             else
             {
                 action = importsOf == null
-                    ? processor.Stylesheet.FindTemplate(processor, frame.Node)
-                    : importsOf.FindTemplateImports(processor, frame.Node);
+                    ? processor.Stylesheet.FindTemplate(processor, frame.Node!)
+                    : importsOf.FindTemplateImports(processor, frame.Node!);
             }
 
             // Built-int template rules
             if (action == null)
             {
-                action = BuiltInTemplate(frame.Node);
+                action = BuiltInTemplate(frame.Node!);
             }
 
             // Jump
@@ -57,10 +57,10 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal Action BuiltInTemplate(XPathNavigator node)
+        internal Action? BuiltInTemplate(XPathNavigator node)
         {
             Debug.Assert(node != null);
-            Action action = null;
+            Action? action = null;
 
             switch (node.NodeType)
             {
@@ -102,12 +102,12 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(frame.State == Initialized);
             Debug.Assert(processor.Debugger != null);
 
-            Action action = null;
+            Action? action = null;
 
             if (this.mode == Compiler.BuiltInMode)
             {
                 // mode="*" -- use one from debuggerStack
-                this.mode = processor.GetPrevioseMode();
+                this.mode = processor.GetPreviousMode();
                 Debug.Assert(this.mode != Compiler.BuiltInMode);
             }
             processor.SetCurrentMode(this.mode);
@@ -115,24 +115,24 @@ namespace System.Xml.Xsl.XsltOld
             if (this.mode != null)
             {
                 action = importsOf == null
-                    ? processor.Stylesheet.FindTemplate(processor, frame.Node, this.mode)
-                    : importsOf.FindTemplateImports(processor, frame.Node, this.mode);
+                    ? processor.Stylesheet.FindTemplate(processor, frame.Node!, this.mode)
+                    : importsOf.FindTemplateImports(processor, frame.Node!, this.mode);
             }
             else
             {
                 action = importsOf == null
-                    ? processor.Stylesheet.FindTemplate(processor, frame.Node)
-                    : importsOf.FindTemplateImports(processor, frame.Node);
+                    ? processor.Stylesheet.FindTemplate(processor, frame.Node!)
+                    : importsOf.FindTemplateImports(processor, frame.Node!);
             }
 
             // Built-int template rules
-            if (action == null && processor.RootAction.builtInSheet != null)
+            if (action == null && processor.RootAction!.builtInSheet != null)
             {
-                action = processor.RootAction.builtInSheet.FindTemplate(processor, frame.Node, Compiler.BuiltInMode);
+                action = processor.RootAction.builtInSheet.FindTemplate(processor, frame.Node!, Compiler.BuiltInMode);
             }
             if (action == null)
             {
-                action = BuiltInTemplate(frame.Node);
+                action = BuiltInTemplate(frame.Node!);
             }
 
             // Jump

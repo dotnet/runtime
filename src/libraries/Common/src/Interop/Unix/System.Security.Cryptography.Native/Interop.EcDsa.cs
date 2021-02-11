@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -10,12 +9,12 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        internal static bool EcDsaSign(ReadOnlySpan<byte> dgst, Span<byte> sig, [In, Out] ref int siglen, SafeEcKeyHandle ecKey) =>
-            EcDsaSign(ref MemoryMarshal.GetReference(dgst), dgst.Length, ref MemoryMarshal.GetReference(sig), ref siglen, ecKey);
+        internal static bool EcDsaSign(ReadOnlySpan<byte> dgst, Span<byte> sig, out int siglen, SafeEcKeyHandle ecKey) =>
+            EcDsaSign(ref MemoryMarshal.GetReference(dgst), dgst.Length, ref MemoryMarshal.GetReference(sig), out siglen, ecKey);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcDsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool EcDsaSign(ref byte dgst, int dlen, ref byte sig, [In, Out] ref int siglen, SafeEcKeyHandle ecKey);
+        private static extern bool EcDsaSign(ref byte dgst, int dlen, ref byte sig, out int siglen, SafeEcKeyHandle ecKey);
 
         internal static int EcDsaVerify(ReadOnlySpan<byte> dgst, ReadOnlySpan<byte> sigbuf, SafeEcKeyHandle ecKey)
         {

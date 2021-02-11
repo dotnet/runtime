@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -16,7 +15,7 @@ namespace Internal.Cryptography
             return true;
         }
 
-        private static string NativeOidToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
+        private static string? NativeOidToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
         {
             IntPtr friendlyNamePtr = IntPtr.Zero;
             int result = Interop.Crypto.LookupFriendlyNameByOid(oid, ref friendlyNamePtr);
@@ -39,7 +38,7 @@ namespace Internal.Cryptography
             }
         }
 
-        private static string NativeFriendlyNameToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
+        private static string? NativeFriendlyNameToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
             IntPtr sharedObject = Interop.Crypto.GetObjectDefinitionByName(friendlyName);
 
@@ -50,9 +49,5 @@ namespace Internal.Cryptography
 
             return Interop.Crypto.GetOidValue(sharedObject);
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
     }
 }

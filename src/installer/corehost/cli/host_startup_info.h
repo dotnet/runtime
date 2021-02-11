@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __HOST_STARTUP_INFO_H_
 #define __HOST_STARTUP_INFO_H_
@@ -11,12 +10,13 @@
 struct host_startup_info_t
 {
     host_startup_info_t() {}
+
     host_startup_info_t(
         const pal::char_t* host_path_value,
         const pal::char_t* dotnet_root_value,
         const pal::char_t* app_path_value);
 
-    int parse(
+    void parse(
         int argc,
         const pal::char_t* argv[]);
 

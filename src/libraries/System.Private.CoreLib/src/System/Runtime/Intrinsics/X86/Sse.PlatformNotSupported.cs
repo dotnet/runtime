@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -12,17 +11,17 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to Intel SSE hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    public abstract class Sse
+    public abstract class Sse : X86Base
     {
         internal Sse() { }
 
-        public static bool IsSupported { [Intrinsic] get { return false; } }
+        public static new bool IsSupported { [Intrinsic] get { return false; } }
 
-        public abstract class X64
+        public new abstract class X64 : X86Base.X64
         {
             internal X64() { }
 
-            public static bool IsSupported { [Intrinsic] get { return false; } }
+            public static new bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
             /// __int64 _mm_cvtss_si64 (__m128 a)
@@ -96,7 +95,7 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128 _mm_cmpgt_ps (__m128 a,  __m128 b)
-        ///   CMPPS xmm, xmm/m128, imm8(6)
+        ///   CMPPS xmm, xmm/m128, imm8(1) with swapped operands
         /// </summary>
         public static Vector128<float> CompareGreaterThan(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
@@ -114,13 +113,13 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128 _mm_cmpgt_ss (__m128 a,  __m128 b)
-        ///   CMPSS xmm, xmm/m32, imm8(6)
+        ///   CMPSS xmm, xmm/m32, imm8(1) with swapped operands
         /// </summary>
         public static Vector128<float> CompareScalarGreaterThan(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_cmpge_ps (__m128 a,  __m128 b)
-        ///   CMPPS xmm, xmm/m128, imm8(5)
+        ///   CMPPS xmm, xmm/m128, imm8(2) with swapped operands
         /// </summary>
         public static Vector128<float> CompareGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
@@ -138,7 +137,7 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128 _mm_cmpge_ss (__m128 a,  __m128 b)
-        ///   CMPPS xmm, xmm/m32, imm8(5)
+        ///   CMPPS xmm, xmm/m32, imm8(2) with swapped operands
         /// </summary>
         public static Vector128<float> CompareScalarGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
@@ -216,25 +215,25 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128 _mm_cmpngt_ps (__m128 a,  __m128 b)
-        ///   CMPPS xmm, xmm/m128, imm8(2)
+        ///   CMPPS xmm, xmm/m128, imm8(5) with swapped operands
         /// </summary>
         public static Vector128<float> CompareNotGreaterThan(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_cmpngt_ss (__m128 a,  __m128 b)
-        ///   CMPSS xmm, xmm/m32, imm8(2)
+        ///   CMPSS xmm, xmm/m32, imm8(5) with swapped operands
         /// </summary>
         public static Vector128<float> CompareScalarNotGreaterThan(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_cmpnge_ps (__m128 a,  __m128 b)
-        ///   CMPPS xmm, xmm/m128, imm8(1)
+        ///   CMPPS xmm, xmm/m128, imm8(6) with swapped operands
         /// </summary>
         public static Vector128<float> CompareNotGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_cmpnge_ss (__m128 a,  __m128 b)
-        ///   CMPSS xmm, xmm/m32, imm8(1)
+        ///   CMPSS xmm, xmm/m32, imm8(6) with swapped operands
         /// </summary>
         public static Vector128<float> CompareScalarNotGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 

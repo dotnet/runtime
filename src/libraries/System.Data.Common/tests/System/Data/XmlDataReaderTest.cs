@@ -1,5 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// See the LICENSE file in the project root for more information.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 // Copyright (c) 2007 Novell, Inc
 //
@@ -186,7 +186,7 @@ namespace System.Data.Tests
                     </DocumentElement>"));
         }
 
-        // Test for Bug#377146
+        // Test for Bug #377146
         [Fact]
         public void XmlLoadCustomTypesTest()
         {

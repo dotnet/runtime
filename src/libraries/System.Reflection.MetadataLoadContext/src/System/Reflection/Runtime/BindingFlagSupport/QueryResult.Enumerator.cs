@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
 
@@ -20,7 +19,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
             public bool MoveNext()
             {
-                while (++_index < _unfilteredCount && !_queriedMembers.Matches(_index, _bindingAttr))
+                while (++_index < _unfilteredCount && !_queriedMembers!.Matches(_index, _bindingAttr))
                 {
                 }
 
@@ -36,14 +35,14 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
-                    return _queriedMembers[_index];
+                    return _queriedMembers![_index];
                 }
             }
 
             private int _index;
             private readonly int _unfilteredCount;
             private readonly BindingFlags _bindingAttr;
-            private readonly QueriedMemberList<M> _queriedMembers;
+            private readonly QueriedMemberList<M>? _queriedMembers;
         }
     }
 }

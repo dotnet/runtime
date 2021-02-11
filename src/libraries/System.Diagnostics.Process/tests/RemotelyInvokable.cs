@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -13,8 +12,8 @@ using System.Threading.Tasks;
 namespace System.Diagnostics.Tests
 {
     /// <summary>
-    /// This class is used as interop between uap and netfx app running in the same app container.
-    /// On uap code running here will be running on netfx.
+    /// This class is used as interop between uap and .NET Framework app running in the same app container.
+    /// On uap code running here will be running on .NET Framework.
     /// This is a workaround for a limitation of uap RemoteInvoke which does not give us much control over the process.
     /// </summary>
     internal static class RemotelyInvokable
@@ -29,8 +28,9 @@ namespace System.Diagnostics.Tests
             return SuccessExitCode;
         }
 
-        public static int Sleep(string duration)
+        public static int Sleep(string duration, string callerName)
         {
+            _ = callerName; // argument ignored, for debugging purposes
             Thread.Sleep(int.Parse(duration));
             return SuccessExitCode;
         }
@@ -65,6 +65,12 @@ namespace System.Diagnostics.Tests
             Console.WriteLine("Signal");
             string line = Console.ReadLine();
             return line == "Success" ? SuccessExitCode : SuccessExitCode + 1;
+        }
+
+        public static int Echo(string value)
+        {
+            Console.WriteLine(value);
+            return SuccessExitCode;
         }
 
         public static int ReadLineWriteIfNull()

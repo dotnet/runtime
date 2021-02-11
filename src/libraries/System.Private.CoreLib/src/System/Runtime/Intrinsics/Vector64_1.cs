@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -19,13 +19,14 @@ namespace System.Runtime.Intrinsics
         where T : struct
     {
         // These fields exist to ensure the alignment is 8, rather than 1.
-        // This also allows the debug view to work https://github.com/dotnet/coreclr/issues/15694)
+        // This also allows the debug view to work https://github.com/dotnet/runtime/issues/9495)
         private readonly ulong _00;
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector64{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static int Count
         {
+            [Intrinsic]
             get
             {
                 ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
@@ -37,12 +38,27 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static Vector64<T> Zero
         {
+            [Intrinsic]
             get
             {
                 ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
                 return default;
             }
         }
+
+
+        /// <summary>Gets a new <see cref="Vector64{T}" /> with all bits set to 1.</summary>
+        /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector64<T> AllBitsSet
+        {
+            [Intrinsic]
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                return Vector64.Create(0xFFFFFFFF).As<uint, T>();
+            }
+        }
+
 
         internal unsafe string DisplayString
         {
@@ -97,7 +113,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="obj" /> is a <see cref="Vector64{T}" /> and is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return (obj is Vector64<T>) && Equals((Vector64<T>)(obj));
         }
@@ -109,14 +125,14 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
-            int hashCode = 0;
+            HashCode hashCode = default;
 
             for (int i = 0; i < Count; i++)
             {
-                hashCode = HashCode.Combine(hashCode, this.GetElement(i).GetHashCode());
+                hashCode.Add(this.GetElement(i).GetHashCode());
             }
 
-            return hashCode;
+            return hashCode.ToHashCode();
         }
 
         /// <summary>Converts the current instance to an equivalent string representation.</summary>

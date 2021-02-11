@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1105,7 +1104,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(StringBuilder sb1, StringBuilder sb2, bool expected)
+        public static void EqualsTest(StringBuilder sb1, StringBuilder sb2, bool expected)
         {
             Assert.Equal(expected, sb1.Equals(sb2));
         }
@@ -1746,7 +1745,7 @@ namespace System.Text.Tests
         [InlineData("Hello", 4, 0, "")]
         [InlineData("Hello", 0, 0, "")]
         [InlineData("", 0, 0, "")]
-        public static void ToString(string value, int startIndex, int length, string expected)
+        public static void ToStringTest(string value, int startIndex, int length, string expected)
         {
             var builder = new StringBuilder(value);
             if (startIndex == 0 && length == value.Length)
@@ -2170,7 +2169,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Equals_String_TestData))]
-        public static void Equals(StringBuilder sb1, string value, bool expected)
+        public static void Equals_String(StringBuilder sb1, string value, bool expected)
         {
             Assert.Equal(expected, sb1.Equals(value.AsSpan()));
         }
@@ -2230,6 +2229,25 @@ namespace System.Text.Tests
             sb2.Append("12345");
 
             Assert.True(sb1.Equals(sb2));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40625")] // Hangs expanding the SB
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static unsafe void FailureOnLargeString()
+        {
+            RemoteExecutor.Invoke(() => // Uses lots of memory
+            {
+                AssertExtensions.ThrowsAny<ArgumentOutOfRangeException, OutOfMemoryException>(() =>
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append(new char[2_000_000_000]);
+                    sb.Length--;
+                    string s = new string('x', 500_000_000);
+                    sb.Append(s); // This should throw, not AV
+                });
+
+                return RemoteExecutor.SuccessExitCode; // workaround https://github.com/dotnet/arcade/issues/5865
+            }).Dispose();
         }
     }
 }

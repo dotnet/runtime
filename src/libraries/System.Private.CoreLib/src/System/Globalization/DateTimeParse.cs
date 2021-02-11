@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -195,23 +194,26 @@ namespace System
             //
             for (int i = 0; i < formats.Length; i++)
             {
-                if (formats[i] == null || formats[i]!.Length == 0) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                string? format = formats[i];
+                if (string.IsNullOrEmpty(format))
                 {
                     result.SetBadFormatSpecifierFailure();
                     return false;
                 }
+
                 // Create a new result each time to ensure the runs are independent. Carry through
                 // flags from the caller and return the result.
                 DateTimeResult innerResult = default;       // The buffer to store the parsing result.
                 innerResult.Init(s);
                 innerResult.flags = result.flags;
-                if (TryParseExact(s, formats[i], dtfi, style, ref innerResult))
+                if (TryParseExact(s, format, dtfi, style, ref innerResult))
                 {
                     result.parsedDate = innerResult.parsedDate;
                     result.timeZoneOffset = innerResult.timeZoneOffset;
                     return true;
                 }
             }
+
             result.SetBadDateTimeFailure();
             return false;
         }
@@ -604,15 +606,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         private static bool Lex(DS dps, ref __DTString str, ref DateTimeToken dtok, ref DateTimeRawInfo raw, ref DateTimeResult result, ref DateTimeFormatInfo dtfi, DateTimeStyles styles)
         {
-            TokenType tokenType;
-            int tokenValue;
             int indexBeforeSeparator;
             char charBeforeSeparator;
 
             TokenType sep;
             dtok.dtt = DTT.Unk;     // Assume the token is unkown.
 
-            str.GetRegularToken(out tokenType, out tokenValue, dtfi);
+            str.GetRegularToken(out TokenType tokenType, out int tokenValue, dtfi);
 
 #if _LOGGING
             if (s_tracingEnabled)
@@ -1553,8 +1553,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
             GetDefaultYear(ref result, ref styles);
 
-            int order;
-            if (!GetMonthDayOrder(dtfi.MonthDayPattern, out order))
+            if (!GetMonthDayOrder(dtfi.MonthDayPattern, out int order))
             {
                 result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDatePattern), dtfi.MonthDayPattern);
                 return false;
@@ -1595,8 +1594,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             int n2 = raw.GetNumber(1);
             int n3 = raw.GetNumber(2);
 
-            int order;
-            if (!GetYearMonthDayOrder(dtfi.ShortDatePattern, out order))
+            if (!GetYearMonthDayOrder(dtfi.ShortDatePattern, out int order))
             {
                 result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDatePattern), dtfi.ShortDatePattern);
                 return false;
@@ -1660,16 +1658,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             // In the first and last cases, it could be either or neither, but a day is a better default interpretation
             // than a 2 digit year.
 
-            int monthDayOrder;
-            if (!GetMonthDayOrder(dtfi.MonthDayPattern, out monthDayOrder))
+            if (!GetMonthDayOrder(dtfi.MonthDayPattern, out int monthDayOrder))
             {
                 result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDatePattern), dtfi.MonthDayPattern);
                 return false;
             }
             if (monthDayOrder == ORDER_DM)
             {
-                int yearMonthOrder;
-                if (!GetYearMonthOrder(dtfi.YearMonthPattern, out yearMonthOrder))
+                if (!GetYearMonthOrder(dtfi.YearMonthPattern, out int yearMonthOrder))
                 {
                     result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDatePattern), dtfi.YearMonthPattern);
                     return false;
@@ -1702,8 +1698,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         private static bool GetHebrewDayOfNM(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
-            int monthDayOrder;
-            if (!GetMonthDayOrder(dtfi.MonthDayPattern, out monthDayOrder))
+            if (!GetMonthDayOrder(dtfi.MonthDayPattern, out int monthDayOrder))
             {
                 result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDatePattern), dtfi.MonthDayPattern);
                 return false;
@@ -1742,16 +1737,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             // In the first and last cases, it could be either or neither, but a day is a better default interpretation
             // than a 2 digit year.
 
-            int monthDayOrder;
-            if (!GetMonthDayOrder(dtfi.MonthDayPattern, out monthDayOrder))
+            if (!GetMonthDayOrder(dtfi.MonthDayPattern, out int monthDayOrder))
             {
                 result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDatePattern), dtfi.MonthDayPattern);
                 return false;
             }
             if (monthDayOrder == ORDER_MD)
             {
-                int yearMonthOrder;
-                if (!GetYearMonthOrder(dtfi.YearMonthPattern, out yearMonthOrder))
+                if (!GetYearMonthOrder(dtfi.YearMonthPattern, out int yearMonthOrder))
                 {
                     result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDatePattern), dtfi.YearMonthPattern);
                     return false;
@@ -1788,8 +1781,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             int n1 = raw.GetNumber(0);
             int n2 = raw.GetNumber(1);
 
-            int order;
-            if (!GetYearMonthDayOrder(dtfi.ShortDatePattern, out order))
+            if (!GetYearMonthDayOrder(dtfi.ShortDatePattern, out int order))
             {
                 result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDatePattern), dtfi.ShortDatePattern);
                 return false;
@@ -1860,8 +1852,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             string pattern = dtfi.ShortDatePattern;
 
             // For compatibility, don't throw if we can't determine the order, but default to YMD instead
-            int order;
-            if (GetYearMonthDayOrder(pattern, out order) && order == ORDER_YDM)
+            if (GetYearMonthDayOrder(pattern, out int order) && order == ORDER_YDM)
             {
                 if (SetDateYMD(ref result, raw.year, n2, n1))
                 {
@@ -1893,8 +1884,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             int n1 = raw.GetNumber(0);
             int n2 = raw.GetNumber(1);
 
-            int order;
-            if (!GetYearMonthDayOrder(dtfi.ShortDatePattern, out order))
+            if (!GetYearMonthDayOrder(dtfi.ShortDatePattern, out int order))
             {
                 result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDatePattern), dtfi.ShortDatePattern);
                 return false;
@@ -2139,8 +2129,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             {
                 if (((result.flags & ParseFlags.HaveYear) == 0) && ((result.flags & ParseFlags.HaveDay) == 0))
                 {
-                    int order;
-                    if (!GetYearMonthDayOrder(dtfi.ShortDatePattern, out order))
+                    if (!GetYearMonthDayOrder(dtfi.ShortDatePattern, out int order))
                     {
                         result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadDatePattern), dtfi.ShortDatePattern);
                         return false;
@@ -2524,7 +2513,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
             //
             // The string to be parsed. Use a __DTString wrapper so that we can trace the index which
-            // indicates the begining of next token.
+            // indicates the beginning of next token.
             //
             __DTString str = new __DTString(s, dtfi);
 
@@ -2686,9 +2675,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
 
-            DateTime time;
             if (!result.calendar.TryToDateTime(result.Year, result.Month, result.Day,
-                    result.Hour, result.Minute, result.Second, 0, result.era, out time))
+                    result.Hour, result.Minute, result.Second, 0, result.era, out DateTime time))
             {
                 result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                 TPTraceExit("0100 (result.calendar.TryToDateTime)", dps);
@@ -2962,12 +2950,11 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             {
             }
             str.Index--;
-            int hour, minute;
             int second = 0;
             double partSecond = 0;
 
             str.SkipWhiteSpaces();
-            if (!ParseDigits(ref str, 2, out hour))
+            if (!ParseDigits(ref str, 2, out int hour))
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -2979,7 +2966,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
             str.SkipWhiteSpaces();
-            if (!ParseDigits(ref str, 2, out minute))
+            if (!ParseDigits(ref str, 2, out int minute))
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -3015,6 +3002,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         result.SetBadDateTimeFailure();
                         return false;
                     }
+                    str.Index--;
                 }
                 else if (ch == 'Z' || ch == 'z')
                 {
@@ -3052,10 +3040,9 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 }
             }
 
-            DateTime time;
             Calendar calendar = GregorianCalendar.GetDefaultInstance();
             if (!calendar.TryToDateTime(raw.year, raw.GetNumber(0), raw.GetNumber(1),
-                    hour, minute, second, 0, result.era, out time))
+                    hour, minute, second, 0, result.era, out DateTime time))
             {
                 result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
                 return false;
@@ -5176,7 +5163,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 if (s.Length > MaxLineLength || (curLineLength + s.Length + 2) > MaxLineLength)
                 {
                     buffer.Append(',');
-                    buffer.Append(Environment.NewLineConst);
+                    buffer.AppendLine();
                     buffer.Append(' ', NewLinePadding);
                     curLineLength = 0;
                 }
@@ -5193,7 +5180,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             s = Hex(strs[strs.Length - 1]);
             if (s.Length > MaxLineLength || (curLineLength + s.Length + 6) > MaxLineLength)
             {
-                buffer.Append(Environment.NewLineConst);
+                buffer.AppendLine();
                 buffer.Append(' ', NewLinePadding);
             }
             else
@@ -5208,7 +5195,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         private static string Hex(ReadOnlySpan<char> str)
         {
             StringBuilder buffer = new StringBuilder();
-            buffer.Append("\"");
+            buffer.Append('"');
             for (int i = 0; i < str.Length; i++)
             {
                 if (str[i] <= '\x007f')
@@ -5216,7 +5203,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 else
                     buffer.Append("\\u").Append(((int)str[i]).ToString("x4", CultureInfo.InvariantCulture));
             }
-            buffer.Append("\"");
+            buffer.Append('"');
             return buffer.ToString();
         }
         // return an unicode escaped string form of char c
@@ -5234,7 +5221,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         }
 
         // for testing; do not make this readonly
-        private static bool s_tracingEnabled = false;
+        private static bool s_tracingEnabled;
 #endif // _LOGGING
     }
 

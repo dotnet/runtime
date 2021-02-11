@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Net.Http;
@@ -13,7 +12,8 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    [SkipOnCoreClr("System.Net.Tests are inestable")]
+    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", RuntimeConfiguration.Checked)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerAuthenticationTests : IDisposable
     {
@@ -32,7 +32,7 @@ namespace System.Net.Tests
 
         public void Dispose() => _factory.Dispose();
 
-        // [ActiveIssue(20840, TestPlatforms.Unix)] // Managed implementation connects successfully.
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/22195", TestPlatforms.Unix)] // Managed implementation connects successfully.
         [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         [InlineData("Basic")]
         [InlineData("NTLM")]
@@ -49,7 +49,7 @@ namespace System.Net.Tests
             }
         }
 
-        // [ActiveIssue(20840, TestPlatforms.Unix)] Managed implementation connects successfully.
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/22195", TestPlatforms.Unix)] Managed implementation connects successfully.
         [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         [InlineData("Basic")]
         [InlineData("NTLM")]
@@ -106,7 +106,7 @@ namespace System.Net.Tests
             yield return new object[] { "abc", HttpStatusCode.InternalServerError };
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20098, TestPlatforms.Unix)]
+        [Theory]
         [InlineData("ExampleRealm")]
         [InlineData("  ExampleRealm  ")]
         [InlineData("")]
@@ -269,7 +269,7 @@ namespace System.Net.Tests
 
             using (var client = new HttpClient())
             {
-                HttpResponseMessage response = await AuthenticationFailure(client, HttpStatusCode.InternalServerError);
+                await AuthenticationFailure(client, HttpStatusCode.InternalServerError);
             }
         }
 
@@ -281,7 +281,7 @@ namespace System.Net.Tests
 
             using (var client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
                 Assert.Throws<OutOfMemoryException>(() => _listener.GetContext());
             }
         }
@@ -450,7 +450,7 @@ namespace System.Net.Tests
                     Basic,
                     Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", TestUser, TestPassword))));
 
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
                 HttpListenerContext listenerContext = await serverContextTask;
 
                 Assert.Null(listenerContext.User);
@@ -469,7 +469,7 @@ namespace System.Net.Tests
                     Basic,
                     Convert.ToBase64String(Encoding.ASCII.GetBytes(authHeader)));
 
-                Task <string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
                 HttpListenerContext listenerContext = await serverContextTask;
 
                 Assert.Equal(expectedUsername, listenerContext.User.Identity.Name);

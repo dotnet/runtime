@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -33,7 +32,7 @@ namespace System.Linq.Expressions.Compiler
             /// <summary>
             /// The child expressions being rewritten.
             /// </summary>
-            private readonly Expression[] _expressions;
+            private readonly Expression?[] _expressions;
 
             /// <summary>
             /// The index of the next expression to rewrite in <see cref="_expressions"/>.
@@ -66,7 +65,7 @@ namespace System.Linq.Expressions.Compiler
             /// </c>
             /// These get wrapped in a Block in the <see cref="Rewrite"/> method.
             /// </example>
-            private List<Expression> _comma;
+            private List<Expression>? _comma;
 
             /// <summary>
             /// The current computed rewrite action, obtained by OR-ing together
@@ -95,7 +94,7 @@ namespace System.Linq.Expressions.Compiler
             /// requires use of a <see cref="ByRefAssignBinaryExpression" /> node
             /// to perform spilling.
             /// </summary>
-            private bool[] _byRefs;
+            private bool[]? _byRefs;
 
             /// <summary>
             /// Creates a new child rewriter instance using the specified initial
@@ -118,7 +117,7 @@ namespace System.Linq.Expressions.Compiler
             /// stack state and rewrite action to be updated accordingly.
             /// </summary>
             /// <param name="expression">The child expression to add.</param>
-            internal void Add(Expression expression)
+            internal void Add(Expression? expression)
             {
                 Debug.Assert(!_done);
 
@@ -201,16 +200,16 @@ namespace System.Linq.Expressions.Compiler
 
                     if (_action == RewriteAction.SpillStack)
                     {
-                        Expression[] clone = _expressions;
+                        Expression?[] clone = _expressions;
                         int count = _lastSpillIndex + 1;
                         List<Expression> comma = new List<Expression>(count + 1);
                         for (int i = 0; i < count; i++)
                         {
-                            Expression current = clone[i];
+                            Expression? current = clone[i];
                             if (ShouldSaveToTemp(current))
                             {
                                 Expression temp;
-                                clone[i] = _self.ToTemp(current, out temp, _byRefs?[i] ?? false);
+                                clone[i] = _self.ToTemp(current!, out temp, _byRefs?[i] ?? false);
                                 comma.Add(temp);
                             }
                         }
@@ -231,7 +230,7 @@ namespace System.Linq.Expressions.Compiler
             /// <c>true</c> if the expression should be saved to a temporary variable;
             /// otherwise, <c>false</c>.
             /// </returns>
-            private static bool ShouldSaveToTemp(Expression expression)
+            private static bool ShouldSaveToTemp(Expression? expression)
             {
                 if (expression == null)
                     return false;
@@ -309,7 +308,7 @@ namespace System.Linq.Expressions.Compiler
             /// <param name="expr">
             /// The child expression representing the instance.
             /// </param>
-            internal void MarkRefInstance(Expression expr)
+            internal void MarkRefInstance(Expression? expr)
             {
                 if (IsRefInstance(expr))
                 {
@@ -380,7 +379,7 @@ namespace System.Linq.Expressions.Compiler
 
                 if (_action == RewriteAction.SpillStack)
                 {
-                    Debug.Assert(_comma.Capacity == _comma.Count + 1);
+                    Debug.Assert(_comma!.Capacity == _comma.Count + 1);
                     _comma.Add(expression);
                     expression = MakeBlock(_comma);
                 }
@@ -401,7 +400,7 @@ namespace System.Linq.Expressions.Compiler
             /// <returns>
             /// The rewritten child expression at the specified <paramref name="index"/>.
             /// </returns>
-            internal Expression this[int index]
+            internal Expression? this[int index]
             {
                 get
                 {
@@ -435,7 +434,7 @@ namespace System.Linq.Expressions.Compiler
             /// The rewritten child expressions between the specified <paramref name="first"/>
             /// and <paramref name="last"/> (inclusive) indexes.
             /// </returns>
-            internal Expression[] this[int first, int last]
+            internal Expression?[] this[int first, int last]
             {
                 get
                 {

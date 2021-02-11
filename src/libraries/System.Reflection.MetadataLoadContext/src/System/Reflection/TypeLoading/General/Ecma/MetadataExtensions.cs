@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
@@ -72,7 +71,7 @@ namespace System.Reflection.TypeLoading.Ecma
         public static int GetToken(this StandaloneSignatureHandle handle) => MetadataTokens.GetToken(handle);
         public static int GetToken(this AssemblyFileHandle handle) => MetadataTokens.GetToken(handle);
 
-        public static string GetStringOrNull(this StringHandle handle, MetadataReader reader) => handle.IsNil ? null : reader.GetString(handle);
+        public static string? GetStringOrNull(this StringHandle handle, MetadataReader reader) => handle.IsNil ? null : reader.GetString(handle);
 
         public static bool Equals(this StringHandle handle, string value, MetadataReader reader) => reader.StringComparer.Equals(handle, value, ignoreCase: false);
 

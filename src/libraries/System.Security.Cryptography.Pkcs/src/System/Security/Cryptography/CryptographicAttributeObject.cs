@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using Internal.Cryptography;
 using System;
 using System.Diagnostics;
 
@@ -17,9 +17,10 @@ namespace System.Security.Cryptography
         {
         }
 
-        public CryptographicAttributeObject(Oid oid, AsnEncodedDataCollection values)
+        public CryptographicAttributeObject(Oid oid, AsnEncodedDataCollection? values)
         {
-            _oid = new Oid(oid);
+            _oid = oid.CopyOid();
+
             if (values == null)
             {
                 Values = new AsnEncodedDataCollection();
@@ -28,7 +29,7 @@ namespace System.Security.Cryptography
             {
                 foreach (AsnEncodedData asn in values)
                 {
-                    if (!string.Equals(asn.Oid.Value, oid.Value, StringComparison.Ordinal))
+                    if (!string.Equals(asn.Oid!.Value, oid.Value, StringComparison.Ordinal))
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_WrongOidInAsnCollection, oid.Value, asn.Oid.Value));
                 }
                 Values = values;
@@ -39,13 +40,7 @@ namespace System.Security.Cryptography
         // Public properties.
         //
 
-        public Oid Oid
-        {
-            get
-            {
-                return new Oid(_oid);
-            }
-        }
+        public Oid Oid => _oid.CopyOid();
 
         public AsnEncodedDataCollection Values { get; }
         private readonly Oid _oid;

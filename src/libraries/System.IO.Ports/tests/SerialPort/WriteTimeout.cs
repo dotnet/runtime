@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO.PortsTests;
@@ -73,7 +72,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(Write_byte_int_int, true);
         }
 
-        [ActiveIssue(15961)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Infinite_Write_char_int_int()
         {

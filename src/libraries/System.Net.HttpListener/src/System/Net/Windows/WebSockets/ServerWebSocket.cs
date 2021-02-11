@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.IO;
@@ -11,7 +10,7 @@ namespace System.Net.WebSockets
     internal sealed class ServerWebSocket : WebSocketBase
     {
         internal static WebSocket Create(Stream innerStream,
-            string subProtocol,
+            string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
@@ -38,7 +37,7 @@ namespace System.Net.WebSockets
         private readonly Interop.WebSocket.Property[] _properties;
 
         public ServerWebSocket(Stream innerStream,
-            string subProtocol,
+            string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)

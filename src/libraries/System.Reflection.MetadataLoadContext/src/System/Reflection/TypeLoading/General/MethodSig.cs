@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -18,7 +17,7 @@ namespace System.Reflection.TypeLoading
     // that it's far shorter than "ParametersAndReturnType".
     internal sealed class MethodSig<T>
     {
-        public T Return { get; private set; }
+        public T Return { get; private set; } = default!;
         public T[] Parameters { get; }
 
         public MethodSig(int parameterCount)

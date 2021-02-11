@@ -193,7 +193,7 @@
     <value>Can't get a heap offset for a virtual heap handle</value>
   </data>
   <data name="InvalidNumberOfSections" xml:space="preserve">
-    <value>Invalid number of sections in declared in PE header.</value>
+    <value>Invalid number of sections declared in PE header.</value>
   </data>
   <data name="InvalidSignature" xml:space="preserve">
     <value>Invalid signature.</value>

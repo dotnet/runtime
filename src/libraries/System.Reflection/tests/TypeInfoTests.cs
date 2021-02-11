@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -473,7 +472,8 @@ namespace System.Reflection.Tests
         [Fact]
         public void IsEnumDefined_Invalid()
         {
-            AssertExtensions.Throws<ArgumentException>("", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined("10"));
             Assert.Throws<ArgumentNullException>(() => typeof(IntEnum).GetTypeInfo().IsEnumDefined(null));
             Assert.Throws<InvalidOperationException>(() => typeof(IntEnum).GetTypeInfo().IsEnumDefined(new NonGenericClassWithNoInterfaces()));
         }
@@ -493,11 +493,18 @@ namespace System.Reflection.Tests
             TypeInfo typeInfo = type.GetTypeInfo();
             Type[] implementedInterfaces = type.GetTypeInfo().ImplementedInterfaces.ToArray();
 
-            Array.Sort(implementedInterfaces, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
-            Array.Sort(expected, delegate (Type a, Type b) { return a.GetHashCode() - b.GetHashCode(); });
+            Array.Sort(implementedInterfaces, TypeSortComparer);
+            Array.Sort(expected, TypeSortComparer);
 
             Assert.Equal(expected, implementedInterfaces);
             Assert.All(expected, ti => Assert.True(ti.GetTypeInfo().IsAssignableFrom(type.GetTypeInfo())));
+            Assert.All(expected, ti => Assert.True(type.GetTypeInfo().IsAssignableTo(ti.GetTypeInfo())));
+
+            static int TypeSortComparer(Type a, Type b)
+            {
+                // produces a stable (within this process) ordering of two Type objects
+                return a.TypeHandle.Value.CompareTo(b.TypeHandle.Value);
+            }
         }
 
         public static IEnumerable<object[]> IsInstanceOfType_TestData()
@@ -568,10 +575,13 @@ namespace System.Reflection.Tests
         [InlineData(typeof(uint[]), typeof(int[]), true)]
         [InlineData(typeof(IList<int>), typeof(int[]), true)]
         [InlineData(typeof(IList<uint>), typeof(int[]), true)]
-        public void IsAssignableFrom(Type type, Type c, bool expected)
+        public void IsAssignable(Type type, Type c, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c));
             Assert.Equal(expected, type.GetTypeInfo().IsAssignableFrom(c?.GetTypeInfo()));
+
+            Assert.Equal(expected, c?.IsAssignableTo(type) ?? false);
+            Assert.Equal(expected, c?.GetTypeInfo().IsAssignableTo(type.GetTypeInfo()) ?? false);
         }
 
         class G<T, U> where T : U
@@ -581,7 +591,7 @@ namespace System.Reflection.Tests
         static volatile object s_boxedInt32;
 
         [Fact]
-        public void IsAssignableFromNullable()
+        public void IsAssignableNullable()
         {
             Type nubInt = typeof(Nullable<int>);
             Type intType = typeof(int);
@@ -592,6 +602,8 @@ namespace System.Reflection.Tests
             // Nullable<T>  is assignable from  int
             Assert.True(nubInt.IsAssignableFrom(intType));
             Assert.False(intType.IsAssignableFrom(nubInt));
+            Assert.False(nubInt.IsAssignableTo(intType));
+            Assert.True(intType.IsAssignableTo(nubInt));
 
             Type nubOfT = nubInt.GetGenericTypeDefinition();
             Type T = nubOfT.GetTypeInfo().GenericTypeParameters[0];
@@ -601,15 +613,22 @@ namespace System.Reflection.Tests
             Assert.True(objType.IsAssignableFrom(T));
             Assert.True(valTypeType.IsAssignableFrom(T));
 
+            Assert.True(T.IsAssignableTo(T));
+            Assert.True(T.IsAssignableTo(objType));
+            Assert.True(T.IsAssignableTo(valTypeType));
+
             // should be false
             // Nullable<T> is not assignable from T
             Assert.False(nubOfT.IsAssignableFrom(T));
             Assert.False(T.IsAssignableFrom(nubOfT));
 
+            Assert.False(nubOfT.IsAssignableTo(T));
+            Assert.False(T.IsAssignableTo(nubOfT));
+
             // illegal type construction due to T->T?
             Assert.Throws<ArgumentException>(() => typeof(G<,>).MakeGenericType(typeof(int), typeof(int?)));
 
-            // Test trivial object casts 
+            // Test trivial object casts
             s_boxedInt32 = (object)1234;
             Assert.True((s_boxedInt32 is int?) && (int?)s_boxedInt32 == 1234);
 
@@ -625,7 +644,7 @@ namespace System.Reflection.Tests
         {
             //void OpenGenericArrays()
             //{
-            //    // this is valid, reflection checks below should agree 
+            //    // this is valid, reflection checks below should agree
             //    IFace[] arr2 = default(T[]);
             //    IEnumerable<IFace> ie = default(T[]);
             //}
@@ -635,7 +654,7 @@ namespace System.Reflection.Tests
         {
             //void OpenGenericArrays()
             //{
-            //    // this is valid, reflection checks below should agree 
+            //    // this is valid, reflection checks below should agree
             //    U[] arr2 = default(T[]);
             //    IEnumerable<U> ie = default(T[]);
             //}
@@ -648,12 +667,17 @@ namespace System.Reflection.Tests
             Assert.True(typeof(IFace[]).IsAssignableFrom(a));
             Assert.True(typeof(IEnumerable<IFace>).IsAssignableFrom(a));
 
+            Assert.True(a.IsAssignableTo(typeof(IFace[])));
+            Assert.True(a.IsAssignableTo(typeof(IEnumerable<IFace>)));
+
             Type a1 = typeof(GG<,>).GetGenericArguments()[0].MakeArrayType();
             Type a2 = typeof(GG<,>).GetGenericArguments()[1].MakeArrayType();
             Assert.True(a2.IsAssignableFrom(a1));
+            Assert.True(a1.IsAssignableTo(a2));
 
             Type ie = typeof(IEnumerable<>).MakeGenericType(typeof(GG<,>).GetGenericArguments()[1]);
             Assert.True(ie.IsAssignableFrom(a1));
+            Assert.True(a1.IsAssignableTo(ie));
         }
 
         public static IEnumerable<object[]> IsEquivilentTo_TestData()
@@ -1186,17 +1210,40 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, type.GetTypeInfo().ContainsGenericParameters);
         }
 
-        [Theory]
-        [InlineData(typeof(int), "System.Int32")]
-        public void FullName(Type type, string expected)
+        [Fact]
+        public void FullName()
         {
-            Assert.Equal(expected, type.GetTypeInfo().FullName);
+            Assert.Equal("System.Int32", typeof(int).GetTypeInfo().FullName);
+
+            Type t = typeof(TI_FullNameTest<>);
+
+            // a generic type parameter
+            Assert.Null(t.GetMethod("TypeParam").ReturnType.GetTypeInfo().FullName);
+
+            // an array type, pointer type, or byref type based on a type parameter
+            Assert.Null(t.GetMethod("ArrayTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Null(t.GetMethod("PointerTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Null(t.GetMethod("ByRefTypeParam").ReturnType.GetTypeInfo().FullName);
+
+            // a generic type that is not a generic type definition but contains unresolved type parameters
+            Assert.Null(t.GetMethod("ListTypeParam").ReturnType.GetTypeInfo().FullName);
+
+            t = typeof(TI_FullNameTest<int>);
+
+            Assert.Equal("System.Int32", t.GetMethod("TypeParam").ReturnType.GetTypeInfo().FullName);
+
+            Assert.Equal("System.Int32[]", t.GetMethod("ArrayTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Equal("System.Int32*", t.GetMethod("PointerTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Equal("System.Int32&", t.GetMethod("ByRefTypeParam").ReturnType.GetTypeInfo().FullName);
+
+            Assert.NotNull(t.GetMethod("ListTypeParam").ReturnType.GetTypeInfo().FullName);
         }
 
         [Fact]
         public void Guid()
         {
             Assert.Equal(new Guid("FD80F123-BEDD-4492-B50A-5D46AE94DD4E"), typeof(TypeInfoTests).GetTypeInfo().GUID);
+            Assert.Equal(System.Guid.Empty, typeof(int[]).GetTypeInfo().GUID);
         }
 
         [Theory]
@@ -1356,6 +1403,9 @@ namespace System.Reflection.Tests
         [InlineData(typeof(PublicEnum), "System.Reflection.Tests")]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1), "System.Reflection.Tests")]
         [InlineData(typeof(int), "System")]
+        [InlineData(typeof(TI_BaseClass[]), "System.Reflection.Tests")]
+        [InlineData(typeof(TI_BaseClass.PublicNestedClass1[]), "System.Reflection.Tests")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42633", TestRuntimes.Mono)]
         public void Namespace(Type type, string expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().Namespace);
@@ -1475,6 +1525,44 @@ namespace System.Reflection.Tests
         public static void UnderlyingSystemType(Type type, Type expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().UnderlyingSystemType);
+        }
+
+        public static IEnumerable<object[]> SZArrayOrNotTypes()
+        {
+            yield return new object[] { typeof(int[]), true };
+            yield return new object[] { typeof(string[]), true };
+            yield return new object[] { typeof(void), false };
+            yield return new object[] { typeof(int), false };
+            yield return new object[] { typeof(int[]).MakeByRefType(), false };
+            yield return new object[] { typeof(int[,]), false };
+            yield return new object[] { typeof(TypeInfoTests), false };
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                yield return new object[] { Array.CreateInstance(typeof(int), new[] { 2 }, new[] { -1 }).GetType(), false };
+                yield return new object[] { Array.CreateInstance(typeof(int), new[] { 2 }, new[] { 1 }).GetType(), false };
+            }
+            yield return new object[] { Array.CreateInstance(typeof(int), new[] { 2 }, new[] { 0 }).GetType(), true };
+            yield return new object[] { typeof(int[][]), true };
+            yield return new object[] { Type.GetType("System.Int32[]"), true };
+            yield return new object[] { Type.GetType("System.Int32[*]"), false };
+            yield return new object[] { Type.GetType("System.Int32"), false };
+            yield return new object[] { typeof(int).MakeArrayType(), true };
+            yield return new object[] { typeof(int).MakeArrayType(1), false };
+            yield return new object[] { typeof(int).MakeArrayType().MakeArrayType(), true };
+            yield return new object[] { typeof(int).MakeArrayType(2), false };
+            yield return new object[] { typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>), false };
+            yield return new object[] { typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>[]), true };
+            yield return new object[] { typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>[,]), false };
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                yield return new object[] { Array.CreateInstance(typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>), new[] { 2 }, new[] { -1 }).GetType(), false };
+            }
+        }
+
+        [Theory, MemberData(nameof(SZArrayOrNotTypes))]
+        public void IsSZArray(Type type, bool expected)
+        {
+            Assert.Equal(expected, type.GetTypeInfo().IsSZArray);
         }
 
 #pragma warning disable 0067, 0169
@@ -1728,4 +1816,23 @@ namespace System.Reflection.Tests
         public class AbstractSubSubClass : AbstractSubClass { }
     }
 #pragma warning restore 0067, 0169
+
+    public class OutsideTypeInfoTests
+    {
+        public class InsideTypeInfoTests { }
+    }
+
+    public class OutsideTypeInfoTests<T>
+    {
+        public class InsideTypeInfoTests<U> { }
+    }
+
+    public class TI_FullNameTest<T> where T : unmanaged
+    {
+        public static T TypeParam() => throw new Exception();
+        public static T[] ArrayTypeParam() => throw new Exception();
+        public static unsafe T* PointerTypeParam() => throw new Exception();
+        public static ref T ByRefTypeParam() => throw new Exception();
+        public static List<T> ListTypeParam() => throw new Exception();
+    }
 }

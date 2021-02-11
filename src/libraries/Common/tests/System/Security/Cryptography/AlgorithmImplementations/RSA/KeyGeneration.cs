@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public class KeyGeneration
     {
         [Fact]
@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             GenerateKey(rsa => GetSecondMin(rsa.LegalKeySizes));
         }
 
-        [Fact(Skip = "Takes approximately 1600 seconds to execute")]
+        [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public static void GenerateMaxKey()
         {
             GenerateKey(rsa => GetMax(rsa.LegalKeySizes));

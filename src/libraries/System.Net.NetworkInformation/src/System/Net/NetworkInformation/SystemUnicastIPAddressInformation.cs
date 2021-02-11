@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Net.Sockets;
@@ -13,7 +12,7 @@ namespace System.Net.NetworkInformation
     {
         private readonly long _dhcpLeaseLifetime;
         private readonly SystemIPAddressInformation _innerInfo;
-        private readonly IPAddress _ipv4Mask;
+        private readonly IPAddress? _ipv4Mask;
         private readonly PrefixOrigin _prefixOrigin;
         private readonly SuffixOrigin _suffixOrigin;
         private readonly DuplicateAddressDetectionState _dadState;
@@ -54,7 +53,7 @@ namespace System.Net.NetworkInformation
                     return IPAddress.Any;
                 }
 
-                return _ipv4Mask;
+                return _ipv4Mask!;
             }
         }
 

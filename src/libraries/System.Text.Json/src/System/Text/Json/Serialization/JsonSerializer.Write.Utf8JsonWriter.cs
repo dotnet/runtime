@@ -1,6 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -13,11 +16,18 @@ namespace System.Text.Json
         /// <param name="value">The value to convert and write.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="writer"/> is null.
+        ///   <paramref name="writer"/> is <see langword="null"/>.
         /// </exception>
-        public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonSerializerOptions options = null)
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// </exception>
+        public static void Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(
+            Utf8JsonWriter writer,
+            TValue value,
+            JsonSerializerOptions? options = null)
         {
-            WriteValueCore(writer, value, typeof(TValue), options);
+            Serialize<TValue>(writer, value, typeof(TValue), options);
         }
 
         /// <summary>
@@ -27,13 +37,48 @@ namespace System.Text.Json
         /// <param name="value">The value to convert and write.</param>
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the behavior.</param>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="writer"/> is null.
+        /// <exception cref="ArgumentException">
+        /// <paramref name="inputType"/> is not compatible with <paramref name="value"/>.
         /// </exception>
-        public static void Serialize(Utf8JsonWriter writer, object value, Type inputType, JsonSerializerOptions options = null)
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="writer"/> or <paramref name="inputType"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="inputType"/> or its serializable members.
+        /// </exception>
+        public static void Serialize(
+            Utf8JsonWriter writer,
+            object? value,
+            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            JsonSerializerOptions? options = null)
         {
-            VerifyValueAndType(value, inputType);
-            WriteValueCore(writer, value, inputType, options);
+            if (inputType == null)
+            {
+                throw new ArgumentNullException(nameof(inputType));
+            }
+
+            if (value != null && !inputType.IsAssignableFrom(value.GetType()))
+            {
+                ThrowHelper.ThrowArgumentException_DeserializeWrongType(inputType, value);
+            }
+
+            Serialize<object?>(writer, value, inputType, options);
+        }
+
+        private static void Serialize<TValue>(Utf8JsonWriter writer, in TValue value, Type type, JsonSerializerOptions? options)
+        {
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
+
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
+            WriteCore<TValue>(writer, value, type, options);
         }
     }
 }

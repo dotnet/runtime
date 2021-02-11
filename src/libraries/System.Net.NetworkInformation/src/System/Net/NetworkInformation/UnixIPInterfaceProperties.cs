@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -10,11 +9,11 @@ namespace System.Net.NetworkInformation
 {
     internal abstract class UnixIPInterfaceProperties : IPInterfaceProperties
     {
-        private UnicastIPAddressInformationCollection _unicastAddresses;
-        private MulticastIPAddressInformationCollection _multicastAddreses;
+        private UnicastIPAddressInformationCollection? _unicastAddresses;
+        private MulticastIPAddressInformationCollection? _multicastAddreses;
         private readonly UnixNetworkInterface _uni;
-        internal string _dnsSuffix;
-        internal IPAddressCollection _dnsAddresses;
+        internal string? _dnsSuffix;
+        internal IPAddressCollection? _dnsAddresses;
 
         public UnixIPInterfaceProperties(UnixNetworkInterface uni, bool globalConfig = false)
         {
@@ -107,7 +106,7 @@ namespace System.Net.NetworkInformation
             return collection;
         }
 
-        private static string GetDnsSuffix()
+        private static string? GetDnsSuffix()
         {
             try
             {
@@ -119,7 +118,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static IPAddressCollection GetDnsAddresses()
+        private static IPAddressCollection? GetDnsAddresses()
         {
             try
             {

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 
@@ -8,7 +7,7 @@ namespace System.Tests
 {
     public class RealParserTests : RealParserTestsBase
     {
-        // The actual tests are defined in: src\Common\tests\System\RealParserTestsBase.netcoreapp.cs
+        // The actual tests are defined in: src\Common\tests\System\RealParserTestsBase.cs
 
         protected override string InvariantToStringDouble(double d)
         {

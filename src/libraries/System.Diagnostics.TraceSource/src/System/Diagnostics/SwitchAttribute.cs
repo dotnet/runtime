@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace System.Diagnostics
 {
@@ -24,6 +23,7 @@ namespace System.Diagnostics
         public string SwitchName
         {
             get { return _name; }
+            [MemberNotNull(nameof(_name))]
             set
             {
                 if (value == null)
@@ -38,6 +38,7 @@ namespace System.Diagnostics
         public Type SwitchType
         {
             get { return _type; }
+            [MemberNotNull(nameof(_type))]
             set
             {
                 if (value == null)
@@ -46,8 +47,9 @@ namespace System.Diagnostics
             }
         }
 
-        public string SwitchDescription { get; set; }
+        public string? SwitchDescription { get; set; }
 
+        [RequiresUnreferencedCode("Types may be trimmed from the assembly.")]
         public static SwitchAttribute[] GetAll(Assembly assembly)
         {
             if (assembly == null)
@@ -67,7 +69,7 @@ namespace System.Diagnostics
             return ret;
         }
 
-        private static void GetAllRecursive(Type type, List<object> switchAttribs)
+        private static void GetAllRecursive([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, List<object> switchAttribs)
         {
             GetAllRecursive((MemberInfo)type, switchAttribs);
             MemberInfo[] members = type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic |

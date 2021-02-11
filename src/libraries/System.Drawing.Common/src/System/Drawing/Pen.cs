@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
 using System.Diagnostics;
@@ -585,7 +584,9 @@ namespace System.Drawing
 
                 if (value != _color)
                 {
+#if FEATURE_SYSTEM_EVENTS
                     Color oldColor = _color;
+#endif
                     _color = value;
                     InternalSetColor(value);
 
@@ -608,7 +609,7 @@ namespace System.Drawing
         {
             get
             {
-                Brush brush = null;
+                Brush? brush = null;
 
                 switch (PenType)
                 {
@@ -636,7 +637,7 @@ namespace System.Drawing
                         break;
                 }
 
-                return brush;
+                return brush!;
             }
             set
             {

@@ -1,21 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Unicode;
 using Internal.Runtime.CompilerServices;
-
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
-using nuint = System.UInt64;
-#else // BIT64
-using nuint = System.UInt32;
-#endif // BIT64
 
 namespace System.Globalization
 {
@@ -24,7 +17,7 @@ namespace System.Globalization
     /// A writing system is the collection of scripts and orthographic rules
     /// required to represent a language as text.
     /// </summary>
-    public partial class TextInfo : ICloneable, IDeserializationCallback
+    public sealed partial class TextInfo : ICloneable, IDeserializationCallback
     {
         private enum Tristate : byte
         {
@@ -34,7 +27,7 @@ namespace System.Globalization
         }
 
         private string? _listSeparator;
-        private bool _isReadOnly = false;
+        private bool _isReadOnly;
 
         private readonly string _cultureName;
         private readonly CultureData _cultureData;
@@ -45,9 +38,7 @@ namespace System.Globalization
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
-        internal static TextInfo Invariant => s_invariant ??= new TextInfo(CultureData.Invariant);
-
-        private static volatile TextInfo? s_invariant;
+        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true) { _isAsciiCasingSameAsInvariant = Tristate.True };
 
         internal TextInfo(CultureData cultureData)
         {
@@ -56,7 +47,16 @@ namespace System.Globalization
             _cultureName = _cultureData.CultureName;
             _textInfoName = _cultureData.TextInfoName;
 
-            FinishInitialization();
+            if (GlobalizationMode.UseNls)
+            {
+                _sortHandle = CompareInfo.NlsGetSortHandle(_textInfoName);
+            }
+        }
+
+        private TextInfo(CultureData cultureData, bool readOnly)
+            : this(cultureData)
+        {
+            SetReadOnlyState(readOnly);
         }
 
         void IDeserializationCallback.OnDeserialization(object? sender)
@@ -64,13 +64,13 @@ namespace System.Globalization
             throw new PlatformNotSupportedException();
         }
 
-        public virtual int ANSICodePage => _cultureData.ANSICodePage;
+        public int ANSICodePage => _cultureData.ANSICodePage;
 
-        public virtual int OEMCodePage => _cultureData.OEMCodePage;
+        public int OEMCodePage => _cultureData.OEMCodePage;
 
-        public virtual int MacCodePage => _cultureData.MacCodePage;
+        public int MacCodePage => _cultureData.MacCodePage;
 
-        public virtual int EBCDICCodePage => _cultureData.EBCDICCodePage;
+        public int EBCDICCodePage => _cultureData.EBCDICCodePage;
 
         // Just use the LCID from our text info name
         public int LCID => CultureInfo.GetCultureInfo(_textInfoName).LCID;
@@ -79,7 +79,7 @@ namespace System.Globalization
 
         public bool IsReadOnly => _isReadOnly;
 
-        public virtual object Clone()
+        public object Clone()
         {
             object o = MemberwiseClone();
             ((TextInfo)o).SetReadOnlyState(false);
@@ -123,7 +123,7 @@ namespace System.Globalization
         /// <summary>
         /// Returns the string used to separate items in a list.
         /// </summary>
-        public virtual string ListSeparator
+        public string ListSeparator
         {
             get => _listSeparator ??= _cultureData.ListSeparator;
             set
@@ -142,9 +142,9 @@ namespace System.Globalization
         /// Converts the character or string to lower case.  Certain locales
         /// have different casing semantics from the file systems in Win32.
         /// </summary>
-        public virtual char ToLower(char c)
+        public char ToLower(char c)
         {
-            if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
             {
                 return ToLowerAsciiInvariant(c);
             }
@@ -152,7 +152,17 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: false);
         }
 
-        public virtual string ToLower(string str)
+        internal static char ToLowerInvariant(char c)
+        {
+            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            {
+                return ToLowerAsciiInvariant(c);
+            }
+
+            return Invariant.ChangeCase(c, toUpper: false);
+        }
+
+        public string ToLower(string str)
         {
             if (str == null)
             {
@@ -172,7 +182,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
 
             char dst = default;
-            ChangeCase(&c, 1, &dst, 1, toUpper);
+            ChangeCaseCore(&c, 1, &dst, 1, toUpper);
             return dst;
         }
 
@@ -297,7 +307,7 @@ namespace System.Globalization
                 // has a case conversion that's different from the invariant culture, even for ASCII data (e.g., tr-TR converts
                 // 'i' (U+0069) to Latin Capital Letter I With Dot Above (U+0130)).
 
-                ChangeCase(pSource + currIdx, charCount, pDestination + currIdx, charCount, toUpper);
+                ChangeCaseCore(pSource + currIdx, charCount, pDestination + currIdx, charCount, toUpper);
             }
 
         Return:
@@ -402,7 +412,7 @@ namespace System.Globalization
                     // and run the culture-aware logic over the remainder of the data
                     fixed (char* pResult = result)
                     {
-                        ChangeCase(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
+                        ChangeCaseCore(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
                     }
                     return result;
                 }
@@ -521,11 +531,13 @@ namespace System.Globalization
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToLowerAsciiInvariant(char c)
         {
-            if ((uint)(c - 'A') <= (uint)('Z' - 'A'))
+            if (UnicodeUtility.IsInRangeInclusive(c, 'A', 'Z'))
             {
-                c = (char)(c | 0x20);
+                // on x86, extending BYTE -> DWORD is more efficient than WORD -> DWORD
+                c = (char)(byte)(c | 0x20);
             }
             return c;
         }
@@ -534,9 +546,9 @@ namespace System.Globalization
         /// Converts the character or string to upper case.  Certain locales
         /// have different casing semantics from the file systems in Win32.
         /// </summary>
-        public virtual char ToUpper(char c)
+        public char ToUpper(char c)
         {
-            if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
             {
                 return ToUpperAsciiInvariant(c);
             }
@@ -544,7 +556,17 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: true);
         }
 
-        public virtual string ToUpper(string str)
+        internal static char ToUpperInvariant(char c)
+        {
+            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            {
+                return ToUpperAsciiInvariant(c);
+            }
+
+            return Invariant.ChangeCase(c, toUpper: true);
+        }
+
+        public string ToUpper(string str)
         {
             if (str == null)
             {
@@ -559,16 +581,15 @@ namespace System.Globalization
             return ChangeCaseCommon<ToUpperConversion>(str);
         }
 
-        internal static char ToUpperAsciiInvariant(char c)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static char ToUpperAsciiInvariant(char c)
         {
-            if ((uint)(c - 'a') <= (uint)('z' - 'a'))
+            if (UnicodeUtility.IsInRangeInclusive(c, 'a', 'z'))
             {
-                c = (char)(c & ~0x20);
+                c = (char)(c & 0x5F); // = low 7 bits of ~0x20
             }
             return c;
         }
-
-        private static bool IsAscii(char c) => c < 0x80;
 
         private bool IsAsciiCasingSameAsInvariant
         {
@@ -598,7 +619,7 @@ namespace System.Globalization
         /// </summary>
         public bool IsRightToLeft => _cultureData.IsRightToLeft;
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is TextInfo otherTextInfo
                 && CultureName.Equals(otherTextInfo.CultureName);
@@ -642,8 +663,7 @@ namespace System.Globalization
 
             for (int i = 0; i < str.Length; i++)
             {
-                int charLen;
-                UnicodeCategory charType = CharUnicodeInfo.InternalGetUnicodeCategory(str, i, out charLen);
+                UnicodeCategory charType = CharUnicodeInfo.GetUnicodeCategoryInternal(str, i, out int charLen);
                 if (char.CheckLetter(charType))
                 {
                     // Special case to check for Dutch specific titlecasing with "IJ" characters
@@ -670,7 +690,7 @@ namespace System.Globalization
                     // Use a loop to find all of the other letters following this letter.
                     while (i < str.Length)
                     {
-                        charType = CharUnicodeInfo.InternalGetUnicodeCategory(str, i, out charLen);
+                        charType = CharUnicodeInfo.GetUnicodeCategoryInternal(str, i, out charLen);
                         if (IsLetterCategory(charType))
                         {
                             if (charType == UnicodeCategory.LowercaseLetter)
@@ -810,6 +830,18 @@ namespace System.Globalization
                 }
             }
             return inputIndex;
+        }
+
+        private unsafe void ChangeCaseCore(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
+        {
+            if (GlobalizationMode.UseNls)
+            {
+                NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+            }
+            else
+            {
+                IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+            }
         }
 
         // Used in ToTitleCase():

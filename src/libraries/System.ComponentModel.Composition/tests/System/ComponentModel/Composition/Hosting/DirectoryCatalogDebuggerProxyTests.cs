@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
@@ -39,7 +38,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor_ValueAsCatalogArgument_ShouldSetAssemblyProperty()
         {
             string directoryPath = GetTemporaryDirectory();
@@ -68,7 +67,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void Constuctor_ValueAsCatalogArgument_ShouldSetSearchPatternProperty()
         {
             string directoryPath = GetTemporaryDirectory();
@@ -90,7 +89,7 @@ namespace System.ComponentModel.Composition.Primitives
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void FullPath_ValidPath_ShouldBeFine()
         {
             string directoryPath = GetTemporaryDirectory();
@@ -116,7 +115,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void LoadedFiles_EmptyDirectory_ShouldBeFine()
         {
             string directoryPath = GetTemporaryDirectory();
@@ -127,6 +126,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [Fact]
+	[PlatformSpecific(~TestPlatforms.Browser)]
         public void LoadedFiles_ContainsMultipleDllsAndSomeNonDll_ShouldOnlyContainDlls()
         {
             string directoryPath = GetTemporaryDirectory();

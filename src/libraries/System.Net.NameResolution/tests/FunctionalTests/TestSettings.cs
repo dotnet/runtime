@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -14,6 +13,15 @@ namespace System.Net.NameResolution.Tests
 
     internal static class TestSettings
     {
+        // A hostname that will not exist in any DNS caches, forcing some I/O to lookup.
+        public static string UncachedHost => $"nonexistent-{Guid.NewGuid():N}.contoso.com";
+
+        public const string IPv4Host = LocalHost;
+
+        // Linux CI servers not configured with IPv6 localhost.
+        // Windows CI servers not configured with IPv6 name resolution.
+        public static readonly string IPv6Host = PlatformDetection.IsWindows ? LocalHost : "ipv6.google.com";
+
         public const string LocalHost = "localhost";
 
         public const string LocalIPString = "127.0.0.1";

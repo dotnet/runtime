@@ -26,7 +26,7 @@ Required Testing: Validation of the behavior of the affected APIs.
 ## Stress Testing ##
 Stress testing must run for at least **48 hours** against a debug build.
 
-Stress testing for checked and release builds can be run locally. Please following the instructions described in tests\src\GC\Stress\stress_run_readme.txt. You can also request it on pull requests with The .NET CI infrastructure with the trigger phrase:
+Stress testing for checked and release builds can be run locally. Please following the instructions described in [gc-stress-run-readme.md](https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/gc-stress-run-readme.md). You can also request it on pull requests with The .NET CI infrastructure with the trigger phrase:
 
 ```
 @dotnet_bot test <platform> <flavor> gc_reliability_framework
@@ -37,17 +37,6 @@ This will run the stress framework for the default amount of time (15 hours) on 
 ## Functional Testing ##
 A functional test run executes the same code as a stress run, but only runs for 30 minutes.
 
-It is recommended that you run at least some of the below PR-triggered CI jobs:
-
-```
-@dotnet_bot test Windows_NT Checked longgc
-@dotnet_bot test OSX10.12 Checked longgc
-@dotnet_bot test Ubuntu Checked longgc
-@dotnet_bot test Windows_NT Checked standalone_gc
-@dotnet_bot test OSX10.12 Checked standalone_gc
-@dotnet_bot test Ubuntu Checked standalone_gc
-```
-
 The "Long GC" tests are a series of GC tests whose running time is too long or memory usage is too high to run with
 the rest of the Priority 0 unit tests. The "Standalone GC" build mode builds and runs the GC in a semi-standalone manner
 (see https://github.com/dotnet/coreclr/projects/3).
@@ -56,10 +45,12 @@ You may also wish to run the GC Simulator tests. They may take up to 24 hours to
 due to poor interactions with the Linux OOM killer. However, they have proven to be quite useful in finding bugs in the past:
 
 ```
-@dotnet_bot test Windows_NT Release gcsimulator
+@dotnet_bot test windows Release gcsimulator
 @dotnet_bot test Ubuntu Release gcsimulator
 @dotnet_bot test OSX10.12 Release gcsimulator
 ```
 
 ## Performance Testing ##
-Coming soon.
+Performance tests can be run using the GC Benchmarking Infrastructure hosted within the [benchmarks section](https://github.com/dotnet/performance/tree/master/src/benchmarks/gc) of the _performance_ repo. This tool allows you to run the tests capturing traces through PerfView, and later analyze such traces for detailed results on GC's, heaps, and related behaviors. These tests also allow you to directly compare behaviors and metrics between different .NET builds and machines.
+
+The _README.md_ located at the link mentioned above contains detailed instructions on how to setup and use the tool. Additionally, there is a _docs_ section with all the information to perform further analysis on the traces.

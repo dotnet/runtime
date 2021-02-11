@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef IJW_BOOTSTRAP_THUNK_H
 #define IJW_BOOTSTRAP_THUNK_H
 
-#if !defined(_TARGET_ARM64_)
+#if !defined(TARGET_ARM64)
 #error "This file should only be included on arm64 builds."
 #endif
 
@@ -19,7 +18,7 @@ extern "C" void start_runtime_thunk_stub();
 class bootstrap_thunk
 {
 private:
-    DWORD           m_rgCode[4];
+    std::uint32_t         m_rgCode[4];
     std::uintptr_t        m_pBootstrapCode;
 
     pal::dll_t       m_dll;            // pal::dll_t of this module

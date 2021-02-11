@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Unicode;
 
 namespace System.Globalization
 {
@@ -13,7 +14,7 @@ namespace System.Globalization
     /// </summary>
     public class StringInfo
     {
-        private string _str = null!; // initialized in helper called by ctors
+        private string _str;
 
         private int[]? _indexes;
 
@@ -26,7 +27,7 @@ namespace System.Globalization
             this.String = value;
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             return value is StringInfo otherStringInfo
                 && _str.Equals(otherStringInfo._str);
@@ -54,6 +55,7 @@ namespace System.Globalization
         public string String
         {
             get => _str;
+            [MemberNotNull(nameof(_str))]
             set
             {
                 _str = value ?? throw new ArgumentNullException(nameof(value));
@@ -65,185 +67,114 @@ namespace System.Globalization
 
         public string SubstringByTextElements(int startingTextElement)
         {
-            // If the string is empty, no sense going further.
-            if (Indexes == null)
-            {
-                if (startingTextElement < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(startingTextElement), startingTextElement, SR.ArgumentOutOfRange_NeedPosNum);
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException(nameof(startingTextElement), startingTextElement, SR.Arg_ArgumentOutOfRangeException);
-                }
-            }
-
-            return SubstringByTextElements(startingTextElement, Indexes.Length - startingTextElement);
+            return SubstringByTextElements(startingTextElement, (Indexes?.Length ?? 0) - startingTextElement);
         }
 
         public string SubstringByTextElements(int startingTextElement, int lengthInTextElements)
         {
-            if (startingTextElement < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startingTextElement), startingTextElement, SR.ArgumentOutOfRange_NeedPosNum);
-            }
-            if (String.Length == 0 || startingTextElement >= Indexes!.Length)
+            int[] indexes = Indexes ?? Array.Empty<int>();
+
+            if ((uint)startingTextElement >= (uint)indexes.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(startingTextElement), startingTextElement, SR.Arg_ArgumentOutOfRangeException);
             }
-            if (lengthInTextElements < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(lengthInTextElements), lengthInTextElements, SR.ArgumentOutOfRange_NeedPosNum);
-            }
-            if (startingTextElement > Indexes.Length - lengthInTextElements)
+            if ((uint)lengthInTextElements > (uint)(indexes.Length - startingTextElement))
             {
                 throw new ArgumentOutOfRangeException(nameof(lengthInTextElements), lengthInTextElements, SR.Arg_ArgumentOutOfRangeException);
             }
 
-            int start = Indexes[startingTextElement];
+            int start = indexes[startingTextElement];
+            Index end = ^0; // assume reading to end of the string unless the caller told us to stop early
 
-            if (startingTextElement + lengthInTextElements == Indexes.Length)
+            if ((uint)(startingTextElement + lengthInTextElements) < (uint)indexes.Length)
             {
-                // We are at the last text element in the string and because of that
-                // must handle the call differently.
-                return String.Substring(start);
+                end = indexes[startingTextElement + lengthInTextElements];
             }
-            else
-            {
-                return String[start..Indexes[lengthInTextElements + startingTextElement]];
-            }
+
+            return String[start..end];
         }
 
+        /// <summary>
+        /// Returns the first text element (extended grapheme cluster) that occurs in the input string.
+        /// </summary>
+        /// <param name="str">The input string to analyze.</param>
+        /// <returns>The substring corresponding to the first text element within <paramref name="str"/>,
+        /// or the empty string if <paramref name="str"/> is empty.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="str"/> is null.</exception>
         public static string GetNextTextElement(string str) => GetNextTextElement(str, 0);
 
         /// <summary>
-        /// Get the code point count of the current text element.
-        ///
-        /// A combining class is defined as:
-        ///      A character/surrogate that has the following Unicode category:
-        ///      * NonSpacingMark (e.g. U+0300 COMBINING GRAVE ACCENT)
-        ///      * SpacingCombiningMark (e.g. U+ 0903 DEVANGARI SIGN VISARGA)
-        ///      * EnclosingMark (e.g. U+20DD COMBINING ENCLOSING CIRCLE)
-        ///
-        /// In the context of GetNextTextElement() and ParseCombiningCharacters(), a text element is defined as:
-        ///  1. If a character/surrogate is in the following category, it is a text element.
-        ///     It can NOT further combine with characters in the combinging class to form a text element.
-        ///      * one of the Unicode category in the combinging class
-        ///      * UnicodeCategory.Format
-        ///      * UnicodeCateogry.Control
-        ///      * UnicodeCategory.OtherNotAssigned
-        ///  2. Otherwise, the character/surrogate can be combined with characters in the combinging class to form a text element.
+        /// Returns the first text element (extended grapheme cluster) that occurs in the input string
+        /// starting at the specified index.
         /// </summary>
-        /// <returns>The length of the current text element</returns>
-        internal static int GetCurrentTextElementLen(string str, int index, int len, ref UnicodeCategory ucCurrent, ref int currentCharCount)
+        /// <param name="str">The input string to analyze.</param>
+        /// <param name="index">The char offset in <paramref name="str"/> at which to begin analysis.</param>
+        /// <returns>The substring corresponding to the first text element within <paramref name="str"/> starting
+        /// at index <paramref name="index"/>, or the empty string if <paramref name="index"/> corresponds to
+        /// the end of <paramref name="str"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="str"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or beyond the end of <paramref name="str"/>.</exception>
+        public static string GetNextTextElement(string str, int index)
         {
-            Debug.Assert(index >= 0 && len >= 0, "StringInfo.GetCurrentTextElementLen() : index = " + index + ", len = " + len);
-            Debug.Assert(index < len, "StringInfo.GetCurrentTextElementLen() : index = " + index + ", len = " + len);
-            if (index + currentCharCount == len)
-            {
-                // This is the last character/surrogate in the string.
-                return currentCharCount;
-            }
-
-            // Call an internal GetUnicodeCategory, which will tell us both the unicode category, and also tell us if it is a surrogate pair or not.
-            int nextCharCount;
-            UnicodeCategory ucNext = CharUnicodeInfo.InternalGetUnicodeCategory(str, index + currentCharCount, out nextCharCount);
-            if (CharUnicodeInfo.IsCombiningCategory(ucNext))
-            {
-                // The next element is a combining class.
-                // Check if the current text element to see if it is a valid base category (i.e. it should not be a combining category,
-                // not a format character, and not a control character).
-                if (CharUnicodeInfo.IsCombiningCategory(ucCurrent)
-                    || (ucCurrent == UnicodeCategory.Format)
-                    || (ucCurrent == UnicodeCategory.Control)
-                    || (ucCurrent == UnicodeCategory.OtherNotAssigned)
-                    || (ucCurrent == UnicodeCategory.Surrogate))    // An unpair high surrogate or low surrogate
-                {
-                    // Will fall thru and return the currentCharCount
-                }
-                else
-                {
-                    // Remember the current index.
-                    int startIndex = index;
-
-                    // We have a valid base characters, and we have a character (or surrogate) that is combining.
-                    // Check if there are more combining characters to follow.
-                    // Check if the next character is a nonspacing character.
-                    index += currentCharCount + nextCharCount;
-
-                    while (index < len)
-                    {
-                        ucNext = CharUnicodeInfo.InternalGetUnicodeCategory(str, index, out nextCharCount);
-                        if (!CharUnicodeInfo.IsCombiningCategory(ucNext))
-                        {
-                            ucCurrent = ucNext;
-                            currentCharCount = nextCharCount;
-                            break;
-                        }
-                        index += nextCharCount;
-                    }
-
-                    return index - startIndex;
-                }
-            }
-
-            // The return value will be the currentCharCount.
-            int ret = currentCharCount;
-            ucCurrent = ucNext;
-            // Update currentCharCount.
-            currentCharCount = nextCharCount;
-            return ret;
+            int nextTextElementLength = GetNextTextElementLength(str, index);
+            return str.Substring(index, nextTextElementLength);
         }
 
         /// <summary>
-        /// Returns the str containing the next text element in str starting at
-        /// index index. If index is not supplied, then it will start at the beginning
-        /// of str. It recognizes a base character plus one or more combining
-        /// characters or a properly formed surrogate pair as a text element.
-        /// See also the ParseCombiningCharacters() and the ParseSurrogates() methods.
+        /// Returns the length of the first text element (extended grapheme cluster) that occurs in the input string.
         /// </summary>
-        public static string GetNextTextElement(string str, int index)
+        /// <param name="str">The input string to analyze.</param>
+        /// <returns>The length (in chars) of the substring corresponding to the first text element within <paramref name="str"/>,
+        /// or 0 if <paramref name="str"/> is empty.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="str"/> is null.</exception>
+        public static int GetNextTextElementLength(string str) => GetNextTextElementLength(str, 0);
+
+        /// <summary>
+        /// Returns the length of the first text element (extended grapheme cluster) that occurs in the input string
+        /// starting at the specified index.
+        /// </summary>
+        /// <param name="str">The input string to analyze.</param>
+        /// <param name="index">The char offset in <paramref name="str"/> at which to begin analysis.</param>
+        /// <returns>The length (in chars) of the substring corresponding to the first text element within <paramref name="str"/> starting
+        /// at index <paramref name="index"/>, or 0 if <paramref name="index"/> corresponds to the end of <paramref name="str"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="str"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or beyond the end of <paramref name="str"/>.</exception>
+        public static int GetNextTextElementLength(string str, int index)
         {
-            if (str == null)
+            if (str is null)
             {
-                throw new ArgumentNullException(nameof(str));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.str);
+            }
+            if ((uint)index > (uint)str.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
-            int len = str.Length;
-            if (index < 0 || index >= len)
-            {
-                if (index == len)
-                {
-                    return string.Empty;
-                }
-
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
-            }
-
-            int charLen;
-            UnicodeCategory uc = CharUnicodeInfo.InternalGetUnicodeCategory(str, index, out charLen);
-            return str.Substring(index, GetCurrentTextElementLen(str, index, len, ref uc, ref charLen));
+            return GetNextTextElementLength(str.AsSpan(index));
         }
 
-        public static TextElementEnumerator GetTextElementEnumerator(string str)
-        {
-            return GetTextElementEnumerator(str, 0);
-        }
+        /// <summary>
+        /// Returns the length of the first text element (extended grapheme cluster) that occurs in the input span.
+        /// </summary>
+        /// <param name="str">The input span to analyze.</param>
+        /// <returns>The length (in chars) of the substring corresponding to the first text element within <paramref name="str"/>,
+        /// or 0 if <paramref name="str"/> is empty.</returns>
+        public static int GetNextTextElementLength(ReadOnlySpan<char> str) => TextSegmentationUtility.GetLengthOfFirstUtf16ExtendedGraphemeCluster(str);
+
+        public static TextElementEnumerator GetTextElementEnumerator(string str) => GetTextElementEnumerator(str, 0);
 
         public static TextElementEnumerator GetTextElementEnumerator(string str, int index)
         {
-            if (str == null)
+            if (str is null)
             {
-                throw new ArgumentNullException(nameof(str));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.str);
+            }
+            if ((uint)index > (uint)str.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
-            int len = str.Length;
-            if (index < 0 || index > len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
-            }
-
-            return new TextElementEnumerator(str, index, len);
+            return new TextElementEnumerator(str, index);
         }
 
         /// <summary>
@@ -260,37 +191,24 @@ namespace System.Globalization
         /// </summary>
         public static int[] ParseCombiningCharacters(string str)
         {
-            if (str == null)
+            if (str is null)
             {
-                throw new ArgumentNullException(nameof(str));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.str);
             }
 
-            int len = str.Length;
-            int[] result = new int[len];
-            if (len == 0)
+            ValueListBuilder<int> builder = new ValueListBuilder<int>(stackalloc int[64]); // 64 arbitrarily chosen
+            ReadOnlySpan<char> remaining = str;
+
+            while (!remaining.IsEmpty)
             {
-                return result;
+                builder.Append(str.Length - remaining.Length); // a new extended grapheme cluster begins at this offset
+                remaining = remaining.Slice(GetNextTextElementLength(remaining)); // consume this cluster
             }
 
-            int resultCount = 0;
+            int[] retVal = builder.AsSpan().ToArray();
+            builder.Dispose();
 
-            int i = 0;
-            int currentCharLen;
-            UnicodeCategory currentCategory = CharUnicodeInfo.InternalGetUnicodeCategory(str, 0, out currentCharLen);
-
-            while (i < len)
-            {
-                result[resultCount++] = i;
-                i += GetCurrentTextElementLen(str, i, len, ref currentCategory, ref currentCharLen);
-            }
-
-            if (resultCount < len)
-            {
-                int[] returnArray = new int[resultCount];
-                Array.Copy(result, returnArray, resultCount);
-                return returnArray;
-            }
-            return result;
+            return retVal;
         }
     }
 }

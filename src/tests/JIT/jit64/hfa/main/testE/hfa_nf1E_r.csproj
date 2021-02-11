@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="hfa_testE.cs" />
+    <ProjectReference Include="..\dll\common.csproj" />
+    <ProjectReference Include="..\dll\hfa_nested_f32_managed.csproj" />
+    <ProjectReference Include="..\dll\CMakeLists.txt" />
+    <ProjectReference Include="..\dll\hfa_nested_f32_common.csproj" />
+  </ItemGroup>
+</Project>

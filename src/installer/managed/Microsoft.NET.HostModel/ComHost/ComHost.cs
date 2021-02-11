@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -10,12 +9,12 @@ namespace Microsoft.NET.HostModel.ComHost
 {
     public class ComHost
     {
-        // These need to match RESOURCEID_CLISDMAP and RESOURCETYPE_CLSIDMAP defined in comhost.h.
+        // These need to match RESOURCEID_CLSIDMAP and RESOURCETYPE_CLSIDMAP defined in comhost.h.
         private const int ClsidmapResourceId = 64;
         private const int ClsidmapResourceType = 1024;
 
         /// <summary>
-        /// Create an ComHost with an embedded CLSIDMap file to map CLSIDs to .NET Classes.
+        /// Create a ComHost with an embedded CLSIDMap file to map CLSIDs to .NET Classes.
         /// </summary>
         /// <param name="comHostSourceFilePath">The path of Apphost template, which has the place holder</param>
         /// <param name="comHostDestinationFilePath">The destination path for desired location to place, including the file name</param>

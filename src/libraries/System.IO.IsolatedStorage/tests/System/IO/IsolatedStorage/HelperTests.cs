@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using Xunit;
@@ -41,7 +40,7 @@ namespace System.IO.IsolatedStorage.Tests
         public void GetDataDirectory(IsolatedStorageScope scope)
         {
             // Machine scope is behind a policy that isn't enabled by default
-            // https://github.com/dotnet/corefx/issues/19839
+            // https://github.com/dotnet/runtime/issues/21742
             if (scope == IsolatedStorageScope.Machine && PlatformDetection.IsInAppContainer)
                 return;
 

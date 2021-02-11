@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.AccessControl;
 
@@ -28,6 +27,20 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(directorySecurity));
 
             directoryInfo.Create(directorySecurity);
+        }
+
+        public static DirectoryInfo CreateDirectory(this DirectorySecurity directorySecurity, string path)
+        {
+            if (directorySecurity == null)
+                throw new ArgumentNullException(nameof(directorySecurity));
+
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Arg_PathEmpty);
+
+            return Directory.CreateDirectory(path, directorySecurity);
         }
 
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo)

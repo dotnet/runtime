@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Dynamic.Utils;
 
@@ -8,7 +7,7 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal abstract class LeftShiftInstruction : Instruction
     {
-        private static Instruction s_SByte, s_Int16, s_Int32, s_Int64, s_Byte, s_UInt16, s_UInt32, s_UInt64;
+        private static Instruction? s_SByte, s_Int16, s_Int32, s_Int64, s_Byte, s_UInt16, s_UInt32, s_UInt64;
 
         public override int ConsumedStack => 2;
         public override int ProducedStack => 1;
@@ -20,8 +19,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object shift = frame.Pop();
-                object value = frame.Pop();
+                object? shift = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -38,8 +37,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object shift = frame.Pop();
-                object value = frame.Pop();
+                object? shift = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -56,8 +55,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object shift = frame.Pop();
-                object value = frame.Pop();
+                object? shift = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -74,8 +73,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object shift = frame.Pop();
-                object value = frame.Pop();
+                object? shift = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -92,8 +91,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object shift = frame.Pop();
-                object value = frame.Pop();
+                object? shift = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -110,8 +109,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object shift = frame.Pop();
-                object value = frame.Pop();
+                object? shift = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -128,8 +127,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object shift = frame.Pop();
-                object value = frame.Pop();
+                object? shift = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -146,8 +145,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object shift = frame.Pop();
-                object value = frame.Pop();
+                object? shift = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null || shift == null)
                 {
                     frame.Push(null);
@@ -160,7 +159,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static Instruction Create(Type type) =>
             type.GetNonNullableType().GetTypeCode() switch
             {

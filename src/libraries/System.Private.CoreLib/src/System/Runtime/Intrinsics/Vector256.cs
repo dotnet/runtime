@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Numerics;
@@ -178,6 +177,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector256{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static Vector256<T> AsVector256<T>(this Vector<T> value)
             where T : struct
         {
@@ -194,6 +194,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static Vector<T> AsVector<T>(this Vector256<T> value)
             where T : struct
         {
@@ -204,20 +205,14 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_set1_epi8</remarks>
         /// <returns>A new <see cref="Vector256{Byte}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<byte> Create(byte value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<byte> result = Vector128.CreateScalarUnsafe(value);           // < v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector256(result);                         // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
-            }
-
             if (Avx.IsSupported)
             {
-                Vector128<byte> result = Vector128.Create(value);                       // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -266,20 +261,14 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector256{Double}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256d _mm256_set1_pd</remarks>
         /// <returns>A new <see cref="Vector256{Double}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<double> Create(double value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<double> result = Vector128.CreateScalarUnsafe(value);         // < v, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector256(result);                         // < v, v, v, v >
-            }
-
             if (Avx.IsSupported)
             {
-                Vector128<double> result = Vector128.Create(value);                     // < v, v, ?, ? >
-                return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -300,20 +289,14 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector256{Int16}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_set1_epi16</remarks>
         /// <returns>A new <see cref="Vector256{Int16}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<short> Create(short value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<short> result = Vector128.CreateScalarUnsafe(value);          // < v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector256(result);                         // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
-            }
-
             if (Avx.IsSupported)
             {
-                Vector128<short> result = Vector128.Create(value);                      // < v, v, v, v, v, v, v, v, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -346,20 +329,14 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector256{Int32}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_set1_epi32</remarks>
         /// <returns>A new <see cref="Vector256{Int32}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<int> Create(int value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<int> result = Vector128.CreateScalarUnsafe(value);            // < v, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector256(result);                         // < v, v, v, v, v, v, v, v >
-            }
-
             if (Avx.IsSupported)
             {
-                Vector128<int> result = Vector128.Create(value);                        // < v, v, v, v, ?, ?, ?, ? >
-                return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v, v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -384,22 +361,14 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector256{Int64}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_set1_epi64x</remarks>
         /// <returns>A new <see cref="Vector256{Int64}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<long> Create(long value)
         {
-            if (Sse2.X64.IsSupported)
+            if (Sse2.X64.IsSupported && Avx.IsSupported)
             {
-                if (Avx2.IsSupported)
-                {
-                    Vector128<long> result = Vector128.CreateScalarUnsafe(value);           // < v, ?, ?, ? >
-                    return Avx2.BroadcastScalarToVector256(result);                         // < v, v, v, v >
-                }
-                else if (Avx.IsSupported)
-                {
-                    Vector128<long> result = Vector128.Create(value);                       // < v, v, ?, ? >
-                    return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v >
-                }
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -420,21 +389,15 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector256{SByte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_set1_epi8</remarks>
         /// <returns>A new <see cref="Vector256{SByte}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<sbyte> Create(sbyte value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<sbyte> result = Vector128.CreateScalarUnsafe(value);          // < v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector256(result);                         // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
-            }
-
             if (Avx.IsSupported)
             {
-                Vector128<sbyte> result = Vector128.Create(value);                      // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -483,20 +446,14 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector256{Single}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256 _mm256_set1_ps</remarks>
         /// <returns>A new <see cref="Vector256{Single}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<float> Create(float value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<float> result = Vector128.CreateScalarUnsafe(value);          // < v, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector256(result);                         // < v, v, v, v, v, v, v, v >
-            }
-
             if (Avx.IsSupported)
             {
-                Vector128<float> result = Vector128.Create(value);                      // < v, v, v, v, ?, ?, ?, ? >
-                return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v, v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -521,21 +478,15 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector256{UInt16}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_set1_epi16</remarks>
         /// <returns>A new <see cref="Vector256{UInt16}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<ushort> Create(ushort value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<ushort> result = Vector128.CreateScalarUnsafe(value);         // < v, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector256(result);                         // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
-            }
-
             if (Avx.IsSupported)
             {
-                Vector128<ushort> result = Vector128.Create(value);                     // < v, v, v, v, v, v, v, v, ?, ?, ?, ?, ?, ?, ?, ? >
-                return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v, v, v, v, v, v, v, v, v, v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -568,21 +519,15 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector256{UInt32}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_set1_epi32</remarks>
         /// <returns>A new <see cref="Vector256{UInt32}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<uint> Create(uint value)
         {
-            if (Avx2.IsSupported)
-            {
-                Vector128<uint> result = Vector128.CreateScalarUnsafe(value);           // < v, ?, ?, ?, ?, ?, ?, ? >
-                return Avx2.BroadcastScalarToVector256(result);                         // < v, v, v, v, v, v, v, v >
-            }
-
             if (Avx.IsSupported)
             {
-                Vector128<uint> result = Vector128.Create(value);                       // < v, v, v, v, ?, ?, ?, ? >
-                return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v, v, v, v, v >
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -607,23 +552,15 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector256{UInt64}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_set1_epi64x</remarks>
         /// <returns>A new <see cref="Vector256{UInt64}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<ulong> Create(ulong value)
         {
-            if (Sse2.X64.IsSupported)
+            if (Sse2.X64.IsSupported && Avx.IsSupported)
             {
-                if (Avx2.IsSupported)
-                {
-                    Vector128<ulong> result = Vector128.CreateScalarUnsafe(value);          // < v, ?, ?, ? >
-                    return Avx2.BroadcastScalarToVector256(result);                         // < v, v, v, v >
-                }
-                else if (Avx.IsSupported)
-                {
-                    Vector128<ulong> result = Vector128.Create(value);                      // < v, v, ?, ? >
-                    return Avx.InsertVector128(result.ToVector256Unsafe(), result, 1);      // < v, v, v, v >
-                }
+                return Create(value);
             }
 
             return SoftwareFallback(value);
@@ -675,15 +612,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="e29">The value that element 29 will be initialized to.</param>
         /// <param name="e30">The value that element 30 will be initialized to.</param>
         /// <param name="e31">The value that element 31 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi8</remarks>
         /// <returns>A new <see cref="Vector256{Byte}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15, byte e16, byte e17, byte e18, byte e19, byte e20, byte e21, byte e22, byte e23, byte e24, byte e25, byte e26, byte e27, byte e28, byte e29, byte e30, byte e31)
         {
             if (Avx.IsSupported)
             {
-                Vector128<byte> lo128 = Vector128.Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
-                Vector128<byte> hi128 = Vector128.Create(e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
-                return Create(lo128, hi128);
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
@@ -735,15 +671,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
         /// <param name="e3">The value that element 3 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256d _mm256_setr_pd</remarks>
         /// <returns>A new <see cref="Vector256{Double}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<double> Create(double e0, double e1, double e2, double e3)
         {
             if (Avx.IsSupported)
             {
-                Vector128<double> lo128 = Vector128.Create(e0, e1);
-                Vector128<double> hi128 = Vector128.Create(e2, e3);
-                return Create(lo128, hi128);
+                return Create(e0, e1, e2, e3);
             }
 
             return SoftwareFallback(e0, e1, e2, e3);
@@ -779,15 +714,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="e13">The value that element 13 will be initialized to.</param>
         /// <param name="e14">The value that element 14 will be initialized to.</param>
         /// <param name="e15">The value that element 15 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi16</remarks>
         /// <returns>A new <see cref="Vector256{Int16}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<short> Create(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7, short e8, short e9, short e10, short e11, short e12, short e13, short e14, short e15)
         {
             if (Avx.IsSupported)
             {
-                Vector128<short> lo128 = Vector128.Create(e0, e1, e2, e3, e4, e5, e6, e7);
-                Vector128<short> hi128 = Vector128.Create(e8, e9, e10, e11, e12, e13, e14, e15);
-                return Create(lo128, hi128);
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
@@ -827,15 +761,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi32</remarks>
         /// <returns>A new <see cref="Vector256{Int32}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<int> Create(int e0, int e1, int e2, int e3, int e4, int e5, int e6, int e7)
         {
             if (Avx.IsSupported)
             {
-                Vector128<int> lo128 = Vector128.Create(e0, e1, e2, e3);
-                Vector128<int> hi128 = Vector128.Create(e4, e5, e6, e7);
-                return Create(lo128, hi128);
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
@@ -863,15 +796,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
         /// <param name="e3">The value that element 3 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi64x</remarks>
         /// <returns>A new <see cref="Vector256{Int64}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<long> Create(long e0, long e1, long e2, long e3)
         {
             if (Sse2.X64.IsSupported && Avx.IsSupported)
             {
-                Vector128<long> lo128 = Vector128.Create(e0, e1);
-                Vector128<long> hi128 = Vector128.Create(e2, e3);
-                return Create(lo128, hi128);
+                return Create(e0, e1, e2, e3);
             }
 
             return SoftwareFallback(e0, e1, e2, e3);
@@ -923,16 +855,15 @@ namespace System.Runtime.Intrinsics
         /// <param name="e29">The value that element 29 will be initialized to.</param>
         /// <param name="e30">The value that element 30 will be initialized to.</param>
         /// <param name="e31">The value that element 31 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi8</remarks>
         /// <returns>A new <see cref="Vector256{SByte}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15, sbyte e16, sbyte e17, sbyte e18, sbyte e19, sbyte e20, sbyte e21, sbyte e22, sbyte e23, sbyte e24, sbyte e25, sbyte e26, sbyte e27, sbyte e28, sbyte e29, sbyte e30, sbyte e31)
         {
             if (Avx.IsSupported)
             {
-                Vector128<sbyte> lo128 = Vector128.Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
-                Vector128<sbyte> hi128 = Vector128.Create(e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
-                return Create(lo128, hi128);
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
@@ -988,15 +919,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256 _mm256_setr_ps</remarks>
         /// <returns>A new <see cref="Vector256{Single}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static unsafe Vector256<float> Create(float e0, float e1, float e2, float e3, float e4, float e5, float e6, float e7)
         {
             if (Avx.IsSupported)
             {
-                Vector128<float> lo128 = Vector128.Create(e0, e1, e2, e3);
-                Vector128<float> hi128 = Vector128.Create(e4, e5, e6, e7);
-                return Create(lo128, hi128);
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
@@ -1036,16 +966,15 @@ namespace System.Runtime.Intrinsics
         /// <param name="e13">The value that element 13 will be initialized to.</param>
         /// <param name="e14">The value that element 14 will be initialized to.</param>
         /// <param name="e15">The value that element 15 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi16</remarks>
         /// <returns>A new <see cref="Vector256{UInt16}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7, ushort e8, ushort e9, ushort e10, ushort e11, ushort e12, ushort e13, ushort e14, ushort e15)
         {
             if (Avx.IsSupported)
             {
-                Vector128<ushort> lo128 = Vector128.Create(e0, e1, e2, e3, e4, e5, e6, e7);
-                Vector128<ushort> hi128 = Vector128.Create(e8, e9, e10, e11, e12, e13, e14, e15);
-                return Create(lo128, hi128);
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
@@ -1085,16 +1014,15 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi32</remarks>
         /// <returns>A new <see cref="Vector256{UInt32}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<uint> Create(uint e0, uint e1, uint e2, uint e3, uint e4, uint e5, uint e6, uint e7)
         {
             if (Avx.IsSupported)
             {
-                Vector128<uint> lo128 = Vector128.Create(e0, e1, e2, e3);
-                Vector128<uint> hi128 = Vector128.Create(e4, e5, e6, e7);
-                return Create(lo128, hi128);
+                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
             }
 
             return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
@@ -1122,16 +1050,15 @@ namespace System.Runtime.Intrinsics
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
         /// <param name="e3">The value that element 3 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi64x</remarks>
         /// <returns>A new <see cref="Vector256{UInt64}" /> with each element initialized to corresponding specified value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<ulong> Create(ulong e0, ulong e1, ulong e2, ulong e3)
         {
             if (Sse2.X64.IsSupported && Avx.IsSupported)
             {
-                Vector128<ulong> lo128 = Vector128.Create(e0, e1);
-                Vector128<ulong> hi128 = Vector128.Create(e2, e3);
-                return Create(lo128, hi128);
+                return Create(e0, e1, e2, e3);
             }
 
             return SoftwareFallback(e0, e1, e2, e3);
@@ -1180,6 +1107,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Double}" /> instance from two <see cref="Vector128{Double}" /> instances.</summary>
         /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 128-bits will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256d _mm256_setr_m128d (__m128d lo, __m128d hi)</remarks>
         /// <returns>A new <see cref="Vector256{Double}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<double> Create(Vector128<double> lower, Vector128<double> upper)
@@ -1234,6 +1162,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Int32}" /> instance from two <see cref="Vector128{Int32}" /> instances.</summary>
         /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 128-bits will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_m128i (__m128i lo, __m128i hi)</remarks>
         /// <returns>A new <see cref="Vector256{Int32}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<int> Create(Vector128<int> lower, Vector128<int> upper)
@@ -1316,6 +1245,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Single}" /> instance from two <see cref="Vector128{Single}" /> instances.</summary>
         /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 128-bits will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256 _mm256_setr_m128 (__m128 lo, __m128 hi)</remarks>
         /// <returns>A new <see cref="Vector256{Single}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<float> Create(Vector128<float> lower, Vector128<float> upper)
@@ -1371,6 +1301,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{UInt32}" /> instance from two <see cref="Vector128{UInt32}" /> instances.</summary>
         /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 128-bits will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_m128i (__m128i lo, __m128i hi)</remarks>
         /// <returns>A new <see cref="Vector256{UInt32}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]

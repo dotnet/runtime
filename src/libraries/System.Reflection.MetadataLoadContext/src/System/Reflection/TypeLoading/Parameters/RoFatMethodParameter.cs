@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,9 +19,9 @@ namespace System.Reflection.TypeLoading
             Debug.Assert(parameterType != null);
         }
 
-        public sealed override string Name => _lazyName ?? (_lazyName = ComputeName());
-        protected abstract string ComputeName();
-        private volatile string _lazyName;
+        public sealed override string? Name => _lazyName ?? (_lazyName = ComputeName());
+        protected abstract string? ComputeName();
+        private volatile string? _lazyName;
 
         public sealed override ParameterAttributes Attributes => (_lazyParameterAttributes == ParameterAttributesSentinel) ? (_lazyParameterAttributes = ComputeAttributes()) : _lazyParameterAttributes;
         protected abstract ParameterAttributes ComputeAttributes();
@@ -39,28 +38,28 @@ namespace System.Reflection.TypeLoading
                 ParameterAttributes attributes = Attributes;
                 if (0 != (attributes & ParameterAttributes.In))
                 {
-                    ConstructorInfo ci = Loader.TryGetInCtor();
+                    ConstructorInfo? ci = Loader.TryGetInCtor();
                     if (ci != null)
                         yield return new RoPseudoCustomAttributeData(ci);
                 }
 
                 if (0 != (attributes & ParameterAttributes.Out))
                 {
-                    ConstructorInfo ci = Loader.TryGetOutCtor();
+                    ConstructorInfo? ci = Loader.TryGetOutCtor();
                     if (ci != null)
                         yield return new RoPseudoCustomAttributeData(ci);
                 }
 
                 if (0 != (attributes & ParameterAttributes.Optional))
                 {
-                    ConstructorInfo ci = Loader.TryGetOptionalCtor();
+                    ConstructorInfo? ci = Loader.TryGetOptionalCtor();
                     if (ci != null)
                         yield return new RoPseudoCustomAttributeData(ci);
                 }
 
                 if (0 != (attributes & ParameterAttributes.HasFieldMarshal))
                 {
-                    CustomAttributeData cad = CustomAttributeHelpers.TryComputeMarshalAsCustomAttributeData(ComputeMarshalAsAttribute, Loader);
+                    CustomAttributeData? cad = CustomAttributeHelpers.TryComputeMarshalAsCustomAttributeData(ComputeMarshalAsAttribute, Loader);
                     if (cad != null)
                         yield return cad;
                 }
@@ -70,7 +69,7 @@ namespace System.Reflection.TypeLoading
         protected abstract MarshalAsAttribute ComputeMarshalAsAttribute();
 
         public abstract override bool HasDefaultValue { get; }
-        public abstract override object RawDefaultValue { get; }
+        public abstract override object? RawDefaultValue { get; }
 
         protected abstract IEnumerable<CustomAttributeData> GetTrueCustomAttributes();
 

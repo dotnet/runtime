@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Test.Common;
 using System.Threading;
@@ -20,7 +19,7 @@ namespace System.Net.Sockets.Tests
             complete.Set();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -34,7 +33,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -54,7 +53,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Socket_ConnectDnsEndPoint_Failure()
         {
@@ -78,7 +77,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Socket_SendToDnsEndPoint_ArgumentException()
         {
@@ -91,7 +90,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Socket_ReceiveFromDnsEndPoint_ArgumentException()
         {
@@ -107,7 +106,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -119,11 +118,11 @@ namespace System.Net.Sockets.Tests
             {
                 IAsyncResult result = sock.BeginConnect(new DnsEndPoint("localhost", port), null, null);
                 sock.EndConnect(result);
-                Assert.Throws<InvalidOperationException>(() => sock.EndConnect(result)); // validate can't call end twice
+                Assert.True(sock.Connected);
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -144,7 +143,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Socket_BeginConnectDnsEndPoint_Failure()
         {
@@ -170,7 +169,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Socket_BeginSendToDnsEndPoint_ArgumentException()
         {
@@ -183,7 +182,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -215,7 +214,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -254,7 +253,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [Trait("IPv4", "true")]
         public void Socket_ConnectAsyncDnsEndPoint_HostNotFound()
@@ -281,7 +280,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [Trait("IPv4", "true")]
         public void Socket_ConnectAsyncDnsEndPoint_ConnectionRefused()
@@ -310,7 +309,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
@@ -331,9 +330,10 @@ namespace System.Net.Sockets.Tests
                 ManualResetEvent complete = new ManualResetEvent(false);
                 args.UserToken = complete;
 
-                Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
-
-                Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args))
+                {
+                    Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                }
 
                 Assert.Equal(SocketError.Success, args.SocketError);
                 Assert.Null(args.ConnectByNameError);
@@ -346,9 +346,11 @@ namespace System.Net.Sockets.Tests
                 args.RemoteEndPoint = new DnsEndPoint("localhost", port6);
                 complete.Reset();
 
-                Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
+                if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args))
+                {
+                    Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                }
 
-                Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
                 complete.Dispose(); // only dispose on success as we know we're done with the instance
 
                 Assert.Equal(SocketError.Success, args.SocketError);
@@ -361,7 +363,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Socket_StaticConnectAsync_HostNotFound()
         {
@@ -388,7 +390,7 @@ namespace System.Net.Sockets.Tests
             complete.Dispose();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Socket_StaticConnectAsync_ConnectionRefused()
         {
@@ -421,7 +423,7 @@ namespace System.Net.Sockets.Tests
             throw new ShouldNotBeInvokedException();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [Trait("IPv6", "true")]
         public void Socket_StaticConnectAsync_SyncFailure()

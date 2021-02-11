@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __DEPS_FORMAT_H_
 #define __DEPS_FORMAT_H_
@@ -77,8 +76,6 @@ public:
         return m_rid_fallback_graph;
     }
 
-    const deps_entry_t& try_ni(const deps_entry_t& entry) const;
-
     pal::string_t get_deps_file() const
     {
         return m_deps_file;
@@ -97,9 +94,6 @@ private:
         const std::function<bool(const pal::string_t&)>& library_exists_fn,
         const std::function<const vec_asset_t&(const pal::string_t&, int, bool*)>& get_assets_fn);
 
-    pal::string_t get_optional_property(const json_parser_t::value_t& properties, const pal::string_t& key) const;
-    pal::string_t get_optional_path(const json_parser_t::value_t& properties, const pal::string_t& key) const;
-
     pal::string_t get_current_rid(const rid_fallback_graph_t& rid_fallback_graph);
     bool perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph);
 
@@ -108,7 +102,6 @@ private:
     deps_assets_t m_assets;
     rid_specific_assets_t m_rid_assets;
 
-    std::unordered_map<pal::string_t, int> m_ni_entries;
     rid_fallback_graph_t m_rid_fallback_graph;
     bool m_file_exists;
     bool m_valid;

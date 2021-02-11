@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Mime;
 using System.Text;
@@ -10,7 +10,7 @@ namespace System.Net.Mail
 {
     public abstract class AttachmentBase : IDisposable
     {
-        internal bool disposed = false;
+        internal bool disposed;
         private readonly MimePart _part = new MimePart();
         private static readonly char[] s_contentCIDInvalidChars = new char[] { '<', '>' };
 
@@ -23,12 +23,12 @@ namespace System.Net.Mail
             SetContentFromFile(fileName, string.Empty);
         }
 
-        protected AttachmentBase(string fileName, string mediaType)
+        protected AttachmentBase(string fileName, string? mediaType)
         {
             SetContentFromFile(fileName, mediaType);
         }
 
-        protected AttachmentBase(string fileName, ContentType contentType)
+        protected AttachmentBase(string fileName, ContentType? contentType)
         {
             SetContentFromFile(fileName, contentType);
         }
@@ -38,17 +38,17 @@ namespace System.Net.Mail
             _part.SetContent(contentStream);
         }
 
-        protected AttachmentBase(Stream contentStream, string mediaType)
+        protected AttachmentBase(Stream contentStream, string? mediaType)
         {
             _part.SetContent(contentStream, null, mediaType);
         }
 
-        internal AttachmentBase(Stream contentStream, string name, string mediaType)
+        internal AttachmentBase(Stream contentStream, string? name, string? mediaType)
         {
             _part.SetContent(contentStream, name, mediaType);
         }
 
-        protected AttachmentBase(Stream contentStream, ContentType contentType)
+        protected AttachmentBase(Stream contentStream, ContentType? contentType)
         {
             _part.SetContent(contentStream, contentType);
         }
@@ -67,14 +67,14 @@ namespace System.Net.Mail
             }
         }
 
-        internal void SetContentFromFile(string fileName, ContentType contentType)
+        internal void SetContentFromFile(string fileName, ContentType? contentType)
         {
             if (fileName == null)
             {
                 throw new ArgumentNullException(nameof(fileName));
             }
 
-            if (fileName == string.Empty)
+            if (fileName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
             }
@@ -83,14 +83,14 @@ namespace System.Net.Mail
             _part.SetContent(stream, contentType);
         }
 
-        internal void SetContentFromFile(string fileName, string mediaType)
+        internal void SetContentFromFile(string fileName, string? mediaType)
         {
             if (fileName == null)
             {
                 throw new ArgumentNullException(nameof(fileName));
             }
 
-            if (fileName == string.Empty)
+            if (fileName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
             }
@@ -99,7 +99,7 @@ namespace System.Net.Mail
             _part.SetContent(stream, null, mediaType);
         }
 
-        internal void SetContentFromString(string content, ContentType contentType)
+        internal void SetContentFromString(string content, ContentType? contentType)
         {
             if (content == null)
             {
@@ -141,7 +141,7 @@ namespace System.Net.Mail
             }
         }
 
-        internal void SetContentFromString(string content, Encoding encoding, string mediaType)
+        internal void SetContentFromString(string content, Encoding? encoding, string? mediaType)
         {
             if (content == null)
             {
@@ -153,7 +153,7 @@ namespace System.Net.Mail
                 _part.Stream.Close();
             }
 
-            if (mediaType == null || mediaType == string.Empty)
+            if (string.IsNullOrEmpty(mediaType))
             {
                 mediaType = MediaTypeNames.Text.Plain;
             }
@@ -220,15 +220,16 @@ namespace System.Net.Mail
                     throw new ObjectDisposedException(GetType().FullName);
                 }
 
-                return _part.Stream;
+                return _part.Stream!;
             }
         }
 
+        [AllowNull]
         public string ContentId
         {
             get
             {
-                string cid = _part.ContentID;
+                string? cid = _part.ContentID;
                 if (string.IsNullOrEmpty(cid))
                 {
                     cid = Guid.NewGuid().ToString();
@@ -285,11 +286,11 @@ namespace System.Net.Mail
             }
         }
 
-        internal Uri ContentLocation
+        internal Uri? ContentLocation
         {
             get
             {
-                Uri uri;
+                Uri? uri;
                 if (!Uri.TryCreate(_part.ContentLocation, UriKind.RelativeOrAbsolute, out uri))
                 {
                     return null;
@@ -314,8 +315,8 @@ namespace System.Net.Mail
 
     public class Attachment : AttachmentBase
     {
-        private string _name;
-        private Encoding _nameEncoding;
+        private string? _name;
+        private Encoding? _nameEncoding;
 
         internal Attachment()
         {
@@ -328,7 +329,7 @@ namespace System.Net.Mail
             MimePart.ContentDisposition = new ContentDisposition();
         }
 
-        public Attachment(string fileName, string mediaType) :
+        public Attachment(string fileName, string? mediaType) :
             base(fileName, mediaType)
         {
             Name = Path.GetFileName(fileName);
@@ -338,7 +339,7 @@ namespace System.Net.Mail
         public Attachment(string fileName, ContentType contentType) :
             base(fileName, contentType)
         {
-            if (contentType.Name == null || contentType.Name == string.Empty)
+            if (string.IsNullOrEmpty(contentType.Name))
             {
                 Name = Path.GetFileName(fileName);
             }
@@ -349,14 +350,14 @@ namespace System.Net.Mail
             MimePart.ContentDisposition = new ContentDisposition();
         }
 
-        public Attachment(Stream contentStream, string name) :
+        public Attachment(Stream contentStream, string? name) :
             base(contentStream, null, null)
         {
             Name = name;
             MimePart.ContentDisposition = new ContentDisposition();
         }
 
-        public Attachment(Stream contentStream, string name, string mediaType) :
+        public Attachment(Stream contentStream, string? name, string? mediaType) :
             base(contentStream, null, mediaType)
         {
             Name = name;
@@ -374,11 +375,7 @@ namespace System.Net.Mail
         {
             if (!allowUnicode && _name != null && _name.Length != 0 && !MimeBasePart.IsAscii(_name, false))
             {
-                Encoding encoding = NameEncoding;
-                if (encoding == null)
-                {
-                    encoding = Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
-                }
+                Encoding encoding = NameEncoding ?? Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
                 MimePart.ContentType.Name = MimeBasePart.EncodeHeaderValue(_name, encoding, MimeBasePart.ShouldUseBase64Encoding(encoding));
             }
             else
@@ -387,7 +384,7 @@ namespace System.Net.Mail
             }
         }
 
-        public string Name
+        public string? Name
         {
             get
             {
@@ -395,7 +392,7 @@ namespace System.Net.Mail
             }
             set
             {
-                Encoding nameEncoding = MimeBasePart.DecodeEncoding(value);
+                Encoding? nameEncoding = MimeBasePart.DecodeEncoding(value);
                 if (nameEncoding != null)
                 {
                     _nameEncoding = nameEncoding;
@@ -412,8 +409,7 @@ namespace System.Net.Mail
             }
         }
 
-
-        public Encoding NameEncoding
+        public Encoding? NameEncoding
         {
             get
             {
@@ -429,7 +425,7 @@ namespace System.Net.Mail
             }
         }
 
-        public ContentDisposition ContentDisposition
+        public ContentDisposition? ContentDisposition
         {
             get
             {
@@ -446,7 +442,7 @@ namespace System.Net.Mail
             base.PrepareForSending(allowUnicode);
         }
 
-        public static Attachment CreateAttachmentFromString(string content, string name)
+        public static Attachment CreateAttachmentFromString(string content, string? name)
         {
             Attachment a = new Attachment();
             a.SetContentFromString(content, null, string.Empty);
@@ -454,7 +450,7 @@ namespace System.Net.Mail
             return a;
         }
 
-        public static Attachment CreateAttachmentFromString(string content, string name, Encoding contentEncoding, string mediaType)
+        public static Attachment CreateAttachmentFromString(string content, string? name, Encoding? contentEncoding, string? mediaType)
         {
             Attachment a = new Attachment();
             a.SetContentFromString(content, contentEncoding, mediaType);

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(methodBase is MethodInfo || methodBase is ConstructorInfo);
 
             var ctor = methodBase as ConstructorInfo;
-            if ((object)ctor != null)
+            if (ctor is not null)
             {
                 il.Emit(opcode, ctor);
             }
@@ -34,32 +34,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(index >= 0);
             Debug.Assert(index < ushort.MaxValue);
 
-            switch (index)
-            {
-                case 0:
-                    il.Emit(OpCodes.Ldarg_0);
-                    break;
-                case 1:
-                    il.Emit(OpCodes.Ldarg_1);
-                    break;
-                case 2:
-                    il.Emit(OpCodes.Ldarg_2);
-                    break;
-                case 3:
-                    il.Emit(OpCodes.Ldarg_3);
-                    break;
-                default:
-                    if (index <= byte.MaxValue)
-                    {
-                        il.Emit(OpCodes.Ldarg_S, (byte)index);
-                    }
-                    else
-                    {
-                        // cast to short, result is correct ushort.
-                        il.Emit(OpCodes.Ldarg, (short)index);
-                    }
-                    break;
-            }
+            il.Emit(OpCodes.Ldarg, index);
         }
 
         internal static void EmitLoadArgAddress(this ILGenerator il, int index)
@@ -67,15 +42,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(index >= 0);
             Debug.Assert(index < ushort.MaxValue);
 
-            if (index <= byte.MaxValue)
-            {
-                il.Emit(OpCodes.Ldarga_S, (byte)index);
-            }
-            else
-            {
-                // cast to short, result is correct ushort.
-                il.Emit(OpCodes.Ldarga, (short)index);
-            }
+            il.Emit(OpCodes.Ldarga, index);
         }
 
         internal static void EmitStoreArg(this ILGenerator il, int index)
@@ -83,15 +50,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(index >= 0);
             Debug.Assert(index < ushort.MaxValue);
 
-            if (index <= byte.MaxValue)
-            {
-                il.Emit(OpCodes.Starg_S, (byte)index);
-            }
-            else
-            {
-                // cast to short, result is correct ushort.
-                il.Emit(OpCodes.Starg, (short)index);
-            }
+            il.Emit(OpCodes.Starg, index);
         }
 
         /// <summary>
@@ -103,11 +62,11 @@ namespace System.Linq.Expressions.Compiler
 
             switch (type.GetTypeCode())
             {
-                case TypeCode.Byte:
+                case TypeCode.SByte:
                     il.Emit(OpCodes.Ldind_I1);
                     break;
                 case TypeCode.Boolean:
-                case TypeCode.SByte:
+                case TypeCode.Byte:
                     il.Emit(OpCodes.Ldind_U1);
                     break;
                 case TypeCode.Int16:
@@ -323,11 +282,10 @@ namespace System.Linq.Expressions.Compiler
             il.Emit(fi.IsStatic ? OpCodes.Stsfld : OpCodes.Stfld, fi);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
         internal static void EmitNew(this ILGenerator il, ConstructorInfo ci)
         {
             Debug.Assert(ci != null);
-            Debug.Assert(!ci.DeclaringType.ContainsGenericParameters);
+            Debug.Assert(!ci.DeclaringType!.ContainsGenericParameters);
 
             il.Emit(OpCodes.Newobj, ci);
         }
@@ -355,51 +313,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitPrimitive(this ILGenerator il, int value)
         {
-            OpCode c;
-            switch (value)
-            {
-                case -1:
-                    c = OpCodes.Ldc_I4_M1;
-                    break;
-                case 0:
-                    c = OpCodes.Ldc_I4_0;
-                    break;
-                case 1:
-                    c = OpCodes.Ldc_I4_1;
-                    break;
-                case 2:
-                    c = OpCodes.Ldc_I4_2;
-                    break;
-                case 3:
-                    c = OpCodes.Ldc_I4_3;
-                    break;
-                case 4:
-                    c = OpCodes.Ldc_I4_4;
-                    break;
-                case 5:
-                    c = OpCodes.Ldc_I4_5;
-                    break;
-                case 6:
-                    c = OpCodes.Ldc_I4_6;
-                    break;
-                case 7:
-                    c = OpCodes.Ldc_I4_7;
-                    break;
-                case 8:
-                    c = OpCodes.Ldc_I4_8;
-                    break;
-                default:
-                    if (value >= sbyte.MinValue && value <= sbyte.MaxValue)
-                    {
-                        il.Emit(OpCodes.Ldc_I4_S, (sbyte)value);
-                    }
-                    else
-                    {
-                        il.Emit(OpCodes.Ldc_I4, value);
-                    }
-                    return;
-            }
-            il.Emit(c);
+            il.Emit(OpCodes.Ldc_I4, value);
         }
 
         private static void EmitPrimitive(this ILGenerator il, uint value)
@@ -440,21 +354,19 @@ namespace System.Linq.Expressions.Compiler
         }
 
         // matches TryEmitConstant
-        internal static bool CanEmitConstant(object value, Type type)
+        internal static bool CanEmitConstant(object? value, Type type)
         {
             if (value == null || CanEmitILConstant(type))
             {
                 return true;
             }
 
-            Type t = value as Type;
-            if (t != null)
+            if (value is Type t)
             {
                 return ShouldLdtoken(t);
             }
 
-            MethodBase mb = value as MethodBase;
-            return mb != null && ShouldLdtoken(mb);
+            return value is MethodBase mb && ShouldLdtoken(mb);
         }
 
         // matches TryEmitILConstant
@@ -485,7 +397,7 @@ namespace System.Linq.Expressions.Compiler
         //
         // Note: we support emitting more things as IL constants than
         // Linq does
-        internal static bool TryEmitConstant(this ILGenerator il, object value, Type type, ILocalCache locals)
+        internal static bool TryEmitConstant(this ILGenerator il, object? value, Type type, ILocalCache locals)
         {
             if (value == null)
             {
@@ -503,8 +415,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // Check for a few more types that we support emitting as constants
-            Type t = value as Type;
-            if (t != null)
+            if (value is Type t)
             {
                 if (ShouldLdtoken(t))
                 {
@@ -520,11 +431,10 @@ namespace System.Linq.Expressions.Compiler
                 return false;
             }
 
-            MethodBase mb = value as MethodBase;
-            if (mb != null && ShouldLdtoken(mb))
+            if (value is MethodBase mb && ShouldLdtoken(mb))
             {
                 il.Emit(OpCodes.Ldtoken, mb);
-                Type dt = mb.DeclaringType;
+                Type? dt = mb.DeclaringType;
                 if (dt != null && dt.IsGenericType)
                 {
                     il.Emit(OpCodes.Ldtoken, dt);
@@ -561,7 +471,7 @@ namespace System.Linq.Expressions.Compiler
                 return false;
             }
 
-            Type dt = mb.DeclaringType;
+            Type? dt = mb.DeclaringType;
             return dt == null || ShouldLdtoken(dt);
         }
 
@@ -575,7 +485,7 @@ namespace System.Linq.Expressions.Compiler
 
                 if (TryEmitILConstant(il, value, nonNullType))
                 {
-                    il.Emit(OpCodes.Newobj, type.GetConstructor(new[] { nonNullType }));
+                    il.Emit(OpCodes.Newobj, TypeUtils.GetNullableConstructor(type, nonNullType));
                     return true;
                 }
 
@@ -700,7 +610,6 @@ namespace System.Linq.Expressions.Compiler
         }
 
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static void EmitNumericConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked)
         {
             TypeCode tc = typeTo.GetTypeCode();
@@ -917,7 +826,7 @@ namespace System.Linq.Expressions.Compiler
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(nnTypeFrom, nnTypeTo, isChecked, locals);
             // construct result type
-            ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
+            ConstructorInfo ci = TypeUtils.GetNullableConstructor(typeTo, nnTypeTo);
             il.Emit(OpCodes.Newobj, ci);
             labEnd = il.DefineLabel();
             il.Emit(OpCodes.Br_S, labEnd);
@@ -931,17 +840,15 @@ namespace System.Linq.Expressions.Compiler
             il.MarkLabel(labEnd);
         }
 
-
         private static void EmitNonNullableToNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
         {
             Debug.Assert(!typeFrom.IsNullableType());
             Debug.Assert(typeTo.IsNullableType());
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(typeFrom, nnTypeTo, isChecked, locals);
-            ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
+            ConstructorInfo ci = TypeUtils.GetNullableConstructor(typeTo, nnTypeTo);
             il.Emit(OpCodes.Newobj, ci);
         }
-
 
         private static void EmitNullableToNonNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
         {
@@ -991,26 +898,38 @@ namespace System.Linq.Expressions.Compiler
                 il.EmitNonNullableToNullableConversion(typeFrom, typeTo, isChecked, locals);
         }
 
-
+        [DynamicDependency("get_HasValue", typeof(Nullable<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The Nullable<T> method will be preserved by the DynamicDependency.")]
         internal static void EmitHasValue(this ILGenerator il, Type nullableType)
         {
-            MethodInfo mi = nullableType.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public);
+            Debug.Assert(nullableType.IsNullableType());
+
+            MethodInfo mi = nullableType.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public)!;
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
 
-
+        [DynamicDependency("get_Value", typeof(Nullable<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The Nullable<T> method will be preserved by the DynamicDependency.")]
         internal static void EmitGetValue(this ILGenerator il, Type nullableType)
         {
-            MethodInfo mi = nullableType.GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public);
+            Debug.Assert(nullableType.IsNullableType());
+
+            MethodInfo mi = nullableType.GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public)!;
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
 
-
+        [DynamicDependency("GetValueOrDefault()", typeof(Nullable<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The Nullable<T> method will be preserved by the DynamicDependency.")]
         internal static void EmitGetValueOrDefault(this ILGenerator il, Type nullableType)
         {
-            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", System.Type.EmptyTypes);
+            Debug.Assert(nullableType.IsNullableType());
+
+            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", Type.EmptyTypes)!;
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
@@ -1057,6 +976,8 @@ namespace System.Linq.Expressions.Compiler
         /// The code assumes that bounds for all dimensions
         /// are already emitted.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The Array ctor is dynamically constructed and is not included in IL. It is not subject to trimming.")]
         internal static void EmitArray(this ILGenerator il, Type arrayType)
         {
             Debug.Assert(arrayType != null);
@@ -1064,7 +985,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (arrayType.IsSZArray)
             {
-                il.Emit(OpCodes.Newarr, arrayType.GetElementType());
+                il.Emit(OpCodes.Newarr, arrayType.GetElementType()!);
             }
             else
             {
@@ -1073,7 +994,7 @@ namespace System.Linq.Expressions.Compiler
                 {
                     types[i] = typeof(int);
                 }
-                ConstructorInfo ci = arrayType.GetConstructor(types);
+                ConstructorInfo? ci = arrayType.GetConstructor(types);
                 Debug.Assert(ci != null);
                 il.EmitNew(ci);
             }
@@ -1085,7 +1006,9 @@ namespace System.Linq.Expressions.Compiler
 
         private static void EmitDecimal(this ILGenerator il, decimal value)
         {
-            int[] bits = decimal.GetBits(value);
+            Span<int> bits = stackalloc int[4];
+            decimal.GetBits(value, bits);
+
             int scale = (bits[3] & int.MaxValue) >> 16;
             if (scale == 0)
             {
@@ -1161,7 +1084,7 @@ namespace System.Linq.Expressions.Compiler
         /// Emits default(T)
         /// Semantics match C# compiler behavior
         /// </summary>
-        internal static void EmitDefault(this ILGenerator il, Type type, ILocalCache locals)
+        internal static void EmitDefault(this ILGenerator il, Type type, ILocalCache? locals)
         {
             switch (type.GetTypeCode())
             {
@@ -1179,7 +1102,7 @@ namespace System.Linq.Expressions.Compiler
                         // This is the IL for default(T) if T is a generic type
                         // parameter, so it should work for any type. It's also
                         // the standard pattern for structs.
-                        LocalBuilder lb = locals.GetLocal(type);
+                        LocalBuilder lb = locals!.GetLocal(type);
                         il.Emit(OpCodes.Ldloca, lb);
                         il.Emit(OpCodes.Initobj, type);
                         il.Emit(OpCodes.Ldloc, lb);

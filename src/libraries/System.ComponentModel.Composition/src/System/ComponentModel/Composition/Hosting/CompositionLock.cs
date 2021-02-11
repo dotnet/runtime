@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #define SINGLETHREADEDLOCKENFORCEMENT
 using System.Threading;
@@ -23,12 +22,12 @@ namespace System.ComponentModel.Composition.Hosting
     internal sealed class CompositionLock : IDisposable
     {
         // narrow lock
-        private readonly Lock _stateLock = null;
+        private readonly Lock? _stateLock;
         // wide lock
         private static readonly object _compositionLock = new object();
 
-        private int _isDisposed = 0;
-        private readonly bool _isThreadSafe = false;
+        private int _isDisposed;
+        private readonly bool _isThreadSafe;
 
         private static readonly EmptyLockHolder _EmptyLockHolder = new EmptyLockHolder();
 
@@ -47,7 +46,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 0)
                 {
-                    _stateLock.Dispose();
+                    _stateLock!.Dispose();
                 }
             }
         }
@@ -94,7 +93,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (_isThreadSafe)
             {
-                return new ReadLock(_stateLock);
+                return new ReadLock(_stateLock!);
             }
             else
             {
@@ -106,7 +105,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (_isThreadSafe)
             {
-                return new WriteLock(_stateLock);
+                return new WriteLock(_stateLock!);
             }
             else
             {

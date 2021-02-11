@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 
@@ -34,9 +34,9 @@ namespace System.Security.Cryptography
             return state.HasElement(name);
         }
 
-        internal static byte[] ReadCryptoBinary(ref ParseState state, string name, int sizeHint = -1)
+        internal static byte[]? ReadCryptoBinary(ref ParseState state, string name, int sizeHint = -1)
         {
-            string value = state.GetValue(name);
+            string? value = state.GetValue(name);
 
             if (value == null)
             {
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
 
         internal static void WriteCryptoBinary(string name, int value, StringBuilder builder)
         {
-            // NetFX compat
+            // .NET Framework compat
             if (value == 0)
             {
                 Span<byte> single = stackalloc byte[1];
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography
             Span<byte> valBuf = stackalloc byte[sizeof(int)];
             BinaryPrimitives.WriteInt32BigEndian(valBuf, value);
 
-            // NetFX does write the counter value as CryptoBinary, so do the leading-byte trim here.
+            // .NET Framework does write the counter value as CryptoBinary, so do the leading-byte trim here.
 
             int start = 0;
 
@@ -166,13 +166,13 @@ namespace System.Security.Cryptography
 
         internal struct ParseState
         {
-            private IEnumerable _enumerable;
-            private IEnumerator _enumerator;
+            private IEnumerable? _enumerable;
+            private IEnumerator? _enumerator;
             private int _index;
 
             internal static ParseState ParseDocument(string xmlString)
             {
-                object rootElement = Functions.ParseDocument(xmlString);
+                object? rootElement = Functions.ParseDocument(xmlString);
 
                 return new ParseState
                 {
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography
 
             internal bool HasElement(string localName)
             {
-                string value = GetValue(localName);
+                string? value = GetValue(localName);
 
                 bool ret = value != null;
 
@@ -198,7 +198,7 @@ namespace System.Security.Cryptography
                 return ret;
             }
 
-            internal string GetValue(string localName)
+            internal string? GetValue(string localName)
             {
                 if (_enumerable == null)
                 {
@@ -229,7 +229,7 @@ namespace System.Security.Cryptography
 
                 while (idx != origIdx)
                 {
-                    string curName = Functions.GetLocalName(_enumerator.Current);
+                    string? curName = Functions.GetLocalName(_enumerator.Current);
 
                     if (localName == curName)
                     {
@@ -265,36 +265,52 @@ namespace System.Security.Cryptography
 
             private static class Functions
             {
-                private static readonly Type s_xDocument = Type.GetType("System.Xml.Linq.XDocument, System.Private.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
-                private static readonly Func<string, object> s_xDocumentCreate =
-                    (Func<string, object>)s_xDocument.GetMethod(
+                private const string XmlLinqAssemblyString = ", System.Private.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
+
+                private static readonly Func<string, object> s_xDocumentCreate;
+                private static readonly PropertyInfo s_docRootProperty;
+                private static readonly MethodInfo s_getElementsMethod;
+                private static readonly PropertyInfo s_elementNameProperty;
+                private static readonly PropertyInfo s_elementValueProperty;
+                private static readonly PropertyInfo s_nameNameProperty;
+
+#pragma warning disable CA1810 // explicit static cctor
+                static Functions()
+                {
+                    Type xDocument = Type.GetType("System.Xml.Linq.XDocument" + XmlLinqAssemblyString)!;
+                    s_xDocumentCreate = xDocument.GetMethod(
                         "Parse",
                         BindingFlags.Static | BindingFlags.Public,
-                        null,
-                        new[] { typeof(string) },
-                        null).CreateDelegate(typeof(Func<string, object>));
-                private static readonly PropertyInfo s_docRootProperty = s_xDocument.GetProperty("Root");
-                private static readonly MethodInfo s_getElementsMethod = s_docRootProperty.PropertyType.GetMethod(
+                        new[] { typeof(string) })!
+                            .CreateDelegate<Func<string, object>>();
+
+                    s_docRootProperty = xDocument.GetProperty("Root")!;
+
+                    Type xElement = Type.GetType("System.Xml.Linq.XElement" + XmlLinqAssemblyString)!;
+                    s_getElementsMethod = xElement.GetMethod(
                         "Elements",
                         BindingFlags.Instance | BindingFlags.Public,
-                        null,
-                        Array.Empty<Type>(),
-                        null);
-                private static readonly PropertyInfo s_elementNameProperty = s_docRootProperty.PropertyType.GetProperty("Name");
-                private static readonly PropertyInfo s_nameNameProperty = s_elementNameProperty.PropertyType.GetProperty("LocalName");
-                private static readonly PropertyInfo s_elementValueProperty = s_docRootProperty.PropertyType.GetProperty("Value");
+                        Type.EmptyTypes)!;
 
-                internal static object ParseDocument(string xmlString) =>
+                    s_elementNameProperty = xElement.GetProperty("Name")!;
+                    s_elementValueProperty = xElement.GetProperty("Value")!;
+
+                    Type xName= Type.GetType("System.Xml.Linq.XName" + XmlLinqAssemblyString)!;
+                    s_nameNameProperty = xName.GetProperty("LocalName")!;
+                }
+#pragma warning restore CA1810
+
+                internal static object? ParseDocument(string xmlString) =>
                     s_docRootProperty.GetValue(s_xDocumentCreate(xmlString));
 
-                internal static IEnumerable GetElements(object element) =>
-                    (IEnumerable)s_getElementsMethod.Invoke(element, Array.Empty<object>());
+                internal static IEnumerable? GetElements(object? element) =>
+                    (IEnumerable?)s_getElementsMethod.Invoke(element, Array.Empty<object>());
 
-                internal static string GetLocalName(object element) =>
-                    (string)s_nameNameProperty.GetValue(s_elementNameProperty.GetValue(element));
+                internal static string? GetLocalName(object? element) =>
+                    (string?)s_nameNameProperty.GetValue(s_elementNameProperty.GetValue(element));
 
-                internal static string GetValue(object element) =>
-                    (string)s_elementValueProperty.GetValue(element);
+                internal static string? GetValue(object? element) =>
+                    (string?)s_elementValueProperty.GetValue(element);
             }
         }
     }

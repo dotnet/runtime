@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -14,7 +13,7 @@ namespace System.Reflection.TypeLoading
     {
         protected RoConstructor() { }
 
-        public abstract override bool Equals(object obj);
+        public abstract override bool Equals(object? obj);
         public abstract override int GetHashCode();
 
         public sealed override Type DeclaringType => GetRoDeclaringType();
@@ -24,7 +23,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override string Name => _lazyName ?? (_lazyName = ComputeName());
         protected abstract string ComputeName();
-        private volatile string _lazyName;
+        private volatile string? _lazyName;
 
         public sealed override Module Module => GetRoModule();
         internal abstract RoModule GetRoModule();
@@ -59,7 +58,7 @@ namespace System.Reflection.TypeLoading
         private volatile MethodImplAttributes _lazyMethodImplAttributes = MethodImplAttributesSentinel;
 
         public sealed override MethodImplAttributes GetMethodImplementationFlags() => MethodImplementationFlags;
-        public abstract override MethodBody GetMethodBody();
+        public abstract override MethodBody? GetMethodBody();
 
         public sealed override bool ContainsGenericParameters => GetRoDeclaringType().ContainsGenericParameters;
 
@@ -68,11 +67,11 @@ namespace System.Reflection.TypeLoading
 
         private MethodSig<RoParameter> MethodSig => _lazyMethodSig ?? (_lazyMethodSig = ComputeMethodSig());
         protected abstract MethodSig<RoParameter> ComputeMethodSig();
-        private volatile MethodSig<RoParameter> _lazyMethodSig;
+        private volatile MethodSig<RoParameter>? _lazyMethodSig;
 
         private MethodSig<RoType> CustomModifiers => _lazyCustomModifiers ?? (_lazyCustomModifiers = ComputeCustomModifiers());
         protected abstract MethodSig<RoType> ComputeCustomModifiers();
-        private volatile MethodSig<RoType> _lazyCustomModifiers;
+        private volatile MethodSig<RoType>? _lazyCustomModifiers;
 
         public sealed override string ToString() => Loader.GetDisposedString() ?? this.ToString(ComputeMethodSigStrings());
         protected abstract MethodSig<string> ComputeMethodSigStrings();
@@ -83,8 +82,8 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsSecurityTransparent => throw new InvalidOperationException(SR.InvalidOperation_IsSecurity);
 
         // Not valid in a ReflectionOnly context
-        public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
-        public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
+        public sealed override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
+        public sealed override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
         public sealed override RuntimeMethodHandle MethodHandle => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
         MethodBase IRoMethodBase.MethodBase => this;

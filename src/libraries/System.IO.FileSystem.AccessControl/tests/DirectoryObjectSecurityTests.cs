@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information
 
 using System.DirectoryServices;
 using System.Security.Principal;
@@ -25,7 +24,7 @@ namespace System.Security.AccessControl
             // We didn't allow setting the security descriptor in core due to assembly refactoring.
             // GetAccessRules() would throw a null ref after setting the descriptor. We now expose
             // the descriptor as a protected property (instead of internal).
-            // https://github.com/dotnet/corefx/issues/34151
+            // https://github.com/dotnet/runtime/issues/28233
 
             var customObjectSecurity = new CustomDirectoryObjectSecurity();
 
@@ -68,7 +67,6 @@ namespace System.Security.AccessControl
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void GetAccessRules_InvalidTargetType()
         {
             var activeDirectorySecurity = new ActiveDirectorySecurity();

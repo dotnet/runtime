@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
 using System.Dynamic.Utils;
@@ -47,9 +46,7 @@ namespace System.Linq.Expressions.Compiler
 
             protected void RequireNoValueProperty()
             {
-                var property = _binding.Member as PropertyInfo;
-
-                if (property != null && property.PropertyType.IsValueType)
+                if (_binding.Member is PropertyInfo property && property.PropertyType.IsValueType)
                 {
                     throw Error.CannotAutoInitializeValueTypeMemberThroughProperty(property);
                 }
@@ -172,7 +169,7 @@ namespace System.Linq.Expressions.Compiler
                             }
                             else
                             {
-                                newInits[i] = new ElementInit(_inits[i].AddMethod, new TrueReadOnlyCollection<Expression>(cr[0, -1]));
+                                newInits[i] = new ElementInit(_inits[i].AddMethod, new TrueReadOnlyCollection<Expression>(cr[0, -1]!));
                             }
                         }
                         return new MemberListBinding(_binding.Member, new TrueReadOnlyCollection<ElementInit>(newInits));
@@ -194,7 +191,7 @@ namespace System.Linq.Expressions.Compiler
                 for (int i = 0; i < count; i++)
                 {
                     ChildRewriter cr = _childRewriters[i];
-                    Result add = cr.Finish(new InstanceMethodCallExpressionN(_inits[i].AddMethod, memberTemp, cr[0, -1]));
+                    Result add = cr.Finish(new InstanceMethodCallExpressionN(_inits[i].AddMethod, memberTemp, cr[0, -1]!));
                     block[i + 1] = add.Node;
                 }
 

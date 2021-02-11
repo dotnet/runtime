@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable IDE0060 // unused parameters
 using System.Runtime.CompilerServices;
@@ -16,6 +15,13 @@ namespace System.Runtime.Intrinsics.Arm
         internal Aes() { }
 
         public static new bool IsSupported { [Intrinsic] get => false; }
+
+        public new abstract class Arm64 : ArmBase.Arm64
+        {
+            internal Arm64() { }
+
+            public static new bool IsSupported { [Intrinsic] get { return false; } }
+        }
 
         /// <summary>
         /// uint8x16_t vaesdq_u8 (uint8x16_t data, uint8x16_t key)
@@ -44,5 +50,34 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: AESMC V>.16B, Vn.16B
         /// </summary>
         public static Vector128<byte> MixColumns(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// poly128_t vmull_p64 (poly64_t a, poly64_t b)
+        ///   A32: VMULL.P8 Qd, Dn, Dm
+        ///   A64: PMULL Vd.1Q, Vn.1D, Vm.1D
+        /// </summary>
+        public static Vector128<long> PolynomialMultiplyWideningLower(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// poly128_t vmull_p64 (poly64_t a, poly64_t b)
+        ///   A32: VMULL.P8 Qd, Dn, Dm
+        ///   A64: PMULL Vd.1Q, Vn.1D, Vm.1D
+        /// </summary>
+        public static Vector128<ulong> PolynomialMultiplyWideningLower(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// poly128_t vmull_high_p64 (poly64x2_t a, poly64x2_t b)
+        ///   A32: VMULL.P8 Qd, Dn+1, Dm+1
+        ///   A64: PMULL2 Vd.1Q, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector128<long> PolynomialMultiplyWideningUpper(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// poly128_t vmull_high_p64 (poly64x2_t a, poly64x2_t b)
+        ///   A32: VMULL.P8 Qd, Dn+1, Dm+1
+        ///   A64: PMULL2 Vd.1Q, Vn.2D, Vm.2D
+        /// </summary>
+        public static Vector128<ulong> PolynomialMultiplyWideningUpper(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
     }
 }

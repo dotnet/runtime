@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Data
 {
@@ -17,9 +16,9 @@ namespace System.Data
         int GetOrdinal(string name);
         bool GetBoolean(int i);
         byte GetByte(int i);
-        long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length);
+        long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferoffset, int length);
         char GetChar(int i);
-        long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length);
+        long GetChars(int i, long fieldoffset, char[]? buffer, int bufferoffset, int length);
         Guid GetGuid(int i);
         short GetInt16(int i);
         int GetInt32(int i);

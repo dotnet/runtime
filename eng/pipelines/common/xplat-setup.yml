@@ -6,20 +6,48 @@ parameters:
   container: ''
   helixQueuesTemplate: ''
   platform: ''
+  targetRid: ''
   jobParameters: {}
+  variables: []
 
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
-    variables:
-      - name: _containsCoreClrChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'] ]
-      - name: _containsLibrariesChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: _containsInstallerChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_installer.containsChange'] ]
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
+      runtimeFlavorDisplayName: 'CoreCLR'
+    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+      runtimeFlavorDisplayName: 'Mono'
+    
+    shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    # keep in sync with /eng/pipelines/common/variables.yml
+    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging')) }}
+
+    variables:
+      # Disable component governance in our CI builds. These builds are not shipping nor
+      # are they a service. Also the component governance jobs issue lots of inconsequential
+      # warnings and errors into our build timelines that make it hard to track down 
+      # real errors in the build
+      - name: skipComponentGovernanceDetection
+        value: true
+      - name: runCodesignValidationInjection
+        value: false
+
+      - name: checkoutFetchDepth
+        value: 20
+
+      - name: buildConfigUpper
+        ${{ if eq(parameters.jobParameters.buildConfig, 'debug') }}:
+          value: 'Debug'
+        ${{ if eq(parameters.jobParameters.buildConfig, 'release') }}:
+          value: 'Release'
+        ${{ if eq(parameters.jobParameters.buildConfig, 'checked') }}:
+          value: 'Checked'
+
+      - name: _BuildConfig
+        value: $(buildConfigUpper)
+
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: archiveExtension
           value: '.zip'
         - name: archiveType
@@ -31,11 +59,11 @@ jobs:
         - name: dir
           value: '\'
         - name: _msbuildCommand
-          value: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
+          value: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -ci
         - name: setScriptToEchoAndFailOnNonZero
           value: ''
 
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
         - name: archiveExtension
           value: '.tar.gz'
         - name: archiveType
@@ -47,7 +75,7 @@ jobs:
         - name: dir
           value: '/'
         - name: _msbuildCommand
-          value: ./eng/common/msbuild.sh --warnaserror false --ci
+          value: ./eng/common/msbuild.sh --ci
         # Set the bash script to display each command, and stop if any command exits nonzero.
         - name: setScriptToEchoAndFailOnNonZero
           value: 'set -xe'
@@ -57,9 +85,19 @@ jobs:
         - name: ROOTFS_DIR
           value: ${{ parameters.jobParameters.crossrootfsDir }}
 
+      - name: runtimeFlavorName
+        ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+          value: Mono
+        ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
+          value: CoreCLR
+      
+      - ${{ each variable in parameters.variables }}:
+        - ${{ variable }}
+
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
+    targetRid: ${{ parameters.targetRid }}
     platform: ${{ parameters.platform }}
 
     ${{ if ne(parameters.container, '') }}:
@@ -71,38 +109,34 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
-        # FreeBSD builds only in the internal project
-        ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: dnceng-freebsd-internal
-
-        # Official Build OSX Pool
-        ${{ if and(eq(parameters.osGroup, 'OSX'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: Hosted Mac Internal
-
-        # Public OSX Build Pool
-        ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
-          name: Hosted macOS
+        # OSX Build Pool (we don't have on-prem OSX BuildPool
+        ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'tvOS') }}:
+          vmImage: 'macOS-10.15'
 
         # Official Build Windows Pool
-        ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Windows.10.Amd64.VS2019
 
         # Public Windows Build Pool
-        ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(eq(parameters.osGroup, 'windows'), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCorePublic-Pool
           queue: BuildPool.Windows.10.Amd64.VS2019.Open
 
+
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
+      # macOS hosted pool machines are slower so we need to give a greater timeout than the 60 mins default.
+      ${{ if and(eq(parameters.jobParameters.timeoutInMinutes, ''), in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'tvOS')) }}:
+        timeoutInMinutes: 120
       ${{ insert }}: ${{ parameters.jobParameters }}
     ${{ if ne(parameters.helixQueuesTemplate, '') }}:
       jobTemplate: ${{ parameters.jobTemplate }}

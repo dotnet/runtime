@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
@@ -18,7 +17,7 @@ namespace System.Collections.Specialized
             _contents = contents;
         }
 
-        public override string this[string key]
+        public override string? this[string key]
         {
             get { return _contents[key]; }
             set { _contents[key] = value; }
@@ -33,7 +32,7 @@ namespace System.Collections.Specialized
 
         public override object SyncRoot => _contents.SyncRoot;
 
-        public override void Add(string key, string value)
+        public override void Add(string key, string? value)
         {
             if (_contents.ContainsKey(key))
             {
@@ -47,13 +46,13 @@ namespace System.Collections.Specialized
 
         public override bool ContainsKey(string key) => _contents.ContainsKey(key);
 
-        public override bool ContainsValue(string value) => _contents.ContainsValue(value);
+        public override bool ContainsValue(string? value) => _contents.ContainsValue(value);
 
         public override void CopyTo(Array array, int index) => _contents.CopyTo(array, index);
 
         public override IEnumerator GetEnumerator()
         {
-            foreach (KeyValuePair<string, string> keyValuePair in _contents)
+            foreach (KeyValuePair<string, string?> keyValuePair in _contents)
             {
                 yield return new DictionaryEntry(keyValuePair.Key, keyValuePair.Value);
             }

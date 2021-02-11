@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
@@ -16,20 +15,18 @@ namespace System.Security.Cryptography.Pkcs
         //
 
         public Pkcs9DocumentName()
-            : base(new Oid(Oids.DocumentName))
+            : base(Oids.DocumentNameOid.CopyOid())
         {
-            // CAPI doesn't have an OID mapping for szOID_CAPICOM_documentName, so we cannot use the faster
-            // FromOidValue factory
         }
 
         public Pkcs9DocumentName(string documentName)
-            : base(Oids.DocumentName, Encode(documentName))
+            : base(Oids.DocumentNameOid.CopyOid(), Encode(documentName))
         {
             _lazyDocumentName = documentName;
         }
 
         public Pkcs9DocumentName(byte[] encodedDocumentName)
-            : base(Oids.DocumentName, encodedDocumentName)
+            : base(Oids.DocumentNameOid.CopyOid(), encodedDocumentName)
         {
         }
 
@@ -55,7 +52,8 @@ namespace System.Security.Cryptography.Pkcs
         // Private methods.
         //
 
-        private static string Decode(byte[] rawData)
+        [return: NotNullIfNotNull("rawData")]
+        private static string? Decode(byte[]? rawData)
         {
             if (rawData == null)
                 return null;
@@ -73,6 +71,6 @@ namespace System.Security.Cryptography.Pkcs
             return PkcsHelpers.EncodeOctetString(octets);
         }
 
-        private volatile string _lazyDocumentName = null;
+        private volatile string? _lazyDocumentName;
     }
 }

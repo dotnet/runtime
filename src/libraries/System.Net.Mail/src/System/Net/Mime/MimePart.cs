@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -17,26 +16,23 @@ namespace System.Net.Mime
     /// </summary>
     internal class MimePart : MimeBasePart, IDisposable
     {
-        private Stream _stream = null;
-        private bool _streamSet = false;
-        private bool _streamUsedOnce = false;
-        private AsyncCallback _readCallback;
-        private AsyncCallback _writeCallback;
+        private Stream? _stream;
+        private bool _streamSet;
+        private bool _streamUsedOnce;
+        private AsyncCallback? _readCallback;
+        private AsyncCallback? _writeCallback;
         private const int maxBufferSize = 0x4400;  //seems optimal for send based on perf analysis
 
         internal MimePart() { }
 
         public void Dispose()
         {
-            if (_stream != null)
-            {
-                _stream.Close();
-            }
+            _stream?.Close();
         }
 
-        internal Stream Stream => _stream;
+        internal Stream? Stream => _stream;
 
-        internal ContentDisposition ContentDisposition
+        internal ContentDisposition? ContentDisposition
         {
             get { return _contentDisposition; }
             set
@@ -44,11 +40,11 @@ namespace System.Net.Mime
                 _contentDisposition = value;
                 if (value == null)
                 {
-                    ((HeaderCollection)Headers).InternalRemove(MailHeaderInfo.GetString(MailHeaderID.ContentDisposition));
+                    ((HeaderCollection)Headers).InternalRemove(MailHeaderInfo.GetString(MailHeaderID.ContentDisposition)!);
                 }
                 else
                 {
-                    _contentDisposition.PersistIfNeeded((HeaderCollection)Headers, true);
+                    _contentDisposition!.PersistIfNeeded((HeaderCollection)Headers, true);
                 }
             }
         }
@@ -57,7 +53,7 @@ namespace System.Net.Mime
         {
             get
             {
-                string value = Headers[MailHeaderInfo.GetString(MailHeaderID.ContentTransferEncoding)];
+                string value = Headers[MailHeaderInfo.GetString(MailHeaderID.ContentTransferEncoding)!]!;
                 if (value.Equals("base64", StringComparison.OrdinalIgnoreCase))
                 {
                     return TransferEncoding.Base64;
@@ -114,7 +110,7 @@ namespace System.Net.Mime
 
             if (_streamSet)
             {
-                _stream.Close();
+                _stream!.Close();
                 _stream = null;
                 _streamSet = false;
             }
@@ -125,7 +121,7 @@ namespace System.Net.Mime
             TransferEncoding = TransferEncoding.Base64;
         }
 
-        internal void SetContent(Stream stream, string name, string mimeType)
+        internal void SetContent(Stream stream, string? name, string? mimeType)
         {
             if (stream == null)
             {
@@ -143,7 +139,7 @@ namespace System.Net.Mime
             SetContent(stream);
         }
 
-        internal void SetContent(Stream stream, ContentType contentType)
+        internal void SetContent(Stream stream, ContentType? contentType)
         {
             if (stream == null)
             {
@@ -153,16 +149,16 @@ namespace System.Net.Mime
             SetContent(stream);
         }
 
-        internal void Complete(IAsyncResult result, Exception e)
+        internal void Complete(IAsyncResult result, Exception? e)
         {
             //if we already completed and we got called again,
             //it mean's that there was an exception in the callback and we
             //should just rethrow it.
 
-            MimePartContext context = (MimePartContext)result.AsyncState;
+            MimePartContext context = (MimePartContext)result.AsyncState!;
             if (context._completed)
             {
-                ExceptionDispatchInfo.Throw(e);
+                ExceptionDispatchInfo.Throw(e!);
             }
 
             try
@@ -191,7 +187,7 @@ namespace System.Net.Mime
                 return;
             }
 
-            ((MimePartContext)result.AsyncState)._completedSynchronously = false;
+            ((MimePartContext)result.AsyncState!)._completedSynchronously = false;
 
             try
             {
@@ -205,11 +201,11 @@ namespace System.Net.Mime
 
         internal void ReadCallbackHandler(IAsyncResult result)
         {
-            MimePartContext context = (MimePartContext)result.AsyncState;
-            context._bytesLeft = Stream.EndRead(result);
+            MimePartContext context = (MimePartContext)result.AsyncState!;
+            context._bytesLeft = Stream!.EndRead(result);
             if (context._bytesLeft > 0)
             {
-                IAsyncResult writeResult = context._outputStream.BeginWrite(context._buffer, 0, context._bytesLeft, _writeCallback, context);
+                IAsyncResult writeResult = context._outputStream!.BeginWrite(context._buffer, 0, context._bytesLeft, _writeCallback, context);
                 if (writeResult.CompletedSynchronously)
                 {
                     WriteCallbackHandler(writeResult);
@@ -228,7 +224,7 @@ namespace System.Net.Mime
                 return;
             }
 
-            ((MimePartContext)result.AsyncState)._completedSynchronously = false;
+            ((MimePartContext)result.AsyncState!)._completedSynchronously = false;
 
             try
             {
@@ -242,9 +238,9 @@ namespace System.Net.Mime
 
         internal void WriteCallbackHandler(IAsyncResult result)
         {
-            MimePartContext context = (MimePartContext)result.AsyncState;
-            context._outputStream.EndWrite(result);
-            IAsyncResult readResult = Stream.BeginRead(context._buffer, 0, context._buffer.Length, _readCallback, context);
+            MimePartContext context = (MimePartContext)result.AsyncState!;
+            context._outputStream!.EndWrite(result);
+            IAsyncResult readResult = Stream!.BeginRead(context._buffer, 0, context._buffer.Length, _readCallback, context);
             if (readResult.CompletedSynchronously)
             {
                 ReadCallbackHandler(readResult);
@@ -273,13 +269,13 @@ namespace System.Net.Mime
 
         internal void ContentStreamCallbackHandler(IAsyncResult result)
         {
-            MimePartContext context = (MimePartContext)result.AsyncState;
+            MimePartContext context = (MimePartContext)result.AsyncState!;
             Stream outputStream = context._writer.EndGetContentStream(result);
             context._outputStream = GetEncodedStream(outputStream);
 
             _readCallback = new AsyncCallback(ReadCallback);
             _writeCallback = new AsyncCallback(WriteCallback);
-            IAsyncResult readResult = Stream.BeginRead(context._buffer, 0, context._buffer.Length, _readCallback, context);
+            IAsyncResult readResult = Stream!.BeginRead(context._buffer, 0, context._buffer.Length, _readCallback, context);
             if (readResult.CompletedSynchronously)
             {
                 ReadCallbackHandler(readResult);
@@ -293,7 +289,7 @@ namespace System.Net.Mime
                 return;
             }
 
-            ((MimePartContext)result.AsyncState)._completedSynchronously = false;
+            ((MimePartContext)result.AsyncState!)._completedSynchronously = false;
 
             try
             {
@@ -314,7 +310,7 @@ namespace System.Net.Mime
                 _buffer = new byte[maxBufferSize];
             }
 
-            internal Stream _outputStream;
+            internal Stream? _outputStream;
             internal LazyAsyncResult _result;
             internal int _bytesLeft;
             internal BaseWriter _writer;
@@ -323,7 +319,7 @@ namespace System.Net.Mime
             internal bool _completedSynchronously = true;
         }
 
-        internal override IAsyncResult BeginSend(BaseWriter writer, AsyncCallback callback, bool allowUnicode, object state)
+        internal override IAsyncResult BeginSend(BaseWriter writer, AsyncCallback? callback, bool allowUnicode, object? state)
         {
             PrepareHeaders(allowUnicode);
             writer.WriteHeaders(Headers, allowUnicode);
@@ -370,7 +366,7 @@ namespace System.Net.Mime
         {
             if (_streamUsedOnce)
             {
-                if (Stream.CanSeek)
+                if (Stream!.CanSeek)
                 {
                     Stream.Seek(0, SeekOrigin.Begin);
                     _streamUsedOnce = false;

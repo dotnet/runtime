@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -317,7 +316,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Content is not available, the builder has been linked with another one.</exception>
         public ImmutableArray<byte> ToImmutableArray(int start, int byteCount)
         {
-            var array = ToArray(start, byteCount);
+            byte[]? array = ToArray(start, byteCount);
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
         }
 
@@ -735,7 +734,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteBytes(ImmutableArray<byte> buffer, int start, int byteCount)
         {
-            WriteBytes(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(buffer), start, byteCount);
+            WriteBytes(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(buffer)!, start, byteCount);
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
@@ -1007,7 +1006,7 @@ namespace System.Reflection.Metadata
         /// Null string is represented as a single byte 0xFF.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void WriteSerializedString(string value)
+        public void WriteSerializedString(string? value)
         {
             if (value == null)
             {
@@ -1146,7 +1145,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <exception cref="ArgumentException"><paramref name="value"/> is not of a constant type.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
-        public void WriteConstant(object value)
+        public void WriteConstant(object? value)
         {
             BlobWriterImpl.WriteConstant(this, value);
         }

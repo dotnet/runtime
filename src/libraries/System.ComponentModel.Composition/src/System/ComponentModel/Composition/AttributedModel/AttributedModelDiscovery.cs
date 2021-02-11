@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Composition.Diagnostics;
 using System.ComponentModel.Composition.Hosting;
@@ -14,7 +13,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 {
     internal static class AttributedModelDiscovery
     {
-        public static ComposablePartDefinition CreatePartDefinitionIfDiscoverable(Type type, ICompositionElement origin)
+        public static ComposablePartDefinition? CreatePartDefinitionIfDiscoverable(Type type, ICompositionElement? origin)
         {
             AttributedPartCreationInfo creationInfo = new AttributedPartCreationInfo(type, null, false, origin);
             if (!creationInfo.IsPartDiscoverable())
@@ -25,7 +24,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             return new ReflectionComposablePartDefinition(creationInfo);
         }
 
-        public static ReflectionComposablePartDefinition CreatePartDefinition(Type type, PartCreationPolicyAttribute partCreationPolicy, bool ignoreConstructorImports, ICompositionElement origin)
+        public static ReflectionComposablePartDefinition CreatePartDefinition(Type type, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
         {
             if (type == null)
             {
@@ -45,7 +44,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             }
 
             // If given an instance then we want to pass the default composition options because we treat it as a shared part
-            ReflectionComposablePartDefinition definition = AttributedModelDiscovery.CreatePartDefinition(attributedPart.GetType(), PartCreationPolicyAttribute.Shared, true, (ICompositionElement)null);
+            ReflectionComposablePartDefinition definition = AttributedModelDiscovery.CreatePartDefinition(attributedPart.GetType(), PartCreationPolicyAttribute.Shared, true, (ICompositionElement?)null);
 
             return new ReflectionComposablePart(definition, attributedPart);
         }
@@ -69,7 +68,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                 throw new ArgumentException(SR.Format(SR.Argument_ReflectionContextReturnsReflectionOnlyType, nameof(reflectionContext)), nameof(reflectionContext));
             }
 
-            ReflectionComposablePartDefinition definition = AttributedModelDiscovery.CreatePartDefinition(mappedType, PartCreationPolicyAttribute.Shared, true, (ICompositionElement)null);
+            ReflectionComposablePartDefinition definition = AttributedModelDiscovery.CreatePartDefinition(mappedType, PartCreationPolicyAttribute.Shared, true, (ICompositionElement?)null);
 
             return CreatePart(definition, attributedPart);
         }

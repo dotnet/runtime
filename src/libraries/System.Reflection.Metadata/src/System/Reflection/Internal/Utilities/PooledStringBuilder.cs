@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Text;
@@ -57,8 +56,8 @@ namespace System.Reflection.Internal
         // if someone needs to create a private pool;
         public static ObjectPool<PooledStringBuilder> CreatePool()
         {
-            ObjectPool<PooledStringBuilder> pool = null;
-            pool = new ObjectPool<PooledStringBuilder>(() => new PooledStringBuilder(pool), 32);
+            ObjectPool<PooledStringBuilder>? pool = null;
+            pool = new ObjectPool<PooledStringBuilder>(() => new PooledStringBuilder(pool!), 32);
             return pool;
         }
 

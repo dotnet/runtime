@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -22,7 +22,7 @@ namespace System.Net.Http.Headers
             _uriKind = uriKind;
         }
 
-        public override bool TryParseValue(string value, object storeValue, ref int index, out object parsedValue)
+        public override bool TryParseValue([NotNullWhen(true)] string? value, object? storeValue, ref int index, [NotNullWhen(true)] out object? parsedValue)
         {
             parsedValue = null;
 
@@ -38,8 +38,7 @@ namespace System.Net.Http.Headers
                 uriString = value.Substring(index);
             }
 
-            Uri uri;
-            if (!Uri.TryCreate(uriString, _uriKind, out uri))
+            if (!Uri.TryCreate(uriString, _uriKind, out Uri? uri))
             {
                 // Some servers send the host names in Utf-8.
                 uriString = DecodeUtf8FromString(uriString);
@@ -55,9 +54,6 @@ namespace System.Net.Http.Headers
             return true;
         }
 
-        // TODO (#5525): This is a helper method copied from WebHeaderCollection.HeaderEncoding.DecodeUtf8FromString.
-        // Merge this code and move to System.Net.Common.
-        //
         // The normal client header parser just casts bytes to chars (see GetString).
         // Check if those bytes were actually utf-8 instead of ASCII.
         // If not, just return the input value.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -100,7 +99,7 @@ namespace System.Linq.Parallel
         // Returns an enumerable that represents the query executing sequentially.
         //
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "AsSequentialQuery is not supported on ForAllOperator")]
         internal override IEnumerable<TInput> AsSequentialQuery(CancellationToken token)
         {
             Debug.Fail("AsSequentialQuery is not supported on ForAllOperator");
@@ -147,7 +146,7 @@ namespace System.Linq.Parallel
             // element action for each element.
             //
 
-            internal override bool MoveNext([MaybeNull, AllowNull] ref TInput currentElement, ref int currentKey)
+            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TInput currentElement, ref int currentKey)
             {
                 Debug.Assert(_elementAction != null, "expected a compiled operator");
 
@@ -156,16 +155,15 @@ namespace System.Linq.Parallel
 
                 // Cancellation testing must be performed here as full enumeration occurs within this method.
                 // We only need to throw a simple exception here.. marshalling logic handled via QueryTaskGroupState.QueryEnd (called by ForAllSpoolingTask)
-                TInput element = default(TInput)!;
-                TKey keyUnused = default(TKey)!;
+                TInput? element = default(TInput);
+                TKey? keyUnused = default(TKey);
                 int i = 0;
-                while (_source.MoveNext(ref element!, ref keyUnused))
+                while (_source.MoveNext(ref element, ref keyUnused))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
+                        _cancellationToken.ThrowIfCancellationRequested();;
                     _elementAction(element);
                 }
-
 
                 return false;
             }

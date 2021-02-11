@@ -1,0 +1,330 @@
+<opdesc>
+<opcode name="nop" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0x00" flow="next" type="Primitive" />
+<opcode name="break" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0x01" flow="break" type="Primitive" />
+<opcode name="ldarg.0" input="Pop0" output="Push1" args="InlineNone" o1="0xFF" o2="0x02" flow="next" type="Macro" constant="0" />
+<opcode name="ldarg.1" input="Pop0" output="Push1" args="InlineNone" o1="0xFF" o2="0x03" flow="next" type="Macro" constant="1" />
+<opcode name="ldarg.2" input="Pop0" output="Push1" args="InlineNone" o1="0xFF" o2="0x04" flow="next" type="Macro" constant="2" />
+<opcode name="ldarg.3" input="Pop0" output="Push1" args="InlineNone" o1="0xFF" o2="0x05" flow="next" type="Macro" constant="3" />
+<opcode name="ldloc.0" input="Pop0" output="Push1" args="InlineNone" o1="0xFF" o2="0x06" flow="next" type="Macro" constant="0" />
+<opcode name="ldloc.1" input="Pop0" output="Push1" args="InlineNone" o1="0xFF" o2="0x07" flow="next" type="Macro" constant="1" />
+<opcode name="ldloc.2" input="Pop0" output="Push1" args="InlineNone" o1="0xFF" o2="0x08" flow="next" type="Macro" constant="2" />
+<opcode name="ldloc.3" input="Pop0" output="Push1" args="InlineNone" o1="0xFF" o2="0x09" flow="next" type="Macro" constant="3" />
+<opcode name="stloc.0" input="Pop1" output="Push0" args="InlineNone" o1="0xFF" o2="0x0A" flow="next" type="Macro" constant="0" />
+<opcode name="stloc.1" input="Pop1" output="Push0" args="InlineNone" o1="0xFF" o2="0x0B" flow="next" type="Macro" constant="1" />
+<opcode name="stloc.2" input="Pop1" output="Push0" args="InlineNone" o1="0xFF" o2="0x0C" flow="next" type="Macro" constant="2" />
+<opcode name="stloc.3" input="Pop1" output="Push0" args="InlineNone" o1="0xFF" o2="0x0D" flow="next" type="Macro" constant="3" />
+<opcode name="ldarg.s" input="Pop0" output="Push1" args="ShortInlineVar" o1="0xFF" o2="0x0E" flow="next" type="Macro" />
+<opcode name="ldarga.s" input="Pop0" output="PushI" args="ShortInlineVar" o1="0xFF" o2="0x0F" flow="next" type="Macro" />
+<opcode name="starg.s" input="Pop1" output="Push0" args="ShortInlineVar" o1="0xFF" o2="0x10" flow="next" type="Macro" />
+<opcode name="ldloc.s" input="Pop0" output="Push1" args="ShortInlineVar" o1="0xFF" o2="0x11" flow="next" type="Macro" />
+<opcode name="ldloca.s" input="Pop0" output="PushI" args="ShortInlineVar" o1="0xFF" o2="0x12" flow="next" type="Macro" />
+<opcode name="stloc.s" input="Pop1" output="Push0" args="ShortInlineVar" o1="0xFF" o2="0x13" flow="next" type="Macro" />
+<opcode name="ldnull" input="Pop0" output="PushRef" args="InlineNone" o1="0xFF" o2="0x14" flow="next" type="Primitive" />
+<opcode name="ldc.i4.m1" input="Pop0" output="PushI" args="InlineNone" o1="0xFF" o2="0x15" flow="next" type="Macro" constant="-1" />
+<opcode name="ldc.i4.0" input="Pop0" output="PushI" args="InlineNone" o1="0xFF" o2="0x16" flow="next" type="Macro" constant="0" />
+<opcode name="ldc.i4.1" input="Pop0" output="PushI" args="InlineNone" o1="0xFF" o2="0x17" flow="next" type="Macro" constant="1" />
+<opcode name="ldc.i4.2" input="Pop0" output="PushI" args="InlineNone" o1="0xFF" o2="0x18" flow="next" type="Macro" constant="2" />
+<opcode name="ldc.i4.3" input="Pop0" output="PushI" args="InlineNone" o1="0xFF" o2="0x19" flow="next" type="Macro" constant="3" />
+<opcode name="ldc.i4.4" input="Pop0" output="PushI" args="InlineNone" o1="0xFF" o2="0x1A" flow="next" type="Macro" constant="4" />
+<opcode name="ldc.i4.5" input="Pop0" output="PushI" args="InlineNone" o1="0xFF" o2="0x1B" flow="next" type="Macro" constant="5" />
+<opcode name="ldc.i4.6" input="Pop0" output="PushI" args="InlineNone" o1="0xFF" o2="0x1C" flow="next" type="Macro" constant="6" />
+<opcode name="ldc.i4.7" input="Pop0" output="PushI" args="InlineNone" o1="0xFF" o2="0x1D" flow="next" type="Macro" constant="7" />
+<opcode name="ldc.i4.8" input="Pop0" output="PushI" args="InlineNone" o1="0xFF" o2="0x1E" flow="next" type="Macro" constant="8" />
+<opcode name="ldc.i4.s" input="Pop0" output="PushI" args="ShortInlineI" o1="0xFF" o2="0x1F" flow="next" type="Macro" />
+<opcode name="ldc.i4" input="Pop0" output="PushI" args="InlineI" o1="0xFF" o2="0x20" flow="next" type="Primitive" />
+<opcode name="ldc.i8" input="Pop0" output="PushI8" args="InlineI8" o1="0xFF" o2="0x21" flow="next" type="Primitive" />
+<opcode name="ldc.r4" input="Pop0" output="PushR4" args="ShortInlineR" o1="0xFF" o2="0x22" flow="next" type="Primitive" />
+<opcode name="ldc.r8" input="Pop0" output="PushR8" args="InlineR" o1="0xFF" o2="0x23" flow="next" type="Primitive" />
+<opcode name="unused99" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0x24" flow="next" />
+<opcode name="dup" input="Pop1" output="Push1+Push1" args="InlineNone" o1="0xFF" o2="0x25" flow="next" type="Primitive" />
+<opcode name="pop" input="Pop1" output="Push0" args="InlineNone" o1="0xFF" o2="0x26" flow="next" type="Primitive" />
+<opcode name="jmp" input="Pop0" output="Push0" args="InlineMethod" o1="0xFF" o2="0x27" flow="call" type="Primitive" />
+<opcode name="call" input="VarPop" output="VarPush" args="InlineMethod" o1="0xFF" o2="0x28" flow="call" type="Primitive" />
+<opcode name="calli" input="VarPop" output="VarPush" args="InlineSig" o1="0xFF" o2="0x29" flow="call" type="Primitive" />
+<opcode name="ret" input="VarPop" output="Push0" args="InlineNone" o1="0xFF" o2="0x2A" flow="return" type="Primitive" />
+<opcode name="br.s" input="Pop0" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x2B" flow="branch" type="Macro" />
+<opcode name="brfalse.s" input="PopI" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x2C" flow="cond-branch" type="Macro" />
+<opcode name="brtrue.s" input="PopI" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x2D" flow="cond-branch" type="Macro" />
+<opcode name="beq.s" input="Pop1+Pop1" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x2E" flow="cond-branch" type="Macro" />
+<opcode name="bge.s" input="Pop1+Pop1" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x2F" flow="cond-branch" type="Macro" />
+<opcode name="bgt.s" input="Pop1+Pop1" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x30" flow="cond-branch" type="Macro" />
+<opcode name="ble.s" input="Pop1+Pop1" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x31" flow="cond-branch" type="Macro" />
+<opcode name="blt.s" input="Pop1+Pop1" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x32" flow="cond-branch" type="Macro" />
+<opcode name="bne.un.s" input="Pop1+Pop1" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x33" flow="cond-branch" type="Macro" />
+<opcode name="bge.un.s" input="Pop1+Pop1" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x34" flow="cond-branch" type="Macro" />
+<opcode name="bgt.un.s" input="Pop1+Pop1" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x35" flow="cond-branch" type="Macro" />
+<opcode name="ble.un.s" input="Pop1+Pop1" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x36" flow="cond-branch" type="Macro" />
+<opcode name="blt.un.s" input="Pop1+Pop1" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0x37" flow="cond-branch" type="Macro" />
+<opcode name="br" input="Pop0" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x38" flow="branch" type="Primitive" />
+<opcode name="brfalse" input="PopI" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x39" flow="cond-branch" type="Primitive" />
+<opcode name="brtrue" input="PopI" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x3A" flow="cond-branch" type="Primitive" />
+<opcode name="beq" input="Pop1+Pop1" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x3B" flow="cond-branch" type="Macro" />
+<opcode name="bge" input="Pop1+Pop1" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x3C" flow="cond-branch" type="Macro" />
+<opcode name="bgt" input="Pop1+Pop1" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x3D" flow="cond-branch" type="Macro" />
+<opcode name="ble" input="Pop1+Pop1" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x3E" flow="cond-branch" type="Macro" />
+<opcode name="blt" input="Pop1+Pop1" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x3F" flow="cond-branch" type="Macro" />
+<opcode name="bne.un" input="Pop1+Pop1" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x40" flow="cond-branch" type="Macro" />
+<opcode name="bge.un" input="Pop1+Pop1" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x41" flow="cond-branch" type="Macro" />
+<opcode name="bgt.un" input="Pop1+Pop1" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x42" flow="cond-branch" type="Macro" />
+<opcode name="ble.un" input="Pop1+Pop1" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x43" flow="cond-branch" type="Macro" />
+<opcode name="blt.un" input="Pop1+Pop1" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0x44" flow="cond-branch" type="Macro" />
+<opcode name="switch" input="PopI" output="Push0" args="InlineSwitch" o1="0xFF" o2="0x45" flow="cond-branch" type="Primitive" />
+<opcode name="ldind.i1" input="PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x46" flow="next" type="Primitive" />
+<opcode name="ldind.u1" input="PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x47" flow="next" type="Primitive" />
+<opcode name="ldind.i2" input="PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x48" flow="next" type="Primitive" />
+<opcode name="ldind.u2" input="PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x49" flow="next" type="Primitive" />
+<opcode name="ldind.i4" input="PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x4A" flow="next" type="Primitive" />
+<opcode name="ldind.u4" input="PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x4B" flow="next" type="Primitive" />
+<opcode name="ldind.i8" input="PopI" output="PushI8" args="InlineNone" o1="0xFF" o2="0x4C" flow="next" type="Primitive" />
+<opcode name="ldind.i" input="PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x4D" flow="next" type="Primitive" />
+<opcode name="ldind.r4" input="PopI" output="PushR4" args="InlineNone" o1="0xFF" o2="0x4E" flow="next" type="Primitive" />
+<opcode name="ldind.r8" input="PopI" output="PushR8" args="InlineNone" o1="0xFF" o2="0x4F" flow="next" type="Primitive" />
+<opcode name="ldind.ref" input="PopI" output="PushRef" args="InlineNone" o1="0xFF" o2="0x50" flow="next" type="Primitive" />
+<opcode name="stind.ref" input="PopI+PopI" output="Push0" args="InlineNone" o1="0xFF" o2="0x51" flow="next" type="Primitive" />
+<opcode name="stind.i1" input="PopI+PopI" output="Push0" args="InlineNone" o1="0xFF" o2="0x52" flow="next" type="Primitive" />
+<opcode name="stind.i2" input="PopI+PopI" output="Push0" args="InlineNone" o1="0xFF" o2="0x53" flow="next" type="Primitive" />
+<opcode name="stind.i4" input="PopI+PopI" output="Push0" args="InlineNone" o1="0xFF" o2="0x54" flow="next" type="Primitive" />
+<opcode name="stind.i8" input="PopI+PopI8" output="Push0" args="InlineNone" o1="0xFF" o2="0x55" flow="next" type="Primitive" />
+<opcode name="stind.r4" input="PopI+PopR4" output="Push0" args="InlineNone" o1="0xFF" o2="0x56" flow="next" type="Primitive" />
+<opcode name="stind.r8" input="PopI+PopR8" output="Push0" args="InlineNone" o1="0xFF" o2="0x57" flow="next" type="Primitive" />
+<opcode name="add" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x58" flow="next" type="Primitive" />
+<opcode name="sub" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x59" flow="next" type="Primitive" />
+<opcode name="mul" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x5A" flow="next" type="Primitive" />
+<opcode name="div" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x5B" flow="next" type="Primitive" />
+<opcode name="div.un" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x5C" flow="next" type="Primitive" />
+<opcode name="rem" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x5D" flow="next" type="Primitive" />
+<opcode name="rem.un" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x5E" flow="next" type="Primitive" />
+<opcode name="and" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x5F" flow="next" type="Primitive" />
+<opcode name="or" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x60" flow="next" type="Primitive" />
+<opcode name="xor" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x61" flow="next" type="Primitive" />
+<opcode name="shl" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x62" flow="next" type="Primitive" />
+<opcode name="shr" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x63" flow="next" type="Primitive" />
+<opcode name="shr.un" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x64" flow="next" type="Primitive" />
+<opcode name="neg" input="Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x65" flow="next" type="Primitive" />
+<opcode name="not" input="Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0x66" flow="next" type="Primitive" />
+<opcode name="conv.i1" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x67" flow="next" type="Primitive" />
+<opcode name="conv.i2" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x68" flow="next" type="Primitive" />
+<opcode name="conv.i4" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x69" flow="next" type="Primitive" />
+<opcode name="conv.i8" input="Pop1" output="PushI8" args="InlineNone" o1="0xFF" o2="0x6A" flow="next" type="Primitive" />
+<opcode name="conv.r4" input="Pop1" output="PushR4" args="InlineNone" o1="0xFF" o2="0x6B" flow="next" type="Primitive" />
+<opcode name="conv.r8" input="Pop1" output="PushR8" args="InlineNone" o1="0xFF" o2="0x6C" flow="next" type="Primitive" />
+<opcode name="conv.u4" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x6D" flow="next" type="Primitive" />
+<opcode name="conv.u8" input="Pop1" output="PushI8" args="InlineNone" o1="0xFF" o2="0x6E" flow="next" type="Primitive" />
+<opcode name="callvirt" input="VarPop" output="VarPush" args="InlineMethod" o1="0xFF" o2="0x6F" flow="call" type="Objmodel" />
+<opcode name="cpobj" input="PopI+PopI" output="Push0" args="InlineType" o1="0xFF" o2="0x70" flow="next" type="Objmodel" />
+<opcode name="ldobj" input="PopI" output="Push1" args="InlineType" o1="0xFF" o2="0x71" flow="next" type="Objmodel" />
+<opcode name="ldstr" input="Pop0" output="PushRef" args="InlineString" o1="0xFF" o2="0x72" flow="next" type="Objmodel" />
+<opcode name="newobj" input="VarPop" output="PushRef" args="InlineMethod" o1="0xFF" o2="0x73" flow="call" type="Objmodel" />
+<opcode name="castclass" input="PopRef" output="PushRef" args="InlineType" o1="0xFF" o2="0x74" flow="next" type="Objmodel" />
+<opcode name="isinst" input="PopRef" output="PushI" args="InlineType" o1="0xFF" o2="0x75" flow="next" type="Objmodel" />
+<opcode name="conv.r.un" input="Pop1" output="PushR8" args="InlineNone" o1="0xFF" o2="0x76" flow="next" type="Primitive" />
+<opcode name="unused58" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0x77" flow="next" />
+<opcode name="unused1" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0x78" flow="next" />
+<opcode name="unbox" input="PopRef" output="PushI" args="InlineType" o1="0xFF" o2="0x79" flow="next" type="Primitive" />
+<opcode name="throw" input="PopRef" output="Push0" args="InlineNone" o1="0xFF" o2="0x7A" flow="throw" type="Objmodel" />
+<opcode name="ldfld" input="PopRef" output="Push1" args="InlineField" o1="0xFF" o2="0x7B" flow="next" type="Objmodel" />
+<opcode name="ldflda" input="PopRef" output="PushI" args="InlineField" o1="0xFF" o2="0x7C" flow="next" type="Objmodel" />
+<opcode name="stfld" input="PopRef+Pop1" output="Push0" args="InlineField" o1="0xFF" o2="0x7D" flow="next" type="Objmodel" />
+<opcode name="ldsfld" input="Pop0" output="Push1" args="InlineField" o1="0xFF" o2="0x7E" flow="next" type="Objmodel" />
+<opcode name="ldsflda" input="Pop0" output="PushI" args="InlineField" o1="0xFF" o2="0x7F" flow="next" type="Objmodel" />
+<opcode name="stsfld" input="Pop1" output="Push0" args="InlineField" o1="0xFF" o2="0x80" flow="next" type="Objmodel" />
+<opcode name="stobj" input="PopI+Pop1" output="Push0" args="InlineType" o1="0xFF" o2="0x81" flow="next" type="Primitive" />
+<opcode name="conv.ovf.i1.un" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x82" flow="next" type="Primitive" />
+<opcode name="conv.ovf.i2.un" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x83" flow="next" type="Primitive" />
+<opcode name="conv.ovf.i4.un" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x84" flow="next" type="Primitive" />
+<opcode name="conv.ovf.i8.un" input="Pop1" output="PushI8" args="InlineNone" o1="0xFF" o2="0x85" flow="next" type="Primitive" />
+<opcode name="conv.ovf.u1.un" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x86" flow="next" type="Primitive" />
+<opcode name="conv.ovf.u2.un" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x87" flow="next" type="Primitive" />
+<opcode name="conv.ovf.u4.un" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x88" flow="next" type="Primitive" />
+<opcode name="conv.ovf.u8.un" input="Pop1" output="PushI8" args="InlineNone" o1="0xFF" o2="0x89" flow="next" type="Primitive" />
+<opcode name="conv.ovf.i.un" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x8A" flow="next" type="Primitive" />
+<opcode name="conv.ovf.u.un" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0x8B" flow="next" type="Primitive" />
+<opcode name="box" input="Pop1" output="PushRef" args="InlineType" o1="0xFF" o2="0x8C" flow="next" type="Primitive" />
+<opcode name="newarr" input="PopI" output="PushRef" args="InlineType" o1="0xFF" o2="0x8D" flow="next" type="Objmodel" />
+<opcode name="ldlen" input="PopRef" output="PushI" args="InlineNone" o1="0xFF" o2="0x8E" flow="next" type="Objmodel" />
+<opcode name="ldelema" input="PopRef+PopI" output="PushI" args="InlineType" o1="0xFF" o2="0x8F" flow="next" type="Objmodel" />
+<opcode name="ldelem.i1" input="PopRef+PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x90" flow="next" type="Objmodel" />
+<opcode name="ldelem.u1" input="PopRef+PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x91" flow="next" type="Objmodel" />
+<opcode name="ldelem.i2" input="PopRef+PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x92" flow="next" type="Objmodel" />
+<opcode name="ldelem.u2" input="PopRef+PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x93" flow="next" type="Objmodel" />
+<opcode name="ldelem.i4" input="PopRef+PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x94" flow="next" type="Objmodel" />
+<opcode name="ldelem.u4" input="PopRef+PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x95" flow="next" type="Objmodel" />
+<opcode name="ldelem.i8" input="PopRef+PopI" output="PushI8" args="InlineNone" o1="0xFF" o2="0x96" flow="next" type="Objmodel" />
+<opcode name="ldelem.i" input="PopRef+PopI" output="PushI" args="InlineNone" o1="0xFF" o2="0x97" flow="next" type="Objmodel" />
+<opcode name="ldelem.r4" input="PopRef+PopI" output="PushR4" args="InlineNone" o1="0xFF" o2="0x98" flow="next" type="Objmodel" />
+<opcode name="ldelem.r8" input="PopRef+PopI" output="PushR8" args="InlineNone" o1="0xFF" o2="0x99" flow="next" type="Objmodel" />
+<opcode name="ldelem.ref" input="PopRef+PopI" output="PushRef" args="InlineNone" o1="0xFF" o2="0x9A" flow="next" type="Objmodel" />
+<opcode name="stelem.i" input="PopRef+PopI+PopI" output="Push0" args="InlineNone" o1="0xFF" o2="0x9B" flow="next" type="Objmodel" />
+<opcode name="stelem.i1" input="PopRef+PopI+PopI" output="Push0" args="InlineNone" o1="0xFF" o2="0x9C" flow="next" type="Objmodel" />
+<opcode name="stelem.i2" input="PopRef+PopI+PopI" output="Push0" args="InlineNone" o1="0xFF" o2="0x9D" flow="next" type="Objmodel" />
+<opcode name="stelem.i4" input="PopRef+PopI+PopI" output="Push0" args="InlineNone" o1="0xFF" o2="0x9E" flow="next" type="Objmodel" />
+<opcode name="stelem.i8" input="PopRef+PopI+PopI8" output="Push0" args="InlineNone" o1="0xFF" o2="0x9F" flow="next" type="Objmodel" />
+<opcode name="stelem.r4" input="PopRef+PopI+PopR4" output="Push0" args="InlineNone" o1="0xFF" o2="0xA0" flow="next" type="Objmodel" />
+<opcode name="stelem.r8" input="PopRef+PopI+PopR8" output="Push0" args="InlineNone" o1="0xFF" o2="0xA1" flow="next" type="Objmodel" />
+<opcode name="stelem.ref" input="PopRef+PopI+PopRef" output="Push0" args="InlineNone" o1="0xFF" o2="0xA2" flow="next" type="Objmodel" />
+<opcode name="ldelem" input="PopRef+PopI" output="Push1" args="InlineType" o1="0xFF" o2="0xA3" flow="next" type="Objmodel" />
+<opcode name="stelem" input="PopRef+PopI+Pop1" output="Push0" args="InlineType" o1="0xFF" o2="0xA4" flow="next" type="Objmodel" />
+<opcode name="unbox.any" input="PopRef" output="Push1" args="InlineType" o1="0xFF" o2="0xA5" flow="next" type="Objmodel" />
+<opcode name="unused5" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xA6" flow="next" />
+<opcode name="unused6" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xA7" flow="next" />
+<opcode name="unused7" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xA8" flow="next" />
+<opcode name="unused8" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xA9" flow="next" />
+<opcode name="unused9" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xAA" flow="next" />
+<opcode name="unused10" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xAB" flow="next" />
+<opcode name="unused11" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xAC" flow="next" />
+<opcode name="unused12" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xAD" flow="next" />
+<opcode name="unused13" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xAE" flow="next" />
+<opcode name="unused14" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xAF" flow="next" />
+<opcode name="unused15" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xB0" flow="next" />
+<opcode name="unused16" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xB1" flow="next" />
+<opcode name="unused17" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xB2" flow="next" />
+<opcode name="conv.ovf.i1" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xB3" flow="next" type="Primitive" />
+<opcode name="conv.ovf.u1" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xB4" flow="next" type="Primitive" />
+<opcode name="conv.ovf.i2" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xB5" flow="next" type="Primitive" />
+<opcode name="conv.ovf.u2" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xB6" flow="next" type="Primitive" />
+<opcode name="conv.ovf.i4" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xB7" flow="next" type="Primitive" />
+<opcode name="conv.ovf.u4" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xB8" flow="next" type="Primitive" />
+<opcode name="conv.ovf.i8" input="Pop1" output="PushI8" args="InlineNone" o1="0xFF" o2="0xB9" flow="next" type="Primitive" />
+<opcode name="conv.ovf.u8" input="Pop1" output="PushI8" args="InlineNone" o1="0xFF" o2="0xBA" flow="next" type="Primitive" />
+<opcode name="unused50" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xBB" flow="next" />
+<opcode name="unused18" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xBC" flow="next" />
+<opcode name="unused19" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xBD" flow="next" />
+<opcode name="unused20" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xBE" flow="next" />
+<opcode name="unused21" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xBF" flow="next" />
+<opcode name="unused22" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xC0" flow="next" />
+<opcode name="unused23" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xC1" flow="next" />
+<opcode name="refanyval" input="Pop1" output="PushI" args="InlineType" o1="0xFF" o2="0xC2" flow="next" type="Primitive" />
+<opcode name="ckfinite" input="Pop1" output="PushR8" args="InlineNone" o1="0xFF" o2="0xC3" flow="next" type="Primitive" />
+<opcode name="unused24" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xC4" flow="next" />
+<opcode name="unused25" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xC5" flow="next" />
+<opcode name="mkrefany" input="PopI" output="Push1" args="InlineType" o1="0xFF" o2="0xC6" flow="next" type="Primitive" />
+<opcode name="unused59" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xC7" flow="next" />
+<opcode name="unused60" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xC8" flow="next" />
+<opcode name="unused61" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xC9" flow="next" />
+<opcode name="unused62" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xCA" flow="next" />
+<opcode name="unused63" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xCB" flow="next" />
+<opcode name="unused64" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xCC" flow="next" />
+<opcode name="unused65" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xCD" flow="next" />
+<opcode name="unused66" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xCE" flow="next" />
+<opcode name="unused67" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xCF" flow="next" />
+<opcode name="ldtoken" input="Pop0" output="PushI" args="InlineTok" o1="0xFF" o2="0xD0" flow="next" type="Primitive" />
+<opcode name="conv.u2" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xD1" flow="next" type="Primitive" />
+<opcode name="conv.u1" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xD2" flow="next" type="Primitive" />
+<opcode name="conv.i" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xD3" flow="next" type="Primitive" />
+<opcode name="conv.ovf.i" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xD4" flow="next" type="Primitive" />
+<opcode name="conv.ovf.u" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xD5" flow="next" type="Primitive" />
+<opcode name="add.ovf" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0xD6" flow="next" type="Primitive" />
+<opcode name="add.ovf.un" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0xD7" flow="next" type="Primitive" />
+<opcode name="mul.ovf" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0xD8" flow="next" type="Primitive" />
+<opcode name="mul.ovf.un" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0xD9" flow="next" type="Primitive" />
+<opcode name="sub.ovf" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0xDA" flow="next" type="Primitive" />
+<opcode name="sub.ovf.un" input="Pop1+Pop1" output="Push1" args="InlineNone" o1="0xFF" o2="0xDB" flow="next" type="Primitive" />
+<opcode name="endfinally" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xDC" flow="return" type="Primitive" />
+<opcode name="leave" input="Pop0" output="Push0" args="InlineBrTarget" o1="0xFF" o2="0xDD" flow="branch" type="Primitive" />
+<opcode name="leave.s" input="Pop0" output="Push0" args="ShortInlineBrTarget" o1="0xFF" o2="0xDE" flow="branch" type="Primitive" />
+<opcode name="stind.i" input="PopI+PopI" output="Push0" args="InlineNone" o1="0xFF" o2="0xDF" flow="next" type="Primitive" />
+<opcode name="conv.u" input="Pop1" output="PushI" args="InlineNone" o1="0xFF" o2="0xE0" flow="next" type="Primitive" />
+<opcode name="unused26" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xE1" flow="next" />
+<opcode name="unused27" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xE2" flow="next" />
+<opcode name="unused28" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xE3" flow="next" />
+<opcode name="unused29" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xE4" flow="next" />
+<opcode name="unused30" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xE5" flow="next" />
+<opcode name="unused31" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xE6" flow="next" />
+<opcode name="unused32" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xE7" flow="next" />
+<opcode name="unused33" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xE8" flow="next" />
+<opcode name="unused34" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xE9" flow="next" />
+<opcode name="unused35" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xEA" flow="next" />
+<opcode name="unused36" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xEB" flow="next" />
+<opcode name="unused37" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xEC" flow="next" />
+<opcode name="unused38" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xED" flow="next" />
+<opcode name="unused39" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xEE" flow="next" />
+<opcode name="unused40" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xEF" flow="next" />
+<opcode name="unused41" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xF0" flow="next" />
+<opcode name="unused42" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xF1" flow="next" />
+<opcode name="unused43" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xF2" flow="next" />
+<opcode name="unused44" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xF3" flow="next" />
+<opcode name="unused45" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xF4" flow="next" />
+<opcode name="unused46" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xF5" flow="next" />
+<opcode name="unused47" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xF6" flow="next" />
+<opcode name="unused48" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xF7" flow="next" />
+<opcode name="prefix7" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xF8" flow="meta" type="Nternal" />
+<opcode name="prefix6" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xF9" flow="meta" type="Nternal" />
+<opcode name="prefix5" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xFA" flow="meta" type="Nternal" />
+<opcode name="prefix4" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xFB" flow="meta" type="Nternal" />
+<opcode name="prefix3" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xFC" flow="meta" type="Nternal" />
+<opcode name="prefix2" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xFD" flow="meta" type="Nternal" />
+<opcode name="prefix1" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xFE" flow="meta" type="Nternal" />
+<opcode name="prefixref" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xFF" flow="meta" type="Nternal" />
+<opcode name="arglist" input="Pop0" output="PushI" args="InlineNone" o1="0xFE" o2="0x00" flow="next" type="Primitive" />
+<opcode name="ceq" input="Pop1+Pop1" output="PushI" args="InlineNone" o1="0xFE" o2="0x01" flow="next" type="Primitive" />
+<opcode name="cgt" input="Pop1+Pop1" output="PushI" args="InlineNone" o1="0xFE" o2="0x02" flow="next" type="Primitive" />
+<opcode name="cgt.un" input="Pop1+Pop1" output="PushI" args="InlineNone" o1="0xFE" o2="0x03" flow="next" type="Primitive" />
+<opcode name="clt" input="Pop1+Pop1" output="PushI" args="InlineNone" o1="0xFE" o2="0x04" flow="next" type="Primitive" />
+<opcode name="clt.un" input="Pop1+Pop1" output="PushI" args="InlineNone" o1="0xFE" o2="0x05" flow="next" type="Primitive" />
+<opcode name="ldftn" input="Pop0" output="PushI" args="InlineMethod" o1="0xFE" o2="0x06" flow="next" type="Primitive" />
+<opcode name="ldvirtftn" input="PopRef" output="PushI" args="InlineMethod" o1="0xFE" o2="0x07" flow="next" type="Primitive" />
+<opcode name="unused56" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x08" flow="next" />
+<opcode name="ldarg" input="Pop0" output="Push1" args="InlineVar" o1="0xFE" o2="0x09" flow="next" type="Primitive" />
+<opcode name="ldarga" input="Pop0" output="PushI" args="InlineVar" o1="0xFE" o2="0x0A" flow="next" type="Primitive" />
+<opcode name="starg" input="Pop1" output="Push0" args="InlineVar" o1="0xFE" o2="0x0B" flow="next" type="Primitive" />
+<opcode name="ldloc" input="Pop0" output="Push1" args="InlineVar" o1="0xFE" o2="0x0C" flow="next" type="Primitive" />
+<opcode name="ldloca" input="Pop0" output="PushI" args="InlineVar" o1="0xFE" o2="0x0D" flow="next" type="Primitive" />
+<opcode name="stloc" input="Pop1" output="Push0" args="InlineVar" o1="0xFE" o2="0x0E" flow="next" type="Primitive" />
+<opcode name="localloc" input="PopI" output="PushI" args="InlineNone" o1="0xFE" o2="0x0F" flow="next" type="Primitive" />
+<opcode name="unused57" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x10" flow="next" />
+<opcode name="endfilter" input="PopI" output="Push0" args="InlineNone" o1="0xFE" o2="0x11" flow="return" type="Primitive" />
+<opcode name="unaligned." input="Pop0" output="Push0" args="ShortInlineI" o1="0xFE" o2="0x12" flow="meta" type="Prefix" />
+<opcode name="volatile." input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x13" flow="meta" type="Prefix" />
+<opcode name="tail." input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x14" flow="meta" type="Prefix" />
+<opcode name="initobj" input="PopI" output="Push0" args="InlineType" o1="0xFE" o2="0x15" flow="next" type="Objmodel" />
+<opcode name="constrained." input="Pop0" output="Push0" args="InlineType" o1="0xFE" o2="0x16" flow="meta" type="Prefix" />
+<opcode name="cpblk" input="PopI+PopI+PopI" output="Push0" args="InlineNone" o1="0xFE" o2="0x17" flow="next" type="Primitive" />
+<opcode name="initblk" input="PopI+PopI+PopI" output="Push0" args="InlineNone" o1="0xFE" o2="0x18" flow="next" type="Primitive" />
+<opcode name="no." input="Pop0" output="Push0" args="ShortInlineI" o1="0xFE" o2="0x19" flow="next" />
+<opcode name="rethrow" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x1A" flow="throw" type="Objmodel" />
+<opcode name="unused" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x1B" flow="next" />
+<opcode name="sizeof" input="Pop0" output="PushI" args="InlineType" o1="0xFE" o2="0x1C" flow="next" type="Primitive" />
+<opcode name="refanytype" input="Pop1" output="PushI" args="InlineNone" o1="0xFE" o2="0x1D" flow="next" type="Primitive" />
+<opcode name="readonly." input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x1E" flow="meta" />
+<opcode name="unused53" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x1F" flow="next" />
+<opcode name="unused54" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x20" flow="next" />
+<opcode name="unused55" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x21" flow="next" />
+<opcode name="unused70" input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x22" flow="next" />
+<opcode name="illegal" input="Pop0" output="Push0" args="InlineNone" o1="0x00" o2="0x00" flow="meta" />
+<opcode name="endmac" input="Pop0" output="Push0" args="InlineNone" o1="0x00" o2="0x00" flow="meta" />
+<opcode name="mono_icall" input="VarPop" output="VarPush" args="InlineI" o1="0xF0" o2="0x00" flow="next" />
+<opcode name="mono_objaddr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x01" flow="next" />
+<opcode name="mono_ldptr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x02" flow="next" />
+<opcode name="mono_vtaddr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x03" flow="next" />
+<opcode name="mono_newobj" input="Pop0" output="PushRef" args="InlineType" o1="0xF0" o2="0x04" flow="next" />
+<opcode name="mono_retobj" input="PopI" output="Push0" args="InlineType" o1="0xF0" o2="0x05" flow="return" />
+<opcode name="mono_ldnativeobj" input="PopI" output="Push1" args="InlineType" o1="0xF0" o2="0x06" flow="return" />
+<opcode name="mono_cisinst" input="PopRef" output="Push1" args="InlineType" o1="0xF0" o2="0x07" flow="next" />
+<opcode name="mono_ccastclass" input="PopRef" output="Push1" args="InlineType" o1="0xF0" o2="0x08" flow="next" />
+<opcode name="mono_save_lmf" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x09" flow="next" />
+<opcode name="mono_restore_lmf" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0A" flow="next" />
+<opcode name="mono_classconst" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x0B" flow="next" />
+<opcode name="mono_not_taken" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0C" flow="next" />
+<opcode name="mono_tls" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x0D" flow="next" />
+<opcode name="mono_icall_addr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x0E" flow="next" />
+<opcode name="mono_dyn_call" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x0F" flow="next" />
+<opcode name="mono_memory_barrier" input="Pop0" output="Push0" args="InlineI" o1="0xF0" o2="0x10" flow="next" />
+<opcode name="unused71" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x11" flow="next" />
+<opcode name="unused72" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x12" flow="next" />
+<opcode name="mono_jit_icall_addr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x13" flow="next" />
+<opcode name="mono_ldptr_int_req_flag" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x14" flow="next" />
+<opcode name="mono_ldptr_card_table" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x15" flow="next" />
+<opcode name="mono_ldptr_nursery_start" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x16" flow="next" />
+<opcode name="mono_ldptr_nursery_bits" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x17" flow="next" />
+<opcode name="mono_calli_extra_arg" input="VarPop" output="VarPush" args="InlineSig" o1="0xF0" o2="0x18" flow="call" />
+<opcode name="mono_lddomain" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x19" flow="next" />
+<opcode name="mono_atomic_store_i4" input="PopI+PopI" output="Push0" args="InlineI" o1="0xF0" o2="0x1A" flow="next" />
+<opcode name="mono_save_last_error" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x1B" flow="next" />
+<opcode name="mono_get_rgctx_arg" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x1C" flow="next" />
+<opcode name="mono_ldptr_profiler_allocation_count" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x1D" flow="next" />
+<opcode name="mono_ld_delegate_method_ptr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x1E" flow="next" />
+<opcode name="mono_rethrow" input="PopRef" output="Push0" args="InlineNone" o1="0xF0" o2="0x1F" flow="throw" type="Objmodel" />
+<opcode name="mono_get_sp" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x20" flow="next" />
+<opcode name="mono_methodconst" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x21" flow="next" />
+<opcode name="mono_pinvoke_addr_cache" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x22" flow="next" />
+</opdesc>

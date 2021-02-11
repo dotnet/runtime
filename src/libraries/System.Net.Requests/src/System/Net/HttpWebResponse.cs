@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -21,14 +19,20 @@ namespace System.Net
     /// </devdoc>
     public class HttpWebResponse : WebResponse, ISerializable
     {
-        private HttpResponseMessage _httpResponseMessage;
+        private HttpResponseMessage _httpResponseMessage = null!;
         private readonly Uri _requestUri;
         private CookieCollection _cookies;
-        private WebHeaderCollection _webHeaderCollection = null;
-        private string _characterSet = null;
+        private WebHeaderCollection? _webHeaderCollection;
+        private string? _characterSet;
         private readonly bool _isVersionHttp11 = true;
 
-        public HttpWebResponse() { }
+        [Obsolete("This API supports the .NET infrastructure and is not intended to be used directly from your code.", true)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public HttpWebResponse()
+        {
+            _requestUri = null!;
+            _cookies = null!;
+        }
 
         [ObsoleteAttribute("Serialization is obsoleted for this type.  https://go.microsoft.com/fwlink/?linkid=14202")]
         protected HttpWebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
@@ -46,7 +50,7 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
-        internal HttpWebResponse(HttpResponseMessage _message, Uri requestUri, CookieContainer cookieContainer)
+        internal HttpWebResponse(HttpResponseMessage _message, Uri requestUri, CookieContainer? cookieContainer)
         {
             _httpResponseMessage = _message;
             _requestUri = requestUri;
@@ -74,7 +78,7 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                long? length = _httpResponseMessage.Content.Headers.ContentLength;
+                long? length = _httpResponseMessage.Content?.Headers.ContentLength;
                 return length.HasValue ? length.Value : -1;
             }
         }
@@ -88,8 +92,7 @@ namespace System.Net
                 // We use TryGetValues() instead of the strongly type Headers.ContentType property so that
                 // we return a string regardless of it being fully RFC conformant. This matches current
                 // .NET Framework behavior.
-                IEnumerable<string> values;
-                if (_httpResponseMessage.Content.Headers.TryGetValues("Content-Type", out values))
+                if (_httpResponseMessage.Content != null && _httpResponseMessage.Content.Headers.TryGetValues("Content-Type", out IEnumerable<string>? values))
                 {
                     // In most cases, there is only one media type value as per RFC. But for completeness, we
                     // return all values in cases of overly malformed strings.
@@ -120,7 +123,12 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                return GetHeaderValueAsString(_httpResponseMessage.Content.Headers.ContentEncoding);
+                if (_httpResponseMessage.Content != null)
+                {
+                    return GetHeaderValueAsString(_httpResponseMessage.Content.Headers.ContentEncoding);
+                }
+
+                return string.Empty;
             }
         }
 
@@ -144,13 +152,13 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                string lastmodHeaderValue = Headers["Last-Modified"];
+                string? lastmodHeaderValue = Headers["Last-Modified"];
                 if (string.IsNullOrEmpty(lastmodHeaderValue))
                 {
                     return DateTime.Now;
                 }
 
-                if (HttpDateParser.TryStringToDate(lastmodHeaderValue, out var dateTimeOffset))
+                if (HttpDateParser.TryParse(lastmodHeaderValue, out DateTimeOffset dateTimeOffset))
                 {
                     return dateTimeOffset.LocalDateTime;
                 }
@@ -171,7 +179,8 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                return string.IsNullOrEmpty(Headers["Server"]) ? string.Empty : Headers["Server"];
+                string? server = Headers["Server"];
+                return string.IsNullOrEmpty(server) ? string.Empty : server;
             }
         }
 
@@ -222,7 +231,7 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                return _httpResponseMessage.RequestMessage.Method.Method;
+                return _httpResponseMessage.RequestMessage!.Method.Method;
             }
         }
 
@@ -234,7 +243,7 @@ namespace System.Net
 
                 // The underlying System.Net.Http API will automatically update
                 // the .RequestUri property to be the final URI of the response.
-                return _httpResponseMessage.RequestMessage.RequestUri;
+                return _httpResponseMessage.RequestMessage!.RequestUri!;
             }
         }
 
@@ -252,19 +261,19 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                return _httpResponseMessage.ReasonPhrase;
+                return _httpResponseMessage.ReasonPhrase ?? string.Empty;
             }
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string CharacterSet
+        public string? CharacterSet
         {
             get
             {
                 CheckDisposed();
-                string contentType = Headers["Content-Type"];
+                string? contentType = Headers["Content-Type"];
 
                 if (_characterSet == null && !string.IsNullOrWhiteSpace(contentType))
                 {
@@ -272,7 +281,7 @@ namespace System.Net
                     _characterSet = string.Empty;
 
                     //first string is the media type
-                    string srchString = contentType.ToLower();
+                    string srchString = contentType.ToLowerInvariant();
 
                     //media subtypes of text type has a default as specified by rfc 2616
                     if (srchString.Trim().StartsWith("text/", StringComparison.Ordinal))
@@ -311,9 +320,9 @@ namespace System.Net
                                     //length. since j points to the next ; the operation j -i
                                     //gives the length of the charset
                                     if (j > i)
-                                        _characterSet = contentType.Substring(i, j - i).Trim();
+                                        _characterSet = contentType.AsSpan(i, j - i).Trim().ToString();
                                     else
-                                        _characterSet = contentType.Substring(i).Trim();
+                                        _characterSet = contentType.AsSpan(i).Trim().ToString();
 
                                     //done
                                     break;
@@ -337,14 +346,19 @@ namespace System.Net
         public override Stream GetResponseStream()
         {
             CheckDisposed();
-            return _httpResponseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+            if (_httpResponseMessage.Content != null)
+            {
+                return _httpResponseMessage.Content.ReadAsStream();
+            }
+
+            return Stream.Null;
         }
 
         public string GetResponseHeader(string headerName)
         {
             CheckDisposed();
-            string headerValue = Headers[headerName];
-            return ((headerValue == null) ? string.Empty : headerValue);
+            string? headerValue = Headers[headerName];
+            return (headerValue == null) ? string.Empty : headerValue;
         }
 
         public override void Close()
@@ -358,7 +372,7 @@ namespace System.Net
             if (httpResponseMessage != null)
             {
                 httpResponseMessage.Dispose();
-                _httpResponseMessage = null;
+                _httpResponseMessage = null!;
             }
         }
 
@@ -370,30 +384,6 @@ namespace System.Net
             }
         }
 
-        private string GetHeaderValueAsString(IEnumerable<string> values)
-        {
-            // There is always at least one value even if it is an empty string.
-            var enumerator = values.GetEnumerator();
-            bool success = enumerator.MoveNext();
-            Debug.Assert(success, "There should be at least one value");
-
-            string headerValue = enumerator.Current;
-
-            if (enumerator.MoveNext())
-            {
-                // Multi-valued header
-                var buffer = new StringBuilder(headerValue);
-
-                do
-                {
-                    buffer.Append(", ");
-                    buffer.Append(enumerator.Current);
-                } while (enumerator.MoveNext());
-
-                return buffer.ToString();
-            }
-
-            return headerValue;
-        }
+        private string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);
     }
 }

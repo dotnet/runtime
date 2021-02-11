@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -246,10 +245,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <param name="value">Constant value.</param>
         /// <returns>Handle to the added or existing blob.</returns>
-        public unsafe BlobHandle GetOrAddConstantBlob(object value)
+        public unsafe BlobHandle GetOrAddConstantBlob(object? value)
         {
-            string str = value as string;
-            if (str != null)
+            if (value is string str)
             {
                 return GetOrAddBlobUTF16(str);
             }
