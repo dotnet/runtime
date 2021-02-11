@@ -1194,6 +1194,7 @@ DEFINE_CLASS(OBJECT_EQUALITYCOMPARER, CollectionsGeneric, ObjectEqualityComparer
 DEFINE_CLASS(GENERIC_COMPARER, CollectionsGeneric, GenericComparer`1)
 DEFINE_CLASS(OBJECT_COMPARER, CollectionsGeneric, ObjectComparer`1)
 DEFINE_CLASS(ENUM_COMPARER, CollectionsGeneric, EnumComparer`1)
+DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
 
 DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 
