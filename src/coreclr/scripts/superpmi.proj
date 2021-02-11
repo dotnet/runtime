@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="printItems">
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
 
    <!--
     This is useful for local testing to print the produced helix items
@@ -49,8 +49,7 @@
     <SuperPMIDirectory>%HELIX_CORRELATION_PAYLOAD%\superpmi</SuperPMIDirectory>
 
     <!-- Related to Benchmarks -->
-    <PerformanceDirectory>$(WorkItemDirectory)\performance</PerformanceDirectory>
-    <DotnetExe>%PerformanceDirectory%\tools\dotnet\dotnet.exe</DotnetExe>
+    <PerformanceDirectory>%HELIX_WORKITEM_PAYLOAD%\performance</PerformanceDirectory>
 
     <OutputMchPath>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
@@ -64,8 +63,7 @@
     <SuperPMIDirectory>$HELIX_CORRELATION_PAYLOAD/superpmi</SuperPMIDirectory>
 
     <!-- Related to Benchmarks -->
-    <PerformanceDirectory>$(WorkItemDirectory)/performance</PerformanceDirectory>
-    <DotnetExe>$PerformanceDirectory/tools/dotnet/dotnet</DotnetExe>
+    <PerformanceDirectory>$HELIX_WORKITEM_PAYLOAD/performance</PerformanceDirectory>
 
     <OutputMchPath>$HELIX_WORKITEM_UPLOAD_ROOT</OutputMchPath>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
@@ -162,6 +160,7 @@
   <ItemGroup Condition="'$(CollectionName)' == 'benchmarks'">
     <HelixWorkItem Include="@(BDN_Partition)">
       <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(WorkItemCommand) -partition_count $(PartitionCount) -partition_index %(HelixWorkItem.Index) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
