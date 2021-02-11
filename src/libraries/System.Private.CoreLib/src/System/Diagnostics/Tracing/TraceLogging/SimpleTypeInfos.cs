@@ -300,9 +300,9 @@ namespace System.Diagnostics.Tracing
             PropertyValue val = valueInfo.PropertyValueFactory(hasValue
                 ? refVal
 #if ES_BUILD_STANDALONE
-                : FormatterServices.GetUninitializedObject(t));
+                : FormatterServices.GetUninitializedObject(valueInfo.DataType));
  #else
-                : RuntimeHelpers.GetUninitializedObject(t));
+                : RuntimeHelpers.GetUninitializedObject(valueInfo.DataType));
  #endif
             this.valueInfo.WriteData(val);
         }
