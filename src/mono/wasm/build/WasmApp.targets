@@ -252,8 +252,8 @@
      <_WasmRuntimePackNativeLibs Include="libSystem.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libSystem.IO.Compression.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
-     <_WasmRuntimePackNativeLibs Include="libicuuc.a" Condition="'$(WasmInvariantGlobalization)' == 'false'" />
-     <_WasmRuntimePackNativeLibs Include="libicui18n.a" Condition="'$(WasmInvariantGlobalization)' == 'false'" />
+     <_WasmRuntimePackNativeLibs Include="libicuuc.a" Condition="'$(WasmInvariantGlobalization)' != 'true'" />
+     <_WasmRuntimePackNativeLibs Include="libicui18n.a" Condition="'$(WasmInvariantGlobalization)' != 'true'" />
      <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
 
      <_WasmObjects Include="$(_WasmIntermediateOutputPath)driver.o"/>
