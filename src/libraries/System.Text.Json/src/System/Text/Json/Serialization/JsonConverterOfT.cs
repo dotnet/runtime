@@ -316,13 +316,16 @@ namespace System.Text.Json.Serialization
             if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
                 !IsValueType && !IsNull(value))
             {
+                Debug.Assert(value != null);
                 ReferenceResolver resolver = state.ReferenceResolver;
+
                 // Write null to break reference cycles.
-                if (resolver.ContainsReferenceForCycleDetection(value!))
+                if (resolver.ContainsReferenceForCycleDetection(value))
                 {
                     writer.WriteNullValue();
                     return true;
                 }
+
                 // For boxed reference types: do not push when boxed in order to avoid false positives
                 //   when we run the ContainsReferenceForCycleDetection check for the converter of the unboxed value.
                 if (!CanBePolymorphic)
