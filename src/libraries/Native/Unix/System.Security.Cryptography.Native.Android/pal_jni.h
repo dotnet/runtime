@@ -58,6 +58,9 @@ extern jmethodID g_ivPsCtor;
 extern jclass    g_bigNumClass;
 extern jmethodID g_bigNumCtor;
 extern jmethodID g_toByteArrayMethod;
+extern jmethodID g_valueOfMethod;
+extern jmethodID g_compareToMethod;
+extern jmethodID g_intValueMethod;
 
 // javax/net/ssl/SSLParameters
 extern jclass    g_sslParamsClass;
@@ -82,6 +85,7 @@ extern jmethodID g_RSAPublicKeyGetPubExpMethod;
 
 // java/security/KeyPair
 extern jclass    g_keyPairClass;
+extern jmethodID g_keyPairCtor;
 extern jmethodID g_keyPairGetPrivateMethod;
 extern jmethodID g_keyPairGetPublicMethod;
 
@@ -115,6 +119,27 @@ extern jclass    g_KeyFactoryClass;
 extern jmethodID g_KeyFactoryGetInstanceMethod;
 extern jmethodID g_KeyFactoryGenPrivateMethod;
 extern jmethodID g_KeyFactoryGenPublicMethod;
+
+// java/security/spec/ECFieldFp
+extern jclass    g_ECFieldFpClass;
+extern jmethodID g_ECFieldFpCtor;
+
+// java/security/spec/ECFieldF2m
+extern jclass    g_ECFieldF2mClass;
+extern jmethodID g_ECFieldF2mCtorWithCoefficientBigInteger;
+
+// java/security/spec/ECParameterSpec
+extern jclass    g_ECParameterSpecClass;
+extern jmethodID g_ECParameterSpecCtor;
+
+// java/security/spec/ECPoint
+extern jclass    g_ECPointClass;
+extern jmethodID g_ECPointCtor;
+
+// java/security/spec/EllipticCurve
+extern jclass    g_EllipticCurveClass;
+extern jmethodID g_EllipticCurveCtor;
+extern jmethodID g_EllipticCurveCtorWithSeed;
 
 // java/security/spec/X509EncodedKeySpec
 extern jclass    g_X509EncodedKeySpecClass;
