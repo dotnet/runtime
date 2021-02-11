@@ -185,9 +185,7 @@ public class ApkBuilder
         foreach (string asm in assemblerFiles)
         {
             // these libraries are linked via modules.c
-            var name = Path.GetFileNameWithoutExtension(asm);
-            aotSources += $"add_library({name} OBJECT {asm}){Environment.NewLine}";
-            monoRuntimeLib += $"    {name}{Environment.NewLine}";
+            aotSources += $"    {asm}{Environment.NewLine}";
         }
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
