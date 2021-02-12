@@ -16,7 +16,7 @@ namespace System
         private class RawData
         {
             public IntPtr Bounds;
-            // The following is to prevent a mismatch between the managed and runtime 
+            // The following is to prevent a mismatch between the managed and runtime
             // layouts where MONO_BIG_ARRAYS is false on 64-bit big endian systems
 #if MONO_BIG_ARRAYS
             public ulong Count;
