@@ -831,6 +831,8 @@ namespace System
                     return SR.ArgumentException_OtherNotArrayOfCorrectLength;
                 case ExceptionResource.ArgumentNull_Array:
                     return SR.ArgumentNull_Array;
+                case ExceptionResource.ArgumentNull_SafeHandle:
+                    return SR.ArgumentNull_SafeHandle;
                 case ExceptionResource.ArgumentOutOfRange_EndIndexStartIndex:
                     return SR.ArgumentOutOfRange_EndIndexStartIndex;
                 case ExceptionResource.ArgumentOutOfRange_Enum:
@@ -1027,6 +1029,7 @@ namespace System
         Task_WaitMulti_NullTask,
         ArgumentException_OtherNotArrayOfCorrectLength,
         ArgumentNull_Array,
+        ArgumentNull_SafeHandle,
         ArgumentOutOfRange_EndIndexStartIndex,
         ArgumentOutOfRange_Enum,
         ArgumentOutOfRange_HugeArrayNotSupported,
