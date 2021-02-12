@@ -140,5 +140,7 @@
     </ItemGroup>
   </Target>
 
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
   <Import Project="ReadyToRun.targets" />
 </Project>
