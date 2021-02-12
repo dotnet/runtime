@@ -427,6 +427,41 @@ mono_context_init (MonoDomain *domain)
 }
 
 /**
+ * mono_context_set:
+ */
+void
+mono_context_set (MonoAppContext * new_context)
+{
+}
+
+void
+mono_context_set_handle (MonoAppContextHandle new_context)
+{
+}
+
+/**
+ * mono_context_get:
+ *
+ * Returns: the current Mono Application Context.
+ */
+MonoAppContext *
+mono_context_get (void)
+{
+	return NULL;
+}
+
+/**
+ * mono_context_get_handle:
+ *
+ * Returns: the current Mono Application Context.
+ */
+MonoAppContextHandle
+mono_context_get_handle (void)
+{
+	return MONO_HANDLE_NEW (MonoAppContext, NULL);
+}
+
+/**
  * mono_runtime_cleanup:
  * \param domain unused.
  *
