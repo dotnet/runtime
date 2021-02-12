@@ -17,7 +17,6 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/appdomain.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/debug-helpers.h>

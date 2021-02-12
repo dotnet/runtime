@@ -9223,6 +9223,12 @@ void emitter::emitDispIns(
             break;
 
         case IF_NONE:
+#if FEATURE_LOOP_ALIGN
+            if (ins == INS_align)
+            {
+                printf("[%d bytes]", id->idCodeSize());
+            }
+#endif
             break;
 
         default:
@@ -11540,6 +11546,10 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 if ((ins != INS_xor) || (reg1 != reg2))
                 {
                     code = AddRexWPrefix(ins, code);
+                }
+                else
+                {
+                    id->idOpSize(EA_4BYTE);
                 }
 
                 // Set the 'w' bit to get the large version

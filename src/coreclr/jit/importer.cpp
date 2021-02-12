@@ -4337,6 +4337,25 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+#ifdef TARGET_ARM64
+            // Intrinsify Interlocked.Or and Interlocked.And only for arm64-v8.1 (and newer)
+            // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
+            case NI_System_Threading_Interlocked_Or:
+            case NI_System_Threading_Interlocked_And:
+            {
+                if (opts.OptimizationEnabled() && compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                {
+                    assert(sig->numArgs == 2);
+                    GenTree*   op2 = impPopStack().val;
+                    GenTree*   op1 = impPopStack().val;
+                    genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XORR : GT_XAND;
+                    retNode        = gtNewOperNode(op, genActualType(callType), op1, op2);
+                    retNode->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+                }
+                break;
+            }
+#endif // TARGET_ARM64
+
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
             {
@@ -4439,6 +4458,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Collections_Generic_Comparer_get_Default:
             case NI_System_Collections_Generic_EqualityComparer_get_Default:
             {
                 // Flag for later handling during devirtualization.
@@ -4894,6 +4914,20 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_Threading_Thread_get_ManagedThreadId;
             }
         }
+#ifndef TARGET_ARM64
+        // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
+        else if (strcmp(className, "Interlocked") == 0)
+        {
+            if (strcmp(methodName, "And") == 0)
+            {
+                result = NI_System_Threading_Interlocked_And;
+            }
+            else if (strcmp(methodName, "Or") == 0)
+            {
+                result = NI_System_Threading_Interlocked_Or;
+            }
+        }
+#endif
     }
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)
@@ -4909,6 +4943,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
         {
             result = NI_System_Collections_Generic_EqualityComparer_get_Default;
+        }
+        else if ((strcmp(className, "Comparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
+        {
+            result = NI_System_Collections_Generic_Comparer_get_Default;
         }
     }
     else if ((strcmp(namespaceName, "System.Numerics") == 0) && (strcmp(className, "BitOperations") == 0))
@@ -13633,7 +13671,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                         else
                         {
-                            op1->gtBashToNOP();
+                            // Can't bash to NOP here because op1 can be referenced from `currentBlock->bbEntryState`,
+                            // if we ever need to reimport we need a valid LCL_VAR on it.
+                            op1 = gtNewNothingNode();
                         }
                     }
 
@@ -21440,6 +21480,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_MET
     const NamedIntrinsic ni = lookupNamedIntrinsic(methodHnd);
     switch (ni)
     {
+        case NI_System_Collections_Generic_Comparer_get_Default:
         case NI_System_Collections_Generic_EqualityComparer_get_Default:
         {
             // Expect one class generic parameter; figure out which it is.
@@ -21461,7 +21502,15 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_MET
 
             if (isFinalType)
             {
-                result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
+                if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+                {
+                    result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
+                }
+                else
+                {
+                    assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
+                    result = info.compCompHnd->getDefaultComparerClass(typeHnd);
+                }
                 JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
                         result != nullptr ? eeGetClassName(result) : "unknown");
             }

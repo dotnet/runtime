@@ -415,6 +415,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #ifdef TARGET_ARM64
         case GT_XCHG:
+        case GT_XORR:
+        case GT_XAND:
         case GT_XADD:
             genLockedInstructions(treeNode->AsOp());
             break;

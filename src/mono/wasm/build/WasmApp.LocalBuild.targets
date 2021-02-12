@@ -21,6 +21,7 @@
 -->
 <Project>
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <PropertyGroup>
     <WasmSkipBundleGeneration>true</WasmSkipBundleGeneration>

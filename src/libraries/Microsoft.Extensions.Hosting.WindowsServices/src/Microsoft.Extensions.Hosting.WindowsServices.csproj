@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net461;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <Reference Include="System.ServiceProcess" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.EventLog\src\Microsoft.Extensions.Logging.EventLog.csproj" />
+  </ItemGroup>
+
+</Project>
