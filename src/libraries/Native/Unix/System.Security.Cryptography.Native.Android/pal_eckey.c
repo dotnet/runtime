@@ -61,7 +61,7 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
 
     (*env)->DeleteLocalRef(keyFactory);
 
-    jobject curveParameters = (*env)->CallObjectMethod(keySpec, g_ECPublicKeySpecGetParamsMethod);
+    jobject curveParameters = (*env)->CallObjectMethod(keySpec, g_ECPublicKeySpecGetParams);
     
     (*env)->DeleteLocalRef(publicKey);
 

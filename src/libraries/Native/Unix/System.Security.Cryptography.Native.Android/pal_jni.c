@@ -110,19 +110,25 @@ jmethodID g_KeyFactoryGenPublicMethod;
 // java/security/spec/ECFieldFp
 jclass    g_ECFieldFpClass;
 jclass    g_ECFieldFpCtor;
+jmethodID g_ECfieldFpGetP;
 
 // java/security/spec/ECFieldF2m
 jclass    g_ECFieldF2mClass;
 jclass    g_ECFieldF2mCtorWithCoefficientByteArray;
+jmethodID g_ECfieldF2mGetReductionPolynomial;
 
 // java/security/spec/ECPoint
 jclass    g_ECPointClass;
-jmethodId g_ECPointCtor;
+jmethodID g_ECPointCtor;
+
+// java/security/spec/ECPublicKey
+jclass    g_ECPublicKeyClass;
+jmethodID g_ECPublicKeyGetW;
 
 // java/security/spec/EllipticCurve
 jclass    g_EllipticCurveClass;
-jmethodId g_EllipticCurveCtor;
-jmethodId g_EllipticCurveCtorWithSeed;
+jmethodID g_EllipticCurveCtor;
+jmethodID g_EllipticCurveCtorWithSeed;
 
 // java/security/spec/X509EncodedKeySpec
 jclass    g_X509EncodedKeySpecClass;
