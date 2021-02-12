@@ -602,6 +602,12 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 	return mono_class_get_method_from_name (klass, name, arguments);
 }
 
+EMSCRIPTEN_KEEPALIVE MonoMethod*
+mono_wasm_get_delegate_invoke (MonoObject *delegate)
+{
+	return mono_get_delegate_invoke(mono_object_get_class (delegate));
+}
+
 EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 {

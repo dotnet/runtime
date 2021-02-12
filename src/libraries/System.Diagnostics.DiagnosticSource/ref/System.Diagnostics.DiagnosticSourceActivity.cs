@@ -63,6 +63,7 @@ namespace System.Diagnostics
         public string? GetBaggageItem(string key) { throw null; }
         public object? GetTagItem(string key) { throw null; }
         public System.Diagnostics.Activity SetEndTime(System.DateTime endTimeUtc) { throw null; }
+        public static Func<System.Diagnostics.ActivityTraceId>? TraceIdGenerator { get { throw null; } set { throw null; } }
         public System.Diagnostics.Activity SetIdFormat(System.Diagnostics.ActivityIdFormat format) { throw null; }
         public System.Diagnostics.Activity SetParentId(System.Diagnostics.ActivityTraceId traceId, System.Diagnostics.ActivitySpanId spanId, System.Diagnostics.ActivityTraceFlags activityTraceFlags = System.Diagnostics.ActivityTraceFlags.None) { throw null; }
         public System.Diagnostics.Activity SetParentId(string parentId) { throw null; }

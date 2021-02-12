@@ -445,9 +445,7 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 #if defined(DEBUG)
 // Various policies for GuardedDevirtualization
 CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRange"))
-CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevirtualizationGuessUniqueInterface"), 1)
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
-CONFIG_INTEGER(JitGuardedDeivrtualizationUseProfile, W("JitGuardedDevirtualizationUseProfile"), 0)
 #endif // DEBUG
 
 // Enable insertion of patchpoints into Tier0 methods with loops.
