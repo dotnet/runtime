@@ -31,7 +31,7 @@ namespace System.Linq
             }
             else if (TryGetElement(source, index, out TSource? element))
             {
-                return element!;
+                return element;
             }
 
             ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
@@ -65,7 +65,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return element!;
+            return element;
         }
 
         public static TSource? ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, int index)
@@ -188,6 +188,11 @@ namespace System.Linq
             else if (source is ICollection<TSource> genericCollection)
             {
                 int count = genericCollection.Count;
+                return count > 0 && TryGetElement(source, count - indexFromEnd, out element);
+            }
+            else if (source is IIListProvider<TSource> listProvider)
+            {
+                int count = listProvider.GetCount(onlyIfCheap: false);
                 return count > 0 && TryGetElement(source, count - indexFromEnd, out element);
             }
             else if (source is ICollection collection)
