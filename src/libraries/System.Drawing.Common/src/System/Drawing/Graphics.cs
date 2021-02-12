@@ -343,11 +343,12 @@ namespace System.Drawing
             get
             {
                 Gdip.CheckStatus(Gdip.GdipCreateMatrix(out IntPtr nativeMatrix));
-                Gdip.CheckStatus(Gdip.GdipGetWorldTransform(
-                    new HandleRef(this, NativeGraphics), new HandleRef(null, nativeMatrix)));
 
                 try
                 {
+                    Gdip.CheckStatus(Gdip.GdipGetWorldTransform(
+                        new HandleRef(this, NativeGraphics), new HandleRef(null, nativeMatrix)));
+
                     Matrix3x2 matrix = default;
                     Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(null, nativeMatrix), (float*)&matrix));
                     return matrix;
