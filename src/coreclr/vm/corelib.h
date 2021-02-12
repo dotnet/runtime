@@ -1189,6 +1189,13 @@ DEFINE_CLASS(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComp
 DEFINE_CLASS(GENERIC_EQUALITYCOMPARER, CollectionsGeneric, GenericEqualityComparer`1)
 DEFINE_CLASS(OBJECT_EQUALITYCOMPARER, CollectionsGeneric, ObjectEqualityComparer`1)
 
+// Classes referenced in Comparer<T>.Default optimization
+
+DEFINE_CLASS(GENERIC_COMPARER, CollectionsGeneric, GenericComparer`1)
+DEFINE_CLASS(OBJECT_COMPARER, CollectionsGeneric, ObjectComparer`1)
+DEFINE_CLASS(ENUM_COMPARER, CollectionsGeneric, EnumComparer`1)
+DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
+
 DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 
 DEFINE_CLASS_U(CompilerServices,           GCHeapHash,                      GCHeapHashObject)
