@@ -21,10 +21,6 @@ namespace System.Drawing.Imaging.Tests
             PropertyItem item = bitmap.GetPropertyItem(PropertyTagLuminanceTable);
             item.Id = value;
             Assert.Equal(value, item.Id);
-
-            // Set same.
-            item.Id = value;
-            Assert.Equal(value, item.Id);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -38,10 +34,6 @@ namespace System.Drawing.Imaging.Tests
             PropertyItem item = bitmap.GetPropertyItem(PropertyTagLuminanceTable);
             item.Len = value;
             Assert.Equal(value, item.Len);
-
-            // Set same.
-            item.Len = value;
-            Assert.Equal(value, item.Len);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -53,10 +45,6 @@ namespace System.Drawing.Imaging.Tests
         {
             using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
             PropertyItem item = bitmap.GetPropertyItem(PropertyTagLuminanceTable);
-            item.Type = value;
-            Assert.Equal(value, item.Type);
-
-            // Set same.
             item.Type = value;
             Assert.Equal(value, item.Type);
         }
@@ -75,10 +63,6 @@ namespace System.Drawing.Imaging.Tests
         {
             using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
             PropertyItem item = bitmap.GetPropertyItem(PropertyTagLuminanceTable);
-            item.Value = value;
-            Assert.Same(value, item.Value);
-
-            // Set same.
             item.Value = value;
             Assert.Same(value, item.Value);
         }

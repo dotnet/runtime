@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing.Imaging
 {
-#pragma warning disable CS0649
     internal unsafe struct PropertyItemInternal
     {
         public int id;
@@ -15,5 +14,4 @@ namespace System.Drawing.Imaging
 
         public Span<byte> Value => new Span<byte>(value, len);
     }
-#pragma warning restore CS0649
 }
