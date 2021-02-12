@@ -7572,6 +7572,18 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     info.compCompHnd->reportTailCallDecision(nullptr,
                                              (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd : nullptr,
                                              call->IsTailPrefixedCall(), tailCallResult, nullptr);
+
+    // It isn't alway profitable to expand a virtual call early when we have an optimized tail call
+    // and the this pointer needs to be evaluated into a temp.
+    //
+    if ((tailCallResult == TAILCALL_OPTIMIZED) && call->IsExpandedEarly() && call->IsVirtualVtable() &&
+        ((call->gtCallThisArg->GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0))
+    {
+        // We will expand this late in lower instead.
+        //
+        call->AsCall()->ClearExpandedEarly();
+    }
+
     // Now actually morph the call.
     compTailCallUsed = true;
     // This will prevent inlining this call.

@@ -4525,6 +4525,11 @@ struct GenTreeCall final : public GenTree
         gtCallMoreFlags |= GTF_CALL_M_EXPANDED_EARLY;
     }
 
+    void ClearExpandedEarly()
+    {
+        gtCallMoreFlags &= ~GTF_CALL_M_EXPANDED_EARLY;
+    }
+
     bool IsExpandedEarly() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
