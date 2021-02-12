@@ -95,6 +95,15 @@ extern jmethodID g_keyPairGenGetInstanceMethod;
 extern jmethodID g_keyPairGenInitializeMethod;
 extern jmethodID g_keyPairGenGenKeyPairMethod;
 
+// java/security/Signature
+extern jclass    g_SignatureClass;
+extern jmethodID g_SignatureGetInstance;
+extern jmethodID g_SignatureInitSign;
+extern jmethodID g_SignatureInitVerify;
+extern jmethodID g_SignatureUpdate;
+extern jmethodID g_SignatureSign;
+extern jmethodID g_SignatureVerify;
+
 // com/android/org/conscrypt/RSAPrivateCrtKey
 extern jclass    g_RSAPrivateCrtKeyClass;
 extern jmethodID g_RSAPrivateCrtKeyPubExpField;

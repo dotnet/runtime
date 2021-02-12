@@ -86,6 +86,15 @@ jmethodID g_keyPairGenGetInstanceMethod;
 jmethodID g_keyPairGenInitializeMethod;
 jmethodID g_keyPairGenGenKeyPairMethod;
 
+// java/security/Signature
+jclass    g_SignatureClass;
+jmethodID g_SignatureGetInstance;
+jmethodID g_SignatureInitSign;
+jmethodID g_SignatureInitVerify;
+jmethodID g_SignatureUpdate;
+jmethodID g_SignatureSign;
+jmethodID g_SignatureVerify;
+
 // java/security/interfaces/RSAPrivateCrtKey
 jclass    g_RSAPrivateCrtKeyClass;
 jmethodID g_RSAPrivateCrtKeyPubExpField;
@@ -342,6 +351,14 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_keyPairGenGetInstanceMethod =    GetMethod(env, true,  g_keyPairGenClass, "getInstance", "(Ljava/lang/String;)Ljava/security/KeyPairGenerator;");
     g_keyPairGenInitializeMethod =     GetMethod(env, false, g_keyPairGenClass, "initialize", "(I)V");
     g_keyPairGenGenKeyPairMethod =     GetMethod(env, false, g_keyPairGenClass, "genKeyPair", "()Ljava/security/KeyPair;");
+
+    g_SignatureClass =                 GetClassGRef(env, "java/security/Signature");
+    g_SignatureGetInstance =           GetMethod(env, true, g_SignatureClass, "getInstance", "(Ljava/lang/String;)Ljava/security/Signature;");
+    g_SignatureInitSign =              GetMethod(env, false, g_SignatureClass, "initSign", "(Ljava/security/PrivateKey;)V");
+    g_SignatureInitVerify =            GetMethod(env, false, g_SignatureClass, "initVerify", "(Ljava/security/PublicKey;)V");
+    g_SignatureUpdate =                GetMethod(env, false, g_SignatureClass, "update", "([B)V");
+    g_SignatureSign =                  GetMethod(env, false, g_SignatureClass, "sign", "()[B");
+    g_SignatureVerify =                GetMethod(env, false, g_SignatureClass, "verify", "([B)Z");
 
     g_RSAPrivateCrtKeyClass =          GetClassGRef(env, "java/security/interfaces/RSAPrivateCrtKey");
     g_RSAPrivateCrtKeyPubExpField =    GetMethod(env, false, g_RSAPrivateCrtKeyClass, "getPublicExponent", "()Ljava/math/BigInteger;");
