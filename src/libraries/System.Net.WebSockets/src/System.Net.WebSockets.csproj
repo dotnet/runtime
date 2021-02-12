@@ -15,6 +15,7 @@
     <Compile Include="System\Net\WebSockets\WebSocketException.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketMessageType.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketReceiveResult.cs" />
+    <Compile Include="System\Net\WebSockets\ManagedWebSocket.Sender.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketState.cs" />
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.cs" />
     <Compile Include="System\IO\Compression\Deflater.cs" />

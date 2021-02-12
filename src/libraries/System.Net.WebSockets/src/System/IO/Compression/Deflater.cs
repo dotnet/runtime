@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-using System.Diagnostics;
 using System.Net.WebSockets;
-using System.Security;
 
 using ZErrorCode = System.IO.Compression.ZLibNative.ErrorCode;
 using ZFlushCode = System.IO.Compression.ZLibNative.FlushCode;
@@ -16,11 +13,8 @@ namespace System.IO.Compression
     /// </summary>
     internal sealed class Deflater : IDisposable
     {
-        private readonly ZLibNative.ZLibStreamHandle _zlibStream;
-        private MemoryHandle _inputBufferHandle;
+        private readonly ZLibNative.ZLibStreamHandle _handle;
         private bool _isDisposed;
-        private const int minWindowBits = -15;  // WindowBits must be between -8..-15 to write no header, 8..15 for a
-        private const int maxWindowBits = 31;   // zlib header, or 24..31 for a GZip header
 
         // Note, DeflateStream or the deflater do not try to be thread safe.
         // The lock is just used to make writing to unmanaged structures atomic to make sure
@@ -31,24 +25,21 @@ namespace System.IO.Compression
 
         internal Deflater(int windowBits)
         {
-            Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
-
             var compressionLevel = ZLibNative.CompressionLevel.DefaultCompression;
             var memLevel = ZLibNative.Deflate_DefaultMemLevel;
             var strategy = ZLibNative.CompressionStrategy.DefaultStrategy;
 
-            ZErrorCode errC;
+            ZErrorCode errorCode;
             try
             {
-                errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, compressionLevel,
-                                                             windowBits, memLevel, strategy);
+                errorCode = ZLibNative.CreateZLibStreamForDeflate(out _handle, compressionLevel, windowBits, memLevel, strategy);
             }
             catch (Exception cause)
             {
                 throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
             }
 
-            switch (errC)
+            switch (errorCode)
             {
                 case ZErrorCode.Ok:
                     return;
@@ -63,171 +54,82 @@ namespace System.IO.Compression
                     throw new WebSocketException(SR.ZLibErrorIncorrectInitParameters);
 
                 default:
-                    throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)errC));
+                    throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)errorCode));
             }
-        }
-
-        ~Deflater()
-        {
-            Dispose(false);
         }
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
             if (!_isDisposed)
             {
-                if (disposing)
-                    _zlibStream.Dispose();
-
-                DeallocateInputBufferHandle();
+                _handle.Dispose();
                 _isDisposed = true;
             }
         }
 
-        public bool NeedsInput() => 0 == _zlibStream.AvailIn;
-
-        internal unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
+        public unsafe void Deflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
         {
-            Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            if (0 == inputBuffer.Length)
+            fixed (byte* fixedInput = input)
+            fixed (byte* fixedOutput = output)
             {
-                return;
-            }
+                _handle.NextIn = (IntPtr)fixedInput;
+                _handle.AvailIn = (uint)input.Length;
 
-            lock (SyncLock)
-            {
-                _inputBufferHandle = inputBuffer.Pin();
+                _handle.NextOut = (IntPtr)fixedOutput;
+                _handle.AvailOut = (uint)output.Length;
 
-                _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
-                _zlibStream.AvailIn = (uint)inputBuffer.Length;
-            }
-        }
+                Deflate(ZFlushCode.NoFlush);
 
-        internal unsafe void SetInput(byte* inputBufferPtr, int count)
-        {
-            Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(inputBufferPtr != null);
-
-            if (count == 0)
-            {
-                return;
-            }
-
-            lock (SyncLock)
-            {
-                _zlibStream.NextIn = (IntPtr)inputBufferPtr;
-                _zlibStream.AvailIn = (uint)count;
+                consumed = input.Length - (int)_handle.AvailIn;
+                written = output.Length - (int)_handle.AvailOut;
             }
         }
 
-        internal int GetDeflateOutput(byte[] outputBuffer)
+        public unsafe int Finish(Span<byte> output, out bool completed)
         {
-            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
-            Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
-
-            try
+            fixed (byte* fixedOutput = output)
             {
-                int bytesRead;
-                ReadDeflateOutput(outputBuffer, ZFlushCode.NoFlush, out bytesRead);
-                return bytesRead;
-            }
-            finally
-            {
-                // Before returning, make sure to release input buffer if necessary:
-                if (0 == _zlibStream.AvailIn)
-                {
-                    DeallocateInputBufferHandle();
-                }
-            }
-        }
+                _handle.NextIn = IntPtr.Zero;
+                _handle.AvailIn = 0;
 
-        private unsafe ZErrorCode ReadDeflateOutput(byte[] outputBuffer, ZFlushCode flushCode, out int bytesRead)
-        {
-            Debug.Assert(outputBuffer?.Length > 0);
+                _handle.NextOut = (IntPtr)fixedOutput;
+                _handle.AvailOut = (uint)output.Length;
 
-            lock (SyncLock)
-            {
-                fixed (byte* bufPtr = &outputBuffer[0])
-                {
-                    _zlibStream.NextOut = (IntPtr)bufPtr;
-                    _zlibStream.AvailOut = (uint)outputBuffer.Length;
+                var errorCode = Deflate(ZFlushCode.SyncFlush);
+                var writtenBytes = output.Length - (int)_handle.AvailOut;
 
-                    ZErrorCode errC = Deflate(flushCode);
-                    bytesRead = outputBuffer.Length - (int)_zlibStream.AvailOut;
+                completed = errorCode == ZErrorCode.Ok && writtenBytes < output.Length;
 
-                    return errC;
-                }
-            }
-        }
-
-        internal bool Finish(byte[] outputBuffer, out int bytesRead)
-        {
-            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
-            Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
-
-            ZErrorCode errC = ReadDeflateOutput(outputBuffer, ZFlushCode.Finish, out bytesRead);
-            return errC == ZErrorCode.StreamEnd;
-        }
-
-        /// <summary>
-        /// Returns true if there was something to flush. Otherwise False.
-        /// </summary>
-        internal bool Flush(byte[] outputBuffer, out int bytesRead)
-        {
-            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
-            Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
-            Debug.Assert(NeedsInput(), "We have something left in previous input!");
-
-
-            // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.
-            // If there is still input left we should never be getting here; instead we
-            // should be calling GetDeflateOutput.
-
-            return ReadDeflateOutput(outputBuffer, ZFlushCode.SyncFlush, out bytesRead) == ZErrorCode.Ok;
-        }
-
-        private void DeallocateInputBufferHandle()
-        {
-            lock (SyncLock)
-            {
-                _zlibStream.AvailIn = 0;
-                _zlibStream.NextIn = ZLibNative.ZNullPtr;
-                _inputBufferHandle.Dispose();
+                return writtenBytes;
             }
         }
 
         private ZErrorCode Deflate(ZFlushCode flushCode)
         {
-            ZErrorCode errC;
+            ZErrorCode errorCode;
             try
             {
-                errC = _zlibStream.Deflate(flushCode);
+                errorCode = _handle.Deflate(flushCode);
             }
             catch (Exception cause)
             {
                 throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
             }
 
-            switch (errC)
+            switch (errorCode)
             {
                 case ZErrorCode.Ok:
                 case ZErrorCode.StreamEnd:
-                    return errC;
+                    return errorCode;
 
                 case ZErrorCode.BufError:
-                    return errC;  // This is a recoverable error
+                    return errorCode;  // This is a recoverable error
 
                 case ZErrorCode.StreamError:
                     throw new WebSocketException(SR.ZLibErrorInconsistentStream);
 
                 default:
-                    throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)errC));
+                    throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)errorCode));
             }
         }
     }

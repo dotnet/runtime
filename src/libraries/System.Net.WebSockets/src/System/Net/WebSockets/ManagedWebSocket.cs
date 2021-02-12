@@ -3,13 +3,11 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,8 +35,6 @@ namespace System.Net.WebSockets
             return new ManagedWebSocket(stream, options);
         }
 
-        /// <summary>Thread-safe random number generator used to generate masks for each send.</summary>
-        private static readonly RandomNumberGenerator s_random = RandomNumberGenerator.Create();
         /// <summary>Encoding for the payload of text messages: UTF8 encoding that throws if invalid bytes are discovered, per the RFC.</summary>
         private static readonly UTF8Encoding s_textEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
@@ -86,9 +82,7 @@ namespace System.Net.WebSockets
         /// Semaphore used to ensure that calls to SendFrameAsync don't run concurrently.
         /// </summary>
         private readonly SemaphoreSlim _sendFrameAsyncLock = new SemaphoreSlim(1, 1);
-
-        private readonly bool _compressionEnabled;
-
+        private readonly Sender _sender;
         // We maintain the current WebSocketState in _state.  However, we separately maintain _sentCloseFrame and _receivedCloseFrame
         // as there isn't a strict ordering between CloseSent and CloseReceived.  If we receive a close frame from the server, we need to
         // transition to CloseReceived even if we're currently in CloseSent, and if we send a close frame, we need to transition to
@@ -127,13 +121,6 @@ namespace System.Net.WebSockets
         /// </summary>
         private int _receivedMaskOffsetOffset;
         /// <summary>
-        /// Temporary send buffer.  This should be released back to the ArrayPool once it's
-        /// no longer needed for the current send operation.  It is stored as an instance
-        /// field to minimize needing to pass it around and to avoid it becoming a field on
-        /// various async state machine objects.
-        /// </summary>
-        private byte[]? _sendBuffer;
-        /// <summary>
         /// Whether the last SendAsync had endOfMessage==false. We need to track this so that we
         /// can send the subsequent message with a continuation opcode if the last message was a fragment.
         /// </summary>
@@ -166,7 +153,7 @@ namespace System.Net.WebSockets
             _stream = stream;
             _isServer = options.IsServer;
             _subprotocol = options.SubProtocol;
-            _compressionEnabled = options.DeflateOptions is not null;
+            _sender = new Sender(options);
 
             // Create a buffer just large enough to handle received packet headers (at most 14 bytes) and
             // control payloads (at most 125 bytes).  Message payloads are read directly into the buffer
@@ -225,6 +212,8 @@ namespace System.Net.WebSockets
                 _disposed = true;
                 _keepAliveTimer?.Dispose();
                 _stream?.Dispose();
+                _sender.Dispose();
+
                 if (_state < WebSocketState.Aborted)
                 {
                     _state = WebSocketState.Closed;
@@ -440,12 +429,10 @@ namespace System.Net.WebSockets
             // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
             // and we own the semaphore, so we don't need to asynchronously wait for it.
             ValueTask writeTask = default;
-            bool releaseSendBufferAndSemaphore = true;
+            bool releaseSemaphore = true;
             try
             {
-                // Write the payload synchronously to the buffer, then write that buffer out to the network.
-                int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer.Span);
-                writeTask = _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes));
+                writeTask = _sender.SendAsync(opcode, endOfMessage, payloadBuffer, _stream);
 
                 // If the operation happens to complete synchronously (or, more specifically, by
                 // the time we get from the previous line to here), release the semaphore, return
@@ -458,7 +445,7 @@ namespace System.Net.WebSockets
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
                 // calling GetResult), we want to release the semaphore and the send buffer. After this point,
                 // both need to be held until writeTask completes.
-                releaseSendBufferAndSemaphore = false;
+                releaseSemaphore = false;
             }
             catch (Exception exc)
             {
@@ -469,9 +456,8 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (releaseSendBufferAndSemaphore)
+                if (releaseSemaphore)
                 {
-                    ReleaseSendBuffer();
                     _sendFrameAsyncLock.Release();
                 }
             }
@@ -493,7 +479,6 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                ReleaseSendBuffer();
                 _sendFrameAsyncLock.Release();
             }
         }
@@ -503,10 +488,9 @@ namespace System.Net.WebSockets
             await _sendFrameAsyncLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer.Span);
                 using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
+                    await _sender.SendAsync(opcode, endOfMessage, payloadBuffer, _stream, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
@@ -517,49 +501,8 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                ReleaseSendBuffer();
                 _sendFrameAsyncLock.Release();
             }
-        }
-
-        /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
-        private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, ReadOnlySpan<byte> payloadBuffer)
-        {
-            // Ensure we have a _sendBuffer.
-            AllocateSendBuffer(payloadBuffer.Length + MaxMessageHeaderLength);
-
-            // Write the message header data to the buffer.
-            int headerLength;
-            int? maskOffset = null;
-            if (_isServer)
-            {
-                // The server doesn't send a mask, so the mask offset returned by WriteHeader
-                // is actually the end of the header.
-                headerLength = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: false);
-            }
-            else
-            {
-                // We need to know where the mask starts so that we can use the mask to manipulate the payload data,
-                // and we need to know the total length for sending it on the wire.
-                maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true);
-                headerLength = maskOffset.GetValueOrDefault() + MaskLength;
-            }
-
-            // Write the payload
-            if (payloadBuffer.Length > 0)
-            {
-                payloadBuffer.CopyTo(new Span<byte>(_sendBuffer, headerLength, payloadBuffer.Length));
-
-                // If we added a mask to the header, XOR the payload with the mask.  We do the manipulation in the send buffer so as to avoid
-                // changing the data in the caller-supplied payload buffer.
-                if (maskOffset.HasValue)
-                {
-                    ApplyMask(new Span<byte>(_sendBuffer, headerLength, payloadBuffer.Length), _sendBuffer, maskOffset.Value, 0);
-                }
-            }
-
-            // Return the number of bytes in the send buffer
-            return headerLength + payloadBuffer.Length;
         }
 
         private void SendKeepAliveFrameAsync()
@@ -590,85 +533,6 @@ namespace System.Net.WebSockets
                 // so there's no need to send a keep-alive ping.
             }
         }
-
-        private int WriteHeader(MessageOpcode opcode, byte[] sendBuffer, ReadOnlySpan<byte> payload, bool endOfMessage, bool useMask)
-        {
-            // Client header format:
-            // 1 bit - FIN - 1 if this is the final fragment in the message (it could be the only fragment), otherwise 0
-            // 1 bit - RSV1 - Per-Message Deflate Compress
-            // 1 bit - RSV2 - Reserved - 0
-            // 1 bit - RSV3 - Reserved - 0
-            // 4 bits - Opcode - How to interpret the payload
-            //     - 0x0 - continuation
-            //     - 0x1 - text
-            //     - 0x2 - binary
-            //     - 0x8 - connection close
-            //     - 0x9 - ping
-            //     - 0xA - pong
-            //     - (0x3 to 0x7, 0xB-0xF - reserved)
-            // 1 bit - Masked - 1 if the payload is masked, 0 if it's not.  Must be 1 for the client
-            // 7 bits, 7+16 bits, or 7+64 bits - Payload length
-            //     - For length 0 through 125, 7 bits storing the length
-            //     - For lengths 126 through 2^16, 7 bits storing the value 126, followed by 16 bits storing the length
-            //     - For lengths 2^16+1 through 2^64, 7 bits storing the value 127, followed by 64 bytes storing the length
-            // 0 or 4 bytes - Mask, if Masked is 1 - random value XOR'd with each 4 bytes of the payload, round-robin
-            // Length bytes - Payload data
-
-            Debug.Assert(sendBuffer.Length >= MaxMessageHeaderLength, $"Expected sendBuffer to be at least {MaxMessageHeaderLength}, got {sendBuffer.Length}");
-
-            sendBuffer[0] = (byte)opcode; // 4 bits for the opcode
-            if (endOfMessage)
-            {
-                sendBuffer[0] |= 0b1000_0000; // 1 bit for FIN
-            }
-
-            if (_compressionEnabled && opcode is MessageOpcode.Text or MessageOpcode.Binary)
-            {
-                sendBuffer[0] |= 0b0100_0000;
-            }
-
-            // Store the payload length.
-            int maskOffset;
-            if (payload.Length <= 125)
-            {
-                sendBuffer[1] = (byte)payload.Length;
-                maskOffset = 2; // no additional payload length
-            }
-            else if (payload.Length <= ushort.MaxValue)
-            {
-                sendBuffer[1] = 126;
-                sendBuffer[2] = (byte)(payload.Length / 256);
-                sendBuffer[3] = unchecked((byte)payload.Length);
-                maskOffset = 2 + sizeof(ushort); // additional 2 bytes for 16-bit length
-            }
-            else
-            {
-                sendBuffer[1] = 127;
-                int length = payload.Length;
-                for (int i = 9; i >= 2; i--)
-                {
-                    sendBuffer[i] = unchecked((byte)length);
-                    length = length / 256;
-                }
-                maskOffset = 2 + sizeof(ulong); // additional 8 bytes for 64-bit length
-            }
-
-            if (useMask)
-            {
-                // Generate the mask.
-                sendBuffer[1] |= 0x80;
-                WriteRandomMask(sendBuffer, maskOffset);
-            }
-
-            // Return the position of the mask.
-            return maskOffset;
-        }
-
-        /// <summary>Writes a 4-byte random mask to the specified buffer at the specified offset.</summary>
-        /// <param name="buffer">The buffer to which to write the mask.</param>
-        /// <param name="offset">The offset into the buffer at which to write the mask.</param>
-        private static void WriteRandomMask(byte[] buffer, int offset) =>
-            s_random.GetBytes(buffer, offset, MaskLength);
 
         /// <summary>
         /// Receive the next text, binary, continuation, or close message, returning information about it and
@@ -1331,27 +1195,6 @@ namespace System.Net.WebSockets
             if (throwOnPrematureClosure)
             {
                 throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
-            }
-        }
-
-        /// <summary>Gets a send buffer from the pool.</summary>
-        [MemberNotNull(nameof(_sendBuffer))]
-        private void AllocateSendBuffer(int minLength)
-        {
-            Debug.Assert(_sendBuffer == null); // would only fail if had some catastrophic error previously that prevented cleaning up
-            _sendBuffer = ArrayPool<byte>.Shared.Rent(minLength);
-        }
-
-        /// <summary>Releases the send buffer to the pool.</summary>
-        private void ReleaseSendBuffer()
-        {
-            Debug.Assert(_sendFrameAsyncLock.CurrentCount == 0, "Caller should hold the _sendFrameAsyncLock");
-
-            byte[]? old = _sendBuffer;
-            if (old != null)
-            {
-                _sendBuffer = null;
-                ArrayPool<byte>.Shared.Return(old);
             }
         }
 
