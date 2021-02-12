@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresUnreferencedCodeAttributeWithDynamicallyAccessedMembersEnabled ();
 			TestRequiresUnreferencedCodeAttributeWithReflectionPattern ();
 			TestRequiresUnreferencedCodeAttributeWithDynamicallyAccessedMembersOnGenericsEnabled ();
+			TestRequiresUnreferencedCodeAndDynamicallyAccessedMembers.Test ();
 		}
 
 		[Kept]
@@ -107,6 +108,55 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public int _publicField;
 
 			private int _privateField;
+		}
+
+		[Kept]
+		[ExpectedNoWarnings]
+		class TestRequiresUnreferencedCodeAndDynamicallyAccessedMembers
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode ("--- RequiresUnreferencedCodeAndPublicMethods ---")]
+			[RecognizedReflectionAccessPattern]
+			static void RequiresUnreferencedCodeAndPublicMethods (
+				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+				Type type)
+			{
+				// This should not produce a warning since the method is annotated with RequiresUnreferencedCode
+				RequiresPublicFields (type);
+
+				// This will still "work" in that it will apply the PublicFields requirement onto the specified type
+				RequiresPublicFields (typeof (TestRequiresUnreferencedCodeAndDynamicallyAccessedMembers));
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern]
+			static void RequiresPublicFields (
+				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+				Type type)
+			{ }
+
+			[Kept]
+			public void PublicInstanceMethod () { }
+
+			[Kept]
+			public static void PublicStaticMethod () { }
+
+			static void PrivateInstanceMethod () { }
+
+			[Kept]
+			public static int PublicStaticField;
+
+			static int PrivateStaticField;
+
+			[Kept]
+			[ExpectedWarning ("IL2026", "--- RequiresUnreferencedCodeAndPublicMethods ---")]
+			public static void Test ()
+			{
+				RequiresUnreferencedCodeAndPublicMethods (typeof (TestRequiresUnreferencedCodeAndDynamicallyAccessedMembers));
+			}
 		}
 	}
 }
