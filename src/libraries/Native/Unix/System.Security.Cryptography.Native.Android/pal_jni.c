@@ -109,12 +109,12 @@ jmethodID g_KeyFactoryGenPublicMethod;
 
 // java/security/spec/ECFieldFp
 jclass    g_ECFieldFpClass;
-jclass    g_ECFieldFpCtor;
+jmethodID g_ECFieldFpCtor;
 jmethodID g_ECfieldFpGetP;
 
 // java/security/spec/ECFieldF2m
 jclass    g_ECFieldF2mClass;
-jclass    g_ECFieldF2mCtorWithCoefficientByteArray;
+jmethodID g_ECFieldF2mCtorWithCoefficientBigInteger;
 jmethodID g_ECfieldF2mGetReductionPolynomial;
 
 // java/security/spec/ECPoint

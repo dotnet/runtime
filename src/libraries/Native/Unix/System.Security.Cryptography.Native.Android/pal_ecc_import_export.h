@@ -3,8 +3,8 @@
 
 #include "pal_types.h"
 #include "pal_compiler.h"
-
-typedef struct EC_KEY;
+#include "pal_jni.h"
+#include "pal_eckey.h"
 
 typedef enum
 {

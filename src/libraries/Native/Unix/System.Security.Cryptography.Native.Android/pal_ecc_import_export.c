@@ -41,14 +41,16 @@ int32_t CryptoNative_GetECKeyParameters(
     // Success; assign variables
     *qx = ToGRef(env, xBn); *cbQx = CryptoNative_GetBigNumBytes(xBn);
     *qy = ToGRef(env, yBn); *cbQy = CryptoNative_GetBigNumBytes(yBn);
+    if (*cbQx == FAIL || *cbQy == FAIL) goto error;
 
     if (includePrivate)
     {
         privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
 
         jobject dBn = (*env)->CallObjectMethod(env, privateKey, g_ECPrivateKeyGetS);
-        *d = ToGRef(dBn);
+        *d = ToGRef(env, dBn);
         *cbD = CryptoNative_GetBigNumBytes(*d);
+        if (*cbD == FAIL) goto error;
     }
     else
     {
@@ -137,14 +139,14 @@ int32_t CryptoNative_GetECCurveParameters(
     {
         *curveType = Characteristic2;
         // Get the reduction polynomial p
-        pBn = (*env)->CallObjectMethod(field, g_ECfieldF2mGetReductionPolynomial);
+        pBn = (*env)->CallObjectMethod(env, field, g_ECfieldF2mGetReductionPolynomial);
     }
     else
     {
         assert((*env)->IsInstanceOf(env, field, g_ECFieldFpClass));
         *curveType = PrimeShortWeierstrass;
         // Get the prime p
-        pBn = (*env)->CallObjectMethod(field, g_ECfieldFpGetP);
+        pBn = (*env)->CallObjectMethod(env, field, g_ECfieldFpGetP);
     }
 
     // Extract gx and gy
@@ -195,12 +197,12 @@ int32_t CryptoNative_GetECCurveParameters(
 error:
     // Clear out variables from CryptoNative_GetECKeyParameters
     *cbQx = *cbQy = 0;
-    ReleaseGRef(*qx);
-    ReleaseGRef(*qy);
+    ReleaseGRef(env, *qx);
+    ReleaseGRef(env, *qy);
     *qx = *qy = NULL;
     if (d)
     {
-        ReleaseGRef(*d);
+        ReleaseGRef(env, *d);
         *d = NULL;
     }
     if (cbD) *cbD = 0;
@@ -208,14 +210,14 @@ error:
     // Clear our out variables
     *curveType = Unspecified;
     *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
-    ReleaseGRef(*p);
-    ReleaseGRef(*a);
-    ReleaseGRef(*b);
-    ReleaseGRef(*gx);
-    ReleaseGRef(*gy);
-    ReleaseGRef(*order);
-    ReleaseGRef(*cofactor);
-    ReleaseGRef(*seed);
+    ReleaseGRef(env, *p);
+    ReleaseGRef(env, *a);
+    ReleaseGRef(env, *b);
+    ReleaseGRef(env, *gx);
+    ReleaseGRef(env, *gy);
+    ReleaseGRef(env, *order);
+    ReleaseGRef(env, *cofactor);
+    ReleaseGRef(env, *seed);
     *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
 
     CryptoNative_BigNumDestroy(xBn);
@@ -231,8 +233,10 @@ exit:
     return rc;
 }
 
-jobject CryptoNative_CreateKeyPairFromCurveParameters(jobject curveParameters, uint8_t* qx, int32_t qxLength, uint8_t* qy, int32_t qyLength, uint8_t* d, int32_t dLength)
+static jobject CryptoNative_CreateKeyPairFromCurveParameters(jobject curveParameters, uint8_t* qx, int32_t qxLength, uint8_t* qy, int32_t qyLength, uint8_t* d, int32_t dLength)
 {
+    JNIEnv* env = GetJNIEnv();
+
     jobject dBn = NULL;
     jobject qxBn = NULL;
     jobject qyBn = NULL;
@@ -255,7 +259,7 @@ jobject CryptoNative_CreateKeyPairFromCurveParameters(jobject curveParameters, u
             goto error;
 
         pubKeyPoint = (*env)->NewObject(env, g_ECPointClass, g_ECPointCtor, qxBn, qyBn);
-        pubKeySpec = (*env)->NewObject(env, g_ECPublicKeySpecClass, g_ECPublicKeySpecCtor, pubKeyPoint, (*key)->curveParameters);
+        pubKeySpec = (*env)->NewObject(env, g_ECPublicKeySpecClass, g_ECPublicKeySpecCtor, pubKeyPoint, curveParameters);
 
         // Set private key (optional)
         if (d && dLength)
@@ -264,7 +268,7 @@ jobject CryptoNative_CreateKeyPairFromCurveParameters(jobject curveParameters, u
             if (!dBn)
                 goto error;
 
-            privKeySpec = (*env)->NewObject(env, g_ECPrivateKeySpecClass, g_ECPrivateKeySpecCtor, dBn, (*key)->curveParameters);
+            privKeySpec = (*env)->NewObject(env, g_ECPrivateKeySpecClass, g_ECPrivateKeySpecCtor, dBn, curveParameters);
         }
     }
     // If we don't have the public key but we have the private key, we can
@@ -276,7 +280,7 @@ jobject CryptoNative_CreateKeyPairFromCurveParameters(jobject curveParameters, u
         if (!dBn)
             goto error;
 
-        privKeySpec = (*env)->NewObject(env, g_ECPrivateKeySpecClass, g_ECPrivateKeySpecCtor, dBn, paramSpec);
+        privKeySpec = (*env)->NewObject(env, g_ECPrivateKeySpecClass, g_ECPrivateKeySpecCtor, dBn, curveParameters);
 
         // Java doesn't have a public implementation of operations on points on an elliptic curve
         // so we can't yet derive a new public key from the private key and generator.
@@ -302,7 +306,7 @@ jobject CryptoNative_CreateKeyPairFromCurveParameters(jobject curveParameters, u
 
     // Create the private and public keys and put them into a key pair.
     algorithmName = JSTRING("EC");
-    keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algName);
+    keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algorithmName);
     publicKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPublicMethod, pubKeySpec);
     privateKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPrivateMethod, privKeySpec);
     keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, publicKey, privateKey);
@@ -319,7 +323,6 @@ cleanup:
     CryptoNative_BigNumDestroy(qxBn);
     CryptoNative_BigNumDestroy(qyBn);
     CryptoNative_BigNumDestroy(dBn);
-    if (G) (*env)->DeleteLocalRef(env, G);
     if (pubG) (*env)->DeleteLocalRef(env, pubG);
     if (pubKeyPoint) (*env)->DeleteLocalRef(env, pubKeyPoint);
     if (pubKeySpec) (*env)->DeleteLocalRef(env, pubKeySpec);
@@ -338,8 +341,6 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
         assert(false);
         return 0;
     }
-    
-    int result = FAILURE;
 
     *key = NULL;
 
@@ -359,11 +360,11 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
     
     if ((*key)->keyPair == NULL)
     {
-        // We were unable to make the keys, so clean up and return FAILURE.
+        // We were unable to make the keys, so clean up and return FAIL.
         ReleaseGRef(env, (*key)->curveParameters);
         CryptoNative_EcKeyDestroy(*key);
         *key = NULL;
-        return FAILURE;
+        return FAIL;
     }
     
     return SUCCESS;
@@ -371,7 +372,7 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
 
 // Converts a java.math.BigInteger to a positive int32_t value.
 // Returns -1 if bigInteger < 0 or > INT32_MAX
-int32_t CryptoNative_ConvertBigIntegerToPositiveInt32(JNIEnv* env, jobject bigInteger)
+static int32_t CryptoNative_ConvertBigIntegerToPositiveInt32(JNIEnv* env, jobject bigInteger)
 {
     jobject zero = (*env)->CallStaticObjectMethod(env, g_bigNumClass, g_valueOfMethod, (int64_t)0);
     int isPositive = (*env)->CallIntMethod(env, bigInteger, g_compareToMethod, zero);
@@ -479,7 +480,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     if (seed && seedLength > 0)
     {
         seedArray = (*env)->NewByteArray(env, seedLength);
-        (*env)->SetByteArrayRegion(env, seedArray, 0, seedLength, seed);
+        (*env)->SetByteArrayRegion(env, seedArray, 0, seedLength, (jbyte*)seed);
         group = (*env)->NewObject(env, g_EllipticCurveClass, g_EllipticCurveCtorWithSeed, field, aBn, bBn, seedArray);
     }
     else
@@ -488,15 +489,15 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     }
 
     // Set generator, order and cofactor
-    gxBn = CryptoNative_BigNumFromBinary(gx, gxLength, NULL);
-    gyBn = CryptoNative_BigNumFromBinary(gy, gyLength, NULL);
+    gxBn = CryptoNative_BigNumFromBinary(gx, gxLength);
+    gyBn = CryptoNative_BigNumFromBinary(gy, gyLength);
     G = (*env)->NewObject(env, g_ECPointClass, g_ECPointCtor, gxBn, gyBn);
 
-    orderBn = CryptoNative_BigNumFromBinary(order, orderLength, NULL);
+    orderBn = CryptoNative_BigNumFromBinary(order, orderLength);
 
     // Java ECC doesn't support BigInteger-based cofactor. It uses positive 32-bit integers.
     // So, convert the cofactor to a positive 32-bit integer with overflow protection.
-    cofactorBn = CryptoNative_BigNumFromBinary(cofactor, cofactorLength, NULL);
+    cofactorBn = CryptoNative_BigNumFromBinary(cofactor, cofactorLength);
     int cofactorInt = CryptoNative_ConvertBigIntegerToPositiveInt32(env, cofactorBn);
 
     if (cofactorInt == -1)
@@ -511,7 +512,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 
     if (!keyPair) goto error;
 
-    keyInfo = CryptoNative_NewEcKey(ToGRef(paramSpec), keyPair);
+    keyInfo = CryptoNative_NewEcKey(ToGRef(env, paramSpec), keyPair);
 
 error:
     CryptoNative_BigNumDestroy(pBn);

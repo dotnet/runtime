@@ -191,6 +191,7 @@ extern jclass    g_NativeCryptoClass;
 #define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_ERROR(fmt, ...) ((void)__android_log_print(ANDROID_LOG_ERROR, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
+#define ON_EXCEPTION_PRINT_AND_GOTO(label) if(CheckJNIExceptions(env)) goto label
 
 void SaveTo(uint8_t* src, uint8_t** dst, size_t len);
 jobject ToGRef(JNIEnv *env, jobject lref);
