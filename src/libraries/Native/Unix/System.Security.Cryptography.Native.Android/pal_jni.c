@@ -49,6 +49,9 @@ jmethodID g_ivPsCtor;
 jclass    g_bigNumClass;
 jmethodID g_bigNumCtor;
 jmethodID g_toByteArrayMethod;
+jmethodID g_valueOfMethod;
+jmethodID g_intValueMethod;
+jmethodID g_compareToMethod;
 
 // javax/net/ssl/SSLParameters
 jclass    g_sslParamsClass;
@@ -73,6 +76,7 @@ jmethodID g_RSAPublicKeyGetPubExpMethod;
 
 // java/security/KeyPair
 jclass    g_keyPairClass;
+jmethodID g_keyPairCtor;
 jmethodID g_keyPairGetPrivateMethod;
 jmethodID g_keyPairGetPublicMethod;
 
@@ -106,29 +110,65 @@ jclass    g_KeyFactoryClass;
 jmethodID g_KeyFactoryGetInstanceMethod;
 jmethodID g_KeyFactoryGenPrivateMethod;
 jmethodID g_KeyFactoryGenPublicMethod;
+jmethodID g_KeyFactoryGetKeySpecMethod;
+
+// java/security/spec/ECParameterSpec
+jclass    g_ECParameterSpecClass;
+jmethodID g_ECParameterSpecCtor;
+jmethodID g_ECParameterSpecGetCurve;
+jmethodID g_ECParameterSpecGetGenerator;
+jmethodID g_ECParameterSpecGetCofactor;
+jmethodID g_ECParameterSpecGetOrder;
+
+// java/security/spec/ECField
+jclass    g_ECFieldClass;
+jmethodID g_ECFieldGetFieldSize;
 
 // java/security/spec/ECFieldFp
 jclass    g_ECFieldFpClass;
 jmethodID g_ECFieldFpCtor;
-jmethodID g_ECfieldFpGetP;
+jmethodID g_ECFieldFpGetP;
 
 // java/security/spec/ECFieldF2m
 jclass    g_ECFieldF2mClass;
 jmethodID g_ECFieldF2mCtorWithCoefficientBigInteger;
-jmethodID g_ECfieldF2mGetReductionPolynomial;
+jmethodID g_ECFieldF2mGetReductionPolynomial;
+
+// java/security/spec/ECGenParameterSpecClass
+jclass    g_ECGenParameterSpecClass;
+jmethodID g_ECGenParameterSpecCtor;
 
 // java/security/spec/ECPoint
 jclass    g_ECPointClass;
 jmethodID g_ECPointCtor;
+jmethodID g_ECPointGetAffineX;
+jmethodID g_ECPointGetAffineY;
 
-// java/security/spec/ECPublicKey
+// java/security/interfaces/ECPrivateKey
+jclass    g_ECPrivateKeyClass;
+jmethodID g_ECPrivateKeyGetS;
+
+// java/security/spec/ECPrivateKeySpec
+jclass    g_ECPrivateKeySpecClass;
+jmethodID g_ECPrivateKeySpecCtor;
+
+// java/security/interfaces/ECPublicKey
 jclass    g_ECPublicKeyClass;
 jmethodID g_ECPublicKeyGetW;
+
+// java/security/spec/ECPublicKeySpec
+jclass    g_ECPublicKeySpecClass;
+jmethodID g_ECPublicKeySpecCtor;
+jmethodID g_ECPublicKeySpecGetParams;
 
 // java/security/spec/EllipticCurve
 jclass    g_EllipticCurveClass;
 jmethodID g_EllipticCurveCtor;
 jmethodID g_EllipticCurveCtorWithSeed;
+jmethodID g_EllipticCurveGetA;
+jmethodID g_EllipticCurveGetB;
+jmethodID g_EllipticCurveGetField;
+jmethodID g_EllipticCurveGetSeed;
 
 // java/security/spec/X509EncodedKeySpec
 jclass    g_X509EncodedKeySpecClass;
@@ -319,22 +359,54 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_KeyFactoryGetInstanceMethod =    GetMethod(env, true, g_KeyFactoryClass, "getInstance", "(Ljava/lang/String;)Ljava/security/KeyFactory;");
     g_KeyFactoryGenPrivateMethod =     GetMethod(env, false, g_KeyFactoryClass, "generatePrivate", "(Ljava/security/spec/KeySpec;)Ljava/security/PrivateKey;");
     g_KeyFactoryGenPublicMethod =      GetMethod(env, false, g_KeyFactoryClass, "generatePublic", "(Ljava/security/spec/KeySpec;)Ljava/security/PublicKey;");
+    g_KeyFactoryGetKeySpecMethod =     GetMethod(env, false, g_KeyFactoryClass, "getKeySpec", "(Ljava/security/Key;Ljava/lang/Class;)Ljava/security/spec/KeySpec;");
+
+    g_ECGenParameterSpecClass =        GetClassGRef(env, "java/security/spec/ECGenParameterSpec");
+    g_ECGenParameterSpecCtor =         GetMethod(env, false, g_ECGenParameterSpecClass, "<init>", "(Ljava/lang/String;)V");
+
+    g_ECFieldClass =                   GetClassGRef(env, "java/security/spec/ECField");
+    g_ECFieldGetFieldSize =            GetMethod(env, false, g_ECFieldClass, "getFieldSize", "()I");
 
     g_ECFieldFpClass =                 GetClassGRef(env, "java/security/spec/ECFieldFp");
     g_ECFieldFpCtor =                  GetMethod(env, false, g_ECFieldFpClass, "<init>", "(Ljava/math/BigInteger;)V");
+    g_ECFieldFpGetP =                  GetMethod(env, false, g_ECFieldFpClass, "getP", "()Ljava/math/BigInteger;");
 
     g_ECFieldF2mClass =                         GetClassGRef(env, "java/security/spec/ECFieldF2m");
     g_ECFieldF2mCtorWithCoefficientBigInteger = GetMethod(env, false, g_ECFieldF2mClass, "<init>", "(ILjava/math/BigInteger;)V");
+    g_ECFieldF2mGetReductionPolynomial =        GetMethod(env, false, g_ECFieldF2mClass, "getReductionPolynomial", "()Ljava/math/BigInteger;");
 
     g_ECParameterSpecClass =           GetClassGRef(env, "java/security/spec/ECParameterSpec");
     g_ECParameterSpecCtor =            GetMethod(env, false, g_ECParameterSpecClass, "<init>", "(Ljava/security/spec/EllipticCurve;Ljava/security/spec/ECPoint;Ljava/math/BigInteger;I)V");
+    g_ECParameterSpecGetCurve =        GetMethod(env, false, g_ECParameterSpecClass, "getCurve", "()Ljava/security/spec/EllipticCurve;");
+    g_ECParameterSpecGetGenerator =    GetMethod(env, false, g_ECParameterSpecClass, "getGenerator", "()Ljava/security/spec/ECPoint;");
+    g_ECParameterSpecGetCofactor =     GetMethod(env, false, g_ECParameterSpecClass, "getCofactor", "()I");
+    g_ECParameterSpecGetOrder =        GetMethod(env, false, g_ECParameterSpecClass, "getOrder", "()Ljava/math/BigInteger;");
 
     g_ECPointClass =                   GetClassGRef(env, "java/security/spec/ECPoint");
     g_ECPointCtor =                    GetMethod(env, false, g_ECPointClass, "<init>", "(Ljava/math/BigInteger;Ljava/math/BigInteger;)V");
+    g_ECPointGetAffineX =              GetMethod(env, false, g_ECPointClass, "getAffineX", "()Ljava/math/BigInteger;");
+    g_ECPointGetAffineY =              GetMethod(env, false, g_ECPointClass, "getAffineY", "()Ljava/math/BigInteger;");
+
+    g_ECPrivateKeyClass =              GetClassGRef(env, "java/security/interfaces/ECPrivateKey");
+    g_ECPrivateKeyGetS =               GetMethod(env, false, g_ECPrivateKeyClass, "getS", "()Ljava/math/BigInteger;");
+
+    g_ECPrivateKeySpecClass =          GetClassGRef(env, "java/security/spec/ECPrivateKeySpec");
+    g_ECPrivateKeySpecCtor =           GetMethod(env, false, g_ECPrivateKeySpecClass, "<init>", "(Ljava/math/BigInteger;Ljava/security/spec/ECParameterSpec;)V");
+
+    g_ECPublicKeyClass =               GetClassGRef(env, "java/security/interfaces/ECPublicKey");
+    g_ECPublicKeyGetW =                GetMethod(env, false, g_ECPublicKeyClass, "getW", "()Ljava/security/spec/ECPoint;");
+
+    g_ECPublicKeySpecClass =           GetClassGRef(env, "java/security/spec/ECPublicKeySpec");
+    g_ECPublicKeySpecCtor =            GetMethod(env, false, g_ECPublicKeySpecClass, "<init>", "(Ljava/security/spec/ECPoint;Ljava/security/spec/ECParameterSpec;)V");
+    g_ECPublicKeySpecGetParams =       GetMethod(env, false, g_ECPublicKeySpecClass, "getParams", "()Ljava/security/spec/ECParameterSpec;");
 
     g_EllipticCurveClass =             GetClassGRef(env, "java/security/spec/EllipticCurve");
-    g_EllipticCurveCtor =              GetMethod(env, false, g_EllipticCurveClass, "<init>", "(Ljava/security/spec/ECField;Ljava/math/BigInteger;)V");
-    g_EllipticCurveCtorWithSeed =      GetMethod(env, false, g_EllipticCurveClass, "<init>", "(Ljava/security/spec/ECField;Ljava/math/BigInteger;[B)V");
+    g_EllipticCurveCtor =              GetMethod(env, false, g_EllipticCurveClass, "<init>", "(Ljava/security/spec/ECField;Ljava/math/BigInteger;Ljava/math/BigInteger;)V");
+    g_EllipticCurveCtorWithSeed =      GetMethod(env, false, g_EllipticCurveClass, "<init>", "(Ljava/security/spec/ECField;Ljava/math/BigInteger;Ljava/math/BigInteger;[B)V");
+    g_EllipticCurveGetA =              GetMethod(env, false, g_EllipticCurveClass, "getA", "()Ljava/math/BigInteger;");
+    g_EllipticCurveGetB =              GetMethod(env, false, g_EllipticCurveClass, "getB", "()Ljava/math/BigInteger;");
+    g_EllipticCurveGetField =          GetMethod(env, false, g_EllipticCurveClass, "getField", "()Ljava/security/spec/ECField;");
+    g_EllipticCurveGetSeed =           GetMethod(env, false, g_EllipticCurveClass, "getSeed", "()[B");
 
     g_X509EncodedKeySpecClass =        GetClassGRef(env, "java/security/spec/X509EncodedKeySpec");
     g_X509EncodedKeySpecCtor =         GetMethod(env, false, g_X509EncodedKeySpecClass, "<init>", "([B)V");

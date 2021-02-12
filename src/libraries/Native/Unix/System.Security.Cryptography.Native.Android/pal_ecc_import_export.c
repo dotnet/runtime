@@ -139,14 +139,14 @@ int32_t CryptoNative_GetECCurveParameters(
     {
         *curveType = Characteristic2;
         // Get the reduction polynomial p
-        pBn = (*env)->CallObjectMethod(env, field, g_ECfieldF2mGetReductionPolynomial);
+        pBn = (*env)->CallObjectMethod(env, field, g_ECFieldF2mGetReductionPolynomial);
     }
     else
     {
         assert((*env)->IsInstanceOf(env, field, g_ECFieldFpClass));
         *curveType = PrimeShortWeierstrass;
         // Get the prime p
-        pBn = (*env)->CallObjectMethod(env, field, g_ECfieldFpGetP);
+        pBn = (*env)->CallObjectMethod(env, field, g_ECFieldFpGetP);
     }
 
     // Extract gx and gy
@@ -158,7 +158,9 @@ int32_t CryptoNative_GetECCurveParameters(
     orderBn = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetOrder);
 
     // Extract cofactor (h)
-    cofactorBn = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetCofactor);
+    int32_t cofactorInt = (*env)->CallIntMethod(env, key->curveParameters, g_ECParameterSpecGetCofactor);
+
+    cofactorBn = (*env)->CallStaticObjectMethod(env, g_bigNumClass, g_valueOfMethod, (int64_t)cofactorInt);
 
     // Extract seed (optional)
     seedArray = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetSeed);
