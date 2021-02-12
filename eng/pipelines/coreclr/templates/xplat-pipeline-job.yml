@@ -42,6 +42,7 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
+    pgoType: ${{ parameters.pgoType }}
 
     # arcade-specific parameters
     condition: and(succeeded(), ${{ parameters.condition }})
