@@ -418,9 +418,21 @@ namespace System
         // internal implementation details (FCALLS and utilities)
         //
 
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern bool BindToMethodName(ObjectHandleOnStack delegateObj, ObjectHandleOnStack target, QCallTypeHandle methodType, string method, DelegateBindingFlags flags);
+
         [RequiresUnreferencedCode("The target method might be removed")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool BindToMethodName(object? target, RuntimeType methodType, string method, DelegateBindingFlags flags);
+        private bool BindToMethodName(object? target, RuntimeType methodType, string method, DelegateBindingFlags flags)
+        {
+            Delegate delArg = this;
+            return BindToMethodName(
+                ObjectHandleOnStack.Create(ref delArg),
+                ObjectHandleOnStack.Create(ref target),
+                new QCallTypeHandle(ref methodType),
+                method,
+                flags
+            );
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags);

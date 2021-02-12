@@ -63,7 +63,7 @@ public:
     static FCDECL3(PCODE, AdjustTarget, Object* refThis, Object* target, PCODE method);
     static FCDECL2(PCODE, GetCallStub, Object* refThis, PCODE method);
 
-    static FCDECL5(FC_BOOL_RET, BindToMethodName, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectClassBaseObject *pMethodTypeUNSAFE, StringObject* methodNameUNSAFE, int flags);
+    static BOOL QCALLTYPE BindToMethodName(QCall::ObjectHandleOnStack delegate, QCall::ObjectHandleOnStack target, QCall::TypeHandle  methodType, PCWSTR pwzMethodName, int flags);
 
     static FCDECL5(FC_BOOL_RET, BindToMethodInfo, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectMethodObject *method, ReflectClassBaseObject *pMethodTypeUNSAFE, int flags);
 

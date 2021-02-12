@@ -789,33 +789,31 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
     return pTargetCall;
 }
 
-FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
-                        Object *refThisUNSAFE,
-                        Object *targetUNSAFE,
-                        ReflectClassBaseObject *pMethodTypeUNSAFE,
-                        StringObject* methodNameUNSAFE,
-                        int flags)
+BOOL QCALLTYPE COMDelegate::BindToMethodName(
+                    QCall::ObjectHandleOnStack delegate,
+                    QCall::ObjectHandleOnStack target,
+                    QCall::TypeHandle methodTypeHandle,
+                    PCWSTR pwzMethodName,
+                    int flags)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    MethodDesc *pMatchingMethod = NULL;
+
+    BEGIN_QCALL;
+    GCX_COOP();
 
     struct _gc
     {
         DELEGATEREF refThis;
         OBJECTREF target;
-        STRINGREF methodName;
-        REFLECTCLASSBASEREF refMethodType;
     } gc;
 
-    gc.refThis    = (DELEGATEREF) ObjectToOBJECTREF(refThisUNSAFE);
-    gc.target     = (OBJECTREF) targetUNSAFE;
-    gc.methodName = (STRINGREF) methodNameUNSAFE;
-    gc.refMethodType = (REFLECTCLASSBASEREF) ObjectToOBJECTREF(pMethodTypeUNSAFE);
+    gc.refThis = (DELEGATEREF) delegate.Get();
+    gc.target = (OBJECTREF) target.Get();
+    TypeHandle methodType = methodTypeHandle.AsTypeHandle();
 
-    TypeHandle methodType = gc.refMethodType->GetType();
-
-    MethodDesc *pMatchingMethod = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    GCPROTECT_BEGIN(gc);
 
     // Caching of MethodDescs (impl and decl) for MethodTable slots provided significant
     // performance gain in some reflection emit scenarios.
@@ -832,7 +830,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     //
 
     // get the name in UTF8 format
-    SString wszName(SString::Literal, gc.methodName->GetBuffer());
+    SString wszName(SString::Literal, pwzMethodName);
     StackScratchBuffer utf8Name;
     LPCUTF8 szNameStr = wszName.GetUTF8(utf8Name);
 
@@ -900,19 +898,21 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
                              pCurMethod,
                              methodType.GetMethodTable(),
                              fIsOpenDelegate);
-
                 pMatchingMethod = pCurMethod;
+
                 goto done;
             }
         }
     }
     done:
         ;
-    HELPER_METHOD_FRAME_END();
 
-    FC_RETURN_BOOL(pMatchingMethod != NULL);
+    GCPROTECT_END();
+
+    END_QCALL;
+
+    return pMatchingMethod != NULL;
 }
-FCIMPLEND
 
 
 FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectMethodObject *pMethodUNSAFE, ReflectClassBaseObject *pMethodTypeUNSAFE, int flags)
