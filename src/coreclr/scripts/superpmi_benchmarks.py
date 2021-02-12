@@ -92,6 +92,22 @@ def setup_args(args):
 
     return coreclr_args
 
+def make_executable(file_name):
+    """Make file executable by changing the permission
+
+    Args:
+        file_name (string): file to execute
+    """
+    if not is_windows:
+        return
+    os.chmod(file_name,
+    # read+execute for owner
+    (stat.S_IRUSR | stat.S_IXUSR) |
+    # read+execute for group
+    (stat.S_IRGRP | stat.S_IXGRP) |
+    # read+execute for other
+    (stat.S_IROTH | stat.S_IXOTH))
+
 def build_and_run(coreclr_args, output_mch_name):
     """Build the microbenchmarks and run them under "superpmi collect"
 
@@ -126,6 +142,8 @@ def build_and_run(coreclr_args, output_mch_name):
         corerun_exe = "corerun"
         script_name = "run_microbenchmarks.sh"
 
+    make_executable(dotnet_exe)
+
     run_command(
             [dotnet_exe, "restore", project_file, "--packages",
             artifacts_packages_directory], _exit_on_fail=True)
@@ -133,7 +151,7 @@ def build_and_run(coreclr_args, output_mch_name):
     run_command(
         [dotnet_exe, "build", project_file, "--configuration", "Release",
         "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
-        "-o", artifacts_directory])
+        "-o", artifacts_directory], _exit_on_fail=True)
 
     collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
         f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
@@ -149,7 +167,6 @@ def build_and_run(coreclr_args, output_mch_name):
                 contents.append("#!/bin/bash")
                 contents.append("export JitName=$COMPlus_JitName")
                 contents.append("unset COMPlus_JitName")
-                contents.append(f"chmod +x {dotnet_exe}")
             else:
                 contents.append("set JitName=%COMPlus_JitName%")
                 contents.append("set COMPlus_JitName=")
@@ -164,8 +181,7 @@ def build_and_run(coreclr_args, output_mch_name):
 
             collection_script.write(os.linesep.join(contents))
 
-        if not is_windows:
-            os.chmod(script_name, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+        make_executable(script_name)
 
     # with ChangeDir(performance_directory):
         run_command([
@@ -344,25 +360,31 @@ def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):
     mcs_command = [mcs_exe, "-dumpMap", old_mch_filename]
 
     # Gather method list to strip
-    (mcs_out, _, _) = run_command(mcs_command, _exit_on_fail=True)
+    (mcs_out, _, return_code) = run_command(mcs_command)
+    if return_code != 0:
+        # If strip command fails, then just copy the old_mch to new_mch
+        print(f"-dumpMap failed. Copying {old_mch_filename} to {new_mch_filename}.")
+        copyfile(old_mch_filename, new_mch_filename)
+        return
 
     method_context_list = mcs_out.decode("utf-8").split(os.linesep)
     filtered_context_list = []
 
     match_pattern = re.compile('^(\\d+),(BenchmarkDotNet|Perfolizer)')
+    print("Stripping following entries:")
     for mc_entry in method_context_list:
         matched = match_pattern.match(mc_entry)
         if matched:
+            print(matched.group(1))
             filtered_context_list.append(matched.group(1))
 
     with open(methods_to_strip_list, "w") as f:
         f.write('\n'.join(filtered_context_list))
 
-    print(f"Stripping {len(filtered_context_list)} entries.")
-
     # Strip and produce new .mcs file
     if run_command([mcs_exe, "-strip", methods_to_strip_list, old_mch_filename, new_mch_filename])[2] != 0:
         # If strip command fails, then just copy the old_mch to new_mch
+        print(f"-strip failed. Copying {old_mch_filename} to {new_mch_filename}.")
         copyfile(old_mch_filename, new_mch_filename)
         return
 
