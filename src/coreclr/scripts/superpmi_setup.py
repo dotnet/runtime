@@ -488,32 +488,27 @@ def main(main_args):
             # Details: https://bugs.python.org/issue26660
             print('Ignoring PermissionError: {0}'.format(pe_error))
 
-    # Setup microbenchmarks
-    if coreclr_args.collection_name == "benchmarks":
-        setup_microbenchmark(correlation_payload_directory, arch)
-    else:
-    # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
-    # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
-    # The following will copy .dotnet to the correlation payload in case we change our mind, and need or want to use it for some scenarios.
+        # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
+        # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
+        # The following will copy .dotnet to the correlation payload in case we change our mind, and need or want to use it for some scenarios.
 
-    # # Copy ".dotnet" to correlation_payload_directory for crossgen2 job; it is needed to invoke crossgen2.dll
-    # if coreclr_args.collection_type == "crossgen2":
-    #     dotnet_src_directory = path.join(source_directory, ".dotnet")
-    #     dotnet_dst_directory = path.join(correlation_payload_directory, ".dotnet")
-    #     print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
-    #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
+        # # Copy ".dotnet" to correlation_payload_directory for crossgen2 job; it is needed to invoke crossgen2.dll
+        # if coreclr_args.collection_type == "crossgen2":
+        #     dotnet_src_directory = path.join(source_directory, ".dotnet")
+        #     dotnet_dst_directory = path.join(correlation_payload_directory, ".dotnet")
+        #     print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
+        #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
 
         # payload
         pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
         input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
         exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
-    exclude_files = native_binaries_to_ignore
-        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory)
-    if coreclr_args.collection_type == "crossgen2":
-        print('Adding exclusions for crossgen2')
-        # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
-        exclude_files += [ "Microsoft.Build.dll" ]
-    partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory, exclude_files)
+        exclude_files = native_binaries_to_ignore
+        if coreclr_args.collection_type == "crossgen2":
+            print('Adding exclusions for crossgen2')
+            # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
+            exclude_files += [ "Microsoft.Build.dll" ]
+        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory, exclude_files)
 
     # Set variables
     print('Setting pipeline variables:')
