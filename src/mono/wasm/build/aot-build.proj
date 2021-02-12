@@ -13,7 +13,7 @@
     <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\wasmappbuilder\publish\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <MonoAotCrossCompilerPath>$(HELIX_CORRELATION_PAYLOAD)/cross/cross/browser-wasm/mono-aot-cross</MonoAotCrossCompilerPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(HELIX_WORKITEM_ROOT)</MicrosoftNetCoreAppRuntimePackRidDir>
-    <EMSDK_PATH>$(HELIX_CORRELATION_PAYLOAD)/emsdk/emscripten</EMSDK_PATH>
+    <EMSDK_PATH>$(HELIX_CORRELATION_PAYLOAD)/emsdk</EMSDK_PATH>
 
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <SkipEmccVersionCheck>true</SkipEmccVersionCheck>
