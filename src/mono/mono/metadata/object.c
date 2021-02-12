@@ -90,13 +90,11 @@ mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s, MonoError *error);
 
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (pointer, "System.Reflection", "Pointer")
-static GENERATE_GET_CLASS_WITH_CACHE (remoting_services, "System.Runtime.Remoting", "RemotingServices")
 static GENERATE_GET_CLASS_WITH_CACHE (unhandled_exception_event_args, "System", "UnhandledExceptionEventArgs")
 static GENERATE_GET_CLASS_WITH_CACHE (first_chance_exception_event_args, "System.Runtime.ExceptionServices", "FirstChanceExceptionEventArgs")
 static GENERATE_GET_CLASS_WITH_CACHE (sta_thread_attribute, "System", "STAThreadAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (activation_services, "System.Runtime.Remoting.Activation", "ActivationServices")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading", "ExecutionContext")
-static GENERATE_GET_CLASS_WITH_CACHE (asyncresult, "System.Runtime.Remoting.Messaging", "AsyncResult");
 
 #define ldstr_lock() mono_coop_mutex_lock (&ldstr_section)
 #define ldstr_unlock() mono_coop_mutex_unlock (&ldstr_section)
@@ -2258,8 +2256,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 			MONO_GC_REGISTER_ROOT_IF_MOVING (vt->type, MONO_ROOT_SOURCE_REFLECTION, vt, "Reflection Type Object");
 	}
 
-	mono_vtable_set_is_remote (vt, mono_class_is_contextbound (klass));
-
 	/*  class_vtable_array keeps an array of created vtables
 	 */
 	memory_manager = mono_domain_ambient_memory_manager (domain);
@@ -2411,23 +2407,17 @@ mono_object_handle_get_virtual_method (MonoObjectHandle obj, MonoMethod *method,
 {
 	error_init (error);
 
-	gboolean is_proxy = FALSE;
 	MonoClass *klass = mono_handle_class (obj);
-	if (mono_class_is_transparent_proxy (klass)) {
-		MonoRemoteClass *remote_class = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoTransparentProxy, obj), remote_class);
-		klass = remote_class->proxy_class;
-		is_proxy = TRUE;
-	}
-	return mono_class_get_virtual_method (klass, method, is_proxy, error);
+	return mono_class_get_virtual_method (klass, method, error);
 }
 
 MonoMethod*
-mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is_proxy, MonoError *error)
+mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, MonoError *error)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 	error_init (error);
 
-	if (!is_proxy && ((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
+	if (((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
 		return method;
 
 	mono_class_setup_vtable (klass);
@@ -2439,8 +2429,7 @@ mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is
 			g_assert (((MonoMethodInflated*)method)->declaring->slot != -1);
 			method->slot = ((MonoMethodInflated*)method)->declaring->slot; 
 		} else {
-			if (!is_proxy)
-				g_assert_not_reached ();
+			g_assert_not_reached ();
 		}
 	}
 
@@ -2448,12 +2437,10 @@ mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is
 	/* check method->slot is a valid index: perform isinstance? */
 	if (method->slot != -1) {
 		if (mono_class_is_interface (method->klass)) {
-			if (!is_proxy) {
-				gboolean variance_used = FALSE;
-				int iface_offset = mono_class_interface_offset_with_variance (klass, method->klass, &variance_used);
-				g_assert (iface_offset > 0);
-				res = vtable [iface_offset + method->slot];
-			}
+			gboolean variance_used = FALSE;
+			int iface_offset = mono_class_interface_offset_with_variance (klass, method->klass, &variance_used);
+			g_assert (iface_offset > 0);
+			res = vtable [iface_offset + method->slot];
 		} else {
 			res = vtable [method->slot];
 		}
@@ -4187,81 +4174,6 @@ mono_new_null (void) // A code size optimization (source and object).
 	return MONO_HANDLE_NEW (MonoObject, NULL);
 }
 
-static MonoObjectHandle
-serialize_or_deserialize_object (MonoObjectHandle obj, const gchar *method_name, MonoMethod **method, MonoError *error)
-{
-	if (!*method) {
-		MonoClass *klass = mono_class_get_remoting_services_class ();
-		*method = mono_class_get_method_from_name_checked (klass, method_name, -1, 0, error);
-		return_val_if_nok (error, mono_new_null ());
-	}
-
-	if (!*method) {
-		mono_error_set_exception_instance (error, NULL);
-		return mono_new_null ();
-	}
-
-	void *params [ ] = { MONO_HANDLE_RAW (obj) };
-	return mono_runtime_try_invoke_handle (*method, NULL_HANDLE, params, error);
-}
-
-static MonoMethod *serialize_method;
-
-static MonoObjectHandle
-serialize_object (MonoObjectHandle obj, MonoError *error)
-{
-	g_assert (!mono_class_is_marshalbyref (mono_handle_class (obj)));
-	return serialize_or_deserialize_object (obj, "SerializeCallData", &serialize_method, error);
-}
-
-static MonoMethod *deserialize_method;
-
-static MonoObjectHandle
-deserialize_object (MonoObjectHandle obj, MonoError *error)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-	return serialize_or_deserialize_object (obj, "DeserializeCallData", &deserialize_method, error);
-}
-
-/**
- * mono_object_xdomain_representation
- * \param obj an object
- * \param target_domain a domain
- * \param error set on error.
- * Creates a representation of obj in the domain \p target_domain.  This
- * is either a copy of \p obj arrived through via serialization and
- * deserialization or a proxy, depending on whether the object is
- * serializable or marshal by ref.  \p obj must not be in \p target_domain.
- * If the object cannot be represented in \p target_domain, NULL is
- * returned and \p error is set appropriately.
- */
-MonoObjectHandle
-mono_object_xdomain_representation (MonoObjectHandle obj, MonoDomain *target_domain, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoObjectHandle deserialized;
-
-	{
-		MonoDomain *domain = mono_domain_get ();
-
-		mono_domain_set_internal_with_options (MONO_HANDLE_DOMAIN (obj), FALSE);
-		MonoObjectHandle serialized = serialize_object (obj, error);
-		mono_domain_set_internal_with_options (target_domain, FALSE);
-		if (is_ok (error))
-			deserialized = deserialize_object (serialized, error);
-		else
-			deserialized = mono_new_null ();
-
-		if (domain != target_domain)
-			mono_domain_set_internal_with_options (domain, FALSE);
-	}
-
-	HANDLE_FUNCTION_RETURN_REF (MonoObject, deserialized);
-}
-
 /* Used in call_unhandled_exception_delegate */
 static MonoObjectHandle
 create_unhandled_exception_eventargs (MonoObjectHandle exc, MonoError *error)
@@ -4310,20 +4222,6 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObjectHandle delegate
 
 	g_assert (domain == mono_object_domain (domain->domain));
 
-	if (MONO_HANDLE_DOMAIN (exc) != domain) {
-
-		exc = mono_object_xdomain_representation (exc, domain, error);
-		if (MONO_HANDLE_IS_NULL (exc)) {
-			ERROR_DECL (inner_error);
-			if (!is_ok (error)) {
-				MonoExceptionHandle serialization_exc = mono_error_convert_to_exception_handle (error);
-				exc = mono_object_xdomain_representation (MONO_HANDLE_CAST (MonoObject, serialization_exc), domain, inner_error);
-			} else {
-				exc = MONO_HANDLE_CAST (MonoObject, mono_exception_new_serialization ("Could not serialize unhandled exception.", inner_error));
-			}
-			mono_error_assert_ok (inner_error);
-		}
-	}
 	g_assert (MONO_HANDLE_DOMAIN (exc) == domain);
 
 	gpointer pa [ ] = {
@@ -5351,8 +5249,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 	error_init (error);
 
 	/* check for is_com_object for COM Interop */
-	if (mono_vtable_is_remote (vtable) || mono_class_is_com_object (vtable->klass))
-	{
+	if (mono_class_is_com_object (vtable->klass)) {
 		gpointer pa [1];
 		MonoMethod *im = vtable->domain->create_proxy_for_type_method;
 
@@ -5399,8 +5296,7 @@ mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 	error_init (error);
 
 	/* check for is_com_object for COM Interop */
-	if (mono_vtable_is_remote (vtable) || mono_class_is_com_object (vtable->klass))
-	{
+	if (mono_class_is_com_object (vtable->klass)) {
 		MonoMethod *im = vtable->domain->create_proxy_for_type_method;
 
 		if (im == NULL) {
@@ -6794,9 +6690,8 @@ mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *er
 	if (!m_class_is_inited (klass))
 		mono_class_init_internal (klass);
 
-	if (mono_class_is_marshalbyref (klass) || mono_class_is_interface (klass)) {
+	if (mono_class_is_interface (klass))
 		return mono_object_handle_isinst_mbyref (obj, klass, error);
-	}
 
 	MonoObjectHandle result = MONO_HANDLE_NEW (MonoObject, NULL);
 
@@ -6874,11 +6769,6 @@ mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, Mo
 		}
 	} else {
 		MonoClass *oklass = vt->klass;
-		if (mono_class_is_transparent_proxy (oklass)){
-			MonoRemoteClass *remote_class = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoTransparentProxy, obj), remote_class);
-			oklass = remote_class->proxy_class;
-		}
-
 		mono_class_setup_supertypes (klass);
 		if (mono_class_has_parent_fast (oklass, klass)) {
 			result = TRUE;

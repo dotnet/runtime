@@ -2452,7 +2452,7 @@ interp_transform_internal_calls (MonoMethod *method, MonoMethod *target_method, 
 		if (!is_virtual && target_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 			target_method = mono_marshal_get_synchronized_wrapper (target_method);
 
-		if (target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && !is_virtual && !mono_class_is_marshalbyref (target_method->klass) && m_class_get_rank (target_method->klass) == 0)
+		if (target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && !is_virtual && m_class_get_rank (target_method->klass) == 0)
 			target_method = mono_marshal_get_native_wrapper (target_method, FALSE, FALSE);
 	}
 	return target_method;
@@ -2603,7 +2603,6 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	/*runtime, icall and pinvoke are checked by summary call*/
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) ||
-	    (mono_class_is_marshalbyref (method->klass)) ||
 	    header.has_clauses)
 		return FALSE;
 
@@ -2917,9 +2916,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	if (is_virtual && target_method && (!(target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-		(MONO_METHOD_IS_FINAL (target_method) &&
-		 target_method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)) &&
-		!(mono_class_is_marshalbyref (target_method->klass))) {
+										(MONO_METHOD_IS_FINAL (target_method)))) {
 		/* Not really virtual, just needs a null check */
 		is_virtual = FALSE;
 		need_null_check = TRUE;
@@ -3143,7 +3140,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				interp_add_ins (td, MINT_CALL_VARARG);
 				td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
 				td->last_ins->data [2] = params_stack_size;
-			} else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass)) {
+			} else if (is_virtual) {
 				interp_add_ins (td, MINT_CALLVIRT_FAST);
 				if (mono_class_is_interface (target_method->klass))
 					td->last_ins->data [1] = -2 * MONO_IMT_SIZE + mono_method_get_imt_slot (target_method);
@@ -3686,7 +3683,7 @@ interp_handle_isinst (TransformData *td, MonoClass *klass, gboolean isinst_instr
 	if (!mono_class_has_variant_generic_params (klass)) {
 		if (mono_class_is_interface (klass))
 			interp_add_ins (td, isinst_instr ? MINT_ISINST_INTERFACE : MINT_CASTCLASS_INTERFACE);
-		else if (!mono_class_is_marshalbyref (klass) && m_class_get_rank (klass) == 0 && !mono_class_is_nullable (klass))
+		else if (m_class_get_rank (klass) == 0 && !mono_class_is_nullable (klass))
 			interp_add_ins (td, isinst_instr ? MINT_ISINST_COMMON : MINT_CASTCLASS_COMMON);
 		else
 			interp_add_ins (td, isinst_instr ? MINT_ISINST : MINT_CASTCLASS);
@@ -5425,9 +5422,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				// Push back the params to top of stack
 				push_types (td, sp_params, csignature->param_count);
 
-				if (!mono_class_is_marshalbyref (klass) &&
-						!mono_class_has_finalizer (klass) &&
-						!m_class_has_weak_fields (klass)) {
+				if (!mono_class_has_finalizer (klass) &&
+					!m_class_has_weak_fields (klass)) {
 					InterpInst *newobj_fast;
 
 					if (is_vt) {

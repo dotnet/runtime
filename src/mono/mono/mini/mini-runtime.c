@@ -3026,7 +3026,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 				supported = FALSE;
 		}
 
-		if (mono_class_is_contextbound (method->klass) || !info->compiled_method)
+		if (!info->compiled_method)
 			supported = FALSE;
 
 		if (supported) {

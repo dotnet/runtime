@@ -462,13 +462,6 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 	return imethod;
 }
 
-static gpointer
-interp_get_remoting_invoke (MonoMethod *method, gpointer addr, MonoError *error)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
 InterpMethod*
 mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
@@ -2977,51 +2970,13 @@ mono_interp_new (MonoDomain* domain, MonoClass* klass)
 	return object;
 }
 
-static void
-mono_interp_load_remote_field (
-	InterpMethod* imethod,
-	MonoObject* o,
-	const guint16* ip,
-	gpointer result)
-{
-	g_assert (o); // Caller checks and throws exception properly.
-
-	void* addr;
-	MonoClassField *field = (MonoClassField*)imethod->data_items [ip [3]];
-
-	addr = (char*)o + field->offset;
-	stackval_from_data (field->type, (stackval*)result, addr, FALSE);
-}
-
-static void
-mono_interp_load_remote_field_vt (
-	InterpMethod* imethod,
-	MonoObject* o,
-	const guint16* ip,
-	gpointer result)
-{
-	g_assert (o); // Caller checks and throws exception properly.
-
-	void* addr;
-	MonoClassField *field = (MonoClassField*)imethod->data_items [ip [3]];
-	MonoClass* klass = mono_class_from_mono_type_internal (field->type);
-	int const i32 = mono_class_value_size (klass, NULL);
-
-	addr = (char*)o + field->offset;
-	memcpy (result, addr, i32);
-}
-
 static gboolean
 mono_interp_isinst (MonoObject* object, MonoClass* klass)
 {
 	ERROR_DECL (error);
 	gboolean isinst;
 	MonoClass *obj_class = mono_object_class (object);
-	// mono_class_is_assignable_from_checked can't handle remoting casts
-	if (mono_class_is_transparent_proxy (obj_class))
-		isinst = mono_object_isinst_checked (object, klass, error) != NULL;
-	else
-		mono_class_is_assignable_from_checked (klass, obj_class, &isinst, error);
+	mono_class_is_assignable_from_checked (klass, obj_class, &isinst, error);
 	mono_error_cleanup (error); // FIXME: do not swallow the error
 	return isinst;
 }
@@ -4962,7 +4917,7 @@ call:
 				gboolean isinst;
 				if (MONO_VTABLE_IMPLEMENTS_INTERFACE (o->vtable, m_class_get_interface_id (c))) {
 					isinst = TRUE;
-				} else if (m_class_is_array_special_interface (c) || mono_object_is_transparent_proxy (o)) {
+				} else if (m_class_is_array_special_interface (c)) {
 					/* slow path */
 					isinst = mono_interp_isinst (o, c); // FIXME: do not swallow the error
 				} else {
@@ -5151,21 +5106,6 @@ call:
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LDRMFLD) {
-			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
-			NULL_CHECK (o);
-			mono_interp_load_remote_field (frame->imethod, o, ip, locals + ip [1]);
-			ip += 4;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_LDRMFLD_VT) {
-			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
-			NULL_CHECK (o);
-			mono_interp_load_remote_field_vt (frame->imethod, o, ip, locals + ip [1]);
-			ip += 4;
-			MINT_IN_BREAK;
-		}
-
 #define STFLD_UNALIGNED(datatype, fieldtype, unaligned) do { \
 	MonoObject *o = LOCAL_VAR (ip [1], MonoObject*); \
 	NULL_CHECK (o); \
@@ -5210,30 +5150,6 @@ call:
 			NULL_CHECK (o);
 			mono_value_copy_internal ((char*)o + ip [3], locals + ip [2], klass);
 			ip += 5;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_STRMFLD) {
-			MonoClassField *field;
-
-			MonoObject *o = LOCAL_VAR (ip [1], MonoObject*);
-			NULL_CHECK (o);
-			
-			field = (MonoClassField*)frame->imethod->data_items [ip [3]];
-			stackval_to_data (field->type, (stackval*)(locals + ip [2]), (char*)o + field->offset, FALSE);
-
-			ip += 4;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_STRMFLD_VT) {
-			MonoClassField *field = (MonoClassField*)frame->imethod->data_items [ip [3]];
-			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
-
-			MonoObject *o = LOCAL_VAR (ip [1], MonoObject*);
-			NULL_CHECK (o);
-
-			mono_value_copy_internal ((char *) o + field->offset, locals + ip [2], klass);
-
-			ip += 4;
 			MINT_IN_BREAK;
 		}
 

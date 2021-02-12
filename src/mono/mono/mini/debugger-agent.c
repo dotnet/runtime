@@ -5116,16 +5116,7 @@ static gboolean
 obj_is_of_type (MonoObject *obj, MonoType *t)
 {
 	MonoClass *klass = obj->vtable->klass;
-	if (!mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass)) {
-		if (mono_class_is_transparent_proxy (klass)) {
-			klass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
-			if (mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass)) {
-				return TRUE;
-			}
-		}
-		return FALSE;
-	}
-	return TRUE;
+	return mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass);
 }
 
 static ErrorCode

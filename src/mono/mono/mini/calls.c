@@ -533,9 +533,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		}
 
 		if ((!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-			 (MONO_METHOD_IS_FINAL (method) &&
-			  method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)) &&
-			!(mono_class_is_marshalbyref (method->klass) && context_used)) {
+			 (MONO_METHOD_IS_FINAL (method)))) {
 			/* 
 			 * the method is not virtual, we just need to ensure this is not null
 			 * and then we can call the method directly.

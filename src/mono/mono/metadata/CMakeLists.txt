@@ -153,8 +153,6 @@ set(metadata_common_sources
     w32process.h
     profiler.c
     profiler-private.h
-    remoting.h
-    remoting.c
     runtime.c
     security.h
     security-core-clr.c

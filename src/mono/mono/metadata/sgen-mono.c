@@ -1070,7 +1070,7 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 		return NULL;
 	if (known_instance_size && ALIGN_TO (m_class_get_instance_size (klass), SGEN_ALLOC_ALIGN) >= SGEN_MAX_SMALL_OBJ_SIZE)
 		return NULL;
-	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass) || m_class_has_weak_fields (klass))
+	if (mono_class_has_finalizer (klass) || m_class_has_weak_fields (klass))
 		return NULL;
 	if (m_class_get_rank (klass))
 		return NULL;
@@ -1094,7 +1094,7 @@ mono_gc_get_managed_array_allocator (MonoClass *klass)
 		return NULL;
 	if (sgen_has_per_allocation_action)
 		return NULL;
-	g_assert (!mono_class_has_finalizer (klass) && !mono_class_is_marshalbyref (klass));
+	g_assert (!mono_class_has_finalizer (klass));
 
 	return mono_gc_get_managed_allocator_by_type (ATYPE_VECTOR, mono_profiler_allocations_enabled () ?
 		MANAGED_ALLOCATOR_PROFILER : MANAGED_ALLOCATOR_REGULAR);

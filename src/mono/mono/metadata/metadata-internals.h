@@ -261,7 +261,6 @@ typedef struct {
 
 	GHashTable *native_func_wrapper_aot_cache;
 	GHashTable *native_func_wrapper_indirect_cache; /* Indexed by MonoMethodSignature. Protected by the marshal lock */
-	GHashTable *remoting_invoke_cache;
 	GHashTable *synchronized_cache;
 	GHashTable *unbox_wrapper_cache;
 	GHashTable *cominterop_invoke_cache;
@@ -504,17 +503,7 @@ struct _MonoImage {
 	GHashTable *wrapper_param_names;
 	GHashTable *array_accessor_cache;
 
-	/*
-	 * indexed by MonoClass pointers
-	 */
-	GHashTable *ldfld_wrapper_cache;
-	GHashTable *ldflda_wrapper_cache;
-	GHashTable *stfld_wrapper_cache;
-	GHashTable *isinst_cache;
-
 	GHashTable *icall_wrapper_cache;
-	GHashTable *castclass_cache;
-	GHashTable *proxy_isinst_cache;
 	GHashTable *rgctx_template_hash; /* LOCKING: templates lock */
 
 	/* Contains rarely used fields of runtime structures belonging to this image */

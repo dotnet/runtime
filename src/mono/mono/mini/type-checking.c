@@ -13,7 +13,7 @@
 #include <mono/metadata/class-abi-details.h>
 
 
-#define is_complex_isinst(klass) (mono_class_is_interface (klass) || m_class_get_rank (klass) || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || mono_class_is_sealed (klass) || m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR || m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR)
+#define is_complex_isinst(klass) (mono_class_is_interface (klass) || m_class_get_rank (klass) || mono_class_is_nullable (klass) || mono_class_is_sealed (klass) || m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR || m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR)
 
 static int
 get_castclass_cache_idx (MonoCompile *cfg)
@@ -423,8 +423,6 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 			mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
 		}
-	} else if (mono_class_is_marshalbyref (klass)) {
-		g_error ("Transparent proxy support is disabled while trying to JIT code that uses it");
 	} else {
 		int vtable_reg = alloc_preg (cfg);
 		int klass_reg = alloc_preg (cfg);
@@ -518,8 +516,6 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 		}
 
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false_bb);
-	} else if (mono_class_is_marshalbyref (klass)) {
-		g_error ("transparent proxy support is disabled while trying to JIT code that uses it");
 	} else {
 		int klass_reg = alloc_preg (cfg);
 

@@ -465,11 +465,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		imt_method = mono_arch_find_imt_method (regs, code);
 		this_arg = (MonoObject *)mono_arch_get_this_arg_from_call (regs, code);
 
-		if (mono_object_is_transparent_proxy (this_arg)) {
-			/* Use the slow path for now */
-		    m = mono_object_get_virtual_method_internal (this_arg, imt_method);
-			vtable_slot_to_patch = NULL;
-		} else {
+		{
 			if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
 				/* Generic virtual method */
 				generic_virtual = imt_method;
@@ -1356,9 +1352,6 @@ mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *e
 		if (code)
 			return code;
 		if (mono_llvm_only) {
-			if (method->wrapper_type == MONO_WRAPPER_PROXY_ISINST)
-				/* These wrappers are not generated */
-				return (gpointer)method_not_found;
 			/* Methods are lazily initialized on first call, so this can't lead recursion */
 			code = mono_jit_compile_method (method, error);
 			if (!is_ok (error))

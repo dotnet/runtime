@@ -4959,14 +4959,6 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 	/* Load the dedup module lazily */
 	load_container_amodule (mono_assembly_get_alc (amodule->assembly));
 
-	/*
-	 * Use the original method instead of its invoke-with-check wrapper.
-	 * This is not a problem when using full-aot, since it doesn't support
-	 * remoting.
-	 */
-	if (mono_aot_only && method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
-		return mono_aot_get_method (domain, mono_marshal_method_from_wrapper (method), error);
-
 	g_assert (m_class_is_inited (klass));
 
 	/* Find method index */

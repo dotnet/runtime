@@ -266,8 +266,6 @@ MONO_JIT_ICALL (mono_profiler_raise_gc_allocation) \
 MONO_JIT_ICALL (mono_profiler_raise_method_enter) \
 MONO_JIT_ICALL (mono_profiler_raise_method_leave) \
 MONO_JIT_ICALL (mono_profiler_raise_method_tail_call) \
-MONO_JIT_ICALL (mono_remoting_update_exception) \
-MONO_JIT_ICALL (mono_remoting_wrapper) \
 MONO_JIT_ICALL (mono_resolve_generic_virtual_call) \
 MONO_JIT_ICALL (mono_resolve_generic_virtual_iface_call) \
 MONO_JIT_ICALL (mono_resolve_iface_call_gsharedvt) \
@@ -331,7 +329,6 @@ MONO_JIT_ICALL (ves_icall_marshal_alloc) \
 MONO_JIT_ICALL (ves_icall_mono_delegate_ctor) \
 MONO_JIT_ICALL (ves_icall_mono_delegate_ctor_interp) \
 MONO_JIT_ICALL (ves_icall_mono_ldstr) \
-MONO_JIT_ICALL (ves_icall_mono_marshal_xdomain_copy_value) \
 MONO_JIT_ICALL (ves_icall_mono_string_from_utf16) \
 MONO_JIT_ICALL (ves_icall_mono_string_to_utf8) \
 MONO_JIT_ICALL (ves_icall_object_new) \
