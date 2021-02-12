@@ -231,6 +231,7 @@
       <ChromiumRevision>768968</ChromiumRevision>
       <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
       <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
+      <EmsdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmsdkDir>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != ''">
@@ -251,7 +252,7 @@
       <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
       
       <!-- Provide toolchain to be able to AOT on helix -->
-      <HelixCorrelationPayload Include="$(EMSDK_PATH)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
+      <HelixCorrelationPayload Include="$(EmsdkDir)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
         <Destination>emsdk</Destination>
         <IncludeDirectoryName>true</IncludeDirectoryName>
       </HelixCorrelationPayload>
