@@ -126,7 +126,6 @@ def build_and_run(coreclr_args, output_mch_name):
     dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
     dotnet_exe = os.path.join(dotnet_directory, "dotnet")
 
-    #TODO: Use TMP instead of os.path.join(performance_directory, "artifacts")
     artifacts_directory = os.path.join(performance_directory, "artifacts")
     artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
     project_file = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
@@ -258,7 +257,6 @@ def execute(coreclr_args, output_mch_name):
         shim_name = "libsuperpmi-shim-collector.so"
         corerun_exe = "corerun"
         script_name = "run_microbenchmarks.sh"
-    
 
     benchmarks_ci_script = path.join(performance_directory, "scripts", "benchmarks_ci.py")
     microbenchmark_proj = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
