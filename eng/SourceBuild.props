@@ -71,6 +71,10 @@
     <InnerBuildArgs>$(InnerBuildArgs) --additional-args</InnerBuildArgs>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <EnableDefaultSourceBuildIntermediateItems>false</EnableDefaultSourceBuildIntermediateItems>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- Work around issue where local clone may cause failure using non-origin remote fallback: https://github.com/dotnet/sourcelink/issues/629 -->
     <InnerBuildEnv Include="EnableSourceControlManagerQueries=false" />
@@ -92,6 +96,123 @@
       Command="git apply --ignore-whitespace --whitespace=nowarn &quot;%(SourceBuildPatchFile.FullPath)&quot;"
       WorkingDirectory="$(RepoRoot)"
       Condition="'@(SourceBuildPatchFile)' != ''" />
+  </Target>
+
+  <Target Name="GetSupplementalIntermediateNupkgArtifactCategorization">
+    <ItemGroup>
+      <!--
+        Order matters in some situations: put more specific patterns first, so
+        they are the ones "picked" during item-name-only deduplication.
+      -->
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-hostfxr-internal-*.tar.gz" Category="hostfxr-internal" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-internal-*.tar.gz" Category="runtime-internal" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-*.tar.gz" Category="RuntimePack.archive" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Runtime.*.nupkg" Category="RuntimePack" />
+
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz" Category="Crossgen2Pack.archive" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-apphost-pack-*.tar.gz" Category="HostPack.archive" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-targeting-pack-*.tar.gz" Category="RefPack.archive" />
+
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg" Category="Crossgen2Pack" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Host.*.nupkg" Category="HostPack" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Ref.*.nupkg" Category="RefPack" />
+
+      <_intermediateArtifactFile
+        Include="
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-ilverify.*.nupkg;
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NET.Sdk.IL.*.nupkg;
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.NETCore.ILAsm.*.nupkg;
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.NETCore.ILDAsm.*.nupkg;
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.NETCore.TestHost.*.nupkg"
+        Category="CoreCLR" />
+
+      <_intermediateArtifactFile
+        Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)NonShipping\Microsoft.NET.HostModel.*.nupkg;"
+        Category="HostLibraries" />
+
+      <_intermediateArtifactFile
+        Include="
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)NonShipping\Microsoft.*.nupkg;
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.*.nupkg;
+          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\System.*.nupkg"
+        Category="Libraries" />
+
+      <!-- Catch-all: anything not in a category gets packed in the 'main' intermediate nupkg. -->
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)**\*.nupkg" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)**\*.tar.gz" />
+      <!-- Don't pack any symbol packages: not needed for downstream source-build CI. -->
+      <_intermediateArtifactFile Remove="$(CurrentRepoSourceBuildArtifactsPackagesDir)**\*.symbols.nupkg" />
+
+      <_intermediateFile Include="@(_intermediateArtifactFile)" PackagePath="artifacts" />
+
+      <!-- Report goes into the 'main' intermediate nupkg. -->
+      <_intermediateFile Include="$(SourceBuildSelfPrebuiltReportDir)**\*" PackagePath="prebuilt-report" />
+    </ItemGroup>
+
+    <RemoveDuplicates Inputs="@(_intermediateFile)">
+      <Output TaskParameter="Filtered" ItemName="IntermediatePackageFile" />
+    </RemoveDuplicates>
+
+    <ItemGroup>
+      <SupplementalIntermediateNupkgCategory Include="%(IntermediatePackageFile.Category)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetSupplementalIntermediateNupkgManifest"
+          Condition="'$(SupplementalIntermediateNupkgCategory)' == ''"
+          DependsOnTargets="InitializeSourceBuildIntermediatePackageId">
+    <PropertyGroup>
+      <SupplementalIntermediateNupkgManifestFile>$(BaseOutputPath)SupplementalIntermediatePackages.txt</SupplementalIntermediateNupkgManifestFile>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="$(SupplementalIntermediateNupkgManifestFile)"
+      Lines="@(SupplementalIntermediateNupkgCategory->'$(SourceBuildIntermediateNupkgPrefix)$(GitHubRepositoryName).%(Identity)$(SourceBuildIntermediateNupkgSuffix)', '%0A')"
+      Overwrite="true" />
+
+    <ItemGroup>
+      <Content Include="$(SupplementalIntermediateNupkgManifestFile)" PackagePath="." />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetIntermediateNupkgArtifactFiles"
+          DependsOnTargets="
+            GetSupplementalIntermediateNupkgArtifactCategorization;
+            GetSupplementalIntermediateNupkgManifest"
+          BeforeTargets="_GetPackageFiles">
+    <ItemGroup>
+      <Content Include="@(IntermediatePackageFile->WithMetadataValue('Category', '$(SupplementalIntermediateNupkgCategory)'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="InitializeSourceBuildSupplementalIntermediatePackageId"
+          Condition="'$(SupplementalIntermediateNupkgCategory)' != ''"
+          AfterTargets="InitializeSourceBuildIntermediatePackageId">
+    <PropertyGroup>
+      <PackageId>$(SourceBuildIntermediateNupkgPrefix)$(GitHubRepositoryName).$(SupplementalIntermediateNupkgCategory)$(SourceBuildIntermediateNupkgSuffix)</PackageId>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Instead of building just one intermediate nupkg, also build supplementals. -->
+  <Target Name="PackSourceBuildSupplementalIntermediateNupkgs"
+          AfterTargets="PackSourceBuildIntermediateNupkg"
+          DependsOnTargets="GetSupplementalIntermediateNupkgArtifactCategorization">
+    <ItemGroup>
+      <SupplementalIntermediateProject
+        Include="$(SourceBuildIntermediateProjFile)"
+        AdditionalProperties="
+          SupplementalIntermediateNupkgCategory=%(SupplementalIntermediateNupkgCategory.Identity)" />
+    </ItemGroup>
+
+    <MSBuild
+      Projects="@(SupplementalIntermediateProject)"
+      Targets="Pack"
+      Properties="
+        CurrentRepoSourceBuildArtifactsPackagesDir=$(CurrentRepoSourceBuildArtifactsPackagesDir);
+        SourceBuildArcadeTargetsFile=$(MSBuildProjectDirectory)\SourceBuildArcade.targets;
+        SourceBuildIntermediateNupkgLicenseFile=$(SourceBuildIntermediateNupkgLicenseFile);
+        "
+      BuildInParallel="true" />
   </Target>
 
 </Project>
