@@ -458,9 +458,11 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 
 	/* mono_set_jit_tls () sets this */
 	void *jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);
+	/* SET_APPDOMAIN () sets this */
+	void *domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
 
 	/*Thread already started to cleanup, can no longer capture unwind state*/
-	if (!jit_tls)
+	if (!jit_tls || !domain)
 		return FALSE;
 
 	/*

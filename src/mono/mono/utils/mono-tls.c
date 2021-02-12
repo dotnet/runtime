@@ -104,6 +104,7 @@
 //
 MONO_KEYWORD_THREAD MonoInternalThread *mono_tls_thread MONO_TLS_FAST;
 MONO_KEYWORD_THREAD MonoJitTlsData     *mono_tls_jit_tls MONO_TLS_FAST;
+MONO_KEYWORD_THREAD MonoDomain         *mono_tls_domain MONO_TLS_FAST;
 MONO_KEYWORD_THREAD SgenThreadInfo     *mono_tls_sgen_thread_info MONO_TLS_FAST;
 MONO_KEYWORD_THREAD MonoLMF           **mono_tls_lmf_addr MONO_TLS_FAST;
 
@@ -111,6 +112,7 @@ MONO_KEYWORD_THREAD MonoLMF           **mono_tls_lmf_addr MONO_TLS_FAST;
 
 MonoInternalThread *mono_tls_thread;
 MonoJitTlsData     *mono_tls_jit_tls;
+MonoDomain         *mono_tls_domain;
 SgenThreadInfo     *mono_tls_sgen_thread_info;
 MonoLMF           **mono_tls_lmf_addr;
 
@@ -126,6 +128,7 @@ MonoLMF           **mono_tls_lmf_addr;
 
 MonoNativeTlsKey mono_tls_key_thread;
 MonoNativeTlsKey mono_tls_key_jit_tls;
+MonoNativeTlsKey mono_tls_key_domain;
 MonoNativeTlsKey mono_tls_key_sgen_thread_info;
 MonoNativeTlsKey mono_tls_key_lmf_addr;
 
@@ -151,6 +154,7 @@ mono_tls_init_runtime_keys (void)
 #ifdef MONO_KEYWORD_THREAD
 	MONO_THREAD_VAR_OFFSET (mono_tls_thread, mono_tls_offsets [TLS_KEY_THREAD]);
 	MONO_THREAD_VAR_OFFSET (mono_tls_jit_tls, mono_tls_offsets [TLS_KEY_JIT_TLS]);
+	MONO_THREAD_VAR_OFFSET (mono_tls_domain, mono_tls_offsets [TLS_KEY_DOMAIN]);
 	MONO_THREAD_VAR_OFFSET (mono_tls_lmf_addr, mono_tls_offsets [TLS_KEY_LMF_ADDR]);
 #elif defined(DISABLE_THREADS)
 #else
@@ -158,6 +162,8 @@ mono_tls_init_runtime_keys (void)
 	MONO_THREAD_VAR_OFFSET (mono_tls_key_thread, mono_tls_offsets [TLS_KEY_THREAD]);
 	mono_native_tls_alloc (&mono_tls_key_jit_tls, NULL);
 	MONO_THREAD_VAR_OFFSET (mono_tls_key_jit_tls, mono_tls_offsets [TLS_KEY_JIT_TLS]);
+	mono_native_tls_alloc (&mono_tls_key_domain, NULL);
+	MONO_THREAD_VAR_OFFSET (mono_tls_key_domain, mono_tls_offsets [TLS_KEY_DOMAIN]);
 	mono_native_tls_alloc (&mono_tls_key_lmf_addr, NULL);
 	MONO_THREAD_VAR_OFFSET (mono_tls_key_lmf_addr, mono_tls_offsets [TLS_KEY_LMF_ADDR]);
 #endif
@@ -171,6 +177,7 @@ mono_tls_free_keys (void)
 #else
 	mono_native_tls_free (mono_tls_key_thread);
 	mono_native_tls_free (mono_tls_key_jit_tls);
+	mono_native_tls_free (mono_tls_key_domain);
 	mono_native_tls_free (mono_tls_key_sgen_thread_info);
 	mono_native_tls_free (mono_tls_key_lmf_addr);
 #endif
@@ -186,6 +193,11 @@ G_EXTERN_C MonoInternalThread *mono_tls_get_thread_extern (void)
 G_EXTERN_C MonoJitTlsData *mono_tls_get_jit_tls_extern (void)
 {
 	return mono_tls_get_jit_tls ();
+}
+
+G_EXTERN_C MonoDomain *mono_tls_get_domain_extern (void)
+{
+	return mono_tls_get_domain ();
 }
 
 G_EXTERN_C SgenThreadInfo *mono_tls_get_sgen_thread_info_extern (void)

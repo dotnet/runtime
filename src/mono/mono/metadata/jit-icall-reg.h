@@ -47,6 +47,7 @@ MONO_JIT_ICALL (generic_trampoline_delegate)	\
 MONO_JIT_ICALL (generic_trampoline_vcall)	\
 	\
 /* These must be ordered like MonoTlsKey (alphabetical). */ \
+MONO_JIT_ICALL (mono_tls_get_domain_extern) \
 MONO_JIT_ICALL (mono_tls_get_jit_tls_extern) \
 MONO_JIT_ICALL (mono_tls_get_lmf_addr_extern) \
 MONO_JIT_ICALL (mono_tls_get_sgen_thread_info_extern) \

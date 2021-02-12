@@ -142,9 +142,11 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 
 	/* mono_set_jit_tls () sets this */
 	void *jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);
+	/* SET_APPDOMAIN () sets this */
+	void *domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
 
 	/*Thread already started to cleanup, can no longer capture unwind state*/
-	if (!jit_tls)
+	if (!jit_tls || !domain)
 		return FALSE;
 
 	/*
@@ -158,7 +160,7 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	if (addr)
 		lmf = *addr;
 
-	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = mono_domain_get ();
+	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = domain;
 	tctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = jit_tls;
 	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = lmf;
 	tctx->valid = TRUE;

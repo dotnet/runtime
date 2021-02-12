@@ -4834,6 +4834,7 @@ register_icalls (void)
 	/* Register tls icalls */
 	register_icall_no_wrapper (mono_tls_get_thread_extern, mono_icall_sig_ptr);
 	register_icall_no_wrapper (mono_tls_get_jit_tls_extern, mono_icall_sig_ptr);
+	register_icall_no_wrapper (mono_tls_get_domain_extern, mono_icall_sig_ptr);
 	register_icall_no_wrapper (mono_tls_get_sgen_thread_info_extern, mono_icall_sig_ptr);
 	register_icall_no_wrapper (mono_tls_get_lmf_addr_extern, mono_icall_sig_ptr);
 
