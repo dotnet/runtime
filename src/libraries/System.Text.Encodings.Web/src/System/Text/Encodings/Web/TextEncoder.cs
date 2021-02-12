@@ -900,7 +900,7 @@ namespace System.Text.Encodings.Web
 
         internal static bool TryCopyCharacters(string source, Span<char> destination, out int numberOfCharactersWritten)
         {
-            Debug.Assert(source.Length > 0);
+            Debug.Assert(!string.IsNullOrEmpty(source));
 
             if (destination.Length < source.Length)
             {
@@ -921,7 +921,7 @@ namespace System.Text.Encodings.Web
         internal static bool TryWriteScalarAsChar(int unicodeScalar, Span<char> destination, out int numberOfCharactersWritten)
         {
             Debug.Assert(unicodeScalar < ushort.MaxValue);
-            if (destination.Length < 1)
+            if (destination.IsEmpty)
             {
                 numberOfCharactersWritten = 0;
                 return false;
