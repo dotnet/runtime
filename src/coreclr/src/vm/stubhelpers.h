@@ -86,7 +86,7 @@ public:
     static FCDECL0(void*,           GetStubContextAddr);
 #endif // TARGET_64BIT
     static FCDECL1(DWORD,           CalcVaListSize, VARARGS *varargs);
-    static FCDECL3(void,            ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE);
+    static void QCALLTYPE           ValidateObject(QCall::ObjectHandleOnStack object, MethodDesc *pMD, QCall::ObjectHandleOnStack pThis);
     static FCDECL3(void,            ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE);
 
 #ifdef PROFILING_SUPPORTED

@@ -1328,8 +1328,15 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint CalcVaListSize(IntPtr va_list);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ValidateObject(object obj, IntPtr pMD, object pThis);
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        internal static extern void ValidateObject(ObjectHandleOnStack obj, IntPtr pMD, ObjectHandleOnStack pThis);
+
+        internal static void ValidateObject(object obj, IntPtr pMD, object pThis)
+        {
+            object objLocal = obj;
+            object localThis = pThis;
+            ValidateObject(ObjectHandleOnStack.Create(ref objLocal), pMD, ObjectHandleOnStack.Create(ref localThis));
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void LogPinnedArgument(IntPtr localDesc, IntPtr nativeArg);

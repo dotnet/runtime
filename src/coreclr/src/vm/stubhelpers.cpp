@@ -1011,16 +1011,18 @@ FCIMPL2(void, StubHelpers::MarshalToManagedVaListInternal, va_list va, VARARGS* 
 }
 FCIMPLEND
 
-FCIMPL3(void, StubHelpers::ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE)
+void QCALLTYPE StubHelpers::ValidateObject(QCall::ObjectHandleOnStack object, MethodDesc *pMD, QCall::ObjectHandleOnStack pThis)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
 #ifdef VERIFY_HEAP
-    HELPER_METHOD_FRAME_BEGIN_0();
+    BEGIN_QCALL;
+    GCX_COOP();
 
     StackSString errorString;
     EX_TRY
     {
+        Object* pObjUNSAFE = OBJECTREFToObject(object.Get());
         AVInRuntimeImplOkayHolder AVOkay;
 		// don't validate the next object if a BGC is in progress.  we can race with background
 	    // sweep which could make the next object a Free object underneath us if it's dead.
@@ -1028,18 +1030,16 @@ FCIMPL3(void, StubHelpers::ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, 
     }
     EX_CATCH
     {
+        Object* pThisUNSAFE = OBJECTREFToObject(pThis.Get());
         FormatValidationMessage(ResolveInteropMethod(pThisUNSAFE, pMD), errorString);
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, errorString.GetUnicode());
     }
     EX_END_CATCH_UNREACHABLE;
-
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 #else // VERIFY_HEAP
-    FCUnique(0xa3);
     UNREACHABLE_MSG("No validation support without VERIFY_HEAP");
 #endif // VERIFY_HEAP
 }
-FCIMPLEND
 
 FCIMPL3(void, StubHelpers::ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE)
 {
