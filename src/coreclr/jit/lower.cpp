@@ -1578,7 +1578,7 @@ void Lowering::LowerCall(GenTree* node)
 
             case GTF_CALL_VIRT_VTABLE:
                 assert(call->IsVirtualVtable());
-                if (comp->opts.compExpandCallsEarly == false)
+                if (!call->IsExpandedEarly())
                 {
                     assert(call->gtControlExpr == nullptr);
                     controlExpr = LowerVirtualVtableCall(call);
