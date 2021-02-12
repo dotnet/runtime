@@ -350,13 +350,12 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             List<SslStream> streams = new List<SslStream>();
             TestHelper.CleanupCertificates("SslStream_ClinetCertificate_SendsChain");
             (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates("SslStream_ClinetCertificate_SendsChain", serverCertificate: false);
-            using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+            using (X509Store store = new X509Store(PlatformDetection.IsOSXLike ? StoreName.My : StoreName.CertificateAuthority, StoreLocation.CurrentUser))
             {
                 // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
                 store.Open(OpenFlags.ReadWrite);

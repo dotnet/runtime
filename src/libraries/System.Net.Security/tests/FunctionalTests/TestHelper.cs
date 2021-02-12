@@ -83,38 +83,30 @@ namespace System.Net.Security.Tests
 
         internal static void CleanupCertificates(string testName)
         {
-            string caName = $"O={testName}";
-            try
-            {
-                using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine))
+            string name = $"O={testName}";
+            X509Store[] stores = new X509Store[]
                 {
-                    store.Open(OpenFlags.ReadWrite);
-                    foreach (X509Certificate2 cert in store.Certificates)
-                    {
-                        if (cert.Subject.Contains(caName))
-                        {
-                            store.Remove(cert);
-                        }
-                    }
-                }
-            }
-            catch { };
+                    new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine),
+                    new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser),
+                    new X509Store(StoreName.My, StoreLocation.CurrentUser)
+                };
 
-            try
+            foreach (X509Store store in stores)
             {
-                using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+                try
                 {
                     store.Open(OpenFlags.ReadWrite);
                     foreach (X509Certificate2 cert in store.Certificates)
                     {
-                        if (cert.Subject.Contains(caName))
+                        if (cert.Subject.Contains(name))
                         {
                             store.Remove(cert);
                         }
                     }
                 }
+                catch { };
+                store.Dispose();
             }
-            catch { };
         }
 
         internal static (X509Certificate2 certificate, X509Certificate2Collection) GenerateCertificates(string targetName, [CallerMemberName] string? testName = null, bool longChain = false, bool serverCertificate = true)
