@@ -6327,6 +6327,7 @@ GenTreeCall* Compiler::gtNewCallNode(
 
 GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
 {
+    assert(type != TYP_VOID);
     // We need to ensure that all struct values are normalized.
     // It might be nice to assert this in general, but we have assignments of int to long.
     if (varTypeIsStruct(type))
@@ -6609,6 +6610,7 @@ GenTree* Compiler::gtArgNodeByLateArgInx(GenTreeCall* call, unsigned lateArgInx)
 
 GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 {
+    assert(!src->TypeIs(TYP_VOID));
     /* Mark the target as being assigned */
 
     if ((dst->gtOper == GT_LCL_VAR) || (dst->OperGet() == GT_LCL_FLD))

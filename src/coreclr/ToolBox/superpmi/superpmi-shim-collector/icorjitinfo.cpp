@@ -252,6 +252,16 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ft
     return result;
 }
 
+// Given T, return the type of the default Comparer<T>.
+// Returns null if the type can't be determined exactly.
+CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getDefaultComparerClass");
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getDefaultComparerClass(cls);
+    mc->recGetDefaultComparerClass(cls, result);
+    return result;
+}
+
 // Given T, return the type of the default EqualityComparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls)
