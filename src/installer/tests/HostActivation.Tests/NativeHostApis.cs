@@ -480,21 +480,45 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void Hostfxr_get_dotnet_environment_info_global_install_path()
         {
             var f = new SdkResolutionFixture(sharedTestState);
-            string globalInstallPath = "\\Program Files\\dotnet";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                globalInstallPath = "/usr/share/dotnet";
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                globalInstallPath = "/usr/local/share/dotnet";
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && IntPtr.Size == 4)
-                globalInstallPath = "Program Files (x86)\\dotnet";
-
+            
             f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info" })
             .CaptureStdOut()
             .CaptureStdErr()
             .Execute()
             .Should().Pass()
-            .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success")
-            .And.HaveStdOutContaining($"{globalInstallPath}");
+            .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Success");
+        }
+
+        [Fact]
+        public void Hostfxr_get_dotnet_environment_info_result_is_nullptr_fails()
+        {
+            var f = new SdkResolutionFixture(sharedTestState);
+
+            f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info", "test_invalid_result_ptr" })
+            .EnvironmentVariable("COREHOST_TRACE", "1")
+            .CaptureStdOut()
+            .CaptureStdErr()
+            .Execute()
+            .Should().Pass()
+            // 0x80008081 (InvalidArgFailure)
+            .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Fail[-2147450751]")
+            .And.HaveStdErrContaining("hostfxr_get_dotnet_environment_info received an invalid argument: result should not be null.");
+        }
+
+        [Fact]
+        public void Hostfxr_get_dotnet_environment_info_reserved_is_not_nullptr_fails()
+        {
+            var f = new SdkResolutionFixture(sharedTestState);
+
+            f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info", "test_invalid_reserved_ptr" })
+            .EnvironmentVariable("COREHOST_TRACE", "1")
+            .CaptureStdOut()
+            .CaptureStdErr()
+            .Execute()
+            .Should().Pass()
+            // 0x80008081 (InvalidArgFailure)
+            .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Fail[-2147450751]")
+            .And.HaveStdErrContaining("hostfxr_get_dotnet_environment_info received an invalid argument: reserved should be null.");
         }
 
         [Fact]

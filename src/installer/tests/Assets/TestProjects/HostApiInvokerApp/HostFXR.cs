@@ -203,43 +203,51 @@ namespace HostApiInvokerApp
             List<hostfxr.hostfxr_dotnet_environment_sdk_info> sdks = new List<hostfxr.hostfxr_dotnet_environment_sdk_info>();
             List<hostfxr.hostfxr_dotnet_environment_framework_info> frameworks = new List<hostfxr.hostfxr_dotnet_environment_framework_info>();
 
+            hostfxr.hostfxr_get_dotnet_environment_info_result_fn result_fn = (IntPtr info, IntPtr result_context) =>
+            {
+                hostfxr.hostfxr_dotnet_environment_info environment_info = Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_info>(info);
+
+                hostfxr_version = environment_info.hostfxr_version;
+                hostfxr_commit_hash = environment_info.hostfxr_commit_hash;
+                    
+                int env_info_size = Marshal.SizeOf(environment_info);
+                if (env_info_size != environment_info.size)
+                    throw new Exception($"Size field value of hostfxr_dotnet_environment_info struct is {environment_info.size} but {env_info_size} was expected.");
+                    
+                for (int i = 0; i < environment_info.sdk_count; i++)
+                {
+                    IntPtr pSdkInfo = new IntPtr(environment_info.sdks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_sdk_info>()));
+                    sdks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_sdk_info>(pSdkInfo));
+
+                    if (Marshal.SizeOf(sdks[i]) != sdks[i].size)
+                        throw new Exception($"Size field value of hostfxr_dotnet_environment_sdk_info struct is {sdks[i].size} but {Marshal.SizeOf(sdks[i])} was expected.");
+                }
+
+                for (int i = 0; i < environment_info.framework_count; i++)
+                {
+                    IntPtr pFrameworkInfo = new IntPtr(environment_info.frameworks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_framework_info>()));
+                    frameworks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_framework_info>(pFrameworkInfo));
+
+                    if (Marshal.SizeOf(frameworks[i]) != frameworks[i].size)
+                        throw new Exception($"Size field value of hostfxr_dotnet_environment_framework_info struct is {frameworks[i].size} but {Marshal.SizeOf(frameworks[i])} was expected.");
+                }
+
+                long result_context_as_int = result_context.ToInt64();
+                if (result_context_as_int != 42)
+                    throw new Exception($"Invalid result_context value: expected 42 but was {result_context_as_int}.");
+            };
+
+            if (dotnetExeDir == "test_invalid_result_ptr")
+                result_fn = null;
+
+            IntPtr reserved_ptr = IntPtr.Zero;
+            if (dotnetExeDir == "test_invalid_reserved_ptr")
+                reserved_ptr = new IntPtr(11);
+
             int rc = hostfxr.hostfxr_get_dotnet_environment_info(
                 dotnet_root: dotnetExeDir,
-                reserved: IntPtr.Zero,
-                result: (info, result_context) => {
-                    hostfxr.hostfxr_dotnet_environment_info environment_info = Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_info>(info);
-
-                    hostfxr_version = environment_info.hostfxr_version;
-                    hostfxr_commit_hash = environment_info.hostfxr_commit_hash;
-                    for (int i = 0; i < environment_info.sdk_count; i++)
-                    {
-                        IntPtr pSdkInfo = new IntPtr(environment_info.sdks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_sdk_info>()));
-                        sdks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_sdk_info>(pSdkInfo));
-                    }
-
-                    for (int i = 0; i < environment_info.framework_count; i++)
-                    {
-                        IntPtr pFrameworkInfo = new IntPtr(environment_info.frameworks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_framework_info>()));
-                        frameworks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_framework_info>(pFrameworkInfo));
-                    }
-
-                    int env_info_size = Marshal.SizeOf(environment_info);
-                    if (env_info_size != environment_info.size)
-                        throw new Exception($"Size field value of hostfxr_dotnet_environment_info struct is {environment_info.size} but {env_info_size} was expected.");
-
-                    
-                    int env_sdk_info_size = (sdks.Count > 0) ? Marshal.SizeOf(sdks[0]) : -1;
-                    if (env_sdk_info_size != -1 && (env_sdk_info_size != sdks[0].size))
-                        throw new Exception($"Size field value of hostfxr_dotnet_environment_sdk_info struct is {sdks[0].size} but {env_sdk_info_size} was expected.");
-
-                    int env_fw_info_size = (frameworks.Count > 0) ? Marshal.SizeOf(frameworks[0]) : -1;
-                    if (env_fw_info_size != -1 && (env_fw_info_size != frameworks[0].size))
-                        throw new Exception($"Size field value of hostfxr_dotnet_environment_framework_info struct is {frameworks[0].size} but {env_fw_info_size} was expected.");
-
-                    long result_context_as_int = result_context.ToInt64();
-                    if (result_context_as_int != 42)
-                        throw new Exception($"Invalid result_context value: expected 42 but was {result_context_as_int}.");
-                },
+                reserved: reserved_ptr,
+                result: result_fn,
                 result_context: new IntPtr(42));
 
             if (rc != 0)
