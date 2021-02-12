@@ -85,11 +85,24 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             Span<byte> destination)
         {
-            byte[] passwordBytes = CryptoPool.Rent(Encoding.UTF8.GetMaxByteCount(password.Length));
-            int passwordBytesWritten = Encoding.UTF8.GetBytes(password, passwordBytes);
+            const int MaxPasswordStackSize = 256;
+
+            byte[]? rentedPasswordBuffer = null;
+            int maxEncodedSize = Encoding.UTF8.GetMaxByteCount(password.Length);
+
+            Span<byte> passwordBuffer = maxEncodedSize > MaxPasswordStackSize ?
+                (rentedPasswordBuffer = CryptoPool.Rent(maxEncodedSize)) :
+                stackalloc byte[MaxPasswordStackSize];
+            int passwordBytesWritten = Encoding.UTF8.GetBytes(password, passwordBuffer);
+            Span<byte> passwordBytes = passwordBuffer.Slice(0, passwordBytesWritten);
 
             Pbkdf2DeriveBytesCore(passwordBytes, salt, iterations, hashAlgorithm, destination);
-            CryptoPool.Return(passwordBytes, clearSize: passwordBytesWritten);
+            CryptographicOperations.ZeroMemory(passwordBytes);
+
+            if (rentedPasswordBuffer is not null)
+            {
+                CryptoPool.Return(rentedPasswordBuffer, clearSize: 0); // manually cleared above.
+            }
         }
 
         private static void Pbkdf2DeriveBytesCore(

@@ -221,14 +221,19 @@ namespace System.Security.Cryptography.DeriveBytesTests
 
         public static IEnumerable<object[]> Pbkdf2DeriveBytes_PasswordString_Compare_Data()
         {
+            string largePassword = new string('y', 1024);
+
             foreach (HashAlgorithmName hashAlgorithm in SupportedHashAlgorithms)
             {
-                // hashAlgorithm, length, iterations, passwordHex, saltHex
+                // hashAlgorithm, length, iterations, password, saltHex
                 yield return new object[] { hashAlgorithm.Name, 1, 1, Password, s_salt.ByteArrayToHex() };
                 yield return new object[] { hashAlgorithm.Name, 1, 1, "", s_salt.ByteArrayToHex() };
                 yield return new object[] { hashAlgorithm.Name, 257, 257, "", s_salt.ByteArrayToHex() };
                 yield return new object[] { hashAlgorithm.Name, 257, 257, Password, "D8D8D8D8D8D8D8D8" };
                 yield return new object[] { hashAlgorithm.Name, 257, 257, Password, "0000000000000000" };
+
+                // case for password exceeding the stack buffer limit.
+                yield return new object[] { hashAlgorithm.Name, 257, 257, largePassword, "0000000000000000" };
             }
         }
 
