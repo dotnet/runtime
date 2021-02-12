@@ -1519,7 +1519,18 @@ public:
 
     static bool OperIsAtomicOp(genTreeOps gtOper)
     {
-        return (gtOper == GT_XADD || gtOper == GT_XCHG || gtOper == GT_LOCKADD || gtOper == GT_CMPXCHG);
+        switch (gtOper)
+        {
+            case GT_XADD:
+            case GT_XORR:
+            case GT_XAND:
+            case GT_XCHG:
+            case GT_LOCKADD:
+            case GT_CMPXCHG:
+                return true;
+            default:
+                return false;
+        }
     }
 
     bool OperIsAtomicOp() const
@@ -4506,17 +4517,17 @@ struct GenTreeCall final : public GenTree
 
     void SetExpRuntimeLookup()
     {
-        gtFlags |= GTF_CALL_M_EXP_RUNTIME_LOOKUP;
+        gtCallMoreFlags |= GTF_CALL_M_EXP_RUNTIME_LOOKUP;
     }
 
     void ClearExpRuntimeLookup()
     {
-        gtFlags &= ~GTF_CALL_M_EXP_RUNTIME_LOOKUP;
+        gtCallMoreFlags &= ~GTF_CALL_M_EXP_RUNTIME_LOOKUP;
     }
 
     bool IsExpRuntimeLookup() const
     {
-        return (gtFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
+        return (gtCallMoreFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
     }
 
     unsigned gtCallMoreFlags; // in addition to gtFlags

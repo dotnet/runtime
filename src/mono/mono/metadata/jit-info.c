@@ -337,6 +337,33 @@ mono_jit_info_table_find (MonoDomain *domain, gpointer addr)
 	return mono_jit_info_table_find_internal (domain, addr, TRUE, FALSE);
 }
 
+void
+mono_jit_info_table_foreach_internal (MonoDomain *domain, MonoJitInfoFunc func, gpointer user_data)
+{
+	MonoJitInfoTable *table;
+	MonoJitInfo *ji;
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
+
+	table = (MonoJitInfoTable *)mono_get_hazardous_pointer ((gpointer volatile*)&domain->jit_info_table, hp, JIT_INFO_TABLE_HAZARD_INDEX);
+	if (table) {
+		for (int chunk_index = 0; chunk_index < table->num_chunks; ++chunk_index) {
+			MonoJitInfoTableChunk *chunk = table->chunks [chunk_index];
+			for (int jit_info_index = 0; jit_info_index < chunk->num_elements; ++jit_info_index) {
+
+				ji = (MonoJitInfo *)mono_get_hazardous_pointer ((gpointer volatile*)&chunk->data [jit_info_index], hp, JIT_INFO_HAZARD_INDEX);
+
+				if (func && !IS_JIT_INFO_TOMBSTONE (ji))
+					func (ji, user_data);
+
+				mono_hazard_pointer_clear (hp, JIT_INFO_HAZARD_INDEX);
+			}
+		}
+	}
+
+	if (hp)
+		mono_hazard_pointer_clear (hp, JIT_INFO_TABLE_HAZARD_INDEX);
+}
+
 static G_GNUC_UNUSED void
 jit_info_table_check (MonoJitInfoTable *table)
 {

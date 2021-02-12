@@ -408,7 +408,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.ReadRequestHeaderAsync();
                         try
                         {
-                            await connection.Writer.WriteAsync(LoopbackServer.GetContentModeResponse(mode, content, connectionClose: false));
+                            await connection.WriteStringAsync(LoopbackServer.GetContentModeResponse(mode, content, connectionClose: false));
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
 
@@ -460,7 +460,7 @@ namespace System.Net.Http.Functional.Tests
                         try
                         {
                             // Write out only part of the response
-                            await connection.Writer.WriteAsync(response.Substring(0, response.Length / 2));
+                            await connection.WriteStringAsync(response.Substring(0, response.Length / 2));
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
 
@@ -1324,7 +1324,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Task serverTask1 = server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.Writer.WriteAsync(LoopbackServer.GetHttpResponse(connectionClose: false) + "here is a bunch of garbage");
+                        await connection.WriteStringAsync(LoopbackServer.GetHttpResponse(connectionClose: false) + "here is a bunch of garbage");
                         await releaseServer.Task; // keep connection alive on the server side
                     });
                     await client.GetStringAsync(uri);
@@ -2628,7 +2628,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_PlaintextStreamFilter(ITestOutputHelper output) : base(output) { }
 
-        public static IEnumerable<object> PlaintextStreamFilter_ContextHasCorrectProperties_Success_MemberData() =>
+        public static IEnumerable<object[]> PlaintextStreamFilter_ContextHasCorrectProperties_Success_MemberData() =>
             from useSsl in new[] { false, true }
             from syncRequest in new[] { false, true }
             from syncCallback in new[] { false, true }
@@ -3017,9 +3017,16 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
-    public sealed class SocketsHttpHandlerTest_Http3 : HttpClientHandlerTest_Http3
+    public sealed class SocketsHttpHandlerTest_Http3_MsQuic : HttpClientHandlerTest_Http3
     {
-        public SocketsHttpHandlerTest_Http3(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandlerTest_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
+        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
+    }
+
+    public sealed class SocketsHttpHandlerTest_Http3_Mock : HttpClientHandlerTest_Http3
+    {
+        public SocketsHttpHandlerTest_Http3_Mock(ITestOutputHelper output) : base(output) { }
+        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]

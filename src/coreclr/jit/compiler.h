@@ -71,11 +71,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  */
 
 struct InfoHdr;            // defined in GCInfo.h
-struct escapeMapping_t;    // defined in flowgraph.cpp
+struct escapeMapping_t;    // defined in fgdiagnostic.cpp
 class emitter;             // defined in emit.h
 struct ShadowParamVarInfo; // defined in GSChecks.cpp
 struct InitVarDscInfo;     // defined in register_arg_convention.h
-class FgStack;             // defined in flowgraph.cpp
+class FgStack;             // defined in fgbasic.cpp
+class Instrumentor;        // defined in fgprofile.cpp
+class SpanningTreeVisitor; // defined in fgprofile.cpp
 #if FEATURE_ANYCSE
 class CSE_DataFlow; // defined in OptCSE.cpp
 #endif
@@ -5535,12 +5537,6 @@ protected:
 
     void fgAdjustForAddressExposedOrWrittenThis();
 
-    bool                                   fgProfileData_ILSizeMismatch;
-    ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
-    BYTE*                                  fgPgoData;
-    UINT32                                 fgPgoSchemaCount;
-    UINT32                                 fgNumProfileRuns;
-
     unsigned fgStressBBProf()
     {
 #ifdef DEBUG
@@ -5559,11 +5555,32 @@ protected:
     }
 
     bool fgHaveProfileData();
-    void fgComputeProfileScale();
     bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::weight_t* weight);
-    void fgInstrumentMethod();
+
+    Instrumentor* fgCountInstrumentor;
+    Instrumentor* fgClassInstrumentor;
+
+    PhaseStatus fgPrepareToInstrumentMethod();
+    PhaseStatus fgInstrumentMethod();
+    PhaseStatus fgIncorporateProfileData();
+    void        fgIncorporateBlockCounts();
+    void        fgIncorporateEdgeCounts();
 
 public:
+    bool                                   fgProfileData_ILSizeMismatch;
+    ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
+    BYTE*                                  fgPgoData;
+    UINT32                                 fgPgoSchemaCount;
+    HRESULT                                fgPgoQueryResult;
+    UINT32                                 fgNumProfileRuns;
+    UINT32                                 fgPgoBlockCounts;
+    UINT32                                 fgPgoEdgeCounts;
+    UINT32                                 fgPgoClassProfiles;
+
+    void WalkSpanningTree(SpanningTreeVisitor* visitor);
+    void fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t weight);
+    void fgComputeProfileScale();
+
     // fgIsUsingProfileWeights - returns true if we have real profile data for this method
     //                           or if we have some fake profile data for the stress mode
     bool fgIsUsingProfileWeights()
@@ -5586,6 +5603,7 @@ public:
 #endif
 
 public:
+    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
     Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree);
     Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
@@ -5593,8 +5611,6 @@ public:
 private:
     void fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt);
     void fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt);
-    Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
-
     void fgInsertStmtAfter(BasicBlock* block, Statement* insertionPoint, Statement* stmt);
 
 public:

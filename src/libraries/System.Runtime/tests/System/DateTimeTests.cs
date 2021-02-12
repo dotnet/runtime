@@ -250,13 +250,6 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, 1, null, DateTimeKind.Local));
         }
 
-        [Fact]
-        public void Ctor_OverflowingCalendar_ThrowsArgumentException()
-        {
-            AssertExtensions.Throws<ArgumentException>(null, () => new DateTime(1, 1, 1, 1, 1, 1, 1, new DateMaxCalendar()));
-            AssertExtensions.Throws<ArgumentException>(null, () => new DateTime(1, 1, 1, 1, 1, 1, 1, new DateMaxCalendar(), DateTimeKind.Local));
-        }
-
         [Theory]
         [InlineData(2004, 1, 31)]
         [InlineData(2004, 2, 29)]
@@ -382,17 +375,17 @@ namespace System.Tests
 
         public static IEnumerable<object[]> AddYears_OutOfRange_TestData()
         {
-            yield return new object[] { DateTime.Now, 10001, "value" };
-            yield return new object[] { DateTime.Now, -10001, "value" };
-            yield return new object[] { DateTime.MaxValue, 1, "months" };
-            yield return new object[] { DateTime.MinValue, -1, "months" };
+            yield return new object[] { DateTime.Now, 10001 };
+            yield return new object[] { DateTime.Now, -10001 };
+            yield return new object[] { DateTime.MaxValue, 1 };
+            yield return new object[] { DateTime.MinValue, -1 };
         }
 
         [Theory]
         [MemberData(nameof(AddYears_OutOfRange_TestData))]
-        public static void AddYears_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, int years, string paramName)
+        public static void AddYears_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, int years)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(paramName, () => date.AddYears(years));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => date.AddYears(years));
         }
 
         public static IEnumerable<object[]> AddMonths_TestData()
@@ -2268,44 +2261,6 @@ namespace System.Tests
             internal ushort wMinute;
             internal ushort wSecond;
             internal ushort wMillisecond;
-        }
-
-        private class DateMaxCalendar : Calendar
-        {
-            public override int[] Eras => throw new NotImplementedException();
-
-            public override DateTime AddMonths(DateTime time, int months) => time;
-
-            public override DateTime AddYears(DateTime time, int years) => time;
-
-            public override int GetDayOfMonth(DateTime time) => 0;
-
-            public override DayOfWeek GetDayOfWeek(DateTime time) => DayOfWeek.Monday;
-
-            public override int GetDayOfYear(DateTime time) => 0;
-
-            public override int GetDaysInMonth(int year, int month, int era) => 0;
-
-            public override int GetDaysInYear(int year, int era) => 0;
-
-            public override int GetEra(DateTime time) => 0;
-
-            public override int GetMonth(DateTime time) => 0;
-
-            public override int GetMonthsInYear(int year, int era) => 0;
-
-            public override int GetYear(DateTime time) => 0;
-
-            public override bool IsLeapDay(int year, int month, int day, int era) => false;
-
-            public override bool IsLeapMonth(int year, int month, int era) => false;
-
-            public override bool IsLeapYear(int year, int era) => false;
-
-            public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
-            {
-                return DateTime.MaxValue;
-            }
         }
 
         [Theory]

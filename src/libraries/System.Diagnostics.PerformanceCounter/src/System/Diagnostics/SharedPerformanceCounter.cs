@@ -1691,6 +1691,7 @@ namespace System.Diagnostics
                         throw new InvalidOperationException(SR.SetSecurityDescriptorFailed);
 
                     Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+                    securityAttributes.lpSecurityDescriptor = securityDescriptorPointer.DangerousGetHandle();
                     securityAttributes.bInheritHandle = Interop.BOOL.FALSE;
 
                     //

@@ -545,11 +545,7 @@ mono_set_timeout_exec (int id)
 {
 	ERROR_DECL (error);
 
-#ifdef ENABLE_NETCORE
 	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
-#else
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "WasmRuntime");
-#endif
 	g_assert (klass);
 
 	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
@@ -625,12 +621,8 @@ void
 mono_arch_register_icall (void)
 {
 #ifdef HOST_WASM
-#ifdef ENABLE_NETCORE
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
-#else
-	mono_add_internal_call_internal ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
-#endif
 #endif
 }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -618,7 +619,7 @@ namespace System.Globalization
         /// </summary>
         public bool IsRightToLeft => _cultureData.IsRightToLeft;
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is TextInfo otherTextInfo
                 && CultureName.Equals(otherTextInfo.CultureName);

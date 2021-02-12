@@ -297,7 +297,12 @@ namespace Internal.JitInterface
                 var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
                 _methodCodeNode.Fixups.Add(node);
             }
+#else
+            MethodIL methodIL = HandleToObject(_methodScope);
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
+            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
 #endif
+
             PublishProfileData();
         }
 
@@ -388,6 +393,8 @@ namespace Internal.JitInterface
 
             _parameterIndexToNameMap = null;
             _localSlotToInfoMap = null;
+
+            _additionalDependencies = null;
 #endif
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -398,6 +405,7 @@ namespace Internal.JitInterface
             _inlinedMethods = new ArrayBuilder<MethodDesc>();
             _actualInstructionSetSupported = default(InstructionSetFlags);
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
+            _pgoResults.Clear();
 #endif
         }
 
@@ -437,14 +445,16 @@ namespace Internal.JitInterface
             return _handleToObject[index];
         }
 
-        private MethodDesc HandleToObject(CORINFO_METHOD_STRUCT_* method) { return (MethodDesc)HandleToObject((IntPtr)method); }
-        private CORINFO_METHOD_STRUCT_* ObjectToHandle(MethodDesc method) { return (CORINFO_METHOD_STRUCT_*)ObjectToHandle((Object)method); }
-
-        private TypeDesc HandleToObject(CORINFO_CLASS_STRUCT_* type) { return (TypeDesc)HandleToObject((IntPtr)type); }
-        private CORINFO_CLASS_STRUCT_* ObjectToHandle(TypeDesc type) { return (CORINFO_CLASS_STRUCT_*)ObjectToHandle((Object)type); }
-
-        private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) { return (FieldDesc)HandleToObject((IntPtr)field); }
-        private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) { return (CORINFO_FIELD_STRUCT_*)ObjectToHandle((Object)field); }
+        private MethodDesc HandleToObject(CORINFO_METHOD_STRUCT_* method) => (MethodDesc)HandleToObject((IntPtr)method);
+        private CORINFO_METHOD_STRUCT_* ObjectToHandle(MethodDesc method) => (CORINFO_METHOD_STRUCT_*)ObjectToHandle((Object)method);
+        private TypeDesc HandleToObject(CORINFO_CLASS_STRUCT_* type) => (TypeDesc)HandleToObject((IntPtr)type);
+        private CORINFO_CLASS_STRUCT_* ObjectToHandle(TypeDesc type) => (CORINFO_CLASS_STRUCT_*)ObjectToHandle((Object)type);
+        private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) => (FieldDesc)HandleToObject((IntPtr)field);
+        private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) => (CORINFO_FIELD_STRUCT_*)ObjectToHandle((object)field);
+        private MethodIL HandleToObject(CORINFO_MODULE_STRUCT_* module) => (MethodIL)HandleToObject((IntPtr)module);
+        private CORINFO_MODULE_STRUCT_* ObjectToHandle(MethodIL methodIL) => (CORINFO_MODULE_STRUCT_*)ObjectToHandle((object)methodIL);
+        private MethodSignature HandleToObject(MethodSignatureInfo* method) => (MethodSignature)HandleToObject((IntPtr)method);
+        private MethodSignatureInfo* ObjectToHandle(MethodSignature method) => (MethodSignatureInfo*)ObjectToHandle((object)method);
 
         private bool Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, CORINFO_METHOD_INFO* methodInfo)
         {
@@ -455,7 +465,7 @@ namespace Internal.JitInterface
             }
 
             methodInfo->ftn = ObjectToHandle(method);
-            methodInfo->scope = (CORINFO_MODULE_STRUCT_*)ObjectToHandle(methodIL);
+            methodInfo->scope = ObjectToHandle(methodIL);
             var ilCode = methodIL.GetILBytes();
             methodInfo->ILCode = (byte*)GetPin(ilCode);
             methodInfo->ILCodeSize = (uint)ilCode.Length;
@@ -646,8 +656,9 @@ namespace Internal.JitInterface
             sig->sigInst.methInst = null; // Not used by the JIT
             sig->sigInst.methInstCount = (uint)signature.GenericParameterCount;
 
-            sig->pSig = (byte*)ObjectToHandle(signature);
+            sig->pSig = null;
             sig->cbSig = 0; // Not used by the JIT
+            sig->methodSignature = ObjectToHandle(signature);
             sig->scope = null;
             sig->token = 0; // Not used by the JIT
         }
@@ -669,8 +680,10 @@ namespace Internal.JitInterface
 
             sig->args = (CORINFO_ARG_LIST_STRUCT_*)0; // CORINFO_ARG_LIST_STRUCT_ is argument index
 
-            sig->pSig = (byte*)ObjectToHandle(locals);
+
+            sig->pSig = null;
             sig->cbSig = 0; // Not used by the JIT
+            sig->methodSignature = (MethodSignatureInfo*)ObjectToHandle(locals);
             sig->scope = null; // Not used by the JIT
             sig->token = 0; // Not used by the JIT
         }
@@ -978,7 +991,7 @@ namespace Internal.JitInterface
             {
                 return null;
             }
-            return (CORINFO_MODULE_STRUCT_*)ObjectToHandle(methodIL);
+            return ObjectToHandle(methodIL);
         }
 
         private bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info)
@@ -1076,7 +1089,7 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(sig != null);
 
-                CorInfoCallConvExtension callConv = GetUnmanagedCallConv((MethodSignature)HandleToObject((IntPtr)sig->pSig), out pSuppressGCTransition);
+                CorInfoCallConvExtension callConv = GetUnmanagedCallConv(HandleToObject(sig->methodSignature), out pSuppressGCTransition);
                 return callConv;
             }
         }
@@ -1234,7 +1247,7 @@ namespace Internal.JitInterface
             // dependency analysis operates on runtime determined ones, we convert the resolved token
             // to the runtime determined form (e.g. Foo<__Canon> becomes Foo<T__Canon>).
 
-            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+            var methodIL = HandleToObject(pResolvedToken.tokenScope);
 
             var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
                 MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
@@ -1282,7 +1295,7 @@ namespace Internal.JitInterface
 
         private void resolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
-            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+            var methodIL = HandleToObject(pResolvedToken.tokenScope);
 
             var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
                 MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
@@ -1315,6 +1328,8 @@ namespace Internal.JitInterface
                 {
                     _compilation.NodeFactory.Resolver.AddModuleTokenForMethod(method, HandleToModuleToken(ref pResolvedToken));
                 }
+#else
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, methodIL, method);
 #endif
             }
             else
@@ -1341,6 +1356,8 @@ namespace Internal.JitInterface
                 {
                     _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, HandleToModuleToken(ref pResolvedToken));
                 }
+#else
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, methodIL, field);
 #endif
             }
             else
@@ -1382,7 +1399,7 @@ namespace Internal.JitInterface
 
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
-            var methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            var methodIL = HandleToObject(module);
             var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
 
             Get_CORINFO_SIG_INFO(methodSig, sig);
@@ -1400,7 +1417,7 @@ namespace Internal.JitInterface
 
         private void findCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
-            var methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            var methodIL = HandleToObject(module);
             Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)), sig: sig);
         }
 
@@ -1433,7 +1450,7 @@ namespace Internal.JitInterface
 
         private char* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
-            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            MethodIL methodIL = HandleToObject(module);
             string s = (string)methodIL.GetObject((int)metaTOK);
             length = (int)s.Length;
             return (char*)GetPin(s);
@@ -2489,7 +2506,7 @@ namespace Internal.JitInterface
         private CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet)
         {
             int index = (int)args;
-            Object sigObj = HandleToObject((IntPtr)sig->pSig);
+            Object sigObj = HandleToObject((IntPtr)sig->methodSignature);
 
             MethodSignature methodSig = sigObj as MethodSignature;
 
@@ -2514,7 +2531,7 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;
-            Object sigObj = HandleToObject((IntPtr)sig->pSig);
+            Object sigObj = HandleToObject((IntPtr)sig->methodSignature);
 
             MethodSignature methodSig = sigObj as MethodSignature;
             if (methodSig != null)

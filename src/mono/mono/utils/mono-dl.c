@@ -21,7 +21,8 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
-#if defined(ENABLE_NETCORE) && defined(TARGET_ANDROID)
+
+#if defined(TARGET_ANDROID) && !defined(WIN32)
 #include <dlfcn.h>
 #endif
 
@@ -151,7 +152,6 @@ get_dl_name_from_libtool (const char *libtool_file)
 	return line;
 }
 
-#ifdef ENABLE_NETCORE
 static const char *
 fix_libc_name (const char *name)
 {
@@ -169,7 +169,6 @@ fix_libc_name (const char *name)
 	}
 	return name;
 }
-#endif
 
 /**
  * mono_dl_open_self:
@@ -182,7 +181,8 @@ fix_libc_name (const char *name)
 MonoDl*
 mono_dl_open_self (char **error_msg)
 {
-#if defined(ENABLE_NETCORE) && defined(TARGET_ANDROID)
+
+#if defined(TARGET_ANDROID) && !defined(WIN32)
 	MonoDl *module;
 	if (error_msg)
 		*error_msg = NULL;
@@ -244,9 +244,7 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 	}
 	module->main_module = name == NULL? TRUE: FALSE;
 
-#ifdef ENABLE_NETCORE
 	name = fix_libc_name (name);
-#endif
 
 	// No GC safe transition because this is called early in main.c
 	lib = mono_dl_open_file (name, lflags);
@@ -438,17 +436,11 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 		need_suffix = FALSE;
 		suffix = "";
 	} else if (idx == 1) {
-#ifdef ENABLE_NETCORE
 		/* netcore system libs have a suffix but no prefix */
 		need_prefix = FALSE;
 		need_suffix = TRUE;
 		suffix = mono_dl_get_so_suffixes () [0];
 		suffixlen = strlen (suffix);
-#else
-		suffix = mono_dl_get_so_suffixes () [idx - 1];
-		if (suffix [0] == '\0')
-			return NULL;
-#endif
 	} else {
 		/* Prefix.Name.suffix */
 		suffix = mono_dl_get_so_suffixes () [idx - 2];

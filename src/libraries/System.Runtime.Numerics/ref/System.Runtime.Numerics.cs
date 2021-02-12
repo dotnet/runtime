@@ -42,7 +42,7 @@ namespace System.Numerics
         public static System.Numerics.BigInteger DivRem(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor, out System.Numerics.BigInteger remainder) { throw null; }
         public bool Equals(long other) { throw null; }
         public bool Equals(System.Numerics.BigInteger other) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public bool Equals(ulong other) { throw null; }
         public long GetBitLength() { throw null; }
@@ -192,7 +192,7 @@ namespace System.Numerics
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, double divisor) { throw null; }
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, System.Numerics.Complex divisor) { throw null; }
         public bool Equals(System.Numerics.Complex value) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Complex Exp(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex FromPolarCoordinates(double magnitude, double phase) { throw null; }
         public override int GetHashCode() { throw null; }

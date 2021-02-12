@@ -39,9 +39,9 @@
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/security-manager.h"
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/w32event.h>
+#include <mono/metadata/w32process.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/utils/strenc.h>
@@ -87,9 +87,6 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 
 static char *
 mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s, MonoError *error);
-
-static void
-array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size);
 
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (pointer, "System.Reflection", "Pointer")
@@ -505,12 +502,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		if (mono_domain_get () != domain) {
 			/* Transfer into the target domain */
 			last_domain = mono_domain_get ();
-			if (!mono_domain_set_fast (domain, FALSE)) {
-				vtable->initialized = 1;
-				mono_type_initialization_unlock ();
-				mono_error_set_exception_instance (error, mono_get_exception_appdomain_unloaded ());
-				goto return_false;
-			}
+			mono_domain_set_fast (domain, FALSE);
 		}
 		lock = (TypeInitializationLock *)g_malloc0 (sizeof (TypeInitializationLock));
 		mono_coop_mutex_init_recursive (&lock->mutex);
@@ -1255,12 +1247,6 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 				mono_custom_attrs_free (ainfo);
 				return SPECIAL_STATIC_THREAD;
 			}
-#ifndef ENABLE_NETCORE
-			else if (strcmp (klass_name, "ContextStaticAttribute") == 0) {
-				mono_custom_attrs_free (ainfo);
-				return SPECIAL_STATIC_CONTEXT;
-			}
-#endif
 		}
 	}
 	mono_custom_attrs_free (ainfo);
@@ -3415,11 +3401,7 @@ mono_field_set_value_internal (MonoObject *obj, MonoClassField *field, void *val
 		return;
 
 	dest = (char*)obj + field->offset;
-#if ENABLE_NETCORE
 	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
-#else
-	mono_copy_value (field->type, dest, value, FALSE);
-#endif
 }
 
 /**
@@ -3727,12 +3709,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 			mono_field_get_value_internal (obj, field, v);
 		}
 
-#if ENABLE_NETCORE
 		args [0] = ptr;
-#else
-		/* MONO_TYPE_PTR is passed by value to runtime_invoke () */
-		args [0] = ptr ? *ptr : NULL;
-#endif
 		args [1] = mono_type_get_object_checked (mono_domain_get (), type, error);
 		goto_if_nok (error, return_null);
 
@@ -4962,18 +4939,6 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObjectHandle delegate
 static MonoRuntimeUnhandledExceptionPolicy runtime_unhandled_exception_policy = MONO_UNHANDLED_POLICY_CURRENT;
 
 /**
- * mono_runtime_unhandled_exception_policy_set:
- * \param policy the new policy
- * This is a VM internal routine.
- * Sets the runtime policy for handling unhandled exceptions.
- */
-void
-mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy policy)
-{
-	runtime_unhandled_exception_policy = policy;
-}
-
-/**
  * mono_runtime_unhandled_exception_policy_get:
  *
  * This is a VM internal routine.
@@ -5014,7 +4979,6 @@ mono_unhandled_exception (MonoObject *exc)
 	MONO_EXTERNAL_ONLY_VOID (mono_unhandled_exception_internal (exc));
 }
 
-#ifdef ENABLE_NETCORE
 static MonoObjectHandle
 create_first_chance_exception_eventargs (MonoObjectHandle exc, MonoError *error)
 {
@@ -5109,7 +5073,6 @@ mono_first_chance_exception_checked (MonoObjectHandle exc, MonoError *error)
 		mono_runtime_delegate_try_invoke_handle (delegate_handle, args, error);
 	}
 }
-#endif
 
 /**
  * mono_unhandled_exception_checked:
@@ -5136,55 +5099,19 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 	 * https://msdn.microsoft.com/en-us/library/system.appdomainunloadedexception(v=vs.110).aspx#Anchor_6
 	 */
 	gboolean no_event = (klass == mono_defaults.threadabortexception_class);
-#ifndef ENABLE_NETCORE
-	no_event = no_event ||
-			(klass == mono_class_get_appdomain_unloaded_exception_class () &&
-			mono_thread_info_current ()->runtime_thread);
-#endif
 	if (no_event)
 		return;
 
 	MONO_STATIC_POINTER_INIT (MonoClassField, field)
 
-#ifndef ENABLE_NETCORE
-		field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "UnhandledException", NULL);
-#else
 		static gboolean inited;
 		if (!inited) {
 			field = mono_class_get_field_from_name_full (mono_defaults.appcontext_class, "UnhandledException", NULL);
 			inited = TRUE;
 		}
-#endif
 
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, field)
 
-#ifndef ENABLE_NETCORE
-	g_assert (field);
-
-	MonoDomain *root_domain;
-	MonoObjectHandle current_appdomain_delegate = MONO_HANDLE_NEW (MonoObject, NULL);
-
-	root_domain = mono_get_root_domain ();
-
-	MonoObjectHandle root_appdomain_delegate = MONO_HANDLE_NEW (MonoObject, mono_field_get_value_object_checked (root_domain, field, (MonoObject*) root_domain->domain, error)); /* FIXME use handles for mono_field_get_value_object_checked */
-	return_if_nok (error);
-	if (current_domain != root_domain) {
-		MONO_HANDLE_ASSIGN (current_appdomain_delegate, MONO_HANDLE_NEW (MonoObject, mono_field_get_value_object_checked (current_domain, field, (MonoObject*) current_domain->domain, error))); /* FIXME use handles for mono_field_get_value_object_checked */
-		return_if_nok (error);
-	}
-
-	if (MONO_HANDLE_IS_NULL (current_appdomain_delegate) && MONO_HANDLE_IS_NULL (root_appdomain_delegate)) {
-		mono_print_unhandled_exception_internal (MONO_HANDLE_RAW (exc)); /* FIXME use handles for mono_print_unhandled_exception */
-	} else {
-		/* unhandled exception callbacks must not be aborted */
-		mono_threads_begin_abort_protected_block ();
-		if (!MONO_HANDLE_IS_NULL (root_appdomain_delegate))
-			call_unhandled_exception_delegate (root_domain, root_appdomain_delegate, exc);
-		if (!MONO_HANDLE_IS_NULL (current_appdomain_delegate))
-			call_unhandled_exception_delegate (current_domain, current_appdomain_delegate, exc);
-		mono_threads_end_abort_protected_block ();
-	}
-#else
 	if (!field)
 		goto leave;
 
@@ -5209,7 +5136,6 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 	}
 
 leave:
-#endif
 
 	/* set exitcode only if we will abort the process */
 	if ((main_thread && mono_thread_internal_current () == main_thread->internal_thread)
@@ -6338,11 +6264,11 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 	g_assert (size == mono_array_length_internal (dest));
 	size *= mono_array_element_size (klass);
 
-	array_full_copy_unchecked_size (src, dest, klass, size);
+	mono_array_full_copy_unchecked_size (src, dest, klass, size);
 }
 
-static void
-array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size)
+void
+mono_array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size)
 {
 	if (mono_gc_is_moving ()) {
 		MonoClass *element_class = m_class_get_element_class (klass);
@@ -6352,8 +6278,7 @@ array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klas
 			else
 				mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
 		} else {
-			mono_array_memcpy_refs_internal
- (dest, 0, src, 0, mono_array_length_internal (src));
+			mono_array_memcpy_refs_internal (dest, 0, src, 0, mono_array_length_internal (src));
 		}
 	} else {
 		mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
@@ -6405,7 +6330,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, Mo
 
 	MonoGCHandle dst_handle;
 	dst_handle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, o), TRUE);
-	array_full_copy_unchecked_size (MONO_HANDLE_RAW (array_handle), MONO_HANDLE_RAW (o), klass, size);
+	mono_array_full_copy_unchecked_size (MONO_HANDLE_RAW (array_handle), MONO_HANDLE_RAW (o), klass, size);
 	mono_gchandle_free_internal (dst_handle);
 
 	MONO_HANDLE_ASSIGN (result, o);
@@ -6712,7 +6637,6 @@ mono_array_new_specific_checked (MonoVTable *vtable, uintptr_t n, MonoError *err
 	return mono_array_new_specific_internal (vtable, n, FALSE, error);
 }
 
-#ifdef ENABLE_NETCORE
 MonoArrayHandle
 ves_icall_System_GC_AllocPinnedArray (MonoReflectionTypeHandle array_type, gint32 length, MonoError *error)
 {
@@ -6730,7 +6654,6 @@ ves_icall_System_GC_AllocPinnedArray (MonoReflectionTypeHandle array_type, gint3
 fail:
 	return MONO_HANDLE_NEW (MonoArray, NULL);
 }
-#endif
 
 
 MonoArrayHandle
@@ -7769,8 +7692,6 @@ mono_ldstr_checked (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError
 		MONO_HANDLE_ASSIGN_RAW (str, (MonoString *)mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL, error));
 		goto exit;
 	}
-	if (!mono_verifier_verify_string_signature (image, idx, error))
-		goto exit;
 	mono_ldstr_metadata_sig (domain, mono_metadata_user_string (image, idx), str, error);
 exit:
 	HANDLE_FUNCTION_RETURN_OBJ (str);
@@ -7853,8 +7774,6 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 
 	error_init (error);
 
-	if (!mono_verifier_verify_string_signature (image, idx, error))
-		return NULL;
 	str = mono_metadata_user_string (image, idx);
 
 	len2 = mono_metadata_decode_blob_size (str, &str);
@@ -8320,59 +8239,6 @@ mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx)
 	eh_callbacks.mono_raise_exception_with_ctx (ex, ctx);
 }
 
-#ifndef ENABLE_NETCORE
-
-/**
- * mono_wait_handle_new:
- * \param domain Domain where the object will be created
- * \param handle Handle for the wait handle
- * \param error set on error.
- * \returns A new \c MonoWaitHandle created in the given domain for the
- * given handle.  On failure returns NULL and sets \p error.
- */
-MonoWaitHandle *
-mono_wait_handle_new (MonoDomain *domain, HANDLE handle, MonoError *error)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoWaitHandle *res;
-	gpointer params [1];
-	static MonoMethod *handle_set;
-
-	error_init (error);
-	res = (MonoWaitHandle *)mono_object_new_checked (domain, mono_defaults.manualresetevent_class, error);
-	return_val_if_nok (error, NULL);
-
-	/* Even though this method is virtual, it's safe to invoke directly, since the object type matches.  */
-	if (!handle_set)
-		handle_set = mono_class_get_property_from_name_internal (mono_defaults.manualresetevent_class, "Handle")->set;
-
-	params [0] = &handle;
-
-	mono_runtime_invoke_checked (handle_set, res, params, error);
-	return res;
-}
-
-HANDLE
-mono_wait_handle_get_handle (MonoWaitHandle *handle)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoSafeHandle *sh;
-
-	MONO_STATIC_POINTER_INIT (MonoClassField, f_safe_handle)
-
-		f_safe_handle = mono_class_get_field_from_name_full (mono_defaults.manualresetevent_class, "safeWaitHandle", NULL);
-		g_assert (f_safe_handle);
-
-	MONO_STATIC_POINTER_INIT_END (MonoClassField, f_safe_handle)
-
-	mono_field_get_value_internal ((MonoObject*)handle, f_safe_handle, &sh);
-	return sh->handle;
-}
-
-#endif /* ENABLE_NETCORE */
-
 /*
  * Returns the MonoMethod to call to Capture the ExecutionContext.
  */
@@ -8425,128 +8291,6 @@ mono_runtime_capture_context (MonoDomain *domain, MonoError *error)
 	return runtime_invoke (NULL, NULL, NULL, domain->capture_context_method);
 #endif
 }
-
-#ifndef ENABLE_NETCORE
-
-/**
- * mono_async_result_new:
- * \param domain domain where the object will be created.
- * \param handle wait handle.
- * \param state state to pass to AsyncResult
- * \param data C closure data.
- * \param error set on error.
- * Creates a new MonoAsyncResult (\c AsyncResult C# class) in the given domain.
- * If the handle is not null, the handle is initialized to a \c MonoWaitHandle.
- * On failure returns NULL and sets \p error.
- */
-MonoAsyncResult *
-mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpointer data, MonoObject *object_data, MonoError *error)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	error_init (error);
-	MonoAsyncResult *res = (MonoAsyncResult *)mono_object_new_checked (domain, mono_class_get_asyncresult_class (), error);
-	return_val_if_nok (error, NULL);
-	MonoObject *context = mono_runtime_capture_context (domain, error);
-	return_val_if_nok (error, NULL);
-	/* we must capture the execution context from the original thread */
-	if (context) {
-		MONO_OBJECT_SETREF_INTERNAL (res, execution_context, context);
-		/* note: result may be null if the flow is suppressed */
-	}
-
-	res->data = (void **)data;
-	MONO_OBJECT_SETREF_INTERNAL (res, object_data, object_data);
-	MONO_OBJECT_SETREF_INTERNAL (res, async_state, state);
-	MonoWaitHandle *wait_handle = mono_wait_handle_new (domain, handle, error);
-	return_val_if_nok (error, NULL);
-	if (handle != NULL)
-		MONO_OBJECT_SETREF_INTERNAL (res, handle, (MonoObject *) wait_handle);
-
-	res->sync_completed = FALSE;
-	res->completed = FALSE;
-
-	return res;
-}
-
-static MonoObject*
-mono_message_invoke (MonoThreadInfo* thread_info_current_var,
-		     MonoObject* target, MonoMethodMessage* msg,
-		     MonoObject** exc, MonoArray** out_args, MonoError* error);
-
-MonoObjectHandle
-ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResultHandle aresh, MonoError* error)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	SETUP_ICALL_FUNCTION;
-
-	MonoAsyncCall *ac;
-	MonoObjectHandle res = MONO_HANDLE_NEW (MonoObject, NULL);
-	MonoAsyncResult* ares = MONO_HANDLE_RAW (aresh);
-
-	g_assert (ares);
-	g_assert (ares->async_delegate);
-	MONO_HANDLE_NEW (MonoObject, ares->async_delegate);
-
-	ac = (MonoAsyncCall*) ares->object_data;
-	MONO_HANDLE_NEW (MonoAsyncCall, ac);
-
-	if (!ac) {
-		MONO_HANDLE_ASSIGN_RAW (res, mono_runtime_delegate_invoke_checked (ares->async_delegate, (void**) &ares->async_state, error));
-		return_val_if_nok (error, NULL_HANDLE);
-	} else {
-		gpointer wait_event = NULL;
-
-		MONO_HANDLE_NEW (MonoMethodMessage, ac->msg);
-
-		ac->msg->exc = NULL;
-
-		MONO_HANDLE_ASSIGN_RAW (res, mono_message_invoke (mono_thread_info_current_var,
-								  ares->async_delegate,
-								  ac->msg,
-								  &ac->msg->exc,
-								  &ac->out_args,
-								  error));
-
-		/* The exit side of the invoke must not be aborted as it would leave the runtime in an undefined state */
-		mono_threads_begin_abort_protected_block ();
-
-		if (!ac->msg->exc) {
-			MonoException *ex = mono_error_convert_to_exception (error);
-			MONO_OBJECT_SETREF_INTERNAL (ac->msg, exc, (MonoObject *)ex);
-		} else {
-			mono_error_cleanup (error);
-		}
-
-		MONO_OBJECT_SETREF_INTERNAL (ac, res, MONO_HANDLE_RAW (res));
-
-		MonoObjectHandle handle = MONO_HANDLE_NEW (MonoObject, NULL); // Create handle outside of lock.
-
-		mono_monitor_enter_internal ((MonoObject*) ares);
-		ares->completed = 1;
-		if (ares->handle) {
-			MONO_HANDLE_ASSIGN_RAW (handle, ares->handle);
-			wait_event = mono_wait_handle_get_handle ((MonoWaitHandle*) ares->handle);
-		}
-		mono_monitor_exit_internal ((MonoObject*) ares);
-
-		if (wait_event != NULL)
-			mono_w32event_set (wait_event);
-
-		error_init (error); //the else branch would leave it in an undefined state
-		if (ac->cb_method) {
-			MONO_HANDLE_NEW (MonoDelegate, ac->cb_target);
-			mono_runtime_invoke_checked (ac->cb_method, ac->cb_target, (gpointer*) &ares, error);
-		}
-
-		mono_threads_end_abort_protected_block ();
-
-		return_val_if_nok (error, NULL_HANDLE);
-	}
-	return res;
-}
-#endif /* ENABLE_NETCORE */
 
 gboolean
 mono_message_init (MonoDomain *domain,

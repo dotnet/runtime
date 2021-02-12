@@ -56,7 +56,6 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/attach.h>
 #include <mono/utils/mono-math.h>
@@ -854,6 +853,7 @@ dump_memory_around_ip (MonoContext *mctx)
 
 	gpointer native_ip = MONO_CONTEXT_GET_IP (mctx);
 	if (native_ip) {
+		native_ip = MINI_FTNPTR_TO_ADDR (native_ip);
 		g_async_safe_printf ("Memory around native instruction pointer (%p):", native_ip);
 		mono_dump_mem (((guint8 *) native_ip) - 0x10, 0x40);
 	} else {

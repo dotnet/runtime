@@ -347,6 +347,54 @@ prefix_name ## _rt_ ## type_name ## _ ## func_name
 #define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
 	EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(ep, hash_map_name, hash_map_type, iterator_type, key_type, value_type)
 
+// Rundown callbacks.
+typedef
+bool
+(*ep_rt_mono_fire_method_rundown_events_func)(
+	const uint64_t method_id,
+	const uint64_t module_id,
+	const uint64_t method_start_address,
+	const uint32_t method_size,
+	const uint32_t method_token,
+	const uint32_t method_flags,
+	const ep_char8_t *method_namespace,
+	const ep_char8_t *method_name,
+	const ep_char8_t *method_signature,
+	const uint16_t count_of_map_entries,
+	const uint32_t *il_offsets,
+	const uint32_t *native_offsets,
+	void *user_data);
+
+typedef
+bool
+(*ep_rt_mono_fire_assembly_rundown_events_func)(
+	const uint64_t domain_id,
+	const uint64_t assembly_id,
+	const uint32_t assembly_flags,
+	const uint32_t binding_id,
+	const ep_char8_t *assembly_name,
+	const uint64_t module_id,
+	const uint32_t module_flags,
+	const uint32_t reserved_flags,
+	const ep_char8_t *module_il_path,
+	const ep_char8_t *module_native_path,
+	const uint8_t *managed_pdb_signature,
+	const uint32_t managed_pdb_age,
+	const ep_char8_t *managed_pdb_build_path,
+	const uint8_t *native_pdb_signature,
+	const uint32_t native_pdb_age,
+	const ep_char8_t *native_pdb_build_path,
+	void *user_data);
+
+typedef
+bool
+(*ep_rt_mono_fire_domain_rundown_events_func)(
+	const uint64_t domain_id,
+	const uint32_t domain_flags,
+	const ep_char8_t *domain_name,
+	const uint32_t domain_index,
+	void *user_data);
+
 typedef EventPipeThreadHolder * (*ep_rt_thread_holder_alloc_func)(void);
 typedef void (*ep_rt_thread_holder_free_func)(EventPipeThreadHolder *thread_holder);
 
@@ -354,7 +402,7 @@ typedef int (*ep_rt_mono_cpu_count_func)(void);
 typedef int (*ep_rt_mono_process_current_pid_func)(void);
 typedef MonoNativeThreadId (*ep_rt_mono_native_thread_id_get_func)(void);
 typedef gboolean (*ep_rt_mono_native_thread_id_equals_func)(MonoNativeThreadId, MonoNativeThreadId);
-typedef mono_bool (*ep_rt_mono_runtime_is_shutting_down_func)(void);
+typedef gboolean (*ep_rt_mono_runtime_is_shutting_down_func)(void);
 typedef gboolean (*ep_rt_mono_rand_try_get_bytes_func)(guchar *buffer, gssize buffer_size, MonoError *error);
 typedef EventPipeThread * (*ep_rt_mono_thread_get_func)(void);
 typedef EventPipeThread * (*ep_rt_mono_thread_get_or_create_func)(void);
@@ -376,6 +424,10 @@ typedef gpointer (*ep_rt_mono_thread_attach_func)(gboolean);
 typedef void (*ep_rt_mono_thread_detach_func)(void);
 typedef char* (*ep_rt_mono_get_os_cmd_line_func)(void);
 typedef char* (*ep_rt_mono_get_managed_cmd_line_func)(void);
+typedef gboolean (*ep_rt_mono_execute_rundown_func)(ep_rt_mono_fire_domain_rundown_events_func domain_events_func, ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func, ep_rt_mono_fire_method_rundown_events_func methods_events_func);
+typedef gboolean (*ep_rt_mono_walk_managed_stack_for_thread_func)(ep_rt_thread_handle_t thread, EventPipeStackContents *stack_contents);
+typedef gboolean (*ep_rt_mono_method_get_simple_assembly_name_func)(ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
+typedef gboolean (*ep_rt_mono_method_get_full_name_func)(ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
 
 typedef struct _EventPipeMonoFuncTable {
 	ep_rt_mono_process_current_pid_func ep_rt_mono_process_current_pid;
@@ -404,6 +456,10 @@ typedef struct _EventPipeMonoFuncTable {
 	ep_rt_mono_thread_detach_func ep_rt_mono_thread_detach;
 	ep_rt_mono_get_os_cmd_line_func ep_rt_mono_get_os_cmd_line;
 	ep_rt_mono_get_managed_cmd_line_func ep_rt_mono_get_managed_cmd_line;
+	ep_rt_mono_execute_rundown_func ep_rt_mono_execute_rundown;
+	ep_rt_mono_walk_managed_stack_for_thread_func ep_rt_mono_walk_managed_stack_for_thread;
+	ep_rt_mono_method_get_simple_assembly_name_func ep_rt_mono_method_get_simple_assembly_name;
+	ep_rt_mono_method_get_full_name_func ep_rt_mono_method_get_full_name;
 } EventPipeMonoFuncTable;
 
 int64_t
@@ -421,7 +477,15 @@ ep_rt_mono_system_timestamp_get (void);
 void
 ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array);
 
-#ifndef EP_RT_MONO_USE_STATIC_RUNTIME
+void
+ep_rt_mono_init_providers_and_events (void);
+
+void
+ep_rt_mono_fini_providers_and_events (void);
+
+void
+ep_rt_mono_execute_rundown (void);
+
 static
 inline
 EventPipeMonoFuncTable *
@@ -430,7 +494,6 @@ ep_rt_mono_func_table_get (void)
 	extern EventPipeMonoFuncTable _ep_rt_mono_func_table;
 	return &_ep_rt_mono_func_table;
 }
-#endif
 
 static
 inline
@@ -603,13 +666,7 @@ inline
 gboolean
 ep_rt_mono_rand_try_get_bytes (guchar *buffer, gssize buffer_size, MonoError *error)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	extern gpointer ep_rt_mono_rand_provider;
-	g_assert (ep_rt_mono_rand_provider != NULL);
-	return mono_rand_try_get_bytes (&ep_rt_mono_rand_provider, buffer, buffer_size, error);
-#else
 	return ep_rt_mono_func_table_get ()->ep_rt_mono_rand_try_get_bytes (buffer, buffer_size, error);
-#endif
 }
 
 static
@@ -617,18 +674,7 @@ inline
 void
 ep_rt_mono_thread_exited (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	extern gboolean ep_rt_mono_initialized;
-	extern MonoNativeTlsKey ep_rt_mono_thread_holder_tls_id;
-	if (ep_rt_mono_initialized) {
-		EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (ep_rt_mono_thread_holder_tls_id);
-		if (thread_holder)
-			thread_holder_free_func (thread_holder);
-		mono_native_tls_set_value (ep_rt_mono_thread_holder_tls_id, NULL);
-	}
-#else
 	ep_rt_mono_func_table_get ()->ep_rt_mono_thread_exited ();
-#endif
 }
 
 static
@@ -672,18 +718,7 @@ inline
 void
 ep_rt_mono_thread_setup (bool background_thread)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	// NOTE, under netcore, only root domain exists.
-	if (!mono_thread_current ()) {
-		MonoThread *thread = mono_thread_internal_attach (mono_get_root_domain ());
-		if (background_thread && thread) {
-			mono_thread_set_state (thread, ThreadState_Background);
-			mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
-		}
-	}
-#else
 	ep_rt_mono_func_table_get ()->ep_rt_mono_thread_attach (background_thread);
-#endif
 }
 
 static
@@ -691,13 +726,7 @@ inline
 void
 ep_rt_mono_thread_teardown (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	MonoThread *current_thread = mono_thread_current ();
-	if (current_thread)
-		mono_thread_internal_detach (current_thread);
-#else
 	ep_rt_mono_func_table_get ()->ep_rt_mono_thread_detach ();
-#endif
 }
 
 /*
@@ -764,11 +793,7 @@ inline
 void
 ep_rt_init (void)
 {
-#ifndef EP_RT_MONO_USE_STATIC_RUNTIME
 	mono_eventpipe_init (ep_rt_mono_func_table_get (), thread_holder_alloc_func, thread_holder_free_func);
-#else
-	mono_eventpipe_init (NULL, thread_holder_alloc_func, thread_holder_free_func);
-#endif
 	ep_rt_spin_lock_alloc (ep_rt_mono_config_lock_get ());
 }
 
@@ -825,8 +850,7 @@ ep_rt_walk_managed_stack_for_thread (
 	ep_rt_thread_handle_t thread,
 	EventPipeStackContents *stack_contents)
 {
-	// TODO: Implement.
-	return true;
+	return (ep_rt_mono_func_table_get ()->ep_rt_mono_walk_managed_stack_for_thread (thread, stack_contents) == TRUE) ? true : false;
 }
 
 static
@@ -837,8 +861,7 @@ ep_rt_method_get_simple_assembly_name (
 	ep_char8_t *name,
 	size_t name_len)
 {
-	//TODO: Implement.
-	return false;
+	return (ep_rt_mono_func_table_get ()->ep_rt_mono_method_get_simple_assembly_name (method, name, name_len) == TRUE) ? true : false;
 }
 
 static
@@ -849,8 +872,7 @@ ep_rt_method_get_full_name (
 	ep_char8_t *name,
 	size_t name_len)
 {
-	//TODO: Implement.
-	return false;
+	return (ep_rt_mono_func_table_get ()->ep_rt_mono_method_get_full_name (method, name, name_len) == TRUE) ? true : false;
 }
 
 static
@@ -866,7 +888,7 @@ inline
 void
 ep_rt_init_providers_and_events (void)
 {
-	;
+	ep_rt_mono_init_providers_and_events ();
 }
 
 static
@@ -1034,6 +1056,19 @@ ep_rt_config_value_get_use_portable_thread_pool (void)
 {
 	// Only supports portable thread pool.
 	return true;
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_rundown (void)
+{
+	uint32_t value_uint32_t = 1;
+	gchar *value = g_getenv ("COMPlus_EventPipeRundown");
+	if (value)
+		value_uint32_t = (uint32_t)atoi (value);
+	g_free (value);
+	return value_uint32_t;
 }
 
 /*
@@ -1249,9 +1284,9 @@ bool
 ep_rt_process_detach (void)
 {
 #ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	return (bool)mono_runtime_is_shutting_down ();
+	return (mono_runtime_is_shutting_down () == TRUE) ? true : false;
 #else
-	return (bool)ep_rt_mono_func_table_get ()->ep_rt_mono_runtime_is_shutting_down ();
+	return (ep_rt_mono_func_table_get ()->ep_rt_mono_runtime_is_shutting_down () == TRUE) ? true : false;
 #endif
 }
 
@@ -1313,7 +1348,11 @@ inline
 void
 ep_rt_execute_rundown (void)
 {
-	//TODO: Implement.
+	if (ep_rt_config_value_get_rundown () > 0) {
+		// Ask the runtime to emit rundown events.
+		if (/*is_running &&*/ !ep_rt_process_shutdown ())
+			ep_rt_mono_execute_rundown ();
+	}
 }
 
 /*
@@ -1386,9 +1425,9 @@ ep_rt_thread_create (
 		thread_params->thread_params.thread_params = params;
 		thread_params->background_thread = true;
 #ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-		return (bool)mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id);
+		return (mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
 #else
-		return (bool)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id);
+		return (ep_rt_mono_func_table_get ()->ep_rt_mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
 #endif
 	}
 
@@ -1922,17 +1961,10 @@ inline
 EventPipeThread *
 ep_rt_thread_get_or_create (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	extern MonoNativeTlsKey ep_rt_mono_thread_holder_tls_id;
-	EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (ep_rt_mono_thread_holder_tls_id);
-	if (!thread_holder) {
-		thread_holder = thread_holder_alloc_func ();
-		mono_native_tls_set_value (ep_rt_mono_thread_holder_tls_id, thread_holder);
-	}
-	return ep_thread_holder_get_thread (thread_holder);
-#else
-	return ep_rt_mono_func_table_get ()->ep_rt_mono_thread_get_or_create ();
-#endif
+	EventPipeThread *thread = ep_rt_thread_get ();
+	if (!thread)
+		thread = ep_rt_mono_func_table_get ()->ep_rt_mono_thread_get_or_create ();
+	return thread;
 }
 
 static
@@ -2047,9 +2079,9 @@ bool
 ep_rt_mono_thread_yield (void)
 {
 #ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	return (bool)mono_thread_info_yield ();
+	return (mono_thread_info_yield () == TRUE) ? true : false;
 #else
-	return (bool)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_yield ();
+	return (ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_yield () == TRUE) ? true : false;
 #endif
 }
 

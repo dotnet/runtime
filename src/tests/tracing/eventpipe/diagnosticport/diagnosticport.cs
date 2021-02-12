@@ -117,7 +117,13 @@ namespace Tracing.Tests.DiagnosticPortValidation
                         circularBufferSizeMB: 1000,
                         format: EventPipeSerializationFormat.NetTrace,
                         providers: new List<Provider> { 
-                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose)
+                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose),
+                            // workaround for https://github.com/dotnet/runtime/issues/44072 which happens because the
+                            // above provider only sends 2 events and that can cause EventPipeEventSource (from TraceEvent)
+                            // to not dispatch the events if the EventBlock is a size not divisible by 8 (the reading alignment in TraceEvent).
+                            // Adding this provider keeps data flowing over the pipe so the reader doesn't get stuck waiting for data
+                            // that won't come otherwise.
+                            new Provider("Microsoft-DotNETCore-SampleProfiler")
                         });
                     Logger.logger.Log("Starting EventPipeSession over standard connection");
                     using Stream eventStream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
@@ -216,7 +222,13 @@ namespace Tracing.Tests.DiagnosticPortValidation
                         circularBufferSizeMB: 1000,
                         format: EventPipeSerializationFormat.NetTrace,
                         providers: new List<Provider> { 
-                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose)
+                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose),
+                            // workaround for https://github.com/dotnet/runtime/issues/44072 which happens because the
+                            // above provider only sends 2 events and that can cause EventPipeEventSource (from TraceEvent)
+                            // to not dispatch the events if the EventBlock is a size not divisible by 8 (the reading alignment in TraceEvent).
+                            // Adding this provider keeps data flowing over the pipe so the reader doesn't get stuck waiting for data
+                            // that won't come otherwise.
+                            new Provider("Microsoft-DotNETCore-SampleProfiler")
                         });
                     Logger.logger.Log("Starting EventPipeSession over standard connection");
                     using Stream eventStream = EventPipeClient.CollectTracing(pid, config, out var sessionId);

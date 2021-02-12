@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.DumpAotProfileData(ref buf, len, extraArg);
         }
 
-        private static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
+        public static int BindJSObject(int jsId, bool ownsHandle, int mappedType)
         {
             WeakReference? reference;
             lock (_boundObjects)
@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return reference.Target is JSObject target ? target.Int32Handle : 0;
         }
 
-        private static int BindCoreCLRObject(int jsId, int gcHandle)
+        public static int BindCoreCLRObject(int jsId, int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? obj;
@@ -157,7 +157,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return true;
         }
 
-        private static void UnBindRawJSObjectAndFree(int gcHandle)
+        public static void UnBindRawJSObjectAndFree(int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             JSObject? obj = h.Target as JSObject;
@@ -171,27 +171,27 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private static object CreateTaskSource(int jsId)
+        public static object CreateTaskSource(int jsId)
         {
             return new TaskCompletionSource<object>();
         }
 
-        private static void SetTaskSourceResult(TaskCompletionSource<object> tcs, object result)
+        public static void SetTaskSourceResult(TaskCompletionSource<object> tcs, object result)
         {
             tcs.SetResult(result);
         }
 
-        private static void SetTaskSourceFailure(TaskCompletionSource<object> tcs, string reason)
+        public static void SetTaskSourceFailure(TaskCompletionSource<object> tcs, string reason)
         {
             tcs.SetException(new JSException(reason));
         }
 
-        private static int GetTaskAndBind(TaskCompletionSource<object> tcs, int jsId)
+        public static int GetTaskAndBind(TaskCompletionSource<object> tcs, int jsId)
         {
             return BindExistingObject(tcs.Task, jsId);
         }
 
-        private static int BindExistingObject(object rawObj, int jsId)
+        public static int BindExistingObject(object rawObj, int jsId)
         {
             JSObject? jsObject;
             if (rawObj is Delegate dele)
@@ -219,7 +219,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject.Int32Handle;
         }
 
-        private static int GetJSObjectId(object rawObj)
+        public static int GetJSObjectId(object rawObj)
         {
             JSObject? jsObject;
             if (rawObj is Delegate dele)
@@ -239,7 +239,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? -1;
         }
 
-        private static object? GetDotNetObject(int gcHandle)
+        public static object? GetDotNetObject(int gcHandle)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
 
@@ -247,7 +247,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 js.GetWrappedObject() ?? h.Target : h.Target;
         }
 
-        private static bool IsSimpleArray(object a)
+        public static bool IsSimpleArray(object a)
         {
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
         }
@@ -262,12 +262,12 @@ namespace System.Runtime.InteropServices.JavaScript
             internal RuntimeMethodHandle handle;
         }
 
-        private static string GetCallSignature(IntPtr methodHandle)
+        public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
         {
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;
 
-            MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle);
+            MethodBase? mb = objForRuntimeType == null ? MethodBase.GetMethodFromHandle(tmp.handle) : MethodBase.GetMethodFromHandle(tmp.handle, Type.GetTypeHandle(objForRuntimeType));
             if (mb == null)
                 return string.Empty;
 
@@ -338,7 +338,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return new string(res);
         }
 
-        private static void SetupJSContinuation(Task task, JSObject continuationObj)
+        public static void SetupJSContinuation(Task task, JSObject continuationObj)
         {
             if (task.IsCompleted)
                 Complete();
@@ -405,12 +405,12 @@ namespace System.Runtime.InteropServices.JavaScript
             return null;
         }
 
-        private static string ObjectToString(object o)
+        public static string ObjectToString(object o)
         {
             return o.ToString() ?? string.Empty;
         }
 
-        private static double GetDateValue(object dtv)
+        public static double GetDateValue(object dtv)
         {
             if (dtv == null)
                 throw new ArgumentNullException(nameof(dtv));
@@ -423,18 +423,18 @@ namespace System.Runtime.InteropServices.JavaScript
             return new DateTimeOffset(dt).ToUnixTimeMilliseconds();
         }
 
-        private static DateTime CreateDateTime(double ticks)
+        public static DateTime CreateDateTime(double ticks)
         {
             DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
             return unixTime.DateTime;
         }
 
-        private static Uri CreateUri(string uri)
+        public static Uri CreateUri(string uri)
         {
             return new Uri(uri);
         }
 
-        private static bool SafeHandleAddRef(SafeHandle safeHandle)
+        public static bool SafeHandleAddRef(SafeHandle safeHandle)
         {
             bool _addRefSucceeded = false;
 #if DEBUG_HANDLE
@@ -466,7 +466,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return _addRefSucceeded;
         }
 
-        private static void SafeHandleRelease(SafeHandle safeHandle)
+        public static void SafeHandleRelease(SafeHandle safeHandle)
         {
             safeHandle.DangerousRelease();
 #if DEBUG_HANDLE
@@ -479,7 +479,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
-        private static void SafeHandleReleaseByHandle(int jsId)
+        public static void SafeHandleReleaseByHandle(int jsId)
         {
 #if DEBUG_HANDLE
             Debug.WriteLine($"SafeHandleReleaseByHandle: {jsId}");

@@ -17,6 +17,29 @@
 #include "hash.h"
 #include "agnostic.h"
 
+extern bool g_debugRec;
+extern bool g_debugRep;
+
+#if 0
+// Enable these to get verbose logging during record or playback.
+#define DEBUG_REC(x)    \
+    if (g_debugRec) {   \
+        printf("rec");  \
+        x;              \
+        printf("\n");   \
+    }
+
+#define DEBUG_REP(x)    \
+    if (g_debugRep) {   \
+        printf("rep");  \
+        x;              \
+        printf("\n");   \
+    }
+#else
+#define DEBUG_REC(x)
+#define DEBUG_REP(x)
+#endif
+
 // Helper function for dumping.
 const char* toString(CorInfoType cit);
 
@@ -637,11 +660,11 @@ public:
 
     void recAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData, HRESULT result);
     void dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agnostic_AllocPgoInstrumentationBySchema& value);
-    DWORD repAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
+    HRESULT repAllocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
 
     void recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData, HRESULT result);
     void dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value);
-    DWORD repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData);
+    HRESULT repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, UINT32* pCountSchemaItems, BYTE** pInstrumentationData);
 
     void recGetLikelyClass(CORINFO_METHOD_HANDLE ftnHnd, CORINFO_CLASS_HANDLE  baseHnd, UINT32 ilOffset, CORINFO_CLASS_HANDLE classHnd, UINT32* pLikelihood, UINT32* pNumberOfClasses);
     void dmpGetLikelyClass(const Agnostic_GetLikelyClass& key, const Agnostic_GetLikelyClassResult& value);
@@ -827,7 +850,7 @@ private:
     void* AllocJitTempBuffer(size_t size)
     {
         DeletionNode *pDeletionNode = (DeletionNode *)malloc(sizeof(DeletionNode) + size);
-        pDeletionNode = this->nodesToDelete;
+        pDeletionNode->pNext = this->nodesToDelete;
         this->nodesToDelete = pDeletionNode;
         return pDeletionNode + 1;
     }
