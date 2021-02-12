@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
-## Licensed to the .NET Foundation under one or more agreements.
-## The .NET Foundation licenses this file to you under the MIT license.
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
 #
 ##
 # Title               : superpmi_setup.py
@@ -238,7 +238,7 @@ def first_fit(sorted_by_size, max_size):
         if file_size < max_size:
             for p_index in partitions:
                 total_in_curr_par = sum(n for _, n in partitions[p_index])
-                if (((total_in_curr_par + file_size) < max_size) and (len(partitions[p_index]) < MAX_FILES_COUNT)):
+                if ((total_in_curr_par + file_size) < max_size) and (len(partitions[p_index]) < MAX_FILES_COUNT):
                     partitions[p_index].append(curr_file)
                     found_bucket = True
                     break
@@ -256,13 +256,11 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _cwd=None, _env=None, _exit_on_fail=False):
+def run_command(command_to_run, _exit_on_fail=False):
     """ Runs the command.
 
     Args:
         command_to_run ([string]): Command to run along with arguments.
-        _cwd (string): Current working directory.
-        _env (string): Environment variables, if any.
         _exit_on_fail (bool): If it should exit on failure.
     Returns:
         (string, string): Returns a tuple of stdout and stderr
@@ -271,7 +269,7 @@ def run_command(command_to_run, _cwd=None, _env=None, _exit_on_fail=False):
     command_stdout = ""
     command_stderr = ""
     return_code = 1
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd, env=_env) as proc:
+    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
         command_stdout, command_stderr = proc.communicate()
         return_code = proc.returncode
 
@@ -282,7 +280,7 @@ def run_command(command_to_run, _cwd=None, _env=None, _exit_on_fail=False):
         if _exit_on_fail and return_code != 0:
             print("Command failed. Exiting.")
             sys.exit(1)
-    return (command_stdout, command_stderr, return_code)
+    return command_stdout, command_stderr, return_code
 
 
 def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda path: True):
@@ -366,6 +364,7 @@ def setup_microbenchmark(workitem_directory, arch):
 
     Args:
         workitem_directory (string): Path to work
+        arch (string): Architecture for which dotnet will be installed
     """
     performance_directory = path.join(workitem_directory, "performance")
 
@@ -375,26 +374,13 @@ def setup_microbenchmark(workitem_directory, arch):
     with ChangeDir(performance_directory):
         dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
         dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
-        # dotnet_exe = os.path.join(dotnet_directory, "dotnet")
-        # artifacts_directory = os.path.join(performance_directory, "artifacts")
-        # artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
 
         if not isfile(dotnet_install_script):
             print("Missing " + dotnet_install_script)
             return
 
-        # build_env_vars = os.environ.copy()
-        # build_env_vars["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1"
-        # build_env_vars["DOTNET_MULTILEVEL_LOOKUP"] = "0"
-        # build_env_vars["UseSharedCompilation"] = "false"
-
         run_command(
             get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir", dotnet_directory, "--verbose"])
-        # run_command([dotnet_exe, "restore", "src/benchmarks/micro/MicroBenchmarks.csproj", "--packages",
-        #              artifacts_packages_directory], _env=build_env_vars)
-        # run_command([dotnet_exe, "build", "src/benchmarks/micro/MicroBenchmarks.csproj", "--configuration", "Release",
-        #              "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
-        #              "-o", artifacts_directory], _env=build_env_vars)
 
 def get_python_name():
     """Gets the python name
@@ -467,9 +453,6 @@ def main(main_args):
     if coreclr_args.collection_name == "benchmarks":
         # Setup microbenchmarks
         setup_microbenchmark(workitem_directory, arch)
-        # performance_directory = path.join(correlation_payload_directory, "performance")
-        # run_command(
-        #     ["git", "clone", "--quiet", "--depth", "1", "https://github.com/kunalspathak/performance", performance_directory])
     else:
         # Setup for pmi/crossgen runs
 
