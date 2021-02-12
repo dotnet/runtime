@@ -98,7 +98,7 @@ def make_executable(file_name):
     Args:
         file_name (string): file to execute
     """
-    if not is_windows:
+    if is_windows:
         return
 
     print("Inside make_executable")
@@ -165,13 +165,13 @@ def build_and_run(coreclr_args, output_mch_name):
 
         contents = []
         # Unset the JitName so dotnet process will not fail
-        if not is_windows:
+        if is_windows:
+            contents.append("set JitName=%COMPlus_JitName%")
+            contents.append("set COMPlus_JitName=")
+        else:
             contents.append("#!/bin/bash")
             contents.append("export JitName=$COMPlus_JitName")
             contents.append("unset COMPlus_JitName")
-        else:
-            contents.append("set JitName=%COMPlus_JitName%")
-            contents.append("set COMPlus_JitName=")
         contents.append(f"pushd {performance_directory}")
         contents.append(collection_command)
 
