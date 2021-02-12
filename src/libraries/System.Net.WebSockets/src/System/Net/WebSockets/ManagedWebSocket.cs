@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -86,6 +87,8 @@ namespace System.Net.WebSockets
         /// </summary>
         private readonly SemaphoreSlim _sendFrameAsyncLock = new SemaphoreSlim(1, 1);
 
+        private readonly bool _compressionEnabled;
+
         // We maintain the current WebSocketState in _state.  However, we separately maintain _sentCloseFrame and _receivedCloseFrame
         // as there isn't a strict ordering between CloseSent and CloseReceived.  If we receive a close frame from the server, we need to
         // transition to CloseReceived even if we're currently in CloseSent, and if we send a close frame, we need to transition to
@@ -163,6 +166,7 @@ namespace System.Net.WebSockets
             _stream = stream;
             _isServer = options.IsServer;
             _subprotocol = options.SubProtocol;
+            _compressionEnabled = options.DeflateOptions is not null;
 
             // Create a buffer just large enough to handle received packet headers (at most 14 bytes) and
             // control payloads (at most 125 bytes).  Message payloads are read directly into the buffer
@@ -523,7 +527,6 @@ namespace System.Net.WebSockets
         {
             // Ensure we have a _sendBuffer.
             AllocateSendBuffer(payloadBuffer.Length + MaxMessageHeaderLength);
-            Debug.Assert(_sendBuffer != null);
 
             // Write the message header data to the buffer.
             int headerLength;
@@ -588,11 +591,11 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static int WriteHeader(MessageOpcode opcode, byte[] sendBuffer, ReadOnlySpan<byte> payload, bool endOfMessage, bool useMask)
+        private int WriteHeader(MessageOpcode opcode, byte[] sendBuffer, ReadOnlySpan<byte> payload, bool endOfMessage, bool useMask)
         {
             // Client header format:
             // 1 bit - FIN - 1 if this is the final fragment in the message (it could be the only fragment), otherwise 0
-            // 1 bit - RSV1 - Reserved - 0
+            // 1 bit - RSV1 - Per-Message Deflate Compress
             // 1 bit - RSV2 - Reserved - 0
             // 1 bit - RSV3 - Reserved - 0
             // 4 bits - Opcode - How to interpret the payload
@@ -616,7 +619,12 @@ namespace System.Net.WebSockets
             sendBuffer[0] = (byte)opcode; // 4 bits for the opcode
             if (endOfMessage)
             {
-                sendBuffer[0] |= 0x80; // 1 bit for FIN
+                sendBuffer[0] |= 0b1000_0000; // 1 bit for FIN
+            }
+
+            if (_compressionEnabled && opcode is MessageOpcode.Text or MessageOpcode.Binary)
+            {
+                sendBuffer[0] |= 0b0100_0000;
             }
 
             // Store the payload length.
@@ -1040,8 +1048,9 @@ namespace System.Net.WebSockets
             Span<byte> receiveBufferSpan = _receiveBuffer.Span;
 
             header.Fin = (receiveBufferSpan[_receiveBufferOffset] & 0x80) != 0;
-            bool reservedSet = (receiveBufferSpan[_receiveBufferOffset] & 0x70) != 0;
+            bool reservedSet = (receiveBufferSpan[_receiveBufferOffset] & 0b0011_0000) != 0;
             header.Opcode = (MessageOpcode)(receiveBufferSpan[_receiveBufferOffset] & 0xF);
+            header.Compressed = (receiveBufferSpan[_receiveBufferOffset] & 0b0100_0000) != 0;
 
             bool masked = (receiveBufferSpan[_receiveBufferOffset + 1] & 0x80) != 0;
             header.PayloadLength = receiveBufferSpan[_receiveBufferOffset + 1] & 0x7F;
@@ -1094,6 +1103,12 @@ namespace System.Net.WebSockets
                         // Can't continue from a final message
                         resultHeader = default;
                         return SR.net_Websockets_ContinuationFromFinalFrame;
+                    }
+                    if (header.Compressed)
+                    {
+                        // Per-Message Compressed flag must be set only in the first frame
+                        resultHeader = default;
+                        return SR.net_Websockets_PerMessageCompressedFlagInContinuation;
                     }
                     break;
 
@@ -1320,6 +1335,7 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>Gets a send buffer from the pool.</summary>
+        [MemberNotNull(nameof(_sendBuffer))]
         private void AllocateSendBuffer(int minLength)
         {
             Debug.Assert(_sendBuffer == null); // would only fail if had some catastrophic error previously that prevented cleaning up
@@ -1570,6 +1586,7 @@ namespace System.Net.WebSockets
             internal bool Fin;
             internal long PayloadLength;
             internal int Mask;
+            internal bool Compressed;
         }
 
         /// <summary>
