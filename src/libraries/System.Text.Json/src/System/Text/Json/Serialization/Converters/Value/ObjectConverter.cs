@@ -20,6 +20,8 @@ namespace System.Text.Json.Serialization.Converters
             throw new InvalidOperationException();
         }
 
+        internal override bool SupportsQuotedNumbers => true;
+
         internal override object ReadWithQuotes(ref Utf8JsonReader reader)
         {
             ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert);

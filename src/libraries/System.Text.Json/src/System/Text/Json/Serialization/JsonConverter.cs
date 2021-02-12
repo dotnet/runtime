@@ -33,6 +33,8 @@ namespace System.Text.Json.Serialization
 
         internal bool CanBePolymorphic { get; set; }
 
+        internal virtual bool SupportsQuotedNumbers => false;
+
         internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
 
         internal abstract JsonParameterInfo CreateJsonParameterInfo();

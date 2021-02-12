@@ -28,6 +28,8 @@ namespace System.Text.Json.Serialization.Converters
                 );
         }
 
+        internal override bool SupportsQuotedNumbers => true;
+
         internal override char ReadWithQuotes(ref Utf8JsonReader reader)
             => Read(ref reader, default!, default!);
 

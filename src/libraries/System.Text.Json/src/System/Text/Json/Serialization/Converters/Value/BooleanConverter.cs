@@ -17,6 +17,8 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteBooleanValue(value);
         }
 
+        internal override bool SupportsQuotedNumbers => true;
+
         internal override bool ReadWithQuotes(ref Utf8JsonReader reader)
         {
             ReadOnlySpan<byte> propertyName = reader.GetSpan();

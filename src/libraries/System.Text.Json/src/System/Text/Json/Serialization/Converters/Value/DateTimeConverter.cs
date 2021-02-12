@@ -15,6 +15,8 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteStringValue(value);
         }
 
+        internal override bool SupportsQuotedNumbers => true;
+
         internal override DateTime ReadWithQuotes(ref Utf8JsonReader reader)
         {
             return reader.GetDateTimeNoValidation();

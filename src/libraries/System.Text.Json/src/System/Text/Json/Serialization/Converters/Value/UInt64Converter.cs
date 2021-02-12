@@ -20,6 +20,8 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteNumberValue(value);
         }
 
+        internal override bool SupportsQuotedNumbers => true;
+
         internal override ulong ReadWithQuotes(ref Utf8JsonReader reader)
         {
             return reader.GetUInt64WithQuotes();

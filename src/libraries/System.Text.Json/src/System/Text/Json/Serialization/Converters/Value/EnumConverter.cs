@@ -302,6 +302,8 @@ namespace System.Text.Json.Serialization.Converters
             return converted;
         }
 
+        internal override bool SupportsQuotedNumbers => true;
+
         internal override T ReadWithQuotes(ref Utf8JsonReader reader)
         {
             string? enumString = reader.GetString();
