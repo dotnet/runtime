@@ -100,6 +100,9 @@ def make_executable(file_name):
     """
     if not is_windows:
         return
+
+    print("Inside make_executable")
+    run_command(["ls", "-l", file_name])
     os.chmod(file_name,
     # read+execute for owner
     (stat.S_IRUSR | stat.S_IXUSR) |
@@ -107,6 +110,7 @@ def make_executable(file_name):
     (stat.S_IRGRP | stat.S_IXGRP) |
     # read+execute for other
     (stat.S_IROTH | stat.S_IXOTH))
+    run_command(["ls", "-l", file_name])
 
 def build_and_run(coreclr_args, output_mch_name):
     """Build the microbenchmarks and run them under "superpmi collect"
@@ -157,28 +161,28 @@ def build_and_run(coreclr_args, output_mch_name):
         "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
 
     with TempDir() as temp_location:
-        # script_name = path.join('/home/kpathak/temp/output', script_name)
         script_name = path.join(temp_location, script_name)
+
+        contents = []
+        # Unset the JitName so dotnet process will not fail
+        if not is_windows:
+            contents.append("#!/bin/bash")
+            contents.append("export JitName=$COMPlus_JitName")
+            contents.append("unset COMPlus_JitName")
+        else:
+            contents.append("set JitName=%COMPlus_JitName%")
+            contents.append("set COMPlus_JitName=")
+        contents.append(f"pushd {performance_directory}")
+        contents.append(collection_command)
+
         with open(script_name, "w") as collection_script:
-            contents = []
-            # Unset the JitName so dotnet process will not fail
-            if not is_windows:
-                contents.append("#!/bin/bash")
-                contents.append("export JitName=$COMPlus_JitName")
-                contents.append("unset COMPlus_JitName")
-            else:
-                contents.append("set JitName=%COMPlus_JitName%")
-                contents.append("set COMPlus_JitName=")
-            contents.append(f"pushd {performance_directory}")
-            contents.append(collection_command)
-
-            print()
-            print(f"{script_name} contents:")
-            print("******************************************")
-            print(os.linesep.join(contents))
-            print("******************************************")
-
             collection_script.write(os.linesep.join(contents))
+
+        print()
+        print(f"{script_name} contents:")
+        print("******************************************")
+        print(os.linesep.join(contents))
+        print("******************************************")
 
         make_executable(script_name)
 
