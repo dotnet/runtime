@@ -259,7 +259,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
 
-  <!-- NetCoreApp3.0 needs to use the same version of dependencies as .NETStandard. -->
+  <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
   <Choose>
     <When Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
       <ItemGroup>
