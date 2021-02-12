@@ -135,7 +135,7 @@ def build_and_run(coreclr_args, output_mch_name):
         "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
         "-o", artifacts_directory])
 
-    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter * --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
+    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
         f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
         "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
 
@@ -149,6 +149,7 @@ def build_and_run(coreclr_args, output_mch_name):
                 contents.append("#!/bin/bash")
                 contents.append("export JitName=$COMPlus_JitName")
                 contents.append("unset COMPlus_JitName")
+                contents.append(f"chmod +x {dotnet_exe}")
             else:
                 contents.append("set JitName=%COMPlus_JitName%")
                 contents.append("set COMPlus_JitName=")
