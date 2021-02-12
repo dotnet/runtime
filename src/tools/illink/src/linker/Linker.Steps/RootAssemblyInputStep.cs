@@ -75,7 +75,11 @@ namespace Mono.Linker.Steps
 					CodeOptimizations.Sealer |
 					CodeOptimizations.UnusedTypeChecks |
 					CodeOptimizations.UnreachableBodies |
-					CodeOptimizations.UnusedInterfaces, assembly.Name.Name);
+					CodeOptimizations.UnusedInterfaces |
+					CodeOptimizations.RemoveDescriptors |
+					CodeOptimizations.RemoveLinkAttributes |
+					CodeOptimizations.RemoveSubstitutions |
+					CodeOptimizations.RemoveDynamicDependencyAttribute, assembly.Name.Name);
 				break;
 			case AssemblyRootMode.AllMembers:
 				Context.Annotations.SetAction (assembly, AssemblyAction.Copy);
