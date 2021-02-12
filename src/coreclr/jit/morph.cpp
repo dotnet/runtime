@@ -7581,7 +7581,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     {
         // We will expand this late in lower instead.
         //
-        call->AsCall()->ClearExpandedEarly();
+        call->ClearExpandedEarly();
     }
 
     // Now actually morph the call.

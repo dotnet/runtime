@@ -8247,7 +8247,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 // Should we expand virtual call targets early for this method?
                 //
-                if (opts.compExpandCallsEarly == true)
+                if (opts.compExpandCallsEarly)
                 {
                     // Mark this method to expand the virtual call target early in fgMorpgCall
                     call->AsCall()->SetExpandedEarly();
