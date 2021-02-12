@@ -196,8 +196,8 @@
       <_WasmSrcPath Condition="'$(WasmSrcPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)</_WasmSrcPath>
       <_WasmSrcPath Condition="'$(WasmSrcPath)' != ''">$(WasmSrcPath)</_WasmSrcPath>
 
-      <EmccFlagsFile>$(WasmSrcPath)src/emcc-flags.txt</EmccFlagsFile>
-      <RuntimeEmccVersionFile>$(WasmSrcPath)src/emcc-version.txt</RuntimeEmccVersionFile>
+      <EmccFlagsFile>$(_WasmSrcPath)src/emcc-flags.txt</EmccFlagsFile>
+      <RuntimeEmccVersionFile>$(_WasmSrcPath)src/emcc-version.txt</RuntimeEmccVersionFile>
       <EmccPublishVersionFile>$(_WasmIntermediateOutputPath)emcc-version.txt</EmccPublishVersionFile>
     </PropertyGroup>
 
