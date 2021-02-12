@@ -27,6 +27,7 @@ struct Agnostic_CORINFO_SIG_INFO
     DWORDLONG args;
     DWORD     pSig_Index;
     DWORD     cbSig;
+    DWORDLONG methodSignature;
     DWORDLONG scope;
     DWORD     token;
 };
@@ -128,13 +129,17 @@ struct Agnostic_CORINFO_RESOLVED_TOKENout
 
 struct Agnostic_GetArgType_Key
 {
+    // Partial CORINFO_SIG_INFO data
     DWORD     flags;
     DWORD     numArgs;
     DWORD     sigInst_classInstCount;
     DWORD     sigInst_classInst_Index;
     DWORD     sigInst_methInstCount;
     DWORD     sigInst_methInst_Index;
+    DWORDLONG methodSignature;
     DWORDLONG scope;
+
+    // Other getArgType() arguments
     DWORDLONG args;
 };
 
@@ -144,6 +149,7 @@ struct Agnostic_GetArgClass_Key
     DWORD     sigInst_classInst_Index;
     DWORD     sigInst_methInstCount;
     DWORD     sigInst_methInst_Index;
+    DWORDLONG methodSignature;
     DWORDLONG scope;
     DWORDLONG args;
 };
@@ -465,31 +471,27 @@ struct Agnostic_IsCompatibleDelegate
 
 struct Agnostic_PgoInstrumentationSchema
 {
-    DWORDLONG Offset;
-    ICorJitInfo::PgoInstrumentationKind InstrumentationKind;
-    int32_t ILOffset;
-    int32_t Count;
-    int32_t Other;
+    DWORDLONG Offset;          // size_t
+    DWORD InstrumentationKind; // ICorJitInfo::PgoInstrumentationKind
+    DWORD ILOffset;            // int32_t
+    DWORD Count;               // int32_t
+    DWORD Other;               // int32_t
 };
 
 struct Agnostic_AllocPgoInstrumentationBySchema
 {
-    DWORDLONG address;
-    DWORD count;
+    DWORDLONG instrumentationDataAddress;
     DWORD schema_index;
-    DWORD schemaCount;
+    DWORD countSchemaItems;
     DWORD result;
 };
 
 struct Agnostic_GetPgoInstrumentationResults
 {
-    DWORD count;
-    DWORD pBlockCounts_index;
-    DWORD numRuns;
-    DWORD schemaCount;
-    DWORD dataByteCount;
+    DWORD countSchemaItems;
     DWORD schema_index;
     DWORD data_index;
+    DWORD dataByteCount;
     DWORD result;
 };
 

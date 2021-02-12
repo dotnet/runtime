@@ -102,9 +102,9 @@ inline void FATAL_GC_ERROR()
 
 // Temporarily disabling using the mark list for regions. We would need to have 
 // each region find their starting and ending positions on the sorted mark list.
-#ifndef USE_REGIONS
+//#ifndef USE_REGIONS
 #define MARK_LIST         //used sorted list to speed up plan phase
-#endif //!USE_REGIONS
+//#endif //!USE_REGIONS
 
 #define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
 
@@ -124,7 +124,7 @@ inline void FATAL_GC_ERROR()
 
 #define CARD_BUNDLE         //enable card bundle feature.(requires WRITE_WATCH)
 
-// #define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
+#define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
 
 #ifdef BACKGROUND_GC
 #define BGC_SERVO_TUNING
@@ -1213,6 +1213,8 @@ public:
 #ifdef VERIFY_HEAP
     PER_HEAP
     void verify_free_lists();
+    PER_HEAP
+    void verify_regions (int gen_number);
     PER_HEAP
     void verify_regions();
     PER_HEAP
@@ -3082,6 +3084,8 @@ protected:
     PER_HEAP
     size_t estimated_reclaim (int gen_number);
     PER_HEAP
+    bool is_full_compacting_gc_productive();
+    PER_HEAP
     BOOL decide_on_compacting (int condemned_gen_number,
                                size_t fragmentation,
                                BOOL& should_expand);
@@ -3130,6 +3134,11 @@ protected:
 #ifdef MARK_LIST
     PER_HEAP_ISOLATED
     void grow_mark_list();
+
+#ifdef USE_REGIONS
+    PER_HEAP
+    uint8_t** get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
+#endif //USE_REGIONS
 #endif //MARK_LIST
 
 #ifdef BACKGROUND_GC
@@ -4123,7 +4132,14 @@ protected:
     uint8_t** g_mark_list_copy;
     PER_HEAP
     uint8_t*** mark_list_piece_start;
+    PER_HEAP
     uint8_t*** mark_list_piece_end;
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    size_t g_mark_list_piece_size;
+    PER_HEAP_ISOLATED
+    uint8_t*** g_mark_list_piece;
+#endif //USE_REGIONS
 #endif //MARK_LIST
 
     PER_HEAP
@@ -5441,6 +5457,7 @@ inline gc_oh_num heap_segment_oh (heap_segment * inst)
     }
 }
 
+#ifdef BACKGROUND_GC
 #ifdef USE_REGIONS
 inline
 bool heap_segment_overflow_p (heap_segment* inst)
@@ -5449,7 +5466,6 @@ bool heap_segment_overflow_p (heap_segment* inst)
 }
 #endif //USE_REGIONS
 
-#ifdef BACKGROUND_GC
 inline
 BOOL heap_segment_decommitted_p (heap_segment * inst)
 {

@@ -472,6 +472,7 @@ CEEInfo::ConvToJitSig(
 
     sigRet->pSig = pSig;
     sigRet->cbSig = cbSig;
+    sigRet->methodSignature = 0;
     sigRet->retTypeClass = 0;
     sigRet->retTypeSigClass = 0;
     sigRet->scope = scopeHnd;
@@ -9255,22 +9256,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     MethodDesc * pMD = GetMethod(ftn);
 
     pResult->accessType = IAT_VALUE;
-
-#if defined(TARGET_X86) && !defined(CROSSGEN_COMPILE)
-    // Deferring X86 support until a need is observed or
-    // time permits investigation into all the potential issues.
-    // https://github.com/dotnet/runtime/issues/33582
-    if (pMD->HasUnmanagedCallersOnlyAttribute())
-    {
-        pResult->addr = (void*)COMDelegate::ConvertToUnmanagedCallback(pMD);
-    }
-    else
-    {
-        pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
-    }
-#else
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
-#endif
 
     EE_TO_JIT_TRANSITION();
 }
@@ -9800,7 +9786,7 @@ namespace
             return CorInfoCallConvExtension::Fastcall;
         case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
         {
-            CorUnmanagedCallingConvention callConvMaybe;
+            CorInfoCallConvExtension callConvMaybe;
             UINT errorResID;
             HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(mod, pSig, cbSig, &callConvMaybe, pSuppressGCTransition, &errorResID);
 
@@ -9809,11 +9795,11 @@ namespace
 
             if (hr == S_OK)
             {
-                return (CorInfoCallConvExtension)callConvMaybe;
+                return callConvMaybe;
             }
             else
             {
-                return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+                return MetaSig::GetDefaultUnmanagedCallingConvention();
             }
         }
         case IMAGE_CEE_CS_CALLCONV_NATIVEVARARG:
@@ -9848,25 +9834,7 @@ namespace
                 }
 
                 PInvokeStaticSigInfo sigInfo(pMD, PInvokeStaticSigInfo::NO_THROW_ON_ERROR);
-                switch (sigInfo.GetCallConv())
-                {
-                case pmCallConvCdecl:
-                    return CorInfoCallConvExtension::C;
-                    break;
-                case pmCallConvStdcall:
-                    return CorInfoCallConvExtension::Stdcall;
-                    break;
-                case pmCallConvThiscall:
-                    return CorInfoCallConvExtension::Thiscall;
-                    break;
-                case pmCallConvFastcall:
-                    return CorInfoCallConvExtension::Fastcall;
-                    break;
-                default:
-                    _ASSERTE_MSG(false, "bad callconv");
-                    return CorInfoCallConvExtension::Managed;
-                    break;
-                }
+                return sigInfo.GetCallConv();
             }
             else
             {
@@ -9874,36 +9842,16 @@ namespace
                 _ASSERTE_MSG(false, "UnmanagedCallersOnly methods are not supported in crossgen and should be rejected before getting here.");
                 return CorInfoCallConvExtension::Managed;
 #else
-                CorPinvokeMap unmanagedCallConv;
+                CorInfoCallConvExtension unmanagedCallConv;
                 if (TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
                 {
                     if (methodCallConv == IMAGE_CEE_CS_CALLCONV_VARARG)
                     {
                         return CorInfoCallConvExtension::C;
                     }
-                    switch (unmanagedCallConv)
-                    {
-                    case pmCallConvWinapi:
-                        return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
-                        break;
-                    case pmCallConvCdecl:
-                        return CorInfoCallConvExtension::C;
-                        break;
-                    case pmCallConvStdcall:
-                        return CorInfoCallConvExtension::Stdcall;
-                        break;
-                    case pmCallConvThiscall:
-                        return CorInfoCallConvExtension::Thiscall;
-                        break;
-                    case pmCallConvFastcall:
-                        return CorInfoCallConvExtension::Fastcall;
-                        break;
-                    default:
-                        _ASSERTE_MSG(false, "bad callconv");
-                        break;
-                    }
+                    return unmanagedCallConv;
                 }
-                return (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+                return MetaSig::GetDefaultUnmanagedCallingConvention();
 #endif // CROSSGEN_COMPILE
             }
         }
@@ -10274,9 +10222,22 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
     pEEInfoOut->sizeOfReversePInvokeFrame = TARGET_POINTER_SIZE * READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits;
-    _ASSERTE(sizeof(ReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
 
-    pEEInfoOut->osPageSize = GetOsPageSize();
+    // The following assert doesn't work in cross-bitness scenarios since the pointer size differs.
+#if (defined(TARGET_64BIT) && defined(HOST_64BIT)) || (defined(TARGET_32BIT) && defined(HOST_32BIT))
+    _ASSERTE(sizeof(ReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
+#endif
+
+    if (!IsReadyToRunCompilation())
+    {
+        pEEInfoOut->osPageSize = GetOsPageSize();
+    }
+    else
+    {
+        // In AOT scenarios the VM reports to the JIT the minimal supported page size.
+        pEEInfoOut->osPageSize = 0x1000;
+    }
+
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
 
@@ -12031,10 +11992,6 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     {
         if (pDataCur->m_pMD == pMD)
         {
-            *pSchema = pDataCur->m_schema.GetElements();
-            *pCountSchemaItems = pDataCur->m_schema.GetCount();
-            *pInstrumentationData = pDataCur->m_pInstrumentationData;
-            hr = pDataCur->m_hr;
             break;
         }
     }
@@ -12047,12 +12004,12 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
         m_foundPgoData = newPgoData;
         newPgoData.SuppressRelease();
         
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_schema, &newPgoData->m_pInstrumentationData);
+        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema, &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData);
         pDataCur = m_foundPgoData;
     }
 
-    *pSchema = pDataCur->m_schema.GetElements();
-    *pCountSchemaItems = pDataCur->m_schema.GetCount();
+    *pSchema = pDataCur->m_schema;
+    *pCountSchemaItems = pDataCur->m_cSchemaElems;
     *pInstrumentationData = pDataCur->m_pInstrumentationData;
     hr = pDataCur->m_hr;
 #else
@@ -12716,7 +12673,6 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
          }
     }
 
-#if !defined(TARGET_X86)
     if (ftn->HasUnmanagedCallersOnlyAttribute())
     {
         // If the stub was generated by the runtime, don't validate
@@ -12727,8 +12683,14 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
             COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(ftn);
 
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+
+        // If we're a reverse IL stub, we need to use the TrackTransitions variant
+        // so we have the target MethodDesc entrypoint to tell the debugger about.
+        if (CORProfilerTrackTransitions() || ftn->IsILStub())
+        {
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
+        }
     }
-#endif // !TARGET_X86
 
     return flags;
 }
@@ -12825,7 +12787,14 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
             optType = methodInfo->ILCodeSize % OPT_RANDOM;
 
         if (g_pConfig->JitMinOpts())
+        {
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
+        }
+        else
+        {
+            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+        }
 
         if (optType == OPT_SIZE)
         {

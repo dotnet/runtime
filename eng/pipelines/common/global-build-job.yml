@@ -11,7 +11,7 @@ parameters:
   variables: []
   targetRid: ''
   timeoutInMinutes: ''
-  dependsOn: ''
+  dependsOn: []
   pool: ''
   platform: ''
   condition: true
@@ -25,6 +25,9 @@ parameters:
   testResultsFormat: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
+  enableRichCodeNavigation: false
+  richCodeNavigationLanguage: 'csharp'
+  richCodeNavigationEnvironment: 'production'
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -40,6 +43,9 @@ jobs:
 
     workspace:
       clean: all
+    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
+    richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
+    richCodeNavigationEnvironment: ${{ parameters.richCodeNavigationEnvironment }}
 
     ${{ if and(ne(parameters.dependOnEvaluatePaths, true),ne(parameters.dependsOn,'')) }}:
       dependsOn: ${{ parameters.dependsOn }}
@@ -73,6 +79,12 @@ jobs:
           value: /p:OfficialBuildId=$(Build.BuildNumber)
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
+      
+      - name: _richCodeNavigationParam
+        ${{ if eq(parameters.enableRichCodeNavigation, true) }}:
+          value: /p:EnableRichCodeNavigation=true
+        ${{ if ne(parameters.enableRichCodeNavigation, true) }}:
+          value: ''
 
       - ${{ if eq(parameters.osGroup, 'Android') }}:
         - name: ANDROID_OPENSSL_AAR
@@ -89,11 +101,11 @@ jobs:
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if eq(parameters.monoCrossAOTTargetOS, 'Android') }}:
+    - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2
-        displayName: Download AOT offset files
+        displayName: Download ${{monoCrossAOTTargetOS}} AOT offset files
         inputs:
-          artifact: Mono_Offsets_Android
+          artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
@@ -106,7 +118,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter)
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam)
       displayName: Build product
       ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
         continueOnError: ${{ parameters.shouldContinueOnError }}

@@ -14,6 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PInvokeTableGenerator.cs" />
+    <Compile Include="IcallTableGenerator.cs" />
     <Compile Include="WasmAppBuilder.cs" />
     <Compile Include="WasmLoadAssembliesAndReferences.cs" />
   </ItemGroup>
@@ -22,6 +23,11 @@
           AfterTargets="Build"
           DependsOnTargets="Publish" />
 
-  <Target Name="GetFilesToPackage" />
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks" />
+      <FilesToPackage Include="$(PublishDir)System.Reflection.MetadataLoadContext.dll" TargetPath="tasks" />
+    </ItemGroup>
+  </Target>
 
 </Project>

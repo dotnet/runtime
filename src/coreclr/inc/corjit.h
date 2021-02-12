@@ -272,13 +272,14 @@ public:
             OFFSET_MASK    = 0x3FFFFFFF
         };
 
-        UINT32 ILOffset;
         UINT32 Count;
         CORINFO_CLASS_HANDLE ClassTable[SIZE];
     };
 
     enum class PgoInstrumentationKind
     {
+        // This must be kept in sync with PgoInstrumentationKind in PgoFormat.cs
+
         // Schema data types
         None = 0,
         FourByte = 1,
@@ -293,17 +294,18 @@ public:
         Align8Byte = 0x20,
         AlignPointer = 0x30,
 
-        // Mask of all schema data types
+        // Mask of all schema alignment types
         AlignMask = 0x30,
 
         DescriptorMin = 0x40,
 
         Done = None, // All instrumentation schemas must end with a record which is "Done"
-        BasicBlockIntCount = DescriptorMin | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
-        TypeHandleHistogramCount = (DescriptorMin * 1) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
-        TypeHandleHistogramTypeHandle = (DescriptorMin * 1) | TypeHandle, // TypeHandle that is part of a type histogram
-        Version = (DescriptorMin * 2) | None, // Version is encoded in the Other field of the schema
-        NumRuns = (DescriptorMin * 3) | None, // Number of runs is encoded in the Other field of the schema
+        BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
+        TypeHandleHistogramCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
+        TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
+        Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
+        NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
+        EdgeIntCount = (DescriptorMin * 6) | FourByte, // 4 byte edge counter, using unsigned 4 byte int
     };
 
     struct PgoInstrumentationSchema
@@ -319,9 +321,11 @@ public:
     // of the buffer is the same as the format the JIT passes to allocPgoInstrumentationBySchema.
     virtual HRESULT getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
-            PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
-            UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
-            BYTE **                    pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            PgoInstrumentationSchema **pSchema,                    // OUT: pointer to the schema table (array) which describes the instrumentation results
+                                                                   // (pointer will not remain valid after jit completes).
+            UINT32 *                   pCountSchemaItems,          // OUT: pointer to the count of schema items in `pSchema` array.
+            BYTE **                    pInstrumentationData        // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
+                                                                   // (pointer will not remain valid after jit completes).
             ) = 0;
 
     // Allocate a profile buffer for use in the current process
@@ -335,11 +339,12 @@ public:
     //
     //  The intention here is that it becomes possible to describe a C data structure with the alignment for ease of use with 
     //  instrumentation helper functions
-    virtual HRESULT allocPgoInstrumentationBySchema (
+    virtual HRESULT allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE     ftnHnd,
-            PgoInstrumentationSchema *pSchema,                     // pointer to the schema table which describes the instrumentation results
-            UINT32                    countSchemaItems,            // pointer to the count schema items
-            BYTE **                   pInstrumentationData         // pointer to the actual instrumentation data
+            PgoInstrumentationSchema *pSchema,                     // IN OUT: pointer to the schema table (array) which describes the instrumentation results. `Offset` field
+                                                                   // is filled in by VM; other fields are set and passed in by caller.
+            UINT32                    countSchemaItems,            // IN: count of schema items in `pSchema` array.
+            BYTE **                   pInstrumentationData         // OUT: `*pInstrumentationData` is set to the address of the instrumentation data.
             ) = 0;
 
     // Get the likely implementing class for a virtual call or interface call made by ftnHnd

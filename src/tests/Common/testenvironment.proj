@@ -56,6 +56,7 @@
       COMPlus_JitObjectStackAllocation;
       COMPlus_JitInlinePolicyProfile;
       COMPlus_JitClassProfiling;
+      COMPlus_JitEdgeProfiling;
       RunningIlasmRoundTrip
     </COMPlusVariables>
   </PropertyGroup>
@@ -149,6 +150,7 @@
     <TestEnvironment Include="jitpgo" TieredPGO="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpgo_inline" TieredPGO="1" TieredCompilation="1" JitInlinePolicyProfile="1"/>
     <TestEnvironment Include="jitpgo_classes" TieredPGO="1" TieredCompilation="1" JitEnableGuardedDevirtualization="1" JitClassProfiling="1"/>
+    <TestEnvironment Include="jitpgo_edgeinstrumentation" TieredPGO="1" TieredCompilation="1" JitEdgeProfiling="1"/>
     <TestEnvironment Include="jitguardeddevirtualization" JitEnableGuardedDevirtualization="1" TieredCompilation="0" />
     <TestEnvironment Include="jitehwritethru" EnableEhWriteThru="1" TieredCompilation="0" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />

@@ -25,6 +25,7 @@ var BindingSupportLib = {
 			module ["mono_call_static_method"] = BINDING.call_static_method.bind(BINDING);
 			module ["mono_bind_assembly_entry_point"] = BINDING.bind_assembly_entry_point.bind(BINDING);
 			module ["mono_call_assembly_entry_point"] = BINDING.call_assembly_entry_point.bind(BINDING);
+			module ["mono_intern_string"] = BINDING.mono_intern_string.bind(BINDING);
 		},
 
 		bindings_lazy_init: function () {
@@ -66,7 +67,9 @@ var BindingSupportLib = {
 			this.mono_wasm_register_bundled_satellite_assemblies = Module.cwrap ('mono_wasm_register_bundled_satellite_assemblies', 'void', [ ]);
 			this.mono_wasm_try_unbox_primitive_and_get_type = Module.cwrap ('mono_wasm_try_unbox_primitive_and_get_type', 'number', ['number', 'number']);
 			this.mono_wasm_box_primitive = Module.cwrap ('mono_wasm_box_primitive', 'number', ['number', 'number', 'number']);
+			this.mono_wasm_intern_string = Module.cwrap ('mono_wasm_intern_string', 'number', ['number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
+			this.mono_wasm_get_delegate_invoke = Module.cwrap ('mono_wasm_get_delegate_invoke', 'number', ['number']);
 
 			this._box_buffer = Module._malloc(16);
 			this._unbox_buffer = Module._malloc(16);
@@ -144,9 +147,108 @@ var BindingSupportLib = {
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
+
+			this._empty_string = "";
+			this._empty_string_ptr = 0;
+			this._interned_string_full_root_buffers = [];
+			this._interned_string_current_root_buffer = null;
+			this._interned_string_current_root_buffer_count = 0;
+			this._interned_string_table = new Map ();
+			this._managed_pointer_to_interned_string_table = new Map ();
+		},
+
+		// Ensures the string is already interned on both the managed and JavaScript sides,
+		//  then returns the interned string value (to provide fast reference comparisons like C#)
+		mono_intern_string: function (string) {
+			if (string.length === 0)
+				return this._empty_string;
+
+			var ptr = this.js_string_to_mono_string_interned (string);
+			var result = this._managed_pointer_to_interned_string_table.get (ptr);
+			return result;
+		},
+
+		_store_string_in_intern_table: function (string, ptr, internIt) {
+			if (!ptr)
+				throw new Error ("null pointer passed to _store_string_in_intern_table");
+
+			var originalArg = ptr;
+			
+			const internBufferSize = 8192;
+
+			if (this._interned_string_current_root_buffer_count >= internBufferSize) {
+				this._interned_string_full_root_buffers.push (this._interned_string_current_root_buffer);
+				this._interned_string_current_root_buffer = null;
+			}
+			if (!this._interned_string_current_root_buffer) {
+				this._interned_string_current_root_buffer = MONO.mono_wasm_new_root_buffer (internBufferSize, "interned strings");
+				this._interned_string_current_root_buffer_count = 0;
+			}
+
+			var rootBuffer = this._interned_string_current_root_buffer;
+			var index = this._interned_string_current_root_buffer_count++;
+			rootBuffer.set (index, ptr);
+
+			// Store the managed string into the managed intern table. This can theoretically
+			//  provide a different managed object than the one we passed in, so update our
+			//  pointer (stored in the root) with the result.
+			if (internIt)
+				rootBuffer.set (index, ptr = this.mono_wasm_intern_string (ptr));
+
+			if (!ptr)
+				throw new Error ("mono_wasm_intern_string produced a null pointer");
+
+			this._interned_string_table.set (string, ptr);
+			this._managed_pointer_to_interned_string_table.set (ptr, string);
+
+			if ((string.length === 0) && !this._empty_string_ptr)
+				this._empty_string_ptr = ptr;
+			
+			return ptr;
+		},
+
+		js_string_to_mono_string_interned: function (string) {
+			var text = (typeof (string) === "symbol")
+				? (string.description || Symbol.keyFor(string) || "<unknown Symbol>")
+				: string;
+			
+			if ((text.length === 0) && this._empty_string_ptr)
+				return this._empty_string_ptr;
+
+			var ptr = this._interned_string_table.get (string);
+			if (ptr)
+				return ptr;
+
+			ptr = this.js_string_to_mono_string_new (text);
+			ptr = this._store_string_in_intern_table (string, ptr, true);
+
+			return ptr;
 		},
 
 		js_string_to_mono_string: function (string) {
+			if (typeof (string) === "symbol")
+				return this.js_string_to_mono_string_interned (string);
+			else if (typeof (string) !== "string")
+				throw new Error ("Expected string argument");
+
+			// Always use an interned pointer for empty strings
+			if (string.length === 0)
+				return this.js_string_to_mono_string_interned (string);
+
+			// Looking up large strings in the intern table will require the JS runtime to
+			//  potentially hash them and then do full byte-by-byte comparisons, which is
+			//  very expensive. Because we can not guarantee it won't happen, try to minimize
+			//  the cost of this and prevent performance issues for large strings
+			if (string.length <= 256) {
+				var interned = this._interned_string_table.get (string);
+				if (interned)
+					return interned;
+			}
+
+			return this.js_string_to_mono_string_new (string);
+		},
+				
+		js_string_to_mono_string_new: function (string) {
 			var buffer = Module._malloc ((string.length + 1) * 2);
 			var buffer16 = (buffer / 2) | 0;
 			for (var i = 0; i < string.length; i++)
@@ -173,26 +275,21 @@ var BindingSupportLib = {
 			return null;
 		},
 
-		conv_string: function (mono_obj) {
-			return MONO.string_decoder.copy (mono_obj);
+		conv_string: function (mono_obj, interned) {
+			var interned_instance = this._managed_pointer_to_interned_string_table.get (mono_obj);
+			if (interned_instance !== undefined)
+				return interned_instance;
+
+			var result = MONO.string_decoder.copy (mono_obj);
+			if (interned) {
+				// This string is interned on the managed side but we didn't have it in our cache.
+				this._store_string_in_intern_table (result, mono_obj, false);
+			}
+			return result;
 		},
 
 		is_nested_array: function (ele) {
 			return this._is_simple_array(ele);
-		},
-
-		js_string_to_mono_string: function (string) {
-			if (string === null || typeof string === "undefined")
-				return 0;
-
-			var buffer = Module._malloc ((string.length + 1) * 2);
-			var buffer16 = (buffer / 2) | 0;
-			for (var i = 0; i < string.length; i++)
-				Module.HEAP16[buffer16 + i] = string.charCodeAt (i);
-			Module.HEAP16[buffer16 + string.length] = 0;
-			var result = this.mono_wasm_string_from_utf16 (buffer, string.length);
-			Module._free (buffer);
-			return result;
 		},
 
 		mono_array_to_js_array: function (mono_array) {
@@ -310,8 +407,10 @@ var BindingSupportLib = {
 				case 27: // uint64
 					// TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
 					throw new Error ("int64 not available");
-				case 3: //string
-					return this.conv_string (mono_obj);
+				case 3: // string
+					return this.conv_string (mono_obj, false);
+				case 29: // interned string
+					return this.conv_string (mono_obj, true);
 				case 4: //vts
 					throw new Error ("no idea on how to unbox value types");
 				case 5: // delegate
@@ -451,6 +550,8 @@ var BindingSupportLib = {
 					return result;
 				} case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
+				case typeof js_obj === "symbol":
+					return this.js_string_to_mono_string_interned (js_obj);
 				case typeof js_obj === "boolean":
 					return this._box_js_bool (js_obj);
 				case isThenable() === true:
@@ -480,6 +581,7 @@ var BindingSupportLib = {
 				case js_obj === null:
 				case typeof js_obj === "undefined":
 					return 0;
+				case typeof js_obj === "symbol":
 				case typeof js_obj === "string":
 					return this.call_method(this.create_uri, null, "s!", [ js_obj ])
 				default:
@@ -679,10 +781,10 @@ var BindingSupportLib = {
 			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__);
 		},
 
-		mono_method_get_call_signature: function(method) {
+		mono_method_get_call_signature: function(method, mono_obj) {
 			this.bindings_lazy_init ();
 
-			return this.call_method (this.get_call_sig, null, "i", [ method ]);
+			return this.call_method (this.get_call_sig, null, "im", [ method, mono_obj ]);
 		},
 
 		get_task_and_bind: function (tcs, js_obj) {
@@ -807,6 +909,7 @@ var BindingSupportLib = {
 			var result = new Map ();
 			result.set ('m', { steps: [{ }], size: 0});
 			result.set ('s', { steps: [{ convert: this.js_string_to_mono_string.bind (this) }], size: 0, needs_root: true });
+			result.set ('S', { steps: [{ convert: this.js_string_to_mono_string_interned.bind (this) }], size: 0, needs_root: true });
 			result.set ('o', { steps: [{ convert: this.js_to_mono_obj.bind (this) }], size: 0, needs_root: true });
 			result.set ('u', { steps: [{ convert: this.js_to_mono_uri.bind (this) }], size: 0, needs_root: true });
 
@@ -1089,7 +1192,7 @@ var BindingSupportLib = {
 			if (exception === 0)
 				return null;
 
-			var msg = this.conv_string (result);
+			var msg = this.conv_string (result, false);
 			var err = new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
 			// console.warn ("error", msg, "at location", err.stack);
 			return err;
@@ -1134,6 +1237,7 @@ var BindingSupportLib = {
 		f: float
 		d: double
 		s: string
+		S: interned string
 		o: js object will be converted to a C# object (this will box numbers/bool/promises)
 		m: raw mono object. Don't use it unless you know what you're doing
 
@@ -1354,25 +1458,19 @@ var BindingSupportLib = {
 					throw new Error("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
 			}
 
-			var [delegateRoot, argsRoot] = MONO.mono_wasm_new_roots ([this.extract_mono_obj (delegate_obj), undefined]);
+			var [delegateRoot] = MONO.mono_wasm_new_roots ([this.extract_mono_obj (delegate_obj)]);
 			try {
-				if (!this.delegate_dynamic_invoke) {
-					if (!this.corlib)
-						this.corlib = this.assembly_load ("System.Private.CoreLib");
-					if (!this.delegate_class)
-						this.delegate_class = this.find_class (this.corlib, "System", "Delegate");
-					if (!this.delegate_class)
-					{
-						throw new Error("System.Delegate class can not be resolved.");
-					}
-					this.delegate_dynamic_invoke = this.find_method (this.delegate_class, "DynamicInvoke", -1);
-				}
-				argsRoot.value = this.js_array_to_mono_array (js_args);
-				if (!this.delegate_dynamic_invoke)
-					throw new Error("System.Delegate.DynamicInvoke method can not be resolved.");
-				return this.call_method (this.delegate_dynamic_invoke, delegateRoot.value, "m", [ argsRoot.value ]);
+				if (typeof delegate_obj.__mono_delegate_invoke__ === "undefined")
+					delegate_obj.__mono_delegate_invoke__ = this.mono_wasm_get_delegate_invoke(delegateRoot.value);
+				if (!delegate_obj.__mono_delegate_invoke__)
+					throw new Error("System.Delegate Invoke method can not be resolved.");
+
+				if (typeof delegate_obj.__mono_delegate_invoke_sig__ === "undefined")
+					delegate_obj.__mono_delegate_invoke_sig__ = Module.mono_method_get_call_signature (delegate_obj.__mono_delegate_invoke__, delegateRoot.value);
+
+				return this.call_method (delegate_obj.__mono_delegate_invoke__, delegateRoot.value, delegate_obj.__mono_delegate_invoke_sig__, js_args);
 			} finally {
-				MONO.mono_wasm_release_roots (delegateRoot, argsRoot);
+				MONO.mono_wasm_release_roots (delegateRoot);
 			}
 		},
 
@@ -1588,7 +1686,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var js_name = BINDING.conv_string (method_name);
+		var js_name = BINDING.conv_string (method_name, false);
 		if (!js_name) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid method name object '" + method_name + "'");
@@ -1622,7 +1720,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var js_name = BINDING.conv_string (property_name);
+		var js_name = BINDING.conv_string (property_name, false);
 		if (!js_name) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid property name object '" + js_name + "'");
@@ -1653,7 +1751,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var property = BINDING.conv_string (property_name);
+		var property = BINDING.conv_string (property_name, false);
 		if (!property) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "'");
@@ -1737,7 +1835,7 @@ var BindingSupportLib = {
 	mono_wasm_get_global_object: function(global_name, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var js_name = BINDING.conv_string (global_name);
+		var js_name = BINDING.conv_string (global_name, false);
 
 		var globalObj;
 
@@ -1795,7 +1893,7 @@ var BindingSupportLib = {
 	mono_wasm_new: function (core_name, args, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var js_name = BINDING.conv_string (core_name);
+		var js_name = BINDING.conv_string (core_name, false);
 
 		if (!js_name) {
 			setValue (is_exception, 1, "i32");

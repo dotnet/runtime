@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Drawing.Imaging
 {
@@ -126,7 +127,7 @@ namespace System.Drawing.Imaging
         /// Returns a value indicating whether the specified object is an <see cref='ImageFormat'/> equivalent to this
         /// <see cref='ImageFormat'/>.
         /// </summary>
-        public override bool Equals(object? o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             ImageFormat? format = o as ImageFormat;
             if (format == null)

@@ -614,6 +614,19 @@ namespace System.Linq
                     ));
         }
 
+        [DynamicDependency("Chunk`1", typeof(Enumerable))]
+        public static IQueryable<TSource[]> Chunk<TSource>(this IQueryable<TSource> source, int size)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource[]>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Chunk_TSource_1(typeof(TSource)),
+                    source.Expression, Expression.Constant(size)
+                    ));
+        }
+
         [DynamicDependency("Concat`1", typeof(Enumerable))]
         public static IQueryable<TSource> Concat<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
@@ -663,6 +676,33 @@ namespace System.Linq
                     null,
                     CachedReflectionInfo.Zip_TFirst_TSecond_TResult_3(typeof(TFirst), typeof(TSecond), typeof(TResult)),
                     source1.Expression, GetSourceExpression(source2), Expression.Quote(resultSelector)
+                    ));
+        }
+
+        /// <summary>
+        /// Produces a sequence of tuples with elements from the three specified sequences.
+        /// </summary>
+        /// <typeparam name="TFirst">The type of the elements of the first input sequence.</typeparam>
+        /// <typeparam name="TSecond">The type of the elements of the second input sequence.</typeparam>
+        /// <typeparam name="TThird">The type of the elements of the third input sequence.</typeparam>
+        /// <param name="source1">The first sequence to merge.</param>
+        /// <param name="source2">The second sequence to merge.</param>
+        /// <param name="source3">The third sequence to merge.</param>
+        /// <returns>A sequence of tuples with elements taken from the first, second and third sequences, in that order.</returns>
+        [DynamicDependency("Zip`3", typeof(Enumerable))]
+        public static IQueryable<(TFirst First, TSecond Second, TThird Third)> Zip<TFirst, TSecond, TThird>(this IQueryable<TFirst> source1, IEnumerable<TSecond> source2, IEnumerable<TThird> source3)
+        {
+            if (source1 == null)
+                throw Error.ArgumentNull(nameof(source1));
+            if (source2 == null)
+                throw Error.ArgumentNull(nameof(source2));
+            if (source3 == null)
+                throw Error.ArgumentNull(nameof(source3));
+            return source1.Provider.CreateQuery<(TFirst, TSecond, TThird)>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Zip_TFirst_TSecond_TThird_3(typeof(TFirst), typeof(TSecond), typeof(TThird)),
+                    source1.Expression, GetSourceExpression(source2), GetSourceExpression(source3)
                     ));
         }
 

@@ -11,6 +11,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
@@ -836,7 +837,7 @@ namespace System.Text
             _emitUTF8Identifier ? PreambleSpan :
             default;
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (value is UTF8Encoding that)
             {

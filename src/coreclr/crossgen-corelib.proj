@@ -4,11 +4,10 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
 
-  <Target Name="InvokeCrossgen"
-          AfterTargets="Build">
+  <Target Name="PrepareForCrossgen">
     <PropertyGroup>
       <!-- Default for using Crossgen2 when not set externally -->
-      <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">false</UseCrossgen2>
+      <UseCrossgen2 Condition="'$(UseCrossgen2)' == ''">true</UseCrossgen2>
 
       <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
       <RootBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</RootBinDir>
@@ -19,10 +18,6 @@
       <ExeExtension Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExtension>
       <DotNetCli>$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.sh'))</DotNetCli>
       <DotNetCli Condition="'$(OS)' == 'Windows_NT'">$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.cmd'))</DotNetCli>
-
-      <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
-      <CoreLibInputPath>$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '$(CoreLibAssemblyName).dll'))</CoreLibInputPath>
-      <CoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dll'))</CoreLibOutputPath>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -43,7 +38,26 @@
 
       <BuildPerfMap>false</BuildPerfMap>
       <BuildPerfMap Condition="$(BuildDll) and '$(TargetOS)' == 'Linux'">true</BuildPerfMap>
+    </PropertyGroup>
 
+    <PropertyGroup>
+      <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
+      <CoreLibInputPath>$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '$(CoreLibAssemblyName).dll'))</CoreLibInputPath>
+      <CoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dll'))</CoreLibOutputPath>
+      <CoreLibNiPdbPath></CoreLibNiPdbPath>
+      <CoreLibPerfMapPath></CoreLibPerfMapPath>
+      <CoreLibNiPdbPath Condition="$(BuildPdb)">$([MSBuild]::NormalizePath('$(BinDir)', 'PDB', '$(CoreLibAssemblyName).ni.pdb'))</CoreLibNiPdbPath>
+      <CoreLibPerfMapPath Condition="$(BuildPerfMap)">$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).perf.map'))</CoreLibPerfMapPath>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="InvokeCrossgen"
+          DependsOnTargets="PrepareForCrossgen"
+          Inputs="$(CoreLibInputPath)"
+          Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath)"
+          AfterTargets="Build">
+
+    <PropertyGroup>
       <CrossGen1Cmd>$([MSBuild]::NormalizePath('$(BinDir)', '$(CrossDir)', 'crossgen$(ExeExtension)'))</CrossGen1Cmd>
       <CrossGen1Cmd>$(CrossGen1Cmd) /nologo</CrossGen1Cmd>
       <CrossGen1Cmd>$(CrossGen1Cmd) <!-- IbcTuning --></CrossGen1Cmd>
@@ -65,43 +79,38 @@
       <CrossGenDllCmd>$(CrossGenDllCmd) $(CoreLibInputPath)</CrossGenDllCmd>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(UseCrossgen2)' != 'true'">
-      <CrossGenDllCmd>$(CrossGen1Cmd) /out "$(CoreLibOutputPath)"</CrossGenDllCmd> 
-      <CrossGenDllCmd>$(CrossGenDllCmd) "$(CoreLibInputPath)"</CrossGenDllCmd>
+    <PropertyGroup Condition="$(BuildPdb)">
+      <CrossGenDllCmd>$(CrossGenDllCmd) --pdb --pdb-path:$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))</CrossGenDllCmd>
     </PropertyGroup>
 
-    <!-- For now we're using Crossgen1 for generating the perf map as Crossgen2 doesn't yet implement it: -->
-    <!-- https://github.com/dotnet/runtime/issues/44123 -->
     <PropertyGroup Condition="$(BuildPerfMap)">
+      <CrossGenDllCmd>$(CrossGenDllCmd) --perfmap --perfmap-path:$(BinDir)</CrossGenDllCmd>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(UseCrossgen2)' != 'true'">
+      <VsSetupCmd>call $([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'coreclr', 'setup_vs_tools.cmd')) &amp;&amp;</VsSetupCmd>
+
+      <CrossGenDllCmd>$(CrossGen1Cmd) /out "$(CoreLibOutputPath)"</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) "$(CoreLibInputPath)"</CrossGenDllCmd>
+
       <CrossGenPerfMapCmd>$(CrossGen1Cmd) /CreatePerfMap "$(BinDir)"</CrossGenPerfMapCmd>
       <CrossGenPerfMapCmd>$(CrossGenPerfMapCmd) "$(CoreLibOutputPath)"</CrossGenPerfMapCmd>
-    </PropertyGroup>
-    
-    <PropertyGroup Condition="$(BuildPdb)">
-      <CrossGenPdbCmd>$(DotNetCli) $([MSBuild]::NormalizePath('$(BinDir)', 'r2rdump', 'r2rdump.dll'))</CrossGenPdbCmd>
-      <CrossGenPdbCmd>$(CrossGenPdbCmd) --create-pdb</CrossGenPdbCmd>
-      <CrossGenPdbCmd>$(CrossGenPdbCmd) --pdb-path:$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))</CrossGenPdbCmd>
-      <CrossGenPdbCmd>$(CrossGenPdbCmd) --in:$(CoreLibOutputPath)</CrossGenPdbCmd>
-    </PropertyGroup>
-    
-    <PropertyGroup Condition="$(BuildPdb) and '$(UseCrossgen2)' != 'true'">
-      <VsSetupCmd>call $([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'coreclr', 'setup_vs_tools.cmd')) &amp;&amp;</VsSetupCmd>
 
       <CrossGenPdbCmd>$(VsSetupCmd) $(CrossGen1Cmd) /CreatePdb "$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))"</CrossGenPdbCmd>
       <CrossGenPdbCmd>$(CrossGenPdbCmd) "$(CoreLibOutputPath)"</CrossGenPdbCmd>
     </PropertyGroup>
-    
+
     <Message Condition="$(BuildDll)" Importance="High" Text="$(CrossGenDllCmd)" />
-    
+
     <Exec Condition="$(BuildDll)" Command="$(CrossGenDllCmd)" />
 
     <Message Condition="$(BuildPdb)" Importance="High" Text="$(CrossGenPdbCmd)" />
 
-    <Exec Condition="$(BuildPdb)" Command="$(CrossGenPdbCmd)" />
+    <Exec Condition="$(BuildPdb) and '$(CrossGenPdbCmd)' != ''" Command="$(CrossGenPdbCmd)" />
 
     <Message Condition="$(BuildPerfMap)" Importance="High" Text="$(CrossGenPerfMapCmd)" />
 
-    <Exec Condition="$(BuildPerfMap)" Command="$(CrossGenPerfMapCmd)" />
+    <Exec Condition="$(BuildPerfMap) and '$(CrossGenPerfMapCmd)' != ''" Command="$(CrossGenPerfMapCmd)" />
 
     <Copy Condition="!$(BuildDll)" SourceFiles="$(CoreLibInputPath)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
 

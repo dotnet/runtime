@@ -476,9 +476,12 @@ namespace System.Numerics
                     n = format[i++] - '0';
                     while (i < format.Length && format[i] >= '0' && format[i] <= '9')
                     {
-                        n = n * 10 + (format[i++] - '0');
-                        if (n >= 10)
-                            break;
+                        int temp = n * 10 + (format[i++] - '0');
+                        if (temp < n)
+                        {
+                            throw new FormatException(SR.Argument_BadFormatSpecifier);
+                        }
+                        n = temp;
                     }
                 }
                 if (i >= format.Length || format[i] == '\0')

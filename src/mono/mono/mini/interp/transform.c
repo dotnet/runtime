@@ -1987,10 +1987,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			interp_emit_ldelema (td, target_method->klass, check_class);
 			td->ip += 5;
 			return TRUE;
-#ifndef ENABLE_NETCORE
-		} else if (!strcmp (tm, "UnsafeMov") || !strcmp (tm, "UnsafeLoad")) {
-			*op = MINT_CALLRUN;
-#endif
 		} else if (!strcmp (tm, "Get")) {
 			interp_emit_ldelema (td, target_method->klass, NULL);
 			interp_emit_ldobj (td, m_class_get_element_class (target_method->klass));
@@ -2191,7 +2187,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (((in_corlib && !strcmp (klass_name_space, "Internal.Runtime.CompilerServices"))
 				|| !strcmp (klass_name_space, "System.Runtime.CompilerServices"))
 			   && !strcmp (klass_name, "Unsafe")) {
-#ifdef ENABLE_NETCORE
 		if (!strcmp (tm, "AddByteOffset"))
 			*op = MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET;
 		else if (!strcmp (tm, "ByteOffset"))
@@ -2238,9 +2233,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		} else if (!strcmp (tm, "InitBlockUnaligned")) {
 			*op = MINT_INITBLK;
 		}
-#endif
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
-#ifdef ENABLE_NETCORE
 		if (!strcmp (tm, "get_OffsetToStringData")) {
 			g_assert (csignature->param_count == 0);
 			int offset = MONO_STRUCT_OFFSET (MonoString, chars);
@@ -2296,7 +2289,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 
 			*op = has_refs ? MINT_LDC_I4_1 : MINT_LDC_I4_0;
 		}
-#endif
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "RuntimeMethodHandle") && !strcmp (tm, "GetFunctionPointer") && csignature->param_count == 1) {
 		// We must intrinsify this method on interp so we don't return a pointer to native code entering interpreter
 		*op = MINT_LDFTN_DYNAMIC;
@@ -2429,7 +2421,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			}
 		}
 	}
-#ifdef ENABLE_NETCORE
 	else if (in_corlib &&
 			   !strcmp ("System.Runtime.CompilerServices", klass_name_space) &&
 			   !strcmp ("RuntimeFeature", klass_name)) {
@@ -2442,7 +2433,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			!strcmp (tm, "get_IsSupported")) {
 		*op = MINT_LDC_I4_0;
 	}
-#endif
 
 	return FALSE;
 }
@@ -3073,14 +3063,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 #endif
 		}
-
-#ifndef ENABLE_NETCORE
-		if (op == MINT_CALLRUN) {
-			interp_ins_set_dreg (td->last_ins, dreg);
-			td->last_ins->data [0] = get_data_item_index (td, target_method);
-			td->last_ins->data [1] = get_data_item_index (td, mono_method_signature_internal (target_method));
-		}
-#endif
 	} else if (!calli && !is_delegate_invoke && !is_virtual && mono_interp_jit_call_supported (target_method, csignature)) {
 		interp_add_ins (td, MINT_JIT_CALL);
 		interp_ins_set_dreg (td->last_ins, dreg);
@@ -3210,7 +3192,7 @@ interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, M
 }
 
 static InterpBasicBlock*
-get_bb (TransformData *td, unsigned char *ip)
+get_bb (TransformData *td, unsigned char *ip, gboolean make_list)
 {
 	int offset = ip - td->il_code;
 	InterpBasicBlock *bb = td->offset_to_bb [offset];
@@ -3223,7 +3205,9 @@ get_bb (TransformData *td, unsigned char *ip)
 		bb->index = td->bb_count++;
 		td->offset_to_bb [offset] = bb;
 
-		td->basic_blocks = g_list_append_mempool (td->mempool, td->basic_blocks, bb);
+                /* Add the blocks in reverse order */
+                if (make_list)
+                        td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, bb);
 	}
 
 	return bb;
@@ -3235,7 +3219,7 @@ get_bb (TransformData *td, unsigned char *ip)
  *   Compute the set of IL level basic blocks.
  */
 static void
-get_basic_blocks (TransformData *td, MonoMethodHeader *header)
+get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_list)
 {
 	guint8 *start = (guint8*)td->il_code;
 	guint8 *end = (guint8*)td->il_code + td->code_size;
@@ -3246,14 +3230,14 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header)
 	const MonoOpcode *opcode;
 
 	td->offset_to_bb = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock*) * (end - start + 1));
-	get_bb (td, start);
+	get_bb (td, start, make_list);
 
 	for (i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = header->clauses + i;
-		get_bb (td, start + c->try_offset);
-		get_bb (td, start + c->handler_offset);
+		get_bb (td, start + c->try_offset, make_list);
+		get_bb (td, start + c->handler_offset, make_list);
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER)
-			get_bb (td, start + c->data.filter_offset);
+			get_bb (td, start + c->data.filter_offset, make_list);
 	}
 
 	while (ip < end) {
@@ -3283,15 +3267,15 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header)
 			break;
 		case MonoShortInlineBrTarget:
 			target = start + cli_addr + 2 + (signed char)ip [1];
-			get_bb (td, target);
+			get_bb (td, target, make_list);
 			ip += 2;
-			get_bb (td, ip);
+			get_bb (td, ip, make_list);
 			break;
 		case MonoInlineBrTarget:
 			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
-			get_bb (td, target);
+			get_bb (td, target, make_list);
 			ip += 5;
-			get_bb (td, ip);
+			get_bb (td, ip, make_list);
 			break;
 		case MonoInlineSwitch: {
 			guint32 n = read32 (ip + 1);
@@ -3299,14 +3283,14 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header)
 			ip += 5;
 			cli_addr += 5 + 4 * n;
 			target = start + cli_addr;
-			get_bb (td, target);
+			get_bb (td, target, make_list);
 
 			for (j = 0; j < n; ++j) {
 				target = start + cli_addr + (gint32)read32 (ip);
-				get_bb (td, target);
+				get_bb (td, target, make_list);
 				ip += 4;
 			}
-			get_bb (td, ip);
+			get_bb (td, ip, make_list);
 			break;
 		}
 		case MonoInlineR:
@@ -3318,8 +3302,12 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header)
 		}
 
 		if (i == CEE_THROW || i == CEE_ENDFINALLY || i == CEE_RETHROW)
-			get_bb (td, ip);
+			get_bb (td, ip, make_list);
 	}
+
+        /* get_bb added blocks in reverse order, unreverse now */
+        if (make_list)
+                td->basic_blocks = g_list_reverse (td->basic_blocks);
 }
 
 static void
@@ -4084,7 +4072,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		exit_bb->stack_height = -1;
 	}
 
-	get_basic_blocks (td, header);
+	get_basic_blocks (td, header, td->gen_sdb_seq_points);
 
 	if (!inlining)
 		initialize_clause_bblocks (td);
@@ -5046,6 +5034,13 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I8_R8);
 #else
 				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I4_R8);
+#endif
+				break;
+			case STACK_TYPE_R4:
+#if SIZEOF_VOID_P == 8
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I8_R4);
+#else
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I4_R4);
 #endif
 				break;
 			case STACK_TYPE_I4:

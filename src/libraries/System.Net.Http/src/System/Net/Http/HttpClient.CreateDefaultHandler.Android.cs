@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+
 namespace System.Net.Http
 {
     public partial class HttpClient
@@ -15,8 +17,8 @@ namespace System.Net.Http
                 return new HttpClientHandler();
             }
 
-            Type? handler = Type.GetType("Xamarin.Android.Net.AndroidClientHandler, Mono.Android");
-            return (HttpMessageHandler)Activator.CreateInstance(handler!)!;
+            Type? androidEnv = Type.GetType("Android.Runtime.AndroidEnvironment, Mono.Android");
+            return (HttpMessageHandler)androidEnv!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null)!;
         }
     }
 }

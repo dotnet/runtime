@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Authentication;
 
 namespace System.Net.Security
@@ -68,7 +69,7 @@ namespace System.Net.Security
                 return hashCode;
             }
 
-            public override bool Equals(object? obj) => (obj is SslCredKey && Equals((SslCredKey)obj));
+            public override bool Equals([NotNullWhen(true)] object? obj) => (obj is SslCredKey && Equals((SslCredKey)obj));
 
             public bool Equals(SslCredKey other)
             {

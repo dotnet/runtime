@@ -1326,14 +1326,14 @@ ep_rt_method_get_simple_assembly_name (
 	EP_ASSERT (method != NULL);
 	EP_ASSERT (name != NULL);
 
-	name [0] = 0;
-
 	const ep_char8_t *assembly_name = method->GetLoaderModule ()->GetAssembly ()->GetSimpleName ();
 	if (!assembly_name)
 		return false;
 
 	size_t assembly_name_len = strlen (assembly_name) + 1;
-	memcpy (name, assembly_name, (assembly_name_len < name_len) ? assembly_name_len : name_len);
+	size_t to_copy = assembly_name_len < name_len ? assembly_name_len : name_len;
+	memcpy (name, assembly_name, to_copy);
+	name [to_copy - 1] = 0;
 
 	return true;
 }
@@ -1359,7 +1359,9 @@ ep_rt_method_get_full_name (
 		const ep_char8_t *method_name_utf8 = method_name.GetUTF8 (conversion);
 		if (method_name_utf8) {
 			size_t method_name_utf8_len = strlen (method_name_utf8) + 1;
-			memcpy (name, method_name_utf8, (method_name_utf8_len < name_len) ? method_name_utf8_len : name_len);
+			size_t to_copy = method_name_utf8_len < name_len ? method_name_utf8_len : name_len;
+			memcpy (name, method_name_utf8, to_copy);
+			name [to_copy - 1] = 0;
 		} else {
 			result = false;
 		}
@@ -1891,7 +1893,7 @@ ep_rt_execute_rundown (void)
 
 // STATIC_CONTRACT_NOTHROW
 #undef ep_rt_object_array_alloc
-#define ep_rt_object_array_alloc(obj_type,size) (new (nothrow) obj_type [size])
+#define ep_rt_object_array_alloc(obj_type,size) (new (nothrow) obj_type [size]())
 
 // STATIC_CONTRACT_NOTHROW
 #undef ep_rt_object_array_free
