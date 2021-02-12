@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.ComponentModel;
@@ -456,8 +457,16 @@ namespace System.Diagnostics.Tests
         [OuterLoop("Requires admin privileges")]
         public void TestUserCredentialsPropertiesOnWindows()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            const string username = "testForDotnetRuntime", password = "PassWord123!!";
+            const string username = "testForDotnetRuntime";
+            string password;
+            using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
+            {
+                byte[] randomBytes = new byte[33];
+                rng.GetBytes(randomBytes);
+
+                // Add special chars to ensure it satisfies password requirements.
+               password = Convert.ToBase64String(randomBytes) + "_-As@!%*(1)4#2";
+           }
 
             uint removalResult = Interop.NetUserDel(null, username);
             Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
