@@ -9,7 +9,8 @@
     <OverridePackageId>Microsoft.NETCore.App.Crossgen2.$(RuntimeIdentifier)</OverridePackageId>
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
-    <RuntimeIdentifiers>linux-x64;linux-musl-x64;osx-x64;osx-arm64;win-x64</RuntimeIdentifiers>
+    <!-- Build this pack for any RID if building from source. Otherwise, only build a few RIDs. -->
+    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;osx-x64;osx-arm64;win-x64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>
         AddRuntimeFilesToPackage;
