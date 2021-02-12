@@ -360,7 +360,7 @@ private:
     static bool VectorConstantIsBroadcastedI64(VectorConstant& vecCns, int count)
     {
         assert(count >= 1 && count <= 4);
-        for (int i = 0; i < count; i++)
+        for (int i = 1; i < count; i++)
         {
             if (vecCns.i64[i] != vecCns.i64[0])
             {
