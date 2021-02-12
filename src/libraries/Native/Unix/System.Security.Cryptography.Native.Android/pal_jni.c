@@ -174,6 +174,10 @@ jmethodID g_EllipticCurveGetSeed;
 jclass    g_X509EncodedKeySpecClass;
 jmethodID g_X509EncodedKeySpecCtor;
 
+// javax/security/auth
+jclass    g_DestroyableClass;
+jmethodID g_destroy;
+
 // com/android/org/conscrypt/NativeCrypto
 jclass    g_NativeCryptoClass;
 
@@ -410,6 +414,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_X509EncodedKeySpecClass =        GetClassGRef(env, "java/security/spec/X509EncodedKeySpec");
     g_X509EncodedKeySpecCtor =         GetMethod(env, false, g_X509EncodedKeySpecClass, "<init>", "([B)V");
+
+    g_DestroyableClass =               GetClassGRef(env, "javax/security/auth/Destroyable");
+    g_destroy =                        GetMethod(env, false, g_DestroyableClass, "destroy", "()V");
 
     g_NativeCryptoClass =              GetClassGRef(env, "com/android/org/conscrypt/NativeCrypto");
 

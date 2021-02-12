@@ -26,7 +26,15 @@ void CryptoNative_EcKeyDestroy(EC_KEY* r)
         if (r->refCount == 0)
         {
             JNIEnv* env = GetJNIEnv();
-            // TODO: Destroy private key.
+            if (r->keyPair != NULL)
+            {
+                // Destroy the private key data.
+                jobject privateKey = (*env)->CallObjectMethod(env, r->keyPair, g_keyPairGetPrivateMethod);
+                (*env)->CallVoidMethod(env, privateKey, g_destroy);
+                (*env)->DeleteLocalRef(env, privateKey);
+                CheckJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
+            }
+
             ReleaseGRef(env, r->keyPair);
             ReleaseGRef(env, r->curveParameters);
             free(r);
@@ -49,6 +57,12 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
     (*env)->CallVoidMethod(env, keyPairGenerator, g_keyPairGenInitializeMethod, paramSpec);
 
     (*env)->DeleteLocalRef(env, paramSpec);
+    if (CheckJNIExceptions(env))
+    {
+        (*env)->DeleteLocalRef(env, ec);
+        (*env)->DeleteLocalRef(env, keyPairGenerator);
+        return NULL;
+    }
 
     jobject keyPair = (*env)->CallObjectMethod(env, keyPairGenerator, g_keyPairGenGenKeyPairMethod);
     
@@ -59,11 +73,19 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
     jobject publicKey = (*env)->CallObjectMethod(env, keyPair, g_keyPairGetPublicMethod);
     jobject keySpec = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGetKeySpecMethod, publicKey, g_ECPublicKeySpecClass);
 
+    (*env)->DeleteLocalRef(env, ec);
+    (*env)->DeleteLocalRef(env, publicKey);
     (*env)->DeleteLocalRef(env, keyFactory);
+
+    if (CheckJNIExceptions(env))
+    {
+        (*env)->DeleteLocalRef(env, keySpec);
+        (*env)->DeleteLocalRef(env, keyPair);
+        return NULL;
+    }
 
     jobject curveParameters = (*env)->CallObjectMethod(env, keySpec, g_ECPublicKeySpecGetParams);
     
-    (*env)->DeleteLocalRef(env, publicKey);
 
     return CryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
 }

@@ -183,6 +183,10 @@ extern jmethodID g_EllipticCurveGetSeed;
 extern jclass    g_X509EncodedKeySpecClass;
 extern jmethodID g_X509EncodedKeySpecCtor;
 
+// javax/security/auth
+extern jclass    g_DestroyableClass;
+extern jmethodID g_destroy;
+
 // com/android/org/conscrypt/NativeCrypto
 extern jclass    g_NativeCryptoClass;
 

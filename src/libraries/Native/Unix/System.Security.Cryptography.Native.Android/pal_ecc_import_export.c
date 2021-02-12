@@ -24,30 +24,30 @@ int32_t CryptoNative_GetECKeyParameters(
     JNIEnv* env = GetJNIEnv();
 
     // Get the public key
-    int rc = 0;
-    jobject xBn = NULL;
-    jobject yBn = NULL;
-    jobject publicKey = NULL;
-    jobject privateKey = NULL;
-    jobject Q = NULL;
+    jobject publicKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPublicMethod);
 
-    publicKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPublicMethod);
+    jobject Q = (*env)->CallObjectMethod(env, publicKey, g_ECPublicKeyGetW);
 
-    Q = (*env)->CallObjectMethod(env, publicKey, g_ECPublicKeyGetW);
+    (*env)->DeleteLocalRef(env, publicKey);
 
-    xBn = (*env)->CallObjectMethod(env, Q, g_ECPointGetAffineX);
-    yBn = (*env)->CallObjectMethod(env, Q, g_ECPointGetAffineY);
+    jobject xBn = (*env)->CallObjectMethod(env, Q, g_ECPointGetAffineX);
+    jobject yBn = (*env)->CallObjectMethod(env, Q, g_ECPointGetAffineY);
+    
+    (*env)->DeleteLocalRef(env, Q);
 
     // Success; assign variables
-    *qx = ToGRef(env, xBn); *cbQx = CryptoNative_GetBigNumBytes(xBn);
-    *qy = ToGRef(env, yBn); *cbQy = CryptoNative_GetBigNumBytes(yBn);
+    *qx = ToGRef(env, xBn); *cbQx = CryptoNative_GetBigNumBytes(xBn); xBn = NULL;
+    *qy = ToGRef(env, yBn); *cbQy = CryptoNative_GetBigNumBytes(yBn); yBn = NULL;
     if (*cbQx == FAIL || *cbQy == FAIL) goto error;
 
     if (includePrivate)
     {
-        privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
+        jobject privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
 
         jobject dBn = (*env)->CallObjectMethod(env, privateKey, g_ECPrivateKeyGetS);
+
+        (*env)->DeleteLocalRef(env, privateKey);
+
         *d = ToGRef(env, dBn);
         *cbD = CryptoNative_GetBigNumBytes(*d);
         if (*cbD == FAIL) goto error;
@@ -61,17 +61,16 @@ int32_t CryptoNative_GetECKeyParameters(
             *cbD = 0;
     }
 
-    // success
-    return 1;
+    return SUCCESS;
 
 error:
     *cbQx = *cbQy = 0;
     *qx = *qy = 0;
     if (d) *d = NULL;
     if (cbD) *cbD = 0;
-    if (xBn) CryptoNative_BigNumDestroy(xBn);
-    if (yBn) CryptoNative_BigNumDestroy(yBn);
-    return rc;
+    if (xBn) (*env)->DeleteLocalRef(env, xBn);
+    if (yBn) (*env)->DeleteLocalRef(env, yBn);
+    return FAIL;
 }
 
 int32_t CryptoNative_GetECCurveParameters(
@@ -194,6 +193,16 @@ int32_t CryptoNative_GetECCurveParameters(
     *cofactor = ToGRef(env, cofactorBn); *cbCofactor = CryptoNative_GetBigNumBytes(cofactorBn);
 
     rc = SUCCESS;
+    
+    if (xBn) (*env)->DeleteLocalRef(env, xBn);
+    if (yBn) (*env)->DeleteLocalRef(env, yBn);
+    if (pBn) (*env)->DeleteLocalRef(env, pBn);
+    if (aBn) (*env)->DeleteLocalRef(env, aBn);
+    if (bBn) (*env)->DeleteLocalRef(env, bBn);
+    if (orderBn) (*env)->DeleteLocalRef(env, orderBn);
+    if (cofactorBn) (*env)->DeleteLocalRef(env, cofactorBn);
+    if (seedBn) (*env)->DeleteLocalRef(env, seedBn);
+
     goto exit;
 
 error:
@@ -222,14 +231,14 @@ error:
     ReleaseGRef(env, *seed);
     *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
 
-    CryptoNative_BigNumDestroy(xBn);
-    CryptoNative_BigNumDestroy(yBn);
-    CryptoNative_BigNumDestroy(pBn);
-    CryptoNative_BigNumDestroy(aBn);
-    CryptoNative_BigNumDestroy(bBn);
-    CryptoNative_BigNumDestroy(orderBn);
-    CryptoNative_BigNumDestroy(cofactorBn);
-    CryptoNative_BigNumDestroy(seedBn);
+    if (xBn) (*env)->DeleteLocalRef(env, xBn);
+    if (yBn) (*env)->DeleteLocalRef(env, yBn);
+    if (pBn) (*env)->DeleteLocalRef(env, pBn);
+    if (aBn) (*env)->DeleteLocalRef(env, aBn);
+    if (bBn) (*env)->DeleteLocalRef(env, bBn);
+    if (orderBn) (*env)->DeleteLocalRef(env, orderBn);
+    if (cofactorBn) (*env)->DeleteLocalRef(env, cofactorBn);
+    if (seedBn) (*env)->DeleteLocalRef(env, seedBn);
 
 exit:
     return rc;
@@ -318,7 +327,9 @@ static jobject CryptoNative_CreateKeyPairFromCurveParameters(jobject curveParame
 error:
     if (privateKey)
     {
-        // TODO: Destroy private key
+        // Destroy the private key data.
+        (*env)->CallVoidMethod(env, privateKey, g_destroy);
+        CheckJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
     }
 
 cleanup:
