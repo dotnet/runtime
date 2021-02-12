@@ -79,7 +79,7 @@ namespace System.Linq
         /// <param name="source">A sequence that contains elements to be counted.</param>
         /// <param name="count">
         ///     When this method returns, contains the count of <paramref name="source" /> if successful,
-        ///     or -1 if the method failed to determine the count.</param>
+        ///     or zero if the method failed to determine the count.</param>
         /// <returns>
         ///   <see langword="true" /> if the count of <paramref name="source"/> can be determined without enumeration;
         ///   otherwise, <see langword="false" />.
@@ -89,7 +89,8 @@ namespace System.Linq
         ///   count can be determined without enumerating; this includes <see cref="ICollection{T}"/>,
         ///   <see cref="ICollection"/> as well as internal types used in the LINQ implementation.
         ///
-        ///   The method is a constant-time operation.
+        ///   The method is typically a constant-time operation, but ultimately this depends on the complexity
+        ///   characteristics of the underlying collection implementation.
         /// </remarks>
         public static bool TryGetNonEnumeratingCount<TSource>(this IEnumerable<TSource> source, out int count)
         {
@@ -106,7 +107,12 @@ namespace System.Linq
 
             if (source is IIListProvider<TSource> listProv)
             {
-                return (count = listProv.GetCount(onlyIfCheap: true)) >= 0;
+                int c = listProv.GetCount(onlyIfCheap: true);
+                if (c >= 0)
+                {
+                    count = c;
+                    return true;
+                }
             }
 
             if (source is ICollection collection)
@@ -115,7 +121,7 @@ namespace System.Linq
                 return true;
             }
 
-            count = -1;
+            count = 0;
             return false;
         }
 

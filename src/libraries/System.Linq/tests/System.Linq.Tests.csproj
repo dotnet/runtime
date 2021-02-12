@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <DefineConstants Condition="'$(OptimizeForSize)' != true">$(DefineConstants);LINQ_OPTIMIZED_FOR_SPEED</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
