@@ -868,53 +868,6 @@ leave:
 	return res;
 }
 
-#ifndef DISABLE_REMOTING
-gpointer
-mono_generic_virtual_remoting_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	ERROR_DECL (error);
-	MonoGenericContext context = { NULL, NULL };
-	MonoMethod *imt_method, *declaring;
-	gpointer addr;
-
-	UnlockedIncrement (&trampoline_calls);
-
-	g_assert (m->is_generic);
-
-	if (m->is_inflated)
-		declaring = mono_method_get_declaring_generic_method (m);
-	else
-		declaring = m;
-
-	if (mono_class_is_ginst (m->klass))
-		context.class_inst = mono_class_get_generic_class (m->klass)->context.class_inst;
-	else
-		g_assert (!mono_class_is_gtd (m->klass));
-
-	imt_method = mono_arch_find_imt_method (regs, code);
-	if (imt_method->is_inflated)
-		context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
-	m = mono_class_inflate_generic_method_checked (declaring, &context, error);
-	g_assert (is_ok (error)); /* FIXME don't swallow the error */;
-	m = mono_marshal_get_remoting_invoke_with_check (m, error);
-	if (!is_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
-
-	addr = mono_jit_compile_method (m, error);
-	if (!is_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
-	g_assert (addr);
-
-	return addr;
-}
-#endif
-
 /**
  * mono_aot_trampoline:
  *
@@ -1067,21 +1020,6 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		 * (ctor_with_method () does this, but it doesn't store the wrapper back into
 		 * delegate->method).
 		 */
-#ifndef DISABLE_REMOTING
-		if (delegate->target && mono_object_is_transparent_proxy (delegate->target)) {
-			is_remote = TRUE;
-			error_init (err);
-#ifndef DISABLE_COM
-			if (((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class != mono_class_get_com_object_class () &&
-			   !mono_class_is_com_object (((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class))
-#endif
-				method = mono_marshal_get_remoting_invoke (method, err);
-			if (!is_ok (err)) {
-				mono_error_set_pending_exception (err);
-				return NULL;
-			}
-		}
-#endif
 		if (!is_remote) {
 			sig = tramp_info->sig;
 			if (!(sig && method == tramp_info->method)) {
@@ -1251,10 +1189,6 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 #endif
 	case MONO_TRAMPOLINE_DELEGATE:
 		return (gconstpointer)mono_delegate_trampoline;
-#ifndef DISABLE_REMOTING
-	case MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING:
-		return (gconstpointer)mono_generic_virtual_remoting_trampoline;
-#endif
 	case MONO_TRAMPOLINE_VCALL:
 		return (gconstpointer)mono_vcall_trampoline;
 	default:
@@ -1295,9 +1229,6 @@ mono_trampolines_init (void)
 	mono_trampoline_code [MONO_TRAMPOLINE_AOT_PLT] = create_trampoline_code (MONO_TRAMPOLINE_AOT_PLT);
 #endif
 	mono_trampoline_code [MONO_TRAMPOLINE_DELEGATE] = create_trampoline_code (MONO_TRAMPOLINE_DELEGATE);
-#ifndef DISABLE_REMOTING
-	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING] = create_trampoline_code (MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING);
-#endif
 	mono_trampoline_code [MONO_TRAMPOLINE_VCALL] = create_trampoline_code (MONO_TRAMPOLINE_VCALL);
 
 	mono_counters_register ("Calls to trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &trampoline_calls);
@@ -1612,7 +1543,6 @@ static const char* const tramp_names [MONO_TRAMPOLINE_NUM] = {
 	"generic_trampoline_aot",
 	"generic_trampoline_aot_plt",
 	"generic_trampoline_delegate",
-	"generic_trampoline_generic_virtual_remoting",
 	"generic_trampoline_vcall"
 };
 

@@ -976,47 +976,6 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		image = mono_defaults.corlib;
 
 		switch (wrapper_type) {
-#ifndef DISABLE_REMOTING
-		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
-			MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
-			if (!m)
-				return FALSE;
-			mono_class_init_internal (m->klass);
-			if (mono_aot_only)
-				ref->method = m;
-			else {
-				ref->method = mono_marshal_get_remoting_invoke_with_check (m, error);
-				return_val_if_nok (error, FALSE);
-			}
-			break;
-		}
-		case MONO_WRAPPER_PROXY_ISINST: {
-			MonoClass *klass = decode_klass_ref (module, p, &p, error);
-			if (!klass)
-				return FALSE;
-			ref->method = mono_marshal_get_proxy_cancast (klass);
-			break;
-		}
-		case MONO_WRAPPER_LDFLD:
-		case MONO_WRAPPER_LDFLDA:
-		case MONO_WRAPPER_STFLD: {
-			MonoClass *klass = decode_klass_ref (module, p, &p, error);
-			if (!klass)
-				return FALSE;
-			MonoType *type = m_class_get_byval_arg (klass);
-			if (wrapper_type == MONO_WRAPPER_LDFLD)
-				ref->method = mono_marshal_get_ldfld_wrapper (type);
-			else if (wrapper_type == MONO_WRAPPER_LDFLDA)
-				ref->method = mono_marshal_get_ldflda_wrapper (type);
-			else if (wrapper_type == MONO_WRAPPER_STFLD)
-				ref->method = mono_marshal_get_stfld_wrapper (type);
-			else {
-				mono_error_set_bad_image_by_name (error, module->aot_name, "Unknown AOT wrapper type %d: %s", wrapper_type, module->aot_name);
-				return FALSE;
-			}
-			break;
-		}
-#endif
 		case MONO_WRAPPER_ALLOC: {
 			int atype = decode_value (p, &p);
 			ManagedAllocatorVariant variant =
@@ -5679,7 +5638,6 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				case MONO_JIT_ICALL_generic_trampoline_aot:
 				case MONO_JIT_ICALL_generic_trampoline_aot_plt:
 				case MONO_JIT_ICALL_generic_trampoline_delegate:
-				case MONO_JIT_ICALL_generic_trampoline_generic_virtual_remoting:
 				case MONO_JIT_ICALL_generic_trampoline_vcall:
 					target = (gpointer)mono_get_trampoline_func (mono_jit_icall_id_to_trampoline_type (jit_icall_id));
 					break;

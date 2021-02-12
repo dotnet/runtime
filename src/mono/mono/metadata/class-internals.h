@@ -324,17 +324,10 @@ int mono_class_interface_match (const uint8_t *bitmap, int id);
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
 
-#ifdef DISABLE_REMOTING
 #define mono_class_is_marshalbyref(klass) (FALSE)
 #define mono_class_is_contextbound(klass) (FALSE)
 #define mono_vtable_is_remote(vtable) (FALSE)
 #define mono_vtable_set_is_remote(vtable,enable) do {} while (0)
-#else
-#define mono_class_is_marshalbyref(klass) (m_class_get_marshalbyref (klass))
-#define mono_class_is_contextbound(klass) (m_class_get_contextbound (klass))
-#define mono_vtable_is_remote(vtable) ((vtable)->remote)
-#define mono_vtable_set_is_remote(vtable,enable) do { (vtable)->remote = enable ? 1 : 0; } while (0)
-#endif
 
 #ifdef DISABLE_COM
 #define mono_class_is_com_object(klass) (FALSE)
@@ -997,12 +990,6 @@ typedef struct {
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *internal_thread_class;
-#ifndef DISABLE_REMOTING
-	MonoClass *transparent_proxy_class;
-	MonoClass *real_proxy_class;
-	MonoClass *marshalbyrefobject_class;
-	MonoClass *iremotingtypeinfo_class;
-#endif
 	MonoClass *mono_method_message_class;
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
@@ -1022,13 +1009,8 @@ typedef struct {
 	MonoClass *appcontext_class;
 } MonoDefaults;
 
-#ifdef DISABLE_REMOTING
 #define mono_class_is_transparent_proxy(klass) (FALSE)
 #define mono_class_is_real_proxy(klass) (FALSE)
-#else
-#define mono_class_is_transparent_proxy(klass) ((klass) == mono_defaults.transparent_proxy_class)
-#define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)
-#endif
 
 #define mono_object_is_transparent_proxy(object) (mono_class_is_transparent_proxy (mono_object_class (object)))
 
@@ -1534,11 +1516,6 @@ mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr);
 
 void
 mono_class_compute_gc_descriptor (MonoClass *klass);
-
-#ifndef DISABLE_REMOTING
-void
-mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out);
-#endif
 
 gboolean
 mono_class_init_checked (MonoClass *klass, MonoError *error);

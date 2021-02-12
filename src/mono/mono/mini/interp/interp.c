@@ -465,26 +465,8 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 static gpointer
 interp_get_remoting_invoke (MonoMethod *method, gpointer addr, MonoError *error)
 {
-#ifndef DISABLE_REMOTING
-	InterpMethod *imethod;
-
-	if (addr) {
-		imethod = lookup_method_pointer (addr);
-	} else {
-		g_assert (method);
-		imethod = mono_interp_get_imethod (mono_domain_get (), method, error);
-		return_val_if_nok (error, NULL);
-	}
-	g_assert (imethod);
-	g_assert (mono_use_interpreter);
-
-	MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke (imethod->method, error);
-	return_val_if_nok (error, NULL);
-	return mono_interp_get_imethod (mono_domain_get (), remoting_invoke_method, error);
-#else
 	g_assert_not_reached ();
 	return NULL;
-#endif
 }
 
 InterpMethod*
@@ -606,17 +588,6 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 	MonoDomain *domain = imethod->domain;
 	InterpMethod *ret = NULL;
 
-#ifndef DISABLE_REMOTING
-	if (mono_class_is_transparent_proxy (vtable->klass)) {
-		ERROR_DECL (error);
-		MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (m, error);
-		mono_error_assert_ok (error);
-		ret = mono_interp_get_imethod (domain, remoting_invoke_method, error);
-		mono_error_assert_ok (error);
-		return ret;
-	}
-#endif
-
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 			ERROR_DECL (error);
@@ -728,12 +699,6 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 {
 	gpointer *table;
 	MonoMemoryManager *memory_manager = m_class_get_mem_manager (vtable->domain, vtable->klass);
-
-#ifndef DISABLE_REMOTING
-	/* FIXME Remoting */
-	if (mono_class_is_transparent_proxy (vtable->klass))
-		return get_virtual_method (imethod, vtable);
-#endif
 
 	table = get_method_table (vtable, offset);
 
@@ -3024,16 +2989,7 @@ mono_interp_load_remote_field (
 	void* addr;
 	MonoClassField *field = (MonoClassField*)imethod->data_items [ip [3]];
 
-#ifndef DISABLE_REMOTING
-	gpointer tmp;
-	if (mono_object_is_transparent_proxy (o)) {
-		MonoClass * const klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-		ERROR_DECL (error);
-		addr = mono_load_remote_field_checked (o, klass, field, &tmp, error);
-		mono_error_cleanup (error); /* FIXME: don't swallow the error */
-	} else
-#endif
-		addr = (char*)o + field->offset;
+	addr = (char*)o + field->offset;
 	stackval_from_data (field->type, (stackval*)result, addr, FALSE);
 }
 
@@ -3051,16 +3007,7 @@ mono_interp_load_remote_field_vt (
 	MonoClass* klass = mono_class_from_mono_type_internal (field->type);
 	int const i32 = mono_class_value_size (klass, NULL);
 
-#ifndef DISABLE_REMOTING
-	gpointer tmp;
-	if (mono_object_is_transparent_proxy (o)) {
-		klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-		ERROR_DECL (error);
-		addr = mono_load_remote_field_checked (o, klass, field, &tmp, error);
-		mono_error_cleanup (error); /* FIXME: don't swallow the error */
-	} else
-#endif
-		addr = (char*)o + field->offset;
+	addr = (char*)o + field->offset;
 	memcpy (result, addr, i32);
 }
 
@@ -4926,14 +4873,6 @@ call:
 
 			mono_interp_error_cleanup (error); // FIXME: do not swallow the error
 			EXCEPTION_CHECKPOINT;
-#ifndef DISABLE_REMOTING
-			if (mono_object_is_transparent_proxy (o)) {
-				MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (cmethod->method, error);
-				mono_error_assert_ok (error);
-				cmethod = mono_interp_get_imethod (domain, remoting_invoke_method, error);
-				mono_error_assert_ok (error);
-			}
-#endif
 			ip += 4;
 			goto call;
 		}
@@ -5280,14 +5219,7 @@ call:
 			NULL_CHECK (o);
 			
 			field = (MonoClassField*)frame->imethod->data_items [ip [3]];
-#ifndef DISABLE_REMOTING
-			if (mono_object_is_transparent_proxy (o)) {
-				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				mono_store_remote_field_checked (o, klass, field, locals + ip [2], error);
-				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
-			} else
-#endif
-				stackval_to_data (field->type, (stackval*)(locals + ip [2]), (char*)o + field->offset, FALSE);
+			stackval_to_data (field->type, (stackval*)(locals + ip [2]), (char*)o + field->offset, FALSE);
 
 			ip += 4;
 			MINT_IN_BREAK;
@@ -5299,14 +5231,7 @@ call:
 			MonoObject *o = LOCAL_VAR (ip [1], MonoObject*);
 			NULL_CHECK (o);
 
-#ifndef DISABLE_REMOTING
-			if (mono_object_is_transparent_proxy (o)) {
-				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				mono_store_remote_field_checked (o, klass, field, locals + ip [2], error);
-				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
-			} else
-#endif
-				mono_value_copy_internal ((char *) o + field->offset, locals + ip [2], klass);
+			mono_value_copy_internal ((char *) o + field->offset, locals + ip [2], klass);
 
 			ip += 4;
 			MINT_IN_BREAK;

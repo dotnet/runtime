@@ -3041,24 +3041,12 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 			return;
 		}
 
-#ifndef DISABLE_REMOTING
-		klass->marshalbyref = parent->marshalbyref;
-		klass->contextbound  = parent->contextbound;
-#endif
-
 		klass->delegate  = parent->delegate;
 
 		if (MONO_CLASS_IS_IMPORT (klass) || mono_class_is_com_object (parent))
 			mono_class_set_is_com_object (klass);
 		
 		if (system_namespace) {
-#ifndef DISABLE_REMOTING
-			if (klass->name [0] == 'M' && !strcmp (klass->name, "MarshalByRefObject"))
-				klass->marshalbyref = 1;
-
-			if (klass->name [0] == 'C' && !strcmp (klass->name, "ContextBoundObject")) 
-				klass->contextbound  = 1;
-#endif
 			if (klass->name [0] == 'D' && !strcmp (klass->name, "Delegate")) 
 				klass->delegate  = 1;
 		}
