@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Internal;
@@ -62,17 +61,7 @@ namespace System.Text.Encodings.Web
             // (includes categories Cc, Cs, Co, Cn, Zs [except U+0020 SPACE], Zl, Zp)
             _allowedCharacters.ForbidUndefinedCharacters();
 
-            ForbidHtmlCharacters(_allowedCharacters);
-        }
-
-        internal static void ForbidHtmlCharacters(AllowedCharactersBitmap allowedCharacters)
-        {
-            allowedCharacters.ForbidCharacter('<');
-            allowedCharacters.ForbidCharacter('>');
-            allowedCharacters.ForbidCharacter('&');
-            allowedCharacters.ForbidCharacter('\''); // can be used to escape attributes
-            allowedCharacters.ForbidCharacter('\"'); // can be used to escape attributes
-            allowedCharacters.ForbidCharacter('+'); // technically not HTML-specific, but can be used to perform UTF7-based attacks
+            HtmlEncoderHelper.ForbidHtmlCharacters(_allowedCharacters);
         }
 
         public DefaultHtmlEncoder(params UnicodeRange[] allowedRanges) : this(new TextEncoderSettings(allowedRanges))
@@ -161,6 +150,23 @@ namespace System.Text.Encodings.Web
             buffer += numberOfHexCharacters + 1;
             *buffer = ';';
             return true;
+        }
+    }
+
+    /// <summary>
+    /// Separates static methods from HtmlEncoder and DefaultHtmlEncoder so those classes can be trimmed
+    /// when only these static methods are needed.
+    /// </summary>
+    internal static class HtmlEncoderHelper
+    {
+        internal static void ForbidHtmlCharacters(AllowedCharactersBitmap allowedCharacters)
+        {
+            allowedCharacters.ForbidCharacter('<');
+            allowedCharacters.ForbidCharacter('>');
+            allowedCharacters.ForbidCharacter('&');
+            allowedCharacters.ForbidCharacter('\''); // can be used to escape attributes
+            allowedCharacters.ForbidCharacter('\"'); // can be used to escape attributes
+            allowedCharacters.ForbidCharacter('+'); // technically not HTML-specific, but can be used to perform UTF7-based attacks
         }
     }
 }
