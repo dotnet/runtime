@@ -62,6 +62,9 @@ enum NamedIntrinsic : unsigned short
     NI_IsSupported_Dynamic,
     NI_Throw_PlatformNotSupportedException,
 
+    NI_System_Threading_Interlocked_And,
+    NI_System_Threading_Interlocked_Or,
+
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #if defined(TARGET_XARCH)

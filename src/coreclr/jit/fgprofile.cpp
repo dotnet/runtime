@@ -904,17 +904,14 @@ public:
     {
         m_blockCount++;
         block->bbSparseProbeList = nullptr;
-        JITDUMP("node " FMT_BB "\n", block->bbNum);
     }
 
     void VisitTreeEdge(BasicBlock* source, BasicBlock* target) override
     {
-        JITDUMP("tree " FMT_BB " -> " FMT_BB "\n", source->bbNum, target->bbNum);
     }
 
     void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, SpanningTreeVisitor::EdgeKind kind) override
     {
-        JITDUMP("non-tree " FMT_BB " -> " FMT_BB "\n", source->bbNum, target->bbNum);
         switch (kind)
         {
             case EdgeKind::PostdominatesSource:

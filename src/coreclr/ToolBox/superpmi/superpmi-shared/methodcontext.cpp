@@ -6522,6 +6522,10 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
         pInfo = &info;
     }
 
+    // Obtain the jit flags and ISA flags.
+    CORJIT_FLAGS corJitFlags;
+    repGetJitFlags(&corJitFlags, sizeof(corJitFlags));
+
     char* obuff = buff;
 
     // Add the Method Signature
@@ -6529,16 +6533,16 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     buff += t;
     len -= t;
 
-    // Add Calling convention information, CorInfoOptions and CorInfoRegionKind
-    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d ", pInfo->args.callConv,
-                  pInfo->options, pInfo->regionKind);
+    // Add Calling convention information, CorInfoOptions, CorInfoRegionKind, jit flags, and ISA flags.
+    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags %016llx", pInfo->args.callConv,
+                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw(), corJitFlags.GetInstructionSetFlagsRaw());
     buff += t;
     len -= t;
 
     // Hash the IL Code for this method and append it to the ID info
     char ilHash[MD5_HASH_BUFFER_SIZE];
     dumpMD5HashToBuffer(pInfo->ILCode, pInfo->ILCodeSize, ilHash, MD5_HASH_BUFFER_SIZE);
-    t = sprintf_s(buff, len, "ILCode Hash: %s", ilHash);
+    t = sprintf_s(buff, len, " ILCode Hash: %s", ilHash);
     buff += t;
     len -= t;
 

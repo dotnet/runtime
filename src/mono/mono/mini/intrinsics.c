@@ -632,11 +632,19 @@ emit_jit_helpers_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 			reg2 = alloc_ireg (cfg);
 			dreg = alloc_ireg (cfg);
 
-			EMIT_NEW_BIALU (cfg, ins, cmp_op, -1, args [0]->dreg, args [1]->dreg);
-			EMIT_NEW_UNALU (cfg, ins, cgt_op, reg1, -1);
-			EMIT_NEW_BIALU (cfg, ins, cmp_op, -1, args [0]->dreg, args [1]->dreg);
-			EMIT_NEW_UNALU (cfg, ins, clt_op, reg2, -1);
-			EMIT_NEW_BIALU (cfg, ins, OP_ISUB, dreg, reg1, reg2);
+			if (t->type >= MONO_TYPE_BOOLEAN && t->type <= MONO_TYPE_U2)
+			{
+				// Use "a - b" for small types (smaller than Int32)
+				EMIT_NEW_BIALU (cfg, ins, OP_ISUB, dreg, args [0]->dreg, args [1]->dreg);
+			}
+			else
+			{
+				EMIT_NEW_BIALU (cfg, ins, cmp_op, -1, args [0]->dreg, args [1]->dreg);
+				EMIT_NEW_UNALU (cfg, ins, cgt_op, reg1, -1);
+				EMIT_NEW_BIALU (cfg, ins, cmp_op, -1, args [0]->dreg, args [1]->dreg);
+				EMIT_NEW_UNALU (cfg, ins, clt_op, reg2, -1);
+				EMIT_NEW_BIALU (cfg, ins, OP_ISUB, dreg, reg1, reg2);
+			}
 		}
 		return ins;
 	}

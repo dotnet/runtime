@@ -39,7 +39,6 @@
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/security-manager.h"
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32process.h>
@@ -7693,8 +7692,6 @@ mono_ldstr_checked (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError
 		MONO_HANDLE_ASSIGN_RAW (str, (MonoString *)mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL, error));
 		goto exit;
 	}
-	if (!mono_verifier_verify_string_signature (image, idx, error))
-		goto exit;
 	mono_ldstr_metadata_sig (domain, mono_metadata_user_string (image, idx), str, error);
 exit:
 	HANDLE_FUNCTION_RETURN_OBJ (str);
@@ -7777,8 +7774,6 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 
 	error_init (error);
 
-	if (!mono_verifier_verify_string_signature (image, idx, error))
-		return NULL;
 	str = mono_metadata_user_string (image, idx);
 
 	len2 = mono_metadata_decode_blob_size (str, &str);
