@@ -725,7 +725,7 @@ namespace Microsoft.Extensions.Options.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public void ValidateOnStart_CallValidateOnStartFirst_ValidationSuccessful()
+        public void ValidateOnStart_CallValidateOnStartFirst_ValidatesFailuresCorrectly()
         {
             var services = new ServiceCollection();
 
@@ -774,16 +774,9 @@ namespace Microsoft.Extensions.Options.Tests
 
             var sp = services.BuildServiceProvider();
 
-            try
-            {
-                var value = sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value;
-            }
-#pragma warning disable CA1031 // Do not catch general exception types
-            catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
-            {
-                Assert.True(false, "Expected no exception, but got: " + ex.Message);
-            }
+            var value = sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value;
+
+            Assert.NotNull(value);
         }
     }
 }

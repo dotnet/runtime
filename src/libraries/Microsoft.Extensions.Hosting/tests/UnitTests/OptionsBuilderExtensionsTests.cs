@@ -21,13 +21,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         public void ValidateOnStart_NullOptionsBuilder_Throws()
         {
-            var hostBuilder = CreateHostBuilder(services =>
-            {
-                OptionsBuilder<ComplexOptions> optionsBuilder = null;
-                optionsBuilder.ValidateOnStart();
-            });
-
-            Assert.Throws<ArgumentNullException>(() => hostBuilder.Build());
+            Assert.Throws<ArgumentNullException>(() => OptionsBuilderExtensions.ValidateOnStart<object>(null));
         }
 
         [Fact]
@@ -136,13 +130,19 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        private async Task ValidateOnStart_AddOptionsMultipleTimesForSameType_LastValidateOnStartCallGetsTriggered()
+        private async Task ValidateOnStart_AddOptionsMultipleTimesForSameType_LastOneGetsTriggered()
         {
+            bool firstOptionsBuilderIgnored = true;
+            bool secondOptionsBuilderTriggered = false;
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddOptions<ComplexOptions>("bad_configuration1")
                     .Configure(o => o.Boolean = false)
-                    .Validate(o => o.Boolean, "bad_configuration1")
+                    .Validate(o =>
+                    {
+                        firstOptionsBuilderIgnored = false;
+                        return o.Boolean;
+                    }, "bad_configuration1")
                     .ValidateOnStart();
 
                 services.AddOptions<ComplexOptions>("bad_configuration2")
@@ -151,7 +151,11 @@ namespace Microsoft.Extensions.Hosting.Tests
                         o.Boolean = false;
                         o.Integer = 11;
                     })
-                    .Validate(o => o.Boolean, "Boolean")
+                    .Validate(o =>
+                    {
+                        secondOptionsBuilderTriggered = true;
+                        return o.Boolean;
+                    }, "Boolean")
                     .Validate(o => o.Integer > 12, "Integer")
                     .ValidateOnStart();
             });
@@ -165,12 +169,44 @@ namespace Microsoft.Extensions.Hosting.Tests
 
                 ValidateFailure<ComplexOptions>(error, 2, "Boolean", "Integer");
             }
+
+            Assert.True(firstOptionsBuilderIgnored);
+            Assert.True(secondOptionsBuilderTriggered);
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        private async Task ValidateOnStart_AddBothLazyAndEagerValidationOnSameType_SkipsLazyValidationWhenHostStarts()
+        private async Task ValidateOnStart_AddEagerValidation_DoesValidationWhenHostStartsWithNoFailure()
         {
+            bool validateCalled = false;
+
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                // Adds eager validation using ValidateOnStart
+                services.AddOptions<ComplexOptions>("correct_configuration")
+                    .Configure(o => o.Boolean = true)
+                    .Validate(o =>
+                    {
+                        validateCalled = true; 
+                        return o.Boolean;
+                    }, "correct_configuration")
+                    .ValidateOnStart();
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                await host.StartAsync();
+            }
+
+            Assert.True(validateCalled);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        private async Task ValidateOnStart_AddLazyValidation_SkipsValidationWhenHostStarts()
+        {
+            bool validateCalled = false;
+
             var hostBuilder = CreateHostBuilder(services =>
             {
                 // Adds eager validation using ValidateOnStart
@@ -179,43 +215,51 @@ namespace Microsoft.Extensions.Hosting.Tests
                     .Validate(o => o.Boolean, "correct_configuration")
                     .ValidateOnStart();
 
-                // Adds lazy validation, skipping validation on start
+                // Adds lazy validation, skipping validation on start (last options builder for same type gets triggered so above one is skipped)
                 services.AddOptions<ComplexOptions>("bad_configuration")
                     .Configure(o => o.Boolean = false)
-                    .Validate(o => o.Boolean, "bad_configuration");
+                    .Validate(o =>
+                    {
+                        validateCalled = true; 
+                        return o.Boolean;
+                    }, "bad_configuration");
             });
 
             // For the lazily added "bad_configuration", validation failure does not occur when host starts
             using (var host = hostBuilder.Build())
             {
-                try
-                {
-                    await host.StartAsync();
-                }
-    #pragma warning disable CA1031 // Do not catch general exception types
-                catch (Exception ex)
-    #pragma warning restore CA1031 // Do not catch general exception types
-                {
-                    Assert.True(false, "Expected no exception, but got: " + ex.Message);
-                }
+                await host.StartAsync();
             }
+
+            Assert.False(validateCalled);
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        public async Task ValidateOnStart_AddBothLazyAndEagerValidationOnDifferentTypes_SkipsLazyValidationWhenHostStarts()
+        public async Task ValidateOnStart_AddBothLazyAndEagerValidationOnDifferentTypes_ValidatesWhenHostStartsOnlyForEagerValidations()
         {
+            bool validateCalledForNested = false;
+            bool validateCalledForComplexOptions = false;
+
             var hostBuilder = CreateHostBuilder(services =>
             {
-                // Lazy validation
+                // Lazy validation for NestedOptions
                 services.AddOptions<NestedOptions>()
                     .Configure(o => o.Integer = 11)
-                    .Validate(o => o.Integer > 12, "Integer");
+                    .Validate(o => 
+                    {
+                        validateCalledForNested = true;
+                        return o.Integer > 12;
+                    }, "Integer");
 
-                // Eager validation
+                // Eager validation for ComplexOptions
                 services.AddOptions<ComplexOptions>()
                     .Configure(o => o.Boolean = false)
-                    .Validate(o => o.Boolean, "first Boolean must be true.")
+                    .Validate(o => 
+                    {
+                        validateCalledForComplexOptions = true;
+                        return o.Boolean;
+                    }, "first Boolean must be true.")
                     .ValidateOnStart();
             });
 
@@ -228,6 +272,9 @@ namespace Microsoft.Extensions.Hosting.Tests
 
                 ValidateFailure<ComplexOptions>(error, 1, "first Boolean must be true.");
             }
+
+            Assert.False(validateCalledForNested);
+            Assert.True(validateCalledForComplexOptions);
         }
 
         [Fact]

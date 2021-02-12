@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class OptionsBuilderExtensions
     {
         /// <summary>
-        /// Enforces options validation check on start rather then in runtime.
+        /// Enforces options validation check on start rather than in runtime.
         /// </summary>
         /// <typeparam name="TOptions">The type of options.</typeparam>
         /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure options instance.</param>
