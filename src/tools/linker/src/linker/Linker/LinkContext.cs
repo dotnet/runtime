@@ -655,14 +655,26 @@ namespace Mono.Linker
 
 	public class CodeOptimizationsSettings
 	{
-		readonly Dictionary<string, CodeOptimizations> perAssembly = new Dictionary<string, CodeOptimizations> ();
+		sealed class Pair
+		{
+			public Pair (CodeOptimizations set, CodeOptimizations values)
+			{
+				this.Set = set;
+				this.Values = values;
+			}
+
+			public CodeOptimizations Set;
+			public CodeOptimizations Values;
+		}
+
+		readonly Dictionary<string, Pair> perAssembly = new ();
 
 		public CodeOptimizationsSettings (CodeOptimizations globalOptimizations)
 		{
 			Global = globalOptimizations;
 		}
 
-		public CodeOptimizations Global { get; set; }
+		public CodeOptimizations Global { get; private set; }
 
 		internal bool IsEnabled (CodeOptimizations optimizations, AssemblyDefinition context)
 		{
@@ -675,8 +687,9 @@ namespace Mono.Linker
 			Debug.Assert (optimizations != 0 && (optimizations & (optimizations - 1)) == 0);
 
 			if (perAssembly.Count > 0 && assemblyName != null &&
-				perAssembly.TryGetValue (assemblyName, out CodeOptimizations assembly)) {
-				return (assembly & optimizations) != 0;
+				perAssembly.TryGetValue (assemblyName, out var assemblySetting) &&
+				(assemblySetting.Set & optimizations) != 0) {
+				return (assemblySetting.Values & optimizations) != 0;
 			}
 
 			return (Global & optimizations) != 0;
@@ -689,12 +702,13 @@ namespace Mono.Linker
 				return;
 			}
 
-			if (!perAssembly.ContainsKey (assemblyContext)) {
-				perAssembly.Add (assemblyContext, optimizations);
+			if (!perAssembly.TryGetValue (assemblyContext, out var assemblySetting)) {
+				perAssembly.Add (assemblyContext, new Pair (optimizations, optimizations));
 				return;
 			}
 
-			perAssembly[assemblyContext] |= optimizations;
+			assemblySetting.Set |= optimizations;
+			assemblySetting.Values |= optimizations;
 		}
 
 		public void Disable (CodeOptimizations optimizations, string assemblyContext = null)
@@ -704,12 +718,13 @@ namespace Mono.Linker
 				return;
 			}
 
-			if (!perAssembly.ContainsKey (assemblyContext)) {
-				perAssembly.Add (assemblyContext, 0);
+			if (!perAssembly.TryGetValue (assemblyContext, out var assemblySetting)) {
+				perAssembly.Add (assemblyContext, new Pair (optimizations, 0));
 				return;
 			}
 
-			perAssembly[assemblyContext] &= ~optimizations;
+			assemblySetting.Set |= optimizations;
+			assemblySetting.Values &= ~optimizations;
 		}
 	}
 
