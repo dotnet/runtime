@@ -44,25 +44,25 @@ jobs:
       testGroup: perf
 
 # build mono on wasm
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    runtimeFlavor: mono
-    platforms:
-    - Browser_wasm
-    jobParameters:
-      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-      nameSuffix: wasm
-      isOfficialBuild: false
-      extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
-      extraStepsParameters:
-        rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-        includeRootFolder: true
-        displayName: Browser Wasm Artifacts
-        artifactName: BrowserWasm
-        archiveType: zip
-        archiveExtension: .zip
+#- template: /eng/pipelines/common/platform-matrix.yml
+#  parameters:
+#    jobTemplate: /eng/pipelines/common/global-build-job.yml
+#    buildConfig: release
+#    runtimeFlavor: mono
+#    platforms:
+#    - Browser_wasm
+#    jobParameters:
+#      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+#      nameSuffix: wasm
+#      isOfficialBuild: false
+#      extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+#      extraStepsParameters:
+#        rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+#        includeRootFolder: true
+#        displayName: Browser Wasm Artifacts
+#        artifactName: BrowserWasm
+#        archiveType: zip
+#        archiveExtension: .zip
 
 # build mono
 # - template: /eng/pipelines/common/platform-matrix.yml
