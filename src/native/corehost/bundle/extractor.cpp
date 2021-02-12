@@ -33,18 +33,16 @@ pal::string_t& extractor_t::extraction_dir()
         pal::string_t host_name = strip_executable_ext(get_filename(m_bundle_path));
         if (!pal::is_path_rooted(m_extraction_dir))
         {
-            pal::string_t cwd;
             pal::string_t relative_path(m_extraction_dir);
-            if (!pal::getcwd(&cwd))
+            if (!pal::getcwd(&m_extraction_dir))
             {
                 trace::error(_X("Failure processing application bundle."));
                 trace::error(_X("Failed to obtain current working dir."));
-                assert(cwd.empty());
+                assert(m_extraction_dir.empty());
                 throw StatusCode::BundleExtractionFailure;
             }
 
-            m_extraction_dir = cwd;
-            dir_utils_t::fixup_path_separator(relative_path);
+            dir_utils_t::fixup_path_separator(m_extraction_dir);
             append_path(&m_extraction_dir, relative_path.c_str());
         }
 

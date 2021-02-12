@@ -79,6 +79,7 @@ namespace AppHost.Bundle.Tests
             // Run the bundled app (extract files to <path>)
             var cmd = Command.Create(singleFile);
             cmd.WorkingDirectory(Path.GetDirectoryName(singleFile))
+                .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, relativePath)
