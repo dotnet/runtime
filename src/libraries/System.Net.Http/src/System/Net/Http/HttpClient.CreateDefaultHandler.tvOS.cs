@@ -7,6 +7,8 @@ namespace System.Net.Http
     {
         private const string HandlerSwitchName = "System.Net.Http.UseNativeHttpHandler";
 
+        private static MethodInfo? handlerMethod;
+
         private static HttpMessageHandler CreateDefaultHandler()
         {
             // Default is to use the Android native handler
@@ -15,8 +17,13 @@ namespace System.Net.Http
                 return new HttpClientHandler();
             }
 
-            Type? runtimeOptions = Type.GetType("ObjCRuntime.RuntimeOptions, Xamarin.iOS");
-            return (HttpMessageHandler)runtimeOptions!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null)!;
+            if (handlerMethod == null)
+            {
+                Type? runtimeOptions = Type.GetType("ObjCRuntime.RuntimeOptions, Xamarin.TVOS");
+                handlerMethod = runtimeOptions!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.Static)!;
+            }
+
+            return (HttpMessageHandler)handlerMethod!.Invoke(null, null)!;
         }
     }
 }
