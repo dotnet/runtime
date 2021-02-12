@@ -15,8 +15,8 @@ namespace System.Net.Http
                 return new HttpClientHandler();
             }
 
-            Type? handler = Type.GetType("Foundation.NSUrlSessionHandler, Xamarin.tvOS");
-            return (HttpMessageHandler)Activator.CreateInstance(handler!)!;
+            Type? runtimeOptions = Type.GetType("ObjCRuntime.RuntimeOptions, Xamarin.iOS");
+            return (HttpMessageHandler)runtimeOptions!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null)!;
         }
     }
 }
