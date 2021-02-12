@@ -1923,7 +1923,9 @@ mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass)
 
 	g_assert (klass);
 
-	return m_class_get_runtime_info (klass)->domain_vtable;
+	if (m_class_get_runtime_info (klass))
+		return m_class_get_runtime_info (klass)->domain_vtable;
+	return NULL;
 }
 
 static gpointer*
