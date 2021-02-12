@@ -1103,7 +1103,7 @@
         "5.0.1",
         "5.0.2"
       ],
-      "BaselineVersion": "5.0.1",
+      "BaselineVersion": "5.0.2",
       "InboxOn": {}
     },
     "Microsoft.NETCore.Targets": {
