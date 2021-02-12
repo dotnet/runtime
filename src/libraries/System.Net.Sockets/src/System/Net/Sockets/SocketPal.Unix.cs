@@ -1884,54 +1884,6 @@ namespace System.Net.Sockets
             }
         }
 
-        public static SocketError SendToAsync(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
-        {
-            asyncResult.SocketAddress = socketAddress;
-
-            int bytesSent;
-            int socketAddressLen = socketAddress.Size;
-            SocketError socketError = handle.AsyncContext.SendToAsync(buffer, offset, count, socketFlags, socketAddress.Buffer, ref socketAddressLen, out bytesSent, asyncResult.CompletionCallback);
-            if (socketError == SocketError.Success)
-            {
-                asyncResult.CompletionCallback(bytesSent, socketAddress.Buffer, socketAddressLen, SocketFlags.None, SocketError.Success);
-            }
-            return socketError;
-        }
-
-        public static SocketError ReceiveFromAsync(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
-        {
-            asyncResult.SocketAddress = socketAddress;
-
-            int socketAddressSize = socketAddress.InternalSize;
-            int bytesReceived;
-            SocketFlags receivedFlags;
-            SocketError socketError = handle.AsyncContext.ReceiveFromAsync(new Memory<byte>(buffer, offset, count), socketFlags, socketAddress.Buffer, ref socketAddressSize, out bytesReceived, out receivedFlags, asyncResult.CompletionCallback);
-            if (socketError == SocketError.Success)
-            {
-                asyncResult.CompletionCallback(bytesReceived, socketAddress.Buffer, socketAddressSize, receivedFlags, SocketError.Success);
-            }
-            return socketError;
-        }
-
-        public static SocketError ReceiveMessageFromAsync(Socket socket, SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, ReceiveMessageOverlappedAsyncResult asyncResult)
-        {
-            asyncResult.SocketAddress = socketAddress;
-
-            bool isIPv4, isIPv6;
-            Socket.GetIPProtocolInformation(((Socket)asyncResult.AsyncObject!).AddressFamily, socketAddress, out isIPv4, out isIPv6);
-
-            int socketAddressSize = socketAddress.InternalSize;
-            int bytesReceived;
-            SocketFlags receivedFlags;
-            IPPacketInformation ipPacketInformation;
-            SocketError socketError = handle.AsyncContext.ReceiveMessageFromAsync(new Memory<byte>(buffer, offset, count), null, socketFlags, socketAddress.Buffer, ref socketAddressSize, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, asyncResult.CompletionCallback);
-            if (socketError == SocketError.Success)
-            {
-                asyncResult.CompletionCallback(bytesReceived, socketAddress.Buffer, socketAddressSize, receivedFlags, ipPacketInformation, SocketError.Success);
-            }
-            return socketError;
-        }
-
         public static SocketError AcceptAsync(Socket socket, SafeSocketHandle handle, SafeSocketHandle? acceptHandle, int receiveSize, int socketAddressSize, AcceptOverlappedAsyncResult asyncResult)
         {
             Debug.Assert(acceptHandle == null, $"Unexpected acceptHandle: {acceptHandle}");

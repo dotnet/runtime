@@ -1735,6 +1735,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genLockedInstructions(treeNode->AsOp());
             break;
 
+        case GT_XORR:
+        case GT_XAND:
+            NYI("Interlocked.Or and Interlocked.And aren't implemented for x86 yet.");
+            break;
+
         case GT_MEMORYBARRIER:
         {
             CodeGen::BarrierKind barrierKind =
@@ -2743,7 +2748,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
         else
         {
-            emit->emitIns_R_R(INS_mov_i2xmm, EA_PTRSIZE, srcXmmReg, srcIntReg);
+            emit->emitIns_R_R(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
 #ifdef TARGET_X86
             // For x86, we need one more to convert it from 8 bytes to 16 bytes.
@@ -5039,9 +5044,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // integer and floating point registers so, let's do that.
         if (call->IsVarargs() && varTypeIsFloating(argNode))
         {
-            regNumber   targetReg = compiler->getCallArgIntRegister(argNode->GetRegNum());
-            instruction ins       = ins_CopyFloatToInt(argNode->TypeGet(), TYP_LONG);
-            inst_RV_RV(ins, argNode->GetRegNum(), targetReg);
+            regNumber srcReg    = argNode->GetRegNum();
+            regNumber targetReg = compiler->getCallArgIntRegister(argNode->GetRegNum());
+            inst_RV_RV(ins_Copy(srcReg, TYP_LONG), targetReg, srcReg);
         }
 #endif // FEATURE_VARARG
     }
@@ -5783,9 +5788,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
             if (varTypeIsFloating(loadType))
             {
-                intArgReg       = compiler->getCallArgIntRegister(argReg);
-                instruction ins = ins_CopyFloatToInt(loadType, TYP_LONG);
-                inst_RV_RV(ins, argReg, intArgReg, loadType);
+                intArgReg = compiler->getCallArgIntRegister(argReg);
+                inst_RV_RV(ins_Copy(argReg, TYP_LONG), intArgReg, argReg, loadType);
             }
             else
             {
@@ -5824,7 +5828,6 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         regMaskTP remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;
         if (remainingIntArgMask != RBM_NONE)
         {
-            instruction insCopyIntToFloat = ins_CopyIntToFloat(TYP_LONG, TYP_DOUBLE);
             GetEmitter()->emitDisableGC();
             for (int argNum = 0, argOffset = 0; argNum < MAX_REG_ARG; ++argNum)
             {
@@ -5838,7 +5841,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
                     // also load it in corresponding float arg reg
                     regNumber floatReg = compiler->getCallArgFloatRegister(argReg);
-                    inst_RV_RV(insCopyIntToFloat, floatReg, argReg);
+                    inst_RV_RV(ins_Copy(argReg, TYP_DOUBLE), floatReg, argReg);
                 }
 
                 argOffset += REGSIZE_BYTES;
@@ -6591,8 +6594,9 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     // Copy the floating-point value to an integer register. If we copied a float to a long, then
     // right-shift the value so the high 32 bits of the floating-point value sit in the low 32
     // bits of the integer register.
-    instruction ins = ins_CopyFloatToInt(targetType, (targetType == TYP_FLOAT) ? TYP_INT : TYP_LONG);
-    inst_RV_RV(ins, op1->GetRegNum(), tmpReg, targetType);
+    regNumber srcReg        = op1->GetRegNum();
+    var_types targetIntType = ((targetType == TYP_FLOAT) ? TYP_INT : TYP_LONG);
+    inst_RV_RV(ins_Copy(srcReg, targetIntType), tmpReg, srcReg, targetType);
     if (targetType == TYP_DOUBLE)
     {
         // right shift by 32 bits to get to exponent.
@@ -6661,7 +6665,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 
     // Copy only the low 32 bits. This will be the high order 32 bits of the floating-point
     // value, no matter the floating-point type.
-    inst_RV_RV(ins_CopyFloatToInt(TYP_FLOAT, TYP_INT), copyToTmpSrcReg, tmpReg, TYP_FLOAT);
+    inst_RV_RV(ins_Copy(copyToTmpSrcReg, TYP_INT), tmpReg, copyToTmpSrcReg, TYP_FLOAT);
 
     // Mask exponent with all 1's and check if the exponent is all 1's
     inst_RV_IV(INS_and, tmpReg, expMask, EA_4BYTE);
@@ -7082,22 +7086,7 @@ void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types sr
     assert(dstFltReg == genIsValidFloatReg(targetReg));
     if (srcFltReg != dstFltReg)
     {
-        instruction ins;
-        regNumber   fltReg;
-        regNumber   intReg;
-        if (dstFltReg)
-        {
-            ins    = ins_CopyIntToFloat(srcType, targetType);
-            fltReg = targetReg;
-            intReg = srcReg;
-        }
-        else
-        {
-            ins    = ins_CopyFloatToInt(srcType, targetType);
-            intReg = targetReg;
-            fltReg = srcReg;
-        }
-        inst_RV_RV(ins, fltReg, intReg, targetType);
+        inst_RV_RV(ins_Copy(srcReg, targetType), targetReg, srcReg, targetType);
     }
     else if (targetReg != srcReg)
     {
@@ -8760,9 +8749,8 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 #if FEATURE_VARARG
         if (compiler->info.compIsVarArgs && varTypeIsFloating(loadType))
         {
-            regNumber   intArgReg = compiler->getCallArgIntRegister(argReg);
-            instruction ins       = ins_CopyFloatToInt(loadType, TYP_LONG);
-            inst_RV_RV(ins, argReg, intArgReg, loadType);
+            regNumber intArgReg = compiler->getCallArgIntRegister(argReg);
+            inst_RV_RV(ins_Copy(argReg, TYP_LONG), intArgReg, argReg, loadType);
         }
 #endif //  FEATURE_VARARG
     }

@@ -255,20 +255,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalDelegate()
-        {
-            HelperMarshal._object1 = null;
-            Runtime.InvokeJS(@"
-                var funcDelegate = App.call_test_method (""CreateFunctionDelegate"", [  ]);
-                var res = funcDelegate (10, 20);
-                App.call_test_method (""InvokeI32"", [ res, res ]);
-            ");
-
-            Assert.Equal(30, HelperMarshal._functionResultValue);
-            Assert.Equal(60, HelperMarshal._i32Value);
-        }
-
-        [Fact]
         public static void BindStaticMethod()
         {
             HelperMarshal._intValue = 0;

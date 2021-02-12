@@ -14,7 +14,7 @@
     <OutputPath>$(TargetingPackPath)</OutputPath>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
-    <XUnitRunnerTargetFramework>netcoreapp2.1</XUnitRunnerTargetFramework>
+    <XUnitRunnerTargetFramework>netcoreapp3.1</XUnitRunnerTargetFramework>
     <CLRTestKind>SharedLibrary</CLRTestKind>
     <IsTestProject>false</IsTestProject>
     <GenerateDependencyFile>false</GenerateDependencyFile>
