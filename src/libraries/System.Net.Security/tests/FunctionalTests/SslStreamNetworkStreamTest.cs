@@ -371,7 +371,10 @@ namespace System.Net.Security.Tests
                 chain.ChainPolicy.DisableCertificateDownloads = false;
                 bool chainStatus = chain.Build(clientCertificate);
                 // Verify we can construct full chain
-                Assert.True(chain.ChainElements.Count >= clientChain.Count, "chain cannot be built");
+                if (chain.ChainElements.Count < clientChain.Count)
+                {
+                    throw new SkipTestException($"chain cannot be built {chain.ChainElements.Count}");
+                }
             }
 
             var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost",  };
