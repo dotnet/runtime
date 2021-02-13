@@ -100,7 +100,7 @@ jobs:
 
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName
-      value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)$(pgoType)'
+      value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: coreClrProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
