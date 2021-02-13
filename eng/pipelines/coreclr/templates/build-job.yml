@@ -20,7 +20,6 @@ parameters:
   testGroup: ''
   timeoutInMinutes: ''
   variables: {}
-  pgoType: ''
 
 ### Product build
 jobs:
