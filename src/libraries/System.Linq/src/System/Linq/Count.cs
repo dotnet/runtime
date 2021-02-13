@@ -92,7 +92,7 @@ namespace System.Linq
         ///   The method is typically a constant-time operation, but ultimately this depends on the complexity
         ///   characteristics of the underlying collection implementation.
         /// </remarks>
-        public static bool TryGetNonEnumeratingCount<TSource>(this IEnumerable<TSource> source, out int count)
+        public static bool TryGetNonEnumeratedCount<TSource>(this IEnumerable<TSource> source, out int count)
         {
             if (source == null)
             {

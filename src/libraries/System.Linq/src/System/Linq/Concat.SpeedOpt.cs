@@ -13,7 +13,7 @@ namespace System.Linq
             public override int GetCount(bool onlyIfCheap)
             {
                 int firstCount, secondCount;
-                if (!_first.TryGetNonEnumeratingCount(out firstCount))
+                if (!_first.TryGetNonEnumeratedCount(out firstCount))
                 {
                     if (onlyIfCheap)
                     {
@@ -23,7 +23,7 @@ namespace System.Linq
                     firstCount = _first.Count();
                 }
 
-                if (!_second.TryGetNonEnumeratingCount(out secondCount))
+                if (!_second.TryGetNonEnumeratedCount(out secondCount))
                 {
                     if (onlyIfCheap)
                     {

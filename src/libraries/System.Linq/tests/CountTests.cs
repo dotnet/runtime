@@ -130,14 +130,14 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEnumeratingCount_NullSource_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).TryGetNonEnumeratingCount(out _));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).TryGetNonEnumeratedCount(out _));
         }
 
         [Theory]
         [MemberData(nameof(NonEnumeratingCount_SupportedEnumerables))]
         public void NonEnumeratingCount_SupportedEnumerables_ShouldReturnExpectedCount<T>(int expectedCount, IEnumerable<T> source)
         {
-            Assert.True(source.TryGetNonEnumeratingCount(out int actualCount));
+            Assert.True(source.TryGetNonEnumeratedCount(out int actualCount));
             Assert.Equal(expectedCount, actualCount);
         }
 
@@ -145,7 +145,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(NonEnumeratingCount_UnsupportedEnumerables))]
         public void NonEnumeratingCount_UnsupportedEnumerables_ShouldReturnFalse<T>(IEnumerable<T> source)
         {
-            Assert.False(source.TryGetNonEnumeratingCount(out int actualCount));
+            Assert.False(source.TryGetNonEnumeratedCount(out int actualCount));
             Assert.Equal(0, actualCount);
         }
 
@@ -153,7 +153,7 @@ namespace System.Linq.Tests
         public void NonEnumeratingCount_ShouldNotEnumerateSource()
         {
             bool isEnumerated = false;
-            Assert.False(Source().TryGetNonEnumeratingCount(out int count));
+            Assert.False(Source().TryGetNonEnumeratedCount(out int count));
             Assert.Equal(0, count);
             Assert.False(isEnumerated);
 
