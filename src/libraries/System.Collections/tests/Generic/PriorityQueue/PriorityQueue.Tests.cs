@@ -44,5 +44,16 @@ namespace System.Collections.Tests
             Assert.Equal("three", queue.Dequeue());
             Assert.Equal("four", queue.Dequeue());
         }
+
+        [Fact]
+        public void PriorityQueue_Generic_EnqueueDequeue_EqualToMin()
+        {
+            PriorityQueue<string, int> queue = SmallPriorityQueueFactory(out HashSet<(string, int)> enqueuedItems);
+
+            string actualElement = queue.EnqueueDequeue("one-not-to-enqueue", 1);
+
+            Assert.Equal("one-not-to-enqueue", actualElement);
+            Assert.True(enqueuedItems.SetEquals(queue.UnorderedItems));
+        }
     }
 }
