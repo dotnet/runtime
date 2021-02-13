@@ -733,6 +733,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
       <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
+      <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
     </ItemGroup>
     <PropertyGroup>
       <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
@@ -752,7 +753,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         SourceFiles="@(TestDlls)"
         DestinationFolder="$(BuildDir)" />
     <Copy
-        SourceFiles="@(XUnitWrapperDll)"
+        SourceFiles="@(RuntimePackLibs)"
         DestinationFolder="$(BuildDir)" />
 
     <AppleAppBuilderTask
@@ -761,7 +762,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
         Assemblies="@(BundleAssemblies)"
-        MainLibraryFileName="$(XUnitWrapperDll)"
         ForceInterpreter="$(MonoForceInterpreter)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"

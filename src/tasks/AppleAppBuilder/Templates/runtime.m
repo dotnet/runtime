@@ -335,6 +335,12 @@ mono_ios_runtime_init (void)
 #endif
 
     const char* executable = "%EntryPointLibName%";
+    if (executable [0] == '\0') {
+        executable = getenv ("MONO_APPLE_APP_ENTRY_POINT_LIB_NAME");
+    }
+    if (executable == NULL) {
+        executable = "";
+    }
     MonoAssembly *assembly = load_assembly (executable, NULL);
     assert (assembly);
     os_log_info (OS_LOG_DEFAULT, "Executable: %{public}s", executable);
