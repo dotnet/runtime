@@ -43,7 +43,6 @@ pal::string_t& extractor_t::extraction_dir()
             }
 
             append_path(&m_extraction_dir, relative_path.c_str());
-            dir_utils_t::fixup_path_separator(m_extraction_dir);
         }
 
         append_path(&m_extraction_dir, host_name.c_str());
