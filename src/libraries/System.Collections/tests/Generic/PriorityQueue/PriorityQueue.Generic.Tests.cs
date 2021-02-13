@@ -224,6 +224,14 @@ namespace System.Collections.Tests
 
         #region EnsureCapacity, TrimExcess
 
+        [Fact]
+        public void PriorityQueue_Generic_EnsureCapacity_Negative()
+        {
+            PriorityQueue<TElement, TPriority> queue = new PriorityQueue<TElement, TPriority>();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => queue.EnsureCapacity(-1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => queue.EnsureCapacity(int.MinValue));
+        }
+
         [Theory]
         [InlineData(0, 0)]
         [InlineData(0, 5)]
