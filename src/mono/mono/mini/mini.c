@@ -44,7 +44,6 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/attach.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/utils/mono-math.h>

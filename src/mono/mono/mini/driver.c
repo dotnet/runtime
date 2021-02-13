@@ -46,7 +46,6 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/coree.h>
-#include <mono/metadata/attach.h>
 #include <mono/metadata/w32process.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
@@ -2090,7 +2089,6 @@ mono_main (int argc, char* argv[])
 	char *aot_options = NULL;
 	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
-	char *attach_options = NULL;
 	char *extra_bindings_config_file = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
@@ -2353,7 +2351,7 @@ mono_main (int argc, char* argv[])
 				agents = g_ptr_array_new ();
 			g_ptr_array_add (agents, argv [i] + 8);
 		} else if (strncmp (argv [i], "--attach=", 9) == 0) {
-			attach_options = argv [i] + 9;
+			g_warning ("--attach= option no longer supported.");
 		} else if (strcmp (argv [i], "--compile") == 0) {
 			if (i + 1 >= argc){
 				fprintf (stderr, "error: --compile option requires a method name argument\n");
@@ -2552,8 +2550,6 @@ mono_main (int argc, char* argv[])
 
 	/* Set rootdir before loading config */
 	mono_set_rootdir ();
-
-	mono_attach_parse_options (attach_options);
 
 	if (trace_options != NULL){
 		/* 

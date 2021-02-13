@@ -46,7 +46,6 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/attach.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/monitor.h>
