@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -268,8 +269,13 @@ namespace System.Collections.Tests
             void trimAndEnsureCapacity()
             {
                 queue.TrimExcess();
-                queue.EnsureCapacity(getNextEnsureCapacity());
+
+                int capacityAfterEnsureCapacity = queue.EnsureCapacity(getNextEnsureCapacity());
+                Assert.Equal(capacityAfterEnsureCapacity, GetUnderlyingBufferCapacity(queue));
+
+                int capacityAfterTrimExcess = (queue.Count < (int)(capacityAfterEnsureCapacity * 0.9)) ? queue.Count : capacityAfterEnsureCapacity;
                 queue.TrimExcess();
+                Assert.Equal(capacityAfterTrimExcess, GetUnderlyingBufferCapacity(queue));
             };
 
             foreach (var (element, priority) in itemsToEnqueue)
@@ -290,6 +296,13 @@ namespace System.Collections.Tests
 
             trimAndEnsureCapacity();
             Assert.Equal(0, queue.Count);
+        }
+
+        private static int GetUnderlyingBufferCapacity(PriorityQueue<TElement, TPriority> queue)
+        {
+            FieldInfo nodesType = queue.GetType().GetField("_nodes", BindingFlags.NonPublic | BindingFlags.Instance);
+            var nodes = ((TElement Element, TPriority Priority)[])nodesType.GetValue(queue);
+            return nodes.Length;
         }
 
         #endregion
