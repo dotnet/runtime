@@ -64,25 +64,23 @@ For Active Directory, it is necessary to set up a VM that is a Domain Controller
     <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
 -->
 
-When running against Active Directory from a Windows client, you should not see any tests marked `[ConditionalFact(nameof(IsActiveDirectoryServer))]` skip. At the moment, that means that there are zero skipped test cases when you run against Active Directory using tests on Windows.
+When running against Active Directory from a Windows client, you should not see any tests marked `[ConditionalFact(nameof(IsActiveDirectoryServer))]` skip. At the moment, that means that there are zero total skipped test cases when you run against Active Directory using tests on Windows.
 
-If you are running your AD server as a VM on the same machine that you are running WSL2, you must execute this command to bridge the two Hyper-V networks:
+If you are running your AD server as a VM on the same machine that you are running WSL2, you must execute this command to bridge the two Hyper-V networks so that it is visible from WSL2:
 `Get-NetIPInterface | where {$_.InterfaceAlias -eq 'vEthernet (WSL)' -or $_.InterfaceAlias -eq 'vEthernet (Default Switch)'} | Set-NetIPInterface -Forwarding Enabled`
 The WSL2 VM should now be able to see the AD VM by IP address.
 
-As DS prefers to connect via computer name, you will need to add entries to your test machine's C:\Windows\System32\drivers\etc\hosts to resolve the machine and the domain it hosts, for example
-172.21.148.98 danmose-ldap.danmose-domain.com
-172.21.148.98 danmose-domain.com
+For the S.DS.AM and S.DS tests to work successfully against AD, the test machine needs to be on the AD domain. It is easiest to have the test machine in a VM as well. Set the primary DNS server for the test machine to be the AD machine, join the machine to that domain, and log into it as a (the) domain user.
 
 Note:
     `Password` is read from the environment if it is surrounded by %, eg %TESTPASSWORD%
 
     </CommentThatAllowsDoubleHyphens>
 
-    <ServerName>danmose-ldap.danmose-domain.com</ServerName>
-    <SearchDN>DC=danmose-domain,DC=com</SearchDN>
-    <Port>389</Port>
-    <User>danmose-domain\Administrator</User>
-    <Password>%TESTPASSWORD%</Password>
+    <ServerName>localhost</ServerName>
+    <SearchDN>DC=example,DC=com</SearchDN>
+    <Port>390</Port>
+    <User>cn=admin,dc=example,dc=com</User>
+    <Password>password</Password>
     <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
 </Configuration>
