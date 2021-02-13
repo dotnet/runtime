@@ -307,11 +307,11 @@ namespace System.Collections.Tests
 
         #endregion
 
-        #region Enumeration ordering
+        #region Enumeration
 
         [Theory]
         [MemberData(nameof(ValidPositiveCollectionSizes))]
-        public void PriorityQueue_EnumerationIsConsistent(int count)
+        public void PriorityQueue_Enumeration_OrderingIsConsistent(int count)
         {
             PriorityQueue<TElement, TPriority> queue = this.GenericPriorityQueueFactory(initialCapacity: 0, count, out _);
 
@@ -320,7 +320,35 @@ namespace System.Collections.Tests
 
             Assert.Equal(firstEnumeration.Length, count);
             Assert.True(firstEnumeration.SequenceEqual(secondEnumeration));
+        }
 
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void PriorityQueue_Enumeration_InvalidationOnModifiedCollection(int count)
+        {
+            IReadOnlyCollection<(TElement, TPriority)> itemsToEnqueue = this.GenericIEnumerableFactory(count).ToArray();
+            PriorityQueue<TElement, TPriority> queue = new PriorityQueue<TElement, TPriority>();
+            queue.EnqueueRange(itemsToEnqueue.Take(count - 1));
+            var enumerator = queue.UnorderedItems.GetEnumerator();
+
+            (TElement element, TPriority priority) = itemsToEnqueue.Last();
+            queue.Enqueue(element, priority);
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void PriorityQueue_Enumeration_InvalidationOnModifiedCapacity(int count)
+        {
+            PriorityQueue<TElement, TPriority> queue = this.GenericPriorityQueueFactory(initialCapacity: 0, count, out _);
+            var enumerator = queue.UnorderedItems.GetEnumerator();
+
+            int capacityBefore = GetUnderlyingBufferCapacity(queue);
+            queue.EnsureCapacity(count * 2 + 4);
+            int capacityAfter = GetUnderlyingBufferCapacity(queue);
+
+            Assert.NotEqual(capacityBefore, capacityAfter);
+            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
 
         #endregion
