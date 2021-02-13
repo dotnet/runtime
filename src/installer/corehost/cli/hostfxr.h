@@ -285,4 +285,37 @@ typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_get_runtime_delegate_fn)(
 //
 typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_close_fn)(const hostfxr_handle host_context_handle);
 
+struct hostfxr_dotnet_environment_sdk_info
+{
+    size_t size;
+    const char_t* version;
+    const char_t* path;
+};
+
+typedef void(HOSTFXR_CALLTYPE* hostfxr_get_dotnet_environment_info_result_fn)(
+    const struct hostfxr_dotnet_environment_info* info,
+    void* result_context);
+
+struct hostfxr_dotnet_environment_framework_info
+{
+    size_t size;
+    const char_t* name;
+    const char_t* version;
+    const char_t* path;
+};
+
+struct hostfxr_dotnet_environment_info
+{
+    size_t size;
+
+    const char_t* hostfxr_version;
+    const char_t* hostfxr_commit_hash;
+
+    int32_t sdk_count;
+    const hostfxr_dotnet_environment_sdk_info* sdks;
+
+    int32_t framework_count;
+    const hostfxr_dotnet_environment_framework_info* frameworks;
+};
+
 #endif //__HOSTFXR_H__

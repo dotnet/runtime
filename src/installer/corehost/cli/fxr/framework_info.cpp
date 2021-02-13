@@ -19,7 +19,17 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
         return false;
     }
 
-    return a.version < b.version;
+    if (a.version < b.version)
+    {
+        return true;
+    }
+
+    if (a.version == b.version)
+    {
+        return a.hive_depth > b.hive_depth;
+    }
+
+    return false;
 }
 
 /*static*/ void framework_info::get_all_framework_infos(
@@ -29,6 +39,8 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
 {
     std::vector<pal::string_t> hive_dir;
     get_framework_and_sdk_locations(own_dir, &hive_dir);
+
+    int32_t hive_depth = 0;
 
     for (pal::string_t dir : hive_dir)
     {
@@ -68,13 +80,15 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
                         {
                             trace::verbose(_X("Found FX version [%s]"), ver.c_str());
 
-                            framework_info info(fx_name, fx_dir, parsed);
+                            framework_info info(fx_name, fx_dir, parsed, hive_depth);
                             framework_infos->push_back(info);
                         }
                     }
                 }
             }
         }
+
+        hive_depth++;
     }
 
     std::sort(framework_infos->begin(), framework_infos->end(), compare_by_name_and_version);

@@ -14,6 +14,7 @@
 #include "hostfxr.h"
 #include "host_context.h"
 #include "bundle/info.h"
+#include <framework_info.h>
 
 namespace
 {
@@ -327,6 +328,138 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
         result(sdk_dirs.size(), &sdk_dirs[0]);
     }
 
+    return StatusCode::Success;
+}
+
+//
+// Returns available SDKs and frameworks.
+//
+// Resolves the existing SDKs and frameworks from a dotnet root directory (if
+// any), or the global default location. If multi-level lookup is enabled and
+// the dotnet root location is different than the global location, the SDKs and
+// frameworks will be enumerated from both locations.
+//
+// The SDKs are sorted in ascending order by version, multi-level lookup
+// locations are put before private ones.
+//
+// The frameworks are sorted in ascending order by name followed by version,
+// multi-level lookup locations are put before private ones.
+//
+// Parameters:
+//    dotnet_root
+//      The path to a directory containing a dotnet executable.
+//
+//    reserved
+//      Reserved for future parameters.
+//
+//    result
+//      Callback invoke to return the list of SDKs and frameworks.
+//      Structs and their elements are valid for the duration of the call.
+//
+//    result_context
+//      Additional context passed to the result callback.
+//
+// Return value:
+//   0 on success, otherwise failure.
+//
+// String encoding:
+//   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
+//   Unix        - UTF-8  (pal::char_t is 1 byte char)
+//
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
+    const pal::char_t* dotnet_root,
+    void* reserved,
+    hostfxr_get_dotnet_environment_info_result_fn result,
+    void* result_context)
+{
+    if (result == nullptr)
+    {
+        trace::error(_X("hostfxr_get_dotnet_environment_info received an invalid argument: result should not be null."));
+        return StatusCode::InvalidArgFailure;
+    }
+
+    if (reserved != nullptr)
+    {
+        trace::error(_X("hostfxr_get_dotnet_environment_info received an invalid argument: reserved should be null."));
+        return StatusCode::InvalidArgFailure;
+    }
+
+    pal::string_t dotnet_dir;
+    if (dotnet_root == nullptr)
+    {
+        if (pal::get_dotnet_self_registered_dir(&dotnet_dir) || pal::get_default_installation_dir(&dotnet_dir))
+        {
+            trace::info(_X("Using global installation location [%s]."), dotnet_dir.c_str());
+        }
+        else
+        {
+            trace::info(_X("No default dotnet installation could be obtained."));
+        }
+    }
+    else
+    {
+        dotnet_dir = dotnet_root;
+    }
+
+    std::vector<sdk_info> sdk_infos;
+    sdk_info::get_all_sdk_infos(dotnet_dir, &sdk_infos);
+
+    std::vector<hostfxr_dotnet_environment_sdk_info> environment_sdk_infos;
+    std::vector<pal::string_t> sdk_versions;
+    if (!sdk_infos.empty())
+    {
+        environment_sdk_infos.reserve(sdk_infos.size());
+        sdk_versions.reserve(sdk_infos.size());
+        for (const sdk_info& info : sdk_infos)
+        {
+            sdk_versions.push_back(info.version.as_str());
+            hostfxr_dotnet_environment_sdk_info sdk
+            {
+                sizeof(hostfxr_dotnet_environment_sdk_info),
+                sdk_versions.back().c_str(),
+                info.full_path.c_str()
+            };
+
+            environment_sdk_infos.push_back(sdk);
+        }
+    }
+
+    std::vector<framework_info> framework_infos;
+    framework_info::get_all_framework_infos(dotnet_dir, _X(""), &framework_infos);
+
+    std::vector<hostfxr_dotnet_environment_framework_info> environment_framework_infos;
+    std::vector<pal::string_t> framework_versions;
+    if (!framework_infos.empty())
+    {
+        environment_framework_infos.reserve(framework_infos.size());
+        framework_versions.reserve(framework_infos.size());
+        for (const framework_info& info : framework_infos)
+        {
+            framework_versions.push_back(info.version.as_str());
+            hostfxr_dotnet_environment_framework_info fw
+            {
+                sizeof(hostfxr_dotnet_environment_framework_info),
+                info.name.c_str(),
+                framework_versions.back().c_str(),
+                info.path.c_str()
+            };
+
+            environment_framework_infos.push_back(fw);
+        }
+    }
+
+    const hostfxr_dotnet_environment_info environment_info
+    {
+        sizeof(hostfxr_dotnet_environment_info),
+        _STRINGIFY(HOST_FXR_PKG_VER),
+        _STRINGIFY(REPO_COMMIT_HASH),
+        environment_sdk_infos.size(),
+        (environment_sdk_infos.empty()) ? nullptr : &environment_sdk_infos[0],
+        environment_framework_infos.size(),
+        (environment_framework_infos.empty()) ? nullptr : &environment_framework_infos[0]
+    };
+
+    result(&environment_info, result_context);
     return StatusCode::Success;
 }
 
