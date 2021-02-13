@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
@@ -85,6 +86,7 @@ namespace System.Runtime.Caching
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         private static void InitFCN()
         {
             if (s_fcn == null)
@@ -161,7 +163,10 @@ namespace System.Runtime.Caching
 
             _filePaths = SanitizeFilePathsList(filePaths);
 
-            InitFCN();
+#if NET5_0
+            if (!OperatingSystem.IsBrowser())
+#endif
+                InitFCN();
             InitDisposableMembers();
         }
 

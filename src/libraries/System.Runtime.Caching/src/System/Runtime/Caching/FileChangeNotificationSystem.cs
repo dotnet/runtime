@@ -7,9 +7,11 @@ using System.Runtime.Caching.Resources;
 using System.Collections;
 using System.IO;
 using System.Security;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
+    [UnsupportedOSPlatform("browser")]
     internal sealed class FileChangeNotificationSystem : IFileChangeNotificationSystem
     {
         private readonly Hashtable _dirMonitors;
