@@ -38,6 +38,13 @@ namespace Microsoft.Extensions.Hosting
         IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate);
 
         /// <summary>
+        /// Configures services added to the container. This can be called multiple times and the results will be additive.
+        /// </summary>
+        /// <param name="configureDelegate">The delegate for configuring the <see cref="IServiceProvider"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        IHostBuilder Configure(Action<HostBuilderContext, IServiceProvider> configureDelegate);
+
+        /// <summary>
         /// Adds services to the container. This can be called multiple times and the results will be additive.
         /// </summary>
         /// <param name="configureDelegate">The delegate for configuring the <see cref="IServiceCollection"/> that will be used

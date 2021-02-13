@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Hosting
     {
         private List<Action<IConfigurationBuilder>> _configureHostConfigActions = new List<Action<IConfigurationBuilder>>();
         private List<Action<HostBuilderContext, IConfigurationBuilder>> _configureAppConfigActions = new List<Action<HostBuilderContext, IConfigurationBuilder>>();
+        private List<Action<HostBuilderContext, IServiceProvider>> _configureActions = new List<Action<HostBuilderContext, IServiceProvider>>();
         private List<Action<HostBuilderContext, IServiceCollection>> _configureServicesActions = new List<Action<HostBuilderContext, IServiceCollection>>();
         private List<IConfigureContainerAdapter> _configureContainerActions = new List<IConfigureContainerAdapter>();
         private IServiceFactoryAdapter _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
@@ -60,6 +61,17 @@ namespace Microsoft.Extensions.Hosting
         public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
         {
             _configureAppConfigActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+            return this;
+        }
+
+        /// <summary>
+        /// Configures services added to the container. This can be called multiple times and the results will be additive.
+        /// </summary>
+        /// <param name="configureDelegate">The delegate for configuring the <see cref="IServiceProvider"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public IHostBuilder Configure(Action<HostBuilderContext, IServiceProvider> configureDelegate)
+        {
+            _configureActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
             return this;
         }
 
@@ -131,6 +143,7 @@ namespace Microsoft.Extensions.Hosting
             CreateHostBuilderContext();
             BuildAppConfiguration();
             CreateServiceProvider();
+            ConfigureServiceProvider();
 
             return _appServices.GetRequiredService<IHost>();
         }
@@ -249,6 +262,14 @@ namespace Microsoft.Extensions.Hosting
             // resolve configuration explicitly once to mark it as resolved within the
             // service provider, ensuring it will be properly disposed with the provider
             _ = _appServices.GetService<IConfiguration>();
+        }
+
+        private void ConfigureServiceProvider()
+        {
+            foreach (Action<HostBuilderContext, IServiceProvider> configureAction in _configureActions)
+            {
+                configureAction(_hostBuilderContext, _appServices);
+            }
         }
     }
 }
