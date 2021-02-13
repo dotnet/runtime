@@ -1262,7 +1262,7 @@ namespace System
             string result = string.FastAllocateString(bufferLength);
             Span<char> buffer = new Span<char>(ref result.GetRawStringData(), bufferLength);
 
-            int p = Int32ToHexChars(buffer, bufferLength, (uint)value, hexBase, digits);
+            int p = Int32ToHexChars(buffer.Slice(0, bufferLength), (uint)value, hexBase, digits);
             Debug.Assert(p == 0);
 
             return result;
@@ -1282,18 +1282,19 @@ namespace System
 
             charsWritten = bufferLength;
 
-            int p = Int32ToHexChars(destination, bufferLength, (uint)value, hexBase, digits);
+            int p = Int32ToHexChars(destination.Slice(0, bufferLength), (uint)value, hexBase, digits);
             Debug.Assert(p == 0);
 
             return true;
         }
 
-        private static int Int32ToHexChars(Span<char> buffer, int bufferEndIndex, uint value, int hexBase, int digits)
+        private static int Int32ToHexChars(Span<char> buffer, uint value, int hexBase, int digits)
         {
-            while (--digits >= 0 || value != 0)
+            int bufferEndIndex = buffer.Length;
+            while ((--digits >= 0 || value != 0) && /* Only to elide bounds check */ (uint)(--bufferEndIndex) < (uint)buffer.Length)
             {
                 byte digit = (byte)(value & 0xF);
-                buffer[--bufferEndIndex] = (char)(digit + (digit < 10 ? (byte)'0' : hexBase));
+                buffer[bufferEndIndex] = (char)(digit + (digit < 10 ? (byte)'0' : hexBase));
                 value >>= 4;
             }
             return bufferEndIndex;
@@ -1336,7 +1337,7 @@ namespace System
         internal static int UInt32ToDecChars(Span<char> buffer, uint value, int digits)
         {
             int bufferEndIndex = buffer.Length;
-            while (--digits >= 0 || value != 0 && /* Only to elide bounds check */ (uint)(--bufferEndIndex) < (uint)buffer.Length)
+            while ((--digits >= 0 || value != 0) && /* Only to elide bounds check */ (uint)(--bufferEndIndex) < (uint)buffer.Length)
             {
                 uint remainder;
                 (value, remainder) = Math.DivRem(value, 10);
@@ -1534,12 +1535,12 @@ namespace System
             int p = bufferLength;
             if (High32((ulong)value) != 0)
             {
-                p = Int32ToHexChars(buffer, p, Low32((ulong)value), hexBase, 8);
-                p = Int32ToHexChars(buffer, p, High32((ulong)value), hexBase, digits - 8);
+                p = Int32ToHexChars(buffer.Slice(0, p), Low32((ulong)value), hexBase, 8);
+                p = Int32ToHexChars(buffer.Slice(0, p), High32((ulong)value), hexBase, digits - 8);
             }
             else
             {
-                p = Int32ToHexChars(buffer, p, Low32((ulong)value), hexBase, Math.Max(digits, 1));
+                p = Int32ToHexChars(buffer.Slice(0, p), Low32((ulong)value), hexBase, Math.Max(digits, 1));
             }
             Debug.Assert(p == 0);
 
@@ -1560,12 +1561,12 @@ namespace System
             int p = bufferLength;
             if (High32((ulong)value) != 0)
             {
-                p = Int32ToHexChars(destination, p, Low32((ulong)value), hexBase, 8);
-                p = Int32ToHexChars(destination, p, High32((ulong)value), hexBase, digits - 8);
+                p = Int32ToHexChars(destination.Slice(0, p), Low32((ulong)value), hexBase, 8);
+                p = Int32ToHexChars(destination.Slice(0, p), High32((ulong)value), hexBase, digits - 8);
             }
             else
             {
-                p = Int32ToHexChars(destination, p, Low32((ulong)value), hexBase, Math.Max(digits, 1));
+                p = Int32ToHexChars(destination.Slice(0, p), Low32((ulong)value), hexBase, Math.Max(digits, 1));
             }
             Debug.Assert(p == 0);
 
