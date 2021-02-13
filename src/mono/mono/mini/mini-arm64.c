@@ -5375,7 +5375,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	if (fail_tramp) {
 		buf = (guint8*)mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), buf_len);
 	} else {
-		MonoMemoryManager *mem_manager = m_class_get_mem_manager (domain, vtable->klass);
+		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		buf = mono_mem_manager_code_reserve (mem_manager, buf_len);
 	}
 	code = buf;

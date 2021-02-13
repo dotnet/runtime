@@ -678,7 +678,7 @@ alloc_method_table (MonoVTable *vtable, int offset)
 	gpointer *table;
 
 	if (offset >= 0) {
-		table = (gpointer*)m_class_alloc0 (vtable->domain, vtable->klass, m_class_get_vtable_size (vtable->klass) * sizeof (gpointer));
+		table = (gpointer*)m_class_alloc0 (vtable->klass, m_class_get_vtable_size (vtable->klass) * sizeof (gpointer));
 		vtable->interp_vtable = table;
 	} else {
 		table = (gpointer*)vtable;
@@ -691,7 +691,7 @@ static InterpMethod* // Inlining causes additional stack use in caller.
 get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 {
 	gpointer *table;
-	MonoMemoryManager *memory_manager = m_class_get_mem_manager (vtable->domain, vtable->klass);
+	MonoMemoryManager *memory_manager = m_class_get_mem_manager (vtable->klass);
 
 	table = get_method_table (vtable, offset);
 
