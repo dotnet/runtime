@@ -33,7 +33,6 @@ jobs:
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
-    container: ${{ parameters.container }}
     
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
