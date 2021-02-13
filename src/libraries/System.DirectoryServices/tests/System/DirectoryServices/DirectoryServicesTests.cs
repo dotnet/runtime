@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Collections;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.DirectoryServices.Tests
 {
@@ -538,7 +539,8 @@ namespace System.DirectoryServices.Tests
 
             Type expected = IsActiveDirectoryServer ? typeof(DirectoryServicesCOMException) : typeof(COMException);
 
-            Assert.True(exception.GetType() == expected, String.Format("Expected exception type '{0}'' got '{1}'' with message '{2}'", expected, exception.GetType(), exception.Message));
+            if (exception.GetType() != expected)
+                throw new XunitException(String.Format("Expected exception type '{0}' got '{1}' with message '{2}'", expected, exception.GetType(), exception.Message));
         }
 
         private DirectoryEntry CreateOU(DirectoryEntry de, string ou, string description)
