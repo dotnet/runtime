@@ -39,6 +39,7 @@ jobs:
     projectFile: ${{ parameters.projectFile }}
     runKind: ${{ parameters.runKind }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
+    container: ${{ parameters.container }}
     # Test job depends on the corresponding build job
     dependsOn:
     - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
