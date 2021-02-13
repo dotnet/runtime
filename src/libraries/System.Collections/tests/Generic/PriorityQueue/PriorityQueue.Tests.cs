@@ -55,5 +55,45 @@ namespace System.Collections.Tests
             Assert.Equal("one-not-to-enqueue", actualElement);
             Assert.True(enqueuedItems.SetEquals(queue.UnorderedItems));
         }
+
+        [Fact]
+        public void PriorityQueue_Generic_Constructor_IEnumerable_Null()
+        {
+            (string, int)[] itemsToEnqueue = new(string, int)[] { (null, 0), ("one", 1) } ;
+            PriorityQueue<string, int> queue = new PriorityQueue<string, int>(itemsToEnqueue);
+            Assert.Null(queue.Dequeue());
+            Assert.Equal("one", queue.Dequeue());
+        }
+
+        [Fact]
+        public void PriorityQueue_Generic_Enqueue_Null()
+        {
+            PriorityQueue<string, int> queue = new PriorityQueue<string, int>();
+
+            queue.Enqueue(element: null, 1);
+            queue.Enqueue(element: "zero", 0);
+            queue.Enqueue(element: "two", 2);
+
+            Assert.Equal("zero", queue.Dequeue());
+            Assert.Null(queue.Dequeue());
+            Assert.Equal("two", queue.Dequeue());
+        }
+
+        [Fact]
+        public void PriorityQueue_Generic_EnqueueRange_Null()
+        {
+            PriorityQueue<string, int> queue = new PriorityQueue<string, int>();
+
+            queue.EnqueueRange(new string[] { null, null, null }, 0);
+            queue.EnqueueRange(new string[] { "not null" }, 1);
+            queue.EnqueueRange(new string[] { null, null, null }, 0);
+
+            for (int i = 0; i < 6; ++i)
+            {
+                Assert.Null(queue.Dequeue());
+            }
+
+            Assert.Equal("not null", queue.Dequeue());
+        }
     }
 }
