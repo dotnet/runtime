@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -17,6 +18,7 @@ namespace System.Security.Cryptography
         }
 
         [UnsupportedOSPlatform("browser")]
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static RandomNumberGenerator? Create(string rngName)
         {
             return (RandomNumberGenerator?)CryptoConfig.CreateFromName(rngName);

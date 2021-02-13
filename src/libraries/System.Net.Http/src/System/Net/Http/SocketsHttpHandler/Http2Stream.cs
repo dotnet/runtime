@@ -35,10 +35,11 @@ namespace System.Net.Http
             /// <summary>Stores any trailers received after returning the response content to the caller.</summary>
             private HttpResponseHeaders? _trailers;
 
-            private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
+            private MultiArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
             private CreditWaiter? _creditWaiter;
             private int _availableCredit;
+            private readonly object _creditSyncObject = new object(); // split from SyncObject to avoid lock ordering problems with Http2Connection.SyncObject
 
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
@@ -99,7 +100,7 @@ namespace System.Net.Http
 
                 _responseProtocolState = ResponseProtocolState.ExpectingStatus;
 
-                _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
+                _responseBuffer = new MultiArrayBuffer(InitialStreamBufferSize);
 
                 _pendingWindowUpdate = 0;
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
@@ -349,11 +350,14 @@ namespace System.Net.Http
 
                 _connection.RemoveStream(this);
 
-                CreditWaiter? w = _creditWaiter;
-                if (w != null)
+                lock (_creditSyncObject)
                 {
-                    w.Dispose();
-                    _creditWaiter = null;
+                    CreditWaiter? waiter = _creditWaiter;
+                    if (waiter != null)
+                    {
+                        waiter.Dispose();
+                        _creditWaiter = null;
+                    }
                 }
             }
 
@@ -409,10 +413,7 @@ namespace System.Net.Http
                 }
 
                 // Discard any remaining buffered response data
-                if (_responseBuffer.ActiveLength != 0)
-                {
-                    _responseBuffer.Discard(_responseBuffer.ActiveLength);
-                }
+                _responseBuffer.DiscardAll();
 
                 _responseProtocolState = ResponseProtocolState.Aborted;
 
@@ -424,7 +425,7 @@ namespace System.Net.Http
 
             public void OnWindowUpdate(int amount)
             {
-                lock (SyncObject)
+                lock (_creditSyncObject)
                 {
                     _availableCredit = checked(_availableCredit + amount);
                     if (_availableCredit > 0 && _creditWaiter != null)
@@ -804,14 +805,14 @@ namespace System.Net.Http
                             break;
                     }
 
-                    if (_responseBuffer.ActiveLength + buffer.Length > StreamWindowSize)
+                    if (_responseBuffer.ActiveMemory.Length + buffer.Length > StreamWindowSize)
                     {
                         // Window size exceeded.
                         ThrowProtocolError(Http2ProtocolErrorCode.FlowControlError);
                     }
 
                     _responseBuffer.EnsureAvailableSpace(buffer.Length);
-                    buffer.CopyTo(_responseBuffer.AvailableSpan);
+                    _responseBuffer.AvailableMemory.CopyFrom(buffer);
                     _responseBuffer.Commit(buffer.Length);
 
                     if (endStream)
@@ -957,7 +958,7 @@ namespace System.Net.Http
                     else
                     {
                         Debug.Assert(_responseProtocolState == ResponseProtocolState.Complete);
-                        return (false, _responseBuffer.ActiveLength == 0);
+                        return (false, _responseBuffer.IsEmpty);
                     }
                 }
             }
@@ -1045,10 +1046,11 @@ namespace System.Net.Http
                 {
                     CheckResponseBodyState();
 
-                    if (_responseBuffer.ActiveLength > 0)
+                    if (!_responseBuffer.IsEmpty)
                     {
-                        int bytesRead = Math.Min(buffer.Length, _responseBuffer.ActiveLength);
-                        _responseBuffer.ActiveSpan.Slice(0, bytesRead).CopyTo(buffer);
+                        MultiMemory activeBuffer = _responseBuffer.ActiveMemory;
+                        int bytesRead = Math.Min(buffer.Length, activeBuffer.Length);
+                        activeBuffer.Slice(0, bytesRead).CopyTo(buffer);
                         _responseBuffer.Discard(bytesRead);
 
                         return (false, bytesRead);
@@ -1221,7 +1223,7 @@ namespace System.Net.Http
                     while (buffer.Length > 0)
                     {
                         int sendSize = -1;
-                        lock (SyncObject)
+                        lock (_creditSyncObject)
                         {
                             if (_availableCredit > 0)
                             {
@@ -1268,7 +1270,7 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
-                    if (_responseBuffer.ActiveLength == 0 && _responseProtocolState == ResponseProtocolState.Complete)
+                    if (_responseBuffer.IsEmpty && _responseProtocolState == ResponseProtocolState.Complete)
                     {
                         fullyConsumed = true;
                     }
@@ -1280,7 +1282,10 @@ namespace System.Net.Http
                     Cancel();
                 }
 
-                _responseBuffer.Dispose();
+                lock (SyncObject)
+                {
+                    _responseBuffer.Dispose();
+                }
             }
 
             private CancellationTokenRegistration RegisterRequestBodyCancellation(CancellationToken cancellationToken) =>

@@ -502,7 +502,6 @@ BEGIN
     IDS_EE_VARARG_NOT_SUPPORTED             "Vararg calling convention not supported."
 
     IDS_EE_INVALID_CA                       "Invalid custom attribute provided."
-    IDS_EE_INVALID_CA_EX                    "Invalid custom attribute provided: '%1'"
 
     IDS_EE_THREADSTART_STATE                "Thread is running or terminated; it cannot restart."
     IDS_EE_THREAD_CANNOT_GET                "Unable to retrieve thread information."

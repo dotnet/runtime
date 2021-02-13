@@ -106,7 +106,7 @@ namespace System.Numerics
 
         // Do an in-place two's complement. "Dangerous" because it causes
         // a mutation and needs to be used with care for immutable types.
-        public static void DangerousMakeTwosComplement(uint[] d)
+        public static void DangerousMakeTwosComplement(Span<uint> d)
         {
             if (d != null && d.Length > 0)
             {

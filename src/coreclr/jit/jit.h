@@ -747,6 +747,10 @@ private:
 #define CLFLG_STRUCTPROMOTE 0x00000
 #endif
 
+#ifdef TARGET_XARCH
+#define FEATURE_LOOP_ALIGN 1
+#endif
+
 #define CLFLG_MAXOPT                                                                                                   \
     (CLFLG_CSE | CLFLG_REGVAR | CLFLG_RNGCHKOPT | CLFLG_DEADASGN | CLFLG_CODEMOTION | CLFLG_QMARK | CLFLG_TREETRANS |  \
      CLFLG_INLINING | CLFLG_STRUCTPROMOTE | CLFLG_CONSTANTFOLD)

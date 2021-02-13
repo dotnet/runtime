@@ -162,9 +162,6 @@ namespace System.Threading
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern DeserializationTracker GetThreadDeserializationTracker(ref StackCrawlMark stackMark);
-
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
         public extern bool IsAlive
         {

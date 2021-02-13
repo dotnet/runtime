@@ -50,7 +50,7 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, BOOL isInBundle)
     return new ConvertedImageLayout(pFlat, isInBundle);
 }
 
-PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError)
+PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT* returnDontThrow)
 {
     STANDARD_VM_CONTRACT;
 
@@ -62,7 +62,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThro
         return PEImageLayout::LoadConverted(pOwner, true);
     }
 
-    PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner,bNTSafeLoad,bThrowOnError));
+    PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner,bNTSafeLoad,returnDontThrow));
     if (pAlloc->GetBase()==NULL)
         return NULL;
     return pAlloc.Extract();
@@ -644,7 +644,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
 }
 
 #if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
-LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError)
+LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT* returnDontThrow)
 {
     CONTRACTL
     {
@@ -664,12 +664,15 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bTh
     m_Module = CLRLoadLibraryEx(pOwner->GetPath(), NULL, dwFlags);
     if (m_Module == NULL)
     {
-        if (!bThrowOnError)
-            return;
-
         // Fetch the HRESULT upfront before anybody gets a chance to corrupt it
         HRESULT hr = HRESULT_FROM_GetLastError();
-        EEFileLoadException::Throw(pOwner->GetPath(), hr, NULL);
+        if (returnDontThrow != NULL)
+        {
+            *returnDontThrow = hr;
+            return;
+        }
+
+        EEFileLoadException::Throw(pOwner->GetPath(), hr);
     }
     IfFailThrow(Init(m_Module,true));
 

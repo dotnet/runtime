@@ -13,6 +13,12 @@
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
     <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
+    <WasmEnableMetadataUpdate Condition="'$(MonoMetadataUpdate)' == 'true'">true</WasmEnableMetadataUpdate>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- TODO: set to "false" for publishing/production builds -->
+    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">true</MonoMetadataUpdate>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -71,7 +77,7 @@
       <_IcuLibdir>$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/browser-wasm/native/lib</_IcuLibdir>
     </PropertyGroup>
 
-    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(_IcuLibdir) ENABLE_ES6=$(WasmEnableES6)"
+    <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(_IcuLibdir) ENABLE_ES6=$(WasmEnableES6) ENABLE_METADATA_UPDATE=$(WasmEnableMetadataUpdate)"
           IgnoreStandardErrorWarningFormat="true" />
 
     <ItemGroup>

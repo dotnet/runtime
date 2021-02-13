@@ -368,7 +368,7 @@ namespace System.Numerics
             return left.m_real != right.m_real || left.m_imaginary != right.m_imaginary;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is Complex)) return false;
             return Equals((Complex)obj);

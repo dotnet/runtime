@@ -7,6 +7,9 @@
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <PlatformManifestFile />
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
+    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
   </PropertyGroup>
 
   <ItemGroup>

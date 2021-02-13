@@ -35,7 +35,7 @@
 
   <!-- Define test projects and companions -->
   <PropertyGroup>
-    <IsTestProject>false</IsTestProject>
+    <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
     <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.UnitTests')) or $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
 
     <IsTestSupportProject>false</IsTestSupportProject>
@@ -51,6 +51,8 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">
     <!-- don't warn on usage of BinaryFormatter from test projects -->
     <NoWarn>$(NoWarn);SYSLIB0011</NoWarn>
+    <!-- allow nullable annotated files to be incorporated into tests without warning -->
+    <Nullable Condition="'$(Nullable)' == '' and '$(Language)' == 'C#'">annotations</Nullable>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -95,9 +97,6 @@
     <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
-
-    <!-- Workaround for codecov issue https://github.com/tonerdo/coverlet/issues/312 -->
-    <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
@@ -132,7 +131,8 @@
     <AnyOSPlatformConfig>AnyOS.AnyCPU.$(Configuration)</AnyOSPlatformConfig>
     <UnixPlatformConfig>Unix.$(Platform).$(Configuration)</UnixPlatformConfig>
     <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
+    <TestArchiveTestsRoot Condition="$(IsFunctionalTest) != true">$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
+    <TestArchiveTestsRoot Condition="$(IsFunctionalTest) == true">$(TestArchiveRoot)runonly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
 

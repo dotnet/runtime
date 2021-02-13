@@ -14,11 +14,11 @@
 ===========================================================*/
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Text;
-using System.Diagnostics;
 
 namespace System.Resources
 {
@@ -231,45 +231,16 @@ namespace System.Resources
                     }
                     else
                     {
-                        IResourceReader reader;
-
-                        // Permit deserialization as long as the default ResourceReader is used
-                        if (ResourceManager.IsDefaultType(readerTypeName, ResourceManager.ResReaderTypeName))
+                        if (ResourceReader.AllowCustomResourceTypes)
                         {
-                            reader = new ResourceReader(
-                                store,
-                                new Dictionary<string, ResourceLocator>(FastResourceComparer.Default),
-                                permitDeserialization: true);
+                            Debug.Assert(readerTypeName != null, "Reader Type name should be set");
+                            Debug.Assert(resSetTypeName != null, "ResourceSet Type name should be set");
+                            return InternalGetResourceSetFromSerializedData(store, readerTypeName, resSetTypeName, _mediator);
                         }
                         else
                         {
-                            Type readerType = Type.GetType(readerTypeName, throwOnError: true)!;
-                            object[] args = new object[1];
-                            args[0] = store;
-                            reader = (IResourceReader)Activator.CreateInstance(readerType, args)!;
+                            throw new NotSupportedException(SR.ResourceManager_ReflectionNotAllowed);
                         }
-
-                        object[] resourceSetArgs = new object[1];
-                        resourceSetArgs[0] = reader;
-
-                        Type resSetType;
-                        if (_mediator.UserResourceSet == null)
-                        {
-                            Debug.Assert(resSetTypeName != null, "We should have a ResourceSet type name from the custom resource file here.");
-                            resSetType = Type.GetType(resSetTypeName, true, false)!;
-                        }
-                        else
-                        {
-                            resSetType = _mediator.UserResourceSet;
-                        }
-
-                        ResourceSet rs = (ResourceSet)Activator.CreateInstance(resSetType,
-                                                                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
-                                                                                null,
-                                                                                resourceSetArgs,
-                                                                                null,
-                                                                                null)!;
-                        return rs;
                     }
                 }
                 else
@@ -305,6 +276,47 @@ namespace System.Resources
                     throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResMgrBadResSet_Type, _mediator.UserResourceSet.AssemblyQualifiedName), e);
                 }
             }
+        }
+
+        [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
+            "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
+        private static ResourceSet InternalGetResourceSetFromSerializedData(Stream store, string readerTypeName, string? resSetTypeName, ResourceManager.ResourceManagerMediator mediator)
+        {
+            IResourceReader reader;
+
+            // Permit deserialization as long as the default ResourceReader is used
+            if (ResourceManager.IsDefaultType(readerTypeName, ResourceManager.ResReaderTypeName))
+            {
+                reader = new ResourceReader(
+                    store,
+                    new Dictionary<string, ResourceLocator>(FastResourceComparer.Default),
+                    permitDeserialization: true);
+            }
+            else
+            {
+                Type readerType = Type.GetType(readerTypeName, throwOnError: true)!;
+                object[] args = new object[1];
+                args[0] = store;
+                reader = (IResourceReader)Activator.CreateInstance(readerType, args)!;
+            }
+
+            object[] resourceSetArgs = new object[1];
+            resourceSetArgs[0] = reader;
+
+            Type? resSetType = mediator.UserResourceSet;
+            if (resSetType == null)
+            {
+                Debug.Assert(resSetTypeName != null, "We should have a ResourceSet type name from the custom resource file here.");
+                resSetType = Type.GetType(resSetTypeName, true, false)!;
+            }
+
+            ResourceSet rs = (ResourceSet)Activator.CreateInstance(resSetType,
+                                                                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
+                                                                    null,
+                                                                    resourceSetArgs,
+                                                                    null,
+                                                                    null)!;
+            return rs;
         }
 
         private Stream? GetManifestResourceStream(Assembly satellite, string fileName)
@@ -421,23 +433,12 @@ namespace System.Resources
         private void HandleSatelliteMissing()
         {
             Debug.Assert(_mediator.MainAssembly != null);
-            string satAssemName = _mediator.MainAssembly.GetName().Name + ".resources.dll";
-            if (_mediator.SatelliteContractVersion != null)
-            {
-                satAssemName += ", Version=" + _mediator.SatelliteContractVersion.ToString();
-            }
-
-            byte[]? token = _mediator.MainAssembly.GetName().GetPublicKeyToken();
-            if (token != null)
-            {
-                int iLen = token.Length;
-                StringBuilder publicKeyTok = new StringBuilder(iLen * 2);
-                for (int i = 0; i < iLen; i++)
-                {
-                    publicKeyTok.Append(token[i].ToString("x", CultureInfo.InvariantCulture));
-                }
-                satAssemName += ", PublicKeyToken=" + publicKeyTok;
-            }
+            AssemblyName mname = _mediator.MainAssembly.GetName();
+            string satAssemName = AssemblyNameFormatter.ComputeDisplayName(
+                mname.Name + ".resources.dll",
+                _mediator.SatelliteContractVersion,
+                null,
+                mname.GetPublicKeyToken());
 
             Debug.Assert(_mediator.NeutralResourcesCulture != null);
             string missingCultureName = _mediator.NeutralResourcesCulture.Name;

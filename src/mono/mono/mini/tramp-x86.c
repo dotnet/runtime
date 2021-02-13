@@ -407,7 +407,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	const int size = TRAMPOLINE_SIZE;
 
-	code = buf = mono_mem_manager_code_reserve_align (mem_manager, size, 4);
+	code = buf = (guint8*)mono_mem_manager_code_reserve_align (mem_manager, size, 4);
 
 	x86_push_imm (buf, (gsize)arg1);
 	x86_jump_code (buf, tramp);

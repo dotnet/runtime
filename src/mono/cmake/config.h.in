@@ -72,7 +72,7 @@
 #cmakedefine PACKAGE_URL 1
 
 /* Version of the corlib-runtime interface */
-#define MONO_CORLIB_VERSION @MONO_CORLIB_VERSION@
+#cmakedefine MONO_CORLIB_VERSION "@MONO_CORLIB_VERSION@"
 
 /* Disables the IO portability layer */
 #cmakedefine DISABLE_PORTABILITY 1
@@ -338,9 +338,6 @@
 /* The size of `long long', as computed by sizeof. */
 #define SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
 
-/* Enables the support for .NET Core Features in the MonoVM */
-#cmakedefine ENABLE_NETCORE 1
-
 /* Xen-specific behaviour */
 #cmakedefine MONO_XEN_OPT 1
 
@@ -404,9 +401,6 @@
 /* Disable reflection emit support */
 #cmakedefine DISABLE_REFLECTION_EMIT 1
 
-/* Disable assembly saving support in reflection emit */
-#cmakedefine DISABLE_REFLECTION_EMIT_SAVE 1
-
 /* Disable support for huge assemblies */
 #cmakedefine DISABLE_LARGE_CODE 1
 
@@ -422,12 +416,6 @@
 /* Disable generics support */
 #cmakedefine DISABLE_GENERICS 1
 
-/* Disable Shadow Copy for AppDomains */
-#cmakedefine DISABLE_SHADOW_COPY 1
-
-/* Disable agent attach support */
-#cmakedefine DISABLE_ATTACH 1
-
 /* Disables the verifier */
 #cmakedefine DISABLE_VERIFIER 1
 
@@ -441,6 +429,9 @@
 /* Some VES is available at runtime */
 #cmakedefine ENABLE_ILGEN 1
 
+/* Disable non-blittable marshalling */
+#cmakedefine DISABLE_NONBLITTABLE
+
 /* Disable SIMD intrinsics related optimizations. */
 #cmakedefine DISABLE_SIMD 1
 
@@ -452,9 +443,6 @@
 
 /* Disable String normalization support. */
 #cmakedefine DISABLE_NORMALIZATION 1
-
-/* Disable desktop assembly loader semantics. */
-#cmakedefine DISABLE_DESKTOP_LOADER 1
 
 /* Disable shared perfcounters. */
 #cmakedefine DISABLE_SHARED_PERFCOUNTERS 1
@@ -1768,8 +1756,12 @@
 /* Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata) */
 #cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
 
+/* Enable runtime support for metadata updates */
+#cmakedefine ENABLE_METADATA_UPDATE 1
+
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.
 #endif
 
 #endif
+

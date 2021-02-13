@@ -24,6 +24,7 @@ namespace ILCompiler
 
         public string CompositeRootPath;
         public bool Optimize;
+        public bool OptimizeDisabled;
         public bool OptimizeSpace;
         public bool OptimizeTime;
         public bool InputBubble;
@@ -31,6 +32,7 @@ namespace ILCompiler
         public bool Verbose;
         public bool Composite;
         public bool CompileNoMethods;
+        public bool EmbedPgoData;
 
         public string DgmlLogFileName;
         public bool GenerateFullDgmlLog;
@@ -45,11 +47,17 @@ namespace ILCompiler
         public bool Resilient;
         public bool Map;
         public bool MapCsv;
+        public bool PrintReproInstructions;
+        public bool Pdb;
+        public string PdbPath;
+        public bool PerfMap;
+        public string PerfMapPath;
         public int Parallelism;
         public int CustomPESectionAlignment;
         public string MethodLayout;
         public string FileLayout;
         public bool VerifyTypeAndFieldLayout;
+        public string CallChainProfileFile;
 
         public string SingleMethodTypeName;
         public string SingleMethodName;
@@ -86,6 +94,7 @@ namespace ILCompiler
                 syntax.DefineOption("o|out|outputfilepath", ref OutputFilePath, SR.OutputFilePath);
                 syntax.DefineOption("crp|compositerootpath", ref CompositeRootPath, SR.CompositeRootPath);
                 syntax.DefineOption("O|optimize", ref Optimize, SR.EnableOptimizationsOption);
+                syntax.DefineOption("Od|optimize-disabled", ref OptimizeDisabled, SR.DisableOptimizationsOption);
                 syntax.DefineOption("Os|optimize-space", ref OptimizeSpace, SR.OptimizeSpaceOption);
                 syntax.DefineOption("Ot|optimize-time", ref OptimizeTime, SR.OptimizeSpeedOption);
                 syntax.DefineOption("inputbubble", ref InputBubble, SR.InputBubbleOption);
@@ -94,6 +103,7 @@ namespace ILCompiler
                 syntax.DefineOption("tuning", ref Tuning, SR.TuningImageOption);
                 syntax.DefineOption("partial", ref Partial, SR.PartialImageOption);
                 syntax.DefineOption("compilebubblegenerics", ref CompileBubbleGenerics, SR.BubbleGenericsOption);
+                syntax.DefineOption("embed-pgo-data", ref EmbedPgoData, SR.EmbedPgoDataOption);
                 syntax.DefineOption("dgmllog|dgml-log-file-name", ref DgmlLogFileName, SR.SaveDependencyLogOption);
                 syntax.DefineOption("fulllog|generate-full-dmgl-log", ref GenerateFullDgmlLog, SR.SaveDetailedLogOption);
                 syntax.DefineOption("verbose", ref Verbose, SR.VerboseLoggingOption);
@@ -106,6 +116,7 @@ namespace ILCompiler
                 syntax.DefineOption("targetos", ref TargetOS, SR.TargetOSOption);
                 syntax.DefineOption("jitpath", ref JitPath, SR.JitPathOption);
 
+                syntax.DefineOption("print-repro-instructions", ref PrintReproInstructions, SR.PrintReproInstructionsOption);
                 syntax.DefineOption("singlemethodtypename", ref SingleMethodTypeName, SR.SingleMethodTypeName);
                 syntax.DefineOption("singlemethodname", ref SingleMethodName, SR.SingleMethodMethodName);
                 syntax.DefineOption("singlemethodindex", ref SingleMethodIndex, SR.SingleMethodIndex);
@@ -115,10 +126,15 @@ namespace ILCompiler
                 syntax.DefineOption("custom-pe-section-alignment", ref CustomPESectionAlignment, SR.CustomPESectionAlignmentOption);
                 syntax.DefineOption("map", ref Map, SR.MapFileOption);
                 syntax.DefineOption("mapcsv", ref MapCsv, SR.MapCsvFileOption);
+                syntax.DefineOption("pdb", ref Pdb, SR.PdbFileOption);
+                syntax.DefineOption("pdb-path", ref PdbPath, SR.PdbFilePathOption);
+                syntax.DefineOption("perfmap", ref PerfMap, SR.PerfMapFileOption);
+                syntax.DefineOption("perfmap-path", ref PerfMapPath, SR.PerfMapFilePathOption);
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);
                 syntax.DefineOption("verify-type-and-field-layout", ref VerifyTypeAndFieldLayout, SR.VerifyTypeAndFieldLayoutOption);
+                syntax.DefineOption("callchain-profile", ref CallChainProfileFile, SR.CallChainProfileFile);
 
                 syntax.DefineOption("h|help", ref Help, SR.HelpOption);
 

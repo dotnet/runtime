@@ -39,7 +39,7 @@
     <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
   </PropertyGroup>
 
-  <!-- 
+  <!--
     hostpolicy and hostfxr aren't in the platform manifest in the ref pack and cannot be without breaking things upstack.
     We add the entries here to ensure that we don't fail the validation that every file included in the runtime pack is in the platform manifest
     without adding the entries to the manifest in the ref pack.
@@ -77,7 +77,7 @@
 
       <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="@(MonoCrossFiles)">
-        <TargetPath>runtimes/$(RuntimeIdentifier)/native/cross</TargetPath>
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/cross/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
       <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="@(MonoIncludeFiles)"
@@ -121,25 +121,26 @@
     <NativeRuntimeAsset Include="$(_diaSymReaderPathIfExists)" />
   </ItemGroup>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-
-  <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
-    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
-      <_crossTargetJit Include="@(CoreCLRCrossTargetFiles)" Condition="'%(FileName)' == '$(LibPrefix)clrjit' and '%(Extension)' == '$(LibSuffix)'" />
-      <_clrjit Include="@(RuntimeFiles)" Condition="'%(FileName)' == '$(LibPrefix)clrjit' and '%(Extension)' == '$(LibSuffix)'" />
-      <_crossTargetCrossgen Include="@(CoreCLRCrossTargetFiles)" Condition="'%(FileName)' == 'crossgen' and '%(Extension)' == '$(ExeSuffix)'" />
-      <_crossgen Include="@(RuntimeFiles)" Condition="'%(FileName)' == 'crossgen' and '%(Extension)' == '$(ExeSuffix)'" />
+  <!-- VS uses this file to show the target framework in the drop down. -->
+  <Target Name="CreateDotVersionFile"
+          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager"
+          BeforeTargets="GetFilesToPublish"
+          Condition="'$(DisableSourceLink)' != 'true'">
+    <ItemGroup>
+      <_VersionFile Include="$(IntermediateOutputPath).version" TargetPath="shared/$(SharedFrameworkName)/$(Version)/" />
     </ItemGroup>
-    <ItemGroup Condition="'@(_crossTargetJit)' != '' and '@(_crossTargetCrossgen)' != ''">
-      <CrossgenTool Include="@(_crossTargetCrossgen->ClearMetadata())"
-                    JitPath="@(_crossTargetJit)"
-                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
-    </ItemGroup>
-    <ItemGroup Condition="'@(_crossTargetJit)' == '' and '@(_crossTargetCrossgen)' == ''">
-      <CrossgenTool Include="@(_crossgen->ClearMetadata())"
-                    JitPath="@(_clrjit)"
-                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
+    <WriteLinesToFile
+      Lines="$(SourceRevisionId);$(Version)"
+      File="@(_VersionFile)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FilesToPublish Include="@(_VersionFile)" />
+      <FileWrites Include="@(_VersionFile)" />
     </ItemGroup>
   </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+  <Import Project="ReadyToRun.targets" />
 </Project>

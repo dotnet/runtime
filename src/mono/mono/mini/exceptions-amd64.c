@@ -43,7 +43,6 @@
 #include "mini-amd64.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
-#include "tasklets.h"
 #include "mono/utils/mono-tls-inline.h"
 
 #ifdef TARGET_WIN32
@@ -1906,59 +1905,6 @@ void mono_arch_code_chunk_destroy (void *chunk)
 }
 #endif /* MONO_ARCH_HAVE_UNWIND_TABLE */
 
-#if MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT) && !defined(ENABLE_NETCORE)
-MonoContinuationRestore
-mono_tasklets_arch_restore (void)
-{
-	static guint8* saved = NULL;
-	guint8 *code, *start;
-	int cont_reg = AMD64_R9; /* register usable on both call conventions */
-	const int kMaxCodeSize = 64;
-
-	if (saved)
-		return (MonoContinuationRestore)saved;
-	code = start = (guint8 *)mono_global_codeman_reserve (kMaxCodeSize);
-	/* the signature is: restore (MonoContinuation *cont, int state, MonoLMF **lmf_addr) */
-	/* cont is in AMD64_ARG_REG1 ($rcx or $rdi)
-	 * state is in AMD64_ARG_REG2 ($rdx or $rsi)
-	 * lmf_addr is in AMD64_ARG_REG3 ($r8 or $rdx)
-	 * We move cont to cont_reg since we need both rcx and rdi for the copy
-	 * state is moved to $rax so it's setup as the return value and we can overwrite $rsi
- 	 */
-	amd64_mov_reg_reg (code, cont_reg, MONO_AMD64_ARG_REG1, 8);
-	amd64_mov_reg_reg (code, AMD64_RAX, MONO_AMD64_ARG_REG2, 8);
-	/* setup the copy of the stack */
-	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, stack_used_size), sizeof (int));
-	amd64_shift_reg_imm (code, X86_SHR, AMD64_RCX, 3);
-	x86_cld (code);
-	amd64_mov_reg_membase (code, AMD64_RSI, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, saved_stack), sizeof (gpointer));
-	amd64_mov_reg_membase (code, AMD64_RDI, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, return_sp), sizeof (gpointer));
-	amd64_prefix (code, X86_REP_PREFIX);
-	amd64_movsl (code);
-
-	/* now restore the registers from the LMF */
-	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, lmf), 8);
-	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_RCX, MONO_STRUCT_OFFSET (MonoLMF, rbp), 8);
-	amd64_mov_reg_membase (code, AMD64_RSP, AMD64_RCX, MONO_STRUCT_OFFSET (MonoLMF, rsp), 8);
-
-#ifdef WIN32
-	amd64_mov_reg_reg (code, AMD64_R14, AMD64_ARG_REG3, 8);
-#else
-	amd64_mov_reg_reg (code, AMD64_R12, AMD64_ARG_REG3, 8);
-#endif
-
-	/* state is already in rax */
-	amd64_jump_membase (code, cont_reg, MONO_STRUCT_OFFSET (MonoContinuation, return_ip));
-	g_assertf ((code - start) <= kMaxCodeSize, "%d %d", (int)(code - start), kMaxCodeSize);
-
-	mono_arch_flush_icache (start, code - start);
-	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
-
-	saved = start;
-	return (MonoContinuationRestore)saved;
-}
-#endif /* MONO_SUPPORT_TASKLETS && !defined(DISABLE_JIT) && !defined(ENABLE_NETCORE) */
-
 /*
  * mono_arch_setup_resume_sighandler_ctx:
  *
@@ -1975,15 +1921,6 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 		MONO_CONTEXT_SET_SP (ctx, (guint64)MONO_CONTEXT_GET_SP (ctx) - 8);
 	MONO_CONTEXT_SET_IP (ctx, func);
 }
-
-#if (!MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT)) && !defined(ENABLE_NETCORE)
-MonoContinuationRestore
-mono_tasklets_arch_restore (void)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-#endif /* (!MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT)) && !defined(ENABLE_NETCORE) */
 
 void
 mono_arch_undo_ip_adjustment (MonoContext *ctx)

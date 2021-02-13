@@ -60,7 +60,7 @@ static
 void
 event_source_fini (EventPipeEventSource *event_source)
 {
-	ep_provider_free (event_source->provider);
+	ep_delete_provider (event_source->provider);
 }
 
 EventPipeEventSource *

@@ -3,100 +3,128 @@
 
 namespace System
 {
-    public class Random
+    /// <summary>
+    /// Represents a pseudo-random number generator, which is an algorithm that produces a sequence of numbers
+    /// that meet certain statistical requirements for randomness.
+    /// </summary>
+    public partial class Random
     {
-        private static readonly Random s_globalRandom = new Random(GenerateGlobalSeed());
-        [ThreadStatic]
-        private static Random? t_threadRandom;
+        /// <summary>The underlying generator implementation.</summary>
+        /// <remarks>
+        /// This is separated out so that different generators can be used based on how this Random instance is constructed.
+        /// If it's built from a seed, then we may need to ensure backwards compatibility for folks expecting consistent sequences
+        /// based on that seed.  If the instance is actually derived from Random, then we need to ensure the derived type's
+        /// overrides are called anywhere they were being called previously.  But if the instance is the base type and is constructed
+        /// with the default constructor, we have a lot of flexibility as to how to optimize the performance and quality of the generator.
+        /// </remarks>
+        private readonly ImplBase _impl;
 
-        private readonly int[] _seedArray = new int[56];
-        private int _inext;
-        private int _inextp;
+        /// <summary>Initializes a new instance of the <see cref="Random"/> class using a default seed value.</summary>
+        public Random() =>
+            // With no seed specified, if this is the base type, we can implement this however we like.
+            // If it's a derived type, for compat we respect the previous implementation, so that overrides
+            // are called as they were previously.
+            _impl = GetType() == typeof(Random) ? new XoshiroImpl() : new LegacyImpl(this);
 
-        public Random() : this(ThreadStaticRandom.Next())
-        {
-        }
+        /// <summary>Initializes a new instance of the Random class, using the specified seed value.</summary>
+        /// <param name="Seed">
+        /// A number used to calculate a starting value for the pseudo-random number sequence. If a negative number
+        /// is specified, the absolute value of the number is used.
+        /// </param>
+        public Random(int Seed) =>
+            // With a custom seed, for compat we respect the previous implementation so that the same sequence
+            // previously output continues to be output.
+            _impl = new LegacyImpl(this, Seed);
 
-        public Random(int Seed)
-        {
-            // Initialize seed array.
+        /// <summary>Returns a non-negative random integer.</summary>
+        /// <returns>A 32-bit signed integer that is greater than or equal to 0 and less than <see cref="int.MaxValue"/>.</returns>
+        public virtual int Next() => _impl.Next();
 
-            int subtraction = (Seed == int.MinValue) ? int.MaxValue : Math.Abs(Seed);
-            int mj = 161803398 - subtraction; // magic number based on Phi (golden ratio)
-            _seedArray[55] = mj;
-            int mk = 1;
-
-            int ii = 0;
-            for (int i = 1; i < 55; i++)
-            {
-                // The range [1..55] is special (Knuth) and so we're wasting the 0'th position.
-                if ((ii += 21) >= 55)
-                {
-                    ii -= 55;
-                }
-
-                _seedArray[ii] = mk;
-                mk = mj - mk;
-                if (mk < 0)
-                {
-                    mk += int.MaxValue;
-                }
-
-                mj = _seedArray[ii];
-            }
-
-            for (int k = 1; k < 5; k++)
-            {
-                for (int i = 1; i < 56; i++)
-                {
-                    int n = i + 30;
-                    if (n >= 55)
-                    {
-                        n -= 55;
-                    }
-
-                    _seedArray[i] -= _seedArray[1 + n];
-                    if (_seedArray[i] < 0)
-                    {
-                        _seedArray[i] += int.MaxValue;
-                    }
-                }
-            }
-
-            _inextp = 21;
-        }
-
-        protected virtual double Sample() =>
-            // Including the division at the end gives us significantly improved random number distribution.
-            InternalSample() * (1.0 / int.MaxValue);
-
-        public virtual int Next() => InternalSample();
-
+        /// <summary>Returns a non-negative random integer that is less than the specified maximum.</summary>
+        /// <param name="maxValue">The exclusive upper bound of the random number to be generated. <paramref name="maxValue"/> must be greater than or equal to 0.</param>
+        /// <returns>
+        /// A 32-bit signed integer that is greater than or equal to 0, and less than <paramref name="maxValue"/>; that is, the range of return values ordinarily
+        /// includes 0 but not <paramref name="maxValue"/>. However, if <paramref name="maxValue"/> equals 0, <paramref name="maxValue"/> is returned.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is less than 0.</exception>
         public virtual int Next(int maxValue)
         {
             if (maxValue < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxValue), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(maxValue)));
+                ThrowMaxValueMustBeNonNegative();
             }
 
-            return (int)(Sample() * maxValue);
+            return _impl.Next(maxValue);
         }
 
+        /// <summary>Returns a random integer that is within a specified range.</summary>
+        /// <param name="minValue">The inclusive lower bound of the random number returned.</param>
+        /// <param name="maxValue">The exclusive upper bound of the random number returned. <paramref name="maxValue"/> must be greater than or equal to <paramref name="minValue"/>.</param>
+        /// <returns>
+        /// A 32-bit signed integer greater than or equal to <paramref name="minValue"/> and less than <paramref name="maxValue"/>; that is, the range of return values includes <paramref name="minValue"/>
+        /// but not <paramref name="maxValue"/>. If minValue equals <paramref name="maxValue"/>, <paramref name="minValue"/> is returned.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="minValue"/> is greater than <paramref name="maxValue"/>.</exception>
         public virtual int Next(int minValue, int maxValue)
         {
             if (minValue > maxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(minValue), SR.Format(SR.Argument_MinMaxValue, nameof(minValue), nameof(maxValue)));
+                ThrowMinMaxValueSwapped();
             }
 
-            long range = (long)maxValue - minValue;
-            return range <= int.MaxValue ?
-                (int)(Sample() * range) + minValue :
-                (int)((long)(GetSampleForLargeRange() * range) + minValue);
+            return _impl.Next(minValue, maxValue);
         }
 
-        public virtual double NextDouble() => Sample();
+        /// <summary>Returns a non-negative random integer.</summary>
+        /// <returns>A 64-bit signed integer that is greater than or equal to 0 and less than <see cref="long.MaxValue"/>.</returns>
+        public virtual long NextInt64() => _impl.NextInt64();
 
+        /// <summary>Returns a non-negative random integer that is less than the specified maximum.</summary>
+        /// <param name="maxValue">The exclusive upper bound of the random number to be generated. <paramref name="maxValue"/> must be greater than or equal to 0.</param>
+        /// <returns>
+        /// A 64-bit signed integer that is greater than or equal to 0, and less than <paramref name="maxValue"/>; that is, the range of return values ordinarily
+        /// includes 0 but not <paramref name="maxValue"/>. However, if <paramref name="maxValue"/> equals 0, <paramref name="maxValue"/> is returned.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is less than 0.</exception>
+        public virtual long NextInt64(long maxValue)
+        {
+            if (maxValue < 0)
+            {
+                ThrowMaxValueMustBeNonNegative();
+            }
+
+            return _impl.NextInt64(maxValue);
+        }
+
+        /// <summary>Returns a random integer that is within a specified range.</summary>
+        /// <param name="minValue">The inclusive lower bound of the random number returned.</param>
+        /// <param name="maxValue">The exclusive upper bound of the random number returned. <paramref name="maxValue"/> must be greater than or equal to <paramref name="minValue"/>.</param>
+        /// <returns>
+        /// A 64-bit signed integer greater than or equal to <paramref name="minValue"/> and less than <paramref name="maxValue"/>; that is, the range of return values includes <paramref name="minValue"/>
+        /// but not <paramref name="maxValue"/>. If minValue equals <paramref name="maxValue"/>, <paramref name="minValue"/> is returned.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="minValue"/> is greater than <paramref name="maxValue"/>.</exception>
+        public virtual long NextInt64(long minValue, long maxValue)
+        {
+            if (minValue > maxValue)
+            {
+                ThrowMinMaxValueSwapped();
+            }
+
+            return _impl.NextInt64(minValue, maxValue);
+        }
+
+        /// <summary>Returns a random floating-point number that is greater than or equal to 0.0, and less than 1.0.</summary>
+        /// <returns>A single-precision floating point number that is greater than or equal to 0.0, and less than 1.0.</returns>
+        public virtual float NextSingle() => _impl.NextSingle();
+
+        /// <summary>Returns a random floating-point number that is greater than or equal to 0.0, and less than 1.0.</summary>
+        /// <returns>A double-precision floating point number that is greater than or equal to 0.0, and less than 1.0.</returns>
+        public virtual double NextDouble() => _impl.NextDouble();
+
+        /// <summary>Fills the elements of a specified array of bytes with random numbers.</summary>
+        /// <param name="buffer">The array to be filled with random numbers.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         public virtual void NextBytes(byte[] buffer)
         {
             if (buffer is null)
@@ -104,94 +132,21 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
             }
 
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                buffer[i] = (byte)InternalSample();
-            }
+            _impl.NextBytes(buffer);
         }
 
-        public virtual void NextBytes(Span<byte> buffer)
-        {
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                buffer[i] = (byte)Next();
-            }
-        }
+        /// <summary>Fills the elements of a specified span of bytes with random numbers.</summary>
+        /// <param name="buffer">The array to be filled with random numbers.</param>
+        public virtual void NextBytes(Span<byte> buffer) => _impl.NextBytes(buffer);
 
-        private int InternalSample()
-        {
-            int locINext = _inext;
-            if (++locINext >= 56)
-            {
-                locINext = 1;
-            }
+        /// <summary>Returns a random floating-point number between 0.0 and 1.0.</summary>
+        /// <returns>A double-precision floating point number that is greater than or equal to 0.0, and less than 1.0.</returns>
+        protected virtual double Sample() => _impl.Sample();
 
-            int locINextp = _inextp;
-            if (++locINextp >= 56)
-            {
-                locINextp = 1;
-            }
+        private static void ThrowMaxValueMustBeNonNegative() =>
+            throw new ArgumentOutOfRangeException("maxValue", SR.Format(SR.ArgumentOutOfRange_NeedNonNegNum, "maxValue"));
 
-            int retVal = _seedArray[locINext] - _seedArray[locINextp];
-
-            if (retVal == int.MaxValue)
-            {
-                retVal--;
-            }
-            if (retVal < 0)
-            {
-                retVal += int.MaxValue;
-            }
-
-            _seedArray[locINext] = retVal;
-            _inext = locINext;
-            _inextp = locINextp;
-
-            return retVal;
-        }
-
-        private static Random ThreadStaticRandom
-        {
-            get
-            {
-                return t_threadRandom ??= CreateThreadStaticRandom();
-
-                static Random CreateThreadStaticRandom()
-                {
-                    int seed;
-                    lock (s_globalRandom)
-                    {
-                        seed = s_globalRandom.Next();
-                    }
-
-                    return new Random(seed);
-                }
-            }
-        }
-
-        private static unsafe int GenerateGlobalSeed()
-        {
-            int result;
-            Interop.GetRandomBytes((byte*)&result, sizeof(int));
-            return result;
-        }
-
-        private double GetSampleForLargeRange()
-        {
-            // The distribution of the double returned by Sample is not good enough for a large range.
-            // If we use Sample for a range [int.MinValue..int.MaxValue), we will end up getting even numbers only.
-            int result = InternalSample();
-
-            // We can't use addition here: the distribution will be bad if we do that.
-            if (InternalSample() % 2 == 0) // decide the sign based on second sample
-            {
-                result = -result;
-            }
-
-            double d = result;
-            d += int.MaxValue - 1; // get a number in range [0..2*int.MaxValue-1)
-            d /= 2u * int.MaxValue - 1;
-            return d;
-        }
+        private static void ThrowMinMaxValueSwapped() =>
+            throw new ArgumentOutOfRangeException("minValue", SR.Format(SR.Argument_MinMaxValue, "minValue", "maxValue"));
     }
 }

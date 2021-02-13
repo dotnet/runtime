@@ -75,8 +75,8 @@ class ShuffleIterator
     int m_currentGenRegIndex;
     // Current floating point register index (relative to the ArgLocDesc::m_idxFloatReg)
     int m_currentFloatRegIndex;
-    // Current stack slot index (relative to the ArgLocDesc::m_idxStack)
-    int m_currentStackSlotIndex;
+    // Current byte stack index (relative to the ArgLocDesc::m_byteStackIndex)
+    int m_currentByteStackIndex;
 
 #if defined(UNIX_AMD64_ABI)
     // Get next shuffle offset for struct passed in registers. There has to be at least one offset left.
@@ -134,7 +134,7 @@ public:
 #endif
         m_currentGenRegIndex(0),
         m_currentFloatRegIndex(0),
-        m_currentStackSlotIndex(0)
+        m_currentByteStackIndex(0)
     {
     }
 
@@ -143,11 +143,13 @@ public:
     {
         return (m_currentGenRegIndex < m_argLocDesc->m_cGenReg) ||
                (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg) ||
-               (m_currentStackSlotIndex < m_argLocDesc->m_cStack);
+               (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize);
     }
 
     // Get next offset to shuffle. There has to be at least one offset left.
-    UINT16 GetNextOfs()
+    // For register arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
+    // For stack arguments it returns stack offset in bytes with negative sign.
+    int GetNextOfs()
     {
         int index;
 
@@ -157,7 +159,9 @@ public:
         EEClass* eeClass = m_argLocDesc->m_eeClass;
         if (m_argLocDesc->m_eeClass != 0)
         {
-            return GetNextOfsInStruct();
+            index = GetNextOfsInStruct();
+            _ASSERT((index & ShuffleEntry::REGMASK) != 0);
+            return index;
         }
 #endif // UNIX_AMD64_ABI
 
@@ -167,7 +171,7 @@ public:
             index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
             m_currentFloatRegIndex++;
 
-            return (UINT16)index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
+            return index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
         }
 
         // Shuffle any registers first (the order matters since otherwise we could end up shuffling a stack slot
@@ -177,15 +181,16 @@ public:
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
             m_currentGenRegIndex++;
 
-            return (UINT16)index | ShuffleEntry::REGMASK;
+            return index | ShuffleEntry::REGMASK;
         }
 
         // If we get here we must have at least one stack slot left to shuffle (this method should only be called
         // when AnythingToShuffle(pArg) == true).
-        if (m_currentStackSlotIndex < m_argLocDesc->m_cStack)
+        if (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize)
         {
-            index = m_argLocDesc->m_idxStack + m_currentStackSlotIndex;
-            m_currentStackSlotIndex++;
+            const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
+            index = byteIndex / TARGET_POINTER_SIZE;
+            m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
             // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
             if (index >= ShuffleEntry::REGMASK)
@@ -193,7 +198,7 @@ public:
                 COMPlusThrow(kNotSupportedException);
             }
 
-            return (UINT16)index;
+            return -(int)byteIndex;
         }
 
         // There are no more offsets to get, the caller should not have called us
@@ -262,13 +267,39 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
 
         // Locate the next slot to shuffle in the source and destination and encode the transfer into a
         // shuffle entry.
-        entry.srcofs = iteratorSrc.GetNextOfs();
-        entry.dstofs = iteratorDst.GetNextOfs();
+        const int srcOffset = iteratorSrc.GetNextOfs();
+        const int dstOffset = iteratorDst.GetNextOfs();
 
         // Only emit this entry if it's not a no-op (i.e. the source and destination locations are
         // different).
-        if (entry.srcofs != entry.dstofs)
+        if (srcOffset != dstOffset)
         {
+            if (srcOffset <= 0)
+            {
+                // It was a stack byte offset.
+                const unsigned srcStackByteOffset = -srcOffset;
+                _ASSERT(((srcStackByteOffset % TARGET_POINTER_SIZE) == 0) && "NYI: does not support shuffling of such args");
+                entry.srcofs = (UINT16)(srcStackByteOffset / TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                _ASSERT((srcOffset & ShuffleEntry::REGMASK) != 0);
+                entry.srcofs = (UINT16)srcOffset;
+            }
+
+            if (dstOffset <= 0)
+            {
+                // It was a stack byte offset.
+                const unsigned dstStackByteOffset = -dstOffset;
+                _ASSERT((dstStackByteOffset % TARGET_POINTER_SIZE) == 0 && "NYI: does not support shuffling of such args");
+                entry.dstofs = (UINT16)(dstStackByteOffset / TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                _ASSERT((dstOffset & ShuffleEntry::REGMASK) != 0);
+                entry.dstofs = (UINT16)dstOffset;
+            }
+
             if (shuffleType == ShuffleComputationType::InstantiatingStub)
             {
                 // Instantiating Stub shuffles only support general register to register moves. More complex cases are handled by IL stubs
@@ -281,6 +312,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     return FALSE;
                 }
             }
+
             pShuffleEntryArray->Append(entry);
         }
     }
@@ -605,13 +637,13 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
             entry.srcofs = ShuffleOfs(ofsSrc);
             entry.dstofs = ShuffleOfs(ofsDst, stackSizeDelta);
 
-            ofsSrc += STACK_ELEM_SIZE;
-            ofsDst += STACK_ELEM_SIZE;
+            ofsSrc += TARGET_POINTER_SIZE;
+            ofsDst += TARGET_POINTER_SIZE;
 
             if (entry.srcofs != entry.dstofs)
                 pShuffleEntryArray->Append(entry);
 
-            cbSize -= STACK_ELEM_SIZE;
+            cbSize -= TARGET_POINTER_SIZE;
         }
         while (cbSize > 0);
     }
@@ -1132,29 +1164,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     GCPROTECT_END();
 }
 
-#if defined(TARGET_X86)
-// Marshals a managed method to an unmanaged callback.
-PCODE COMDelegate::ConvertToUnmanagedCallback(MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(pMD != NULL);
-        PRECONDITION(pMD->HasUnmanagedCallersOnlyAttribute());
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END;
-
-    // Get UMEntryThunk from the thunk cache.
-    UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
-
-    PCODE pCode = (PCODE)pUMEntryThunk->GetCode();
-    _ASSERTE(pCode != NULL);
-    return pCode;
-}
-#endif // defined(TARGET_X86)
-
 // Marshals a delegate to a unmanaged callback.
 LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 {
@@ -1366,31 +1375,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         // Also, mark this delegate as an unmanaged function pointer wrapper.
         delObj->SetInvocationCount(DELEGATE_MARKER_UNMANAGEDFPTR);
     }
-
-#if defined(TARGET_X86)
-    GCPROTECT_BEGIN(delObj);
-
-    Stub *pInterceptStub = NULL;
-
-    {
-        GCX_PREEMP();
-
-        MethodDesc *pStubMD = pClass->m_pForwardStubMD;
-        _ASSERTE(pStubMD != NULL && pStubMD->IsILStub());
-
-    }
-
-    if (pInterceptStub != NULL)
-    {
-        // install the outer-most stub to sync block
-        SyncBlock *pSyncBlock = delObj->GetSyncBlock();
-
-        InteropSyncBlockInfo *pInteropInfo = pSyncBlock->GetInteropInfo();
-        VERIFY(pInteropInfo->SetInterceptStub(pInterceptStub));
-    }
-
-    GCPROTECT_END();
-#endif // TARGET_X86
 
     return delObj;
 }
@@ -2190,7 +2174,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         BOOL fReturnVal = !sig.IsReturnTypeVoid();
 
         SigTypeContext emptyContext;
-        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, TRUE, TRUE, FALSE);
+        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
@@ -2374,7 +2358,7 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
         BOOL fReturnVal = !sig.IsReturnTypeVoid();
 
         SigTypeContext emptyContext;
-        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, TRUE, TRUE, FALSE);
+        ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 

@@ -506,6 +506,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     {
         switch (ins)
         {
+            case INS_movd: // TODO-Cleanup: replace with movq, https://github.com/dotnet/runtime/issues/47943.
             case INS_andn:
             case INS_bextr:
             case INS_blsi:
@@ -518,8 +519,6 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_cvtss2si:
             case INS_cvtsi2sd:
             case INS_cvtsi2ss:
-            case INS_mov_xmm2i:
-            case INS_mov_i2xmm:
             case INS_movnti:
             case INS_mulx:
             case INS_pdep:
@@ -874,9 +873,16 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
         //   * W must be unset                    (0x00 validates bit 7)
         if ((vexPrefix & 0xFFFF7F80) == 0x00C46100)
         {
-            emitOutputByte(dst, 0xC5);
-            emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0x80) | (vexPrefix & 0x7F));
-            return 2;
+            // Encoding optimization calculation is not done while estimating the instruction
+            // size and thus over-predict instruction size by 1 byte.
+            // If there are IGs that will be aligned, do not optimize encoding so the
+            // estimated alignment sizes are accurate.
+            if (emitCurIG->igNum > emitLastAlignedIgNum)
+            {
+                emitOutputByte(dst, 0xC5);
+                emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0x80) | (vexPrefix & 0x7F));
+                return 2;
+            }
         }
 
         emitOutputByte(dst, ((vexPrefix >> 16) & 0xFF));
@@ -1232,7 +1238,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_cvtsd2si:
         case INS_cvtss2si:
         case INS_extractps:
-        case INS_mov_xmm2i:
+        case INS_movd:
         case INS_movmskpd:
         case INS_movmskps:
         case INS_mulx:
@@ -2651,22 +2657,62 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
     }
 }
 
-/*****************************************************************************
- *
- *  The next instruction will be a loop head entry point
- *  So insert a dummy instruction here to ensure that
- *  the x86 I-cache alignment rule is followed.
- */
-
-void emitter::emitLoopAlign()
+//-----------------------------------------------------------------------------
+//
+//  The next instruction will be a loop head entry point
+//  So insert an alignment instruction here to ensure that
+//  we can properly align the code.
+//
+void emitter::emitLoopAlign(unsigned short paddingBytes)
 {
     /* Insert a pseudo-instruction to ensure that we align
        the next instruction properly */
 
-    instrDesc* id = emitNewInstrSmall(EA_1BYTE);
-    id->idIns(INS_align);
-    id->idCodeSize(15); // We may need to skip up to 15 bytes of code
-    emitCurIGsize += 15;
+    assert(paddingBytes <= MAX_ENCODED_SIZE);
+    paddingBytes       = min(paddingBytes, MAX_ENCODED_SIZE); // We may need to skip up to 15 bytes of code
+    instrDescAlign* id = emitNewInstrAlign();
+    id->idCodeSize(paddingBytes);
+    id->idaIG = emitCurIG;
+
+    /* Append this instruction to this IG's alignment list */
+    id->idaNext = emitCurIGAlignList;
+
+    emitCurIGsize += paddingBytes;
+    emitCurIGAlignList = id;
+}
+
+//-----------------------------------------------------------------------------
+//
+//  The next instruction will be a loop head entry point
+//  So insert alignment instruction(s) here to ensure that
+//  we can properly align the code.
+//
+//  This emits more than one `INS_align` instruction depending on the
+//  alignmentBoundary parameter.
+//
+void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
+{
+    unsigned short nPaddingBytes    = alignmentBoundary - 1;
+    unsigned short nAlignInstr      = (nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
+    unsigned short instrDescSize    = nAlignInstr * sizeof(instrDescAlign);
+    unsigned short insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
+    unsigned short lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
+
+    // Ensure that all align instructions fall in same IG.
+    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
+    {
+        emitForceNewIG = true;
+    }
+
+    /* Insert a pseudo-instruction to ensure that we align
+    the next instruction properly */
+
+    while (insAlignCount)
+    {
+        emitLoopAlign();
+        insAlignCount--;
+    }
+    emitLoopAlign(lastInsAlignSize);
 }
 
 /*****************************************************************************
@@ -2676,7 +2722,7 @@ void emitter::emitLoopAlign()
 
 void emitter::emitIns_Nop(unsigned size)
 {
-    assert(size <= 15);
+    assert(size <= MAX_ENCODED_SIZE);
 
     instrDesc* id = emitNewInstr();
     id->idIns(INS_nop);
@@ -7341,6 +7387,12 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
     switch (idOp)
     {
         case ID_OP_NONE:
+#if FEATURE_LOOP_ALIGN
+            if (id->idIns() == INS_align)
+            {
+                return sizeof(instrDescAlign);
+            }
+#endif
             break;
 
         case ID_OP_LBL:
@@ -7363,8 +7415,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
         case ID_OP_CNS:
         case ID_OP_DSP:
         case ID_OP_DSP_CNS:
-        case ID_OP_AMD:
-        case ID_OP_AMD_CNS:
             if (id->idIsLargeCns())
             {
                 if (id->idIsLargeDsp())
@@ -7381,6 +7431,30 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
                 if (id->idIsLargeDsp())
                 {
                     return sizeof(instrDescDsp);
+                }
+                else
+                {
+                    return sizeof(instrDesc);
+                }
+            }
+        case ID_OP_AMD:
+        case ID_OP_AMD_CNS:
+            if (id->idIsLargeCns())
+            {
+                if (id->idIsLargeDsp())
+                {
+                    return sizeof(instrDescCnsAmd);
+                }
+                else
+                {
+                    return sizeof(instrDescCns);
+                }
+            }
+            else
+            {
+                if (id->idIsLargeDsp())
+                {
+                    return sizeof(instrDescAmd);
                 }
                 else
                 {
@@ -8762,15 +8836,7 @@ void emitter::emitDispIns(
         case IF_RRD_RRD:
         case IF_RWR_RRD:
         case IF_RRW_RRD:
-            if (ins == INS_mov_i2xmm)
-            {
-                printf("%s, %s", emitRegName(id->idReg1(), EA_16BYTE), emitRegName(id->idReg2(), attr));
-            }
-            else if (ins == INS_mov_xmm2i)
-            {
-                printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), EA_16BYTE));
-            }
-            else if (ins == INS_pmovmskb)
+            if (ins == INS_pmovmskb)
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
             }
@@ -9157,6 +9223,12 @@ void emitter::emitDispIns(
             break;
 
         case IF_NONE:
+#if FEATURE_LOOP_ALIGN
+            if (ins == INS_align)
+            {
+                printf("[%d bytes]", id->idCodeSize());
+            }
+#endif
             break;
 
         default:
@@ -9323,6 +9395,48 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
 #endif // TARGET_AMD64
 
     return dst;
+}
+
+//--------------------------------------------------------------------
+// emitOutputAlign: Outputs NOP to align the loop
+//
+// Arguments:
+//   ig - Current instruction group
+//   id - align instruction that holds amount of padding (NOPs) to add
+//   dst - Destination buffer
+//
+// Return Value:
+//   None.
+//
+// Notes:
+//   Amount of padding needed to align the loop is already calculated. This
+//   method extracts that information and inserts suitable NOP instructions.
+//
+BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
+{
+    // Candidate for loop alignment
+    assert(codeGen->ShouldAlignLoops());
+    assert(ig->isLoopAlign());
+
+    unsigned paddingToAdd = id->idCodeSize();
+
+    // Either things are already aligned or align them here.
+    assert((paddingToAdd == 0) || (((size_t)dst & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
+
+    // Padding amount should not exceed the alignment boundary
+    assert(0 <= paddingToAdd && paddingToAdd < emitComp->opts.compJitAlignLoopBoundary);
+
+#ifdef DEBUG
+    unsigned paddingNeeded = emitCalculatePaddingForLoopAlignment(ig, (size_t)dst, true);
+
+    // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
+    if (emitComp->opts.compJitAlignLoopAdaptive)
+    {
+        assert(paddingToAdd == paddingNeeded);
+    }
+#endif
+
+    return emitOutputNOP(dst, paddingToAdd);
 }
 
 /*****************************************************************************
@@ -11330,11 +11444,19 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     regNumber   reg2 = id->idReg2();
     emitAttr    size = id->idOpSize();
 
-    // Get the 'base' opcode
-    code = insCodeRM(ins);
-    code = AddVexPrefixIfNeeded(ins, code, size);
     if (IsSSEOrAVXInstruction(ins))
     {
+        assert((ins != INS_movd) || (isFloatReg(reg1) != isFloatReg(reg2)));
+
+        if ((ins != INS_movd) || isFloatReg(reg1))
+        {
+            code = insCodeRM(ins);
+        }
+        else
+        {
+            code = insCodeMR(ins);
+        }
+        code = AddVexPrefixIfNeeded(ins, code, size);
         code = insEncodeRMreg(ins, code);
 
         if (TakesRexWPrefix(ins, size))
@@ -11344,6 +11466,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
     else if ((ins == INS_movsx) || (ins == INS_movzx) || (insIsCMOV(ins)))
     {
+        assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
+        code = insCodeRM(ins);
+        code = AddVexPrefixIfNeeded(ins, code, size);
         code = insEncodeRMreg(ins, code) | (int)(size == EA_2BYTE);
 #ifdef TARGET_AMD64
 
@@ -11355,6 +11480,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
     else if (ins == INS_movsxd)
     {
+        assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
+        code = insCodeRM(ins);
+        code = AddVexPrefixIfNeeded(ins, code, size);
         code = insEncodeRMreg(ins, code);
 
 #endif // TARGET_AMD64
@@ -11363,6 +11491,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     else if ((ins == INS_bsf) || (ins == INS_bsr) || (ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) ||
              (ins == INS_tzcnt))
     {
+        assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
+        code = insCodeRM(ins);
+        code = AddVexPrefixIfNeeded(ins, code, size);
         code = insEncodeRMreg(ins, code);
         if ((ins == INS_crc32) && (size > EA_1BYTE))
         {
@@ -11382,7 +11513,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 #endif // FEATURE_HW_INTRINSICS
     else
     {
-        code = insEncodeMRreg(ins, insCodeMR(ins));
+        assert(!TakesVexPrefix(ins));
+        code = insCodeMR(ins);
+        code = insEncodeMRreg(ins, code);
 
         if (ins != INS_test)
         {
@@ -11414,6 +11547,10 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 {
                     code = AddRexWPrefix(ins, code);
                 }
+                else
+                {
+                    id->idOpSize(EA_4BYTE);
+                }
 
                 // Set the 'w' bit to get the large version
                 code |= 0x1;
@@ -11426,17 +11563,27 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         }
     }
 
-    regNumber reg345 = REG_NA;
+    regNumber regFor012Bits = reg2;
+    regNumber regFor345Bits = REG_NA;
     if (IsBMIInstruction(ins))
     {
-        reg345 = getBmiRegNumber(ins);
+        regFor345Bits = getBmiRegNumber(ins);
     }
-    if (reg345 == REG_NA)
+    if (regFor345Bits == REG_NA)
     {
-        reg345 = id->idReg1();
+        regFor345Bits = reg1;
     }
-    unsigned regCode = insEncodeReg345(ins, reg345, size, &code);
-    regCode |= insEncodeReg012(ins, reg2, size, &code);
+    if (ins == INS_movd)
+    {
+        assert(isFloatReg(reg1) != isFloatReg(reg2));
+        if (isFloatReg(reg2))
+        {
+            std::swap(regFor012Bits, regFor345Bits);
+        }
+    }
+
+    unsigned regCode = insEncodeReg345(ins, regFor345Bits, size, &code);
+    regCode |= insEncodeReg012(ins, regFor012Bits, size, &code);
 
     if (TakesVexPrefix(ins))
     {
@@ -11531,7 +11678,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     }
                 }
 
-                emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+                emitGCregLiveUpd(id->idGCref(), reg1, dst);
                 break;
 
             case IF_RRW_RRD:
@@ -11551,13 +11698,13 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
                     */
                     case INS_xor:
-                        assert(id->idReg1() == id->idReg2());
-                        emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+                        assert(reg1 == reg2);
+                        emitGCregLiveUpd(id->idGCref(), reg1, dst);
                         break;
 
                     case INS_or:
                     case INS_and:
-                        emitGCregDeadUpd(id->idReg1(), dst);
+                        emitGCregDeadUpd(reg1, dst);
                         break;
 
                     case INS_add:
@@ -11574,7 +11721,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                                ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub)));
 #endif
                         // Mark r1 as holding a byref
-                        emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
+                        emitGCregLiveUpd(GCT_BYREF, reg1, dst);
                         break;
 
                     default:
@@ -11656,15 +11803,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 case IF_RWR_RRD:
                 case IF_RRW_RRD:
                 case IF_RWR_RRD_RRD:
-                    // INS_movxmm2i writes to reg2.
-                    if (ins == INS_mov_xmm2i)
-                    {
-                        emitGCregDeadUpd(id->idReg2(), dst);
-                    }
-                    else
-                    {
-                        emitGCregDeadUpd(id->idReg1(), dst);
-                    }
+                    emitGCregDeadUpd(reg1, dst);
                     break;
 
                 default:
@@ -12398,7 +12537,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 #ifdef DEBUG
             if (emitComp->verbose)
             {
-                printf("; NOTE: size of jump [%08X] mis-predicted\n", emitComp->dspPtr(id));
+                printf("; NOTE: size of jump [%08X] mis-predicted by %d bytes\n", emitComp->dspPtr(id),
+                       (id->idCodeSize() - JMP_SIZE_SMALL));
             }
 #endif
         }
@@ -12559,10 +12699,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     assert(emitIssuing);
 
-    BYTE*         dst           = *dp;
-    size_t        sz            = sizeof(instrDesc);
-    instruction   ins           = id->idIns();
-    unsigned char callInstrSize = 0;
+    BYTE*         dst               = *dp;
+    size_t        sz                = sizeof(instrDesc);
+    instruction   ins               = id->idIns();
+    unsigned char callInstrSize     = 0;
+    int           emitOffsAdjBefore = emitOffsAdj;
 
 #ifdef DEBUG
     bool dspOffs = emitComp->opts.dspGCtbls;
@@ -12598,9 +12739,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // the loop alignment pseudo instruction
             if (ins == INS_align)
             {
-                sz  = SMALL_IDSC_SIZE;
-                dst = emitOutputNOP(dst, (-(int)(size_t)dst) & 0x0f);
-                assert(((size_t)dst & 0x0f) == 0);
+                sz = sizeof(instrDescAlign);
+                // IG can be marked as not needing alignment after emitting align instruction
+                // In such case, skip outputting alignment.
+                if (ig->isLoopAlign())
+                {
+                    dst = emitOutputAlign(ig, id, dst);
+                }
+#ifdef DEBUG
+                else
+                {
+                    // If the IG is not marked as need alignment, then the code size
+                    // should be zero i.e. no padding needed.
+                    assert(id->idCodeSize() == 0);
+                }
+#endif
                 break;
             }
 
@@ -13704,7 +13857,49 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
+#endif
 
+#if FEATURE_LOOP_ALIGN
+    // Only compensate over-estimated instructions if emitCurIG is before
+    // the last IG that needs alignment.
+    if (emitCurIG->igNum <= emitLastAlignedIgNum)
+    {
+        int diff = id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp));
+        assert(diff >= 0);
+        if (diff != 0)
+        {
+
+#ifdef DEBUG
+            // should never over-estimate align instruction
+            assert(id->idIns() != INS_align);
+            JITDUMP("Added over-estimation compensation: %d\n", diff);
+
+            if (emitComp->opts.disAsm)
+            {
+                emitDispInsAddr(dst);
+                printf("\t\t  ;; NOP compensation instructions of %d bytes.\n", diff);
+            }
+#endif
+
+            dst = emitOutputNOP(dst, diff);
+
+            // since we compensated the over-estimation, revert the offsAdj that
+            // might have happened in the jump
+            if (emitOffsAdjBefore != emitOffsAdj)
+            {
+#ifdef DEBUG
+                insFormat format = id->idInsFmt();
+                assert((format == IF_LABEL) || (format == IF_RWR_LABEL) || (format == IF_SWR_LABEL));
+                assert(diff == (emitOffsAdj - emitOffsAdjBefore));
+#endif
+                emitOffsAdj -= diff;
+            }
+        }
+        assert((id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp))) == 0);
+    }
+#endif
+
+#ifdef DEBUG
     if (emitComp->compDebugBreak)
     {
         // set JitEmitPrintRefRegs=1 will print out emitThisGCrefRegs and emitThisByrefRegs
@@ -14506,18 +14701,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             // Actually variable sized: rep stosd, used to zero frame slots
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_25C;
-            break;
-
-        case INS_mov_xmm2i:
-            // movd  reg, xmm
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            break;
-
-        case INS_mov_i2xmm:
-            // movd  xmm, reg
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
             break;
 
         case INS_movd:

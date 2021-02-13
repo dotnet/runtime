@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
@@ -54,7 +53,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         });
 
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, IntPtr nativeObjPtr)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, IntPtr nativeObjPtr, TimeSpan idleTimeout)
         {
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
@@ -62,6 +61,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             _connected = true;
 
             SetCallbackHandler();
+
+            SetIdleTimeout(idleTimeout);
         }
 
         // constructor for outbound connections

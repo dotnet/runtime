@@ -4,7 +4,7 @@
     <ProjectReference Remove="$(MSBuildThisFileDirectory)AndroidAppBuilder\AndroidAppBuilder.csproj"
                       Condition="'$(TargetOS)' != 'Android'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)AppleAppBuilder\AppleAppBuilder.csproj"
-                      Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" />
+                      Condition="'$(TargetOS)' != 'MacCatalyst' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)WasmAppBuilder\WasmAppBuilder.csproj"
                       Condition="'$(TargetOS)' != 'Browser'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)WasmBuildTasks\WasmBuildTasks.csproj"
@@ -48,8 +48,7 @@
 
     <!-- Include both the project file and its sources as an input. -->
     <ItemGroup>
-      <TasksSrc Include="%(ProjectReferenceWithConfiguration.Identity)" />
-      <TasksSrc Include="%(ProjectReferenceWithConfiguration.RelativeDir)%(ProjectReferenceWithConfiguration.RecursiveDir)**\*.cs" />
+      <TasksSrc Include="%(ProjectReferenceWithConfiguration.RelativeDir)%(ProjectReferenceWithConfiguration.RecursiveDir)**\*" />
     </ItemGroup>
   </Target>
 </Project>

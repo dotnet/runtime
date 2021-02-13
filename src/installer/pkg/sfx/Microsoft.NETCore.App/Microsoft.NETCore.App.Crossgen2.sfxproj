@@ -9,7 +9,7 @@
     <OverridePackageId>Microsoft.NETCore.App.Crossgen2.$(RuntimeIdentifier)</OverridePackageId>
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
-    <RuntimeIdentifiers>linux-x64;linux-musl-x64;osx-x64;win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;linux-musl-x64;osx-x64;osx-arm64;win-x64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>
         AddRuntimeFilesToPackage;
@@ -72,26 +72,7 @@
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-
-  <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
-    <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
-      <_crossTargetJit Include="@(CoreCLRCrossTargetFiles)" Condition="'%(FileName)' == '$(LibPrefix)clrjit' and '%(Extension)' == '$(LibSuffix)'" />
-      <_clrjit Include="@(RuntimeFiles)" Condition="'%(FileName)' == '$(LibPrefix)clrjit' and '%(Extension)' == '$(LibSuffix)'" />
-      <_crossTargetCrossgen Include="@(CoreCLRCrossTargetFiles)" Condition="'%(FileName)' == 'crossgen' and '%(Extension)' == '$(ExeSuffix)'" />
-      <_crossgen Include="@(RuntimeFiles)" Condition="'%(FileName)' == 'crossgen' and '%(Extension)' == '$(ExeSuffix)'" />
-    </ItemGroup>
-    <ItemGroup Condition="'@(_crossTargetJit)' != '' and '@(_crossTargetCrossgen)' != ''">
-      <CrossgenTool Include="@(_crossTargetCrossgen->ClearMetadata())"
-                    JitPath="@(_crossTargetJit)"
-                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
-    </ItemGroup>
-    <ItemGroup Condition="'@(_crossTargetJit)' == '' and '@(_crossTargetCrossgen)' == ''">
-      <CrossgenTool Include="@(_crossgen->ClearMetadata())"
-                    JitPath="@(_clrjit)"
-                    DiaSymReader="$(_diaSymReaderPathIfExists)" />
-    </ItemGroup>
-  </Target>
-
+  <Import Project="ReadyToRun.targets" />
 
   <Target Name="GetFilesToPublish">
     <MSBuild Projects="$(MSBuildProjectFullPath)"

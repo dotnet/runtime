@@ -4,7 +4,7 @@
 
 Here is one example of a daily workflow for a developer working mainly on the libraries, in this case using Windows:
 
-```bat
+```cmd
 :: From root:
 git clean -xdf
 git pull upstream master & git push origin master
@@ -60,7 +60,7 @@ For Linux:
 ```
 
 For Windows:
-```bat
+```cmd
 ./build.cmd -rc Release
 ```
 

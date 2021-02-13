@@ -34,7 +34,6 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (MonoObject*, runtime_invoke, (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)) \
 	MONO_EE_CALLBACK (void, init_delegate, (MonoDelegate *del, MonoError *error)) \
 	MONO_EE_CALLBACK (void, delegate_ctor, (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)) \
-	MONO_EE_CALLBACK (gpointer, get_remoting_invoke, (MonoMethod *method, gpointer imethod, MonoError *error)) \
 	MONO_EE_CALLBACK (void, set_resume_state, (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)) \
 	MONO_EE_CALLBACK (void, get_resume_state, (const MonoJitTlsData *jit_tls, gboolean *has_resume_state, MonoInterpFrameHandle *interp_frame, gpointer *handler_ip)) \
 	MONO_EE_CALLBACK (gboolean, run_finally, (StackFrameInfo *frame, int clause_index, gpointer handler_ip, gpointer handler_ip_end)) \
@@ -57,6 +56,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (void, stop_single_stepping, (void)) \
 	MONO_EE_CALLBACK (void, free_context, (gpointer)) \
 	MONO_EE_CALLBACK (void, set_optimizations, (guint32)) \
+	MONO_EE_CALLBACK (void, metadata_update_init, (MonoError *error)) \
 	MONO_EE_CALLBACK (void, invalidate_transformed, (MonoDomain *domain)) \
 	MONO_EE_CALLBACK (void, cleanup, (void)) \
 	MONO_EE_CALLBACK (void, mark_stack, (gpointer thread_info, GcScanFunc func, gpointer gc_data, gboolean precise)) \

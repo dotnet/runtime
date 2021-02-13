@@ -3522,7 +3522,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         }
 
         //
-        // Make sure that the number of elements look valid.
+        // This optimization is only valid for a constant array size.
         //
         if (arrayLengthNode->gtOper != GT_CNS_INT)
         {
@@ -4337,6 +4337,25 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+#ifdef TARGET_ARM64
+            // Intrinsify Interlocked.Or and Interlocked.And only for arm64-v8.1 (and newer)
+            // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
+            case NI_System_Threading_Interlocked_Or:
+            case NI_System_Threading_Interlocked_And:
+            {
+                if (opts.OptimizationEnabled() && compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                {
+                    assert(sig->numArgs == 2);
+                    GenTree*   op2 = impPopStack().val;
+                    GenTree*   op1 = impPopStack().val;
+                    genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XORR : GT_XAND;
+                    retNode        = gtNewOperNode(op, genActualType(callType), op1, op2);
+                    retNode->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+                }
+                break;
+            }
+#endif // TARGET_ARM64
+
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
             {
@@ -4362,6 +4381,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callType, 16);
 
                     retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callType, 16);
+                    break;
                 }
 #elif defined(TARGET_ARM64)
                 if (compExactlyDependsOn(InstructionSet_AdvSimd))
@@ -4393,39 +4413,52 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                                        callType, simdSize);
 
                     retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callType, simdSize);
+                    break;
                 }
 #endif
+
+                // TODO-CQ-XArch: Ideally we would create a GT_INTRINSIC node for fma, however, that currently
+                // requires more extensive changes to valuenum to support methods with 3 operands
+
+                // We want to generate a GT_INTRINSIC node in the case the call can't be treated as
+                // a target intrinsic so that we can still benefit from CSE and constant folding.
+
                 break;
             }
 #endif // FEATURE_HW_INTRINSICS
 
-            case NI_System_Math_Sin:
-            case NI_System_Math_Cbrt:
-            case NI_System_Math_Sqrt:
             case NI_System_Math_Abs:
-            case NI_System_Math_Cos:
-            case NI_System_Math_Round:
-            case NI_System_Math_Cosh:
-            case NI_System_Math_Sinh:
-            case NI_System_Math_Tan:
-            case NI_System_Math_Tanh:
-            case NI_System_Math_Asin:
-            case NI_System_Math_Asinh:
             case NI_System_Math_Acos:
             case NI_System_Math_Acosh:
+            case NI_System_Math_Asin:
+            case NI_System_Math_Asinh:
             case NI_System_Math_Atan:
-            case NI_System_Math_Atan2:
             case NI_System_Math_Atanh:
+            case NI_System_Math_Atan2:
+            case NI_System_Math_Cbrt:
+            case NI_System_Math_Ceiling:
+            case NI_System_Math_Cos:
+            case NI_System_Math_Cosh:
+            case NI_System_Math_Exp:
+            case NI_System_Math_Floor:
+            case NI_System_Math_FMod:
+            case NI_System_Math_ILogB:
+            case NI_System_Math_Log:
+            case NI_System_Math_Log2:
             case NI_System_Math_Log10:
             case NI_System_Math_Pow:
-            case NI_System_Math_Exp:
-            case NI_System_Math_Ceiling:
-            case NI_System_Math_Floor:
+            case NI_System_Math_Round:
+            case NI_System_Math_Sin:
+            case NI_System_Math_Sinh:
+            case NI_System_Math_Sqrt:
+            case NI_System_Math_Tan:
+            case NI_System_Math_Tanh:
             {
                 retNode = impMathIntrinsic(method, sig, callType, ni, tailCall);
                 break;
             }
 
+            case NI_System_Collections_Generic_Comparer_get_Default:
             case NI_System_Collections_Generic_EqualityComparer_get_Default:
             {
                 // Flag for later handling during devirtualization.
@@ -4602,15 +4635,22 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
     if (!IsIntrinsicImplementedByUserCall(intrinsicName))
 #endif
     {
+        CORINFO_CLASS_HANDLE    tmpClass;
+        CORINFO_ARG_LIST_HANDLE arg;
+        var_types               op1Type;
+        var_types               op2Type;
+
         switch (sig->numArgs)
         {
             case 1:
                 op1 = impPopStack().val;
 
-                assert(varTypeIsFloating(op1));
+                arg     = sig->args;
+                op1Type = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &tmpClass)));
 
-                if (op1->TypeGet() != callType)
+                if (op1->TypeGet() != genActualType(op1Type))
                 {
+                    assert(varTypeIsFloating(op1));
                     op1 = gtNewCastNode(callType, op1, false, callType);
                 }
 
@@ -4622,16 +4662,22 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
-                assert(varTypeIsFloating(op1));
-                assert(varTypeIsFloating(op2));
+                arg     = sig->args;
+                op1Type = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &tmpClass)));
 
-                if (op2->TypeGet() != callType)
+                if (op1->TypeGet() != genActualType(op1Type))
                 {
-                    op2 = gtNewCastNode(callType, op2, false, callType);
-                }
-                if (op1->TypeGet() != callType)
-                {
+                    assert(varTypeIsFloating(op1));
                     op1 = gtNewCastNode(callType, op1, false, callType);
+                }
+
+                arg     = info.compCompHnd->getArgNext(arg);
+                op2Type = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &tmpClass)));
+
+                if (op2->TypeGet() != genActualType(op2Type))
+                {
+                    assert(varTypeIsFloating(op2));
+                    op2 = gtNewCastNode(callType, op2, false, callType);
                 }
 
                 op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, op2,
@@ -4709,57 +4755,9 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
         else if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
         {
-            if (strcmp(methodName, "FusedMultiplyAdd") == 0)
-            {
-                result = NI_System_Math_FusedMultiplyAdd;
-            }
-            else if (strcmp(methodName, "Round") == 0)
-            {
-                result = NI_System_Math_Round;
-            }
-            else if (strcmp(methodName, "Sin") == 0)
-            {
-                result = NI_System_Math_Sin;
-            }
-            else if (strcmp(methodName, "Cos") == 0)
-            {
-                result = NI_System_Math_Cos;
-            }
-            else if (strcmp(methodName, "Cbrt") == 0)
-            {
-                result = NI_System_Math_Cbrt;
-            }
-            else if (strcmp(methodName, "Sqrt") == 0)
-            {
-                result = NI_System_Math_Sqrt;
-            }
-            else if (strcmp(methodName, "Abs") == 0)
+            if (strcmp(methodName, "Abs") == 0)
             {
                 result = NI_System_Math_Abs;
-            }
-            else if (strcmp(methodName, "Cosh") == 0)
-            {
-                result = NI_System_Math_Cosh;
-            }
-            else if (strcmp(methodName, "Sinh") == 0)
-            {
-                result = NI_System_Math_Sinh;
-            }
-            else if (strcmp(methodName, "Tan") == 0)
-            {
-                result = NI_System_Math_Tan;
-            }
-            else if (strcmp(methodName, "Tanh") == 0)
-            {
-                result = NI_System_Math_Tanh;
-            }
-            else if (strcmp(methodName, "Asin") == 0)
-            {
-                result = NI_System_Math_Asin;
-            }
-            else if (strcmp(methodName, "Asinh") == 0)
-            {
-                result = NI_System_Math_Asinh;
             }
             else if (strcmp(methodName, "Acos") == 0)
             {
@@ -4769,17 +4767,69 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Math_Acosh;
             }
+            else if (strcmp(methodName, "Asin") == 0)
+            {
+                result = NI_System_Math_Asin;
+            }
+            else if (strcmp(methodName, "Asinh") == 0)
+            {
+                result = NI_System_Math_Asinh;
+            }
             else if (strcmp(methodName, "Atan") == 0)
             {
                 result = NI_System_Math_Atan;
+            }
+            else if (strcmp(methodName, "Atanh") == 0)
+            {
+                result = NI_System_Math_Atanh;
             }
             else if (strcmp(methodName, "Atan2") == 0)
             {
                 result = NI_System_Math_Atan2;
             }
-            else if (strcmp(methodName, "Atanh") == 0)
+            else if (strcmp(methodName, "Cbrt") == 0)
             {
-                result = NI_System_Math_Atanh;
+                result = NI_System_Math_Cbrt;
+            }
+            else if (strcmp(methodName, "Ceiling") == 0)
+            {
+                result = NI_System_Math_Ceiling;
+            }
+            else if (strcmp(methodName, "Cos") == 0)
+            {
+                result = NI_System_Math_Cos;
+            }
+            else if (strcmp(methodName, "Cosh") == 0)
+            {
+                result = NI_System_Math_Cosh;
+            }
+            else if (strcmp(methodName, "Exp") == 0)
+            {
+                result = NI_System_Math_Exp;
+            }
+            else if (strcmp(methodName, "Floor") == 0)
+            {
+                result = NI_System_Math_Floor;
+            }
+            else if (strcmp(methodName, "FMod") == 0)
+            {
+                result = NI_System_Math_FMod;
+            }
+            else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
+            {
+                result = NI_System_Math_FusedMultiplyAdd;
+            }
+            else if (strcmp(methodName, "ILogB") == 0)
+            {
+                result = NI_System_Math_ILogB;
+            }
+            else if (strcmp(methodName, "Log") == 0)
+            {
+                result = NI_System_Math_Log;
+            }
+            else if (strcmp(methodName, "Log2") == 0)
+            {
+                result = NI_System_Math_Log2;
             }
             else if (strcmp(methodName, "Log10") == 0)
             {
@@ -4789,17 +4839,29 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Math_Pow;
             }
-            else if (strcmp(methodName, "Exp") == 0)
+            else if (strcmp(methodName, "Round") == 0)
             {
-                result = NI_System_Math_Exp;
+                result = NI_System_Math_Round;
             }
-            else if (strcmp(methodName, "Ceiling") == 0)
+            else if (strcmp(methodName, "Sin") == 0)
             {
-                result = NI_System_Math_Ceiling;
+                result = NI_System_Math_Sin;
             }
-            else if (strcmp(methodName, "Floor") == 0)
+            else if (strcmp(methodName, "Sinh") == 0)
             {
-                result = NI_System_Math_Floor;
+                result = NI_System_Math_Sinh;
+            }
+            else if (strcmp(methodName, "Sqrt") == 0)
+            {
+                result = NI_System_Math_Sqrt;
+            }
+            else if (strcmp(methodName, "Tan") == 0)
+            {
+                result = NI_System_Math_Tan;
+            }
+            else if (strcmp(methodName, "Tanh") == 0)
+            {
+                result = NI_System_Math_Tanh;
             }
         }
         else if (strcmp(className, "GC") == 0)
@@ -4852,6 +4914,20 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 result = NI_System_Threading_Thread_get_ManagedThreadId;
             }
         }
+#ifndef TARGET_ARM64
+        // TODO-CQ: Implement for XArch (https://github.com/dotnet/runtime/issues/32239).
+        else if (strcmp(className, "Interlocked") == 0)
+        {
+            if (strcmp(methodName, "And") == 0)
+            {
+                result = NI_System_Threading_Interlocked_And;
+            }
+            else if (strcmp(methodName, "Or") == 0)
+            {
+                result = NI_System_Threading_Interlocked_Or;
+            }
+        }
+#endif
     }
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)
@@ -4867,6 +4943,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
         {
             result = NI_System_Collections_Generic_EqualityComparer_get_Default;
+        }
+        else if ((strcmp(className, "Comparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
+        {
+            result = NI_System_Collections_Generic_Comparer_get_Default;
         }
     }
     else if ((strcmp(namespaceName, "System.Numerics") == 0) && (strcmp(className, "BitOperations") == 0))
@@ -13501,6 +13581,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         op1->gtFlags |= (GTF_OVERFLOW | GTF_EXCEPT);
                     }
+
+                    if (op1->gtGetOp1()->OperIsConst() && opts.OptimizationEnabled())
+                    {
+                        // Try and fold the introduced cast
+                        op1 = gtFoldExprConst(op1);
+                    }
                 }
 
                 impPushOnStack(op1, tiRetVal);
@@ -13585,7 +13671,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                         else
                         {
-                            op1->gtBashToNOP();
+                            // Can't bash to NOP here because op1 can be referenced from `currentBlock->bbEntryState`,
+                            // if we ever need to reimport we need a valid LCL_VAR on it.
+                            op1 = gtNewNothingNode();
                         }
                     }
 
@@ -17335,6 +17423,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
 #endif
+#if defined(TARGET_X86)
+        else if (info.compCallConv != CorInfoCallConvExtension::Managed)
+        {
+            op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
+        }
+#endif
         else
         {
             // return void
@@ -20529,21 +20623,25 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     {
         // AMD64/x86 has SSE2 instructions to directly compute sqrt/abs and SSE4.1
         // instructions to directly compute round/ceiling/floor.
-        //
-        // TODO: Because the x86 backend only targets SSE for floating-point code,
-        //       it does not treat Sine, Cosine, or Round as intrinsics (JIT32
-        //       implemented those intrinsics as x87 instructions). If this poses
-        //       a CQ problem, it may be necessary to change the implementation of
-        //       the helper calls to decrease call overhead or switch back to the
-        //       x87 instructions. This is tracked by #7097.
-        case NI_System_Math_Sqrt:
+
         case NI_System_Math_Abs:
+        case NI_System_Math_Sqrt:
             return true;
 
-        case NI_System_Math_Round:
         case NI_System_Math_Ceiling:
         case NI_System_Math_Floor:
+        case NI_System_Math_Round:
             return compOpportunisticallyDependsOn(InstructionSet_SSE41);
+
+        case NI_System_Math_FusedMultiplyAdd:
+        {
+            // AMD64/x86 has FMA3 instructions to directly compute fma. However, in
+            // the scenario where it is supported we should have generated GT_HWINTRINSIC
+            // nodes in place of the GT_INTRINSIC node.
+
+            assert(!compIsaSupportedDebugOnly(InstructionSet_FMA));
+            return false;
+        }
 
         default:
             return false;
@@ -20551,12 +20649,22 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 #elif defined(TARGET_ARM64)
     switch (intrinsicName)
     {
-        case NI_System_Math_Sqrt:
         case NI_System_Math_Abs:
-        case NI_System_Math_Round:
-        case NI_System_Math_Floor:
         case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
             return true;
+
+        case NI_System_Math_FusedMultiplyAdd:
+        {
+            // ARM64 has AdvSimd instructions to directly compute fma. However, in
+            // the scenario where it is supported we should have generated GT_HWINTRINSIC
+            // nodes in place of the GT_INTRINSIC node.
+
+            assert(!compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
+            return false;
+        }
 
         default:
             return false;
@@ -20564,9 +20672,9 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 #elif defined(TARGET_ARM)
     switch (intrinsicName)
     {
-        case NI_System_Math_Sqrt:
         case NI_System_Math_Abs:
         case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
             return true;
 
         default:
@@ -20597,31 +20705,43 @@ bool Compiler::IsMathIntrinsic(NamedIntrinsic intrinsicName)
 {
     switch (intrinsicName)
     {
-        case NI_System_Math_Sin:
-        case NI_System_Math_Cbrt:
-        case NI_System_Math_Sqrt:
         case NI_System_Math_Abs:
-        case NI_System_Math_Cos:
-        case NI_System_Math_Round:
-        case NI_System_Math_Cosh:
-        case NI_System_Math_Sinh:
-        case NI_System_Math_Tan:
-        case NI_System_Math_Tanh:
-        case NI_System_Math_Asin:
-        case NI_System_Math_Asinh:
         case NI_System_Math_Acos:
         case NI_System_Math_Acosh:
+        case NI_System_Math_Asin:
+        case NI_System_Math_Asinh:
         case NI_System_Math_Atan:
-        case NI_System_Math_Atan2:
         case NI_System_Math_Atanh:
+        case NI_System_Math_Atan2:
+        case NI_System_Math_Cbrt:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Cos:
+        case NI_System_Math_Cosh:
+        case NI_System_Math_Exp:
+        case NI_System_Math_Floor:
+        case NI_System_Math_FMod:
+        case NI_System_Math_FusedMultiplyAdd:
+        case NI_System_Math_ILogB:
+        case NI_System_Math_Log:
+        case NI_System_Math_Log2:
         case NI_System_Math_Log10:
         case NI_System_Math_Pow:
-        case NI_System_Math_Exp:
-        case NI_System_Math_Ceiling:
-        case NI_System_Math_Floor:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sin:
+        case NI_System_Math_Sinh:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Tan:
+        case NI_System_Math_Tanh:
+        {
+            assert((intrinsicName > NI_SYSTEM_MATH_START) && (intrinsicName < NI_SYSTEM_MATH_END));
             return true;
+        }
+
         default:
+        {
+            assert((intrinsicName < NI_SYSTEM_MATH_START) || (intrinsicName > NI_SYSTEM_MATH_END));
             return false;
+        }
     }
 }
 
@@ -21360,6 +21480,7 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_MET
     const NamedIntrinsic ni = lookupNamedIntrinsic(methodHnd);
     switch (ni)
     {
+        case NI_System_Collections_Generic_Comparer_get_Default:
         case NI_System_Collections_Generic_EqualityComparer_get_Default:
         {
             // Expect one class generic parameter; figure out which it is.
@@ -21381,7 +21502,15 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_MET
 
             if (isFinalType)
             {
-                result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
+                if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+                {
+                    result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
+                }
+                else
+                {
+                    assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
+                    result = info.compCompHnd->getDefaultComparerClass(typeHnd);
+                }
                 JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
                         result != nullptr ? eeGetClassName(result) : "unknown");
             }

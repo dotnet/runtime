@@ -90,11 +90,11 @@ public:
     static void PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo);
 
     static MethodDesc* CreateCLRToNativeILStub(
-                    StubSigDesc*       pSigDesc,
-                    CorNativeLinkType  nlType,
-                    CorNativeLinkFlags nlFlags,
-                    CorPinvokeMap      unmgdCallConv,
-                    DWORD              dwStubFlags); // NDirectStubFlags
+                    StubSigDesc*             pSigDesc,
+                    CorNativeLinkType        nlType,
+                    CorNativeLinkFlags       nlFlags,
+                    CorInfoCallConvExtension unmgdCallConv,
+                    DWORD                    dwStubFlags); // NDirectStubFlags
 
 #ifdef FEATURE_COMINTEROP
     static MethodDesc* CreateFieldAccessILStub(
@@ -150,18 +150,19 @@ enum NDirectStubFlags
 #ifdef FEATURE_COMINTEROP
     NDIRECTSTUB_FL_FIELDGETTER              = 0x00002000, // COM->CLR field getter
     NDIRECTSTUB_FL_FIELDSETTER              = 0x00004000, // COM->CLR field setter
-    // unused                               = 0x00008000,
-    // unused                               = 0x00010000,
-    // unused                               = 0x00020000,
+#endif // FEATURE_COMINTEROP
+    NDIRECTSTUB_FL_SUPPRESSGCTRANSITION     = 0x00008000,
+    NDIRECTSTUB_FL_STUB_HAS_THIS            = 0x00010000,
+    NDIRECTSTUB_FL_TARGET_HAS_THIS          = 0x00020000,
+    // unused                               = 0x00040000,
     // unused                               = 0x00080000,
     // unused                               = 0x00100000,
     // unused                               = 0x00200000,
     // unused                               = 0x00400000,
     // unused                               = 0x00800000,
-#endif // FEATURE_COMINTEROP
 
     // internal flags -- these won't ever show up in an NDirectStubHashBlob
-    // unused                               = 0x10000000,
+    NDIRECTSTUB_FL_FOR_NUMPARAMBYTES        = 0x10000000,   // do just enough to return the right value from Marshal.NumParamBytes
 
 #ifdef FEATURE_COMINTEROP
     NDIRECTSTUB_FL_COMLATEBOUND             = 0x20000000,   // we use a generic stub for late bound calls
@@ -210,6 +211,7 @@ inline bool SF_IsNGENedStubForProfiling(DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsDebuggableStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL)); }
 inline bool SF_IsCALLIStub             (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_UNMANAGED_CALLI)); }
 inline bool SF_IsStubWithCctorTrigger  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_TRIGGERCCTOR)); }
+inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_FOR_NUMPARAMBYTES)); }
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_STRUCT_MARSHAL)); }
 
 #ifdef FEATURE_ARRAYSTUB_AS_IL
@@ -329,7 +331,7 @@ public:
     void ReportErrors();
 
 private:
-    void InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg);
+    void InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg);
     void DllImportInit(MethodDesc* pMD, LPCUTF8 *pLibName, LPCUTF8 *pEntryPointName);
     void PreInit(Module* pModule, MethodTable *pClass);
     void PreInit(MethodDesc* pMD);
@@ -381,13 +383,13 @@ public:
         else
             m_wFlags &= ~PINVOKE_STATIC_SIGINFO_IS_DELEGATE_INTEROP;
     }
-    CorPinvokeMap GetCallConv() { LIMITED_METHOD_CONTRACT; return m_callConv; }
+    CorInfoCallConvExtension GetCallConv() { LIMITED_METHOD_CONTRACT; return m_callConv; }
     Signature GetSignature() { LIMITED_METHOD_CONTRACT; return m_sig; }
 
 private:
     Module* m_pModule;
     Signature m_sig;
-    CorPinvokeMap m_callConv;
+    CorInfoCallConvExtension m_callConv;
     WORD m_error;
 
     enum
@@ -443,11 +445,9 @@ public:
                 const Signature &signature,
                 SigTypeContext *pTypeContext,
                 MethodDesc* pTargetMD,
-                int  iLCIDParamIdx,
-                BOOL fTargetHasThis,
-                BOOL fStubHasThis);
+                int  iLCIDParamIdx);
 
-    void    SetCallingConvention(CorPinvokeMap unmngCallConv, BOOL fIsVarArg);
+    void    SetCallingConvention(CorInfoCallConvExtension unmngCallConv, BOOL fIsVarArg);
 
     void    Begin(DWORD dwStubFlags);
     void    End(DWORD dwStubFlags);
@@ -569,18 +569,18 @@ class NDirectStubParameters
 {
 public:
 
-    NDirectStubParameters(Signature          sig,
-                          SigTypeContext*    pTypeContext,
-                          Module*            pModule,
-                          Module*            pLoaderModule,
-                          CorNativeLinkType  nlType,
-                          CorNativeLinkFlags nlFlags,
-                          CorPinvokeMap      unmgdCallConv,
-                          DWORD              dwStubFlags,  // NDirectStubFlags
-                          int                nParamTokens,
-                          mdParamDef*        pParamTokenArray,
-                          int                iLCIDArg,
-                          MethodTable*       pMT
+    NDirectStubParameters(Signature                sig,
+                          SigTypeContext*          pTypeContext,
+                          Module*                  pModule,
+                          Module*                  pLoaderModule,
+                          CorNativeLinkType        nlType,
+                          CorNativeLinkFlags       nlFlags,
+                          CorInfoCallConvExtension unmgdCallConv,
+                          DWORD                    dwStubFlags,  // NDirectStubFlags
+                          int                      nParamTokens,
+                          mdParamDef*              pParamTokenArray,
+                          int                      iLCIDArg,
+                          MethodTable*             pMT
                           ) :
         m_sig(sig),
         m_pTypeContext(pTypeContext),
@@ -598,18 +598,18 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-    Signature           m_sig;
-    SigTypeContext*     m_pTypeContext;
-    Module*             m_pModule;
-    Module*             m_pLoaderModule;
-    mdParamDef*         m_pParamTokenArray;
-    CorPinvokeMap       m_unmgdCallConv;
-    CorNativeLinkType   m_nlType;
-    CorNativeLinkFlags  m_nlFlags;
-    DWORD               m_dwStubFlags;
-    int                 m_iLCIDArg;
-    int                 m_nParamTokens;
-    MethodTable*        m_pMT;
+    Signature                m_sig;
+    SigTypeContext*          m_pTypeContext;
+    Module*                  m_pModule;
+    Module*                  m_pLoaderModule;
+    mdParamDef*              m_pParamTokenArray;
+    CorInfoCallConvExtension m_unmgdCallConv;
+    CorNativeLinkType        m_nlType;
+    CorNativeLinkFlags       m_nlFlags;
+    DWORD                    m_dwStubFlags;
+    int                      m_iLCIDArg;
+    int                      m_nParamTokens;
+    MethodTable*             m_pMT;
 };
 
 PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD);

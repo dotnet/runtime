@@ -188,6 +188,13 @@ namespace System.Linq
              (s_Cast_TResult_1 = new Func<IQueryable, IQueryable<object>>(Queryable.Cast<object>).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TResult);
 
+        private static MethodInfo? s_Chunk_TSource_1;
+
+        public static MethodInfo Chunk_TSource_1(Type TSource) =>
+             (s_Chunk_TSource_1 ??
+             (s_Chunk_TSource_1 = new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.Chunk).GetMethodInfo().GetGenericMethodDefinition()))
+              .MakeGenericMethod(TSource);
+
         private static MethodInfo? s_Concat_TSource_2;
 
         public static MethodInfo Concat_TSource_2(Type TSource) =>
@@ -842,6 +849,13 @@ namespace System.Linq
              (s_Zip_TFirst_TSecond_TResult_3 ??
              (s_Zip_TFirst_TSecond_TResult_3 = new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object, object>>, IQueryable<object>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TFirst, TSecond, TResult);
+
+        private static MethodInfo? s_Zip_TFirst_TSecond_TThird_3;
+
+        public static MethodInfo Zip_TFirst_TSecond_TThird_3(Type TFirst, Type TSecond, Type TThird) =>
+             (s_Zip_TFirst_TSecond_TThird_3 ??
+             (s_Zip_TFirst_TSecond_TThird_3 = new Func<IQueryable<object>, IEnumerable<object>, IEnumerable<object>, IQueryable<(object, object, object)>>(Queryable.Zip).GetMethodInfo().GetGenericMethodDefinition()))
+              .MakeGenericMethod(TFirst, TSecond, TThird);
 
 
         private static MethodInfo? s_SkipLast_TSource_2;

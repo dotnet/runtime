@@ -154,6 +154,15 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getUnboxedEntry(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultComparerClass(
+          CORINFO_CLASS_HANDLE elemType)
+{
+    API_ENTER(getDefaultComparerClass);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getDefaultComparerClass(elemType);
+    API_LEAVE(getDefaultComparerClass);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {
@@ -1602,25 +1611,27 @@ void WrapICorJitInfo::reportFatalError(
     API_LEAVE(reportFatalError);
 }
 
-HRESULT WrapICorJitInfo::allocMethodBlockCounts(
-          UINT32 count,
-          ICorJitInfo::BlockCounts** pBlockCounts)
+HRESULT WrapICorJitInfo::getPgoInstrumentationResults(
+          CORINFO_METHOD_HANDLE ftnHnd,
+          PgoInstrumentationSchema** pSchema,
+          UINT32* pCountSchemaItems,
+          BYTE** pInstrumentationData)
 {
-    API_ENTER(allocMethodBlockCounts);
-    HRESULT temp = wrapHnd->allocMethodBlockCounts(count, pBlockCounts);
-    API_LEAVE(allocMethodBlockCounts);
+    API_ENTER(getPgoInstrumentationResults);
+    HRESULT temp = wrapHnd->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
+    API_LEAVE(getPgoInstrumentationResults);
     return temp;
 }
 
-HRESULT WrapICorJitInfo::getMethodBlockCounts(
+HRESULT WrapICorJitInfo::allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,
-          UINT32* pCount,
-          ICorJitInfo::BlockCounts** pBlockCounts,
-          UINT32* pNumRuns)
+          PgoInstrumentationSchema* pSchema,
+          UINT32 countSchemaItems,
+          BYTE** pInstrumentationData)
 {
-    API_ENTER(getMethodBlockCounts);
-    HRESULT temp = wrapHnd->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
-    API_LEAVE(getMethodBlockCounts);
+    API_ENTER(allocPgoInstrumentationBySchema);
+    HRESULT temp = wrapHnd->allocPgoInstrumentationBySchema(ftnHnd, pSchema, countSchemaItems, pInstrumentationData);
+    API_LEAVE(allocPgoInstrumentationBySchema);
     return temp;
 }
 

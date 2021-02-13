@@ -120,6 +120,9 @@
   <data name="BubbleGenericsOption" xml:space="preserve">
     <value>Compile instantiations from reference modules used in the current module</value>
   </data>
+  <data name="EmbedPgoDataOption" xml:space="preserve">
+    <value>Embed instrumentation data in generated file</value>
+  </data>
   <data name="CodeGenOptions" xml:space="preserve">
     <value>Define a codegen option</value>
   </data>
@@ -145,7 +148,7 @@
     <value>Method layout must be either DefaultSort or MethodOrder.</value>
   </data>
   <data name="InvalidMethodLayout" xml:space="preserve">
-    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, or HotWarmCold.</value>
+    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, HotWarmCold, or CallFrequency.</value>
   </data>
   <data name="CompileNoMethodsOption" xml:space="preserve">
     <value>True to skip compiling methods into the R2R image (default = false)</value>
@@ -221,6 +224,9 @@
   </data>
   <data name="SaveDetailedLogOption" xml:space="preserve">
     <value>Save detailed log of dependency analysis</value>
+  </data>
+  <data name="PrintReproInstructionsOption" xml:space="preserve">
+    <value>When compiling each method, print out the set of arguments needed to compile that method only</value>
   </data>
   <data name="SingleMethodGenericArgs" xml:space="preserve">
     <value>Single method compilation: generic arguments to the method</value>
@@ -302,5 +308,26 @@
   </data>
   <data name="MapCsvFileOption" xml:space="preserve">
     <value>Generate a CSV formatted map file</value>
+  </data>
+  <data name="DisableOptimizationsOption" xml:space="preserve">
+    <value>Disable optimizations to simplify debugging</value>
+  </data>
+  <data name="WarningOverridingOptimize" xml:space="preserve">
+    <value>Warning: -Od overrides other optimization options</value>
+  </data>
+  <data name="CallChainProfileFile" xml:space="preserve">
+    <value>Json file(s) for predictive profile guided optimization</value>
+  </data>
+  <data name="PdbFileOption" xml:space="preserve">
+    <value>Generate PDB symbol information file (supported on Windows only)</value>
+  </data>
+  <data name="PerfMapFileOption" xml:space="preserve">
+    <value>Generate PerfMap symbol information file for use by PerfInfo</value>
+  </data>
+  <data name="PdbFilePathOption" xml:space="preserve">
+    <value>Explicit specification of the output PDB file path</value>
+  </data>
+  <data name="PerfMapFilePathOption" xml:space="preserve">
+    <value>Explicit specification of the PerfMap file path</value>
   </data>
 </root>

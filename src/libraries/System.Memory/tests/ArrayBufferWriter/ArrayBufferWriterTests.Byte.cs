@@ -99,20 +99,26 @@ namespace System.Buffers.Tests
         public void GetMemory_ExceedMaximumBufferSize()
         {
             const int MaxArrayLength = 0X7FEFFFFF;
-
             int initialCapacity = int.MaxValue / 2 + 1;
 
-            var output = new ArrayBufferWriter<byte>(initialCapacity);
-            output.Advance(initialCapacity);
+            try
+            {
+                var output = new ArrayBufferWriter<byte>(initialCapacity);
+                output.Advance(initialCapacity);
 
-            // Validate we can't double the buffer size, but can grow
-            Memory<byte> memory = output.GetMemory(1);
+                // Validate we can't double the buffer size, but can grow
+                Memory<byte> memory;
+                memory = output.GetMemory(1);
 
-            // The buffer should grow more than the 1 byte requested otherwise performance will not be usable
-            // between 1GB and 2GB. The current implementation maxes out the buffer size to MaxArrayLength.
-            Assert.Equal(MaxArrayLength - initialCapacity, memory.Length);
-
-            Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
+                // The buffer should grow more than the 1 byte requested otherwise performance will not be usable
+                // between 1GB and 2GB. The current implementation maxes out the buffer size to MaxArrayLength.
+                Assert.Equal(MaxArrayLength - initialCapacity, memory.Length);
+                Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
+            }
+            catch (OutOfMemoryException)
+            {
+                // On memory constrained devices, we can get an OutOfMemoryException, which we can safely ignore.
+            }
         }
     }
 }
