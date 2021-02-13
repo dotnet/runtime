@@ -77,7 +77,6 @@ set(DISABLE_CLEANUP 1)
 set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
-set(DISABLE_ATTACH 1)
 
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
