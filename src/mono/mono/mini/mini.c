@@ -4119,12 +4119,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	if (prof_method != method)
 		MONO_PROFILER_RAISE (jit_done, (prof_method, jinfo));
 
-	if (!(method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE ||
-		  method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
-		  method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE)) {
-		if (!mono_runtime_class_init_full (vtable, error))
-			return NULL;
-	}
+	if (!mono_runtime_class_init_full (vtable, error))
+		return NULL;
 	return MINI_ADDR_TO_FTNPTR (code);
 }
 
