@@ -14,7 +14,7 @@
 #include "bundle_marker.h"
 
 #if defined(_WIN32)
-#include "cli/apphost/apphost.windows.h"
+#include "apphost/apphost.windows.h"
 #endif
 
 #define CURHOST_TYPE    _X("apphost")
