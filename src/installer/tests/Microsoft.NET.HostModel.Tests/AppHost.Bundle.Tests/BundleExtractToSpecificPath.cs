@@ -63,7 +63,6 @@ namespace AppHost.Bundle.Tests
         [InlineData("../foo", BundleOptions.BundleAllContent)]
         [InlineData("foo", BundleOptions.BundleAllContent)]
         [InlineData("foo/bar", BundleOptions.BundleAllContent)]
-        [InlineData("foo\\bar", BundleOptions.BundleAllContent)]
         [InlineData("./foo", BundleOptions.BundleNativeBinaries)]
         [InlineData("../foo", BundleOptions.BundleNativeBinaries)]
         [InlineData("foo", BundleOptions.BundleNativeBinaries)]
