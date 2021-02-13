@@ -401,7 +401,7 @@ namespace System.Collections.Generic
         public void TrimExcess() { }
         public bool TryDequeue([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
-        public partial class UnorderedItemsCollection : System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)>, System.Collections.Generic.IReadOnlyCollection<(TElement element, TPriority priority)>, System.Collections.ICollection, System.Collections.IEnumerable
+        public sealed partial class UnorderedItemsCollection : System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)>, System.Collections.Generic.IReadOnlyCollection<(TElement element, TPriority priority)>, System.Collections.ICollection, System.Collections.IEnumerable
         {
             internal UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue) { }
             public int Count { get { throw null; } }

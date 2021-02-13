@@ -557,7 +557,7 @@ namespace System.Collections.Generic
             _nodes[nodeIndex] = node;
         }
 
-        public partial class UnorderedItemsCollection : IReadOnlyCollection<(TElement element, TPriority priority)>, ICollection
+        public sealed class UnorderedItemsCollection : IReadOnlyCollection<(TElement element, TPriority priority)>, ICollection
         {
             private readonly PriorityQueue<TElement, TPriority> _queue;
 
