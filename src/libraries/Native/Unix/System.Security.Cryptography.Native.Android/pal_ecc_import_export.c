@@ -464,6 +464,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     if (curveType == PrimeShortWeierstrass)
     {
         field = (*env)->NewObject(env, g_ECFieldFpClass, g_ECFieldFpCtor, pBn);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
     else if (curveType == Characteristic2)
     {
@@ -485,6 +486,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
         }
 
         field = (*env)->NewObject(env, g_ECFieldF2mClass, g_ECFieldF2mCtorWithCoefficientBigInteger, m, pBn);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
 
     aBn = CryptoNative_BigNumFromBinary(a, aLength);

@@ -327,7 +327,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_toByteArrayMethod =       GetMethod(env, false, g_bigNumClass, "toByteArray", "()[B");
     g_valueOfMethod =           GetMethod(env, true, g_bigNumClass, "valueOf", "(J)Ljava/math/BigInteger;");
     g_intValueMethod =          GetMethod(env, false, g_bigNumClass, "intValue", "()I");
-    g_compareToMethod =         GetMethod(env, true, g_bigNumClass, "valueOf", "(Ljava/math/BigInteger;)I");
+    g_compareToMethod =         GetMethod(env, false, g_bigNumClass, "compareTo", "(Ljava/math/BigInteger;)I");
 
     g_sslParamsClass =              GetClassGRef(env, "javax/net/ssl/SSLParameters");
     g_sslParamsGetProtocolsMethod = GetMethod(env, false,  g_sslParamsClass, "getProtocols", "()[Ljava/lang/String;");
