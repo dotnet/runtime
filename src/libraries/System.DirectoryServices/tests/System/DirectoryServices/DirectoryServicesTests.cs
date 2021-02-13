@@ -534,12 +534,11 @@ namespace System.DirectoryServices.Tests
         private void CheckSpecificException(Action blockToExecute)
         {
             Exception exception = Record.Exception(blockToExecute);
-            Assert.NotNull(exception);
+            Assert.True(exception != null, "No exception was thrown");
 
-            if (IsActiveDirectoryServer)
-                Assert.IsType<DirectoryServicesCOMException>(exception);
-            else
-                Assert.IsType<COMException>(exception);
+            Type expected = IsActiveDirectoryServer ? typeof(DirectoryServicesCOMException) : typeof(COMException);
+
+            Assert.True(exception.GetType() == expected, String.Format("Expected exception type '{0}'' got '{1}'' with message '{2}'", expected, exception.GetType(), exception.Message));
         }
 
         private DirectoryEntry CreateOU(DirectoryEntry de, string ou, string description)

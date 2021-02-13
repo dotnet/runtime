@@ -31,7 +31,7 @@ namespace System.DirectoryServices.Tests
                         IADs iads = (IADs) rootOU.NativeObject;
                         Assert.Equal("ou=dateRoot", iads.Name);
                         Assert.Equal("Class", iads.Class);
-                        Assert.True(iads.ADsPath.IndexOf(LdapConfiguration.Configuration.ServerName, StringComparison.OrdinalIgnoreCase) >= 0);
+                        Assert.Contains(LdapConfiguration.Configuration.ServerName, iads.ADsPath, StringComparison.OrdinalIgnoreCase);
 
                         IADsSecurityDescriptor iadsSD = (IADsSecurityDescriptor) de.Properties["ntSecurityDescriptor"].Value;
                         Assert.Contains(iadsSD.Owner.Split('\\')[0], LdapConfiguration.Configuration.UserName, StringComparison.OrdinalIgnoreCase);
