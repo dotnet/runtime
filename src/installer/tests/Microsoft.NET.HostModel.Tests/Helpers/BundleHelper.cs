@@ -83,7 +83,8 @@ namespace BundleTests.Helpers
         public static string[] GetFilesNeverExtracted(TestProjectFixture fixture)
         {
             string appBaseName = GetAppBaseName(fixture);
-            return new string[] { $"{appBaseName}.exe",
+            return new string[] { $"{appBaseName}",
+                                  $"{appBaseName}.exe",
                                   $"{appBaseName}.pdb",
                                   $"{appBaseName}.runtimeconfig.dev.json",
                                   Path.GetFileName(fixture.TestProject.HostFxrDll),
