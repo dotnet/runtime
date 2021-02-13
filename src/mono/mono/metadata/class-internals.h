@@ -1533,29 +1533,52 @@ m_field_get_offset (MonoClassField *field)
 }
 
 /*
- * Memory allocation for classes/methods
+ * Memory allocation for images/classes/methods
  *
  *   These should be used to allocate memory whose lifetime is equal to
- * the lifetime of the domain+class/method pair.
+ * the lifetime of the image/class/method.
  */
 
 static inline MonoMemoryManager*
-m_class_get_mem_manager (MonoDomain *domain, MonoClass *klass)
+m_image_get_mem_manager (MonoImage *image)
 {
-	// FIXME:
-	return mono_domain_memory_manager (domain);
+	return (MonoMemoryManager*)mono_image_get_alc (image)->memory_manager;
 }
 
 static inline void *
-m_class_alloc (MonoDomain *domain, MonoClass *klass, guint size)
+m_image_alloc (MonoImage *image, guint size)
 {
-	return mono_mem_manager_alloc (m_class_get_mem_manager (domain, klass), size);
+	return mono_mem_manager_alloc (m_image_get_mem_manager (image), size);
 }
 
 static inline void *
-m_class_alloc0 (MonoDomain *domain, MonoClass *klass, guint size)
+m_image_alloc0 (MonoImage *image, guint size)
 {
-	return mono_mem_manager_alloc0 (m_class_get_mem_manager (domain, klass), size);
+	return mono_mem_manager_alloc0 (m_image_get_mem_manager (image), size);
+}
+
+static inline MonoMemoryManager*
+m_class_get_mem_manager (MonoClass *klass)
+{
+	// FIXME: Generics
+	MonoAssemblyLoadContext *alc = mono_image_get_alc (m_class_get_image (klass));
+	if (alc)
+		return (MonoMemoryManager*)alc->memory_manager;
+	else
+		/* Dynamic assemblies */
+		return mono_domain_ambient_memory_manager (mono_get_root_domain ());
+}
+
+static inline void *
+m_class_alloc (MonoClass *klass, guint size)
+{
+	return mono_mem_manager_alloc (m_class_get_mem_manager (klass), size);
+}
+
+static inline void *
+m_class_alloc0 (MonoClass *klass, guint size)
+{
+	return mono_mem_manager_alloc0 (m_class_get_mem_manager (klass), size);
 }
 
 static inline MonoMemoryManager*

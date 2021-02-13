@@ -2,12 +2,7 @@ DOTNET := ../../dotnet.sh
 
 LIBRARIES_TESTS_CONFIG=Release
 CORECLR_TESTS_CONFIG=Release
-MONO_RUNTIME_CONFIG=Release
-
-# auto detect configurations for mono runtime and coreclr tests
-ifeq ($(words $(wildcard ../../artifacts/bin/mono/*.*.*)), 1)
-	MONO_RUNTIME_CONFIG := $(word 3,$(subst ., ,$(notdir $(wildcard ../../artifacts/bin/mono/*.*.*))))
-endif
+MONO_RUNTIME_CONFIG=Debug
 
 ifeq ($(words $(wildcard ../../artifacts/tests/coreclr/*.*.*)), 1)
 	CORECLR_TESTS_CONFIG := $(word 3,$(subst ., ,$(notdir $(wildcard ../../artifacts/tests/coreclr/*.*.*))))
@@ -34,7 +29,7 @@ bcl corelib:
 
 # build runtime and copy to artifacts
 runtime:
-	../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.Runtime
+	../.././build.sh -c $(MONO_RUNTIME_CONFIG) -subset Mono.Runtime+libs.pretest
 
 # copy mono runtime bits from artifacts to $(DST)
 copy-runtime-files-to:
