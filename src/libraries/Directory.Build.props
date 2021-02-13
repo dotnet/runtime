@@ -51,6 +51,8 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">
     <!-- don't warn on usage of BinaryFormatter from test projects -->
     <NoWarn>$(NoWarn);SYSLIB0011</NoWarn>
+    <!-- allow nullable annotated files to be incorporated into tests without warning -->
+    <Nullable Condition="'$(Nullable)' == '' and '$(Language)' == 'C#'">annotations</Nullable>
   </PropertyGroup>
 
   <!-- Common repo directories -->

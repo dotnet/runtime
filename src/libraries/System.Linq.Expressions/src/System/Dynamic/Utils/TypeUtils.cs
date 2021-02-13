@@ -618,6 +618,7 @@ namespace System.Dynamic.Utils
             || IsImplicitBoxingConversion(source, destination)
             || IsImplicitNullableConversion(source, destination);
 
+        [RequiresUnreferencedCode(Expression.ExpressionRequiresUnreferencedCode)]
         public static MethodInfo? GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType)
         {
             Type nnExprType = GetNonNullableType(convertFrom);

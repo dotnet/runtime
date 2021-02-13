@@ -37,7 +37,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 Assert.False(chain.Build(endEntity));
-                Assert.True(chain.AllStatusFlags().HasFlag(X509ChainStatusFlags.PartialChain), "expected partial chain");
+                X509ChainStatusFlags chainFlags = chain.AllStatusFlags();
+                Assert.True(chainFlags.HasFlag(X509ChainStatusFlags.PartialChain), $"expected partial chain flags, got {chainFlags}");
             }
         }
 

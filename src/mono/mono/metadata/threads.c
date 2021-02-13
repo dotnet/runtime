@@ -2644,8 +2644,6 @@ mono_threads_is_critical_method (MonoMethod *method)
 {
 	switch (method->wrapper_type) {
 	case MONO_WRAPPER_RUNTIME_INVOKE:
-	case MONO_WRAPPER_XDOMAIN_INVOKE:
-	case MONO_WRAPPER_XDOMAIN_DISPATCH:	
 		return TRUE;
 	}
 	return FALSE;

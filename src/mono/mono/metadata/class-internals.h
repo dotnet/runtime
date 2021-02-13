@@ -46,12 +46,6 @@ typedef enum {
 	MONO_WRAPPER_NUM
 } MonoWrapperType;
 
-typedef enum {
-	MONO_REMOTING_TARGET_UNKNOWN,
-	MONO_REMOTING_TARGET_APPDOMAIN,
-	MONO_REMOTING_TARGET_COMINTEROP
-} MonoRemotingTarget;
-
 #define MONO_METHOD_PROP_GENERIC_CONTAINER 0
 /* verification success bit, protected by the image lock */
 #define MONO_METHOD_PROP_VERIFICATION_SUCCESS 1
@@ -324,18 +318,6 @@ int mono_class_interface_match (const uint8_t *bitmap, int id);
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
 
-#ifdef DISABLE_REMOTING
-#define mono_class_is_marshalbyref(klass) (FALSE)
-#define mono_class_is_contextbound(klass) (FALSE)
-#define mono_vtable_is_remote(vtable) (FALSE)
-#define mono_vtable_set_is_remote(vtable,enable) do {} while (0)
-#else
-#define mono_class_is_marshalbyref(klass) (m_class_get_marshalbyref (klass))
-#define mono_class_is_contextbound(klass) (m_class_get_contextbound (klass))
-#define mono_vtable_is_remote(vtable) ((vtable)->remote)
-#define mono_vtable_set_is_remote(vtable,enable) do { (vtable)->remote = enable ? 1 : 0; } while (0)
-#endif
-
 #ifdef DISABLE_COM
 #define mono_class_is_com_object(klass) (FALSE)
 #else
@@ -372,7 +354,6 @@ struct MonoVTable {
 	guint8      initialized; /* cctor has been run */
 	/* Keep this a guint8, the jit depends on it */
 	guint8      flags; /* MonoVTableFlags */
-	guint remote          : 1; /* class is remotely activated */
 	guint init_failed     : 1; /* cctor execution failed */
 	guint has_static_fields : 1; /* pointer to the data stored at the end of the vtable array */
 	guint gc_bits         : MONO_VTABLE_AVAILABLE_GC_BITS; /* Those bits are reserved for the usaged of the GC */
@@ -716,13 +697,6 @@ typedef struct {
 	gint64 gc_reserved_bytes;
 	gint32 gc_num_pinned;
 	gint32 gc_sync_blocks;
-	/* Remoting category */
-	gint32 remoting_calls;
-	gint32 remoting_channels;
-	gint32 remoting_proxies;
-	gint32 remoting_classes;
-	gint32 remoting_objects;
-	gint32 remoting_contexts;
 	/* Loader category */
 	gint32 loader_classes;
 	gint32 loader_total_classes;
@@ -997,12 +971,6 @@ typedef struct {
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *internal_thread_class;
-#ifndef DISABLE_REMOTING
-	MonoClass *transparent_proxy_class;
-	MonoClass *real_proxy_class;
-	MonoClass *marshalbyrefobject_class;
-	MonoClass *iremotingtypeinfo_class;
-#endif
 	MonoClass *mono_method_message_class;
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
@@ -1021,17 +989,6 @@ typedef struct {
 	MonoClass *alc_class;
 	MonoClass *appcontext_class;
 } MonoDefaults;
-
-#ifdef DISABLE_REMOTING
-#define mono_class_is_transparent_proxy(klass) (FALSE)
-#define mono_class_is_real_proxy(klass) (FALSE)
-#else
-#define mono_class_is_transparent_proxy(klass) ((klass) == mono_defaults.transparent_proxy_class)
-#define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)
-#endif
-
-#define mono_object_is_transparent_proxy(object) (mono_class_is_transparent_proxy (mono_object_class (object)))
-
 
 #define GENERATE_GET_CLASS_WITH_CACHE_DECL(shortname) \
 MonoClass* mono_class_get_##shortname##_class (void);
@@ -1534,11 +1491,6 @@ mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr);
 
 void
 mono_class_compute_gc_descriptor (MonoClass *klass);
-
-#ifndef DISABLE_REMOTING
-void
-mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out);
-#endif
 
 gboolean
 mono_class_init_checked (MonoClass *klass, MonoError *error);
