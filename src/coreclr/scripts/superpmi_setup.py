@@ -269,7 +269,7 @@ def run_command(command_to_run, _exit_on_fail=False):
     command_stdout = ""
     command_stderr = ""
     return_code = 1
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
+    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
         command_stdout, command_stderr = proc.communicate()
         return_code = proc.returncode
 
