@@ -256,18 +256,12 @@ namespace System.Linq.Tests
         protected static IEnumerable<T> ListPartitionOrEmpty<T>(IList<T> source) // Or Empty
         {
             var listPartition = source.Skip(0);
-            Assert.True(
-                listPartition.GetType().Name.Contains("ListPartition", StringComparison.InvariantCulture)
-                || listPartition.GetType().Name.Contains("EmptyPartition", StringComparison.InvariantCulture));
             return listPartition;
         }
 
         protected static IEnumerable<T> EnumerablePartitionOrEmpty<T>(IEnumerable<T> source) // Or Empty
         {
             var enumerablePartition = ForceNotCollection(source).Skip(0);
-            Assert.True(
-                enumerablePartition.GetType().Name.Contains("EnumerablePartition", StringComparison.InvariantCulture)
-                || enumerablePartition.GetType().Name.Contains("EmptyPartition", StringComparison.InvariantCulture));
             return enumerablePartition;
         }
 
