@@ -32,10 +32,6 @@ MONO_CLASS_GETTER(m_class_get_min_align, guint8, , MonoClass, min_align)
 MONO_CLASS_GETTER(m_class_get_packing_size, guint, , MonoClass, packing_size)
 MONO_CLASS_GETTER(m_class_is_ghcimpl, gboolean, , MonoClass, ghcimpl)
 MONO_CLASS_GETTER(m_class_has_finalize, gboolean, , MonoClass, has_finalize)
-#ifndef DISABLE_REMOTING
-MONO_CLASS_GETTER(m_class_get_marshalbyref, guint, , MonoClass, marshalbyref)
-MONO_CLASS_GETTER(m_class_get_contextbound, guint, , MonoClass, contextbound)
-#endif
 MONO_CLASS_GETTER(m_class_is_delegate, gboolean, , MonoClass, delegate)
 MONO_CLASS_GETTER(m_class_is_gc_descr_inited, gboolean, , MonoClass, gc_descr_inited)
 MONO_CLASS_GETTER(m_class_has_cctor, gboolean,  , MonoClass, has_cctor)

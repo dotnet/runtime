@@ -86,15 +86,15 @@ mono_gc_collection_count (int generation)
 }
 
 void
-mono_gc_stop_world ()
+mono_stop_world (MonoThreadInfoFlags flags)
 {
-	g_assert ("mono_gc_stop_world is not supported in null GC");
+	g_assert ("mono_stop_world is not supported in null GC");
 }
 
 void
-mono_gc_restart_world ()
+mono_restart_world (MonoThreadInfoFlags flags)
 {
-	g_assert ("mono_gc_restart_world is not supported in null GC");
+	g_assert ("mono_restart_world is not supported in null GC");
 }
 
 void

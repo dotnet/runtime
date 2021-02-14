@@ -691,9 +691,7 @@ namespace System.Drawing
 
             if (!cumulTransform.IsIdentity)
             {
-                float[] elements = cumulTransform.Elements;
-                currentOffset.X = elements[4];
-                currentOffset.Y = elements[5];
+                currentOffset = cumulTransform.Offset;
             }
 
             GraphicsContext? context = _previousContext;

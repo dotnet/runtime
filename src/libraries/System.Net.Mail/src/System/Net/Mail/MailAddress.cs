@@ -272,7 +272,7 @@ namespace System.Net.Mail
 
         public override int GetHashCode()
         {
-            return ToString().GetHashCode(StringComparison.InvariantCultureIgnoreCase);
+            return StringComparer.InvariantCultureIgnoreCase.GetHashCode(ToString());
         }
 
         private static readonly EncodedStreamFactory s_encoderFactory = new EncodedStreamFactory();

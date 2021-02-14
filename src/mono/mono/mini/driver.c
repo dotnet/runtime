@@ -41,13 +41,11 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/environment-internals.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/coree.h>
-#include <mono/metadata/attach.h>
 #include <mono/metadata/w32process.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
@@ -1427,13 +1425,8 @@ static void main_thread_handler (gpointer user_data)
 		for (i = 0; i < main_args->argc; ++i) {
 			assembly = mono_domain_assembly_open_internal (main_args->domain, mono_domain_default_alc (main_args->domain), main_args->argv [i]);
 			if (!assembly) {
-				if (mono_is_problematic_file (main_args->argv [i])) {
-					fprintf (stderr, "Info: AOT of problematic assembly %s skipped. This is expected.\n", main_args->argv [i]);
-					continue;
-				} else {
-					fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
-					exit (1);
-				}
+				fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
+				exit (1);
 			}
 			/* Check that the assembly loaded matches the filename */
 			{
@@ -2096,7 +2089,6 @@ mono_main (int argc, char* argv[])
 	char *aot_options = NULL;
 	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
-	char *attach_options = NULL;
 	char *extra_bindings_config_file = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
@@ -2290,7 +2282,7 @@ mono_main (int argc, char* argv[])
 			}
 			mono_inject_async_exc_pos = atoi (argv [++i]);
 		} else if (strcmp (argv [i], "--verify-all") == 0) {
-			mono_verifier_enable_verify_all ();
+			g_warning ("--verify-all is obsolete, ignoring");
 		} else if (strcmp (argv [i], "--full-aot") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
 		} else if (strcmp (argv [i], "--llvmonly") == 0) {
@@ -2359,7 +2351,7 @@ mono_main (int argc, char* argv[])
 				agents = g_ptr_array_new ();
 			g_ptr_array_add (agents, argv [i] + 8);
 		} else if (strncmp (argv [i], "--attach=", 9) == 0) {
-			attach_options = argv [i] + 9;
+			g_warning ("--attach= option no longer supported.");
 		} else if (strcmp (argv [i], "--compile") == 0) {
 			if (i + 1 >= argc){
 				fprintf (stderr, "error: --compile option requires a method name argument\n");
@@ -2404,44 +2396,24 @@ mono_main (int argc, char* argv[])
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
-#ifndef DISABLE_SECURITY
-			mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
-#else
-			fprintf (stderr, "error: --security: not compiled with security manager support");
+			fprintf (stderr, "error: --security is obsolete.");
 			return 1;
-#endif
 		} else if (strncmp (argv [i], "--security=", 11) == 0) {
-			/* Note: validil, and verifiable need to be
-			   accepted even if DISABLE_SECURITY is defined. */
-
 			if (strcmp (argv [i] + 11, "core-clr") == 0) {
-#ifndef DISABLE_SECURITY
-				mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
-				mono_security_set_mode (MONO_SECURITY_MODE_CORE_CLR);
-#else
-				fprintf (stderr, "error: --security: not compiled with CoreCLR support");
+				fprintf (stderr, "error: --security=core-clr is obsolete.");
 				return 1;
-#endif
 			} else if (strcmp (argv [i] + 11, "core-clr-test") == 0) {
-#ifndef DISABLE_SECURITY
-				/* fixme should we enable verifiable code here?*/
-				mono_security_set_mode (MONO_SECURITY_MODE_CORE_CLR);
-				mono_security_core_clr_test = TRUE;
-#else
-				fprintf (stderr, "error: --security: not compiled with CoreCLR support");
+				fprintf (stderr, "error: --security=core-clr-test is obsolete.");
 				return 1;
-#endif
 			} else if (strcmp (argv [i] + 11, "cas") == 0) {
-#ifndef DISABLE_SECURITY
-				fprintf (stderr, "warning: --security=cas not supported.");
-#else
-				fprintf (stderr, "error: --security: not compiled with CAS support");
+				fprintf (stderr, "error: --security=cas is obsolete.");
 				return 1;
-#endif
 			} else if (strcmp (argv [i] + 11, "validil") == 0) {
-				mono_verifier_set_mode (MONO_VERIFIER_MODE_VALID);
+                                fprintf (stderr, "error: --security=validil is obsolete.");
+                                return 1;
 			} else if (strcmp (argv [i] + 11, "verifiable") == 0) {
-				mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
+                                fprintf (stderr, "error: --securty=verifiable is obsolete.");
+                                return 1;
 			} else {
 				fprintf (stderr, "error: --security= option has invalid argument (cas, core-clr, verifiable or validil)\n");
 				return 1;
@@ -2552,34 +2524,6 @@ mono_main (int argc, char* argv[])
 		return 1;
 	}
 
-/*
- * XXX: verify if other OSes need it; many platforms seem to have it so that
- * mono_w32process_get_path -> mono_w32process_get_name, and the name is not
- * necessarily a path instead of just the program name
- */
-#if defined (_AIX)
-	/*
-	 * mono_w32process_get_path on these can only return a name, not a path;
-	 * which may not be good for us if the mono command name isn't on $PATH,
-	 * like in CI scenarios. chances are argv based is fine if we inherited
-	 * the environment variables.
-	 */
-	mono_w32process_set_cli_launcher (argv [0]);
-#elif !defined(HOST_WIN32) && defined(HAVE_UNISTD_H)
-	/*
-	 * If we are not embedded, use the mono runtime executable to run managed exe's.
-	 */
-	{
-		char *runtime_path;
-
-		runtime_path = mono_w32process_get_path (getpid ());
-		if (runtime_path) {
-			mono_w32process_set_cli_launcher (runtime_path);
-			g_free (runtime_path);
-		}
-	}
-#endif
-
 	if (g_hasenv ("MONO_XDEBUG"))
 		enable_debugging = TRUE;
 
@@ -2606,8 +2550,6 @@ mono_main (int argc, char* argv[])
 
 	/* Set rootdir before loading config */
 	mono_set_rootdir ();
-
-	mono_attach_parse_options (attach_options);
 
 	if (trace_options != NULL){
 		/* 
@@ -2637,11 +2579,6 @@ mono_main (int argc, char* argv[])
 	if (mixed_mode)
 		mono_load_coree (argv [i]);
 #endif
-
-	/* Parse gac loading options before loading assemblies. */
-	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER || action == DO_REGRESSION) {
-		mono_config_parse (config_file);
-	}
 
 	mono_set_defaults (mini_verbose_level, opt);
 	mono_set_os_args (argc, argv);

@@ -42,7 +42,6 @@
 #include "mono/metadata/string-icalls.h"
 #include "mono/metadata/attrdefs.h"
 #include "mono/metadata/cominterop.h"
-#include "mono/metadata/remoting.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/handle.h"
 #include "mono/metadata/object-internals.h"
@@ -127,8 +126,14 @@ get_method_image (MonoMethod *method)
 // The name of func must be linkable for AOT, for example g_free does not work (monoeg_g_free instead),
 // nor does the C++ overload fmod (mono_fmod instead). These functions therefore
 // must be extern "C".
+#ifndef DISABLE_JIT
 #define register_icall(func, sig, no_wrapper) \
 	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), #func))
+#else
+/* No need for the name/C symbol */
+#define register_icall(func, sig, no_wrapper) \
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (no_wrapper), NULL))
+#endif
 
 MonoMethodSignature*
 mono_signature_no_pinvoke (MonoMethod *method)
@@ -257,7 +262,6 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_lookup_pinvoke, mono_icall_sig_ptr_ptr, FALSE);
 
 		mono_cominterop_init ();
-		mono_remoting_init ();
 
 		mono_counters_register ("MonoClass::class_marshal_info_count count",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_marshal_info_count);
@@ -1534,22 +1538,6 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 	info = mono_marshal_get_wrapper_info (wrapper);
 
 	switch (wrapper_type) {
-	case MONO_WRAPPER_REMOTING_INVOKE:
-	case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-	case MONO_WRAPPER_XDOMAIN_INVOKE:
-		m = info->d.remoting.method;
-		if (wrapper->is_inflated) {
-			ERROR_DECL (error);
-			MonoMethod *result;
-			/*
-			 * A method cannot be inflated and a wrapper at the same time, so the wrapper info
-			 * contains an uninflated method.
-			 */
-			result = mono_class_inflate_generic_method_checked (m, mono_method_get_context (wrapper), error);
-			g_assert (is_ok (error)); /* FIXME don't swallow the error */
-			return result;
-		}
-		return m;
 	case MONO_WRAPPER_SYNCHRONIZED:
 		m = info->d.synchronized.method;
 		if (wrapper->is_inflated) {
@@ -3932,9 +3920,6 @@ mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *ca
 	if (mono_error_set_pending_exception (error))
 		return NULL;
 
-	if (mono_object_is_transparent_proxy (obj))
-		return isinst;
-
 	uintptr_t cache_update = (uintptr_t)obj->vtable;
 	if (!isinst)
 		cache_update = cache_update | 0x1;
@@ -4295,7 +4280,7 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 		return STELEMREF_INTERFACE;
 #endif
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
-	if (mono_class_is_marshalbyref (element_class) || m_class_get_rank (element_class) || mono_class_has_variant_generic_params (element_class))
+	if (m_class_get_rank (element_class) || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
 	if (mono_class_is_sealed (element_class))
 		return STELEMREF_SEALED_CLASS;
@@ -4808,42 +4793,6 @@ mono_marshal_clear_last_error (void)
 #else
 	errno = 0;
 #endif
-}
-
-static gsize
-copy_managed_common (MonoArrayHandle managed, gconstpointer native, gint32 start_index,
-		gint32 length, gpointer *managed_addr, MonoGCHandle *gchandle, MonoError *error)
-{
-	MONO_CHECK_ARG_NULL_HANDLE (managed, 0);
-	MONO_CHECK_ARG_NULL (native, 0);
-
-	MonoClass *klass = mono_handle_class (managed);
-
-	// FIXME? move checks to managed
-	if (m_class_get_rank (klass) != 1) {
-		mono_error_set_argument (error, "array", "array is multi-dimensional");
-		return 0;
-	}
-	if (start_index < 0) {
-		mono_error_set_argument (error, "startIndex", "Must be >= 0");
-		return 0;
-	}
-	if (length < 0) {
-		mono_error_set_argument (error, "length", "Must be >= 0");
-		return 0;
-	}
-	if (start_index + length > mono_array_handle_length (managed)) {
-		mono_error_set_argument (error, "length", "start_index + length > array length");
-		return 0;
-	}
-
-	gsize const element_size = mono_array_element_size (klass);
-
-	// Handle generic arrays, which do not allow fixed.
-	if (!*managed_addr)
-		*managed_addr = mono_array_handle_pin_with_size (managed, element_size, start_index, gchandle);
-
-	return element_size * length;
 }
 
 guint32 

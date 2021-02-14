@@ -1055,7 +1055,7 @@ namespace System.Linq.Tests
             Assert.Equal(taken5, taken5);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
         [InlineData(1000)]
         [InlineData(1000000)]
         [InlineData(int.MaxValue)]

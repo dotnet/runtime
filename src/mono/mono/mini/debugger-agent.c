@@ -1906,7 +1906,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	res = (Id *)g_ptr_array_index (ids [type], GPOINTER_TO_INT (id - 1));
 	dbg_unlock ();
 
-	if (res->domain == NULL || res->domain->state == MONO_APPDOMAIN_UNLOADED) {
+	if (res->domain == NULL) {
 		PRINT_DEBUG_MSG (1, "ERR_UNLOADED, id=%d, type=%d.\n", id, type);
 		*err = ERR_UNLOADED;
 		return NULL;
@@ -3873,9 +3873,6 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 	MonoDomain* old_domain;
 	AgentDomainInfo *info = NULL;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
 	info = get_agent_domain_info (domain);
 	g_assert (info);
 
@@ -3895,9 +3892,6 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 {
 	GSList *tmp;
 	MonoDomain* old_domain;
-
-	if (mono_domain_is_unloading (domain))
-		return;
 
 	old_domain = mono_domain_get ();
 
@@ -5122,16 +5116,7 @@ static gboolean
 obj_is_of_type (MonoObject *obj, MonoType *t)
 {
 	MonoClass *klass = obj->vtable->klass;
-	if (!mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass)) {
-		if (mono_class_is_transparent_proxy (klass)) {
-			klass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
-			if (mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass)) {
-				return TRUE;
-			}
-		}
-		return FALSE;
-	}
-	return TRUE;
+	return mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass);
 }
 
 static ErrorCode
@@ -6310,9 +6295,6 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
@@ -6351,9 +6333,6 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 
 	GetTypesForSourceFileArgs *ud = (GetTypesForSourceFileArgs*)user_data;
 	MonoDomain *domain = (MonoDomain*)key;
-
-	if (mono_domain_is_unloading (domain))
-		return;
 
 	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
 
@@ -6769,7 +6748,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 		tls->abort_requested = TRUE;
 
-		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread), FALSE);
+		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread));
 		mono_loader_unlock ();
 		break;
 	}
@@ -9216,7 +9195,6 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	MonoClassField *f = NULL;
 	MonoClass *k;
 	gboolean found;
-	gboolean remote_obj = FALSE;
 	MonoStringHandle string_handle = MONO_HANDLE_NEW (MonoString, NULL); // FIXME? Not always needed.
 
 	if (command == CMD_OBJECT_REF_IS_COLLECTED) {
@@ -9238,16 +9216,10 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	MonoClass *obj_type;
 
 	obj_type = obj->vtable->klass;
-	if (mono_class_is_transparent_proxy (obj_type)) {
-		obj_type = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
-		remote_obj = TRUE;
-	}
-
 	g_assert (obj_type);
 
 	switch (command) {
 	case CMD_OBJECT_REF_GET_TYPE:
-		/* This handles transparent proxies too */
 		buffer_add_typeid (buf, obj->vtable->domain, mono_class_from_mono_type_internal (((MonoReflectionType*)obj->vtable->type)->type));
 		break;
 	case CMD_OBJECT_REF_GET_VALUES_ICORDBG: {
@@ -9303,22 +9275,7 @@ get_field_value:
 				buffer_add_value (buf, f->type, val, obj->vtable->domain);
 				g_free (val);
 			} else {
-				void *field_value = NULL;
-#ifndef DISABLE_REMOTING
-				void *field_storage = NULL;
-#endif
-				if (remote_obj) {
-#ifndef DISABLE_REMOTING
-					field_value = mono_load_remote_field_checked(obj, obj_type, f, &field_storage, error);
-					if (!is_ok (error)) {
-						mono_error_cleanup (error); /* FIXME report the error */
-						goto invalid_object;
-					}
-#else
-					g_assert_not_reached ();
-#endif
-				} else
-					field_value = (guint8*)obj + f->offset;
+				void *field_value = (guint8*)obj + f->offset;
 
 				buffer_add_value (buf, f->type, field_value, obj->vtable->domain);
 			}

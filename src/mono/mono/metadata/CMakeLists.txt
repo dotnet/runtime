@@ -30,7 +30,6 @@ set(ilgen_sources ${ilgen_base_sources})
 endif()
 
 set(metadata_win32_sources
-    console-win32.c
     w32file-win32.c
     icall-windows.c
     marshal-windows.c
@@ -38,7 +37,6 @@ set(metadata_win32_sources
     w32mutex-win32.c
     w32semaphore-win32.c
     w32event-win32.c
-    w32process-win32.c
     w32socket-win32.c
     w32error-win32.c)
 
@@ -46,8 +44,6 @@ set(metadata_unix_sources
     w32mutex-unix.c
     w32semaphore-unix.c
     w32event-unix.c
-    w32process-unix.c
-    w32process-unix-internals.h
     w32process-unix-osx.c
     w32process-unix-bsd.c
     w32process-unix-haiku.c
@@ -70,8 +66,6 @@ set(metadata_common_sources
     appdomain-icalls.h
     assembly.c
     assembly-internals.h
-    attach.h
-    attach.c
     cil-coff.h
     class.c
     class-getters.h
@@ -121,7 +115,6 @@ set(metadata_common_sources
     mempool.h
     mempool-internals.h
     metadata.c
-    metadata-verify.c
     metadata-internals.h
     metadata-update.h
     metadata-update.c
@@ -146,8 +139,6 @@ set(metadata_common_sources
     mono-ptr-array.h
     mono-route.c
     monitor.h
-    normalization-tables.h
-    number-formatter.h
     number-ms.h
     object.c
     object-forward.h
@@ -157,18 +148,13 @@ set(metadata_common_sources
     property-bag.c
     w32socket.h
     w32socket-internals.h
-    w32process.c
     w32process.h
-    w32process-internals.h
     profiler.c
     profiler-private.h
-    remoting.h
-    remoting.c
     runtime.c
     security.h
     security-core-clr.c
     security-core-clr.h
-    security-manager.c
     security-manager.h
     string-icalls.c
     string-icalls.h
@@ -177,7 +163,6 @@ set(metadata_common_sources
     threads.c
     threads-types.h
     verify.c
-    verify-internals.h
     wrapper-types.h
     dynamic-image-internals.h
     dynamic-stream.c

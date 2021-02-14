@@ -56,9 +56,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/attach.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-errno.h>
 #include <mono/utils/mono-compiler.h>
@@ -323,13 +321,6 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 
 MONO_SIG_HANDLER_FUNC (static, sigquit_signal_handler)
 {
-	gboolean res;
-
-	/* We use this signal to start the attach agent too */
-	res = mono_attach_start ();
-	if (res)
-		return;
-
 	mono_threads_request_thread_dump ();
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);

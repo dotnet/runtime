@@ -1065,7 +1065,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
         size_t* pInstrumentationDataDst = (size_t*)((*pAllocatedData) + schemaDataSize);
         size_t* pInstrumentationDataDstEnd = (size_t*)((*pAllocatedData) + schemaDataSize + instrumentationDataSize);
         *pInstrumentationData = (BYTE*)pInstrumentationDataDst;
-        volatile size_t*pSrc = (volatile size_t*)found->header.GetData();
+        volatile size_t*pSrc = (volatile size_t*)(found->header.GetData() + found->header.countsOffset);
         // Use a volatile memcpy to copy the instrumentation data into a temporary buffer
         // This allows the instrumentation data to be made stable for reading during the execution of the jit
         // and since the copy moves through a volatile pointer, there will be no tearing of individual data elements
