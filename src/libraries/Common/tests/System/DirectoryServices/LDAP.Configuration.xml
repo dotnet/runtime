@@ -41,7 +41,12 @@ If you are running your AD server as a VM on the same machine that you are runni
 
 The WSL2 VM should now be able to see the AD VM by IP address. To make it visible by host name, it's probably easiest to just add it to /etc/hosts.
 
-For the S.DS.AM and S.DS tests to work successfully against AD, the test machine needs to be on the AD domain. It is easiest to have the test machine in a VM as well. Set the primary DNS server for the test machine to be the AD machine, join the machine to that domain, and log into it as a (the) domain user.
+For the S.DS.AM and S.DS tests (which only run on Windows) to work successfully against AD, the test machine needs to be on the AD domain. It is easiest to have the test machine in a VM as well. Set the primary DNS server for the test machine to be the AD machine, join the machine to that domain, and log into it as a (the) domain user.
+
+To verify the AD connection from Linux, use either of these:
+
+    ldapsearch -h danmose-ldap -p 389 -D 'CN=Administrator,CN=Users,DC=danmose-domain,DC=com' -x -w $TESTPASSWORD
+    ldapsearch -h danmose-ldap -p 389 -D 'danmose-domain\Administrator' -x -w $TESTPASSWORD
 
 Note:
     `Password` is read from the environment if it is surrounded by %, eg %TESTPASSWORD%
