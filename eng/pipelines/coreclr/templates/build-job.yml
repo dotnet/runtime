@@ -281,7 +281,7 @@ jobs:
 
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools')) }}:
       # Publish test native components for consumption by test execution.
-      - ${{ if ne(parameters.isOfficialBuild, true) }}:
+      - ${{ if and(ne(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:
             rootFolder: $(nativeTestArtifactRootFolderPath)
