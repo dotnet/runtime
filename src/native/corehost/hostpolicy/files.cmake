@@ -35,6 +35,5 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/file_entry.h
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/manifest.h
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/runner.h
-    ${CMAKE_CURRENT_LIST_DIR}/../../coreclr_resolver.h
+    ${CMAKE_CURRENT_LIST_DIR}/../coreclr_resolver.h
 )
-

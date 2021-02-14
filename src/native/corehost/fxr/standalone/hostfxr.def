@@ -8,6 +8,7 @@ EXPORTS
     hostfxr_resolve_sdk
     hostfxr_resolve_sdk2
     hostfxr_get_available_sdks
+    hostfxr_get_dotnet_environment_info
     hostfxr_get_native_search_directories
     hostfxr_set_error_writer
     hostfxr_initialize_for_dotnet_command_line

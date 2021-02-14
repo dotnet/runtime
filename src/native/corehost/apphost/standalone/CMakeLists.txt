@@ -25,7 +25,7 @@ set(SOURCES
 
 set(HEADERS
     ../bundle_marker.h
-    ../../../hostfxr_resolver.h
+    ../../hostfxr_resolver.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

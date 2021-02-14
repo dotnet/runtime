@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 #
-## Licensed to the .NET Foundation under one or more agreements.
-## The .NET Foundation licenses this file to you under the MIT license.
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
 #
 ##
-# Title               : superpmi-setup.py
+# Title               : superpmi_setup.py
 #
 # Notes:
 #
@@ -41,6 +41,7 @@ import tempfile
 from os import linesep, listdir, path, walk
 from os.path import isfile, join, getsize
 from coreclr_arguments import *
+from superpmi import ChangeDir
 
 # Start of parser object creation.
 
@@ -115,6 +116,7 @@ native_binaries_to_ignore = [
 ]
 
 MAX_FILES_COUNT = 1500
+
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -236,7 +238,7 @@ def first_fit(sorted_by_size, max_size):
         if file_size < max_size:
             for p_index in partitions:
                 total_in_curr_par = sum(n for _, n in partitions[p_index])
-                if (((total_in_curr_par + file_size) < max_size) and (len(partitions[p_index]) < MAX_FILES_COUNT)):
+                if ((total_in_curr_par + file_size) < max_size) and (len(partitions[p_index]) < MAX_FILES_COUNT):
                     partitions[p_index].append(curr_file)
                     found_bucket = True
                     break
@@ -254,20 +256,31 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _cwd=None):
+def run_command(command_to_run, _exit_on_fail=False):
     """ Runs the command.
 
     Args:
         command_to_run ([string]): Command to run along with arguments.
-        _cmd (string): Current working directory.
+        _exit_on_fail (bool): If it should exit on failure.
+    Returns:
+        (string, string): Returns a tuple of stdout and stderr
     """
     print("Running: " + " ".join(command_to_run))
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
-        stdout, stderr = proc.communicate()
-        if len(stdout) > 0:
-            print(stdout.decode("utf-8"))
-        if len(stderr) > 0:
-            print(stderr.decode("utf-8"))
+    command_stdout = ""
+    command_stderr = ""
+    return_code = 1
+    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
+        command_stdout, command_stderr = proc.communicate()
+        return_code = proc.returncode
+
+        if len(command_stdout) > 0:
+            print(command_stdout.decode("utf-8"))
+        if len(command_stderr) > 0:
+            print(command_stderr.decode("utf-8"))
+        if _exit_on_fail and return_code != 0:
+            print("Command failed. Exiting.")
+            sys.exit(1)
+    return command_stdout, command_stderr, return_code
 
 
 def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda path: True):
@@ -322,7 +335,8 @@ def copy_files(src_path, dst_path, file_names):
         shutil.copy2(f, dst_path_of_file)
 
 
-def partition_files(src_directory, dst_directory, max_size, exclude_directories=[], exclude_files=native_binaries_to_ignore):
+def partition_files(src_directory, dst_directory, max_size, exclude_directories=[],
+                    exclude_files=native_binaries_to_ignore):
     """ Copy bucketized files based on size to destination folder.
 
     Args:
@@ -345,6 +359,41 @@ def partition_files(src_directory, dst_directory, max_size, exclude_directories=
         index += 1
 
 
+def setup_microbenchmark(workitem_directory, arch):
+    """ Perform setup of microbenchmarks
+
+    Args:
+        workitem_directory (string): Path to work
+        arch (string): Architecture for which dotnet will be installed
+    """
+    performance_directory = path.join(workitem_directory, "performance")
+
+    run_command(
+        ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
+
+    with ChangeDir(performance_directory):
+        dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
+        dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
+
+        if not isfile(dotnet_install_script):
+            print("Missing " + dotnet_install_script)
+            return
+
+        run_command(
+            get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir", dotnet_directory, "--verbose"])
+
+def get_python_name():
+    """Gets the python name
+
+    Returns:
+        string: Returns the appropriate python name depending on the OS.
+    """
+    if is_windows:
+        return ["py", "-3"]
+    else:
+        return ["python3"]
+
+
 def set_pipeline_variable(name, value):
     """ This method sets pipeline variable.
 
@@ -353,8 +402,8 @@ def set_pipeline_variable(name, value):
         value (string): Value of the variable.
     """
     define_variable_format = "##vso[task.setvariable variable={0}]{1}"
-    print("{0} -> {1}".format(name, value)) # logging
-    print(define_variable_format.format(name, value)) # set variable
+    print("{0} -> {1}".format(name, value))  # logging
+    print(define_variable_format.format(name, value))  # set variable
 
 
 def main(main_args):
@@ -397,55 +446,59 @@ def main(main_args):
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
     copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
-    # Clone and build jitutils
-    try:
-        with tempfile.TemporaryDirectory() as jitutils_directory:
-            run_command(
-                ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
-            # Set dotnet path to run bootstrap
-            os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
-            bootstrap_file = "bootstrap.cmd" if is_windows else "bootstrap.sh"
-            run_command([path.join(jitutils_directory, bootstrap_file)], jitutils_directory)
-
-            copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, [path.join(jitutils_directory, "bin", "pmi.dll")])
-    except PermissionError as pe_error:
-        # Details: https://bugs.python.org/issue26660
-        print('Ignoring PermissionError: {0}'.format(pe_error))
-
     # Workitem directories
     workitem_directory = path.join(source_directory, "workitem")
-    pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
+    input_artifacts = ""
 
-    # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
-    # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
-    # The following will copy .dotnet to the correlation payload in case we change our mind, and need or want to use it for some scenarios.
+    if coreclr_args.collection_name == "benchmarks":
+        # Setup microbenchmarks
+        setup_microbenchmark(workitem_directory, arch)
+    else:
+        # Setup for pmi/crossgen runs
 
-    # # Copy ".dotnet" to correlation_payload_directory for crossgen2 job; it is needed to invoke crossgen2.dll
-    # if coreclr_args.collection_type == "crossgen2":
-    #     dotnet_src_directory = path.join(source_directory, ".dotnet")
-    #     dotnet_dst_directory = path.join(correlation_payload_directory, ".dotnet")
-    #     print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
-    #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
+        # Clone and build jitutils
+        try:
+            with tempfile.TemporaryDirectory() as jitutils_directory:
+                run_command(
+                    ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
+                # Set dotnet path to run bootstrap
+                os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
+                bootstrap_file = "bootstrap.cmd" if is_windows else "bootstrap.sh"
+                run_command([path.join(jitutils_directory, bootstrap_file)], jitutils_directory)
 
-    # payload
-    input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
-    exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
-    exclude_files = native_binaries_to_ignore
-    if coreclr_args.collection_type == "crossgen2":
-        print('Adding exclusions for crossgen2')
-        # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
-        exclude_files += [ "Microsoft.Build.dll" ]
-    partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory, exclude_files)
+                copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, [path.join(jitutils_directory, "bin", "pmi.dll")])
+        except PermissionError as pe_error:
+            # Details: https://bugs.python.org/issue26660
+            print('Ignoring PermissionError: {0}'.format(pe_error))
+
+        # NOTE: we can't use the build machine ".dotnet" to run on all platforms. E.g., the Windows x86 build uses a
+        # Windows x64 .dotnet\dotnet.exe that can't load a 32-bit shim. Thus, we always use corerun from Core_Root to invoke crossgen2.
+        # The following will copy .dotnet to the correlation payload in case we change our mind, and need or want to use it for some scenarios.
+
+        # # Copy ".dotnet" to correlation_payload_directory for crossgen2 job; it is needed to invoke crossgen2.dll
+        # if coreclr_args.collection_type == "crossgen2":
+        #     dotnet_src_directory = path.join(source_directory, ".dotnet")
+        #     dotnet_dst_directory = path.join(correlation_payload_directory, ".dotnet")
+        #     print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
+        #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
+
+        # payload
+        pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
+        input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
+        exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "tests" else []
+        exclude_files = native_binaries_to_ignore
+        if coreclr_args.collection_type == "crossgen2":
+            print('Adding exclusions for crossgen2')
+            # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
+            exclude_files += [ "Microsoft.Build.dll" ]
+        partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory, exclude_files)
 
     # Set variables
     print('Setting pipeline variables:')
     set_pipeline_variable("CorrelationPayloadDirectory", correlation_payload_directory)
     set_pipeline_variable("WorkItemDirectory", workitem_directory)
     set_pipeline_variable("InputArtifacts", input_artifacts)
-    if is_windows:
-        set_pipeline_variable("Python", "py -3")
-    else:
-        set_pipeline_variable("Python", "python3")
+    set_pipeline_variable("Python", ' '.join(get_python_name()))
     set_pipeline_variable("Architecture", arch)
     set_pipeline_variable("Creator", creator)
     set_pipeline_variable("Queue", helix_queue)

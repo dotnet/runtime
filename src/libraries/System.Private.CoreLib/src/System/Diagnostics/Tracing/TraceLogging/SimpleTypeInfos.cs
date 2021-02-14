@@ -4,9 +4,12 @@
 #if ES_BUILD_STANDALONE
 using System;
 using System.Diagnostics;
+using System.Runtime.Serialization;
 #endif
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
@@ -267,7 +270,6 @@ namespace System.Diagnostics.Tracing
     internal sealed class NullableTypeInfo : TraceLoggingTypeInfo
     {
         private readonly TraceLoggingTypeInfo valueInfo;
-        private readonly Func<PropertyValue, PropertyValue> valueGetter;
 
         public NullableTypeInfo(Type type, List<Type> recursionCheck)
             : base(type)
@@ -275,7 +277,6 @@ namespace System.Diagnostics.Tracing
             Type[] typeArgs = type.GenericTypeArguments;
             Debug.Assert(typeArgs.Length == 1);
             this.valueInfo = TraceLoggingTypeInfo.GetInstance(typeArgs[0], recursionCheck);
-            this.valueGetter = PropertyValue.GetPropertyGetter(type.GetProperty("Value")!);
         }
 
         public override void WriteMetadata(
@@ -288,13 +289,22 @@ namespace System.Diagnostics.Tracing
             this.valueInfo.WriteMetadata(group, "Value", format);
         }
 
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                Justification = "The underlying type of Nullable<T> must be defaultable")]
+#endif
         public override void WriteData(PropertyValue value)
         {
-            // It's not currently possible to get the HasValue property of a nullable type through reflection when the
-            // value is null. Instead, we simply check that the nullable is not null.
-            bool hasValue = value.ReferenceValue != null;
+            object? refVal = value.ReferenceValue;
+            bool hasValue = refVal is not null;
             TraceLoggingDataCollector.AddScalar(hasValue);
-            PropertyValue val = hasValue ? valueGetter(value) : valueInfo.PropertyValueFactory(Activator.CreateInstance(valueInfo.DataType));
+            PropertyValue val = valueInfo.PropertyValueFactory(hasValue
+                ? refVal
+#if ES_BUILD_STANDALONE
+                : FormatterServices.GetUninitializedObject(valueInfo.DataType));
+ #else
+                : RuntimeHelpers.GetUninitializedObject(valueInfo.DataType));
+ #endif
             this.valueInfo.WriteData(val);
         }
     }

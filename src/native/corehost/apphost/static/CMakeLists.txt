@@ -28,7 +28,7 @@ set(SOURCES
 
 set(HEADERS
     ../bundle_marker.h
-    ../../../hostfxr_resolver.h
+    ../../hostfxr_resolver.h
 )
 
 add_definitions(-D_NO_ASYNCRTIMP)
