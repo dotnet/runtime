@@ -15,6 +15,8 @@ namespace System.Net.WebSockets
     {
         private sealed class Sender : IDisposable
         {
+            private const byte PerMessageDeflateBit = 0b0100_0000;
+
             private readonly int _maskLength;
             private readonly Encoder? _encoder;
 
@@ -31,35 +33,32 @@ namespace System.Net.WebSockets
                     if (options.IsServer)
                     {
                         _encoder = deflate.ServerContextTakeover ?
-                            new Deflate(-deflate.ServerMaxWindowBits) :
-                            new PersistedDeflate(-deflate.ServerMaxWindowBits);
+                            new Deflater(-deflate.ServerMaxWindowBits) :
+                            new PersistedDeflater(-deflate.ServerMaxWindowBits);
                     }
                     else
                     {
                         _encoder = deflate.ClientContextTakeover ?
-                            new Deflate(-deflate.ClientMaxWindowBits) :
-                            new PersistedDeflate(-deflate.ClientMaxWindowBits);
+                            new Deflater(-deflate.ClientMaxWindowBits) :
+                            new PersistedDeflater(-deflate.ClientMaxWindowBits);
                     }
                 }
             }
 
-            public void Dispose()
-            {
-                _encoder?.Dispose();
-            }
+            public void Dispose() => _encoder?.Dispose();
 
             public ValueTask SendAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> content, Stream stream, CancellationToken cancellationToken = default)
             {
                 var buffer = new Buffer(content.Length + MaxMessageHeaderLength);
-                var compressed = false;
+                byte reservedBits = 0;
 
                 // Reserve space for the frame header
                 buffer.Advance(MaxMessageHeaderLength);
 
-                if (_encoder is not null && opcode is MessageOpcode.Text or MessageOpcode.Binary)
+                // Encoding is onlt supported for user messages
+                if (_encoder is not null && opcode <= MessageOpcode.Continuation)
                 {
-                    _encoder.Encode(content.Span, ref buffer);
-                    compressed = true;
+                    _encoder.Encode(content.Span, ref buffer, continuation: opcode == MessageOpcode.Continuation, endOfMessage, out reservedBits);
                 }
                 else if (content.Length > 0)
                 {
@@ -76,7 +75,7 @@ namespace System.Net.WebSockets
                 var header = buffer.WrittenSpan.Slice(headerOffset, headerLength);
 
                 // Write the message header data to the buffer.
-                EncodeHeader(header, opcode, endOfMessage, payload.Length, compressed);
+                EncodeHeader(header, opcode, endOfMessage, payload.Length, reservedBits);
 
                 // If we added a mask to the header, XOR the payload with the mask.
                 if (payload.Length > 0 && _maskLength > 0)
@@ -84,23 +83,22 @@ namespace System.Net.WebSockets
                     ApplyMask(payload, BitConverter.ToInt32(header.Slice(header.Length - MaskLength)), 0);
                 }
 
-                var array = buffer.GetArray();
                 var releaseArray = true;
 
                 try
                 {
-                    var sendTask = stream.WriteAsync(new ReadOnlyMemory<byte>(array, headerOffset, headerLength + payload.Length), cancellationToken);
+                    var sendTask = stream.WriteAsync(new ReadOnlyMemory<byte>(buffer.Array, headerOffset, headerLength + payload.Length), cancellationToken);
 
                     if (sendTask.IsCompleted)
                         return sendTask;
 
                     releaseArray = false;
-                    return WaitAsync(sendTask.AsTask(), array);
+                    return WaitAsync(sendTask.AsTask(), buffer.Array);
                 }
                 finally
                 {
                     if (releaseArray)
-                        ArrayPool<byte>.Shared.Return(array);
+                        ArrayPool<byte>.Shared.Return(buffer.Array);
                 }
             }
 
@@ -123,8 +121,12 @@ namespace System.Net.WebSockets
                 _ => 10
             } + _maskLength;
 
-            private void EncodeHeader(Span<byte> header, MessageOpcode opcode, bool endOfMessage, int payloadLength, bool compressed)
+            private void EncodeHeader(Span<byte> header, MessageOpcode opcode, bool endOfMessage, int payloadLength, byte reservedBits)
             {
+                // The current implementation only supports per message deflate extension. In the future
+                // if more extensions are implemented or we allow third party extensions this assert must be changed.
+                Debug.Assert((reservedBits | 0b0100_0000) == 0b0100_0000);
+
                 // Client header format:
                 // 1 bit - FIN - 1 if this is the final fragment in the message (it could be the only fragment), otherwise 0
                 // 1 bit - RSV1 - Per-Message Deflate Compress
@@ -146,14 +148,11 @@ namespace System.Net.WebSockets
                 // 0 or 4 bytes - Mask, if Masked is 1 - random value XOR'd with each 4 bytes of the payload, round-robin
                 // Length bytes - Payload data
                 header[0] = (byte)opcode; // 4 bits for the opcode
+                header[0] |= reservedBits;
+
                 if (endOfMessage)
                 {
                     header[0] |= 0b1000_0000; // 1 bit for FIN
-                }
-
-                if (compressed)
-                {
-                    header[0] |= 0b0100_0000;
                 }
 
                 // Store the payload length.
@@ -185,6 +184,10 @@ namespace System.Net.WebSockets
                 }
             }
 
+            /// <summary>
+            /// Helper class which allows writing to a rent'ed byte array
+            /// and auto-grow functionality.
+            /// </summary>
             internal ref struct Buffer
             {
                 private byte[] _array;
@@ -197,6 +200,8 @@ namespace System.Net.WebSockets
                 }
 
                 public Span<byte> WrittenSpan => new Span<byte>(_array, 0, _index);
+
+                public byte[] Array => _array;
 
                 public int FreeCapacity => _array.Length - _index;
 
@@ -223,33 +228,48 @@ namespace System.Net.WebSockets
 
                     return _array.AsSpan(_index);
                 }
-
-                public byte[] GetArray() => _array;
             }
 
             private abstract class Encoder : IDisposable
             {
                 public abstract void Dispose();
 
-                internal abstract void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer);
+                internal abstract void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer, bool continuation, bool endOfMessage, out byte reservedBits);
             }
 
-            private class Deflate : Encoder
+            /// <summary>
+            /// Deflate encoder which doesn't persist the deflator accross messages.
+            /// </summary>
+            private class Deflater : Encoder
             {
                 private readonly int _windowBits;
 
-                public Deflate(int windowBits) => _windowBits = windowBits;
+                // Although the inflater isn't persisted accross messages, a single message
+                // might be split into multiple frames.
+                private IO.Compression.Deflater? _deflater;
 
-                public override void Dispose() { }
+                public Deflater(int windowBits) => _windowBits = windowBits;
 
-                internal override void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer)
+                public override void Dispose() => _deflater?.Dispose();
+
+                internal override void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer, bool continuation, bool endOfMessage, out byte reservedBits)
                 {
-                    using var deflater = new Deflater(_windowBits);
+                    Debug.Assert((continuation && _deflater is not null) || (!continuation && _deflater is null),
+                        "Invalid state. The deflater was expected to be null if not continuation and not null otherwise.");
 
-                    Encode(payload, ref buffer, deflater);
+                    _deflater ??= new IO.Compression.Deflater(_windowBits);
+
+                    Encode(payload, ref buffer, _deflater);
+                    reservedBits = continuation ? 0 : PerMessageDeflateBit;
+
+                    if (endOfMessage)
+                    {
+                        _deflater.Dispose();
+                        _deflater = null;
+                    }
                 }
 
-                protected static void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer, Deflater deflater)
+                public static void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer, IO.Compression.Deflater deflater)
                 {
                     while (payload.Length > 0)
                     {
@@ -273,19 +293,22 @@ namespace System.Net.WebSockets
                 }
             }
 
-            private sealed class PersistedDeflate : Deflate
+            /// <summary>
+            /// Deflate encoder which persists the deflator state accross messages.
+            /// </summary>
+            private sealed class PersistedDeflater : Encoder
             {
-                private readonly Deflater _deflater;
+                private readonly IO.Compression.Deflater _deflater;
 
-                public PersistedDeflate(int windowBits) : base(windowBits)
-                {
-                    _deflater = new Deflater(windowBits);
-                }
+                public PersistedDeflater(int windowBits) => _deflater = new(windowBits);
 
                 public override void Dispose() => _deflater.Dispose();
 
-                internal override void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer)
-                    => Encode(payload, ref buffer, _deflater);
+                internal override void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer, bool continuation, bool endOfMessage, out byte reservedBits)
+                {
+                    Deflater.Encode(payload, ref buffer, _deflater);
+                    reservedBits = continuation ? 0 : PerMessageDeflateBit;
+                }
             }
         }
     }
