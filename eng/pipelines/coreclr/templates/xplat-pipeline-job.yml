@@ -13,7 +13,6 @@ parameters:
   stagedBuild: false
   strategy: ''
   pool: ''
-  pgoType: ''
 
   # arcade-specific parameters
   condition: true
