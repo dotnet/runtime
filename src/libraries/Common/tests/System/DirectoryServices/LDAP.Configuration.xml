@@ -35,9 +35,11 @@ For Active Directory, it is necessary to set up a VM that is a Domain Controller
 
 When running against Active Directory from a Windows client, you should not see any tests marked `[ConditionalFact(nameof(IsActiveDirectoryServer))]` skip. At the moment, that means that there are zero total skipped test cases when you run against Active Directory using tests on Windows.
 
-If you are running your AD server as a VM on the same machine that you are running WSL2, you must execute this command to bridge the two Hyper-V networks so that it is visible from WSL2:
-`Get-NetIPInterface | where {$_.InterfaceAlias -eq 'vEthernet (WSL)' -or $_.InterfaceAlias -eq 'vEthernet (Default Switch)'} | Set-NetIPInterface -Forwarding Enabled`
-The WSL2 VM should now be able to see the AD VM by IP address.
+If you are running your AD server as a VM on the same machine that you are running WSL2, you must execute this command on the host to bridge the two Hyper-V networks so that it is visible from WSL2:
+
+        Get-NetIPInterface | where {$_.InterfaceAlias -eq 'vEthernet (WSL)' -or $_.InterfaceAlias -eq 'vEthernet (Default Switch)'} | Set-NetIPInterface -Forwarding Enabled
+
+The WSL2 VM should now be able to see the AD VM by IP address. To make it visible by host name, it's probably easiest to just add it to /etc/hosts.
 
 For the S.DS.AM and S.DS tests to work successfully against AD, the test machine needs to be on the AD domain. It is easiest to have the test machine in a VM as well. Set the primary DNS server for the test machine to be the AD machine, join the machine to that domain, and log into it as a (the) domain user.
 
