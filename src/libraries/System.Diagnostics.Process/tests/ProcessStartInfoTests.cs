@@ -458,15 +458,7 @@ namespace System.Diagnostics.Tests
         public void TestUserCredentialsPropertiesOnWindows()
         {
             const string username = "testForDotnetRuntime";
-            string password;
-            using (RandomNumberGenerator rng = new RNGCryptoServiceProvider())
-            {
-                byte[] randomBytes = new byte[33];
-                rng.GetBytes(randomBytes);
-
-                // Add special chars to ensure it satisfies password requirements.
-               password = Convert.ToBase64String(randomBytes) + "_-As@!%*(1)4#2";
-           }
+            string password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(33)) + "_-As@!%*(1)4#2";
 
             uint removalResult = Interop.NetUserDel(null, username);
             Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
