@@ -8,8 +8,8 @@ using System.Runtime.CompilerServices;
 namespace System.Collections.Generic
 {
     /// <summary>
-    /// Represents a data structure in which each element additionally has a priority
-    /// associated with it.
+    /// Represents a data structure in which each element has an associated priority
+    /// that determines the order in which the pair is dequeued.
     /// </summary>
     /// <typeparam name="TElement">The type of the element.</typeparam>
     /// <typeparam name="TPriority">The type of the priority.</typeparam>
@@ -28,12 +28,19 @@ namespace System.Collections.Generic
         private int _size;
 
         /// <summary>
-        /// Used to keep enumerator in sync with the collection.
+        /// Version updated on mutation to help validate enumerators operate on a consistent state.
         /// </summary>
         private int _version;
 
+        /// <summary>
+        /// When the underlying buffer for the heap nodes grows to accomodate more nodes,
+        /// this is the minimum the capacity will grow by.
+        /// </summary>
         private const int MinimumElementsToGrowBy = 4;
 
+        /// <summary>
+        /// The index at which the heap root is maintained.
+        /// </summary>
         private const int RootIndex = 0;
 
         /// <summary>
@@ -142,13 +149,12 @@ namespace System.Collections.Generic
             // Virtually add the node at the end of the underlying array.
             // Note that the node being enqueued does not need to be physically placed
             // there at this point, as such an assignment would be redundant.
-            (TElement Element, TPriority Priority) node = (element, priority);
             _size++;
             _version++;
 
             // Restore the heap order
             int lastNodeIndex = GetLastNodeIndex();
-            MoveUp(node, lastNodeIndex);
+            MoveUp((element, priority), lastNodeIndex);
         }
 
         /// <summary>
@@ -296,12 +302,12 @@ namespace System.Collections.Generic
                             EnsureEnoughCapacityBeforeAddingNode();
                             _nodes[_size++] = (enumerator.Current, priority);
                         }
-                    }
-                }
 
-                if (_size > 1)
-                {
-                    Heapify();
+                        if (_size > 1)
+                        {
+                            Heapify();
+                        }
+                    }
                 }
             }
             else
@@ -335,24 +341,15 @@ namespace System.Collections.Generic
         {
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            int currentCapacity = _nodes.Length;
-            if (currentCapacity >= capacity)
+            if (_nodes.Length < capacity)
             {
-                return currentCapacity;
+                SetCapacity(Math.Max(capacity, ComputeCapacityForNextGrowth()));
             }
 
-            int capacityForNextGrowth = ComputeCapacityForNextGrowth();
-            if (capacityForNextGrowth > capacity)
-            {
-                capacity = capacityForNextGrowth;
-            }
-
-            SetCapacity(capacity);
-            return capacity;
+            return _nodes.Length;
         }
 
         /// <summary>
@@ -370,13 +367,11 @@ namespace System.Collections.Generic
 
         private void EnsureEnoughCapacityBeforeAddingNode()
         {
-            if (_size < _nodes.Length)
+            Debug.Assert(_size <= _nodes.Length);
+            if (_size == _nodes.Length)
             {
-                return;
+                SetCapacity(ComputeCapacityForNextGrowth());
             }
-
-            int newCapacity = ComputeCapacityForNextGrowth();
-            SetCapacity(newCapacity);
         }
 
         private int ComputeCapacityForNextGrowth()
@@ -384,11 +379,7 @@ namespace System.Collections.Generic
             const int GrowthFactor = 2;
             const int MaxArrayLength = 0X7FEFFFFF;
 
-            int newCapacity = _nodes.Length * GrowthFactor;
-            if (newCapacity < _nodes.Length + MinimumElementsToGrowBy)
-            {
-                newCapacity = _nodes.Length + MinimumElementsToGrowBy;
-            }
+            int newCapacity = Math.Max(_nodes.Length * GrowthFactor, _nodes.Length + MinimumElementsToGrowBy);
 
             // Allow the structure to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _nodes.Length overflowed thanks to the (uint) cast.
@@ -633,8 +624,6 @@ namespace System.Collections.Generic
 
                 public bool MoveNext()
                 {
-                    bool advancedEnumerator;
-
                     if (_version != _queue._version)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
@@ -642,19 +631,17 @@ namespace System.Collections.Generic
 
                     if (_index == FirstCallToEnumerator)
                     {
-                        _index = 0;
-                        advancedEnumerator = (_queue._size > 0);
-
-                        if (advancedEnumerator)
+                        if (_queue._size > 0)
                         {
+                            _index = 0;
                             _currentElement = _queue._nodes[_index];
+                            return true;
                         }
                         else
                         {
                             _index = EndOfEnumeration;
+                            return false;
                         }
-
-                        return advancedEnumerator;
                     }
 
                     if (_index == EndOfEnumeration)
@@ -662,19 +649,20 @@ namespace System.Collections.Generic
                         return false;
                     }
 
+                    // advance enumerator
                     _index++;
-                    advancedEnumerator = (_index < _queue._size);
 
-                    if (advancedEnumerator)
+                    if (_index < _queue._size)
                     {
                         _currentElement = _queue._nodes[_index];
+                        return true;
                     }
                     else
                     {
+                        _index = EndOfEnumeration;
                         _currentElement = default;
+                        return false;
                     }
-
-                    return advancedEnumerator;
                 }
 
                 public (TElement element, TPriority priority) Current
