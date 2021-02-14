@@ -192,8 +192,16 @@ namespace System.Linq
             }
             else if (source is IIListProvider<TSource> listProvider)
             {
-                int count = listProvider.GetCount(onlyIfCheap: false);
-                return count > 0 && TryGetElement(source, count - indexFromEnd, out element);
+                int count = listProvider.GetCount(onlyIfCheap: true);
+                if (count == 0)
+                {
+                    return false;
+                }
+
+                if (count > 0)
+                {
+                    return TryGetElement(source, count - indexFromEnd, out element);
+                }
             }
             else if (source is ICollection collection)
             {
