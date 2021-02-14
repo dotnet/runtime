@@ -7573,15 +7573,31 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                                              (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd : nullptr,
                                              call->IsTailPrefixedCall(), tailCallResult, nullptr);
 
-    // It isn't alway profitable to expand a virtual call early when we have an optimized tail call
-    // and the this pointer needs to be evaluated into a temp.
+    // Are we currently planning to expand the gtControlExpr as an early virtual call target?
     //
-    if ((tailCallResult == TAILCALL_OPTIMIZED) && call->IsExpandedEarly() && call->IsVirtualVtable() &&
-        ((call->gtCallThisArg->GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0))
+    if (call->IsExpandedEarly() && call->IsVirtualVtable())
     {
-        // We will expand this late in lower instead.
+        // It isn't alway profitable to expand a virtual call early
         //
-        call->ClearExpandedEarly();
+        // We alway expand the TAILCALL_HELPER type late.
+        // And we exapnd late when we have an optimized tail call
+        // and the this pointer needs to be evaluated into a temp.
+        //
+        if (tailCallResult == TAILCALL_HELPER)
+        {
+            // We will alway expand this late in lower instead.
+            // (see LowerTailCallViaJitHelper as it needs some work
+            // for us to be able to expand this earlier in morph)
+            //
+            call->ClearExpandedEarly();
+        }
+        else if ((tailCallResult == TAILCALL_OPTIMIZED) &&
+                 ((call->gtCallThisArg->GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0))
+        {
+            // We generate better code when we expand this late in lower instead.
+            //
+            call->ClearExpandedEarly();
+        }
     }
 
     // Now actually morph the call.
