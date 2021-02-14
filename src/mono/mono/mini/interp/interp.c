@@ -637,22 +637,22 @@ typedef struct {
 } InterpVTableEntry;
 
 /* memory manager lock must be held */
-static GSList*
-append_imethod (MonoMemoryManager *memory_manager, GSList *list, InterpMethod *imethod, InterpMethod *target_imethod)
+static GList*
+append_imethod (MonoMemoryManager *memory_manager, GList *list, InterpMethod *imethod, InterpMethod *target_imethod)
 {
-	GSList *ret;
+	GList *ret;
 	InterpVTableEntry *entry;
 
-	entry = (InterpVTableEntry*) mono_mem_manager_alloc_nolock (memory_manager, sizeof (InterpVTableEntry));
+	entry = (InterpVTableEntry*) mono_mem_manager_alloc0 (memory_manager, sizeof (InterpVTableEntry));
 	entry->imethod = imethod;
 	entry->target_imethod = target_imethod;
-	ret = g_slist_append_mempool (memory_manager->mp, list, entry);
+	ret = mono_mem_manager_g_list_append (memory_manager, list, entry);
 
 	return ret;
 }
 
 static InterpMethod*
-get_target_imethod (GSList *list, InterpMethod *imethod)
+get_target_imethod (GList *list, InterpMethod *imethod)
 {
 	while (list != NULL) {
 		InterpVTableEntry *entry = (InterpVTableEntry*) list->data;
@@ -722,13 +722,13 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 		return (InterpMethod*) ((gsize)table [offset] & ~0x1);
 	} else {
 		/* Virtual generic or interface call. Multiple methods in slot */
-		InterpMethod *target_imethod = get_target_imethod ((GSList*)table [offset], imethod);
+		InterpMethod *target_imethod = get_target_imethod ((GList*)table [offset], imethod);
 
 		if (!target_imethod) {
 			target_imethod = get_virtual_method (imethod, vtable);
 			mono_mem_manager_lock (memory_manager);
-			if (!get_target_imethod ((GSList*)table [offset], imethod))
-				table [offset] = append_imethod (memory_manager, (GSList*)table [offset], imethod, target_imethod);
+			if (!get_target_imethod ((GList*)table [offset], imethod))
+				table [offset] = append_imethod (memory_manager, (GList*)table [offset], imethod, target_imethod);
 			mono_mem_manager_unlock (memory_manager);
 		}
 		return target_imethod;

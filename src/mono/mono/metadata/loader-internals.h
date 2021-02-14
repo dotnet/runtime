@@ -209,13 +209,7 @@ void *
 mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size);
 
 void *
-mono_mem_manager_alloc_nolock (MonoMemoryManager *memory_manager, guint size);
-
-void *
 mono_mem_manager_alloc0 (MonoMemoryManager *memory_manager, guint size);
-
-void *
-mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size);
 
 void *
 mono_mem_manager_code_reserve (MonoMemoryManager *memory_manager, int size);
@@ -233,6 +227,12 @@ mono_mem_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManage
 
 char*
 mono_mem_manager_strdup (MonoMemoryManager *memory_manager, const char *s);
+
+GList*
+mono_mem_manager_g_list_append (MonoMemoryManager *memory_manager, GList *list, gpointer data);
+
+gboolean
+mono_mem_manager_mp_contains_addr (MonoMemoryManager *memory_manager, gpointer addr);
 
 G_END_DECLS
 
