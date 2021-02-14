@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace System.DirectoryServices.Tests
@@ -80,9 +82,22 @@ namespace System.DirectoryServices.Tests
             if (!File.Exists(configFile))
                 Environment.FailFast("LDAP test configuration file not found: " + configFile);
 
+            // To use test servers, set an environment variable LDAP_TEST_SERVER_INDEX
+            // to the 0-based index of the <Connection> element in LDAP.Configuration.xml
+            if (!int.TryParse(Environment.GetEnvironmentVariable("LDAP_TEST_SERVER_INDEX"), out int serverIndex))
+            {
+                return null;
+            }
+
             LdapConfiguration ldapConfig = null;
             try
             {
+                XElement configuration = XDocument.Load(configFile).Element("Configuration");
+
+                XElement connection = configuration.Elements("Connection").Skip(serverIndex).First();
+
+                Debug.WriteLine($"Using test LDAP server {connection.Attribute("Name").Value}");
+
                 string serverName = "";
                 string searchDn = "";
                 string port = "";
@@ -90,72 +105,60 @@ namespace System.DirectoryServices.Tests
                 string password = "";
                 AuthenticationTypes at = AuthenticationTypes.None;
 
-                XElement config = XDocument.Load(configFile).Element("Configuration");
-                if (config != null)
+                XElement child = connection.Element("ServerName");
+                if (child != null)
+                    serverName = child.Value;
+
+                child = connection.Element("SearchDN");
+                if (child != null)
+                    searchDn = child.Value;
+
+                child = connection.Element("Port");
+                if (child != null)
+                    port = child.Value;
+
+                child = connection.Element("User");
+                if (child != null)
+                    user = child.Value;
+
+                child = connection.Element("Password");
+                if (child != null)
                 {
-                    XElement child = config.Element("ServerName");
-                    if (child != null)
+                    string val = child.Value;
+                    if (val.StartsWith("%") && val.EndsWith("%"))
                     {
-                        serverName = child.Value;
+                        val = Environment.GetEnvironmentVariable(val.Substring(1, val.Length - 2));
                     }
-                    else
+                    password = val;
+                }
+
+                child = connection.Element("AuthenticationTypes");
+                if (child != null)
+                {
+                    string[] parts = child.Value.Split(',');
+                    foreach (string p in parts)
                     {
-                        // No configuration in the XML - presumably they didn't set up test servers
-                        Environment.FailFast(configFile);
-                        return null;
-                    }
-
-                    child = config.Element("SearchDN");
-                    if (child != null)
-                        searchDn = child.Value;
-
-                    child = config.Element("Port");
-                    if (child != null)
-                        port = child.Value;
-
-                    child = config.Element("User");
-                    if (child != null)
-                        user = child.Value;
-
-                    child = config.Element("Password");
-                    if (child != null)
-                    {
-                        string val = child.Value;
-                        if (val.StartsWith("%") && val.EndsWith("%"))
-                        {
-                            val = Environment.GetEnvironmentVariable(val.Substring(1, val.Length - 2));
-                        }
-                        password = val;
-                    }
-
-                    child = config.Element("AuthenticationTypes");
-                    if (child != null)
-                    {
-                        string[] parts = child.Value.Split(',');
-                        foreach (string p in parts)
-                        {
-                            string s = p.Trim();
-                            if (s.Equals("Anonymous", StringComparison.OrdinalIgnoreCase))
-                                at |= AuthenticationTypes.Anonymous;
-                            if (s.Equals("Delegation", StringComparison.OrdinalIgnoreCase))
-                                at |= AuthenticationTypes.Delegation;
-                            if (s.Equals("Encryption", StringComparison.OrdinalIgnoreCase))
-                                at |= AuthenticationTypes.FastBind;
-                            if (s.Equals("FastBind", StringComparison.OrdinalIgnoreCase))
-                                at |= AuthenticationTypes.FastBind;
-                            if (s.Equals("ReadonlyServer", StringComparison.OrdinalIgnoreCase))
-                                at |= AuthenticationTypes.ReadonlyServer;
-                            if (s.Equals("Sealing", StringComparison.OrdinalIgnoreCase))
-                                at |= AuthenticationTypes.Sealing;
-                            if (s.Equals("Secure", StringComparison.OrdinalIgnoreCase))
-                                at |= AuthenticationTypes.Secure;
-                            if (s.Equals("SecureSocketsLayer", StringComparison.OrdinalIgnoreCase))
-                                at |= AuthenticationTypes.SecureSocketsLayer;
-                            if (s.Equals("ServerBind", StringComparison.OrdinalIgnoreCase))
-                                at |= AuthenticationTypes.ServerBind;
-                            if (s.Equals("Signing", StringComparison.OrdinalIgnoreCase))
-                                at |= AuthenticationTypes.Signing;
-                        }
+                        string s = p.Trim();
+                        if (s.Equals("Anonymous", StringComparison.OrdinalIgnoreCase))
+                            at |= AuthenticationTypes.Anonymous;
+                        if (s.Equals("Delegation", StringComparison.OrdinalIgnoreCase))
+                            at |= AuthenticationTypes.Delegation;
+                        if (s.Equals("Encryption", StringComparison.OrdinalIgnoreCase))
+                            at |= AuthenticationTypes.FastBind;
+                        if (s.Equals("FastBind", StringComparison.OrdinalIgnoreCase))
+                            at |= AuthenticationTypes.FastBind;
+                        if (s.Equals("ReadonlyServer", StringComparison.OrdinalIgnoreCase))
+                            at |= AuthenticationTypes.ReadonlyServer;
+                        if (s.Equals("Sealing", StringComparison.OrdinalIgnoreCase))
+                            at |= AuthenticationTypes.Sealing;
+                        if (s.Equals("Secure", StringComparison.OrdinalIgnoreCase))
+                            at |= AuthenticationTypes.Secure;
+                        if (s.Equals("SecureSocketsLayer", StringComparison.OrdinalIgnoreCase))
+                            at |= AuthenticationTypes.SecureSocketsLayer;
+                        if (s.Equals("ServerBind", StringComparison.OrdinalIgnoreCase))
+                            at |= AuthenticationTypes.ServerBind;
+                        if (s.Equals("Signing", StringComparison.OrdinalIgnoreCase))
+                            at |= AuthenticationTypes.Signing;
                     }
 
                     ldapConfig = new LdapConfiguration(serverName, searchDn, user, password, port, at);
