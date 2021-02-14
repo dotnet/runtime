@@ -211,30 +211,30 @@ namespace System.Linq.Tests
         {
             int?[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-            Assert.Equal(5, ListPartition(source).ElementAtOrDefault(5));
-            Assert.Equal(5, ListPartition(source).ElementAtOrDefault(new Index(5)));
-            Assert.Equal(5, ListPartition(source).ElementAtOrDefault(^5));
+            Assert.Equal(5, ListPartitionOrEmpty(source).ElementAtOrDefault(5));
+            Assert.Equal(5, ListPartitionOrEmpty(source).ElementAtOrDefault(new Index(5)));
+            Assert.Equal(5, ListPartitionOrEmpty(source).ElementAtOrDefault(^5));
 
-            Assert.Equal(0, ListPartition(source).ElementAtOrDefault(0));
-            Assert.Equal(0, ListPartition(source).ElementAtOrDefault(new Index(0)));
-            Assert.Equal(0, ListPartition(source).ElementAtOrDefault(^10));
+            Assert.Equal(0, ListPartitionOrEmpty(source).ElementAtOrDefault(0));
+            Assert.Equal(0, ListPartitionOrEmpty(source).ElementAtOrDefault(new Index(0)));
+            Assert.Equal(0, ListPartitionOrEmpty(source).ElementAtOrDefault(^10));
 
-            Assert.Equal(9, ListPartition(source).ElementAtOrDefault(9));
-            Assert.Equal(9, ListPartition(source).ElementAtOrDefault(new Index(9)));
-            Assert.Equal(9, ListPartition(source).ElementAtOrDefault(^1));
+            Assert.Equal(9, ListPartitionOrEmpty(source).ElementAtOrDefault(9));
+            Assert.Equal(9, ListPartitionOrEmpty(source).ElementAtOrDefault(new Index(9)));
+            Assert.Equal(9, ListPartitionOrEmpty(source).ElementAtOrDefault(^1));
 
-            Assert.Null(ListPartition(source).ElementAtOrDefault(-1));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(^11));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(-1));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(^11));
 
-            Assert.Null(ListPartition(source).ElementAtOrDefault(10));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(new Index(10)));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(^0));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(10));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(new Index(10)));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(^0));
 
-            Assert.Null(ListPartition(source).ElementAtOrDefault(int.MinValue));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(int.MinValue));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Null(ListPartition(source).ElementAtOrDefault(int.MaxValue));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(int.MaxValue));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -242,30 +242,30 @@ namespace System.Linq.Tests
         {
             int?[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-            Assert.Equal(5, EnumerablePartition(source).ElementAtOrDefault(5));
-            Assert.Equal(5, EnumerablePartition(source).ElementAtOrDefault(new Index(5)));
-            Assert.Equal(5, EnumerablePartition(source).ElementAtOrDefault(^5));
+            Assert.Equal(5, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(5));
+            Assert.Equal(5, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(new Index(5)));
+            Assert.Equal(5, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(^5));
 
-            Assert.Equal(0, EnumerablePartition(source).ElementAtOrDefault(0));
-            Assert.Equal(0, EnumerablePartition(source).ElementAtOrDefault(new Index(0)));
-            Assert.Equal(0, EnumerablePartition(source).ElementAtOrDefault(^10));
+            Assert.Equal(0, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(0));
+            Assert.Equal(0, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(new Index(0)));
+            Assert.Equal(0, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(^10));
 
-            Assert.Equal(9, EnumerablePartition(source).ElementAtOrDefault(9));
-            Assert.Equal(9, EnumerablePartition(source).ElementAtOrDefault(new Index(9)));
-            Assert.Equal(9, EnumerablePartition(source).ElementAtOrDefault(^1));
+            Assert.Equal(9, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(9));
+            Assert.Equal(9, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(new Index(9)));
+            Assert.Equal(9, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(^1));
 
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(-1));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^11));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(-1));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(^11));
 
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(10));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(new Index(10)));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^0));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(10));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(new Index(10)));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(^0));
 
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(int.MinValue));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(int.MinValue));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(int.MaxValue));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(int.MaxValue));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -315,20 +315,20 @@ namespace System.Linq.Tests
         {
             int?[] source = { };
 
-            Assert.Null(ListPartition(source).ElementAtOrDefault(1));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(-1));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(new Index(1)));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(^1));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(1));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(-1));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(new Index(1)));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(^1));
 
-            Assert.Null(ListPartition(source).ElementAtOrDefault(0));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(new Index(0)));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(^0));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(0));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(new Index(0)));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(^0));
 
-            Assert.Null(ListPartition(source).ElementAtOrDefault(int.MinValue));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(int.MinValue));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Null(ListPartition(source).ElementAtOrDefault(int.MaxValue));
-            Assert.Null(ListPartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(int.MaxValue));
+            Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -336,20 +336,20 @@ namespace System.Linq.Tests
         {
             int?[] source = { };
 
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(1));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(-1));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(new Index(1)));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^1));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(1));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(-1));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(new Index(1)));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(^1));
 
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(0));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(new Index(0)));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^0));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(0));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(new Index(0)));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(^0));
 
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(int.MinValue));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(^int.MaxValue));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(int.MinValue));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(^int.MaxValue));
 
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(int.MaxValue));
-            Assert.Null(EnumerablePartition(source).ElementAtOrDefault(new Index(int.MaxValue)));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(int.MaxValue));
+            Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(new Index(int.MaxValue)));
         }
     }
 }

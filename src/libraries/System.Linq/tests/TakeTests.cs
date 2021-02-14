@@ -1401,36 +1401,36 @@ namespace System.Linq.Tests
         {
             var source = new[] { 1, 2, 3, 4, 5 };
 
-            Assert.Equal(source, ListPartition(source).Take(0..6));
-            Assert.Equal(source, ListPartition(source).Take(0..int.MaxValue));
+            Assert.Equal(source, ListPartitionOrEmpty(source).Take(0..6));
+            Assert.Equal(source, ListPartitionOrEmpty(source).Take(0..int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartition(source).Take(^10..4));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartition(source).Take(^int.MaxValue..4));
-            Assert.Equal(source, ListPartition(source).Take(^10..6));
-            Assert.Equal(source, ListPartition(source).Take(^int.MaxValue..6));
-            Assert.Equal(source, ListPartition(source).Take(^10..int.MaxValue));
-            Assert.Equal(source, ListPartition(source).Take(^int.MaxValue..int.MaxValue));
+            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^10..4));
+            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^int.MaxValue..4));
+            Assert.Equal(source, ListPartitionOrEmpty(source).Take(^10..6));
+            Assert.Equal(source, ListPartitionOrEmpty(source).Take(^int.MaxValue..6));
+            Assert.Equal(source, ListPartitionOrEmpty(source).Take(^10..int.MaxValue));
+            Assert.Equal(source, ListPartitionOrEmpty(source).Take(^int.MaxValue..int.MaxValue));
 
-            Assert.Empty(ListPartition(source).Take(0..^6));
-            Assert.Empty(ListPartition(source).Take(0..^int.MaxValue));
-            Assert.Empty(ListPartition(source).Take(4..^6));
-            Assert.Empty(ListPartition(source).Take(4..^int.MaxValue));
-            Assert.Empty(ListPartition(source).Take(6..^6));
-            Assert.Empty(ListPartition(source).Take(6..^int.MaxValue));
-            Assert.Empty(ListPartition(source).Take(int.MaxValue..^6));
-            Assert.Empty(ListPartition(source).Take(int.MaxValue..^int.MaxValue));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(0..^6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(0..^int.MaxValue));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(4..^6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(4..^int.MaxValue));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(6..^6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(6..^int.MaxValue));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(int.MaxValue..^6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(int.MaxValue..^int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartition(source).Take(^10..^1));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartition(source).Take(^int.MaxValue..^1));
-            Assert.Empty(ListPartition(source).Take(^0..^6));
-            Assert.Empty(ListPartition(source).Take(^1..^6));
-            Assert.Empty(ListPartition(source).Take(^6..^6));
-            Assert.Empty(ListPartition(source).Take(^10..^6));
-            Assert.Empty(ListPartition(source).Take(^int.MaxValue..^6));
-            Assert.Empty(ListPartition(source).Take(^0..^int.MaxValue));
-            Assert.Empty(ListPartition(source).Take(^1..^int.MaxValue));
-            Assert.Empty(ListPartition(source).Take(^6..^int.MaxValue));
-            Assert.Empty(ListPartition(source).Take(^int.MaxValue..^int.MaxValue));
+            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^10..^1));
+            Assert.Equal(new int[] { 1, 2, 3, 4 }, ListPartitionOrEmpty(source).Take(^int.MaxValue..^1));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^0..^6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^1..^6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^6..^6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^10..^6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^int.MaxValue..^6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^0..^int.MaxValue));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^1..^int.MaxValue));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^6..^int.MaxValue));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^int.MaxValue..^int.MaxValue));
         }
 
         [Fact]
@@ -1438,36 +1438,36 @@ namespace System.Linq.Tests
         {
             var source = new[] { 1, 2, 3, 4, 5 };
 
-            Assert.Equal(source, EnumerablePartition(source).Take(0..6));
-            Assert.Equal(source, EnumerablePartition(source).Take(0..int.MaxValue));
+            Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(0..6));
+            Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(0..int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartition(source).Take(^10..4));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartition(source).Take(^int.MaxValue..4));
-            Assert.Equal(source, EnumerablePartition(source).Take(^10..6));
-            Assert.Equal(source, EnumerablePartition(source).Take(^int.MaxValue..6));
-            Assert.Equal(source, EnumerablePartition(source).Take(^10..int.MaxValue));
-            Assert.Equal(source, EnumerablePartition(source).Take(^int.MaxValue..int.MaxValue));
+            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^10..4));
+            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..4));
+            Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(^10..6));
+            Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..6));
+            Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(^10..int.MaxValue));
+            Assert.Equal(source, EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..int.MaxValue));
 
-            Assert.Empty(EnumerablePartition(source).Take(0..^6));
-            Assert.Empty(EnumerablePartition(source).Take(0..^int.MaxValue));
-            Assert.Empty(EnumerablePartition(source).Take(4..^6));
-            Assert.Empty(EnumerablePartition(source).Take(4..^int.MaxValue));
-            Assert.Empty(EnumerablePartition(source).Take(6..^6));
-            Assert.Empty(EnumerablePartition(source).Take(6..^int.MaxValue));
-            Assert.Empty(EnumerablePartition(source).Take(int.MaxValue..^6));
-            Assert.Empty(EnumerablePartition(source).Take(int.MaxValue..^int.MaxValue));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(0..^6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(0..^int.MaxValue));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(4..^6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(4..^int.MaxValue));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(6..^6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(6..^int.MaxValue));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(int.MaxValue..^6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(int.MaxValue..^int.MaxValue));
 
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartition(source).Take(^10..^1));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartition(source).Take(^int.MaxValue..^1));
-            Assert.Empty(EnumerablePartition(source).Take(^0..^6));
-            Assert.Empty(EnumerablePartition(source).Take(^1..^6));
-            Assert.Empty(EnumerablePartition(source).Take(^6..^6));
-            Assert.Empty(EnumerablePartition(source).Take(^10..^6));
-            Assert.Empty(EnumerablePartition(source).Take(^int.MaxValue..^6));
-            Assert.Empty(EnumerablePartition(source).Take(^0..^int.MaxValue));
-            Assert.Empty(EnumerablePartition(source).Take(^1..^int.MaxValue));
-            Assert.Empty(EnumerablePartition(source).Take(^6..^int.MaxValue));
-            Assert.Empty(EnumerablePartition(source).Take(^int.MaxValue..^int.MaxValue));
+            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^10..^1));
+            Assert.Equal(new int[] { 1, 2, 3, 4 }, EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..^1));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^0..^6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^1..^6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^10..^6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..^6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^0..^int.MaxValue));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^1..^int.MaxValue));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^int.MaxValue));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^int.MaxValue..^int.MaxValue));
         }
 
         [Fact]
@@ -1624,44 +1624,44 @@ namespace System.Linq.Tests
             int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
             // Multiple elements in the middle.
-            Assert.Equal(source[^9..5], ListPartition(source).Take(^9..5));
-            Assert.Equal(source[2..7], ListPartition(source).Take(2..7));
-            Assert.Equal(source[2..^4], ListPartition(source).Take(2..^4));
-            Assert.Equal(source[^7..^4], ListPartition(source).Take(^7..^4));
+            Assert.Equal(source[^9..5], ListPartitionOrEmpty(source).Take(^9..5));
+            Assert.Equal(source[2..7], ListPartitionOrEmpty(source).Take(2..7));
+            Assert.Equal(source[2..^4], ListPartitionOrEmpty(source).Take(2..^4));
+            Assert.Equal(source[^7..^4], ListPartitionOrEmpty(source).Take(^7..^4));
 
             // Range with default index.
-            Assert.Equal(source[^9..], ListPartition(source).Take(^9..));
-            Assert.Equal(source[2..], ListPartition(source).Take(2..));
-            Assert.Equal(source[..^4], ListPartition(source).Take(..^4));
-            Assert.Equal(source[..6], ListPartition(source).Take(..6));
+            Assert.Equal(source[^9..], ListPartitionOrEmpty(source).Take(^9..));
+            Assert.Equal(source[2..], ListPartitionOrEmpty(source).Take(2..));
+            Assert.Equal(source[..^4], ListPartitionOrEmpty(source).Take(..^4));
+            Assert.Equal(source[..6], ListPartitionOrEmpty(source).Take(..6));
 
             // All.
-            Assert.Equal(source[..], ListPartition(source).Take(..));
+            Assert.Equal(source[..], ListPartitionOrEmpty(source).Take(..));
 
             // Single element in the middle.
-            Assert.Equal(source[^9..2], ListPartition(source).Take(^9..2));
-            Assert.Equal(source[2..3], ListPartition(source).Take(2..3));
-            Assert.Equal(source[2..^7], ListPartition(source).Take(2..^7));
-            Assert.Equal(source[^5..^4], ListPartition(source).Take(^5..^4));
+            Assert.Equal(source[^9..2], ListPartitionOrEmpty(source).Take(^9..2));
+            Assert.Equal(source[2..3], ListPartitionOrEmpty(source).Take(2..3));
+            Assert.Equal(source[2..^7], ListPartitionOrEmpty(source).Take(2..^7));
+            Assert.Equal(source[^5..^4], ListPartitionOrEmpty(source).Take(^5..^4));
 
             // Single element at start.
-            Assert.Equal(source[^10..1], ListPartition(source).Take(^10..1));
-            Assert.Equal(source[0..1], ListPartition(source).Take(0..1));
-            Assert.Equal(source[0..^9], ListPartition(source).Take(0..^9));
-            Assert.Equal(source[^10..^9], ListPartition(source).Take(^10..^9));
+            Assert.Equal(source[^10..1], ListPartitionOrEmpty(source).Take(^10..1));
+            Assert.Equal(source[0..1], ListPartitionOrEmpty(source).Take(0..1));
+            Assert.Equal(source[0..^9], ListPartitionOrEmpty(source).Take(0..^9));
+            Assert.Equal(source[^10..^9], ListPartitionOrEmpty(source).Take(^10..^9));
 
             // Single element at end.
-            Assert.Equal(source[^1..10], ListPartition(source).Take(^1..10));
-            Assert.Equal(source[9..10], ListPartition(source).Take(9..10));
-            Assert.Equal(source[9..^0], ListPartition(source).Take(9..^0));
-            Assert.Equal(source[^1..^0], ListPartition(source).Take(^1..^0));
+            Assert.Equal(source[^1..10], ListPartitionOrEmpty(source).Take(^1..10));
+            Assert.Equal(source[9..10], ListPartitionOrEmpty(source).Take(9..10));
+            Assert.Equal(source[9..^0], ListPartitionOrEmpty(source).Take(9..^0));
+            Assert.Equal(source[^1..^0], ListPartitionOrEmpty(source).Take(^1..^0));
 
             // No element.
-            Assert.Equal(source[3..3], ListPartition(source).Take(3..3));
-            Assert.Equal(source[6..^4], ListPartition(source).Take(6..^4));
-            Assert.Equal(source[3..^7], ListPartition(source).Take(3..^7));
-            Assert.Equal(source[^3..7], ListPartition(source).Take(^3..7));
-            Assert.Equal(source[^6..^6], ListPartition(source).Take(^6..^6));
+            Assert.Equal(source[3..3], ListPartitionOrEmpty(source).Take(3..3));
+            Assert.Equal(source[6..^4], ListPartitionOrEmpty(source).Take(6..^4));
+            Assert.Equal(source[3..^7], ListPartitionOrEmpty(source).Take(3..^7));
+            Assert.Equal(source[^3..7], ListPartitionOrEmpty(source).Take(^3..7));
+            Assert.Equal(source[^6..^6], ListPartitionOrEmpty(source).Take(^6..^6));
         }
 
         [Fact]
@@ -1670,44 +1670,44 @@ namespace System.Linq.Tests
             int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
             // Multiple elements in the middle.
-            Assert.Equal(source[^9..5], EnumerablePartition(source).Take(^9..5));
-            Assert.Equal(source[2..7], EnumerablePartition(source).Take(2..7));
-            Assert.Equal(source[2..^4], EnumerablePartition(source).Take(2..^4));
-            Assert.Equal(source[^7..^4], EnumerablePartition(source).Take(^7..^4));
+            Assert.Equal(source[^9..5], EnumerablePartitionOrEmpty(source).Take(^9..5));
+            Assert.Equal(source[2..7], EnumerablePartitionOrEmpty(source).Take(2..7));
+            Assert.Equal(source[2..^4], EnumerablePartitionOrEmpty(source).Take(2..^4));
+            Assert.Equal(source[^7..^4], EnumerablePartitionOrEmpty(source).Take(^7..^4));
 
             // Range with default index.
-            Assert.Equal(source[^9..], EnumerablePartition(source).Take(^9..));
-            Assert.Equal(source[2..], EnumerablePartition(source).Take(2..));
-            Assert.Equal(source[..^4], EnumerablePartition(source).Take(..^4));
-            Assert.Equal(source[..6], EnumerablePartition(source).Take(..6));
+            Assert.Equal(source[^9..], EnumerablePartitionOrEmpty(source).Take(^9..));
+            Assert.Equal(source[2..], EnumerablePartitionOrEmpty(source).Take(2..));
+            Assert.Equal(source[..^4], EnumerablePartitionOrEmpty(source).Take(..^4));
+            Assert.Equal(source[..6], EnumerablePartitionOrEmpty(source).Take(..6));
 
             // All.
-            Assert.Equal(source[..], EnumerablePartition(source).Take(..));
+            Assert.Equal(source[..], EnumerablePartitionOrEmpty(source).Take(..));
 
             // Single element in the middle.
-            Assert.Equal(source[^9..2], EnumerablePartition(source).Take(^9..2));
-            Assert.Equal(source[2..3], EnumerablePartition(source).Take(2..3));
-            Assert.Equal(source[2..^7], EnumerablePartition(source).Take(2..^7));
-            Assert.Equal(source[^5..^4], EnumerablePartition(source).Take(^5..^4));
+            Assert.Equal(source[^9..2], EnumerablePartitionOrEmpty(source).Take(^9..2));
+            Assert.Equal(source[2..3], EnumerablePartitionOrEmpty(source).Take(2..3));
+            Assert.Equal(source[2..^7], EnumerablePartitionOrEmpty(source).Take(2..^7));
+            Assert.Equal(source[^5..^4], EnumerablePartitionOrEmpty(source).Take(^5..^4));
 
             // Single element at start.
-            Assert.Equal(source[^10..1], EnumerablePartition(source).Take(^10..1));
-            Assert.Equal(source[0..1], EnumerablePartition(source).Take(0..1));
-            Assert.Equal(source[0..^9], EnumerablePartition(source).Take(0..^9));
-            Assert.Equal(source[^10..^9], EnumerablePartition(source).Take(^10..^9));
+            Assert.Equal(source[^10..1], EnumerablePartitionOrEmpty(source).Take(^10..1));
+            Assert.Equal(source[0..1], EnumerablePartitionOrEmpty(source).Take(0..1));
+            Assert.Equal(source[0..^9], EnumerablePartitionOrEmpty(source).Take(0..^9));
+            Assert.Equal(source[^10..^9], EnumerablePartitionOrEmpty(source).Take(^10..^9));
 
             // Single element at end.
-            Assert.Equal(source[^1..10], EnumerablePartition(source).Take(^1..10));
-            Assert.Equal(source[9..10], EnumerablePartition(source).Take(9..10));
-            Assert.Equal(source[9..^0], EnumerablePartition(source).Take(9..^0));
-            Assert.Equal(source[^1..^0], EnumerablePartition(source).Take(^1..^0));
+            Assert.Equal(source[^1..10], EnumerablePartitionOrEmpty(source).Take(^1..10));
+            Assert.Equal(source[9..10], EnumerablePartitionOrEmpty(source).Take(9..10));
+            Assert.Equal(source[9..^0], EnumerablePartitionOrEmpty(source).Take(9..^0));
+            Assert.Equal(source[^1..^0], EnumerablePartitionOrEmpty(source).Take(^1..^0));
 
             // No element.
-            Assert.Equal(source[3..3], EnumerablePartition(source).Take(3..3));
-            Assert.Equal(source[6..^4], EnumerablePartition(source).Take(6..^4));
-            Assert.Equal(source[3..^7], EnumerablePartition(source).Take(3..^7));
-            Assert.Equal(source[^3..7], EnumerablePartition(source).Take(^3..7));
-            Assert.Equal(source[^6..^6], EnumerablePartition(source).Take(^6..^6));
+            Assert.Equal(source[3..3], EnumerablePartitionOrEmpty(source).Take(3..3));
+            Assert.Equal(source[6..^4], EnumerablePartitionOrEmpty(source).Take(6..^4));
+            Assert.Equal(source[3..^7], EnumerablePartitionOrEmpty(source).Take(3..^7));
+            Assert.Equal(source[^3..7], EnumerablePartitionOrEmpty(source).Take(^3..7));
+            Assert.Equal(source[^6..^6], EnumerablePartitionOrEmpty(source).Take(^6..^6));
         }
 
         [Fact]
@@ -1737,10 +1737,10 @@ namespace System.Linq.Tests
         {
             int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-            Assert.Empty(ListPartition(source).Take(3..2));
-            Assert.Empty(ListPartition(source).Take(6..^5));
-            Assert.Empty(ListPartition(source).Take(3..^8));
-            Assert.Empty(ListPartition(source).Take(^6..^7));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(3..2));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(6..^5));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(3..^8));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^6..^7));
         }
 
         [Fact]
@@ -1748,10 +1748,10 @@ namespace System.Linq.Tests
         {
             int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-            Assert.Empty(EnumerablePartition(source).Take(3..2));
-            Assert.Empty(EnumerablePartition(source).Take(6..^5));
-            Assert.Empty(EnumerablePartition(source).Take(3..^8));
-            Assert.Empty(EnumerablePartition(source).Take(^6..^7));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(3..2));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(6..^5));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(3..^8));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^7));
         }
 
         [Fact]
@@ -1864,50 +1864,50 @@ namespace System.Linq.Tests
             int[] source = { };
 
             // Multiple elements in the middle.
-            Assert.Empty(ListPartition(source).Take(^9..5));
-            Assert.Empty(ListPartition(source).Take(2..7));
-            Assert.Empty(ListPartition(source).Take(2..^4));
-            Assert.Empty(ListPartition(source).Take(^7..^4));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^9..5));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(2..7));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(2..^4));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^7..^4));
 
             // Range with default index.
-            Assert.Empty(ListPartition(source).Take(^9..));
-            Assert.Empty(ListPartition(source).Take(2..));
-            Assert.Empty(ListPartition(source).Take(..^4));
-            Assert.Empty(ListPartition(source).Take(..6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^9..));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(2..));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(..^4));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(..6));
 
             // All.
-            Assert.Equal(source[..], ListPartition(source).Take(..));
+            Assert.Equal(source[..], ListPartitionOrEmpty(source).Take(..));
 
             // Single element in the middle.
-            Assert.Empty(ListPartition(source).Take(^9..2));
-            Assert.Empty(ListPartition(source).Take(2..3));
-            Assert.Empty(ListPartition(source).Take(2..^7));
-            Assert.Empty(ListPartition(source).Take(^5..^4));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^9..2));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(2..3));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(2..^7));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^5..^4));
 
             // Single element at start.
-            Assert.Empty(ListPartition(source).Take(^10..1));
-            Assert.Empty(ListPartition(source).Take(0..1));
-            Assert.Empty(ListPartition(source).Take(0..^9));
-            Assert.Empty(ListPartition(source).Take(^10..^9));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^10..1));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(0..1));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(0..^9));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^10..^9));
 
             // Single element at end.
-            Assert.Empty(ListPartition(source).Take(^1..^10));
-            Assert.Empty(ListPartition(source).Take(9..10));
-            Assert.Empty(ListPartition(source).Take(9..^9));
-            Assert.Empty(ListPartition(source).Take(^1..^9));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^1..^10));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(9..10));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(9..^9));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^1..^9));
 
             // No element.
-            Assert.Empty(ListPartition(source).Take(3..3));
-            Assert.Empty(ListPartition(source).Take(6..^4));
-            Assert.Empty(ListPartition(source).Take(3..^7));
-            Assert.Empty(ListPartition(source).Take(^3..7));
-            Assert.Empty(ListPartition(source).Take(^6..^6));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(3..3));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(6..^4));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(3..^7));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^3..7));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^6..^6));
 
             // Invalid range.
-            Assert.Empty(ListPartition(source).Take(3..2));
-            Assert.Empty(ListPartition(source).Take(6..^5));
-            Assert.Empty(ListPartition(source).Take(3..^8));
-            Assert.Empty(ListPartition(source).Take(^6..^7));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(3..2));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(6..^5));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(3..^8));
+            Assert.Empty(ListPartitionOrEmpty(source).Take(^6..^7));
         }
 
         [Fact]
@@ -1916,50 +1916,50 @@ namespace System.Linq.Tests
             int[] source = { };
 
             // Multiple elements in the middle.
-            Assert.Empty(EnumerablePartition(source).Take(^9..5));
-            Assert.Empty(EnumerablePartition(source).Take(2..7));
-            Assert.Empty(EnumerablePartition(source).Take(2..^4));
-            Assert.Empty(EnumerablePartition(source).Take(^7..^4));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^9..5));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(2..7));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(2..^4));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^7..^4));
 
             // Range with default index.
-            Assert.Empty(EnumerablePartition(source).Take(^9..));
-            Assert.Empty(EnumerablePartition(source).Take(2..));
-            Assert.Empty(EnumerablePartition(source).Take(..^4));
-            Assert.Empty(EnumerablePartition(source).Take(..6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^9..));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(2..));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(..^4));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(..6));
 
             // All.
-            Assert.Equal(source[..], EnumerablePartition(source).Take(..));
+            Assert.Equal(source[..], EnumerablePartitionOrEmpty(source).Take(..));
 
             // Single element in the middle.
-            Assert.Empty(EnumerablePartition(source).Take(^9..2));
-            Assert.Empty(EnumerablePartition(source).Take(2..3));
-            Assert.Empty(EnumerablePartition(source).Take(2..^7));
-            Assert.Empty(EnumerablePartition(source).Take(^5..^4));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^9..2));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(2..3));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(2..^7));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^5..^4));
 
             // Single element at start.
-            Assert.Empty(EnumerablePartition(source).Take(^10..1));
-            Assert.Empty(EnumerablePartition(source).Take(0..1));
-            Assert.Empty(EnumerablePartition(source).Take(0..^9));
-            Assert.Empty(EnumerablePartition(source).Take(^10..^9));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^10..1));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(0..1));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(0..^9));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^10..^9));
 
             // Single element at end.
-            Assert.Empty(EnumerablePartition(source).Take(^1..^10));
-            Assert.Empty(EnumerablePartition(source).Take(9..10));
-            Assert.Empty(EnumerablePartition(source).Take(9..^9));
-            Assert.Empty(EnumerablePartition(source).Take(^1..^9));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^1..^10));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(9..10));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(9..^9));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^1..^9));
 
             // No element.
-            Assert.Empty(EnumerablePartition(source).Take(3..3));
-            Assert.Empty(EnumerablePartition(source).Take(6..^4));
-            Assert.Empty(EnumerablePartition(source).Take(3..^7));
-            Assert.Empty(EnumerablePartition(source).Take(^3..7));
-            Assert.Empty(EnumerablePartition(source).Take(^6..^6));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(3..3));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(6..^4));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(3..^7));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^3..7));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^6));
 
             // Invalid range.
-            Assert.Empty(EnumerablePartition(source).Take(3..2));
-            Assert.Empty(EnumerablePartition(source).Take(6..^5));
-            Assert.Empty(EnumerablePartition(source).Take(3..^8));
-            Assert.Empty(EnumerablePartition(source).Take(^6..^7));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(3..2));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(6..^5));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(3..^8));
+            Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^7));
         }
     }
 }
