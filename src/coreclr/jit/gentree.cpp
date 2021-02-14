@@ -17771,18 +17771,14 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     objClass = gtGetClassHandle(call->gtCallThisArg->GetNode(), pIsExact, pIsNonNull);
                     break;
                 }
-                else if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
-                         (ni == NI_System_Collections_Generic_Comparer_get_Default))
+                
+                CORINFO_CLASS_HANDLE specialObjClass = impGetSpecialIntrinsicExactReturnType(call->gtCallMethHnd);
+                if (specialObjClass != nullptr)
                 {
-                    CORINFO_CLASS_HANDLE specialObjClass =
-                        impGetSpecialIntrinsicExactReturnType(call->gtCallMethHnd);
-                    if (specialObjClass != nullptr)
-                    {
-                        objClass    = specialObjClass;
-                        *pIsExact   = true;
-                        *pIsNonNull = true;
-                        break;
-                    }
+                    objClass    = specialObjClass;
+                    *pIsExact   = true;
+                    *pIsNonNull = true;
+                    break;
                 }
             }
             if (call->IsInlineCandidate())
