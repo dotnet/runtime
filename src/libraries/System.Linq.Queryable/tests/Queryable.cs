@@ -129,7 +129,7 @@ namespace System.Linq.Tests
                      nameof(Enumerable.Append),
                      nameof(Enumerable.Prepend),
                      nameof(Enumerable.ToHashSet),
-                     nameof(Enumerable.TryGetNonEnumeratingCount),
+                     nameof(Enumerable.TryGetNonEnumeratedCount),
                      "Fold",
                      "LeftJoin",
                  }
