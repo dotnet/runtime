@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Linq.Queryable, PublicKeyToken=b03f5f7f11d50a3a">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Linq.EnumerableRewriter.VisitMethodCall(System.Linq.Expressions.MethodCallExpression)</property>
+      <property name="Justification">Leaving this warning in the library because there is nothing we can do to make this safe. The developer will need to address this warning by preserving the corresponding IEnumerable extension methods.</property>
+    </attribute>
+  </assembly>
+</linker>
