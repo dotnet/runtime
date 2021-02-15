@@ -361,10 +361,9 @@ namespace System.Net.WebSockets
 
         private Task ValidateAndReceiveAsync(Task receiveTask, CancellationToken cancellationToken)
         {
-            if (receiveTask == null ||
-                        (receiveTask.IsCompletedSuccessfully &&
-                         !(receiveTask is Task<WebSocketReceiveResult> wsrr && wsrr.Result.MessageType == WebSocketMessageType.Close) &&
-                         !(receiveTask is Task<ValueWebSocketReceiveResult> vwsrr && vwsrr.Result.MessageType == WebSocketMessageType.Close)))
+            if ( receiveTask.IsCompletedSuccessfully &&
+               !(receiveTask is Task<WebSocketReceiveResult> wsrr && wsrr.Result.MessageType == WebSocketMessageType.Close) &&
+               !(receiveTask is Task<ValueWebSocketReceiveResult> vwsrr && vwsrr.Result.MessageType == WebSocketMessageType.Close))
             {
                 ValueTask<ValueWebSocketReceiveResult> vt = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(Memory<byte>.Empty, cancellationToken);
                 receiveTask =
