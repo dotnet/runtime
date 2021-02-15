@@ -74,7 +74,7 @@
 #include "external-only.c"
 
 static void
-get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value, MonoStringHandleOut string_handle, MonoError *error);
+get_default_field_value (MonoClassField *field, void *value, MonoStringHandleOut string_handle, MonoError *error);
 
 static void
 mono_ldstr_metadata_sig (const char* sig, MonoStringHandleOut string_handle, MonoError *error);
@@ -329,7 +329,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	ERROR_DECL (error);
-	MonoDomain *domain = vtable->domain;
+	MonoDomain *domain = mono_get_root_domain ();
 	MonoClass *klass = vtable->klass;
 	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 	MonoException *ex;
@@ -398,12 +398,12 @@ unref_type_lock (TypeInitializationLock *lock)
 /**
  * mono_runtime_run_module_cctor:
  * \param image the image whose module ctor to run
- * \param domain the domain to load the module class vtable in
  * \param error set on error
  * This routine runs the module ctor for \p image, if it hasn't already run
  */
 gboolean
-mono_runtime_run_module_cctor (MonoImage *image, MonoDomain *domain, MonoError *error) {
+mono_runtime_run_module_cctor (MonoImage *image, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	if (!image->checked_module_cctor) {
@@ -438,18 +438,17 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoDomain *domain = vtable->domain;
-
 	error_init (error);
 
 	if (vtable->initialized)
 		return TRUE;
 
 	MonoClass *klass = vtable->klass;
+	MonoDomain *domain = mono_get_root_domain ();
 	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
 
 	MonoImage *klass_image = m_class_get_image (klass);
-	if (!mono_runtime_run_module_cctor(klass_image, vtable->domain, error)) {
+	if (!mono_runtime_run_module_cctor (klass_image, error)) {
 		return FALSE;
 	}
 	MonoMethod *method = mono_class_get_cctor (klass);
@@ -1918,13 +1917,12 @@ mono_class_vtable_checked (MonoClass *klass, MonoError *error)
 
 /**
  * mono_class_try_get_vtable:
- * \param domain the application domain
  * \param class the class to initialize
  * This function tries to get the associated vtable from \p class if
  * it was already created.
  */
 MonoVTable *
-mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass)
+mono_class_try_get_vtable (MonoClass *klass)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -2946,7 +2944,6 @@ mono_field_get_value_internal (MonoObject *obj, MonoClassField *field, void *val
 
 /**
  * mono_field_get_value_object:
- * \param domain domain where the object will be created (if boxing)
  * \param field \c MonoClassField describing the field to fetch information from
  * \param obj The object instance for the field.
  * \returns a new \c MonoObject with the value from the given field.  If the
@@ -2958,7 +2955,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	MonoObject* result;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	result = mono_field_get_value_object_checked (domain, field, obj, error);
+	result = mono_field_get_value_object_checked (field, obj, error);
 	mono_error_assert_ok (error);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
@@ -2973,16 +2970,15 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
  * field represents a value type, the value is boxed.
  */
 MonoObjectHandle
-mono_static_field_get_value_handle (MonoDomain *domain, MonoClassField *field, MonoError *error)
+mono_static_field_get_value_handle (MonoClassField *field, MonoError *error)
 // FIXMEcoop invert
 {
 	HANDLE_FUNCTION_ENTER ();
-	HANDLE_FUNCTION_RETURN_REF (MonoObject, MONO_HANDLE_NEW (MonoObject, mono_field_get_value_object_checked (domain, field, NULL, error)));
+	HANDLE_FUNCTION_RETURN_REF (MonoObject, MONO_HANDLE_NEW (MonoObject, mono_field_get_value_object_checked (field, NULL, error)));
 }
 
 /**
  * mono_field_get_value_object_checked:
- * \param domain domain where the object will be created (if boxing)
  * \param field \c MonoClassField describing the field to fetch information from
  * \param obj The object instance for the field.
  * \param error Set on error.
@@ -2990,7 +2986,7 @@ mono_static_field_get_value_handle (MonoDomain *domain, MonoClassField *field, M
  * field represents a value type, the value is boxed.  On error returns NULL and sets \p error.
  */
 MonoObject *
-mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, MonoObject *obj, MonoError *error)
+mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, MonoError *error)
 {
 	// FIXMEcoop
 
@@ -3073,7 +3069,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 	
 	if (is_ref) {
 		if (is_literal) {
-			get_default_field_value (domain, field, &o, string_handle, error);
+			get_default_field_value (field, &o, string_handle, error);
 			goto_if_nok (error, return_null);
 		} else if (is_static) {
 			mono_field_static_get_value_checked (vtable, field, &o, string_handle, error);
@@ -3099,7 +3095,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 
 		v = &ptr;
 		if (is_literal) {
-			get_default_field_value (domain, field, v, string_handle, error);
+			get_default_field_value (field, v, string_handle, error);
 			goto_if_nok (error, return_null);
 		} else if (is_static) {
 			mono_field_static_get_value_checked (vtable, field, v, string_handle, error);
@@ -3131,7 +3127,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 	v = mono_object_get_data (o);
 
 	if (is_literal) {
-		get_default_field_value (domain, field, v, string_handle, error);
+		get_default_field_value (field, v, string_handle, error);
 		goto_if_nok (error, return_null);
 	} else if (is_static) {
 		mono_field_static_get_value_checked (vtable, field, v, string_handle, error);
@@ -3197,7 +3193,7 @@ mono_metadata_read_constant_value (const char *blob, MonoTypeEnum type, void *va
 }
 
 gboolean
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoStringHandleOut string_handle, MonoError *error)
+mono_get_constant_value_from_blob (MonoTypeEnum type, const char *blob, void *value, MonoStringHandleOut string_handle, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -3219,7 +3215,7 @@ exit:
 }
 
 static void
-get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value, MonoStringHandleOut string_handle, MonoError *error)
+get_default_field_value (MonoClassField *field, void *value, MonoStringHandleOut string_handle, MonoError *error)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -3229,7 +3225,7 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value,
 	error_init (error);
 	
 	data = mono_class_get_field_default_value (field, &def_type);
-	(void)mono_get_constant_value_from_blob (domain, def_type, data, value, string_handle, error);
+	(void)mono_get_constant_value_from_blob (def_type, data, value, string_handle, error);
 }
 
 void
@@ -3244,7 +3240,7 @@ mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *
 	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 	
 	if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL) {
-		get_default_field_value (vt->domain, field, value, string_handle, error);
+		get_default_field_value (field, value, string_handle, error);
 		return;
 	}
 
@@ -5156,10 +5152,9 @@ mono_object_new_handle (MonoClass *klass, MonoError *error)
  * mono_object_new_pinned:
  *
  *   Same as mono_object_new, but the returned object will be pinned.
- * For SGEN, these objects will only be freed at appdomain unload.
  */
 MonoObjectHandle
-mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *error)
+mono_object_new_pinned_handle (MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -5176,7 +5171,7 @@ mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *
 }
 
 MonoObject *
-mono_object_new_pinned (MonoDomain *domain, MonoClass *klass, MonoError *error)
+mono_object_new_pinned (MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 

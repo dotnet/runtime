@@ -297,7 +297,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 		klass = mono_class_get_appdomain_class ();
 
-		ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_pinned_handle (domain, klass, error));
+		ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_pinned_handle (klass, error));
 		goto_if_nok (error, exit);
 
 		domain->domain = MONO_HANDLE_RAW (ad);
@@ -449,7 +449,7 @@ mono_context_init_checked (MonoDomain *domain, MonoError *error)
 		goto exit;
 
 	klass = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
-	context = MONO_HANDLE_CAST (MonoAppContext, mono_object_new_pinned_handle (domain, klass, error));
+	context = MONO_HANDLE_CAST (MonoAppContext, mono_object_new_pinned_handle (klass, error));
 	goto_if_nok (error, exit);
 
 	MONO_HANDLE_SETVAL (context, domain_id, gint32, domain->domain_id);

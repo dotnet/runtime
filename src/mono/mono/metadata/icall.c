@@ -1313,7 +1313,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoA
 		MONO_HANDLE_ASSIGN (fields, fields_arr);
 		MonoObjectHandle h = MONO_HANDLE_NEW (MonoObject, NULL);
 		for (int i = 0; i < count; ++i) {
-			MonoObject *o = mono_field_get_value_object_checked (mono_handle_domain (this_obj), unhandled [i], MONO_HANDLE_RAW (this_obj), error);
+			MonoObject *o = mono_field_get_value_object_checked (unhandled [i], MONO_HANDLE_RAW (this_obj), error);
 			return_val_if_nok (error, 0);
 			MONO_HANDLE_ASSIGN_RAW (h, o);
 			mono_array_handle_setref (fields_arr, i, h);
@@ -1481,12 +1481,12 @@ ves_icall_System_ValueType_Equals (MonoObjectHandle this_obj, MonoObjectHandle t
 		MONO_HANDLE_ASSIGN (fields, fields_arr);
 		MonoObjectHandle h = MONO_HANDLE_NEW (MonoObject, NULL);
 		for (int i = 0; i < count; ++i) {
-			MonoObject *o = mono_field_get_value_object_checked (mono_handle_domain (this_obj), unhandled [i], MONO_HANDLE_RAW (this_obj), error);
+			MonoObject *o = mono_field_get_value_object_checked (unhandled [i], MONO_HANDLE_RAW (this_obj), error);
 			return_val_if_nok (error, FALSE);
 			MONO_HANDLE_ASSIGN_RAW (h, o);
 			mono_array_handle_setref (fields_arr, i * 2, h);
 
-			o = mono_field_get_value_object_checked (mono_handle_domain (this_obj), unhandled [i], MONO_HANDLE_RAW (that), error);
+			o = mono_field_get_value_object_checked (unhandled [i], MONO_HANDLE_RAW (that), error);
 			return_val_if_nok (error, FALSE);
 			MONO_HANDLE_ASSIGN_RAW (h, o);
 			mono_array_handle_setref (fields_arr, (i * 2) + 1, h);
@@ -2119,7 +2119,7 @@ ves_icall_RuntimeFieldInfo_GetValueInternal (MonoReflectionFieldHandle field_han
 	MonoObject * const obj = MONO_HANDLE_RAW (obj_handle);
 	MonoObject *result;
 
-	result = mono_field_get_value_object_checked (mono_object_domain (field), cf, obj, error);
+	result = mono_field_get_value_object_checked (cf, obj, error);
 
 	return MONO_HANDLE_NEW (MonoObject, result);
 }
@@ -2296,7 +2296,6 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 	MonoObject *o = NULL;
 	MonoClassField *field = MONO_HANDLE_GETVAL  (rfield, field);
 	MonoClass *klass;
-	MonoDomain *domain = MONO_HANDLE_DOMAIN (rfield);
 	gchar *v;
 	MonoTypeEnum def_type;
 	const char *def_value;
@@ -2356,13 +2355,13 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 		goto_if_nok (error, return_null);
 		o_handle = MONO_HANDLE_NEW (MonoObject, o);
 		v = ((gchar *) o) + sizeof (MonoObject);
-		(void)mono_get_constant_value_from_blob (domain, def_type, def_value, v, string_handle, error);
+		(void)mono_get_constant_value_from_blob (def_type, def_value, v, string_handle, error);
 		goto_if_nok (error, return_null);
 		break;
 	}
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_CLASS:
-		(void)mono_get_constant_value_from_blob (domain, def_type, def_value, &o, string_handle, error);
+		(void)mono_get_constant_value_from_blob (def_type, def_value, &o, string_handle, error);
 		goto_if_nok (error, return_null);
 		o_handle = MONO_HANDLE_NEW (MonoObject, o);
 		break;
@@ -7244,7 +7243,6 @@ ves_icall_property_info_get_default_value (MonoReflectionPropertyHandle property
 	MonoType blob_type;
 	MonoProperty *prop = property->property;
 	MonoType *type = get_property_type (prop);
-	MonoDomain *domain = mono_object_domain (property);
 	MonoTypeEnum def_type;
 	const char *def_value;
 
@@ -7259,7 +7257,7 @@ ves_icall_property_info_get_default_value (MonoReflectionPropertyHandle property
 
 	mono_type_from_blob_type (&blob_type, def_type, type);
 
-	return mono_get_object_from_blob (domain, &blob_type, def_value, MONO_HANDLE_NEW (MonoString, NULL), error);
+	return mono_get_object_from_blob (&blob_type, def_value, MONO_HANDLE_NEW (MonoString, NULL), error);
 }
 
 MonoBoolean

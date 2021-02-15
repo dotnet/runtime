@@ -470,7 +470,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	 * that the resulting object is different.   
 	 */
 	if (type == m_class_get_byval_arg (klass) && !image_is_dynamic (m_class_get_image (klass))) {
-		MonoVTable *vtable = mono_class_try_get_vtable (domain, klass);
+		MonoVTable *vtable = mono_class_try_get_vtable (klass);
 		if (vtable && vtable->type)
 			return (MonoReflectionType *)vtable->type;
 	}
@@ -523,7 +523,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 		goto leave;
 	}
 	/* This is stored in vtables/JITted code so it has to be pinned */
-	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.runtimetype_class, error);
+	res = (MonoReflectionType *)mono_object_new_pinned (mono_defaults.runtimetype_class, error);
 	goto_if_nok (error, leave);
 
 	res->type = type;
@@ -862,7 +862,6 @@ mono_event_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoEvent *e
 
 /**
  * mono_get_reflection_missing_object:
- * \param domain Domain where the object lives
  *
  * \returns the \c System.Reflection.Missing.Value singleton object
  * (of type \c System.Reflection.Missing).
@@ -871,7 +870,7 @@ mono_event_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoEvent *e
  * is present
  */
 static MonoObjectHandle
-mono_get_reflection_missing_object (MonoDomain *domain)
+mono_get_reflection_missing_object (void)
 {
 	ERROR_DECL (error);
 
@@ -885,13 +884,13 @@ mono_get_reflection_missing_object (MonoDomain *domain)
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, missing_value_field)
 
 	/* FIXME change mono_field_get_value_object_checked to return a handle */
-	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_field_get_value_object_checked (domain, missing_value_field, NULL, error));
+	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_field_get_value_object_checked (missing_value_field, NULL, error));
 	mono_error_assert_ok (error);
 	return obj;
 }
 
 static MonoObjectHandle
-get_dbnull_object (MonoDomain *domain, MonoError *error)
+get_dbnull_object (MonoError *error)
 {
 	error_init (error);
 
@@ -904,24 +903,24 @@ get_dbnull_object (MonoDomain *domain, MonoError *error)
 	MONO_STATIC_POINTER_INIT_END (MonoClassField, dbnull_value_field)
 
 	/* FIXME change mono_field_get_value_object_checked to return a handle */
-	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_field_get_value_object_checked (domain, dbnull_value_field, NULL, error));
+	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_field_get_value_object_checked (dbnull_value_field, NULL, error));
 	return obj;
 }
 
 static MonoObjectHandle
-get_dbnull (MonoDomain *domain, MonoObjectHandle dbnull, MonoError *error)
+get_dbnull (MonoObjectHandle dbnull, MonoError *error)
 {
 	error_init (error);
 	if (MONO_HANDLE_IS_NULL (dbnull))
-		MONO_HANDLE_ASSIGN (dbnull, get_dbnull_object (domain, error));
+		MONO_HANDLE_ASSIGN (dbnull, get_dbnull_object (error));
 	return dbnull;
 }
 
 static MonoObjectHandle
-get_reflection_missing (MonoDomain *domain, MonoObjectHandleOut reflection_missing)
+get_reflection_missing (MonoObjectHandleOut reflection_missing)
 {
 	if (MONO_HANDLE_IS_NULL (reflection_missing))
-		MONO_HANDLE_ASSIGN (reflection_missing, mono_get_reflection_missing_object (domain));
+		MONO_HANDLE_ASSIGN (reflection_missing, mono_get_reflection_missing_object ());
 	return reflection_missing;
 }
 
@@ -955,9 +954,9 @@ add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjec
 	if (!(sig_param->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) ||
 	    (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)) {
 		if (sig_param->attrs & PARAM_ATTRIBUTE_OPTIONAL)
-			def_value = get_reflection_missing (domain, missing);
+			def_value = get_reflection_missing (missing);
 		else
-			def_value = get_dbnull (domain, dbnull, error);
+			def_value = get_dbnull (dbnull, error);
 		goto_if_nok (error, leave);
 	} else {
 		MonoType blob_type;
@@ -974,15 +973,15 @@ add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjec
 		} else
 			blob_type.data.klass = mono_class_from_mono_type_internal (&blob_type);
 
-		def_value = mono_get_object_from_blob (domain, &blob_type, blob, MONO_HANDLE_NEW (MonoString, NULL), error);
+		def_value = mono_get_object_from_blob (&blob_type, blob, MONO_HANDLE_NEW (MonoString, NULL), error);
 		goto_if_nok (error, leave);
 
 		/* Type in the Constant table is MONO_TYPE_CLASS for nulls */
 		if (blob_type_enum != MONO_TYPE_CLASS && MONO_HANDLE_IS_NULL(def_value)) {
 			if (sig_param->attrs & PARAM_ATTRIBUTE_OPTIONAL)
-				def_value = get_reflection_missing (domain, missing);
+				def_value = get_reflection_missing (missing);
 			else
-				def_value = get_dbnull (domain, dbnull, error);
+				def_value = get_dbnull (dbnull, error);
 			goto_if_nok (error, leave);
 		}
 	}
@@ -1352,7 +1351,7 @@ mono_get_dbnull_object (MonoDomain *domain)
 {
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	MonoObjectHandle obj = get_dbnull_object (domain, error);
+	MonoObjectHandle obj = get_dbnull_object (error);
 	mono_error_assert_ok (error);
 	HANDLE_FUNCTION_RETURN_OBJ (obj);
 }
@@ -1425,7 +1424,7 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 }
 
 MonoObjectHandle
-mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob, MonoStringHandleOut string_handle, MonoError *error)
+mono_get_object_from_blob (MonoType *type, const char *blob, MonoStringHandleOut string_handle, MonoError *error)
 {
 	error_init (error);
 
@@ -1451,7 +1450,7 @@ mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob,
 			basetype = mono_class_enum_basetype_internal (klass);
 	}
 			
-	if (mono_get_constant_value_from_blob (domain, basetype->type,  blob, retval, string_handle, error))
+	if (mono_get_constant_value_from_blob (basetype->type,  blob, retval, string_handle, error))
 		MONO_HANDLE_ASSIGN_RAW (object_handle, object);
 	else
 		object_handle = NULL_HANDLE;
@@ -1460,7 +1459,8 @@ mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob,
 }
 
 static int
-assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
+assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
+{
 	int found_sep;
 	char *s;
 	gboolean quoted = FALSE;

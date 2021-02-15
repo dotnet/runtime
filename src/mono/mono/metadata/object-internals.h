@@ -1456,7 +1456,7 @@ gboolean
 mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, MonoError *error);
 
 gboolean
-mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const char *blob, void *value, MonoStringHandleOut string_handle, MonoError *error);
+mono_get_constant_value_from_blob (MonoTypeEnum type, const char *blob, void *value, MonoStringHandleOut string_handle, MonoError *error);
 
 gboolean
 mono_metadata_read_constant_value (const char *blob, MonoTypeEnum type, void *value, MonoError *error);
@@ -1626,10 +1626,10 @@ void
 mono_first_chance_exception_internal (MonoObject *exc_raw);
 
 MonoVTable *
-mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass);
+mono_class_try_get_vtable (MonoClass *klass);
 
 gboolean
-mono_runtime_run_module_cctor (MonoImage *image, MonoDomain *domain, MonoError *error);
+mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
 
 gboolean
 mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error);
@@ -1644,7 +1644,7 @@ gboolean
 mono_class_is_reflection_method_or_constructor (MonoClass *klass);
 
 MonoObjectHandle
-mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob, MonoStringHandleOut string_handle, MonoError *error);
+mono_get_object_from_blob (MonoType *type, const char *blob, MonoStringHandleOut string_handle, MonoError *error);
 
 gboolean
 mono_class_has_ref_info (MonoClass *klass);
@@ -1659,10 +1659,10 @@ void
 mono_class_free_ref_info (MonoClass *klass);
 
 MonoObject *
-mono_object_new_pinned (MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_object_new_pinned (MonoClass *klass, MonoError *error);
 
 MonoObjectHandle
-mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_object_new_pinned_handle (MonoClass *klass, MonoError *error);
 
 MonoObject *
 mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error);
@@ -1695,10 +1695,10 @@ MONO_API void *
 mono_vtable_get_static_field_data (MonoVTable *vt);
 
 MonoObject *
-mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, MonoObject *obj, MonoError *error);
+mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, MonoError *error);
 
 MonoObjectHandle
-mono_static_field_get_value_handle (MonoDomain *domain, MonoClassField *field, MonoError *error);
+mono_static_field_get_value_handle (MonoClassField *field, MonoError *error);
 
 gboolean
 mono_property_set_value_handle (MonoProperty *prop, MonoObjectHandle obj, void **params, MonoError *error);

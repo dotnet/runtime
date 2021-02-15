@@ -1354,7 +1354,7 @@ mono_jit_exec_internal (MonoDomain *domain, MonoAssembly *assembly, int argc, ch
     // (https://github.com/Fody/Costura) to work properly, as they inject
     // a module initializer which sets up event handlers (e.g. AssemblyResolve)
     // that allow the main method to run properly
-    if (!mono_runtime_run_module_cctor(image, domain, error)) {
+    if (!mono_runtime_run_module_cctor(image, error)) {
         g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
         return 1;
     }
