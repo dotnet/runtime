@@ -383,8 +383,8 @@ namespace System.Collections.Generic
     {
         public PriorityQueue() { }
         public PriorityQueue(System.Collections.Generic.IComparer<TPriority>? comparer) { }
-        public PriorityQueue(System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)> items) { }
-        public PriorityQueue(System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)> items, System.Collections.Generic.IComparer<TPriority>? comparer) { }
+        public PriorityQueue(System.Collections.Generic.IEnumerable<(TElement Element, TPriority Priority)> items) { }
+        public PriorityQueue(System.Collections.Generic.IEnumerable<(TElement Element, TPriority Priority)> items, System.Collections.Generic.IComparer<TPriority>? comparer) { }
         public PriorityQueue(int initialCapacity) { }
         public PriorityQueue(int initialCapacity, System.Collections.Generic.IComparer<TPriority>? comparer) { }
         public System.Collections.Generic.IComparer<TPriority> Comparer { get { throw null; } }
@@ -394,14 +394,14 @@ namespace System.Collections.Generic
         public TElement Dequeue() { throw null; }
         public void Enqueue(TElement element, TPriority priority) { }
         public TElement EnqueueDequeue(TElement element, TPriority priority) { throw null; }
-        public void EnqueueRange(System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)> items) { }
+        public void EnqueueRange(System.Collections.Generic.IEnumerable<(TElement Element, TPriority Priority)> items) { }
         public void EnqueueRange(System.Collections.Generic.IEnumerable<TElement> elements, TPriority priority) { }
         public int EnsureCapacity(int capacity) { throw null; }
         public TElement Peek() { throw null; }
         public void TrimExcess() { }
         public bool TryDequeue([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TElement element, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TPriority priority) { throw null; }
-        public sealed partial class UnorderedItemsCollection : System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)>, System.Collections.Generic.IReadOnlyCollection<(TElement element, TPriority priority)>, System.Collections.ICollection, System.Collections.IEnumerable
+        public sealed partial class UnorderedItemsCollection : System.Collections.Generic.IEnumerable<(TElement Element, TPriority Priority)>, System.Collections.Generic.IReadOnlyCollection<(TElement Element, TPriority Priority)>, System.Collections.ICollection, System.Collections.IEnumerable
         {
             internal UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue) { }
             public int Count { get { throw null; } }
@@ -409,14 +409,14 @@ namespace System.Collections.Generic
             object System.Collections.ICollection.SyncRoot { get { throw null; } }
             void ICollection.CopyTo(System.Array array, int index) { }
             public System.Collections.Generic.PriorityQueue<TElement, TPriority>.UnorderedItemsCollection.Enumerator GetEnumerator() { throw null; }
-            System.Collections.Generic.IEnumerator<(TElement element, TPriority priority)> System.Collections.Generic.IEnumerable<(TElement element, TPriority priority)>.GetEnumerator() { throw null; }
+            System.Collections.Generic.IEnumerator<(TElement Element, TPriority Priority)> System.Collections.Generic.IEnumerable<(TElement Element, TPriority Priority)>.GetEnumerator() { throw null; }
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-            public partial struct Enumerator : System.Collections.Generic.IEnumerator<(TElement element, TPriority priority)>, System.Collections.IEnumerator, System.IDisposable
+            public partial struct Enumerator : System.Collections.Generic.IEnumerator<(TElement Element, TPriority Priority)>, System.Collections.IEnumerator, System.IDisposable
             {
-                (TElement element, TPriority priority) IEnumerator<(TElement element, TPriority priority)>.Current { get { throw null; } }
+                (TElement Element, TPriority Priority) IEnumerator<(TElement Element, TPriority Priority)>.Current { get { throw null; } }
                 public void Dispose() { }
                 public bool MoveNext() { throw null; }
-                public (TElement element, TPriority priority) Current { get { throw null; } }
+                public (TElement Element, TPriority Priority) Current { get { throw null; } }
                 object System.Collections.IEnumerator.Current { get { throw null; } }
                 void System.Collections.IEnumerator.Reset() { }
             }
