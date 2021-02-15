@@ -169,6 +169,7 @@ namespace Mono.Linker
 			context.StripSecurity = true;
 			bool new_mvid_used = false;
 			bool deterministic_used = false;
+			bool keepCompilersResources = false;
 
 			List<BaseStep> inputs = CreateDefaultResolvers ();
 
@@ -280,6 +281,12 @@ namespace Mono.Linker
 						}
 
 						context.SetCustomData (values[0], values[1]);
+						continue;
+
+					case "--keep-compilers-resources":
+						if (!GetBoolParam (token, l => keepCompilersResources = l))
+							return -1;
+
 						continue;
 
 					case "--keep-facades":
@@ -649,6 +656,10 @@ namespace Mono.Linker
 			if (_needAddBypassNGenStep)
 				p.AddStepAfter (typeof (SweepStep), new AddBypassNGenStep ());
 
+			if (keepCompilersResources) {
+				p.RemoveStep (typeof (RemoveResourcesStep));
+			}
+
 			p.AddStepBefore (typeof (OutputStep), new SealerStep ());
 
 			//
@@ -659,6 +670,7 @@ namespace Mono.Linker
 			// BodySubstituterStep [optional]
 			// MarkStep
 			// ReflectionBlockedStep [optional]
+			// RemoveResourcesStep [optional]
 			// ProcessWarningsStep
 			// OutputWarningSuppressions
 			// SweepStep
@@ -1108,28 +1120,29 @@ namespace Mono.Linker
 
 			Console.WriteLine ();
 			Console.WriteLine ("Linking");
-			Console.WriteLine ("  --disable-opt NAME [ASM]  Disable one of the default optimizations globaly or for a specific assembly name");
-			Console.WriteLine ("                              beforefieldinit: Unused static fields are removed if there is no static ctor");
-			Console.WriteLine ("                              ipconstprop: Interprocedural constant propagation on return values");
-			Console.WriteLine ("                              overrideremoval: Overrides of virtual methods on types that are never instantiated are removed");
-			Console.WriteLine ("                              unreachablebodies: Instance methods that are marked but not executed are converted to throws");
-			Console.WriteLine ("                              unusedinterfaces: Removes interface types from declaration when not used");
-			Console.WriteLine ("                              unusedtypechecks: Inlines never successful type checks");
-			Console.WriteLine ("  --enable-opt NAME [ASM]   Enable one of the additional optimizations globaly or for a specific assembly name");
-			Console.WriteLine ("                              sealer: Any method or type which does not have override is marked as sealed");
-			Console.WriteLine ("  --explicit-reflection     Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
-			Console.WriteLine ("  --keep-dep-attributes     Keep attributes used for manual dependency tracking. Defaults to false");
-			Console.WriteLine ("  --feature FEATURE VALUE   Apply any optimizations defined when this feature setting is a constant known at link time");
-			Console.WriteLine ("  --new-mvid                Generate a new guid for each linked assembly (short -g). Defaults to true");
-			Console.WriteLine ("  --strip-descriptors       Remove XML descriptor resources for linked assemblies. Defaults to true");
-			Console.WriteLine ("  --strip-security          Remove metadata and code related to Code Access Security. Defaults to true");
-			Console.WriteLine ("  --substitutions FILE      Configuration file with field or methods substitution rules");
-			Console.WriteLine ("  --ignore-substitutions    Skips reading embedded substitutions. Defaults to false");
-			Console.WriteLine ("  --strip-substitutions     Remove XML substitution resources for linked assemblies. Defaults to true");
-			Console.WriteLine ("  --used-attrs-only         Attribute usage is removed if the attribute type is not used. Defaults to false");
-			Console.WriteLine ("  --link-attributes FILE    Supplementary custom attribute definitions for attributes controlling the linker behavior.");
-			Console.WriteLine ("  --ignore-link-attributes  Skips reading embedded attributes. Defaults to false");
-			Console.WriteLine ("  --strip-link-attributes   Remove XML link attributes resources for linked assemblies. Defaults to true");
+			Console.WriteLine ("  --disable-opt NAME [ASM]   Disable one of the default optimizations globaly or for a specific assembly name");
+			Console.WriteLine ("                               beforefieldinit: Unused static fields are removed if there is no static ctor");
+			Console.WriteLine ("                               ipconstprop: Interprocedural constant propagation on return values");
+			Console.WriteLine ("                               overrideremoval: Overrides of virtual methods on types that are never instantiated are removed");
+			Console.WriteLine ("                               unreachablebodies: Instance methods that are marked but not executed are converted to throws");
+			Console.WriteLine ("                               unusedinterfaces: Removes interface types from declaration when not used");
+			Console.WriteLine ("                               unusedtypechecks: Inlines never successful type checks");
+			Console.WriteLine ("  --enable-opt NAME [ASM]    Enable one of the additional optimizations globaly or for a specific assembly name");
+			Console.WriteLine ("                               sealer: Any method or type which does not have override is marked as sealed");
+			Console.WriteLine ("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
+			Console.WriteLine ("  --keep-dep-attributes      Keep attributes used for manual dependency tracking. Defaults to false");
+			Console.WriteLine ("  --feature FEATURE VALUE    Apply any optimizations defined when this feature setting is a constant known at link time");
+			Console.WriteLine ("  --new-mvid                 Generate a new guid for each linked assembly (short -g). Defaults to true");
+			Console.WriteLine ("  --strip-descriptors        Remove XML descriptor resources for linked assemblies. Defaults to true");
+			Console.WriteLine ("  --strip-security           Remove metadata and code related to Code Access Security. Defaults to true");
+			Console.WriteLine ("  --substitutions FILE       Configuration file with field or methods substitution rules");
+			Console.WriteLine ("  --ignore-substitutions     Skips reading embedded substitutions. Defaults to false");
+			Console.WriteLine ("  --strip-substitutions      Remove XML substitution resources for linked assemblies. Defaults to true");
+			Console.WriteLine ("  --used-attrs-only          Attribute usage is removed if the attribute type is not used. Defaults to false");
+			Console.WriteLine ("  --link-attributes FILE     Supplementary custom attribute definitions for attributes controlling the linker behavior.");
+			Console.WriteLine ("  --ignore-link-attributes   Skips reading embedded attributes. Defaults to false");
+			Console.WriteLine ("  --strip-link-attributes    Remove XML link attributes resources for linked assemblies. Defaults to true");
+			Console.WriteLine ("  --keep-compilers-resources Keep assembly resources used for F# compilation resources. Defaults to false");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Analyzer");
@@ -1156,6 +1169,7 @@ namespace Mono.Linker
 		{
 			Pipeline p = new Pipeline ();
 			p.AppendStep (new MarkStep ());
+			p.AppendStep (new RemoveResourcesStep ());
 			p.AppendStep (new ValidateVirtualMethodAnnotationsStep ());
 			p.AppendStep (new ProcessWarningsStep ());
 			p.AppendStep (new OutputWarningSuppressions ());
