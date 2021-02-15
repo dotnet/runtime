@@ -50,13 +50,6 @@ namespace System.Net.WebSockets
             private MessageHeader _lastHeader = new() { Opcode = MessageOpcode.Text, Fin = true };
 
             /// <summary>
-            /// Because user messages can have continuations (split onto multiple frames)
-            /// but also we need to know the actual message type (text or binary) we need
-            /// a seperate field to track if the last received header is actually a continuation.
-            /// </summary>
-            private bool _continuation;
-
-            /// <summary>
             /// Buffer used for reading data from the network.
             /// Not readonly here because the buffer is mutable and is a struct.
             /// </summary>
@@ -286,17 +279,20 @@ namespace System.Net.WebSockets
                 Debug.Assert(_lastHeader.PayloadLength == 0);
 
                 _receivedMaskOffset = 0;
-                _decoder?.Reset();
 
                 while (true)
                 {
                     if (TryParseMessageHeader(_readBuffer.AvailableSpan, _lastHeader, _isServer, out var header, out var consumedBytes))
                     {
                         // If this is a continuation, replace the opcode with the one of the message it's continuing
-                        if (_continuation = (header.Opcode == MessageOpcode.Continuation))
+                        if (header.Opcode == MessageOpcode.Continuation)
                         {
                             header.Opcode = _lastHeader.Opcode;
                             header.Compressed = _lastHeader.Compressed;
+                        }
+                        else
+                        {
+                            _decoder?.Reset();
                         }
 
                         _lastHeader = header;
@@ -390,6 +386,9 @@ namespace System.Net.WebSockets
 
                 public abstract void Dispose();
 
+                /// <summary>
+                /// Resets the decoder state after fully processing a message.
+                /// </summary>
                 public abstract void Reset();
 
                 public abstract void Decode(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written);
