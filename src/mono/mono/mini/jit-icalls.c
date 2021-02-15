@@ -815,7 +815,7 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 
 	mono_class_init_internal (field->parent);
 
-	vtable = mono_class_vtable_checked (domain, field->parent, error);
+	vtable = mono_class_vtable_checked (field->parent, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
@@ -1424,7 +1424,7 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 	if (!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated && !strcmp (cmethod->name, "GetType")) {
 		MonoVTable *vt;
 
-		vt = mono_class_vtable_checked (mono_domain_get (), klass, error);
+		vt = mono_class_vtable_checked (klass, error);
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
 			return NULL;

@@ -201,7 +201,7 @@ create_domain_objects (MonoDomain *domain)
 	 * Initialize String.Empty. This enables the removal of
 	 * the static cctor of the String class.
 	 */
-	string_vt = mono_class_vtable_checked (domain, mono_defaults.string_class, error);
+	string_vt = mono_class_vtable_checked (mono_defaults.string_class, error);
 	mono_error_assert_ok (error);
 	string_empty_fld = mono_class_get_field_from_name_full (mono_defaults.string_class, "Empty", NULL);
 	g_assert (string_empty_fld);

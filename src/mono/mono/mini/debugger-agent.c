@@ -7809,7 +7809,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			if (!found)
 				goto invalid_fieldid;
 
-			vtable = mono_class_vtable_checked (domain, f->parent, error);
+			vtable = mono_class_vtable_checked (f->parent, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -7854,7 +7854,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			// FIXME: Check for literal/const
 
-			vtable = mono_class_vtable_checked (domain, f->parent, error);
+			vtable = mono_class_vtable_checked (f->parent, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -7999,7 +7999,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_IS_INITIALIZED: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		goto_if_nok (error, loader_error);
 
 		if (vtable)
@@ -9261,7 +9261,7 @@ get_field_value:
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, error);
+				vtable = mono_class_vtable_checked (f->parent, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_object;
@@ -9308,7 +9308,7 @@ get_field_value:
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, error);
+				vtable = mono_class_vtable_checked (f->parent, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_fieldid;

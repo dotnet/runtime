@@ -119,7 +119,7 @@ mono_array_class_get_cached_function (MonoClass *eclass, MonoClass **aclass)
 static inline MonoArray*
 mono_array_new_cached_function (MonoDomain *domain, MonoClass *aclass, int size, MonoError *error)
 {
-	MonoVTable *vtable = mono_class_vtable_checked (domain, aclass, error);
+	MonoVTable *vtable = mono_class_vtable_checked (aclass, error);
 	MonoArray *arr = NULL;
 	if (is_ok (error))
 		arr = mono_array_new_specific_checked (vtable, size, error);
@@ -135,7 +135,7 @@ mono_array_new_cached_function (MonoDomain *domain, MonoClass *aclass, int size,
 static inline MonoArrayHandle
 mono_array_new_cached_handle_function (MonoDomain *domain, MonoClass *aclass, int size, MonoError *error)
 {
-	MonoVTable *vtable = mono_class_vtable_checked (domain, aclass, error);
+	MonoVTable *vtable = mono_class_vtable_checked (aclass, error);
 	MonoArrayHandle arr = NULL_HANDLE_ARRAY;
 	if (is_ok (error))
 		arr = mono_array_new_specific_handle (vtable, size, error);

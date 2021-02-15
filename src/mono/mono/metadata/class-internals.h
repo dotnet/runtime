@@ -1226,7 +1226,7 @@ MonoClassField*
 mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *type);
 
 MonoVTable*
-mono_class_vtable_checked (MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_class_vtable_checked (MonoClass *klass, MonoError *error);
 
 void
 mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error);

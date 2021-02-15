@@ -625,7 +625,7 @@ create_thread_object (void)
 	MonoInternalThread *thread;
 	MonoVTable *vt;
 
-	vt = mono_class_vtable_checked (mono_get_root_domain (), mono_defaults.internal_thread_class, error);
+	vt = mono_class_vtable_checked (mono_defaults.internal_thread_class, error);
 	mono_error_assert_ok (error);
 	thread = (MonoInternalThread*) mono_object_new_mature (vt, error);
 	/* only possible failure mode is OOM, from which we don't exect to recover */

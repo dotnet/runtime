@@ -1491,7 +1491,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = GUINT_TO_POINTER ((guint32)(-((m_class_get_interface_id (patch_info->data.klass) + 1) * TARGET_SIZEOF_VOID_P)));
 		break;
 	case MONO_PATCH_INFO_VTABLE:
-		target = mono_class_vtable_checked (domain, patch_info->data.klass, error);
+		target = mono_class_vtable_checked (patch_info->data.klass, error);
 		mono_error_assert_ok (error);
 		break;
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
@@ -1504,7 +1504,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, patch_info->data.field->parent, error);
+		MonoVTable *vtable = mono_class_vtable_checked (patch_info->data.field->parent, error);
 		mono_error_assert_ok (error);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {
@@ -2579,7 +2579,7 @@ lookup_start:
 			MonoVTable *vtable;
 
 			mono_atomic_inc_i32 (&mono_jit_stats.methods_lookups);
-			vtable = mono_class_vtable_checked (domain, method->klass, error);
+			vtable = mono_class_vtable_checked (method->klass, error);
 			if (!is_ok (error))
 				return NULL;
 			g_assert (vtable);
@@ -2628,7 +2628,7 @@ lookup_start:
 			 * called by init_method ().
 			 */
 			if (!mono_llvm_only && !mono_class_is_open_constructed_type (m_class_get_byval_arg (method->klass))) {
-				vtable = mono_class_vtable_checked (domain, method->klass, error);
+				vtable = mono_class_vtable_checked (method->klass, error);
 				mono_error_assert_ok (error);
 				if (!mono_runtime_class_init_full (vtable, error))
 					return NULL;
@@ -2996,7 +2996,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	(void)invoke;
-	info->vtable = mono_class_vtable_checked (domain, method->klass, error);
+	info->vtable = mono_class_vtable_checked (method->klass, error);
 	if (!is_ok (error))
 		goto exit;
 	g_assert (info->vtable);

@@ -4814,7 +4814,7 @@ call:
 			g_assert (!m_class_is_valuetype (newobj_class));
 
 			MonoDomain* const domain = frame->imethod->domain;
-			MonoVTable *vtable = mono_class_vtable_checked (domain, newobj_class, error);
+			MonoVTable *vtable = mono_class_vtable_checked (newobj_class, error);
 			if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error)) {
 				MonoException *exc = mono_error_convert_to_exception (error);
 				g_assert (exc);

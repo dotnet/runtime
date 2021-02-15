@@ -925,7 +925,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 
 	switch (info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		return_val_if_nok (error, NULL);
 		return mono_vtable_get_static_field_data (vtable);
 	}
@@ -934,7 +934,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 	case MONO_RGCTX_INFO_ELEMENT_KLASS:
 		return m_class_get_element_class (klass);
 	case MONO_RGCTX_INFO_VTABLE: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		return_val_if_nok (error, NULL);
 		return vtable;
 	}
@@ -2281,7 +2281,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		if (mono_class_field_is_special_static (field)) {
 			gpointer addr;
 
-			mono_class_vtable_checked (domain, field->parent, error);
+			mono_class_vtable_checked (field->parent, error);
 			mono_error_assert_ok (error);
 
 			/* Return the TLS offset */
@@ -3874,7 +3874,7 @@ gpointer
 mini_method_get_rgctx (MonoMethod *m)
 {
 	ERROR_DECL (error);
-	MonoVTable *vt = mono_class_vtable_checked (mono_domain_get (), m->klass, error);
+	MonoVTable *vt = mono_class_vtable_checked (m->klass, error);
 	mono_error_assert_ok (error);
 	if (mini_method_needs_mrgctx (m))
 		return mini_method_get_mrgctx (vt, m);

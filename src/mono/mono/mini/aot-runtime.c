@@ -4874,13 +4874,13 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 	gboolean inited_ok;
 	inited_ok = TRUE;
 	if (init_class) {
-		MonoVTable *vt = mono_class_vtable_checked (domain, init_class, error);
+		MonoVTable *vt = mono_class_vtable_checked (init_class, error);
 		if (!is_ok (error))
 			inited_ok = FALSE;
 		else
 			inited_ok = mono_runtime_class_init_full (vt, error);
 	} else if (from_plt && klass_to_run_ctor && !mono_class_is_gtd (klass_to_run_ctor)) {
-		MonoVTable *vt = mono_class_vtable_checked (domain, klass_to_run_ctor, error);
+		MonoVTable *vt = mono_class_vtable_checked (klass_to_run_ctor, error);
 		if (!is_ok (error))
 			inited_ok = FALSE;
 		else

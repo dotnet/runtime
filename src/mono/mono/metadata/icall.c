@@ -1137,7 +1137,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (Mo
 	if (mono_class_is_gtd (klass))
 		return;
 
-	vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
+	vtable = mono_class_vtable_checked (klass, error);
 	return_if_nok (error);
 
 	/* This will call the type constructor */
@@ -1154,7 +1154,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunModuleConstructor (M
 	MonoClass *module_klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | 1, error);
 	return_if_nok (error);
 
-	MonoVTable * vtable = mono_class_vtable_checked (mono_domain_get (), module_klass, error);
+	MonoVTable * vtable = mono_class_vtable_checked (module_klass, error);
 	return_if_nok (error);
 
 	mono_runtime_class_init_full (vtable, error);
@@ -1215,7 +1215,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObjectI
 	}
 
 	if (!mono_class_is_before_field_init (klass)) {
-		vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
+		vtable = mono_class_vtable_checked (klass, error);
 		return_val_if_nok (error, NULL_HANDLE);
 
 		mono_runtime_class_init_full (vtable, error);
@@ -2209,7 +2209,7 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 		  (!isref && v == NULL && value_gchandle == 0));
 
 	if (type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		MonoVTable *vtable = mono_class_vtable_checked (MONO_HANDLE_DOMAIN (field), cf->parent, error);
+		MonoVTable *vtable = mono_class_vtable_checked (cf->parent, error);
 		goto_if_nok (error, leave);
 
 		if (!vtable->initialized) {
@@ -3446,7 +3446,7 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	*MONO_HANDLE_REF (exception_out) = NULL;
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
-		if (!mono_class_vtable_checked (mono_object_domain (method), m->klass, error)) {
+		if (!mono_class_vtable_checked (m->klass, error)) {
 			mono_error_cleanup (error); /* FIXME does this make sense? */
 			error_init_reuse (error);
 			exception = mono_class_get_exception_for_failure (m->klass);
