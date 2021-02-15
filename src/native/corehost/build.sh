@@ -66,11 +66,6 @@ handle_arguments() {
             __ShiftArgs=1
             ;;
 
-        nativelibsartifacts|-nativelibsartifacts)
-            __NativeLibsArtifacts="$2"
-            __ShiftArgs=1
-            ;;
-
         runtimeflavor|-runtimeflavor)
             __RuntimeFlavor="$2"
             __ShiftArgs=1
@@ -92,17 +87,12 @@ __DistroRidLower="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
 __BinDir="$__RootBinDir/bin/$__DistroRidLower.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/$__DistroRidLower.$__BuildType"
 
-export __BinDir __IntermediatesDir __CoreClrArtifacts __NativeLibsArtifacts __RuntimeFlavor
+export __BinDir __IntermediatesDir __CoreClrArtifacts __RuntimeFlavor
 
 __CMakeArgs="-DCLI_CMAKE_HOST_VER=\"$__host_ver\" -DCLI_CMAKE_COMMON_HOST_VER=\"$__apphost_ver\" -DCLI_CMAKE_HOST_FXR_VER=\"$__fxr_ver\" $__CMakeArgs"
 __CMakeArgs="-DCLI_CMAKE_HOST_POLICY_VER=\"$__policy_ver\" -DCLI_CMAKE_PKG_RID=\"$__DistroRid\" -DCLI_CMAKE_COMMIT_HASH=\"$__commit_hash\" $__CMakeArgs"
-__CMakeArgs="-DCORECLR_ARTIFACTS=\"$__CoreClrArtifacts\" -DNATIVE_LIBS_ARTIFACTS=\"$__NativeLibsArtifacts\" $__CMakeArgs"
 __CMakeArgs="-DRUNTIME_FLAVOR=\"$__RuntimeFlavor\" $__CMakeArgs"
 __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
-
-if [[ "$__PortableBuild" == 1 ]]; then
-    __CMakeArgs="-DCLI_CMAKE_PORTABLE_BUILD=1 $__CMakeArgs"
-fi
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.
@@ -117,3 +107,8 @@ check_prereqs
 
 # Build the installer native components.
 build_native "$__TargetOS" "$__BuildArch" "$__scriptpath" "$__IntermediatesDir" "$__CMakeArgs" "installer component"
+
+if [[ "$__RuntimeFlavor" != "Mono" ]]; then
+    echo Copying "$__CoreClrArtifacts/corehost/."  to "$__CMakeBinDir/corehost"
+    cp -a "$__CoreClrArtifacts/corehost/."  "$__CMakeBinDir/corehost"
+fi
