@@ -2,5 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <PackageDescription>INI configuration provider implementation for Microsoft.Extensions.Configuration.</PackageDescription>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
   </PropertyGroup>
 </Project>

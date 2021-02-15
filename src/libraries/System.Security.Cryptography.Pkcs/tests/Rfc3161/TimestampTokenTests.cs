@@ -859,17 +859,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
                     if (validHash)
                     {
-                        using (SHA1 hasher = SHA1.Create())
-                        {
-                            byte[] hash = hasher.ComputeHash(tsaCert.RawData);
+                        byte[] hash = SHA1.HashData(tsaCert.RawData);
 
-                            Buffer.BlockCopy(
-                                hash,
-                                0,
-                                signingCertificateV1Bytes,
-                                signingCertificateV1Bytes.Length - hash.Length,
-                                hash.Length);
-                        }
+                        Buffer.BlockCopy(
+                            hash,
+                            0,
+                            signingCertificateV1Bytes,
+                            signingCertificateV1Bytes.Length - hash.Length,
+                            hash.Length);
                     }
 
                     if (!skipIssuerSerial)

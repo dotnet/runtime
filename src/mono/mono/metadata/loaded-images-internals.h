@@ -18,10 +18,8 @@
  */
 enum {
 	MONO_LOADED_IMAGES_HASH_PATH = 0,
-	MONO_LOADED_IMAGES_HASH_PATH_REFONLY = 1,
-	MONO_LOADED_IMAGES_HASH_NAME = 2,
-	MONO_LOADED_IMAGES_HASH_NAME_REFONLY = 3,
-	MONO_LOADED_IMAGES_HASH_COUNT = 4
+	MONO_LOADED_IMAGES_HASH_NAME = 1,
+	MONO_LOADED_IMAGES_HASH_COUNT = 2
 };
 
 struct _MonoLoadedImages {
@@ -39,21 +37,16 @@ void
 mono_loaded_images_free (MonoLoadedImages *li);
 
 GHashTable *
-mono_loaded_images_get_hash (MonoLoadedImages *li, gboolean refonly);
+mono_loaded_images_get_hash (MonoLoadedImages *li);
 
 GHashTable *
-mono_loaded_images_get_by_name_hash (MonoLoadedImages *li, gboolean refonly);
+mono_loaded_images_get_by_name_hash (MonoLoadedImages *li);
 
 gboolean
 mono_loaded_images_remove_image (MonoImage *image);
 
 MonoLoadedImages*
 mono_image_get_loaded_images_for_modules (MonoImage *image);
-
-#ifndef ENABLE_NETCORE
-MonoLoadedImages*
-mono_get_global_loaded_images (void);
-#endif
 
 MonoImage *
 mono_find_image_owner (void *ptr);

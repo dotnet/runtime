@@ -292,12 +292,7 @@ found:
 			if (entry_point == NULL)
 				entry_point = aname;
 		} else if (strncmp (kind, "config:", strlen ("config:")) == 0){
-			char *config = kind + strlen ("config:");
-			char *aname = g_strdup (config);
-			aname [strlen(aname)-strlen(".config")] = 0;
-			mono_register_config_for_assembly (aname, g_str_from_file_region (fd, offset, item_size));
 		} else if (strncmp (kind, "systemconfig:", strlen ("systemconfig:")) == 0){
-			mono_config_parse_memory (g_str_from_file_region (fd, offset, item_size));
 		} else if (strncmp (kind, "options:", strlen ("options:")) == 0){
 			mono_parse_options_from (g_str_from_file_region (fd, offset, item_size), ref_argc, ref_argv);
 		} else if (strncmp (kind, "config_dir:", strlen ("config_dir:")) == 0){

@@ -2,6 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <IsWindowsSpecific>true</IsWindowsSpecific>
     <PackageDescription>Provides the System.Diagnostics.EventLog class, which allows the applications to use the windows event log service.
 
