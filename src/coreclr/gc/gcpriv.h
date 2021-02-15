@@ -124,7 +124,7 @@ inline void FATAL_GC_ERROR()
 
 #define CARD_BUNDLE         //enable card bundle feature.(requires WRITE_WATCH)
 
-// #define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
+#define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
 
 #ifdef BACKGROUND_GC
 #define BGC_SERVO_TUNING
@@ -1213,6 +1213,8 @@ public:
 #ifdef VERIFY_HEAP
     PER_HEAP
     void verify_free_lists();
+    PER_HEAP
+    void verify_regions (int gen_number);
     PER_HEAP
     void verify_regions();
     PER_HEAP
@@ -3081,6 +3083,8 @@ protected:
     size_t end_space_after_gc();
     PER_HEAP
     size_t estimated_reclaim (int gen_number);
+    PER_HEAP
+    bool is_full_compacting_gc_productive();
     PER_HEAP
     BOOL decide_on_compacting (int condemned_gen_number,
                                size_t fragmentation,

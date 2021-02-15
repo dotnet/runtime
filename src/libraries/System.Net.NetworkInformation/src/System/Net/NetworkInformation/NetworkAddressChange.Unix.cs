@@ -153,7 +153,7 @@ namespace System.Net.NetworkInformation
             new Thread(s => LoopReadSocket((int)s!))
             {
                 IsBackground = true,
-                Name = ".NET Net Address Monitor"
+                Name = ".NET Network Address Change"
             }.UnsafeStart(newSocket);
         }
 

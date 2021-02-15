@@ -158,6 +158,7 @@ void Phase::PostPhase(PhaseStatus status)
     // PhaseStatus from their DoPhase methods.
     //
     static Phases s_allowlist[] = {PHASE_IMPORTATION,       PHASE_IBCINSTR,
+                                   PHASE_IBCPREP,           PHASE_INCPROFILE,
                                    PHASE_INDXCALL,          PHASE_MORPH_INLINE,
                                    PHASE_ALLOCATE_OBJECTS,  PHASE_EMPTY_TRY,
                                    PHASE_EMPTY_FINALLY,     PHASE_MERGE_FINALLY_CHAINS,

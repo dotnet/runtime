@@ -150,6 +150,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_Month(int month)
+        {
+            throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_BadYearMonthDay()
         {
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);

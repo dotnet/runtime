@@ -487,7 +487,7 @@ namespace Microsoft.Win32
                             s_windowThread = new Thread(new ThreadStart(systemEvents.WindowThreadProc))
                             {
                                 IsBackground = true,
-                                Name = ".NET SystemEvents"
+                                Name = ".NET System Events"
                             };
                             s_windowThread.Start();
                             s_eventWindowReady.WaitOne();

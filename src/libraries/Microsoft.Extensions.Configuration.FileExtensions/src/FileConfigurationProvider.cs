@@ -76,18 +76,12 @@ namespace Microsoft.Extensions.Configuration
             }
             else
             {
-                // Always create new Data on reload to drop old keys
-                if (reload)
-                {
-                    Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                }
-
                 static Stream OpenRead(IFileInfo fileInfo)
                 {
                     if (fileInfo.PhysicalPath != null)
                     {
                         // The default physical file info assumes asynchronous IO which results in unnecessary overhead
-                        // especally since the configuration system is synchronous. This uses the same settings
+                        // especially since the configuration system is synchronous. This uses the same settings
                         // and disables async IO.
                         return new FileStream(
                             fileInfo.PhysicalPath,
@@ -108,6 +102,10 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch (Exception e)
                 {
+                    if (reload)
+                    {
+                        Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    }
                     HandleException(ExceptionDispatchInfo.Capture(e));
                 }
             }

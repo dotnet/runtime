@@ -406,11 +406,10 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            Comparer<TSource> comparer = Comparer<TSource>.Default;
             TSource? value = default;
-            if (value == null)
+            using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                if (value == null)
                 {
                     do
                     {
@@ -423,6 +422,7 @@ namespace System.Linq
                     }
                     while (value == null);
 
+                    Comparer<TSource> comparer = Comparer<TSource>.Default;
                     while (e.MoveNext())
                     {
                         TSource x = e.Current;
@@ -432,10 +432,7 @@ namespace System.Linq
                         }
                     }
                 }
-            }
-            else
-            {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                else
                 {
                     if (!e.MoveNext())
                     {
@@ -446,7 +443,7 @@ namespace System.Linq
                     while (e.MoveNext())
                     {
                         TSource x = e.Current;
-                        if (comparer.Compare(x, value) < 0)
+                        if (Comparer<TSource>.Default.Compare(x, value) < 0)
                         {
                             value = x;
                         }

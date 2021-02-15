@@ -2879,32 +2879,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoSchema                  = nullptr;
     fgPgoData                    = nullptr;
     fgPgoSchemaCount             = 0;
+    fgPgoQueryResult             = E_FAIL;
     fgProfileData_ILSizeMismatch = false;
-    fgNumProfileRuns             = 0;
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
-        HRESULT hr;
-        hr = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
-                                                            &fgPgoData);
-
-        if (SUCCEEDED(hr))
-        {
-            fgNumProfileRuns = 0;
-            for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
-            {
-                if (fgPgoSchema[iSchema].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::NumRuns)
-                {
-                    fgNumProfileRuns += fgPgoSchema[iSchema].Other;
-                }
-            }
-
-            if (fgNumProfileRuns == 0)
-                fgNumProfileRuns = 1;
-        }
-
-        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; schema at %p, counts at %p, %d schema "
-                "elements, %d runs\n",
-                info.compFullName, hr, dspPtr(fgPgoSchema), dspPtr(fgPgoData), fgPgoSchemaCount, fgNumProfileRuns);
+        fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
+                                                                          &fgPgoSchemaCount, &fgPgoData);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
@@ -2912,7 +2892,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         // We will discard the IBC data in this case
         //
-        if (FAILED(hr) && (fgPgoSchema != nullptr))
+        if (FAILED(fgPgoQueryResult) && (fgPgoSchema != nullptr))
         {
             fgProfileData_ILSizeMismatch = true;
             fgPgoData                    = nullptr;
@@ -2921,7 +2901,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #ifdef DEBUG
         // A successful result implies a non-NULL fgPgoSchema
         //
-        if (SUCCEEDED(hr))
+        if (SUCCEEDED(fgPgoQueryResult))
         {
             assert(fgPgoSchema != nullptr);
         }
@@ -2929,7 +2909,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // A failed result implies a NULL fgPgoSchema
         //   see implementation of Compiler::fgHaveProfileData()
         //
-        if (FAILED(hr))
+        if (FAILED(fgPgoQueryResult))
         {
             assert(fgPgoSchema == nullptr);
         }
@@ -4415,6 +4395,21 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
     compFunctionTraceStart();
+
+    // Incorporate profile data.
+    //
+    // Note: the importer is sensitive to block weights, so this has
+    // to happen before importation.
+    //
+    DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
+
+    // If we're going to instrument code, we may need to prepare before
+    // we import.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
+    }
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //

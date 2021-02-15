@@ -642,10 +642,7 @@ SingleResponse ::= SEQUENCE {
 
             if (_dnHash == null)
             {
-                using (HashAlgorithm hash = SHA1.Create())
-                {
-                    _dnHash = hash.ComputeHash(_cert.SubjectName.RawData);
-                }
+                _dnHash = SHA1.HashData(_cert.SubjectName.RawData);
             }
 
             if (!idReader.TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> reqDn))

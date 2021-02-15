@@ -24,7 +24,6 @@
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
-#include "mono/metadata/verify-internals.h"
 #include "mono/metadata/icall-decl.h"
 #include "mono/utils/checked-build.h"
 
@@ -875,9 +874,6 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 
 	mono_class_init_internal (method->klass);
 
-	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
-		goto fail;
-
 	if (len == 0) {
 		attr = mono_object_new_handle (mono_domain_get (), method->klass, error);
 		goto_if_nok (error, fail);
@@ -1069,9 +1065,6 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 
 	error_init (error);
 
-	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
-		return;
-
 	mono_class_init_internal (method->klass);
 
 	domain = mono_domain_get ();
@@ -1234,9 +1227,6 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 	named_args = NULL;
 
 	error_init (error);
-
-	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
-		goto fail;
 
 	mono_class_init_internal (method->klass);
 
@@ -1435,16 +1425,9 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 		}
 		MONO_HANDLE_ASSIGN_RAW (minfo_h, minfo);
 
-#if ENABLE_NETCORE
 		namedarg = create_cattr_named_arg (minfo, obj, error);
 		MONO_HANDLE_ASSIGN_RAW (namedarg_h, namedarg);
-#else
-		MonoObject* typedarg = create_cattr_typed_arg (arginfo [i].type, obj, error);
-		MONO_HANDLE_ASSIGN_RAW (typedarg_h, typedarg);
-		goto_if_nok (error, leave);
-		namedarg = create_cattr_named_arg (minfo, typedarg, error);
-		MONO_HANDLE_ASSIGN_RAW (namedarg_h, namedarg);
-#endif
+
 		goto_if_nok (error, leave);
 
 		mono_array_setref_internal (named_args, i, namedarg);
@@ -1695,11 +1678,6 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 			}
 		}
 
-		if (!mono_verifier_verify_cattr_blob (image, cols [MONO_CUSTOM_ATTR_VALUE], error)) {
-			g_array_free (attr_array, TRUE);
-			g_free (ainfo);
-			return NULL;
-		}
 		data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
 		attr->data_size = mono_metadata_decode_value (data, &data);
 		attr->data = (guchar*)data;
@@ -2219,15 +2197,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, mb, cattrs);
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs);
 	} else if (strcmp ("ConstructorBuilder", klass_name) == 0) {
-#ifdef ENABLE_NETCORE
 		mono_error_set_not_supported (error, "");
 		goto leave;
-#else
-		MonoReflectionCtorBuilderHandle cb = MONO_HANDLE_CAST (MonoReflectionCtorBuilder, obj);
-		MonoMethod *mhandle = MONO_HANDLE_GETVAL (cb, mhandle);
-		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, cb, cattrs);
-		cinfo = mono_custom_attrs_from_builders_handle (NULL, m_class_get_image (mhandle->klass), cattrs);
-#endif
 	} else if (strcmp ("MethodBuilder", klass_name) == 0) {
 		MonoReflectionMethodBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionMethodBuilder, obj);
 		MonoMethod *mhandle = MONO_HANDLE_GETVAL (mb, mhandle);

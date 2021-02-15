@@ -278,7 +278,7 @@ namespace System.Text.RegularExpressions
                 _hasTimeout = hasTimeout;
             }
 
-            public override bool Equals(object? obj) =>
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
                 obj is Key other && Equals(other);
 
             public bool Equals(Key other) =>

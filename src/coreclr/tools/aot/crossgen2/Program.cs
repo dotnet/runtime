@@ -136,6 +136,7 @@ namespace ILCompiler
                     "exclusiveweight" => ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight,
                     "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
                     "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
+                    "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
                     _ => throw new CommandLineException(SR.InvalidMethodLayout)
                 };
             }
@@ -540,8 +541,10 @@ namespace ILCompiler
                         versionBubbleModules,
                         _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
                         mibcFiles,
+                        jsonProfile,
                         _typeSystemContext,
-                        compilationGroup);
+                        compilationGroup,
+                        _commandLineOptions.EmbedPgoData);
 
                     if (_commandLineOptions.Partial)
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
@@ -593,6 +596,7 @@ namespace ILCompiler
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)
                         .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath)
+                        .UseProfileFile(jsonProfile != null)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)
                         .FileLayoutAlgorithms(_methodLayout, _fileLayout)

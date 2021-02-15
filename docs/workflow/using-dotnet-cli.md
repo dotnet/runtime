@@ -1,7 +1,7 @@
 
 # Using your .NET Runtime build with .NET SDK
 
-This walkthrough explains how to run your own app against your local build using only the .NET SDK. 
+This walkthrough explains how to run your own app against your local build using only the .NET SDK.
 
 Testing your local build this way is quite realistic - more like a real user. However it takes longer because you have to build the package. Each build can take 10 minutes altogether.
 
@@ -181,9 +181,9 @@ So the steps are:
 
 ```cmd
 build.cmd clr+libs+host+packs -c release
-``` 
+```
 
-If you only changed libraries, `build.cmd libs+host+packs -c release` is a little faster; if you only changed clr, then `build.cmd clr+host+packs -c release` 
+If you only changed libraries, `build.cmd libs+host+packs -c release` is a little faster; if you only changed clr, then `build.cmd clr+host+packs -c release`
 
 ### 2. Delete your local package cache
 
@@ -197,4 +197,4 @@ rd /s /q c:\localcache
 dotnet publish
 ```
 
-Now your app will use your updated package. 
+Now your app will use your updated package.

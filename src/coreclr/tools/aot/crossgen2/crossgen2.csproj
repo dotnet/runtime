@@ -90,6 +90,12 @@
       CopyToPublishDirectory="PreserveNewest"
       Link="$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)"
      />
+
+    <Content Include="$(RuntimeBinDir)/pgort*.dll"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="%(FileName)%(Extension)"
+      />
   </ItemGroup>
 
   <Target Name="CreateCrossTargetingPackage" AfterTargets="Build" Condition="'$(CrossHostArch)' != ''">

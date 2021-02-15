@@ -464,10 +464,10 @@ namespace System
             }
         }
 
-        public static bool TryParse<TEnum>(string? value, out TEnum result) where TEnum : struct =>
+        public static bool TryParse<TEnum>([NotNullWhen(true)] string? value, out TEnum result) where TEnum : struct =>
             TryParse<TEnum>(value, ignoreCase: false, out result);
 
-        public static bool TryParse<TEnum>(string? value, bool ignoreCase, out TEnum result) where TEnum : struct =>
+        public static bool TryParse<TEnum>([NotNullWhen(true)] string? value, bool ignoreCase, out TEnum result) where TEnum : struct =>
             TryParse<TEnum>(value, ignoreCase, throwOnFailure: false, out result);
 
         private static bool TryParse<TEnum>(string? value, bool ignoreCase, bool throwOnFailure, out TEnum result) where TEnum : struct

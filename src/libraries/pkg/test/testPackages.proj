@@ -4,7 +4,7 @@
   <ItemGroup>
     <PackagesToTest Condition="'$(PackagesToTest)' != ''" Include="$(PackagesToTest)" />
     <!-- transport package not expected to be closure complete  -->
-    <ExcludePackages Include="Microsoft.Extensions.Internal.Transport" />
+    <ExcludePackages Include="Microsoft.AspNetCore.Internal.Transport" />
     <ExcludePackages Include="$(ExcludePackages)" />
 
     <PackageReports Condition="'@(PackagesToTest)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>

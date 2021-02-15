@@ -133,7 +133,7 @@ namespace System.Text.Json
         public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<byte> utf8Value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
         public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<char> value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
         public static System.Text.Json.JsonEncodedText Encode(string value, System.Text.Encodings.Web.JavaScriptEncoder? encoder = null) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Text.Json.JsonEncodedText other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }

@@ -1451,7 +1451,7 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             {
                 assert(baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_LONG || baseType == TYP_ULONG);
                 op1Reg = op1->GetRegNum();
-                emit->emitIns_R_R(ins, emitActualTypeSize(baseType), op1Reg, targetReg);
+                emit->emitIns_R_R(ins, emitActualTypeSize(baseType), targetReg, op1Reg);
             }
             else
             {
@@ -1562,7 +1562,7 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
                 {
                     // extract instructions return to GP-registers, so it needs int size as the emitsize
                     inst_RV_TT_IV(ins, emitTypeSize(TYP_INT), tmpTargetReg, op1, i);
-                    emit->emitIns_R_R(INS_mov_i2xmm, EA_4BYTE, targetReg, tmpTargetReg);
+                    emit->emitIns_R_R(INS_movd, EA_4BYTE, targetReg, tmpTargetReg);
                 }
                 else
                 {
@@ -1688,7 +1688,7 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
             assert(numArgs == 1);
             assert((baseType == TYP_INT) || (baseType == TYP_UINT));
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            emit->emitIns_R_R(ins, emitActualTypeSize(baseType), op1Reg, targetReg);
+            emit->emitIns_R_R(ins, emitActualTypeSize(baseType), targetReg, op1Reg);
             break;
         }
 
