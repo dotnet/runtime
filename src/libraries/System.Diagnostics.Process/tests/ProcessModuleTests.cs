@@ -94,7 +94,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(expectedCount, disposedCount);
         }
 
-[ActiveIssue("https://github.com/dotnet/runtime/pull/335059")]
+        [ActiveIssue("https://github.com/dotnet/runtime/pull/335059")]
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void LongModuleFileNamesAreSupported()
