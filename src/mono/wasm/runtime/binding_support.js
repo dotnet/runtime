@@ -69,6 +69,7 @@ var BindingSupportLib = {
 			this.mono_wasm_box_primitive = Module.cwrap ('mono_wasm_box_primitive', 'number', ['number', 'number', 'number']);
 			this.mono_wasm_intern_string = Module.cwrap ('mono_wasm_intern_string', 'number', ['number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
+			this.mono_wasm_get_delegate_invoke = Module.cwrap ('mono_wasm_get_delegate_invoke', 'number', ['number']);
 
 			this._box_buffer = Module._malloc(16);
 			this._unbox_buffer = Module._malloc(16);
@@ -225,7 +226,9 @@ var BindingSupportLib = {
 		},
 
 		js_string_to_mono_string: function (string) {
-			if (typeof (string) === "symbol")
+			if (string === null)
+				return null;
+			else if (typeof (string) === "symbol")
 				return this.js_string_to_mono_string_interned (string);
 			else if (typeof (string) !== "string")
 				throw new Error ("Expected string argument");
@@ -780,10 +783,10 @@ var BindingSupportLib = {
 			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__);
 		},
 
-		mono_method_get_call_signature: function(method) {
+		mono_method_get_call_signature: function(method, mono_obj) {
 			this.bindings_lazy_init ();
 
-			return this.call_method (this.get_call_sig, null, "i", [ method ]);
+			return this.call_method (this.get_call_sig, null, "im", [ method, mono_obj ]);
 		},
 
 		get_task_and_bind: function (tcs, js_obj) {
@@ -1457,25 +1460,19 @@ var BindingSupportLib = {
 					throw new Error("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
 			}
 
-			var [delegateRoot, argsRoot] = MONO.mono_wasm_new_roots ([this.extract_mono_obj (delegate_obj), undefined]);
+			var [delegateRoot] = MONO.mono_wasm_new_roots ([this.extract_mono_obj (delegate_obj)]);
 			try {
-				if (!this.delegate_dynamic_invoke) {
-					if (!this.corlib)
-						this.corlib = this.assembly_load ("System.Private.CoreLib");
-					if (!this.delegate_class)
-						this.delegate_class = this.find_class (this.corlib, "System", "Delegate");
-					if (!this.delegate_class)
-					{
-						throw new Error("System.Delegate class can not be resolved.");
-					}
-					this.delegate_dynamic_invoke = this.find_method (this.delegate_class, "DynamicInvoke", -1);
-				}
-				argsRoot.value = this.js_array_to_mono_array (js_args);
-				if (!this.delegate_dynamic_invoke)
-					throw new Error("System.Delegate.DynamicInvoke method can not be resolved.");
-				return this.call_method (this.delegate_dynamic_invoke, delegateRoot.value, "m", [ argsRoot.value ]);
+				if (typeof delegate_obj.__mono_delegate_invoke__ === "undefined")
+					delegate_obj.__mono_delegate_invoke__ = this.mono_wasm_get_delegate_invoke(delegateRoot.value);
+				if (!delegate_obj.__mono_delegate_invoke__)
+					throw new Error("System.Delegate Invoke method can not be resolved.");
+
+				if (typeof delegate_obj.__mono_delegate_invoke_sig__ === "undefined")
+					delegate_obj.__mono_delegate_invoke_sig__ = Module.mono_method_get_call_signature (delegate_obj.__mono_delegate_invoke__, delegateRoot.value);
+
+				return this.call_method (delegate_obj.__mono_delegate_invoke__, delegateRoot.value, delegate_obj.__mono_delegate_invoke_sig__, js_args);
 			} finally {
-				MONO.mono_wasm_release_roots (delegateRoot, argsRoot);
+				MONO.mono_wasm_release_roots (delegateRoot);
 			}
 		},
 

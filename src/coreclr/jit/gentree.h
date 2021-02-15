@@ -1519,7 +1519,18 @@ public:
 
     static bool OperIsAtomicOp(genTreeOps gtOper)
     {
-        return (gtOper == GT_XADD || gtOper == GT_XCHG || gtOper == GT_LOCKADD || gtOper == GT_CMPXCHG);
+        switch (gtOper)
+        {
+            case GT_XADD:
+            case GT_XORR:
+            case GT_XAND:
+            case GT_XCHG:
+            case GT_LOCKADD:
+            case GT_CMPXCHG:
+                return true;
+            default:
+                return false;
+        }
     }
 
     bool OperIsAtomicOp() const

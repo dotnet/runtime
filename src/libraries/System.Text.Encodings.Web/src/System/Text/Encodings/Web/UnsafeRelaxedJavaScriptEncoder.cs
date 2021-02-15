@@ -301,13 +301,13 @@ namespace System.Text.Encodings.Web
         // surrogate pairs in the output.
         public override int MaxOutputCharactersPerInputCharacter => 12; // "\uFFFF\uFFFF" is the longest encoded form
 
-        private static readonly char[] s_b = new char[] { '\\', 'b' };
-        private static readonly char[] s_t = new char[] { '\\', 't' };
-        private static readonly char[] s_n = new char[] { '\\', 'n' };
-        private static readonly char[] s_f = new char[] { '\\', 'f' };
-        private static readonly char[] s_r = new char[] { '\\', 'r' };
-        private static readonly char[] s_back = new char[] { '\\', '\\' };
-        private static readonly char[] s_doubleQuote = new char[] { '\\', '"' };
+        private const string s_b = "\\b";
+        private const string s_t = "\\t";
+        private const string s_n = "\\n";
+        private const string s_f = "\\f";
+        private const string s_r = "\\r";
+        private const string s_back = "\\\\";
+        private const string s_doubleQuote = "\\\"";
 
         // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
         // See ECMA-262, Sec. 7.8.4, and ECMA-404, Sec. 9
@@ -330,12 +330,13 @@ namespace System.Text.Encodings.Web
             // be written out as numeric entities for defense-in-depth.
             // See UnicodeEncoderBase ctor comments for more info.
 
+            Span<char> destination = new Span<char>(buffer, bufferLength);
             if (!WillEncode(unicodeScalar))
             {
-                return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten);
+                return TryWriteScalarAsChar(unicodeScalar, destination, out numberOfCharactersWritten);
             }
 
-            char[] toCopy;
+            string toCopy;
             switch (unicodeScalar)
             {
                 case '\"':
@@ -362,7 +363,7 @@ namespace System.Text.Encodings.Web
                 default:
                     return JavaScriptEncoderHelper.TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten);
             }
-            return TryCopyCharacters(toCopy, buffer, bufferLength, out numberOfCharactersWritten);
+            return TryCopyCharacters(toCopy, destination, out numberOfCharactersWritten);
         }
     }
 }

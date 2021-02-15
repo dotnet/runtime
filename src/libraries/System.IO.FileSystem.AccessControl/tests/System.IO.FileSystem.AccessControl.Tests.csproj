@@ -13,6 +13,7 @@
     <Compile Include="FileSystemAuditRuleTests.cs" />
     <Compile Include="FileSystemSecurityTests.cs" />
     <Compile Include="Helpers.cs" />
+    <Compile Include="TempAclDirectory.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.IO.FileSystem.AccessControl.csproj" SkipUseReferenceAssembly="true" />
