@@ -19572,6 +19572,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 }
 #endif // TARGET_ARM
 
-bool GenTree::IsInvariant() const {
+bool GenTree::IsInvariant() const
+{
     return Compiler::IsInvariant((GenTree*)this);
 }
