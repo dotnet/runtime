@@ -16,7 +16,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_NameNull_Throw()
         {
-            AssertExtensions.Throws<ArgumentException>("name", () => { NameValueHeaderValue nameValue = new NameValueHeaderValue(null as NameValueHeaderValue); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { NameValueHeaderValue nameValue = new NameValueHeaderValue(null as string); });
         }
 
         [Fact]
