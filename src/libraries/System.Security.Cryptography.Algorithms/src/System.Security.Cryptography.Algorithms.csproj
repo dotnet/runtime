@@ -334,12 +334,18 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptAlgPseudoHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDeriveKeyPBKDF2.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDeriveKeyPBKDF2.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyKey.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyKey.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHashData.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptHashData.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenerateSymmetricKey.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenerateSymmetricKey.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptKeyDerivation.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptKeyDerivation.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptDeriveKeyMaterial.cs"
@@ -382,6 +388,8 @@
              Link="Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeBCryptHashHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\CngCommon.Hash.cs"
