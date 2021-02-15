@@ -1225,8 +1225,10 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 				return LLVMBuildBitCast (ctx->builder, LLVMBuildZExt (ctx->builder, v, LLVMInt64Type (), ""), dtype, "");
 		}
 
-		if (LLVMGetTypeKind (stype) == LLVMVectorTypeKind && LLVMGetTypeKind (dtype) == LLVMVectorTypeKind)
-			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
+		if (LLVMGetTypeKind (stype) == LLVMVectorTypeKind && LLVMGetTypeKind (dtype) == LLVMVectorTypeKind) {
+			if (mono_llvm_get_prim_size_bits (stype) == mono_llvm_get_prim_size_bits (dtype))
+				return LLVMBuildBitCast (ctx->builder, v, dtype, "");
+		}
 
 		mono_llvm_dump_value (v);
 		mono_llvm_dump_type (dtype);
