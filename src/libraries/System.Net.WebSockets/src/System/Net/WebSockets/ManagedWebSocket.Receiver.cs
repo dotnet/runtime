@@ -93,7 +93,16 @@ namespace System.Net.WebSockets
                 }
             }
 
-            public void Dispose() => _decoder?.Dispose();
+            public void Dispose()
+            {
+                _decoder?.Dispose();
+
+                if (_decoderBuffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(_decoderBuffer);
+                    _decoderBuffer = null;
+                }
+            }
 
             public MessageHeader GetLastHeader() => _lastHeader;
 
