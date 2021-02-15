@@ -117,7 +117,7 @@ mono_array_class_get_cached_function (MonoClass *eclass, MonoClass **aclass)
 #define mono_array_class_get_cached(eclass) (mono_array_class_get_cached_function ((eclass), &(eclass ## _array)))
 
 static inline MonoArray*
-mono_array_new_cached_function (MonoDomain *domain, MonoClass *aclass, int size, MonoError *error)
+mono_array_new_cached_function (MonoClass *aclass, int size, MonoError *error)
 {
 	MonoVTable *vtable = mono_class_vtable_checked (aclass, error);
 	MonoArray *arr = NULL;
@@ -129,11 +129,11 @@ mono_array_new_cached_function (MonoDomain *domain, MonoClass *aclass, int size,
 // eclass should be a run-time constant
 // If you get an error using this macro, you need to manually instantiate the MonoClass *foo ## _array cache.
 // See for example object_class_array.
-#define mono_array_new_cached(domain, eclass, size, error) \
-	mono_array_new_cached_function ((domain), mono_array_class_get_cached (eclass), (size), (error))
+#define mono_array_new_cached(eclass, size, error) \
+	mono_array_new_cached_function (mono_array_class_get_cached (eclass), (size), (error))
 
 static inline MonoArrayHandle
-mono_array_new_cached_handle_function (MonoDomain *domain, MonoClass *aclass, int size, MonoError *error)
+mono_array_new_cached_handle_function (MonoClass *aclass, int size, MonoError *error)
 {
 	MonoVTable *vtable = mono_class_vtable_checked (aclass, error);
 	MonoArrayHandle arr = NULL_HANDLE_ARRAY;
@@ -145,8 +145,8 @@ mono_array_new_cached_handle_function (MonoDomain *domain, MonoClass *aclass, in
 // eclass should be a run-time constant
 // If you get an error using this macro, you need to manually instantiate the MonoClass *foo ## _array cache.
 // See for example object_class_array.
-#define mono_array_new_cached_handle(domain, eclass, size, error) \
-	mono_array_new_cached_handle_function ((domain), mono_array_class_get_cached (eclass), (size), (error))
+#define mono_array_new_cached_handle(eclass, size, error) \
+	mono_array_new_cached_handle_function (mono_array_class_get_cached (eclass), (size), (error))
 
 #ifdef MONO_BIG_ARRAYS
 typedef uint64_t mono_array_size_t;
@@ -1490,7 +1490,7 @@ char *
 mono_string_to_utf8_image (MonoImage *image, MonoStringHandle s, MonoError *error);
 
 MonoArrayHandle
-mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array, MonoError *error);
+mono_array_clone_in_domain (MonoArrayHandle array, MonoError *error);
 
 MonoArray*
 mono_array_clone_checked (MonoArray *array, MonoError *error);
@@ -1505,10 +1505,10 @@ gboolean
 mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res);
 
 MonoArray*
-mono_array_new_checked (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
+mono_array_new_checked (MonoClass *eclass, uintptr_t n, MonoError *error);
 
 MonoArray*
-mono_array_new_full_checked (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
+mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
 
 ICALL_EXPORT
 MonoArray*
@@ -1762,10 +1762,10 @@ MonoArray *
 mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error);
 
 MonoObject *
-mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_object_new_checked (MonoClass *klass, MonoError *error);
 
 MonoObjectHandle
-mono_object_new_handle (MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_object_new_handle (MonoClass *klass, MonoError *error);
 
 // This function skips handling of remoting and COM.
 // "alloc" means "less".
@@ -1797,34 +1797,34 @@ gboolean
 mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, MonoError *error);
 
 MonoStringHandle
-mono_string_new_size_handle (MonoDomain *domain, gint32 len, MonoError *error);
+mono_string_new_size_handle (gint32 len, MonoError *error);
 
 MonoString*
-mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
+mono_string_new_len_checked (const char *text, guint length, MonoError *error);
 
 MonoString *
-mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
+mono_string_new_size_checked (gint32 len, MonoError *error);
 
 MonoString*
-mono_ldstr_checked (MonoDomain *domain, MonoImage *image, uint32_t str_index, MonoError *error);
+mono_ldstr_checked (MonoImage *image, uint32_t str_index, MonoError *error);
 
 MonoStringHandle
-mono_ldstr_handle (MonoDomain *domain, MonoImage *image, uint32_t str_index, MonoError *error);
+mono_ldstr_handle (MonoImage *image, uint32_t str_index, MonoError *error);
 
 MONO_PROFILER_API MonoString*
-mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *merror);
+mono_string_new_checked (const char *text, MonoError *merror);
 
 MonoString*
-mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
+mono_string_new_wtf8_len_checked (const char *text, guint length, MonoError *error);
 
 MonoString *
-mono_string_new_utf16_checked (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error);
+mono_string_new_utf16_checked (const gunichar2 *text, gint32 len, MonoError *error);
 
 MonoStringHandle
-mono_string_new_utf16_handle (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error);
+mono_string_new_utf16_handle (const gunichar2 *text, gint32 len, MonoError *error);
 
 MonoStringHandle
-mono_string_new_utf8_len (MonoDomain *domain, const char *text, guint length, MonoError *error);
+mono_string_new_utf8_len (const char *text, guint length, MonoError *error);
 
 MonoString *
 mono_string_from_utf16_checked (const mono_unichar2 *data, MonoError *error);

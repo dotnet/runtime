@@ -1047,7 +1047,7 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, int param_count, stackva
 			lengths [i] = values [i].data.i;
 		}
 	}
-	return (MonoObject*) mono_array_new_full_checked (domain, klass, lengths, lower_bounds, error);
+	return (MonoObject*) mono_array_new_full_checked (klass, lengths, lower_bounds, error);
 }
 
 static gint32
@@ -2962,10 +2962,10 @@ static long opcode_counts[MINT_LASTOP];
 	} while (0);
 
 static MonoObject*
-mono_interp_new (MonoDomain* domain, MonoClass* klass)
+mono_interp_new (MonoClass* klass)
 {
 	ERROR_DECL (error);
-	MonoObject* const object = mono_object_new_checked (domain, klass, error);
+	MonoObject* const object = mono_object_new_checked (klass, error);
 	mono_error_cleanup (error); // FIXME: do not swallow the error
 	return object;
 }
@@ -4813,7 +4813,6 @@ call:
 
 			g_assert (!m_class_is_valuetype (newobj_class));
 
-			MonoDomain* const domain = frame->imethod->domain;
 			MonoVTable *vtable = mono_class_vtable_checked (newobj_class, error);
 			if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error)) {
 				MonoException *exc = mono_error_convert_to_exception (error);
@@ -4821,7 +4820,7 @@ call:
 				THROW_EX (exc, ip);
 			}
 			error_init_reuse (error);
-			MonoObject* o = mono_object_new_checked (domain, newobj_class, error);
+			MonoObject* o = mono_object_new_checked (newobj_class, error);
 			LOCAL_VAR (call_args_offset, MonoObject*) = o; // return value
 			call_args_offset += MINT_STACK_SLOT_SIZE;
 			LOCAL_VAR (call_args_offset, MonoObject*) = o; // first parameter
@@ -6138,7 +6137,7 @@ call:
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_NEWOBJ)
-			LOCAL_VAR (ip [1], MonoObject*) = mono_interp_new (frame->imethod->domain, (MonoClass*)frame->imethod->data_items [ip [2]]); // FIXME: do not swallow the error
+			LOCAL_VAR (ip [1], MonoObject*) = mono_interp_new ((MonoClass*)frame->imethod->data_items [ip [2]]); // FIXME: do not swallow the error
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_RETOBJ)

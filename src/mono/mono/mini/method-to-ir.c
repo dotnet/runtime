@@ -8674,7 +8674,7 @@ calli_end:
 					EMIT_NEW_IMAGECONST (cfg, iargs [1], image);
 					EMIT_NEW_ICONST (cfg, iargs [2], mono_metadata_token_index (n));
 					*sp = mono_emit_jit_icall (cfg, ves_icall_mono_ldstr, iargs);
-					mono_ldstr_checked (cfg->domain, image, mono_metadata_token_index (n), cfg->error);
+					mono_ldstr_checked (image, mono_metadata_token_index (n), cfg->error);
 					CHECK_CFG_ERROR;
 				} else {
 					if (cfg->cbb->out_of_line) {
@@ -8703,7 +8703,7 @@ calli_end:
 					else {
 						NEW_PCONST (cfg, ins, NULL);
 						ins->type = STACK_OBJ;
-						ins->inst_p0 = mono_ldstr_checked (cfg->domain, image, mono_metadata_token_index (n), cfg->error);
+						ins->inst_p0 = mono_ldstr_checked (image, mono_metadata_token_index (n), cfg->error);
 						CHECK_CFG_ERROR;
 
 						if (!ins->inst_p0)

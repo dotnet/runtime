@@ -1047,7 +1047,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 	if (ta == NULL) {
 		/* Exception is not thrown yet */
-		res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, 0, error);
+		res = mono_array_new_checked (mono_defaults.stack_frame_class, 0, error);
 		mono_error_set_pending_exception (error);
 		return res;
 	}
@@ -1058,7 +1058,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 	len = mono_array_length_internal (ta) / TRACE_IP_ENTRY_SIZE;
 
-	res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0, error);
+	res = mono_array_new_checked (mono_defaults.stack_frame_class, len > skip ? len - skip : 0, error);
 	if (!is_ok (error))
 		goto fail;
 
@@ -1069,7 +1069,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 	for (i = skip; i < len; i++) {
 		MonoJitInfo *ji;
-		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, error);
+		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (mono_defaults.stack_frame_class, error);
 		if (!is_ok (error))
 			goto fail;
 		MONO_HANDLE_ASSIGN_RAW (sf_h, sf);
@@ -1103,7 +1103,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 			sf->method = NULL;
 			s = mono_method_get_name_full (method, TRUE, FALSE, MONO_TYPE_NAME_FORMAT_REFLECTION);
-			MonoString *name = mono_string_new_checked (domain, s, error);
+			MonoString *name = mono_string_new_checked (s, error);
 			g_free (s);
 			if (!is_ok (error))
 				goto fail;
@@ -1138,7 +1138,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 		if (need_file_info) {
 			if (location && location->source_file) {
-				MonoString *filename = mono_string_new_checked (domain, location->source_file, error);
+				MonoString *filename = mono_string_new_checked (location->source_file, error);
 				if (!is_ok (error))
 					goto fail;
 				MONO_OBJECT_SETREF_INTERNAL (sf, filename, filename);
@@ -1936,7 +1936,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	if (need_file_info) {
 		if (location) {
-			MonoString *filename = mono_string_new_checked (domain, location->source_file, error);
+			MonoString *filename = mono_string_new_checked (location->source_file, error);
 			if (!is_ok (error)) {
 				mono_error_set_pending_exception (error);
 				return FALSE;
@@ -2125,7 +2125,7 @@ build_native_trace (MonoError *error)
 
 	if (!size)
 		return NULL;
-	res = mono_array_new_checked (mono_domain_get (), mono_defaults.int_class, size, error);
+	res = mono_array_new_checked (mono_defaults.int_class, size, error);
 	return_val_if_nok (error, NULL);
 
 	for (i = 0; i < size; i++)
@@ -2185,7 +2185,7 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 				methods_len += old_methods_len;
 			}
 
-			MonoArray *all_methods = mono_array_new_checked (domain, mono_defaults.object_class, methods_len, error);
+			MonoArray *all_methods = mono_array_new_checked (mono_defaults.object_class, methods_len, error);
 			mono_error_assert_ok (error);
 
 			if (old_methods)
@@ -2577,7 +2577,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	g_assert (ctx != NULL);
 	if (!obj) {
 		MonoException *ex = mono_get_exception_null_reference ();
-		MonoString *msg = mono_string_new_checked (domain, "Object reference not set to an instance of an object", error);
+		MonoString *msg = mono_string_new_checked ("Object reference not set to an instance of an object", error);
 		mono_error_assert_ok (error);
 		MONO_OBJECT_SETREF_INTERNAL (ex, message, msg);
 		obj = (MonoObject *)ex;
@@ -2628,7 +2628,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			char *from_name = mono_type_get_full_name (jit_tls->class_cast_from);
 			char *to_name = mono_type_get_full_name (jit_tls->class_cast_to);
 			char *msg = g_strdup_printf ("Unable to cast object of type '%s' to type '%s'.", from_name, to_name);
-			mono_ex->message = mono_string_new_checked (domain, msg, error);
+			mono_ex->message = mono_string_new_checked (msg, error);
 			g_free (from_name);
 			g_free (to_name);
 			if (!is_ok (error)) {
@@ -2641,7 +2641,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			char *from_name = mono_type_get_full_name (jit_tls->class_cast_from);
 			char *to_name = mono_type_get_full_name (jit_tls->class_cast_to);
 			char *msg = g_strdup_printf ("Source array of type '%s' cannot be cast to destination array type '%s'.", from_name, to_name);
-			mono_ex->message = mono_string_new_checked (domain, msg, error);
+			mono_ex->message = mono_string_new_checked (msg, error);
 			g_free (from_name);
 			g_free (to_name);
 			if (!is_ok (error)) {
@@ -3968,9 +3968,9 @@ mono_llvm_load_exception (void)
 		// FIXME:
 		//MONO_OBJECT_SETREF_INTERNAL (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
 	} else {
-		MONO_OBJECT_SETREF_INTERNAL (mono_ex, trace_ips, mono_array_new_checked (mono_domain_get (), mono_defaults.int_class, 0, error));
+		MONO_OBJECT_SETREF_INTERNAL (mono_ex, trace_ips, mono_array_new_checked (mono_defaults.int_class, 0, error));
 		mono_error_assert_ok (error);
-		MONO_OBJECT_SETREF_INTERNAL (mono_ex, stack_trace, mono_array_new_checked (mono_domain_get (), mono_defaults.stack_frame_class, 0, error));
+		MONO_OBJECT_SETREF_INTERNAL (mono_ex, stack_trace, mono_array_new_checked (mono_defaults.stack_frame_class, 0, error));
 		mono_error_assert_ok (error);
 	}
 

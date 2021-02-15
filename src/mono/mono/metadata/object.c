@@ -77,7 +77,7 @@ static void
 get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value, MonoStringHandleOut string_handle, MonoError *error);
 
 static void
-mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig, MonoStringHandleOut string_handle, MonoError *error);
+mono_ldstr_metadata_sig (const char* sig, MonoStringHandleOut string_handle, MonoError *error);
 
 static void
 free_main_args (void);
@@ -1100,7 +1100,7 @@ mono_class_insecure_overlapping (MonoClass *klass)
 MonoStringHandle
 ves_icall_string_alloc_impl (int length, MonoError *error)
 {
-	MonoString *s = mono_string_new_size_checked (mono_domain_get (), length, error);
+	MonoString *s = mono_string_new_size_checked (length, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING);
 	return MONO_HANDLE_NEW (MonoString, s);
 }
@@ -3126,7 +3126,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 		goto exit;
 	}
 
-	o = mono_object_new_checked (domain, klass, error);
+	o = mono_object_new_checked (klass, error);
 	goto_if_nok (error, return_null);
 	v = mono_object_get_data (o);
 
@@ -3210,7 +3210,7 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 		goto exit;
 
 	if (type == MONO_TYPE_STRING) {
-		mono_ldstr_metadata_sig (domain, *(const char**)value, string_handle, error);
+		mono_ldstr_metadata_sig (*(const char**)value, string_handle, error);
 		*(gpointer*)value = MONO_HANDLE_RAW (string_handle);
 	}
 	result = TRUE;
@@ -3591,7 +3591,7 @@ mono_nullable_box (gpointer vbuf, MonoClass *klass, MonoError *error)
 	g_assertf (!m_class_is_byreflike (param_class), "Unexpected Nullable<%s> - generic type instantiated with IsByRefLike type", mono_type_get_full_name (param_class));
 
 	if (*(guint8*)(has_value_field_addr)) {
-		MonoObject *o = mono_object_new_checked (mono_domain_get (), param_class, error);
+		MonoObject *o = mono_object_new_checked (param_class, error);
 		return_val_if_nok (error, NULL);
 		if (m_class_has_references (param_class))
 			mono_gc_wbarrier_value_copy_internal (mono_object_unbox_internal (o), value_field_addr, 1, param_class);
@@ -3870,11 +3870,11 @@ leave:
 }
 
 static gboolean
-handle_main_arg_array_set (MonoDomain *domain, int idx, MonoArrayHandle dest, MonoError *error)
+handle_main_arg_array_set (int idx, MonoArrayHandle dest, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
-	MonoStringHandle value = mono_string_new_handle (domain, main_args [idx], error);
+	MonoStringHandle value = mono_string_new_handle (main_args [idx], error);
 	goto_if_nok (error, leave);
 	MONO_HANDLE_ARRAY_SETREF (dest, idx, value);
 leave:
@@ -3893,16 +3893,15 @@ mono_runtime_get_main_args_handle (MonoError *error)
 	HANDLE_FUNCTION_ENTER ();
 	MonoArrayHandle array;
 	int i;
-	MonoDomain *domain = mono_domain_get ();
 	error_init (error);
 
-	array = mono_array_new_handle (domain, mono_defaults.string_class, num_main_args, error);
+	array = mono_array_new_handle (mono_defaults.string_class, num_main_args, error);
 	if (!is_ok (error)) {
 		array = MONO_HANDLE_CAST (MonoArray, NULL_HANDLE);
 		goto leave;
 	}
 	for (i = 0; i < num_main_args; ++i) {
-		if (!handle_main_arg_array_set (domain, i, array, error))
+		if (!handle_main_arg_array_set (i, array, error))
 			goto leave;
 	}
 leave:
@@ -3972,7 +3971,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	ERROR_DECL (error);
 	int i;
 	MonoArray *args = NULL;
-	MonoDomain *domain = mono_domain_get ();
 	gchar *utf8_fullpath;
 	MonoMethodSignature *sig;
 
@@ -4037,7 +4035,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	}
 
 	if (sig->param_count) {
-		args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, argc, error);
+		args = (MonoArray*)mono_array_new_checked (mono_defaults.string_class, argc, error);
 		mono_error_assert_ok (error);
 		for (i = 0; i < argc; ++i) {
 			/* The encodings should all work, given that
@@ -4045,13 +4043,13 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 			 * main_args array.
 			 */
 			gchar *str = mono_utf8_from_external (argv [i]);
-			MonoString *arg = mono_string_new_checked (domain, str, error);
+			MonoString *arg = mono_string_new_checked (str, error);
 			mono_error_assert_ok (error);
 			mono_array_setref_internal (args, i, arg);
 			g_free (str);
 		}
 	} else {
-		args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 0, error);
+		args = (MonoArray*)mono_array_new_checked (mono_defaults.string_class, 0, error);
 		mono_error_assert_ok (error);
 	}
 	
@@ -4165,7 +4163,7 @@ create_unhandled_exception_eventargs (MonoObjectHandle exc, MonoError *error)
 			&is_terminating
 		};
 
-		MonoObjectHandle obj = mono_object_new_handle (mono_domain_get (), klass, error);
+		MonoObjectHandle obj = mono_object_new_handle (klass, error);
 		goto_if_nok (error, return_null);
 
 		mono_runtime_invoke_handle_void (method, obj, args, error);
@@ -4274,7 +4272,7 @@ create_first_chance_exception_eventargs (MonoObjectHandle exc, MonoError *error)
 	gpointer args [1];
 	args [0] = MONO_HANDLE_RAW (exc);
 
-	obj = mono_object_new_handle (mono_domain_get (), klass, error);
+	obj = mono_object_new_handle (klass, error);
 	goto_if_nok (error, return_null);
 
 	mono_runtime_invoke_handle_void (ctor, obj, args, error);
@@ -4662,7 +4660,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 					/* MS seems to create the objects if a null is passed in */
 					gboolean was_null = FALSE;
 					if (!mono_array_get_internal (params, MonoObject*, i)) {
-						MonoObject *o = mono_object_new_checked (mono_domain_get (), mono_class_from_mono_type_internal (t_orig), error);
+						MonoObject *o = mono_object_new_checked (mono_class_from_mono_type_internal (t_orig), error);
 						return_val_if_nok (error, NULL);
 						mono_array_setref_internal (params, i, o); 
 						was_null = TRUE;
@@ -4906,7 +4904,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		}
 
 		if (!obj) {
-			MonoObjectHandle obj_h = mono_object_new_handle (mono_domain_get (), method->klass, error);
+			MonoObjectHandle obj_h = mono_object_new_handle (method->klass, error);
 			goto_if_nok (error, exit_null);
 			obj = MONO_HANDLE_RAW (obj_h);
 			g_assert (obj); /*maybe we should raise a TLE instead?*/
@@ -4933,7 +4931,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 				obj = NULL;
 			} else {
 				/* Convert the unboxed vtype into a Nullable structure */
-				MonoObjectHandle nullable_h = mono_object_new_handle (mono_domain_get (), method->klass, error);
+				MonoObjectHandle nullable_h = mono_object_new_handle (method->klass, error);
 				goto_if_nok (error, exit_null);
 				MonoObject* nullable = MONO_HANDLE_RAW (nullable_h);
 
@@ -5086,7 +5084,7 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
 	MonoObject * result;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	result = mono_object_new_checked (domain, klass, error);
+	result = mono_object_new_checked (klass, error);
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
@@ -5099,7 +5097,7 @@ ves_icall_object_new (MonoDomain *domain, MonoClass *klass)
 
 	ERROR_DECL (error);
 
-	MonoObject * result = mono_object_new_checked (domain, klass, error);
+	MonoObject * result = mono_object_new_checked (klass, error);
 
 	mono_error_set_pending_exception (error);
 	return result;
@@ -5117,7 +5115,7 @@ ves_icall_object_new (MonoDomain *domain, MonoClass *klass)
  * It returns NULL on failure and sets \p error.
  */
 MonoObject *
-mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
+mono_object_new_checked (MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -5143,7 +5141,7 @@ mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
  * It returns NULL on failure and sets \p error.
  */
 MonoObjectHandle
-mono_object_new_handle (MonoDomain *domain, MonoClass *klass, MonoError *error)
+mono_object_new_handle (MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -5454,7 +5452,7 @@ mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token
 	klass = mono_class_get_checked (image, token, error);
 	mono_error_assert_ok (error);
 	
-	MonoObjectHandle result = mono_object_new_handle (domain, klass, error);
+	MonoObjectHandle result = mono_object_new_handle (klass, error);
 
 	mono_error_cleanup (error);
 
@@ -5494,8 +5492,7 @@ mono_object_clone_handle (MonoObjectHandle obj, MonoError *error)
 	MonoClass* const klass = vtable->klass;
 
 	if (m_class_get_rank (klass))
-		return MONO_HANDLE_CAST (MonoObject, mono_array_clone_in_domain (MONO_HANDLE_DOMAIN (obj),
-			MONO_HANDLE_CAST (MonoArray, obj), error));
+		return MONO_HANDLE_CAST (MonoObject, mono_array_clone_in_domain (MONO_HANDLE_CAST (MonoArray, obj), error));
 
 	int const size = m_class_get_instance_size (klass);
 
@@ -5559,7 +5556,7 @@ mono_array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass 
  * specified \c MonoDomain.  On failure returns NULL and sets \p error.
  */
 MonoArrayHandle
-mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, MonoError *error)
+mono_array_clone_in_domain (MonoArrayHandle array_handle, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -5576,7 +5573,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, Mo
 	MonoArrayHandle o;
 	if (array_bounds == NULL) {
 		size = mono_array_handle_length (array_handle);
-		o = mono_array_new_full_handle (domain, klass, &size, NULL, error);
+		o = mono_array_new_full_handle (klass, &size, NULL, error);
 		goto_if_nok (error, leave);
 		size *= mono_array_element_size (klass);
 	} else {
@@ -5589,7 +5586,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, Mo
 			size *= array_bounds [i].length;
 			lower_bounds [i] = array_bounds [i].lower_bound;
 		}
-		o = mono_array_new_full_handle (domain, klass, sizes, lower_bounds, error);
+		o = mono_array_new_full_handle (klass, sizes, lower_bounds, error);
 		goto_if_nok (error, leave);
 	}
 
@@ -5636,7 +5633,7 @@ mono_array_clone_checked (MonoArray *array_raw, MonoError *error)
 	/* FIXME: callers of mono_array_clone_checked should use handles */
 	error_init (error);
 	MONO_HANDLE_DCL (MonoArray, array);
-	MonoArrayHandle result = mono_array_clone_in_domain (MONO_HANDLE_DOMAIN (array), array, error);
+	MonoArrayHandle result = mono_array_clone_in_domain (array, error);
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -5692,14 +5689,14 @@ MonoArray*
 mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds)
 {
 	ERROR_DECL (error);
-	MonoArray *array = mono_array_new_full_checked (domain, array_class, lengths, lower_bounds, error);
+	MonoArray *array = mono_array_new_full_checked (array_class, lengths, lower_bounds, error);
 	mono_error_cleanup (error);
 
 	return array;
 }
 
 MonoArray*
-mono_array_new_full_checked (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error)
+mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -5806,7 +5803,7 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
 	MONO_ENTER_GC_UNSAFE;
 
 	ERROR_DECL (error);
-	result = mono_array_new_checked (domain, eclass, n, error);
+	result = mono_array_new_checked (eclass, n, error);
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
@@ -5814,7 +5811,6 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
 
 /**
  * mono_array_new_checked:
- * \param domain domain where the object is created
  * \param eclass element class
  * \param n number of array elements
  * \param error set on error
@@ -5822,7 +5818,7 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
  * On failure returns NULL and sets \p error.
  */
 MonoArray *
-mono_array_new_checked (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error)
+mono_array_new_checked (MonoClass *eclass, uintptr_t n, MonoError *error)
 {
 	MonoClass *ac;
 
@@ -5841,7 +5837,7 @@ MonoArray*
 ves_icall_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
 {
 	ERROR_DECL (error);
-	MonoArray *arr = mono_array_new_checked (domain, eclass, n, error);
+	MonoArray *arr = mono_array_new_checked (eclass, n, error);
 	mono_error_set_pending_exception (error);
 
 	return arr;
@@ -5987,7 +5983,7 @@ mono_string_new_utf16 (MonoDomain *domain, const mono_unichar2 *text, gint32 len
 	MonoString *res = NULL;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	res = mono_string_new_utf16_checked (domain, text, len, error);
+	res = mono_string_new_utf16_checked (text, len, error);
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
@@ -6002,7 +5998,7 @@ mono_string_new_utf16 (MonoDomain *domain, const mono_unichar2 *text, gint32 len
  * On error, returns NULL and sets \p error.
  */
 MonoString *
-mono_string_new_utf16_checked (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error)
+mono_string_new_utf16_checked (const gunichar2 *text, gint32 len, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6010,7 +6006,7 @@ mono_string_new_utf16_checked (MonoDomain *domain, const gunichar2 *text, gint32
 	
 	error_init (error);
 	
-	s = mono_string_new_size_checked (domain, len, error);
+	s = mono_string_new_size_checked (len, error);
 	if (s != NULL)
 		memcpy (mono_string_chars_internal (s), text, len * 2);
 
@@ -6026,9 +6022,9 @@ mono_string_new_utf16_checked (MonoDomain *domain, const gunichar2 *text, gint32
  * On error, returns NULL and sets \p error.
  */
 MonoStringHandle
-mono_string_new_utf16_handle (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error)
+mono_string_new_utf16_handle (const gunichar2 *text, gint32 len, MonoError *error)
 {
-	return MONO_HANDLE_NEW (MonoString, mono_string_new_utf16_checked (domain, text, len, error));
+	return MONO_HANDLE_NEW (MonoString, mono_string_new_utf16_checked (text, len, error));
 }
 
 /**
@@ -6039,7 +6035,7 @@ mono_string_new_utf16_handle (MonoDomain *domain, const gunichar2 *text, gint32 
  * \returns A newly created string object which contains \p text. On failure returns NULL and sets \p error.
  */
 static MonoString *
-mono_string_new_utf32_checked (MonoDomain *domain, const mono_unichar4 *text, gint32 len, MonoError *error)
+mono_string_new_utf32_checked (const mono_unichar4 *text, gint32 len, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6051,7 +6047,7 @@ mono_string_new_utf32_checked (MonoDomain *domain, const mono_unichar4 *text, gi
 	
 	gint32 utf16_len = g_utf16_len (utf16_output);
 	
-	s = mono_string_new_size_checked (domain, utf16_len, error);
+	s = mono_string_new_size_checked (utf16_len, error);
 	goto_if_nok (error, exit);
 
 	memcpy (mono_string_chars_internal (s), utf16_output, utf16_len * 2);
@@ -6072,7 +6068,7 @@ MonoString *
 mono_string_new_utf32 (MonoDomain *domain, const mono_unichar4 *text, gint32 len)
 {
 	ERROR_DECL (error);
-	MonoString *result = mono_string_new_utf32_checked (domain, text, len, error);
+	MonoString *result = mono_string_new_utf32_checked (text, len, error);
 	mono_error_cleanup (error);
 	return result;
 }
@@ -6089,14 +6085,14 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	MonoString *str;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	str = mono_string_new_size_checked (domain, len, error);
+	str = mono_string_new_size_checked (len, error);
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 	return str;
 }
 
 MonoStringHandle
-mono_string_new_size_handle (MonoDomain *domain, gint32 len, MonoError *error)
+mono_string_new_size_handle (gint32 len, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6127,10 +6123,10 @@ mono_string_new_size_handle (MonoDomain *domain, gint32 len, MonoError *error)
 }
 
 MonoString *
-mono_string_new_size_checked (MonoDomain *domain, gint32 length, MonoError *error)
+mono_string_new_size_checked (gint32 length, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
-	HANDLE_FUNCTION_RETURN_OBJ (mono_string_new_size_handle (domain, length, error));
+	HANDLE_FUNCTION_RETURN_OBJ (mono_string_new_size_handle (length, error));
 }
 
 /**
@@ -6147,7 +6143,7 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 	MonoStringHandle result;
 
 	MONO_ENTER_GC_UNSAFE;
-	result = mono_string_new_utf8_len (domain, text, length, error);
+	result = mono_string_new_utf8_len (text, length, error);
 	MONO_EXIT_GC_UNSAFE;
 
 	mono_error_cleanup (error);
@@ -6163,7 +6159,7 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
  * failure returns NULL and sets \p error.
  */
 MonoStringHandle
-mono_string_new_utf8_len (MonoDomain *domain, const char *text, guint length, MonoError *error)
+mono_string_new_utf8_len (const char *text, guint length, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6184,7 +6180,7 @@ mono_string_new_utf8_len (MonoDomain *domain, const char *text, guint length, Mo
 		//mono_error_set_execution_engine (error, "String conversion error: %s", eg_error->message);
 		g_error_free (eg_error);
 	} else {
-		o = mono_string_new_utf16_handle (domain, ut, items_written, error);
+		o = mono_string_new_utf16_handle (ut, items_written, error);
 	}
 
 	g_free (ut);
@@ -6193,20 +6189,20 @@ mono_string_new_utf8_len (MonoDomain *domain, const char *text, guint length, Mo
 }
 
 MonoString*
-mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error)
+mono_string_new_len_checked (const char *text, guint length, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
-	HANDLE_FUNCTION_RETURN_OBJ (mono_string_new_utf8_len (domain, text, length, error));
+	HANDLE_FUNCTION_RETURN_OBJ (mono_string_new_utf8_len (text, length, error));
 }
 
 static
 MonoString*
-mono_string_new_internal (MonoDomain *domain, const char *text)
+mono_string_new_internal (const char *text)
 {
 	ERROR_DECL (error);
 	MonoString *res = NULL;
-	res = mono_string_new_checked (domain, text, error);
+	res = mono_string_new_checked (text, error);
 	if (!is_ok (error)) {
 		/* Mono API compatability: assert on Out of Memory errors,
 		 * return NULL otherwise (most likely an invalid UTF-8 byte
@@ -6229,7 +6225,7 @@ mono_string_new_internal (MonoDomain *domain, const char *text)
 MonoString*
 mono_string_new (MonoDomain *domain, const char *text)
 {
-	MONO_EXTERNAL_ONLY_GC_UNSAFE (MonoString*, mono_string_new_internal (domain, text));
+	MONO_EXTERNAL_ONLY_GC_UNSAFE (MonoString*, mono_string_new_internal (text));
 }
 
 /**
@@ -6240,7 +6236,7 @@ mono_string_new (MonoDomain *domain, const char *text)
  * On error returns NULL and sets \p merror.
  */
 MonoString*
-mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *error)
+mono_string_new_checked (const char *text, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6257,7 +6253,7 @@ mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *error)
 	ut = g_utf8_to_utf16 (text, len, NULL, &items_written, &eg_error);
 	
 	if (!eg_error)
-		o = mono_string_new_utf16_checked (domain, ut, items_written, error);
+		o = mono_string_new_utf16_checked (ut, items_written, error);
 	else {
 		mono_error_set_execution_engine (error, "String conversion error: %s", eg_error->message);
 		g_error_free (eg_error);
@@ -6278,7 +6274,7 @@ mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *error)
 	}
 
 	len = g_utf8_strlen (text, -1);
-	o = mono_string_new_size_checked (domain, len, error);
+	o = mono_string_new_size_checked (len, error);
 	if (!o)
 		goto leave;
 	str = mono_string_chars_internal (o);
@@ -6302,7 +6298,7 @@ leave:
  * On error returns NULL and sets \p merror.
  */
 MonoString*
-mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error)
+mono_string_new_wtf8_len_checked (const char *text, guint length, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6316,7 +6312,7 @@ mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint le
 	ut = eg_wtf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
 
 	if (!eg_error)
-		o = mono_string_new_utf16_checked (domain, ut, items_written, error);
+		o = mono_string_new_utf16_checked (ut, items_written, error);
 	else
 		g_error_free (eg_error);
 
@@ -6328,7 +6324,7 @@ mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint le
 MonoStringHandle
 mono_string_new_wrapper_internal_impl (const char *text, MonoError *error)
 {
-	return MONO_HANDLE_NEW (MonoString, mono_string_new_internal (mono_domain_get (), text));
+	return MONO_HANDLE_NEW (MonoString, mono_string_new_internal (text));
 }
 
 /**
@@ -6881,7 +6877,7 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	MonoString *result;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	result = mono_ldstr_checked (domain, image, idx, error);
+	result = mono_ldstr_checked (image, idx, error);
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
@@ -6889,7 +6885,6 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 
 /**
  * mono_ldstr_checked:
- * \param domain the domain where the string will be used.
  * \param image a metadata context
  * \param idx index into the user string table.
  * \param error set on error.
@@ -6898,7 +6893,7 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
  * On failure returns NULL and sets \p error.
  */
 MonoString*
-mono_ldstr_checked (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError *error)
+mono_ldstr_checked (MonoImage *image, guint32 idx, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 	error_init (error);
@@ -6911,16 +6906,16 @@ mono_ldstr_checked (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError
 		MONO_HANDLE_ASSIGN_RAW (str, (MonoString *)mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL, error));
 		goto exit;
 	}
-	mono_ldstr_metadata_sig (domain, mono_metadata_user_string (image, idx), str, error);
+	mono_ldstr_metadata_sig (mono_metadata_user_string (image, idx), str, error);
 exit:
 	HANDLE_FUNCTION_RETURN_OBJ (str);
 }
 
 MonoStringHandle
-mono_ldstr_handle (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError *error)
+mono_ldstr_handle (MonoImage *image, guint32 idx, MonoError *error)
 {
 	// FIXME invert mono_ldstr_handle and mono_ldstr_checked.
-	return MONO_HANDLE_NEW (MonoString, mono_ldstr_checked (domain, image, idx, error));
+	return MONO_HANDLE_NEW (MonoString, mono_ldstr_checked (image, idx, error));
 }
 
 char*
@@ -6944,14 +6939,13 @@ mono_string_from_blob (const char *str, MonoError *error)
 }
 /**
  * mono_ldstr_metadata_sig
- * \param domain the domain for the string
  * \param sig the signature of a metadata string
  * \param error set on error
  * \returns a \c MonoString for a string stored in the metadata. On
  * failure returns NULL and sets \p error.
  */
 static void
-mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig, MonoStringHandleOut string_handle, MonoError *error)
+mono_ldstr_metadata_sig (const char* sig, MonoStringHandleOut string_handle, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6963,7 +6957,7 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig, MonoStringHandleOu
 
 	// FIXMEcoop excess handle, use mono_string_new_utf16_checked and string_handle parameter
 
-	MonoStringHandle o = mono_string_new_utf16_handle (domain, (gunichar2*)sig, len, error);
+	MonoStringHandle o = mono_string_new_utf16_handle ((gunichar2*)sig, len, error);
 	return_if_nok (error);
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
@@ -7270,7 +7264,7 @@ mono_string_from_utf16_checked (const gunichar2 *data, MonoError *error)
 	error_init (error);
 	if (!data)
 		return NULL;
-	return mono_string_new_utf16_checked (mono_domain_get (), data, g_utf16_len (data), error);
+	return mono_string_new_utf16_checked (data, g_utf16_len (data), error);
 }
 
 /**
@@ -7822,7 +7816,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 	MonoMethodMessage *msg;
 	int i, count;
 
-	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, error); 
+	msg = (MonoMethodMessage *)mono_object_new_checked (mono_defaults.mono_method_message_class, error); 
 	return_val_if_nok  (error, NULL);
 
 	if (invoke) {
@@ -8021,7 +8015,6 @@ mono_array_addr_with_size (MonoArray *array, int size, uintptr_t idx)
 MonoArray *
 mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error)
 {
-	MonoDomain *domain = mono_domain_get ();
 	MonoArray *res;
 	int len, i;
 
@@ -8030,7 +8023,7 @@ mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error)
 		return NULL;
 
 	len = g_list_length (list);
-	res = mono_array_new_checked (domain, eclass, len, error);
+	res = mono_array_new_checked (eclass, len, error);
 	return_val_if_nok (error, NULL);
 
 	for (i = 0; list; list = list->next, i++)

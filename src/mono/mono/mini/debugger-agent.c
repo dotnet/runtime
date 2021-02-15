@@ -5966,7 +5966,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 				return ERR_INVALID_ARGUMENT;
 			else {
 				ERROR_DECL (error);
-				this_arg = mono_object_new_checked (domain, m->klass, error);
+				this_arg = mono_object_new_checked (m->klass, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					return ERR_INVALID_ARGUMENT;
@@ -7172,7 +7172,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			return err;
 		s = decode_string (p, &p, end);
 
-		o = mono_string_new_checked (domain, s, error);
+		o = mono_string_new_checked (s, error);
 		if (!is_ok (error)) {
 			PRINT_DEBUG_MSG (1, "[dbg] Failed to allocate String object '%s': %s\n", s, mono_error_get_message (error));
 			mono_error_cleanup (error);
@@ -7189,7 +7189,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		uintptr_t size = 0;
 		int len = decode_int (p, &p, end);
 		size = len;
-		arr = mono_array_new_full_checked (mono_domain_get (), mono_class_create_array (mono_get_byte_class(), 1), &size, NULL, error);
+		arr = mono_array_new_full_checked (mono_class_create_array (mono_get_byte_class(), 1), &size, NULL, error);
 		elem = mono_array_addr_internal (arr, guint8, 0);
 		memcpy (elem, p, len);
 		p += len;
@@ -7212,7 +7212,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		// FIXME:
 		g_assert (domain == domain2);
 
-		o = mono_object_new_checked (domain, klass, error);
+		o = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 
 		err = decode_value (m_class_get_byval_arg (klass), domain, (guint8 *)mono_object_unbox_internal (o), p, &p, end, TRUE);
@@ -8012,7 +8012,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		ERROR_DECL (error);
 		MonoObject *obj;
 
-		obj = mono_object_new_checked (domain, klass, error);
+		obj = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 		buffer_add_objid (buf, obj);
 		break;
@@ -8382,7 +8382,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			MonoString *s;
 			char *s2;
 
-			s = mono_ldstr_checked (domain, m_class_get_image (method->klass), mono_metadata_token_index (token), error);
+			s = mono_ldstr_checked (m_class_get_image (method->klass), mono_metadata_token_index (token), error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 			s2 = mono_string_to_utf8_checked_internal (s, error);

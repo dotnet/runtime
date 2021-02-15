@@ -5280,7 +5280,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			token = mono_metadata_token_index (read32 (td->ip + 1));
 			push_type (td, STACK_TYPE_O, mono_defaults.string_class);
 			if (method->wrapper_type == MONO_WRAPPER_NONE) {
-				MonoString *s = mono_ldstr_checked (domain, image, token, error);
+				MonoString *s = mono_ldstr_checked (image, token, error);
 				goto_if_nok (error, exit);
 				/* GC won't scan code stream, but reference is held by metadata
 				 * machinery so we are good here */

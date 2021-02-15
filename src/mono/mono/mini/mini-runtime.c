@@ -1550,7 +1550,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_LDSTR:
 		target =
-			mono_ldstr_checked (domain, patch_info->data.token->image,
+			mono_ldstr_checked (patch_info->data.token->image,
 					    mono_metadata_token_index (patch_info->data.token->token), error);
 		break;
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {

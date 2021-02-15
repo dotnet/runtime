@@ -745,8 +745,7 @@ mono_array_new_n_icall (MonoMethod *cm, gint32 pcount, intptr_t *params)
 		lengths += rank;
 	}
 
-	MonoArray *arr = mono_array_new_full_checked (mono_domain_get (),
-		cm->klass, lengths, lower_bounds, error);
+	MonoArray *arr = mono_array_new_full_checked (cm->klass, lengths, lower_bounds, error);
 
 	return mono_error_set_pending_exception (error) ? NULL : arr;
 }
@@ -765,8 +764,7 @@ mono_array_new_n (MonoMethod *cm, int n, uintptr_t lengths [], intptr_t lower_bo
 	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY)
 		plower_bounds = lower_bounds;
 
-	MonoArray *arr = mono_array_new_full_checked (mono_domain_get (),
-		cm->klass, lengths, plower_bounds, error);
+	MonoArray *arr = mono_array_new_full_checked (cm->klass, lengths, plower_bounds, error);
 
 	return mono_error_set_pending_exception (error) ? NULL : arr;
 }
@@ -1127,7 +1125,7 @@ MonoString*
 ves_icall_mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
 	ERROR_DECL (error);
-	MonoString *result = mono_ldstr_checked (domain, image, idx, error);
+	MonoString *result = mono_ldstr_checked (image, idx, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }
@@ -1136,7 +1134,7 @@ MonoString*
 mono_helper_ldstr (MonoImage *image, guint32 idx)
 {
 	ERROR_DECL (error);
-	MonoString *result = mono_ldstr_checked (mono_domain_get (), image, idx, error);
+	MonoString *result = mono_ldstr_checked (image, idx, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }
@@ -1145,7 +1143,7 @@ MonoString*
 mono_helper_ldstr_mscorlib (guint32 idx)
 {
 	ERROR_DECL (error);
-	MonoString *result = mono_ldstr_checked (mono_domain_get (), mono_defaults.corlib, idx, error);
+	MonoString *result = mono_ldstr_checked (mono_defaults.corlib, idx, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }
@@ -1161,7 +1159,7 @@ mono_helper_newobj_mscorlib (guint32 idx)
 		return NULL;
 	}
 
-	MonoObject *obj = mono_object_new_checked (mono_domain_get (), klass, error);
+	MonoObject *obj = mono_object_new_checked (klass, error);
 	if (!is_ok (error))
 		mono_error_set_pending_exception (error);
 	return obj;

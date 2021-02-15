@@ -1525,14 +1525,14 @@ load_agent (MonoDomain *domain, char *desc)
 	mono_thread_set_main (mono_thread_current ());
 
 	if (args) {
-		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 1, error);
+		main_args = (MonoArray*)mono_array_new_checked (mono_defaults.string_class, 1, error);
 		if (main_args) {
-			MonoString *str = mono_string_new_checked (domain, args, error);
+			MonoString *str = mono_string_new_checked (args, error);
 			if (str)
 				mono_array_set_internal (main_args, MonoString*, 0, str);
 		}
 	} else {
-		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 0, error);
+		main_args = (MonoArray*)mono_array_new_checked (mono_defaults.string_class, 0, error);
 	}
 	if (!main_args) {
 		g_print ("Could not allocate array for main args of assembly '%s' due to %s\n", agent, mono_error_get_message (error));
