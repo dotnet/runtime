@@ -105,10 +105,9 @@ namespace System.Net.WebSockets.Tests
         [PlatformSpecific(~TestPlatforms.Browser)] // System.Net.Sockets is not supported on this platform.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0b_1000_0001, 0b_0_000_0001, false)] // fin + text, no mask + length == 1
-        [InlineData(0b_1100_0001, 0b_0_000_0001, true)] // fin + rsv1 + text, no mask + length == 1
         [InlineData(0b_1010_0001, 0b_0_000_0001, true)] // fin + rsv2 + text, no mask + length == 1
         [InlineData(0b_1001_0001, 0b_0_000_0001, true)] // fin + rsv3 + text, no mask + length == 1
-        [InlineData(0b_1111_0001, 0b_0_000_0001, true)] // fin + rsv1 + rsv2 + rsv3 + text, no mask + length == 1
+        [InlineData(0b_1011_0001, 0b_0_000_0001, true)] // fin + rsv2 + rsv3 + text, no mask + length == 1
         [InlineData(0b_1000_0001, 0b_1_000_0001, true)] // fin + text, mask + length == 1
         [InlineData(0b_1000_0011, 0b_0_000_0001, true)] // fin + opcode==3, no mask + length == 1
         [InlineData(0b_1000_0100, 0b_0_000_0001, true)] // fin + opcode==4, no mask + length == 1
