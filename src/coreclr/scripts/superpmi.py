@@ -239,12 +239,13 @@ collect_parser = subparsers.add_parser("collect", description=collect_descriptio
 
 # Add required arguments
 collect_parser.add_argument("collection_command", nargs='?', help=superpmi_collect_help)
-collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command.")
+collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command. This is a single string; quote it if necessary if the arguments contain spaces.")
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen", action="store_true", help="Run crossgen on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossgen2 on a set of directories or assemblies.")
-collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="Pass a sequence of managed dlls or directories to recursively use while collecting with PMI, crossgen, or crossgen2. Required if --pmi, --crossgen, or --crossgen2 is specified.")
+collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI, crossgen, or crossgen2. Required if --pmi, --crossgen, or --crossgen2 is specified.")
+collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
@@ -490,6 +491,30 @@ def run_and_log(command, log_level=logging.DEBUG):
         logging.log(log_level, line)
     return proc.returncode
 
+
+def write_file_to_log(filepath, log_level=logging.DEBUG):
+    """ Read the text of a file and write it to the logger. If the file doesn't exist, don't output anything.
+
+    Args:
+        filepath (string) : file to log
+        log_level (int)   : log level to use for logging output
+
+    Returns:
+        Nothing
+    """
+    if not os.path.exists(filepath):
+        return
+
+    logging.log(log_level, "============== Contents of " + filepath)
+
+    with open(filepath) as file_handle:
+        lines = file_handle.readlines()
+        lines = [item.strip() for item in lines]
+        for line in lines:
+            logging.log(log_level, line)
+
+    logging.log(log_level, "============== End contents of " + filepath)
+
 # Functions to verify the OS and architecture. They take an instance of CoreclrArguments,
 # which is used to find the list of legal OS and architectures
 
@@ -518,12 +543,13 @@ class TempDir:
 
         Use with: "with TempDir() as temp_dir" to change to that directory and then automatically
         change back to the original working directory afterwards and remove the temporary
-        directory and its contents (if args.skip_cleanup is False).
+        directory and its contents (if skip_cleanup is False).
     """
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, skip_cleanup=False):
         self.mydir = tempfile.mkdtemp() if path is None else path
         self.cwd = None
+        self._skip_cleanup = skip_cleanup
 
     def __enter__(self):
         self.cwd = os.getcwd()
@@ -532,10 +558,7 @@ class TempDir:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
-        # Note: we are using the global `args`, not coreclr_args. This works because
-        # the `skip_cleanup` argument is not processed by CoreclrArguments, but is
-        # just copied there.
-        if not args.skip_cleanup:
+        if not self._skip_cleanup:
             shutil.rmtree(self.mydir)
 
 
@@ -682,8 +705,17 @@ class SuperPMICollect:
         if coreclr_args.crossgen:
             self.crossgen_tool = os.path.join(self.core_root, self.crossgen_tool_name)
 
+        if coreclr_args.crossgen2:
+            self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
+            if coreclr_args.dotnet_tool_path is None:
+                self.crossgen2_driver_tool = self.corerun
+            else:
+                self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
+            logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
+
         if coreclr_args.pmi or coreclr_args.crossgen or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
+            self.exclude = coreclr_args.exclude
 
         self.coreclr_args = coreclr_args
 
@@ -724,7 +756,7 @@ class SuperPMICollect:
         passed = False
 
         try:
-            with TempDir(self.coreclr_args.temp_dir) as temp_location:
+            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
@@ -816,11 +848,19 @@ class SuperPMICollect:
                         env[complus_var] = value
                         print_platform_specific_environment_vars(logging.DEBUG, self.coreclr_args, complus_var, value)
 
-            # If we need them, collect all the assemblies we're going to use for the collection(s)
+            # If we need them, collect all the assemblies we're going to use for the collection(s).
+            # Remove the files matching the `-exclude` arguments (case-insensitive) from the list.
             if self.coreclr_args.pmi or self.coreclr_args.crossgen or self.coreclr_args.crossgen2:
                 assemblies = []
                 for item in self.assemblies:
-                    assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]))
+                    assemblies += get_files_from_path(item, match_func=lambda file: any(file.endswith(extension) for extension in [".dll", ".exe"]) and (self.exclude is None or not any(e.lower() in file.lower() for e in self.exclude)))
+                if len(assemblies) == 0:
+                    logging.error("No assemblies found using `-assemblies` and `-exclude` arguments!")
+                else:
+                    logging.debug("Using assemblies:")
+                    for item in assemblies:
+                        logging.debug("  %s", item)
+                    logging.debug("") # add trailing empty line
 
             ################################################################################################ Do collection using given collection command (e.g., script)
             if self.collection_command is not None:
@@ -879,6 +919,13 @@ class SuperPMICollect:
                             os.remove(stdout_filepath)
                         if is_zero_length_file(stderr_filepath):
                             os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
                     except OSError as ose:
                         if "[WinError 32] The process cannot access the file because it is being used by another " \
                            "process:" in format(ose):
@@ -950,6 +997,13 @@ class SuperPMICollect:
                             os.remove(stdout_filepath)
                         if is_zero_length_file(stderr_filepath):
                             os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
                     except OSError as ose:
                         if "[WinError 32] The process cannot access the file because it is being used by another " \
                            "process:" in format(ose):
@@ -1014,6 +1068,7 @@ class SuperPMICollect:
                     # where "dotnet" is one of:
                     # 1. <runtime_root>\dotnet.cmd/sh
                     # 2. "dotnet" on PATH
+                    # 3. corerun in Core_Root
 
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
@@ -1029,15 +1084,9 @@ class SuperPMICollect:
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
                     # Log what is in the response file
-                    with open(rsp_filepath) as rsp_file_handle:
-                        rsp_lines = rsp_file_handle.readlines()
-                        rsp_lines = [item.strip() for item in rsp_lines]
-                        logging.debug("============== Contents of " + rsp_filepath)
-                        for line in rsp_lines:
-                            logging.debug(line)
-                        logging.debug("============== End contents of " + rsp_filepath)
+                    write_file_to_log(rsp_filepath)
 
-                    command = [self.coreclr_args.dotnet_tool_path, self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
+                    command = [self.crossgen2_driver_tool, self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
 
@@ -1063,6 +1112,13 @@ class SuperPMICollect:
                             os.remove(stdout_filepath)
                         if is_zero_length_file(stderr_filepath):
                             os.remove(stderr_filepath)
+
+                        return_code = proc.returncode
+                        if return_code != 0:
+                            logging.debug("'%s': Error return code: %s", command_string, return_code)
+                            write_file_to_log(stdout_filepath, log_level=logging.DEBUG)
+
+                        write_file_to_log(stderr_filepath, log_level=logging.DEBUG)
                     except OSError as ose:
                         if "[WinError 32] The process cannot access the file because it is being used by another " \
                            "process:" in format(ose):
@@ -1515,7 +1571,7 @@ class SuperPMIReplayAsmDiffs:
         files_with_asm_diffs = []
         files_with_replay_failures = []
 
-        with TempDir(self.coreclr_args.temp_dir) as temp_location:
+        with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
             logging.debug("")
@@ -1702,7 +1758,7 @@ class SuperPMIReplayAsmDiffs:
                         path_var = os.environ.get("PATH")
                         if path_var is not None:
                             jit_analyze_file = "jit-analyze.bat" if platform.system() == "Windows" else "jit-analyze.sh"
-                            jit_analyze_path = find_file(jit_analyze_file, path_var.split(";"))
+                            jit_analyze_path = find_file(jit_analyze_file, path_var.split(os.pathsep))
                             if jit_analyze_path is not None:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
                                 command = [ jit_analyze_path, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
@@ -1828,7 +1884,7 @@ def determine_pmi_location(coreclr_args):
         logging.info("Using PMI at %s", pmi_location)
     else:
         path_var = os.environ.get("PATH")
-        pmi_location = find_file("pmi.dll", path_var.split(";")) if path_var is not None else None
+        pmi_location = find_file("pmi.dll", path_var.split(os.pathsep)) if path_var is not None else None
         if pmi_location is not None:
             logging.info("Using PMI found on PATH at %s", pmi_location)
         else:
@@ -1871,7 +1927,7 @@ def determine_jit_name(coreclr_args):
         raise RuntimeError("Unknown OS.")
 
 
-def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_location=True, search_path=True):
+def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_location=True, search_path=True, throw_on_not_found=True):
     """ Find a tool or any specified file (e.g., clrjit.dll) and return the full path to that tool if found.
 
     Args:
@@ -1904,12 +1960,15 @@ def find_tool(coreclr_args, tool_name, search_core_root=True, search_product_loc
     if search_path:
         path_var = os.environ.get("PATH")
         if path_var is not None:
-            tool_path = find_file(tool_name, path_var.split(";"))
+            tool_path = find_file(tool_name, path_var.split(os.pathsep))
             if tool_path is not None:
                 logging.debug("Using %s from PATH: %s", tool_name, tool_path)
                 return tool_path
 
-    raise RuntimeError("Tool " + tool_name + " not found. Have you built the runtime repo and created a Core_Root, or put it on your PATH?")
+    if throw_on_not_found:
+        raise RuntimeError("Tool " + tool_name + " not found. Have you built the runtime repo and created a Core_Root, or put it on your PATH?")
+
+    return None
 
 
 def determine_superpmi_tool_name(coreclr_args):
@@ -1976,6 +2035,24 @@ def determine_mcs_tool_path(coreclr_args):
     return find_tool(coreclr_args, mcs_tool_name)
 
 
+def determine_dotnet_tool_name(coreclr_args):
+    """ Determine the dotnet tool name based on the OS
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+
+    Return:
+        (str) Name of the dotnet tool to use
+    """
+
+    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+        return "dotnet"
+    elif coreclr_args.host_os == "windows":
+        return "dotnet.exe"
+    else:
+        raise RuntimeError("Unsupported OS.")
+
+
 def determine_jit_ee_version(coreclr_args):
     """ Determine the JIT-EE version to use.
 
@@ -2016,6 +2093,7 @@ def determine_jit_ee_version(coreclr_args):
                 match_obj = re.search(r'^constexpr GUID JITEEVersionIdentifier *= *{ */\* *([^ ]*) *\*/', line)
                 if match_obj is not None:
                     jiteeversionguid_h_jit_ee_version = match_obj.group(1)
+                    jiteeversionguid_h_jit_ee_version = jiteeversionguid_h_jit_ee_version.lower()
                     logging.info("Using JIT/EE Version from jiteeversionguid.h: %s", jiteeversionguid_h_jit_ee_version)
                     return jiteeversionguid_h_jit_ee_version
             logging.warning("Warning: couldn't find JITEEVersionIdentifier in %s; is the file corrupt?", jiteeversionguid_h_path)
@@ -2027,6 +2105,7 @@ def determine_jit_ee_version(coreclr_args):
     return_code = proc.returncode
     if return_code == 0:
         mcs_jit_ee_version = stdout_jit_ee_version.decode('utf-8').strip()
+        mcs_jit_ee_version = mcs_jit_ee_version.lower()
         logging.info("Using JIT/EE Version from mcs: %s", mcs_jit_ee_version)
         return mcs_jit_ee_version
 
@@ -2757,8 +2836,9 @@ def setup_args(args):
                 os.makedirs(coreclr_args.spmi_location)
     else:
         log_file = coreclr_args.log_file
-        log_dir = os.path.basename(log_file)
+        log_dir = os.path.dirname(log_file)
         if not os.path.isdir(log_dir):
+            print("Creating log directory {} for log file {}".format(log_dir, log_file))
             os.makedirs(log_dir)
 
     if log_file is not None:
@@ -2890,8 +2970,8 @@ def setup_args(args):
 
         coreclr_args.verify(args,
                             "collection_command",
-                            lambda command: command is None or os.path.isfile(command),
-                            "Unable to find script.")
+                            lambda unused: True,
+                            "Unable to set collection_command.")
 
         coreclr_args.verify(args,
                             "collection_args",
@@ -2919,6 +2999,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set assemblies",
                             modify_arg=lambda items: [item for item in items if os.path.isdir(item) or os.path.isfile(item)])
+
+        coreclr_args.verify(args,
+                            "exclude",
+                            lambda unused: True,
+                            "Unable to set exclude")
 
         coreclr_args.verify(args,
                             "pmi_location",
@@ -2979,6 +3064,10 @@ def setup_args(args):
             print("Don't specify `-assemblies` if a collection command is given")
             sys.exit(1)
 
+        if (args.collection_command is not None) and (len(args.exclude) > 0):
+            print("Don't specify `-exclude` if a collection command is given")
+            sys.exit(1)
+
         if ((args.pmi is True) or (args.crossgen is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
             print("Specify `-assemblies` if `--pmi` or `--crossgen` or `--crossgen2` is given")
             sys.exit(1)
@@ -3001,18 +3090,33 @@ def setup_args(args):
                 sys.exit(1)
 
             # Which dotnet will we use to run it?
-            dotnet_tool_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
-            dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_tool_name))
+            dotnet_script_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
+            dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_script_name))
             if not os.path.exists(dotnet_tool_path):
-                dotnet_tool_path = find_tool(coreclr_args, "dotnet", search_core_root=False, search_product_location=False, search_path=True)  # Only search path
-                if dotnet_tool_path is None:
-                    print("`--crossgen2` is specified, but couldn't find a `dotnet` to run it")
-                    sys.exit(1)
+                dotnet_tool_name = determine_dotnet_tool_name(coreclr_args)
+                dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True, throw_on_not_found=False)  # Only search path
 
             coreclr_args.crossgen2_tool_path = crossgen2_tool_path
             coreclr_args.dotnet_tool_path = dotnet_tool_path
             logging.debug("Using crossgen2 tool %s", coreclr_args.crossgen2_tool_path)
-            logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
+            if coreclr_args.dotnet_tool_path is not None:
+                logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
+
+        if coreclr_args.temp_dir is not None:
+            coreclr_args.temp_dir = os.path.abspath(coreclr_args.temp_dir)
+            logging.debug("Using temp_dir %s", coreclr_args.temp_dir)
+
+        if coreclr_args.collection_command is not None:
+            if os.path.isfile(coreclr_args.collection_command):
+                coreclr_args.collection_command = os.path.abspath(coreclr_args.collection_command)
+            else:
+                # Look on path and in Core_Root. Searching Core_Root is useful so you can just specify "corerun.exe" as the collection command in it can be found.
+                collection_tool_path = find_tool(coreclr_args, coreclr_args.collection_command, search_core_root=True, search_product_location=False, search_path=True, throw_on_not_found=False)
+                if collection_tool_path is None:
+                    print("Couldn't find collection command \"{}\"".format(coreclr_args.collection_command))
+                    sys.exit(1)
+                coreclr_args.collection_command = collection_tool_path
+                logging.info("Using collection command from PATH: \"%s\"", coreclr_args.collection_command)
 
     elif coreclr_args.mode == "replay":
 
@@ -3153,6 +3257,10 @@ def setup_args(args):
                             "coredistools_location",
                             os.path.isfile,
                             "Unable to find coredistools.")
+
+        if coreclr_args.temp_dir is not None:
+            coreclr_args.temp_dir = os.path.abspath(coreclr_args.temp_dir)
+            logging.debug("Using temp_dir %s", coreclr_args.temp_dir)
 
     elif coreclr_args.mode == "upload":
 

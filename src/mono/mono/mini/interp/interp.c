@@ -47,7 +47,6 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
@@ -463,31 +462,6 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 	return imethod;
 }
 
-static gpointer
-interp_get_remoting_invoke (MonoMethod *method, gpointer addr, MonoError *error)
-{
-#ifndef DISABLE_REMOTING
-	InterpMethod *imethod;
-
-	if (addr) {
-		imethod = lookup_method_pointer (addr);
-	} else {
-		g_assert (method);
-		imethod = mono_interp_get_imethod (mono_domain_get (), method, error);
-		return_val_if_nok (error, NULL);
-	}
-	g_assert (imethod);
-	g_assert (mono_use_interpreter);
-
-	MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke (imethod->method, error);
-	return_val_if_nok (error, NULL);
-	return mono_interp_get_imethod (mono_domain_get (), remoting_invoke_method, error);
-#else
-	g_assert_not_reached ();
-	return NULL;
-#endif
-}
-
 InterpMethod*
 mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
@@ -607,17 +581,6 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 	MonoDomain *domain = imethod->domain;
 	InterpMethod *ret = NULL;
 
-#ifndef DISABLE_REMOTING
-	if (mono_class_is_transparent_proxy (vtable->klass)) {
-		ERROR_DECL (error);
-		MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (m, error);
-		mono_error_assert_ok (error);
-		ret = mono_interp_get_imethod (domain, remoting_invoke_method, error);
-		mono_error_assert_ok (error);
-		return ret;
-	}
-#endif
-
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 			ERROR_DECL (error);
@@ -729,12 +692,6 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 {
 	gpointer *table;
 	MonoMemoryManager *memory_manager = m_class_get_mem_manager (vtable->domain, vtable->klass);
-
-#ifndef DISABLE_REMOTING
-	/* FIXME Remoting */
-	if (mono_class_is_transparent_proxy (vtable->klass))
-		return get_virtual_method (imethod, vtable);
-#endif
 
 	table = get_method_table (vtable, offset);
 
@@ -1570,11 +1527,9 @@ ves_pinvoke_method (
 	}
 #endif
 
-#ifdef ENABLE_NETCORE
 	if (save_last_error) {
 		mono_marshal_clear_last_error ();
 	}
-#endif
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
@@ -1699,34 +1654,6 @@ interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpoint
 
 	mono_delegate_ctor (this_obj, target, entry, imethod->method, error);
 }
-
-/*
- * From the spec:
- * runtime specifies that the implementation of the method is automatically
- * provided by the runtime and is primarily used for the methods of delegates.
- */
-#ifndef ENABLE_NETCORE
-static MONO_NEVER_INLINE MonoException*
-ves_imethod (InterpFrame *frame, MonoMethod *method, MonoMethodSignature *sig, stackval *sp)
-{
-	const char *name = method->name;
-	mono_class_init_internal (method->klass);
-
-	if (method->klass == mono_defaults.array_class) {
-		if (!strcmp (name, "UnsafeMov")) {
-			/* TODO: layout checks */
-			stackval_from_data (sig->ret, sp, (char*) sp, FALSE);
-			return NULL;
-		}
-		if (!strcmp (name, "UnsafeLoad"))
-			return ves_array_get (frame, sp, sp, sig, FALSE);
-	}
-	
-	g_error ("Don't know how to exec runtime method %s.%s::%s", 
-			m_class_get_name_space (method->klass), m_class_get_name (method->klass),
-			method->name);
-}
-#endif
 
 #if DEBUG_INTERP
 static void
@@ -2033,10 +1960,8 @@ interp_entry (InterpEntryData *data)
 static void
 do_icall (MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
-#ifdef ENABLE_NETCORE
 	if (save_last_error)
 		mono_marshal_clear_last_error ();
-#endif
 
 	switch (op) {
 	case MINT_ICALL_V_V: {
@@ -2151,6 +2076,7 @@ do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval
 	interp_pop_lmf (&ext);
 
 	goto exit_icall; // prevent unused label warning in some configurations
+	/* If an exception is thrown from native code, execution will continue here */
 exit_icall:
 	return NULL;
 }
@@ -2902,7 +2828,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 			return addr;
 		}
 
-#ifdef ENABLE_NETCORE
 		/*
 		 * The runtime expects a function pointer unique to method and
 		 * the native caller expects a function pointer with the
@@ -2910,7 +2835,6 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		 */
 		mono_error_set_platform_not_supported (error, "No native to managed transitions on this platform.");
 		return NULL;
-#endif
 	}
 #endif
 	return (gpointer)interp_no_native_to_managed;
@@ -3046,69 +2970,13 @@ mono_interp_new (MonoDomain* domain, MonoClass* klass)
 	return object;
 }
 
-static void
-mono_interp_load_remote_field (
-	InterpMethod* imethod,
-	MonoObject* o,
-	const guint16* ip,
-	gpointer result)
-{
-	g_assert (o); // Caller checks and throws exception properly.
-
-	void* addr;
-	MonoClassField *field = (MonoClassField*)imethod->data_items [ip [3]];
-
-#ifndef DISABLE_REMOTING
-	gpointer tmp;
-	if (mono_object_is_transparent_proxy (o)) {
-		MonoClass * const klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-		ERROR_DECL (error);
-		addr = mono_load_remote_field_checked (o, klass, field, &tmp, error);
-		mono_error_cleanup (error); /* FIXME: don't swallow the error */
-	} else
-#endif
-		addr = (char*)o + field->offset;
-	stackval_from_data (field->type, (stackval*)result, addr, FALSE);
-}
-
-static void
-mono_interp_load_remote_field_vt (
-	InterpMethod* imethod,
-	MonoObject* o,
-	const guint16* ip,
-	gpointer result)
-{
-	g_assert (o); // Caller checks and throws exception properly.
-
-	void* addr;
-	MonoClassField *field = (MonoClassField*)imethod->data_items [ip [3]];
-	MonoClass* klass = mono_class_from_mono_type_internal (field->type);
-	int const i32 = mono_class_value_size (klass, NULL);
-
-#ifndef DISABLE_REMOTING
-	gpointer tmp;
-	if (mono_object_is_transparent_proxy (o)) {
-		klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-		ERROR_DECL (error);
-		addr = mono_load_remote_field_checked (o, klass, field, &tmp, error);
-		mono_error_cleanup (error); /* FIXME: don't swallow the error */
-	} else
-#endif
-		addr = (char*)o + field->offset;
-	memcpy (result, addr, i32);
-}
-
 static gboolean
 mono_interp_isinst (MonoObject* object, MonoClass* klass)
 {
 	ERROR_DECL (error);
 	gboolean isinst;
 	MonoClass *obj_class = mono_object_class (object);
-	// mono_class_is_assignable_from_checked can't handle remoting casts
-	if (mono_class_is_transparent_proxy (obj_class))
-		isinst = mono_object_isinst_checked (object, klass, error) != NULL;
-	else
-		mono_class_is_assignable_from_checked (klass, obj_class, &isinst, error);
+	mono_class_is_assignable_from_checked (klass, obj_class, &isinst, error);
 	mono_error_cleanup (error); // FIXME: do not swallow the error
 	return isinst;
 }
@@ -3748,18 +3616,8 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLRUN) {
-#ifndef ENABLE_NETCORE
-			MonoMethod *target_method = (MonoMethod*) frame->imethod->data_items [ip [2]];
-			MonoMethodSignature *sig = (MonoMethodSignature*) frame->imethod->data_items [ip [3]];
-
-			MonoException *ex = ves_imethod (frame, target_method, sig, (stackval*)(locals + ip [1]));
-			if (ex)
-				THROW_EX (ex, ip);
-
-			ip += 4;
-#else
 			g_assert_not_reached ();
-#endif
+
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_RET)
@@ -4970,14 +4828,6 @@ call:
 
 			mono_interp_error_cleanup (error); // FIXME: do not swallow the error
 			EXCEPTION_CHECKPOINT;
-#ifndef DISABLE_REMOTING
-			if (mono_object_is_transparent_proxy (o)) {
-				MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (cmethod->method, error);
-				mono_error_assert_ok (error);
-				cmethod = mono_interp_get_imethod (domain, remoting_invoke_method, error);
-				mono_error_assert_ok (error);
-			}
-#endif
 			ip += 4;
 			goto call;
 		}
@@ -5067,7 +4917,7 @@ call:
 				gboolean isinst;
 				if (MONO_VTABLE_IMPLEMENTS_INTERFACE (o->vtable, m_class_get_interface_id (c))) {
 					isinst = TRUE;
-				} else if (m_class_is_array_special_interface (c) || mono_object_is_transparent_proxy (o)) {
+				} else if (m_class_is_array_special_interface (c)) {
 					/* slow path */
 					isinst = mono_interp_isinst (o, c); // FIXME: do not swallow the error
 				} else {
@@ -5256,21 +5106,6 @@ call:
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LDRMFLD) {
-			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
-			NULL_CHECK (o);
-			mono_interp_load_remote_field (frame->imethod, o, ip, locals + ip [1]);
-			ip += 4;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_LDRMFLD_VT) {
-			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
-			NULL_CHECK (o);
-			mono_interp_load_remote_field_vt (frame->imethod, o, ip, locals + ip [1]);
-			ip += 4;
-			MINT_IN_BREAK;
-		}
-
 #define STFLD_UNALIGNED(datatype, fieldtype, unaligned) do { \
 	MonoObject *o = LOCAL_VAR (ip [1], MonoObject*); \
 	NULL_CHECK (o); \
@@ -5315,44 +5150,6 @@ call:
 			NULL_CHECK (o);
 			mono_value_copy_internal ((char*)o + ip [3], locals + ip [2], klass);
 			ip += 5;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_STRMFLD) {
-			MonoClassField *field;
-
-			MonoObject *o = LOCAL_VAR (ip [1], MonoObject*);
-			NULL_CHECK (o);
-			
-			field = (MonoClassField*)frame->imethod->data_items [ip [3]];
-#ifndef DISABLE_REMOTING
-			if (mono_object_is_transparent_proxy (o)) {
-				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				mono_store_remote_field_checked (o, klass, field, locals + ip [2], error);
-				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
-			} else
-#endif
-				stackval_to_data (field->type, (stackval*)(locals + ip [2]), (char*)o + field->offset, FALSE);
-
-			ip += 4;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_STRMFLD_VT) {
-			MonoClassField *field = (MonoClassField*)frame->imethod->data_items [ip [3]];
-			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
-
-			MonoObject *o = LOCAL_VAR (ip [1], MonoObject*);
-			NULL_CHECK (o);
-
-#ifndef DISABLE_REMOTING
-			if (mono_object_is_transparent_proxy (o)) {
-				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				mono_store_remote_field_checked (o, klass, field, locals + ip [2], error);
-				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
-			} else
-#endif
-				mono_value_copy_internal ((char *) o + field->offset, locals + ip [2], klass);
-
-			ip += 4;
 			MINT_IN_BREAK;
 		}
 
@@ -7485,7 +7282,7 @@ interp_invalidate_transformed (MonoDomain *domain)
 	gboolean need_stw_restart = FALSE;
 #ifdef ENABLE_METADATA_UPDATE
 	need_stw_restart = TRUE;
-	mono_gc_stop_world ();
+	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 	metadata_update_prepare_to_invalidate (domain);
 #endif
 	MonoJitDomainInfo *info = domain_jit_info (domain);
@@ -7494,7 +7291,7 @@ interp_invalidate_transformed (MonoDomain *domain)
 	mono_domain_jit_code_hash_unlock (domain);
 
 	if (need_stw_restart)
-		mono_gc_restart_world ();
+		mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 }
 
 static void

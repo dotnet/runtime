@@ -140,7 +140,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(12, sliced[1]);
         }
 
-        private static TheoryData<SharedArrayBuffer> GetTestData(int length)
+        public static TheoryData<SharedArrayBuffer> GetTestData(int length)
         {
             // create a SharedArrayBuffer with a size in bytes
             SharedArrayBuffer buffer = new SharedArrayBuffer(length);

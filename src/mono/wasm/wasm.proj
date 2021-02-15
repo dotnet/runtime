@@ -16,6 +16,11 @@
     <WasmEnableMetadataUpdate Condition="'$(MonoMetadataUpdate)' == 'true'">true</WasmEnableMetadataUpdate>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- TODO: set to "false" for publishing/production builds -->
+    <MonoMetadataUpdate Condition="'$(MonoMetadataUpdate)' == ''">true</MonoMetadataUpdate>
+  </PropertyGroup>
+
   <Target Name="CheckEnv">
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'Browser'" Text="Expected TargetOS==Browser, got '$(TargetOS)'"/>

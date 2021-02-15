@@ -11,10 +11,6 @@
     <TestSupportFiles Include="$(MSBuildThisFileDirectory)SupportFiles\Directory.Build.*">
       <DestinationFolder>$(TrimmingTestDir)</DestinationFolder>
     </TestSupportFiles>
-
-    <CliEnvironment Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <CliEnvironment Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
-    <CliEnvironment Include="DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
   <Target Name="CreateTestDir"
@@ -92,15 +88,13 @@
 
   <Target Name="PublishTrimmedProjects"
           DependsOnTargets="GenerateProjects">
-    <PropertyGroup>
-      <TestPublishTrimmedCommand>"$(DotNetTool)"</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) build /t:PublishTrimmed</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /nr:false</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) /warnaserror</TestPublishTrimmedCommand>
-      <TestPublishTrimmedCommand>$(TestPublishTrimmedCommand) -p:configuration=$(Configuration)</TestPublishTrimmedCommand>
-    </PropertyGroup>
+    <MSBuild Projects="@(TestConsoleApps)"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=$(Configuration)" />
 
-    <Exec Command="$(TestPublishTrimmedCommand) %(TestConsoleApps.AdditionalArgs)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.ProjectDir)" />
+    <MSBuild Projects="@(TestConsoleApps)"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration)" />
   </Target>
 
   <Target Name="ExecuteApplications"

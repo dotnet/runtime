@@ -2057,6 +2057,12 @@ public:
         bool* requiresInstMethodTableArg
         ) = 0;
 
+    // Given T, return the type of the default Comparer<T>.
+    // Returns null if the type can't be determined exactly.
+    virtual CORINFO_CLASS_HANDLE getDefaultComparerClass(
+            CORINFO_CLASS_HANDLE elemType
+            ) = 0;
+
     // Given T, return the type of the default EqualityComparer<T>.
     // Returns null if the type can't be determined exactly.
     virtual CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(

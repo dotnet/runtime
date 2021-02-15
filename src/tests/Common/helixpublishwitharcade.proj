@@ -225,7 +225,6 @@
   <PropertyGroup>
     <EnableAzurePipelinesReporter>$(PublishTestResults)</EnableAzurePipelinesReporter>
     <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>
-    <EnableXUnitReporter>true</EnableXUnitReporter>
     <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
     <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
     <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
