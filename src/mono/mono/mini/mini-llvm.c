@@ -8580,7 +8580,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_CREATE_SCALAR:
 		case OP_CREATE_SCALAR_UNSAFE: {
 			MonoTypeEnum primty = inst_c1_type (ins);
-			LLVMTypeRef type = type_to_sse_type (primty);
+			LLVMTypeRef type = simd_class_to_llvm_type (ctx, ins->klass);
 			// use undef vector (most likely empty but may contain garbage values) for OP_CREATE_SCALAR_UNSAFE
 			// and zero one for OP_CREATE_SCALAR
 			LLVMValueRef vector = (ins->opcode == OP_CREATE_SCALAR) ? LLVMConstNull (type) : LLVMGetUndef (type);
