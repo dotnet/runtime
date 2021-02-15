@@ -19,10 +19,12 @@ namespace System.Net.WebSockets
 
             private readonly int _maskLength;
             private readonly Encoder? _encoder;
+            private readonly Stream _stream;
 
-            public Sender(WebSocketCreationOptions options)
+            public Sender(Stream stream, WebSocketCreationOptions options)
             {
                 _maskLength = options.IsServer ? 0 : MaskLength;
+                _stream = stream;
 
                 var deflate = options.DeflateOptions;
 
@@ -47,7 +49,7 @@ namespace System.Net.WebSockets
 
             public void Dispose() => _encoder?.Dispose();
 
-            public ValueTask SendAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> content, Stream stream, CancellationToken cancellationToken = default)
+            public ValueTask SendAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> content, CancellationToken cancellationToken = default)
             {
                 var buffer = new Buffer(content.Length + MaxMessageHeaderLength);
                 byte reservedBits = 0;
@@ -87,7 +89,7 @@ namespace System.Net.WebSockets
 
                 try
                 {
-                    var sendTask = stream.WriteAsync(new ReadOnlyMemory<byte>(buffer.Array, headerOffset, headerLength + payload.Length), cancellationToken);
+                    var sendTask = _stream.WriteAsync(new ReadOnlyMemory<byte>(buffer.Array, headerOffset, headerLength + payload.Length), cancellationToken);
 
                     if (sendTask.IsCompleted)
                         return sendTask;

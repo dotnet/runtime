@@ -72,17 +72,14 @@ namespace System.Net.WebSockets
         private readonly Timer? _keepAliveTimer;
         /// <summary>CancellationTokenSource used to abort all current and future operations when anything is canceled or any error occurs.</summary>
         private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
-        /// <summary>Buffer used for reading data from the network.</summary>
-        private readonly Memory<byte> _receiveBuffer;
-        /// <summary>
-        /// Tracks the state of the validity of the UTF8 encoding of text payloads.  Text may be split across fragments.
-        /// </summary>
-        private readonly Utf8MessageState _utf8TextState = new Utf8MessageState();
+
         /// <summary>
         /// Semaphore used to ensure that calls to SendFrameAsync don't run concurrently.
         /// </summary>
         private readonly SemaphoreSlim _sendFrameAsyncLock = new SemaphoreSlim(1, 1);
         private readonly Sender _sender;
+        private readonly Receiver _receiver;
+
         // We maintain the current WebSocketState in _state.  However, we separately maintain _sentCloseFrame and _receivedCloseFrame
         // as there isn't a strict ordering between CloseSent and CloseReceived.  If we receive a close frame from the server, we need to
         // transition to CloseReceived even if we're currently in CloseSent, and if we send a close frame, we need to transition to
@@ -102,24 +99,10 @@ namespace System.Net.WebSockets
         private string? _closeStatusDescription;
 
         /// <summary>
-        /// The last header received in a ReceiveAsync.  If ReceiveAsync got a header but then
-        /// returned fewer bytes than was indicated in the header, subsequent ReceiveAsync calls
-        /// will use the data from the header to construct the subsequent receive results, and
-        /// the payload length in this header will be decremented to indicate the number of bytes
-        /// remaining to be received for that header.  As a result, between fragments, the payload
-        /// length in this header should be 0.
+        /// Tracks the state of the validity of the UTF8 encoding of text payloads.  Text may be split across fragments.
         /// </summary>
-        private MessageHeader _lastReceiveHeader = new MessageHeader { Opcode = MessageOpcode.Text, Fin = true };
-        /// <summary>The offset of the next available byte in the _receiveBuffer.</summary>
-        private int _receiveBufferOffset;
-        /// <summary>The number of bytes available in the _receiveBuffer.</summary>
-        private int _receiveBufferCount;
-        /// <summary>
-        /// When dealing with partially read fragments of binary/text messages, a mask previously received may still
-        /// apply, and the first new byte received may not correspond to the 0th position in the mask.  This value is
-        /// the next offset into the mask that should be applied.
-        /// </summary>
-        private int _receivedMaskOffsetOffset;
+        private readonly Utf8MessageState _utf8TextState = new Utf8MessageState();
+
         /// <summary>
         /// Whether the last SendAsync had endOfMessage==false. We need to track this so that we
         /// can send the subsequent message with a continuation opcode if the last message was a fragment.
@@ -138,10 +121,13 @@ namespace System.Net.WebSockets
         /// be pending while a Close{Output}Async is issued, which itself needs to loop until a close frame is received.
         /// As such, we need thread-safety in the management of <see cref="_lastReceiveAsync"/>.
         /// </summary>
-        private object ReceiveAsyncLock => _utf8TextState; // some object, as we're simply lock'ing on it
+        private object ReceiveAsyncLock => _receiver; // some object, as we're simply lock'ing on it
 
         private ManagedWebSocket(Stream stream, WebSocketCreationOptions options)
         {
+            _sender = new Sender(stream, options);
+            _receiver = new Receiver(stream, options);
+
             Debug.Assert(StateUpdateLock != null, $"Expected {nameof(StateUpdateLock)} to be non-null");
             Debug.Assert(ReceiveAsyncLock != null, $"Expected {nameof(ReceiveAsyncLock)} to be non-null");
             Debug.Assert(StateUpdateLock != ReceiveAsyncLock, "Locks should be different objects");
@@ -153,13 +139,6 @@ namespace System.Net.WebSockets
             _stream = stream;
             _isServer = options.IsServer;
             _subprotocol = options.SubProtocol;
-            _sender = new Sender(options);
-
-            // Create a buffer just large enough to handle received packet headers (at most 14 bytes) and
-            // control payloads (at most 125 bytes).  Message payloads are read directly into the buffer
-            // supplied to ReceiveAsync.
-            const int ReceiveBufferMinLength = MaxControlPayloadLength;
-            _receiveBuffer = new byte[ReceiveBufferMinLength];
 
             // Set up the abort source so that if it's triggered, we transition the instance appropriately.
             // There's no need to store the resulting CancellationTokenRegistration, as this instance owns
@@ -432,7 +411,7 @@ namespace System.Net.WebSockets
             bool releaseSemaphore = true;
             try
             {
-                writeTask = _sender.SendAsync(opcode, endOfMessage, payloadBuffer, _stream);
+                writeTask = _sender.SendAsync(opcode, endOfMessage, payloadBuffer);
 
                 // If the operation happens to complete synchronously (or, more specifically, by
                 // the time we get from the previous line to here), release the semaphore, return
@@ -490,7 +469,7 @@ namespace System.Net.WebSockets
             {
                 using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
                 {
-                    await _sender.SendAsync(opcode, endOfMessage, payloadBuffer, _stream, cancellationToken).ConfigureAwait(false);
+                    await _sender.SendAsync(opcode, endOfMessage, payloadBuffer, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
@@ -562,134 +541,67 @@ namespace System.Net.WebSockets
             {
                 while (true) // in case we get control frames that should be ignored from the user's perspective
                 {
-                    // Get the last received header.  If its payload length is non-zero, that means we previously
-                    // received the header but were only able to read a part of the fragment, so we should skip
-                    // reading another header and just proceed to use that same header and read more data associated
-                    // with it.  If instead its payload length is zero, then we've completed the processing of
-                    // thta message, and we should read the next header.
-                    MessageHeader header = _lastReceiveHeader;
-                    if (header.PayloadLength == 0)
+                    var byteCount = await _receiver.ReceiveAsync(payloadBuffer, cancellationToken).ConfigureAwait(false);
+
+                    if (byteCount < 0)
                     {
-                        if (_receiveBufferCount < (_isServer ? MaxMessageHeaderLength : (MaxMessageHeaderLength - MaskLength)))
+                        if (byteCount == ReceivedControlMessage)
                         {
-                            // Make sure we have the first two bytes, which includes the start of the payload length.
-                            if (_receiveBufferCount < 2)
+                            var messageOrNull = await _receiver.ReceiveControlMessageAsync(cancellationToken).ConfigureAwait(false);
+                            if (messageOrNull is null)
+                                ThrowIfEOFUnexpected(true);
+
+                            var message = messageOrNull.GetValueOrDefault();
+
+                            // If the header represents a ping or a pong, it's a control message meant
+                            // to be transparent to the user, so handle it and then loop around to read again.
+                            // Alternatively, if it's a close message, handle it and exit.
+                            if (message.Opcode is MessageOpcode.Ping or MessageOpcode.Pong)
                             {
-                                await EnsureBufferContainsAsync(2, cancellationToken, throwOnPrematureClosure: true).ConfigureAwait(false);
-                            }
+                                // If this was a ping, send back a pong response.
+                                if (message.Opcode == MessageOpcode.Ping)
+                                    await SendFrameAsync(MessageOpcode.Pong, endOfMessage: true, message.Payload, cancellationToken).ConfigureAwait(false);
 
-                            // Then make sure we have the full header based on the payload length.
-                            // If this is the server, we also need room for the received mask.
-                            long payloadLength = _receiveBuffer.Span[_receiveBufferOffset + 1] & 0x7F;
-                            if (_isServer || payloadLength > 125)
+                                continue;
+                            }
+                            else
                             {
-                                int minNeeded =
-                                    2 +
-                                    (_isServer ? MaskLength : 0) +
-                                    (payloadLength <= 125 ? 0 : payloadLength == 126 ? sizeof(ushort) : sizeof(ulong)); // additional 2 or 8 bytes for 16-bit or 64-bit length
-                                await EnsureBufferContainsAsync(minNeeded, cancellationToken).ConfigureAwait(false);
+                                Debug.Assert(message.Opcode == MessageOpcode.Close);
+
+                                await HandleReceivedCloseAsync(message.Payload, cancellationToken).ConfigureAwait(false);
+                                return resultGetter.GetResult(0, WebSocketMessageType.Close, true, _closeStatus, _closeStatusDescription);
                             }
                         }
-
-                        string? headerErrorMessage = TryParseMessageHeaderFromReceiveBuffer(out header);
-                        if (headerErrorMessage != null)
+                        else if (byteCount == ReceivedConnectionClose)
                         {
-                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, headerErrorMessage).ConfigureAwait(false);
+                            ThrowIfEOFUnexpected(true);
                         }
-                        _receivedMaskOffsetOffset = 0;
-                    }
-
-                    // If the header represents a ping or a pong, it's a control message meant
-                    // to be transparent to the user, so handle it and then loop around to read again.
-                    // Alternatively, if it's a close message, handle it and exit.
-                    if (header.Opcode == MessageOpcode.Ping || header.Opcode == MessageOpcode.Pong)
-                    {
-                        await HandleReceivedPingPongAsync(header, cancellationToken).ConfigureAwait(false);
-                        continue;
-                    }
-                    else if (header.Opcode == MessageOpcode.Close)
-                    {
-                        await HandleReceivedCloseAsync(header, cancellationToken).ConfigureAwait(false);
-                        return resultGetter.GetResult(0, WebSocketMessageType.Close, true, _closeStatus, _closeStatusDescription);
-                    }
-
-                    // If this is a continuation, replace the opcode with the one of the message it's continuing
-                    if (header.Opcode == MessageOpcode.Continuation)
-                    {
-                        header.Opcode = _lastReceiveHeader.Opcode;
-                    }
-
-                    // The message should now be a binary or text message.  Handle it by reading the payload and returning the contents.
-                    Debug.Assert(header.Opcode == MessageOpcode.Binary || header.Opcode == MessageOpcode.Text, $"Unexpected opcode {header.Opcode}");
-
-                    // If there's no data to read, return an appropriate result.
-                    if (header.PayloadLength == 0 || payloadBuffer.Length == 0)
-                    {
-                        _lastReceiveHeader = header;
-                        return resultGetter.GetResult(
-                            0,
-                            header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
-                            header.Fin && header.PayloadLength == 0,
-                            null, null);
-                    }
-
-                    // Otherwise, read as much of the payload as we can efficiently, and update the header to reflect how much data
-                    // remains for future reads.  We first need to copy any data that may be lingering in the receive buffer
-                    // into the destination; then to minimize ReceiveAsync calls, we want to read as much as we can, stopping
-                    // only when we've either read the whole message or when we've filled the payload buffer.
-
-                    // First copy any data lingering in the receive buffer.
-                    int totalBytesReceived = 0;
-                    if (_receiveBufferCount > 0)
-                    {
-                        int receiveBufferBytesToCopy = Math.Min(payloadBuffer.Length, (int)Math.Min(header.PayloadLength, _receiveBufferCount));
-                        Debug.Assert(receiveBufferBytesToCopy > 0);
-                        _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(payloadBuffer.Span);
-                        ConsumeFromBuffer(receiveBufferBytesToCopy);
-                        totalBytesReceived += receiveBufferBytesToCopy;
-                        Debug.Assert(
-                            _receiveBufferCount == 0 ||
-                            totalBytesReceived == payloadBuffer.Length ||
-                            totalBytesReceived == header.PayloadLength);
-                    }
-
-                    // Then read directly into the payload buffer until we've hit a limit.
-                    while (totalBytesReceived < payloadBuffer.Length &&
-                           totalBytesReceived < header.PayloadLength)
-                    {
-                        int numBytesRead = await _stream.ReadAsync(payloadBuffer.Slice(
-                            totalBytesReceived,
-                            (int)Math.Min(payloadBuffer.Length, header.PayloadLength) - totalBytesReceived), cancellationToken).ConfigureAwait(false);
-                        if (numBytesRead <= 0)
+                        else
                         {
-                            ThrowIfEOFUnexpected(throwOnPrematureClosure: true);
-                            break;
+                            Debug.Assert(byteCount == ReceivedHeaderError);
+
+                            var error = _receiver.GetLastHeader().Error;
+                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, error).ConfigureAwait(false);
                         }
-                        totalBytesReceived += numBytesRead;
                     }
 
-                    if (_isServer)
-                    {
-                        _receivedMaskOffsetOffset = ApplyMask(payloadBuffer.Span.Slice(0, totalBytesReceived), header.Mask, _receivedMaskOffsetOffset);
-                    }
-                    header.PayloadLength -= totalBytesReceived;
+                    var header = _receiver.GetLastHeader();
 
                     // If this a text message, validate that it contains valid UTF8.
-                    if (header.Opcode == MessageOpcode.Text &&
-                        !TryValidateUtf8(payloadBuffer.Span.Slice(0, totalBytesReceived), header.Fin && header.PayloadLength == 0, _utf8TextState))
+                    if (header.Opcode == MessageOpcode.Text && byteCount > 0 &&
+                        !TryValidateUtf8(payloadBuffer.Span.Slice(0, byteCount), header.Fin && header.PayloadLength == 0, _utf8TextState))
                     {
                         await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.InvalidPayloadData, WebSocketError.Faulted).ConfigureAwait(false);
                     }
 
-                    _lastReceiveHeader = header;
                     return resultGetter.GetResult(
-                        totalBytesReceived,
-                        header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
-                        header.Fin && header.PayloadLength == 0,
-                        null, null);
+                        count: byteCount,
+                        messageType: header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
+                        endOfMessage: header.Fin && header.PayloadLength == 0,
+                        closeStatus: null, closeDescription: null);
                 }
             }
-            catch (Exception exc) when (!(exc is OperationCanceledException))
+            catch (Exception exc) when (exc is not OperationCanceledException)
             {
                 if (_state == WebSocketState.Aborted)
                 {
@@ -711,10 +623,7 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>Processes a received close message.</summary>
-        /// <param name="header">The message header.</param>
-        /// <param name="cancellationToken">The CancellationToken used to cancel the websocket operation.</param>
-        /// <returns>The received result message.</returns>
-        private async ValueTask HandleReceivedCloseAsync(MessageHeader header, CancellationToken cancellationToken)
+        private async ValueTask HandleReceivedCloseAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellationToken)
         {
             lock (StateUpdateLock)
             {
@@ -733,41 +642,30 @@ namespace System.Net.WebSockets
             string closeStatusDescription = string.Empty;
 
             // Handle any payload by parsing it into the close status and description.
-            if (header.PayloadLength == 1)
+            if (payload.Length == 1)
             {
                 // The close payload length can be 0 or >= 2, but not 1.
                 await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted).ConfigureAwait(false);
             }
-            else if (header.PayloadLength >= 2)
+            else if (payload.Length >= 2)
             {
-                if (_receiveBufferCount < header.PayloadLength)
-                {
-                    await EnsureBufferContainsAsync((int)header.PayloadLength, cancellationToken).ConfigureAwait(false);
-                }
-
-                if (_isServer)
-                {
-                    ApplyMask(_receiveBuffer.Span.Slice(_receiveBufferOffset, (int)header.PayloadLength), header.Mask, 0);
-                }
-
-                closeStatus = (WebSocketCloseStatus)(_receiveBuffer.Span[_receiveBufferOffset] << 8 | _receiveBuffer.Span[_receiveBufferOffset + 1]);
+                closeStatus = (WebSocketCloseStatus)(payload.Span[0] << 8 | payload.Span[1]);
                 if (!IsValidCloseStatus(closeStatus))
                 {
                     await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted).ConfigureAwait(false);
                 }
 
-                if (header.PayloadLength > 2)
+                if (payload.Length > 2)
                 {
                     try
                     {
-                        closeStatusDescription = s_textEncoding.GetString(_receiveBuffer.Span.Slice(_receiveBufferOffset + 2, (int)header.PayloadLength - 2));
+                        closeStatusDescription = s_textEncoding.GetString(payload.Span.Slice(2));
                     }
                     catch (DecoderFallbackException exc)
                     {
                         await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, innerException: exc).ConfigureAwait(false);
                     }
                 }
-                ConsumeFromBuffer((int)header.PayloadLength);
             }
 
             // Store the close status and description onto the instance.
@@ -776,66 +674,7 @@ namespace System.Net.WebSockets
 
             if (!_isServer && _sentCloseFrame)
             {
-                await WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        /// <summary>Issues a read on the stream to wait for EOF.</summary>
-        private async ValueTask WaitForServerToCloseConnectionAsync(CancellationToken cancellationToken)
-        {
-            // Per RFC 6455 7.1.1, try to let the server close the connection.  We give it up to a second.
-            // We simply issue a read and don't care what we get back; we could validate that we don't get
-            // additional data, but at this point we're about to close the connection and we're just stalling
-            // to try to get the server to close first.
-            ValueTask<int> finalReadTask = _stream.ReadAsync(_receiveBuffer, cancellationToken);
-            if (!finalReadTask.IsCompletedSuccessfully)
-            {
-                const int WaitForCloseTimeoutMs = 1_000; // arbitrary amount of time to give the server (same as netfx)
-                using (var finalCts = new CancellationTokenSource(WaitForCloseTimeoutMs))
-                using (finalCts.Token.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
-                {
-                    try
-                    {
-                        await finalReadTask.ConfigureAwait(false);
-                    }
-                    catch
-                    {
-                        // Eat any resulting exceptions.  We were going to close the connection, anyway.
-                    }
-                }
-            }
-        }
-
-        /// <summary>Processes a received ping or pong message.</summary>
-        /// <param name="header">The message header.</param>
-        /// <param name="cancellationToken">The CancellationToken used to cancel the websocket operation.</param>
-        private async ValueTask HandleReceivedPingPongAsync(MessageHeader header, CancellationToken cancellationToken)
-        {
-            // Consume any (optional) payload associated with the ping/pong.
-            if (header.PayloadLength > 0 && _receiveBufferCount < header.PayloadLength)
-            {
-                await EnsureBufferContainsAsync((int)header.PayloadLength, cancellationToken).ConfigureAwait(false);
-            }
-
-            // If this was a ping, send back a pong response.
-            if (header.Opcode == MessageOpcode.Ping)
-            {
-                if (_isServer)
-                {
-                    ApplyMask(_receiveBuffer.Span.Slice(_receiveBufferOffset, (int)header.PayloadLength), header.Mask, 0);
-                }
-
-                await SendFrameAsync(
-                    MessageOpcode.Pong,
-                    endOfMessage: true,
-                    _receiveBuffer.Slice(_receiveBufferOffset, (int)header.PayloadLength),
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            // Regardless of whether it was a ping or pong, we no longer need the payload.
-            if (header.PayloadLength > 0)
-            {
-                ConsumeFromBuffer((int)header.PayloadLength);
+                await _receiver.WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -892,97 +731,98 @@ namespace System.Net.WebSockets
                 await CloseOutputAsync(closeStatus, string.Empty, default).ConfigureAwait(false);
             }
 
-            // Dump our receive buffer; we're in a bad state to do any further processing
-            _receiveBufferCount = 0;
-
             // Let the caller know we've failed
             throw errorMessage != null ?
                 new WebSocketException(error, errorMessage, innerException) :
                 new WebSocketException(error, innerException);
         }
 
-        /// <summary>Parses a message header from the buffer.  This assumes the header is in the buffer.</summary>
-        /// <param name="resultHeader">The read header.</param>
-        /// <returns>null if a valid header was read; non-null containing the string error message to use if the header was invalid.</returns>
-        private string? TryParseMessageHeaderFromReceiveBuffer(out MessageHeader resultHeader)
+        private static bool TryParseMessageHeader(
+            ReadOnlySpan<byte> buffer,
+            MessageHeader previousHeader,
+            bool isServer,
+            out MessageHeader header,
+            out int consumedBytes)
         {
-            Debug.Assert(_receiveBufferCount >= 2, $"Expected to at least have the first two bytes of the header.");
+            header = default;
+            consumedBytes = 0;
 
-            MessageHeader header = default;
-            Span<byte> receiveBufferSpan = _receiveBuffer.Span;
+            if (buffer.Length < 2)
+                return false;
 
-            header.Fin = (receiveBufferSpan[_receiveBufferOffset] & 0x80) != 0;
-            bool reservedSet = (receiveBufferSpan[_receiveBufferOffset] & 0b0011_0000) != 0;
-            header.Opcode = (MessageOpcode)(receiveBufferSpan[_receiveBufferOffset] & 0xF);
-            header.Compressed = (receiveBufferSpan[_receiveBufferOffset] & 0b0100_0000) != 0;
+            // Check first for reserved bits that should always be unset
+            if ((buffer[0] & 0b0011_0000) != 0)
+                return Error(ref header, SR.net_Websockets_ReservedBitsSet);
 
-            bool masked = (receiveBufferSpan[_receiveBufferOffset + 1] & 0x80) != 0;
-            header.PayloadLength = receiveBufferSpan[_receiveBufferOffset + 1] & 0x7F;
+            header.Fin = (buffer[0] & 0x80) != 0;
+            header.Opcode = (MessageOpcode)(buffer[0] & 0xF);
+            header.Compressed = (buffer[0] & 0b0100_0000) != 0;
 
-            ConsumeFromBuffer(2);
+            bool masked = (buffer[1] & 0x80) != 0;
+            if (masked && !isServer)
+                return Error(ref header, SR.net_Websockets_ClientReceivedMaskedFrame);
+
+            header.PayloadLength = buffer[1] & 0x7F;
+
+            // We've consumed the first 2 bytes
+            buffer = buffer.Slice(2);
+            consumedBytes += 2;
 
             // Read the remainder of the payload length, if necessary
             if (header.PayloadLength == 126)
             {
-                Debug.Assert(_receiveBufferCount >= 2, $"Expected to have two bytes for the payload length.");
-                header.PayloadLength = (receiveBufferSpan[_receiveBufferOffset] << 8) | receiveBufferSpan[_receiveBufferOffset + 1];
-                ConsumeFromBuffer(2);
+                if (buffer.Length < 2)
+                    return false;
+
+                header.PayloadLength = (buffer[0] << 8) | buffer[1];
+                buffer = buffer.Slice(2);
+                consumedBytes += 2;
             }
             else if (header.PayloadLength == 127)
             {
-                Debug.Assert(_receiveBufferCount >= 8, $"Expected to have eight bytes for the payload length.");
-                header.PayloadLength = 0;
-                for (int i = 0; i < 8; i++)
-                {
-                    header.PayloadLength = (header.PayloadLength << 8) | receiveBufferSpan[_receiveBufferOffset + i];
-                }
-                ConsumeFromBuffer(8);
-            }
+                if (buffer.Length < 8)
+                    return false;
 
-            if (reservedSet)
-            {
-                resultHeader = default;
-                return SR.net_Websockets_ReservedBitsSet;
+                header.PayloadLength = 0;
+                for (int i = 0; i < 8; ++i)
+                {
+                    header.PayloadLength = (header.PayloadLength << 8) | buffer[i];
+                }
+                buffer = buffer.Slice(8);
+                consumedBytes += 8;
             }
 
             if (masked)
             {
-                if (!_isServer)
-                {
-                    resultHeader = default;
-                    return SR.net_Websockets_ClientReceivedMaskedFrame;
-                }
-                header.Mask = CombineMaskBytes(receiveBufferSpan, _receiveBufferOffset);
+                if (buffer.Length < MaskLength)
+                    return false;
 
-                // Consume the mask bytes
-                ConsumeFromBuffer(4);
+                header.Mask = BitConverter.ToInt32(buffer);
+                consumedBytes += MaskLength;
             }
 
             // Do basic validation of the header
             switch (header.Opcode)
             {
                 case MessageOpcode.Continuation:
-                    if (_lastReceiveHeader.Fin)
+                    if (previousHeader.Fin)
                     {
                         // Can't continue from a final message
-                        resultHeader = default;
-                        return SR.net_Websockets_ContinuationFromFinalFrame;
+                        return Error(ref header, SR.net_Websockets_ContinuationFromFinalFrame);
                     }
                     if (header.Compressed)
                     {
                         // Per-Message Compressed flag must be set only in the first frame
-                        resultHeader = default;
-                        return SR.net_Websockets_PerMessageCompressedFlagInContinuation;
+                        return Error(ref header, SR.net_Websockets_PerMessageCompressedFlagInContinuation);
                     }
                     break;
 
                 case MessageOpcode.Binary:
                 case MessageOpcode.Text:
-                    if (!_lastReceiveHeader.Fin)
+                    if (!previousHeader.Fin)
                     {
                         // Must continue from a non-final message
-                        resultHeader = default;
-                        return SR.net_Websockets_NonContinuationAfterNonFinalFrame;
+                        return Error(ref header, SR.net_Websockets_NonContinuationAfterNonFinalFrame);
                     }
                     break;
 
@@ -992,20 +832,22 @@ namespace System.Net.WebSockets
                     if (header.PayloadLength > MaxControlPayloadLength || !header.Fin)
                     {
                         // Invalid control messgae
-                        resultHeader = default;
-                        return SR.net_Websockets_InvalidControlMessage;
+                        return Error(ref header, SR.net_Websockets_InvalidControlMessage);
                     }
                     break;
 
                 default:
                     // Unknown opcode
-                    resultHeader = default;
-                    return SR.Format(SR.net_Websockets_UnknownOpcode, header.Opcode);
+                    return Error(ref header, SR.Format(SR.net_Websockets_UnknownOpcode, header.Opcode));
             }
 
-            // Return the read header
-            resultHeader = header;
-            return null;
+            return true;
+
+            static bool Error(ref MessageHeader header, string error)
+            {
+                header.Error = error;
+                return false;
+            }
         }
 
         /// <summary>Send a close message, then receive until we get a close response message.</summary>
@@ -1141,44 +983,7 @@ namespace System.Net.WebSockets
 
             if (!_isServer && _receivedCloseFrame)
             {
-                await WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private void ConsumeFromBuffer(int count)
-        {
-            Debug.Assert(count >= 0, $"Expected non-negative count, got {count}");
-            Debug.Assert(count <= _receiveBufferCount, $"Trying to consume {count}, which is more than exists {_receiveBufferCount}");
-            _receiveBufferCount -= count;
-            _receiveBufferOffset += count;
-        }
-
-        private async ValueTask EnsureBufferContainsAsync(int minimumRequiredBytes, CancellationToken cancellationToken, bool throwOnPrematureClosure = true)
-        {
-            Debug.Assert(minimumRequiredBytes <= _receiveBuffer.Length, $"Requested number of bytes {minimumRequiredBytes} must not exceed {_receiveBuffer.Length}");
-
-            // If we don't have enough data in the buffer to satisfy the minimum required, read some more.
-            if (_receiveBufferCount < minimumRequiredBytes)
-            {
-                // If there's any data in the buffer, shift it down.
-                if (_receiveBufferCount > 0)
-                {
-                    _receiveBuffer.Span.Slice(_receiveBufferOffset, _receiveBufferCount).CopyTo(_receiveBuffer.Span);
-                }
-                _receiveBufferOffset = 0;
-
-                // While we don't have enough data, read more.
-                while (_receiveBufferCount < minimumRequiredBytes)
-                {
-                    int numRead = await _stream.ReadAsync(_receiveBuffer.Slice(_receiveBufferCount, _receiveBuffer.Length - _receiveBufferCount), cancellationToken).ConfigureAwait(false);
-                    Debug.Assert(numRead >= 0, $"Expected non-negative bytes read, got {numRead}");
-                    if (numRead <= 0)
-                    {
-                        ThrowIfEOFUnexpected(throwOnPrematureClosure);
-                        break;
-                    }
-                    _receiveBufferCount += numRead;
-                }
+                await _receiver.WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -1200,19 +1005,6 @@ namespace System.Net.WebSockets
 
         private static int CombineMaskBytes(Span<byte> buffer, int maskOffset) =>
             BitConverter.ToInt32(buffer.Slice(maskOffset));
-
-        /// <summary>Applies a mask to a portion of a byte array.</summary>
-        /// <param name="toMask">The buffer to which the mask should be applied.</param>
-        /// <param name="mask">The array containing the mask to apply.</param>
-        /// <param name="maskOffset">The offset into <paramref name="mask"/> of the mask to apply of length <see cref="MaskLength"/>.</param>
-        /// <param name="maskOffsetIndex">The next position offset from <paramref name="maskOffset"/> of which by to apply next from the mask.</param>
-        /// <returns>The updated maskOffsetOffset value.</returns>
-        private static int ApplyMask(Span<byte> toMask, byte[] mask, int maskOffset, int maskOffsetIndex)
-        {
-            Debug.Assert(maskOffsetIndex < MaskLength, $"Unexpected {nameof(maskOffsetIndex)}: {maskOffsetIndex}");
-            Debug.Assert(mask.Length >= MaskLength + maskOffset, $"Unexpected inputs: {mask.Length}, {maskOffset}");
-            return ApplyMask(toMask, CombineMaskBytes(mask, maskOffset), maskOffsetIndex);
-        }
 
         /// <summary>Applies a mask to a portion of a byte array.</summary>
         /// <param name="toMask">The buffer to which the mask should be applied.</param>
@@ -1430,6 +1222,18 @@ namespace System.Net.WebSockets
             internal long PayloadLength;
             internal int Mask;
             internal bool Compressed;
+            internal string? Error;
+        }
+
+        private readonly struct ControlMessage
+        {
+            internal ControlMessage(MessageOpcode opcode, ReadOnlyMemory<byte> payload)
+            {
+                Opcode = opcode;
+                Payload = payload;
+            }
+            internal MessageOpcode Opcode { get; }
+            internal ReadOnlyMemory<byte> Payload { get; }
         }
 
         /// <summary>

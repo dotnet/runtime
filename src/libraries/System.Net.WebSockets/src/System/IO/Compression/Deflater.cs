@@ -14,14 +14,6 @@ namespace System.IO.Compression
     internal sealed class Deflater : IDisposable
     {
         private readonly ZLibNative.ZLibStreamHandle _handle;
-        private bool _isDisposed;
-
-        // Note, DeflateStream or the deflater do not try to be thread safe.
-        // The lock is just used to make writing to unmanaged structures atomic to make sure
-        // that they do not get inconsistent fields that may lead to an unmanaged memory violation.
-        // To prevent *managed* buffer corruption or other weird behaviour users need to synchronise
-        // on the stream explicitly.
-        private object SyncLock => this;
 
         internal Deflater(int windowBits)
         {
@@ -58,14 +50,7 @@ namespace System.IO.Compression
             }
         }
 
-        public void Dispose()
-        {
-            if (!_isDisposed)
-            {
-                _handle.Dispose();
-                _isDisposed = true;
-            }
-        }
+        public void Dispose() => _handle.Dispose();
 
         public unsafe void Deflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
         {
