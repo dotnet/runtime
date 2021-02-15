@@ -1900,7 +1900,7 @@ mono_class_vtable_checked (MonoDomain *domain, MonoClass *klass, MonoError *erro
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoClassRuntimeInfo *runtime_info;
+	MonoVTable *vtable;
 
 	error_init (error);
 
@@ -1911,10 +1911,9 @@ mono_class_vtable_checked (MonoDomain *domain, MonoClass *klass, MonoError *erro
 		return NULL;
 	}
 
-	/* this check can be inlined in jitted code, too */
-	runtime_info = m_class_get_runtime_info (klass);
-	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id])
-		return runtime_info->domain_vtables [domain->domain_id];
+	vtable = m_class_get_runtime_vtable (klass);
+	if (vtable)
+		return vtable;
 	return mono_class_create_runtime_vtable (domain, klass, error);
 }
 
@@ -1930,13 +1929,13 @@ mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	MonoClassRuntimeInfo *runtime_info;
+	MonoVTable *vtable;
 
 	g_assert (klass);
 
-	runtime_info = m_class_get_runtime_info (klass);
-	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id])
-		return runtime_info->domain_vtables [domain->domain_id];
+	vtable = m_class_get_runtime_vtable (klass);
+	if (vtable)
+		return vtable;
 	return NULL;
 }
 
@@ -1971,7 +1970,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoVTable *vt;
-	MonoClassRuntimeInfo *runtime_info;
 	MonoClassField *field;
 	MonoMemoryManager *memory_manager;
 	char *t;
@@ -1987,11 +1985,10 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	mono_loader_lock (); /*FIXME mono_class_init_internal acquires it*/
 	mono_domain_lock (domain);
 
-	runtime_info = m_class_get_runtime_info (klass);
-	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id]) {
+	vt = m_class_get_runtime_vtable (klass);
+	if (vt) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
-		vt = runtime_info->domain_vtables [domain->domain_id];
 		goto exit;
 	}
 	if (!m_class_is_inited (klass) || mono_class_has_failure (klass)) {
@@ -2262,17 +2259,13 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	mono_mem_manager_lock (memory_manager);
 	g_ptr_array_add (memory_manager->class_vtable_array, vt);
 	mono_mem_manager_unlock (memory_manager);
-	/* klass->runtime_info is protected by the loader lock, both when
-	 * it it enlarged and when it is stored info.
-	 */
 
 	/*
-	 * Store the vtable in klass->runtime_info.
-	 * klass->runtime_info is accessed without locking, so this do this last after the vtable has been constructed.
+	 * Store the vtable in klass_vtable.
+	 * klass->runtime_vtable is accessed without locking, so this do this last after the vtable has been constructed.
 	 */
 	mono_memory_barrier ();
-
-	mono_class_setup_runtime_info  (klass, domain, vt);
+	mono_class_set_runtime_vtable (klass, vt);
 
 	if (klass == mono_defaults.runtimetype_class) {
 		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);

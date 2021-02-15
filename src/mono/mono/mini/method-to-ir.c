@@ -3972,7 +3972,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 			if (cfg->run_cctors && m_class_has_cctor (method->klass)) {
 				ERROR_DECL (error);
 				/*FIXME it would easier and lazier to just use mono_class_try_get_vtable */
-				if (!m_class_get_runtime_info (method->klass))
+				if (!m_class_get_runtime_vtable (method->klass))
 					/* No vtable created yet */
 					return FALSE;
 				vtable = mono_class_vtable_checked (cfg->domain, method->klass, error);
@@ -3992,7 +3992,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 			}
 		} else if (mono_class_needs_cctor_run (method->klass, NULL)) {
 			ERROR_DECL (error);
-			if (!m_class_get_runtime_info (method->klass))
+			if (!m_class_get_runtime_vtable (method->klass))
 				/* No vtable created yet */
 				return FALSE;
 			vtable = mono_class_vtable_checked (cfg->domain, method->klass, error);
