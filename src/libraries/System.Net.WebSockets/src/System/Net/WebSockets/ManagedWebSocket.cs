@@ -359,14 +359,14 @@ namespace System.Net.WebSockets
             }
         }
 
-        private Task ValidateAndReceiveAsync(Task receiveTask, byte[] buffer, CancellationToken cancellationToken)
+        private Task ValidateAndReceiveAsync(Task receiveTask, CancellationToken cancellationToken)
         {
             if (receiveTask == null ||
                         (receiveTask.IsCompletedSuccessfully &&
                          !(receiveTask is Task<WebSocketReceiveResult> wsrr && wsrr.Result.MessageType == WebSocketMessageType.Close) &&
                          !(receiveTask is Task<ValueWebSocketReceiveResult> vwsrr && vwsrr.Result.MessageType == WebSocketMessageType.Close)))
             {
-                ValueTask<ValueWebSocketReceiveResult> vt = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(buffer, cancellationToken);
+                ValueTask<ValueWebSocketReceiveResult> vt = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(Memory<byte>.Empty, cancellationToken);
                 receiveTask =
                     vt.IsCompletedSuccessfully ? (vt.Result.MessageType == WebSocketMessageType.Close ? s_cachedCloseTask : Task.CompletedTask) :
                     vt.AsTask();
@@ -879,48 +879,40 @@ namespace System.Net.WebSockets
             if (State == WebSocketState.CloseSent)
             {
                 // Wait until we've received a close response
-                byte[] closeBuffer = ArrayPool<byte>.Shared.Rent(MaxMessageHeaderLength + MaxControlPayloadLength);
-                try
+                while (!_receivedCloseFrame)
                 {
-                    while (!_receivedCloseFrame)
+                    Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
+                    Task receiveTask;
+                    bool usingExistingReceive;
+                    lock (ReceiveAsyncLock)
                     {
-                        Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
-                        Task receiveTask;
-                        bool usingExistingReceive;
-                        lock (ReceiveAsyncLock)
+                        // Now that we're holding the ReceiveAsyncLock, double-check that we've not yet received the close frame.
+                        // It could have been received between our check above and now due to a concurrent receive completing.
+                        if (_receivedCloseFrame)
                         {
-                            // Now that we're holding the ReceiveAsyncLock, double-check that we've not yet received the close frame.
-                            // It could have been received between our check above and now due to a concurrent receive completing.
-                            if (_receivedCloseFrame)
-                            {
-                                break;
-                            }
-
-                            // We've not yet processed a received close frame, which means we need to wait for a received close to complete.
-                            // There may already be one in flight, in which case we want to just wait for that one rather than kicking off
-                            // another (we don't support concurrent receive operations).  We need to kick off a new receive if either we've
-                            // never issued a receive or if the last issued receive completed for reasons other than a close frame.  There is
-                            // a race condition here, e.g. if there's a in-flight receive that completes after we check, but that's fine: worst
-                            // case is we then await it, find that it's not what we need, and try again.
-                            receiveTask = _lastReceiveAsync;
-                            Task newReceiveTask = ValidateAndReceiveAsync(receiveTask, closeBuffer, cancellationToken);
-                            usingExistingReceive = ReferenceEquals(receiveTask, newReceiveTask);
-                            _lastReceiveAsync = receiveTask = newReceiveTask;
+                            break;
                         }
 
-                        // Wait for whatever receive task we have.  We'll then loop around again to re-check our state.
-                        // If this is an existing receive, and if we have a cancelable token, we need to register with that
-                        // token while we wait, since it may not be the same one that was given to the receive initially.
-                        Debug.Assert(receiveTask != null);
-                        using (usingExistingReceive ? cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this) : default)
-                        {
-                            await receiveTask.ConfigureAwait(false);
-                        }
+                        // We've not yet processed a received close frame, which means we need to wait for a received close to complete.
+                        // There may already be one in flight, in which case we want to just wait for that one rather than kicking off
+                        // another (we don't support concurrent receive operations).  We need to kick off a new receive if either we've
+                        // never issued a receive or if the last issued receive completed for reasons other than a close frame.  There is
+                        // a race condition here, e.g. if there's a in-flight receive that completes after we check, but that's fine: worst
+                        // case is we then await it, find that it's not what we need, and try again.
+                        receiveTask = _lastReceiveAsync;
+                        Task newReceiveTask = ValidateAndReceiveAsync(receiveTask, cancellationToken);
+                        usingExistingReceive = ReferenceEquals(receiveTask, newReceiveTask);
+                        _lastReceiveAsync = receiveTask = newReceiveTask;
                     }
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(closeBuffer);
+
+                    // Wait for whatever receive task we have.  We'll then loop around again to re-check our state.
+                    // If this is an existing receive, and if we have a cancelable token, we need to register with that
+                    // token while we wait, since it may not be the same one that was given to the receive initially.
+                    Debug.Assert(receiveTask != null);
+                    using (usingExistingReceive ? cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this) : default)
+                    {
+                        await receiveTask.ConfigureAwait(false);
+                    }
                 }
             }
 
