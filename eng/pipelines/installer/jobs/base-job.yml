@@ -471,6 +471,7 @@ jobs:
       runtimeVariant: ${{ parameters.runtimeVariant }}
       skipTests: $(SkipTests)
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
+      pgoType: ${{ parameters.pgoType }}
 
   - ${{ if ne(parameters.osGroup, 'windows') }}:
     - script: set -x && df -h
