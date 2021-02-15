@@ -7,6 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Libraries
 {
 	[SetupLinkerArgument ("-a", "test.exe", "library")]
+	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	public class RootLibrary
 	{
 		private int field;
@@ -33,6 +34,10 @@ namespace Mono.Linker.Tests.Cases.Libraries
 
 		[Kept]
 		protected internal void UnusedProtectedInternalMethod ()
+		{
+		}
+
+		protected private void UnusedProtectedPrivateMethod ()
 		{
 		}
 
@@ -66,6 +71,25 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		}
 
 		[Kept]
+		public class SubstitutionsTest
+		{
+			[Kept]
+			private static bool FalseProp { [Kept] get { return false; } }
+
+			[Kept]
+			[ExpectBodyModified]
+			public SubstitutionsTest ()
+			{
+				if (FalseProp)
+					LocalMethod ();
+			}
+
+			private void LocalMethod ()
+			{
+			}
+		}
+
+		[Kept]
 		[KeptInterface (typeof (I))]
 		public class IfaceClass : I
 		{
@@ -85,5 +109,9 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		public interface I
 		{
 		}
+	}
+
+	internal class RootLibrary_Internal
+	{
 	}
 }
