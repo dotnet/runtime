@@ -274,6 +274,22 @@ namespace System.Security.Cryptography.DeriveBytesTests
                 yield return new object[] { hashAlgorithm.Name, 257, 257, "D8D8D8D8D8D8D8D8", "D8D8D8D8D8D8D8D8" };
                 yield return new object[] { hashAlgorithm.Name, 257, 257, "0000000000000000", "0000000000000000" };
             }
+
+            // Test around HMAC SHA1 and SHA256 block boundaries
+            for (int blockBoundary = 63; blockBoundary <= 65; blockBoundary++)
+            {
+                byte[] password = new byte[blockBoundary];
+                yield return new object[] { HashAlgorithmName.SHA1.Name, 257, 257, password.ByteArrayToHex(), "0000000000000000" };
+                yield return new object[] { HashAlgorithmName.SHA256.Name, 257, 257, password.ByteArrayToHex(), "0000000000000000" };
+            }
+
+            // Test around HMAC SHA384 and SHA512 block boundaries
+            for (int blockBoundary = 127; blockBoundary <= 129; blockBoundary++)
+            {
+                byte[] password = new byte[blockBoundary];
+                yield return new object[] { HashAlgorithmName.SHA384.Name, 257, 257, password.ByteArrayToHex(), "0000000000000000" };
+                yield return new object[] { HashAlgorithmName.SHA512.Name, 257, 257, password.ByteArrayToHex(), "0000000000000000" };
+            }
         }
 
         public static IEnumerable<object[]> Pbkdf2_PasswordString_Compare_Data()
