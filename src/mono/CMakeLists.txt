@@ -216,6 +216,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   # FIXME: Rest of the flags from configure.ac
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_BROWSER 1)
+  add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
