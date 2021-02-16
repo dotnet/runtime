@@ -12,13 +12,13 @@ internal static partial class Interop
         internal const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
 
         [DllImport(Libraries.Kernel32)]
-        internal static extern uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
+        internal static extern uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, BOOL bWaitAll, uint dwMilliseconds, BOOL bAlertable);
 
         [DllImport(Libraries.Kernel32)]
         internal static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
         [DllImport(Libraries.Kernel32)]
-        internal static extern uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, bool bAlertable);
+        internal static extern uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, BOOL bAlertable);
 
         [DllImport(Libraries.Kernel32)]
         internal static extern void Sleep(uint milliseconds);
