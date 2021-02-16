@@ -65,8 +65,9 @@ namespace System.Collections.Generic
         /// Creates an empty priority queue.
         /// </summary>
         public PriorityQueue()
-            : this(initialCapacity: 0, comparer: null)
         {
+            _nodes = Array.Empty<(TElement, TPriority)>();
+            _comparer = InitializeComparer(null);
         }
 
         /// <summary>
@@ -81,8 +82,9 @@ namespace System.Collections.Generic
         /// Creates an empty priority queue with the specified priority comparer.
         /// </summary>
         public PriorityQueue(IComparer<TPriority>? comparer)
-            : this(initialCapacity: 0, comparer)
         {
+            _nodes = Array.Empty<(TElement, TPriority)>();
+            _comparer = InitializeComparer(null);
         }
 
         /// <summary>
@@ -101,7 +103,7 @@ namespace System.Collections.Generic
                 ? Array.Empty<(TElement, TPriority)>()
                 : new (TElement, TPriority)[initialCapacity];
 
-            _comparer = comparer;
+            _comparer = InitializeComparer(comparer);
         }
 
         /// <summary>
@@ -124,7 +126,7 @@ namespace System.Collections.Generic
             }
 
             _nodes = EnumerableHelpers.ToArray(items, out _size);
-            _comparer = comparer;
+            _comparer = InitializeComparer(comparer);
 
             if (_size > 1)
             {
@@ -521,14 +523,16 @@ namespace System.Collections.Generic
 
             Debug.Assert(_comparer is null);
 
+            (TElement Element, TPriority Priority)[] nodes = _nodes;
+
             while (nodeIndex > 0)
             {
                 int parentIndex = GetParentIndex(nodeIndex);
-                (TElement Element, TPriority Priority) parent = _nodes[parentIndex];
+                (TElement Element, TPriority Priority) parent = nodes[parentIndex];
 
                 if (Comparer<TPriority>.Default.Compare(node.Priority, parent.Priority) < 0)
                 {
-                    _nodes[nodeIndex] = parent;
+                    nodes[nodeIndex] = parent;
                     nodeIndex = parentIndex;
                 }
                 else
@@ -537,7 +541,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            _nodes[nodeIndex] = node;
+            nodes[nodeIndex] = node;
         }
 
         /// <summary>
@@ -550,14 +554,17 @@ namespace System.Collections.Generic
 
             Debug.Assert(_comparer is not null);
 
+            IComparer<TPriority> comparer = _comparer;
+            (TElement Element, TPriority Priority)[] nodes = _nodes;
+
             while (nodeIndex > 0)
             {
                 int parentIndex = GetParentIndex(nodeIndex);
-                (TElement Element, TPriority Priority) parent = _nodes[parentIndex];
+                (TElement Element, TPriority Priority) parent = nodes[parentIndex];
 
-                if (_comparer.Compare(node.Priority, parent.Priority) < 0)
+                if (comparer.Compare(node.Priority, parent.Priority) < 0)
                 {
-                    _nodes[nodeIndex] = parent;
+                    nodes[nodeIndex] = parent;
                     nodeIndex = parentIndex;
                 }
                 else
@@ -566,7 +573,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            _nodes[nodeIndex] = node;
+            nodes[nodeIndex] = node;
         }
 
         /// <summary>
@@ -580,18 +587,21 @@ namespace System.Collections.Generic
 
             Debug.Assert(_comparer is null);
 
+            (TElement Element, TPriority Priority)[] nodes = _nodes;
+            int size = _size;
+
             int i;
-            while ((i = GetFirstChildIndex(nodeIndex)) < _size)
+            while ((i = GetFirstChildIndex(nodeIndex)) < size)
             {
                 // Check if the current node (pointed by 'nodeIndex') should really be extracted
                 // first, or maybe one of its children should be extracted earlier.
-                (TElement Element, TPriority Priority) topChild = _nodes[i];
-                int childrenIndexesLimit = Math.Min(i + Arity, _size);
+                (TElement Element, TPriority Priority) topChild = nodes[i];
+                int childrenIndexesLimit = Math.Min(i + Arity, size);
                 int topChildIndex = i;
 
                 while (++i < childrenIndexesLimit)
                 {
-                    (TElement Element, TPriority Priority) child = _nodes[i];
+                    (TElement Element, TPriority Priority) child = nodes[i];
                     if (Comparer<TPriority>.Default.Compare(child.Priority, topChild.Priority) < 0)
                     {
                         topChild = child;
@@ -608,11 +618,11 @@ namespace System.Collections.Generic
 
                 // Move the top child up by one node and now investigate the
                 // node that was considered to be the top child (recursive).
-                _nodes[nodeIndex] = topChild;
+                nodes[nodeIndex] = topChild;
                 nodeIndex = topChildIndex;
             }
 
-            _nodes[nodeIndex] = node;
+            nodes[nodeIndex] = node;
         }
 
         /// <summary>
@@ -626,19 +636,23 @@ namespace System.Collections.Generic
 
             Debug.Assert(_comparer is not null);
 
+            IComparer<TPriority> comparer = _comparer;
+            (TElement Element, TPriority Priority)[] nodes = _nodes;
+            int size = _size;
+
             int i;
-            while ((i = GetFirstChildIndex(nodeIndex)) < _size)
+            while ((i = GetFirstChildIndex(nodeIndex)) < size)
             {
                 // Check if the current node (pointed by 'nodeIndex') should really be extracted
                 // first, or maybe one of its children should be extracted earlier.
-                (TElement Element, TPriority Priority) topChild = _nodes[i];
-                int childrenIndexesLimit = Math.Min(i + Arity, _size);
+                (TElement Element, TPriority Priority) topChild = nodes[i];
+                int childrenIndexesLimit = Math.Min(i + Arity, size);
                 int topChildIndex = i;
 
                 while (++i < childrenIndexesLimit)
                 {
-                    (TElement Element, TPriority Priority) child = _nodes[i];
-                    if (_comparer.Compare(child.Priority, topChild.Priority) < 0)
+                    (TElement Element, TPriority Priority) child = nodes[i];
+                    if (comparer.Compare(child.Priority, topChild.Priority) < 0)
                     {
                         topChild = child;
                         topChildIndex = i;
@@ -647,18 +661,43 @@ namespace System.Collections.Generic
 
                 // In case no child needs to be extracted earlier than the current node,
                 // there is nothing more to do - the right spot was found.
-                if (_comparer.Compare(node.Priority, topChild.Priority) <= 0)
+                if (comparer.Compare(node.Priority, topChild.Priority) <= 0)
                 {
                     break;
                 }
 
                 // Move the top child up by one node and now investigate the
                 // node that was considered to be the top child (recursive).
-                _nodes[nodeIndex] = topChild;
+                nodes[nodeIndex] = topChild;
                 nodeIndex = topChildIndex;
             }
 
             _nodes[nodeIndex] = node;
+        }
+
+        /// <summary>
+        /// Initializes the custom comparer to be used internally by the heap.
+        /// </summary>
+        private static IComparer<TPriority>? InitializeComparer(IComparer<TPriority>? comparer)
+        {
+            if (typeof(TPriority).IsValueType)
+            {
+                if (comparer == Comparer<TPriority>.Default)
+                {
+                    // if the user manually specifies the default comparer,
+                    // revert to using the optimized path.
+                    return null;
+                }
+
+                return comparer;
+            }
+            else
+            {
+                // Currently the JIT doesn't optimize direct Comparer<T>.Default.Compare
+                // calls for reference types, so we want to cache the comparer instance instead.
+                // TODO update if this changes in the future.
+                return comparer ?? Comparer<TPriority>.Default;
+            }
         }
 
         /// <summary>
