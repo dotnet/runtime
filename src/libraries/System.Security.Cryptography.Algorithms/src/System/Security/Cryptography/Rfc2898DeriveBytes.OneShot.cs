@@ -11,82 +11,82 @@ namespace System.Security.Cryptography
         // Throwing UTF8 on invalid input.
         private static readonly Encoding s_throwingUtf8Encoding = new UTF8Encoding(false, true);
 
-        public static byte[] Pbkdf2DeriveBytes(
+        public static byte[] Pbkdf2(
             byte[] password,
             byte[] salt,
             int iterations,
-            int length,
-            HashAlgorithmName hashAlgorithm)
+            HashAlgorithmName hashAlgorithm,
+            int outputLength)
         {
             if (password is null)
                 throw new ArgumentNullException(nameof(password));
             if (salt is null)
                 throw new ArgumentNullException(nameof(salt));
 
-            return Pbkdf2DeriveBytes(new ReadOnlySpan<byte>(password), new ReadOnlySpan<byte>(salt), iterations, length, hashAlgorithm);
+            return Pbkdf2(new ReadOnlySpan<byte>(password), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
 
-        public static byte[] Pbkdf2DeriveBytes(
-            ReadOnlySpan<byte> password,
-            ReadOnlySpan<byte> salt,
-            int iterations,
-            int length,
-            HashAlgorithmName hashAlgorithm)
-        {
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            byte[] result = new byte[length];
-            Pbkdf2DeriveBytes(password, salt, iterations, hashAlgorithm, result);
-            return result;
-        }
-
-        public static void Pbkdf2DeriveBytes(
+        public static byte[] Pbkdf2(
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
             int iterations,
             HashAlgorithmName hashAlgorithm,
-            Span<byte> destination)
+            int outputLength)
         {
-            Pbkdf2DeriveBytesCore(password, salt, iterations, hashAlgorithm, destination);
+            if (outputLength < 0)
+                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            byte[] result = new byte[outputLength];
+            Pbkdf2(password, salt, result, iterations, hashAlgorithm);
+            return result;
         }
 
-        public static byte[] Pbkdf2DeriveBytes(
+        public static void Pbkdf2(
+            ReadOnlySpan<byte> password,
+            ReadOnlySpan<byte> salt,
+            Span<byte> destination,
+            int iterations,
+            HashAlgorithmName hashAlgorithm)
+        {
+            Pbkdf2Core(password, salt, destination, iterations, hashAlgorithm);
+        }
+
+        public static byte[] Pbkdf2(
             string password,
             byte[] salt,
             int iterations,
-            int length,
-            HashAlgorithmName hashAlgorithm)
+            HashAlgorithmName hashAlgorithm,
+            int outputLength)
         {
             if (password is null)
                 throw new ArgumentNullException(nameof(password));
             if (salt is null)
                 throw new ArgumentNullException(nameof(salt));
 
-            return Pbkdf2DeriveBytes(password.AsSpan(), new ReadOnlySpan<byte>(salt), iterations, length, hashAlgorithm);
+            return Pbkdf2(password.AsSpan(), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
 
-        public static byte[] Pbkdf2DeriveBytes(
-            ReadOnlySpan<char> password,
-            ReadOnlySpan<byte> salt,
-            int iterations,
-            int length,
-            HashAlgorithmName hashAlgorithm)
-        {
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            byte[] result = new byte[length];
-            Pbkdf2DeriveBytes(password, salt, iterations, hashAlgorithm, result);
-            return result;
-        }
-
-        public static void Pbkdf2DeriveBytes(
+        public static byte[] Pbkdf2(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> salt,
             int iterations,
             HashAlgorithmName hashAlgorithm,
-            Span<byte> destination)
+            int outputLength)
+        {
+            if (outputLength < 0)
+                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            byte[] result = new byte[outputLength];
+            Pbkdf2(password, salt, result, iterations, hashAlgorithm);
+            return result;
+        }
+
+        public static void Pbkdf2(
+            ReadOnlySpan<char> password,
+            ReadOnlySpan<byte> salt,
+            Span<byte> destination,
+            int iterations,
+            HashAlgorithmName hashAlgorithm)
         {
             const int MaxPasswordStackSize = 256;
 
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography
             int passwordBytesWritten = s_throwingUtf8Encoding.GetBytes(password, passwordBuffer);
             Span<byte> passwordBytes = passwordBuffer.Slice(0, passwordBytesWritten);
 
-            Pbkdf2DeriveBytesCore(passwordBytes, salt, iterations, hashAlgorithm, destination);
+            Pbkdf2Core(passwordBytes, salt, destination, iterations, hashAlgorithm);
             CryptographicOperations.ZeroMemory(passwordBytes);
 
             if (rentedPasswordBuffer is not null)
@@ -108,12 +108,12 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void Pbkdf2DeriveBytesCore(
+        private static void Pbkdf2Core(
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
+            Span<byte> destination,
             int iterations,
-            HashAlgorithmName hashAlgorithm,
-            Span<byte> destination)
+            HashAlgorithmName hashAlgorithm)
         {
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
