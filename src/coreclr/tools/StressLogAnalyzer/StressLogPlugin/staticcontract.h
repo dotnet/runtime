@@ -1,0 +1,3 @@
+#define _ASSERTE(a)
+#define STATIC_CONTRACT_LEAF
+#define STATIC_CONTRACT_WRAPPER
