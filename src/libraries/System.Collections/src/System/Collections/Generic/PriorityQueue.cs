@@ -692,7 +692,7 @@ namespace System.Collections.Generic
             {
                 // Currently the JIT doesn't optimize direct Comparer<T>.Default.Compare
                 // calls for reference types, so we want to cache the comparer instance instead.
-                // TODO update if this changes in the future.
+                // TODO https://github.com/dotnet/runtime/issues/10050: Update if this changes in the future.
                 return comparer ?? Comparer<TPriority>.Default;
             }
         }
