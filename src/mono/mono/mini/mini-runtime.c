@@ -359,14 +359,6 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 {
 	if (!caller || caller->is_trampoline || !callee || callee->is_trampoline)
 		return FALSE;
-
-	/*
-	 * If the call was made from domain-neutral to domain-specific
-	 * code, we can't patch the call site.
-	 */
-	if (caller->domain_neutral && !callee->domain_neutral)
-		return FALSE;
-
 	return TRUE;
 }
 
@@ -2540,20 +2532,10 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 	 */
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 		winfo = mono_marshal_get_wrapper_info (method);
-	if (winfo && winfo->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
+	if (winfo && winfo->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER)
 		callinfo = mono_find_jit_icall_info (winfo->d.icall.jit_icall_id);
 
-		/* Must be domain neutral since there is only one copy */
-		opt |= MONO_OPT_SHARED;
-	} else {
-		/* MONO_OPT_SHARED is no longer supported, we only use it for icall wrappers */
-		opt &= ~MONO_OPT_SHARED;
-	}
-
-	if (opt & MONO_OPT_SHARED)
-		target_domain = mono_get_root_domain ();
-	else
-		target_domain = domain;
+	target_domain = domain;
 
 	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
@@ -2575,7 +2557,7 @@ lookup_start:
 	info = lookup_method (target_domain, method);
 	if (info) {
 		/* We can't use a domain specific method in another domain */
-		if (! ((domain != target_domain) && !info->domain_neutral)) {
+		if (domain == target_domain) {
 			MonoVTable *vtable;
 
 			mono_atomic_inc_i32 (&mono_jit_stats.methods_lookups);
@@ -2879,15 +2861,12 @@ mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *met
 	MonoDomain *target_domain;
 	MonoJitInfo *info;
 
-	if (default_opt & MONO_OPT_SHARED)
-		target_domain = mono_get_root_domain ();
-	else
-		target_domain = domain;
+	target_domain = domain;
 
 	info = lookup_method (target_domain, method);
 	if (info) {
 		/* We can't use a domain specific method in another domain */
-		if (! ((domain != target_domain) && !info->domain_neutral)) {
+		if (domain == target_domain) {
 			mono_atomic_inc_i32 (&mono_jit_stats.methods_lookups);
 			if (ji)
 				*ji = info;
@@ -4771,16 +4750,14 @@ register_icalls (void)
 	register_icall (ves_icall_mono_delegate_ctor, mono_icall_sig_void_object_object_ptr, FALSE);
 	register_icall (ves_icall_mono_delegate_ctor_interp, mono_icall_sig_void_object_object_ptr, FALSE);
 	register_icall (mono_class_static_field_address,
-				 mono_icall_sig_ptr_ptr_ptr, FALSE);
+				 mono_icall_sig_ptr_ptr, FALSE);
 	register_icall (mono_ldtoken_wrapper, mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_ldtoken_wrapper_generic_shared,
 		mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_get_special_static_data, mono_icall_sig_ptr_int, FALSE);
-	register_icall (ves_icall_mono_ldstr, mono_icall_sig_object_ptr_ptr_int32, FALSE);
 	register_icall (mono_helper_stelem_ref_check, mono_icall_sig_void_object_object, FALSE);
-	register_icall (ves_icall_object_new, mono_icall_sig_object_ptr_ptr, FALSE);
+	register_icall (ves_icall_object_new, mono_icall_sig_object_ptr, FALSE);
 	register_icall (ves_icall_object_new_specific, mono_icall_sig_object_ptr, FALSE);
-	register_icall (ves_icall_array_new, mono_icall_sig_object_ptr_ptr_int32, FALSE);
 	register_icall (ves_icall_array_new_specific, mono_icall_sig_object_ptr_int32, FALSE);
 	register_icall (ves_icall_runtime_class_init, mono_icall_sig_void_ptr, FALSE);
 	register_icall (mono_ldftn, mono_icall_sig_ptr_ptr, FALSE);

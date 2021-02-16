@@ -1490,10 +1490,6 @@ mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_
 
 ICALL_EXPORT
 MonoArray*
-ves_icall_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n);
-
-ICALL_EXPORT
-MonoArray*
 ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n);
 
 gpointer
@@ -1647,7 +1643,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error);
 
 ICALL_EXPORT
 MonoObject *
-ves_icall_object_new (MonoDomain *domain, MonoClass *klass);
+ves_icall_object_new (MonoClass *klass);
 	
 ICALL_EXPORT
 MonoObject *

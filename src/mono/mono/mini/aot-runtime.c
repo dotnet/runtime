@@ -3439,7 +3439,6 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		}
 
 		jinfo->unwind_info = unwind_info;
-		jinfo->domain_neutral = 0;
 		jinfo->from_aot = 1;
 	}
 

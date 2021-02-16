@@ -1292,7 +1292,6 @@ typedef struct {
 	gint             spill_count;
 	gint             spill_info_len [16];
 	/* unsigned char   *cil_code; */
-	MonoInst        *domainvar; /* a cache for the current domain */
 	MonoInst        *got_var; /* Global Offset Table variable */
 	MonoInst        **locals;
 	/* Variable holding the mrgctx/vtable address for gshared methods */
@@ -1457,7 +1456,6 @@ typedef struct {
 	guint            interp : 1;
 	guint            use_current_cpu : 1;
 	guint            self_init : 1;
-	guint            domainvar_inited : 1;
 	guint            code_exec_only : 1;
 	guint            interp_entry_only : 1;
 	guint8           uses_simd_intrinsics;

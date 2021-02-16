@@ -803,9 +803,10 @@ mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 }
 
 gpointer
-mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
+mono_class_static_field_address (MonoClassField *field)
 {
 	ERROR_DECL (error);
+	MonoDomain *domain = mono_get_root_domain ();
 	MonoVTable *vtable;
 	gpointer addr;
 	
@@ -1119,15 +1120,6 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 		*this_arg = obj;
 
 	return addr;
-}
-
-MonoString*
-ves_icall_mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
-{
-	ERROR_DECL (error);
-	MonoString *result = mono_ldstr_checked (image, idx, error);
-	mono_error_set_pending_exception (error);
-	return result;
 }
 
 MonoString*

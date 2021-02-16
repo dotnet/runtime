@@ -2405,7 +2405,6 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	jinfo_try_holes_size += num_holes * sizeof (MonoTryBlockHoleJitInfo);
 
 	mono_jit_info_init (jinfo, cfg->method_to_register, cfg->native_code, cfg->code_len, flags, num_clauses, num_holes);
-	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
 
 	if (COMPILE_LLVM (cfg))
 		jinfo->from_llvm = TRUE;
@@ -4064,7 +4063,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	info = mini_lookup_method (target_domain, method, shared);
 	if (info) {
 		/* We can't use a domain specific method in another domain */
-		if ((target_domain == mono_domain_get ()) || info->domain_neutral) {
+		if (target_domain == mono_domain_get ()) {
 			code = info->code_start;
 			discarded_code ++;
 			discarded_jit_time += jit_time;

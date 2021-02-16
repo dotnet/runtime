@@ -5087,7 +5087,7 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
 }
 
 MonoObject *
-ves_icall_object_new (MonoDomain *domain, MonoClass *klass)
+ves_icall_object_new (MonoClass *klass)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -5826,16 +5826,6 @@ mono_array_new_checked (MonoClass *eclass, uintptr_t n, MonoError *error)
 	return_val_if_nok (error, NULL);
 
 	return mono_array_new_specific_checked (vtable, n, error);
-}
-
-MonoArray*
-ves_icall_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
-{
-	ERROR_DECL (error);
-	MonoArray *arr = mono_array_new_checked (eclass, n, error);
-	mono_error_set_pending_exception (error);
-
-	return arr;
 }
 
 /**
