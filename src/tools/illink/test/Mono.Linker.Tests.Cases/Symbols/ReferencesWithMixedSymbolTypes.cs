@@ -5,6 +5,7 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols
 {
+	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[Reference ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb")]
 

@@ -32,7 +32,7 @@ namespace Mono.Linker
 		{
 			defaultReaderParameters = new ReaderParameters ();
 			defaultReaderParameters.AssemblyResolver = this;
-			directories = new Collection<string> (2) { "." };
+			directories = new Collection<string> ();
 		}
 
 		public AssemblyDefinition GetAssembly (string file, ReaderParameters parameters)

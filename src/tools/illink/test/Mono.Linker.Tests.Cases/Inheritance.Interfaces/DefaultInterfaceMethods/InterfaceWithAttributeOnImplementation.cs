@@ -6,6 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 {
+	[SetupLinkerArgument ("--skip-unresolved", "true")]
 #if !NETCOREAPP
 	[IgnoreTestCase ("Only for .NET Core for some reason")]
 #endif

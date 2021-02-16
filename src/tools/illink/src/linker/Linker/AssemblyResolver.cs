@@ -127,18 +127,11 @@ namespace Mono.Linker
 			return asm;
 		}
 
-		void CacheAssembly (AssemblyDefinition assembly)
+		public void CacheAssembly (AssemblyDefinition assembly)
 		{
 			_assemblies[assembly.Name.Name] = assembly;
 			if (assembly != null)
 				_context.RegisterAssembly (assembly);
-		}
-
-		public virtual AssemblyDefinition CacheAssemblyWithPath (AssemblyDefinition assembly)
-		{
-			CacheAssembly (assembly);
-			base.AddSearchDirectory (Path.GetDirectoryName (GetAssemblyFileName (assembly)));
-			return assembly;
 		}
 
 		public void AddReferenceAssembly (string referencePath)
