@@ -123,7 +123,7 @@ namespace System.Linq
                 {
                     if (isIndexFromEnd)
                     {
-                        count = listProvider.GetCount(onlyIfCheap: true);
+                        count = partition.GetCount(onlyIfCheap: true);
                         if (count > 0)
                         {
                             element = partition.TryGetElementAt(count - index, out bool found);
@@ -141,9 +141,9 @@ namespace System.Linq
                     count = listProvider.GetCount(onlyIfCheap: true);
                 }
             }
-            else if (source is ICollection<TSource> genericCollection)
+            else if (source is ICollection<TSource> collectionoft)
             {
-                count = genericCollection.Count;
+                count = collectionoft.Count;
             }
             else if (source is ICollection collection)
             {
