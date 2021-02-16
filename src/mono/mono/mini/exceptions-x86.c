@@ -19,7 +19,6 @@
 
 #include <mono/metadata/abi-details.h>
 #include <mono/arch/x86/x86-codegen.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
@@ -142,7 +141,6 @@ mono_win32_get_handle_stackoverflow (void)
 static void 
 win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, CONTEXT *sctx)
 {
-	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo rji;
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	MonoLMF *lmf = jit_tls->lmf;		
@@ -165,7 +163,7 @@ win32_handle_stack_overflow (EXCEPTION_POINTERS* ep, CONTEXT *sctx)
 	do {
 		MonoContext new_ctx;
 
-		mono_arch_unwind_frame (domain, jit_tls, &rji, &ctx, &new_ctx, &lmf, NULL, &frame);
+		mono_arch_unwind_frame (jit_tls, &rji, &ctx, &new_ctx, &lmf, NULL, &frame);
 		if (!frame.ji) {
 			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
@@ -802,11 +800,11 @@ mono_arch_exceptions_init (void)
  * See exceptions-amd64.c for docs.
  */
 gboolean
-mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf,
-							 host_mgreg_t **save_locations,
-							 StackFrameInfo *frame)
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
+						MonoJitInfo *ji, MonoContext *ctx, 
+						MonoContext *new_ctx, MonoLMF **lmf,
+						host_mgreg_t **save_locations,
+						StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 

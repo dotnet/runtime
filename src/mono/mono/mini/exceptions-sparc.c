@@ -16,7 +16,6 @@
 #include <sys/ucontext.h>
 
 #include <mono/arch/sparc/sparc-codegen.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
@@ -365,11 +364,11 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
  * start of the function or -1 if that info is not available.
  */
 gboolean
-mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf,
-							 host_mgreg_t **save_locations,
-							 StackFrameInfo *frame)
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
+						MonoJitInfo *ji, MonoContext *ctx, 
+						MonoContext *new_ctx, MonoLMF **lmf,
+						host_mgreg_t **save_locations,
+						StackFrameInfo *frame)
 {
 	gpointer *window;
 

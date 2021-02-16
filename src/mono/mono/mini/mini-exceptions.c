@@ -423,7 +423,7 @@ get_unwind_backtrace (void)
 #endif
 
 static gboolean
-arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
+arch_unwind_frame (MonoJitTlsData *jit_tls,
 				   MonoJitInfo *ji, MonoContext *ctx,
 				   MonoContext *new_ctx, MonoLMF **lmf,
 				   host_mgreg_t **save_locations,
@@ -462,7 +462,7 @@ arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 	}
 
-	return mono_arch_unwind_frame (domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
+	return mono_arch_unwind_frame (jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
 }
 
 /*
@@ -488,7 +488,7 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 	if (managed)
 		*managed = FALSE;
 
-	err = arch_unwind_frame (domain, jit_tls, ji, ctx, new_ctx, lmf, NULL, &frame);
+	err = arch_unwind_frame (jit_tls, ji, ctx, new_ctx, lmf, NULL, &frame);
 	if (!err)
 		return (MonoJitInfo *)-1;
 
@@ -648,7 +648,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (save_locations)
 		memset (save_locations, 0, MONO_MAX_IREGS * sizeof (host_mgreg_t*));
 
-	err = arch_unwind_frame (target_domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
+	err = arch_unwind_frame (jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
 	if (!err)
 		return FALSE;
 
