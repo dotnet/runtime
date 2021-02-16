@@ -9,6 +9,7 @@
     <Compile Include="AppendPrependTests.cs" />
     <Compile Include="AverageTests.cs" />
     <Compile Include="CastTests.cs" />
+    <Compile Include="ChunkTests.cs" />
     <Compile Include="ConcatTests.cs" />
     <Compile Include="ContainsTests.cs" />
     <Compile Include="CountTests.cs" />

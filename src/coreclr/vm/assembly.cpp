@@ -408,7 +408,7 @@ Assembly * Assembly::Create(
 
 
 #ifndef CROSSGEN_COMPILE
-Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs *args)
+Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
 {
     // WARNING: not backout clean
     CONTRACT(Assembly *)
@@ -550,44 +550,49 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
 
-        // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
-        // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
-        // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
-        //
-        // If the creator assembly has a HostAssembly associated with it, then use it for binding. Otherwise, the creator is dynamic
-        // and will have a fallback load context binder associated with it.
-        ICLRPrivBinder *pFallbackLoadContextBinder = nullptr;
+        ICLRPrivBinder* pFallbackLoadContextBinder = pBinderContext;
 
-        // There is always a manifest file - wehther working with static or dynamic assemblies.
-        PEFile *pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
-        _ASSERTE(pCallerAssemblyManifestFile != NULL);
-
-        if (!pCallerAssemblyManifestFile->IsDynamic())
+        // If ALC is not specified
+        if (pFallbackLoadContextBinder == nullptr)
         {
-            // Static assemblies with do not have fallback load context
-            _ASSERTE(pCallerAssemblyManifestFile->GetFallbackLoadContextBinder() == nullptr);
+            // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
+            // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
+            // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
+            //
+            // If the creator assembly has a HostAssembly associated with it, then use it for binding. Otherwise, the creator is dynamic
+            // and will have a fallback load context binder associated with it.
 
-            if (pCallerAssemblyManifestFile->IsSystem())
+            // There is always a manifest file - wehther working with static or dynamic assemblies.
+            PEFile* pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
+            _ASSERTE(pCallerAssemblyManifestFile != NULL);
+
+            if (!pCallerAssemblyManifestFile->IsDynamic())
             {
-                // CoreLibrary is always bound to TPA binder
-                pFallbackLoadContextBinder = pDomain->GetTPABinderContext();
+                // Static assemblies with do not have fallback load context
+                _ASSERTE(pCallerAssemblyManifestFile->GetFallbackLoadContextBinder() == nullptr);
+
+                if (pCallerAssemblyManifestFile->IsSystem())
+                {
+                    // CoreLibrary is always bound to TPA binder
+                    pFallbackLoadContextBinder = pDomain->GetTPABinderContext();
+                }
+                else
+                {
+                    // Fetch the binder from the host assembly
+                    PTR_ICLRPrivAssembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
+                    _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
+
+                    UINT_PTR assemblyBinderID = 0;
+                    IfFailThrow(pCallerAssemblyHostAssembly->GetBinderID(&assemblyBinderID));
+                    pFallbackLoadContextBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
+                }
             }
             else
             {
-                // Fetch the binder from the host assembly
-                PTR_ICLRPrivAssembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
-                _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
-
-                UINT_PTR assemblyBinderID = 0;
-                IfFailThrow(pCallerAssemblyHostAssembly->GetBinderID(&assemblyBinderID));
-                pFallbackLoadContextBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+                // Creator assembly is dynamic too, so use its fallback load context for the one
+                // we are creating.
+                pFallbackLoadContextBinder = pCallerAssemblyManifestFile->GetFallbackLoadContextBinder();
             }
-        }
-        else
-        {
-            // Creator assembly is dynamic too, so use its fallback load context for the one
-            // we are creating.
-            pFallbackLoadContextBinder = pCallerAssemblyManifestFile->GetFallbackLoadContextBinder();
         }
 
         // At this point, we should have a fallback load context binder to work with
@@ -598,6 +603,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
     }
 
     NewHolder<DomainAssembly> pDomainAssembly;
+    BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
 
     {
         GCX_PREEMP();
@@ -617,10 +623,22 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
             // Once everything is setup and nothing can fail anymore, the ownership will be
             // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
             pAssemblyLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
+            createdNewAssemblyLoaderAllocator = TRUE;
         }
         else
         {
-            pLoaderAllocator = pDomain->GetLoaderAllocator();
+            AssemblyLoaderAllocator* pAssemblyLoaderAllocator = nullptr;
+
+            if (pBinderContext != nullptr)
+            {
+                pBinderContext->GetLoaderAllocator((LPVOID*)&pAssemblyLoaderAllocator);
+            }
+
+            pLoaderAllocator = pAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pAssemblyLoaderAllocator;
+        }
+
+        if (!createdNewAssemblyLoaderAllocator)
+        {
             pLoaderAllocator.SuppressRelease();
         }
 
@@ -643,13 +661,13 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
         {
             GCX_PREEMP();
             // Assembly::Create will call SuppressRelease on the NewHolder that holds the LoaderAllocator when it transfers ownership
-            pAssem = Assembly::Create(pDomain, pFile, pDomainAssembly->GetDebuggerInfoBits(), args->access & ASSEMBLY_ACCESS_COLLECT ? TRUE : FALSE, pamTracker, pLoaderAllocator);
+            pAssem = Assembly::Create(pDomain, pFile, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
 
             ReflectionModule* pModule = (ReflectionModule*) pAssem->GetManifestModule();
             pModule->SetCreatingAssembly( pCallerAssembly );
 
 
-            if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
+            if (createdNewAssemblyLoaderAllocator)
             {
                 // Initializing the virtual call stub manager is delayed to remove the need for the LoaderAllocator destructor to properly handle
                 // uninitializing the VSD system. (There is a need to suspend the runtime, and that's tricky)
@@ -687,7 +705,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
             pamTracker->SuppressRelease();
 
             // Once we reach this point, the loader allocator lifetime is controlled by the Assembly object.
-            if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
+            if (createdNewAssemblyLoaderAllocator)
             {
                 // Atomically transfer ownership to the managed heap
                 pLoaderAllocator->ActivateManagedTracking();

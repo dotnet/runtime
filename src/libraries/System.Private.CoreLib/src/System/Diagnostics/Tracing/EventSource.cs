@@ -229,16 +229,17 @@ namespace System.Diagnostics.Tracing
     /// </remarks>
     public partial class EventSource : IDisposable
     {
-#if FEATURE_EVENTSOURCE_XPLAT
-#pragma warning disable CA1823 // field is used to keep listener alive
-        private static readonly EventListener? persistent_Xplat_Listener = XplatEventLogger.InitializePersistentListener();
-#pragma warning restore CA1823
-#endif //FEATURE_EVENTSOURCE_XPLAT
 
         internal static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
+
+#if FEATURE_EVENTSOURCE_XPLAT
+#pragma warning disable CA1823 // field is used to keep listener alive
+        private static readonly EventListener? persistent_Xplat_Listener = IsSupported ? XplatEventLogger.InitializePersistentListener() : null;
+#pragma warning restore CA1823
+#endif //FEATURE_EVENTSOURCE_XPLAT
 
         /// <summary>
         /// The human-friendly name of the eventSource.  It defaults to the simple name of the class
@@ -3804,11 +3805,10 @@ namespace System.Diagnostics.Tracing
         static EventListener()
         {
 #if FEATURE_PERFTRACING
-            // Ensure that NativeRuntimeEventSource is initialized so that EventListeners get an opportunity to subscribe to its events.
-            // This is required because NativeRuntimeEventSource never emit events on its own, and thus will never be initialized
-            // in the normal way that EventSources are initialized.
+            // This allows NativeRuntimeEventSource to get initialized so that EventListeners can subscribe to the runtime events emitted from
+            // native side.
             GC.KeepAlive(NativeRuntimeEventSource.Log);
-#endif // FEATURE_PERFTRACING
+#endif
         }
 
         /// <summary>

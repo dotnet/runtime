@@ -72,16 +72,11 @@ endif()
 #
 set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
 
-set(DISABLE_REMOTING 1)
 set(DISABLE_APPDOMAINS 1)
 set(DISABLE_CLEANUP 1)
 set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
-set(DISABLE_ATTACH 1)
-set(DISABLE_CONFIG 1)
-set(DISABLE_CFGDIR_CONFIG 1)
-set(DISABLE_VERIFIER 1)
 
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
@@ -221,6 +216,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   # FIXME: Rest of the flags from configure.ac
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_BROWSER 1)
+  add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
@@ -453,21 +449,21 @@ if(LLVM_PREFIX)
     set(llvm_cxxflags "-I${LLVM_PREFIX}/include")
 
     # llvm-config --system-libs
-    set(llvm_system_libs "-lz -lrt -ldl -lpthread -lm")
+    set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
 
     # llvm-config --libs analysis core bitwriter mcjit orcjit
-    set(llvm_core_libs "-lLLVMOrcJIT -lLLVMJITLink -lLLVMMCJIT -lLLVMExecutionEngine -lLLVMRuntimeDyld -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+    set(llvm_core_libs "-lLLVMOrcJIT" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMRuntimeDyld" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
 
     # Check codegen libs and add needed libraries.
     if("${llvm_codegen_libs}" STREQUAL "x86codegen")
       # llvm-config --libs x86codegen
-      set(llvm_extra "-lLLVMX86CodeGen -lLLVMGlobalISel -lLLVMX86Desc -lLLVMX86Utils -lLLVMX86Info -lLLVMMCDisassembler -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMX86CodeGen" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Utils" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
     elseif("${llvm_codegen_libs}" STREQUAL "armcodegen")
       # llvm-config --libs armcodegen
-      set(llvm_extra "-lLLVMARMCodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMARMDesc -lLLVMMCDisassembler -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMARMUtils -lLLVMARMInfo -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMARMCodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
     elseif("${llvm_codegen_libs}" STREQUAL "aarch64codegen")
       # llvm-config --libs aarch64codegen
-      set(llvm_extra "-lLLVMAArch64CodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMAArch64Desc -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMAArch64Utils -lLLVMAArch64Info -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMAArch64CodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
     else()
       message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
     endif()
@@ -485,8 +481,10 @@ if(LLVM_PREFIX)
     endif()
     execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
+    separate_arguments(llvm_system_libs NATIVE_COMMAND ${llvm_system_libs_space_separated})
+    separate_arguments(llvm_libs NATIVE_COMMAND ${llvm_libs_space_separated})
   endif()
 
   if (${llvm_api_version} LESS 900)
@@ -693,6 +691,10 @@ if(TARGET_IOS OR TARGET_ANDROID)
   unset(DISABLE_DLLMAP)
 else()
   set(DISABLE_DLLMAP 1)
+endif()
+if (TARGET_BROWSER)
+  # sys/errno.h exists, but just emits a warning and includes errno.h
+  unset(HAVE_SYS_ERRNO_H)
 endif()
 ### End of OS specific checks
 

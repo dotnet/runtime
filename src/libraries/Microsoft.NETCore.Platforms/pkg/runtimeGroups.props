@@ -63,6 +63,11 @@
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="exherbo">
+      <Parent>linux</Parent>
+      <Architectures>x64</Architectures>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
