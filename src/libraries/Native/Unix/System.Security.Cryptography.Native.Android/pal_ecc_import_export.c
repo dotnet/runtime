@@ -491,7 +491,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 
     aBn = CryptoNative_BigNumFromBinary(a, aLength);
     bBn = CryptoNative_BigNumFromBinary(b, bLength);
-        
+
     if (seed && seedLength > 0)
     {
         seedArray = (*env)->NewByteArray(env, seedLength);
@@ -500,7 +500,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     }
     else
     {
-        group = (*env)->NewObject(g_EllipticCurveClass, g_EllipticCurveCtor, field, aBn, bBn);
+        group = (*env)->NewObject(env, g_EllipticCurveClass, g_EllipticCurveCtor, field, aBn, bBn);
     }
 
     // Set generator, order and cofactor
