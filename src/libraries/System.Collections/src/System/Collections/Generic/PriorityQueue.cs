@@ -420,7 +420,10 @@ namespace System.Collections.Generic
 
             int lastNodeIndex = GetLastNodeIndex();
             (TElement Element, TPriority Priority) lastNode = _nodes[lastNodeIndex];
-            _nodes[lastNodeIndex] = default;
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<(TElement, TPriority)>())
+            {
+                _nodes[lastNodeIndex] = default;
+            }
             _size--;
             _version++;
 
