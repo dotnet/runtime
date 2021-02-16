@@ -14,23 +14,19 @@ namespace System.Net.WebSockets.Tests
         private readonly SemaphoreSlim _inputLock = new(initialCount: 0);
         private readonly Queue<Block> _inputQueue = new();
 
-        private WebSocketStream _remoteStream;
-
-        public static (WebSocketStream server, WebSocketStream client) Create()
-        {
-            var server = new WebSocketStream();
-            var client = new WebSocketStream();
-
-            server._remoteStream = client;
-            client._remoteStream = server;
-
-            return (server, client);
-        }
-
-        private WebSocketStream()
+        public WebSocketStream()
         {
             GC.SuppressFinalize(this);
+            Remote = new WebSocketStream(this);
         }
+
+        private WebSocketStream(WebSocketStream remote)
+        {
+            GC.SuppressFinalize(this);
+            Remote = remote;
+        }
+
+        public WebSocketStream Remote { get; }
 
         public override bool CanRead => true;
 
@@ -46,10 +42,16 @@ namespace System.Net.WebSockets.Tests
         {
             _inputLock.Dispose();
 
-            lock (_remoteStream._inputQueue)
+            lock (Remote._inputQueue)
             {
-                _remoteStream._inputQueue.Enqueue(Block.ConnectionClosed);
-                _remoteStream._inputLock.Release();
+                try
+                {
+                    Remote._inputLock.Release();
+                    Remote._inputQueue.Enqueue(Block.ConnectionClosed);
+                }
+                catch ( ObjectDisposedException)
+                {
+                }
             }
         }
 
@@ -84,19 +86,25 @@ namespace System.Net.WebSockets.Tests
 
         public void Write(params byte[] data)
         {
-            lock (_remoteStream._inputQueue)
+            lock (Remote._inputQueue)
             {
-                _remoteStream._inputQueue.Enqueue(new Block(data));
-                _remoteStream._inputLock.Release();
+                Remote._inputLock.Release();
+                Remote._inputQueue.Enqueue(new Block(data));
             }
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            lock (_remoteStream._inputQueue)
+            lock (Remote._inputQueue)
             {
-                _remoteStream._inputQueue.Enqueue(new Block(buffer.ToArray()));
-                _remoteStream._inputLock.Release();
+                try
+                {
+                    Remote._inputLock.Release();
+                    Remote._inputQueue.Enqueue(new Block(buffer.ToArray()));
+                }
+                catch (ObjectDisposedException)
+                {
+                }
             }
         }
 
