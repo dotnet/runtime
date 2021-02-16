@@ -483,7 +483,7 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
 		ji = prev_ji;
 	else
-		ji = mini_jit_info_table_find (domain, ip, NULL);
+		ji = mini_jit_info_table_find (ip);
 
 	if (managed)
 		*managed = FALSE;
@@ -643,10 +643,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
 		ji = prev_ji;
 	else
-		ji = mini_jit_info_table_find_ext (domain, ip, TRUE, &target_domain);
-
-	if (!target_domain)
-		target_domain = domain;
+		ji = mini_jit_info_table_find_ext (ip, TRUE);
 
 	if (save_locations)
 		memset (save_locations, 0, MONO_MAX_IREGS * sizeof (host_mgreg_t*));
@@ -1281,7 +1278,8 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 		for (l = ips; l; l = l->next) {
 			guint8 *ip = (guint8*)l->data;
 			memset (&frame, 0, sizeof (StackFrameInfo));
-			frame.ji = mini_jit_info_table_find (domain, ip, &frame.domain);
+			frame.ji = mini_jit_info_table_find (ip);
+			frame.domain = mono_get_root_domain ();
 			if (!frame.ji || frame.ji->is_trampoline)
 				continue;
 			frame.type = FRAME_TYPE_MANAGED;
@@ -1777,9 +1775,7 @@ mono_summarize_unmanaged_stack (MonoThreadSummary *out)
 		/* TODO: Trampolines - follow examples from mono_print_method_from_ip() */
 
 		MonoJitInfo *ji;
-		MonoDomain *domain = mono_domain_get ();
-		MonoDomain *target_domain;
-		ji = mini_jit_info_table_find_ext (domain, (char *)ip, TRUE, &target_domain);
+		ji = mini_jit_info_table_find_ext ((char *)ip, TRUE);
 		if (ji) {
 			frame->is_managed = TRUE;
 			if (!ji->async && !ji->is_trampoline) {
@@ -1847,7 +1843,6 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	if (mono_llvm_only) {
 		GSList *l, *ips;
-		MonoDomain *frame_domain;
 		guint8 *frame_ip = NULL;
 
 		/* FIXME: Generalize this code with an interface which returns an array of StackFrame structures */
@@ -1858,7 +1853,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 			frame_ip = ip;
 
-			ji = mini_jit_info_table_find (mono_domain_get (), ip, &frame_domain);
+			ji = mini_jit_info_table_find (ip);
 			if (!ji || ji->is_trampoline)
 				continue;
 
@@ -1989,47 +1984,19 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 /*
  * mini_jit_info_table_find_ext:
  *
- *   Same as mono_jit_info_table_find, but search all the domains of the current thread
- * if ADDR is not found in DOMAIN. The domain where the method was found is stored into
- * OUT_DOMAIN if it is not NULL.
  */
 MonoJitInfo*
-mini_jit_info_table_find_ext (MonoDomain *domain, gpointer addr, gboolean allow_trampolines, MonoDomain **out_domain)
+mini_jit_info_table_find_ext (gpointer addr, gboolean allow_trampolines)
 {
-	MonoJitInfo *ji;
-
-	if (out_domain)
-		*out_domain = NULL;
-
 	// FIXME: Transition all callers to this function
-	// or add it to mono_jit_info_table_find
-	ji = mono_jit_info_table_find_internal (domain, addr, TRUE, allow_trampolines);
 	addr = MINI_FTNPTR_TO_ADDR (addr);
-
-	ji = mono_jit_info_table_find_internal (domain, addr, TRUE, allow_trampolines);
-	if (ji) {
-		if (out_domain)
-			*out_domain = domain;
-		return ji;
-	}
-
-	/* maybe it is shared code, so we also search in the root domain */
-	if (domain != mono_get_root_domain ()) {
-		ji = mono_jit_info_table_find_internal (mono_get_root_domain (), addr, TRUE, allow_trampolines);
-		if (ji) {
-			if (out_domain)
-				*out_domain = mono_get_root_domain ();
-			return ji;
-		}
-	}
-
-	return NULL;
+	return mono_jit_info_table_find_internal (mono_get_root_domain (), addr, TRUE, allow_trampolines);
 }
 
 MonoJitInfo*
-mini_jit_info_table_find (MonoDomain *domain, gpointer addr, MonoDomain **out_domain)
+mini_jit_info_table_find (gpointer addr)
 {
-	return mini_jit_info_table_find_ext (domain, addr, FALSE, out_domain);
+	return mini_jit_info_table_find_ext (addr, FALSE);
 }
 
 /* Class lazy loading functions */
@@ -2901,7 +2868,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 							 *	There aren't any further finally/fault handler blocks down the stack over this exception.
 							 *   This must be ensured by the code that installs the guard trampoline.
 							 */
-							g_assert (ji == mini_jit_info_table_find (domain, (char *)MONO_CONTEXT_GET_IP (&jit_tls->handler_block_context), NULL));
+							g_assert (ji == mini_jit_info_table_find ((char *)MONO_CONTEXT_GET_IP (&jit_tls->handler_block_context)));
 
 							if (!is_address_protected (ji, jit_tls->handler_block, ei->handler_start)) {
 								is_outside = TRUE;

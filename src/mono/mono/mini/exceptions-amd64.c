@@ -694,7 +694,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			rip = *(guint64*)((*lmf)->rsp - sizeof(host_mgreg_t));
 		}
 
-		ji = mini_jit_info_table_find (domain, (char *)rip, NULL);
+		ji = mini_jit_info_table_find ((char *)rip);
 		/*
 		 * FIXME: ji == NULL can happen when a managed-to-native wrapper is interrupted
 		 * in the soft debugger suspend code, since (*lmf)->rsp no longer points to the
@@ -868,7 +868,7 @@ static void
 altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
 {
 	MonoContext mctx;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (ctx));
 	gboolean stack_ovf = (flags & 1) != 0;
 	gboolean nullref = (flags & 2) != 0;
 

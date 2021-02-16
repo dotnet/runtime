@@ -866,7 +866,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	} else if (*lmf) {
 		g_assert ((((gsize)(*lmf)->previous_lmf) & 2) == 0);
 
-		if ((ji = mini_jit_info_table_find (domain, (gpointer)(uintptr_t)(*lmf)->eip, NULL))) {
+		if ((ji = mini_jit_info_table_find ((gpointer)(uintptr_t)(*lmf)->eip))) {
 			frame->ji = ji;
 		} else {
 			if (!(*lmf)->method)
@@ -1118,7 +1118,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 #if defined (MONO_ARCH_USE_SIGACTION) && !defined (MONO_CROSS_COMPILE)
 	MonoException *exc = NULL;
 	ucontext_t *ctx = (ucontext_t*)sigctx;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)UCONTEXT_REG_EIP (ctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find ((gpointer)UCONTEXT_REG_EIP (ctx));
 	gpointer *sp;
 	int frame_size;
 
@@ -1128,7 +1128,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	 */
 	if (!ji && fault_addr == (gpointer)UCONTEXT_REG_EIP (ctx)) {
 		glong *sp = (glong*)UCONTEXT_REG_ESP (ctx);
-		ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)sp [0], NULL);
+		ji = mini_jit_info_table_find ((gpointer)sp [0]);
 		if (ji)
 			UCONTEXT_REG_EIP (ctx) = sp [0];
 	}

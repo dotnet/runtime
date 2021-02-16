@@ -301,7 +301,7 @@ mono_print_method_from_ip (void *ip)
 
 	if (!domain)
 		domain = mono_get_root_domain ();
-	ji = mini_jit_info_table_find_ext (domain, (char *)ip, TRUE, &target_domain);
+	ji = mini_jit_info_table_find_ext (ip, TRUE);
 	if (ji && ji->is_trampoline) {
 		MonoTrampInfo *tinfo = ji->d.tramp_info;
 
@@ -2590,7 +2590,7 @@ lookup_start:
 				 * The suspend code needs to be able to lookup these methods by ip in async context,
 				 * so preload their jit info.
 				 */
-				MonoJitInfo *ji = mini_jit_info_table_find (domain, code, NULL);
+				MonoJitInfo *ji = mini_jit_info_table_find (code);
 				g_assert (ji);
 			}
 
@@ -2664,12 +2664,10 @@ lookup_start:
 	//FIXME mini_jit_info_table_find doesn't work yet under wasm due to code_start/code_end issues.
 #ifndef HOST_WASM
 	if ((method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER || method->wrapper_type == MONO_WRAPPER_ALLOC)) {
-		MonoDomain *d;
-
 		/*
 		 * SGEN requires the JIT info for these methods to be registered, see is_ip_in_managed_allocator ().
 		 */
-		MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (char *)code, &d);
+		MonoJitInfo *ji = mini_jit_info_table_find (code);
 		g_assert (ji);
 	}
 #endif
@@ -3250,7 +3248,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 					return NULL;
 			} else {
 				if (mono_llvm_only) {
-					ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+					ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (compiled_method));
 					callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 					if (callee_gsharedvt)
 						callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jinfo_get_method (ji)));

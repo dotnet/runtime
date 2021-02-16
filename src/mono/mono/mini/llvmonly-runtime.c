@@ -175,7 +175,7 @@ mini_llvmonly_add_method_wrappers (MonoMethod *m, gpointer compiled_method, gboo
 		MonoMethod *jmethod;
 		gpointer wrapper_addr;
 
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+		ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (compiled_method));
 		g_assert (ji);
 		jmethod = jinfo_get_method (ji);
 

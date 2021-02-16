@@ -67,7 +67,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		gpointer addr = mono_compile_method_checked ((*lmf)->method, error);
 		mono_error_assert_ok (error);
 
-		ji = mini_jit_info_table_find (domain, addr, NULL);
+		ji = mini_jit_info_table_find (addr);
 		g_assert (ji);
 
 		frame->type = FRAME_TYPE_MANAGED;

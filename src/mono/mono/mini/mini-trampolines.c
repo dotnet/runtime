@@ -362,7 +362,7 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 
 	if (m->is_inflated || callee_array_helper) {
 		// This loads information from AOT so try to avoid it if possible
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+		ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (compiled_method));
 		callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 	}
 
@@ -705,9 +705,9 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		if (plt_entry) {
 			if (generic_shared) {
 				target_ji =
-					mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+					mini_jit_info_table_find (mono_get_addr_from_ftnptr (compiled_method));
 				if (!ji)
-					ji = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
+					ji = mini_jit_info_table_find (code);
 
 				if (ji && ji->has_generic_jit_info) {
 					if (target_ji && !target_ji->has_generic_jit_info) {
@@ -729,9 +729,9 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 
 			/* Patch calling code */
 			target_ji =
-				mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+				mini_jit_info_table_find (mono_get_addr_from_ftnptr (compiled_method));
 			if (!ji)
-				ji = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
+				ji = mini_jit_info_table_find (code);
 
 			if (ji && target_ji && generic_shared && ji->has_generic_jit_info && !target_ji->has_generic_jit_info) {
 				/* 

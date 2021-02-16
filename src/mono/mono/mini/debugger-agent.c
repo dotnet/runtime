@@ -2068,8 +2068,10 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 
 	if (out_ip)
 		*out_ip = ip;
+	if (domain)
+		*domain = mono_get_root_domain ();
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, domain);
+	ji = mini_jit_info_table_find (ip);
 	if (!ji) {
 		/* Could be an interpreter method */
 
@@ -4739,7 +4741,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 	if (!agent_inited)
 		return;
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_CONTEXT_GET_IP (throw_ctx), NULL);
+	ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (throw_ctx));
 	if (catch_frame)
 		catch_ji = catch_frame->ji;
 	else

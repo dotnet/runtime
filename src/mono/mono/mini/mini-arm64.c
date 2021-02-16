@@ -890,7 +890,7 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 
 		return thunks;
 	} else {
-		ji = mini_jit_info_table_find (domain, (char*)code, NULL);
+		ji = mini_jit_info_table_find (code);
 		g_assert (ji);
 		info = mono_jit_info_get_thunk_info (ji);
 		g_assert (info);

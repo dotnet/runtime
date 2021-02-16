@@ -602,7 +602,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		return TRUE;
 	} else if (*lmf) {
 		
-		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL))) {
+		if ((ji = mini_jit_info_table_find ((gpointer)(*lmf)->eip))) {
 		} else {
 			if (!(*lmf)->method)
 				return FALSE;
@@ -659,7 +659,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 #ifdef MONO_ARCH_USE_SIGACTION
 	os_ucontext *uc = (os_ucontext*)sigctx;
 	MonoContext *uc_copy;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (sigctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (mono_arch_ip_from_context (sigctx));
 	gpointer *sp;
 	int frame_size;
 

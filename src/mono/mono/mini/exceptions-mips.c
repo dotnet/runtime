@@ -479,7 +479,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 		g_assert (((*lmf)->magic == MIPS_LMF_MAGIC1) || ((*lmf)->magic == MIPS_LMF_MAGIC2));
 
-		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL);
+		ji = mini_jit_info_table_find ((gpointer)(*lmf)->eip);
 		if (!ji) {
 			// FIXME: This can happen with multiple appdomains (bug #444383)
 			return FALSE;

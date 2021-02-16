@@ -553,7 +553,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		return TRUE;
 	} else if (*lmf) {
 
-		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL);
+		ji = mini_jit_info_table_find ((gpointer)(*lmf)->eip);
 		if (!ji) {
 			if (!(*lmf)->method)
 				return FALSE;
@@ -582,7 +582,7 @@ static void
 altstack_handle_and_restore (MonoContext *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer obj, guint32 flags)
 {
 	MonoContext mctx;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (ctx));
 	gboolean stack_ovf = (flags & 1) != 0;
 	gboolean nullref = (flags & 2) != 0;
 

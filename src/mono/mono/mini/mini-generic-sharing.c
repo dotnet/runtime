@@ -1071,7 +1071,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 			return mini_llvmonly_create_ftndesc (domain, addr, arg);
 		}
 
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (addr), NULL);
+		ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
 		g_assert (ji);
 		if (mini_jit_info_is_gsharedvt (ji))
 			return mono_create_static_rgctx_trampoline (method, addr);
@@ -2193,7 +2193,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoJitInfo *ji;
 		gboolean callee_gsharedvt;
 
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (addr), NULL);
+		ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
 		g_assert (ji);
 		callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 		if (callee_gsharedvt)
@@ -2381,7 +2381,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		}
 
 		// FIXME: This loads information in the AOT case
-		callee_ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (addr), NULL);
+		callee_ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
 		callee_gsharedvt = ji_is_gsharedvt (callee_ji);
 
 		/*

@@ -399,7 +399,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		if (!(*lmf)->method)
 			return FALSE;
 
-		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->ip, NULL);
+		ji = mini_jit_info_table_find ((gpointer)(*lmf)->ip);
 		if (!ji)
 			return FALSE;
 
