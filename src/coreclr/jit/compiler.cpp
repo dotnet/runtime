@@ -3979,6 +3979,15 @@ _SetMinOpts:
         }
     }
 
+#if TARGET_ARM
+    // A single JitStress=1 Linux ARM32 test fails when we expand virtual calls early
+    // JIT\HardwareIntrinsics\General\Vector128_1\Vector128_1_ro
+    //
+    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() == 2);
+#else
+    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() != 0);
+#endif
+
     fgCanRelocateEHRegions = true;
 }
 
@@ -5514,7 +5523,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 #ifdef TARGET_UNIX
     info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
 #else
-    info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
+    info.compMatchedVM        = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
 #endif
 
     // If we are not compiling for a matched VM, then we are getting JIT flags that don't match our target
