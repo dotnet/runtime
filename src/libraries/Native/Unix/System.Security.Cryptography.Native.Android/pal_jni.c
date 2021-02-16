@@ -259,6 +259,12 @@ void ReleaseGRef(JNIEnv *env, jobject gref)
         (*env)->DeleteGlobalRef(env, gref);
 }
 
+void ReleaseLRef(JNIEnv *env, jobject lref)
+{
+    if (lref)
+        (*env)->DeleteLocalRef(env, lref);
+}
+
 jclass GetClassGRef(JNIEnv *env, const char* name)
 {
     LOG_DEBUG("Finding %s class", name);

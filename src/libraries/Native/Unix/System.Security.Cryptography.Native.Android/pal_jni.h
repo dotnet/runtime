@@ -258,6 +258,7 @@ void SaveTo(uint8_t* src, uint8_t** dst, size_t len);
 jobject ToGRef(JNIEnv *env, jobject lref);
 jobject AddGRef(JNIEnv *env, jobject gref);
 void ReleaseGRef(JNIEnv *env, jobject gref);
+void ReleaseLRef(JNIEnv *env, jobject lref);
 jclass GetClassGRef(JNIEnv *env, const char* name);
 bool CheckJNIExceptions(JNIEnv* env);
 void AssertOnJNIExceptions(JNIEnv* env);

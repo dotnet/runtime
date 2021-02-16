@@ -33,27 +33,27 @@ CryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint8_t* sig, int32
 
     jobject privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
     (*env)->CallVoidMethod(env, signatureObject, g_SignatureInitSign, privateKey);
-    (*env)->DeleteLocalRef(env, privateKey);
+    ReleaseLRef(env, privateKey);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     jbyteArray digestArray = (*env)->NewByteArray(env, dgstlen);
     (*env)->SetByteArrayRegion(env, digestArray, 0, dgstlen, (const jbyte*)dgst);
     (*env)->CallVoidMethod(env, signatureObject, g_SignatureUpdate, digestArray);
-    (*env)->DeleteLocalRef(env, digestArray);
+    ReleaseLRef(env, digestArray);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     jbyteArray sigResult = (*env)->CallObjectMethod(env, signatureObject, g_SignatureSign);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
     jsize sigSize = (*env)->GetArrayLength(sigResult);
     (*env)->GetByteArrayRegion(env, sigResult, 0, sigSize, sig);
-    (*env)->DeleteLocalRef(env, sigResult);
+    ReleaseLRef(env, sigResult);
 
-    (*env)->DeleteLocalRef(env, signatureObject);
+    ReleaseLRef(env, signatureObject);
 
     return SUCCESS;
 
     error:
-    (*env)->DeleteLocalRef(env, signatureObject);
+    ReleaseLRef(env, signatureObject);
     return FAIL;
 }
 
@@ -70,27 +70,27 @@ CryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, const uint8_t* si
 
     jobject publicKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPublicMethod);
     (*env)->CallVoidMethod(env, signatureObject, g_SignatureInitVerify, publicKey);
-    (*env)->DeleteLocalRef(env, publicKey);
+    ReleaseLRef(env, publicKey);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     jbyteArray digestArray = (*env)->NewByteArray(env, dgstlen);
     (*env)->SetByteArrayRegion(env, digestArray, 0, dgstlen, (const jbyte*)dgst);
     (*env)->CallVoidMethod(env, signatureObject, g_SignatureUpdate, digestArray);
-    (*env)->DeleteLocalRef(env, digestArray);
+    ReleaseLRef(env, digestArray);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     jbyteArray sigArray = (*env)->NewByteArray(env, dgstlen);
     (*env)->SetByteArrayRegion(env, sigArray, 0, siglen, (const jbyte*)sig);
     (*env)->CallObjectMethod(env, signatureObject, g_SignatureVerify, sigArray);
-    (*env)->DeleteLocalRef(env, sigArray);
+    ReleaseLRef(env, sigArray);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
-    (*env)->DeleteLocalRef(env, signatureObject);
+    ReleaseLRef(env, signatureObject);
 
     return SUCCESS;
 
     error:
-    (*env)->DeleteLocalRef(env, signatureObject);
+    ReleaseLRef(env, signatureObject);
     return FAIL;
 }
 
@@ -106,6 +106,6 @@ int32_t CryptoNative_EcDsaSize(const EC_KEY* key)
     JNIEnv* env = GetJNIEnv();
     jobject order = (*env)->CallObjectMethod(key->curveParameters, g_ECParameterSpecGetOrder);
     int byteLength = CryptoNative_GetBigNumBytes(order);
-    (*env)->DeleteLocalRef(env, order);
+    ReleaseLRef(env, order);
     return 2 * byteLength + derEncodingBytes;
 }

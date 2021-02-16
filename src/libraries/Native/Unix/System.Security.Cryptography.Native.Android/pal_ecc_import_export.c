@@ -75,8 +75,8 @@ error:
     *qx = *qy = 0;
     if (d) *d = NULL;
     if (cbD) *cbD = 0;
-    if (xBn) (*env)->DeleteLocalRef(env, xBn);
-    if (yBn) (*env)->DeleteLocalRef(env, yBn);
+    ReleaseLRef(env, xBn);
+    ReleaseLRef(env, yBn);
     return FAIL;
 }
 
@@ -201,14 +201,14 @@ int32_t CryptoNative_GetECCurveParameters(
 
     rc = SUCCESS;
     
-    if (xBn) (*env)->DeleteLocalRef(env, xBn);
-    if (yBn) (*env)->DeleteLocalRef(env, yBn);
-    if (pBn) (*env)->DeleteLocalRef(env, pBn);
-    if (aBn) (*env)->DeleteLocalRef(env, aBn);
-    if (bBn) (*env)->DeleteLocalRef(env, bBn);
-    if (orderBn) (*env)->DeleteLocalRef(env, orderBn);
-    if (cofactorBn) (*env)->DeleteLocalRef(env, cofactorBn);
-    if (seedBn) (*env)->DeleteLocalRef(env, seedBn);
+    ReleaseLRef(env, xBn);
+    ReleaseLRef(env, yBn);
+    ReleaseLRef(env, pBn);
+    ReleaseLRef(env, aBn);
+    ReleaseLRef(env, bBn);
+    ReleaseLRef(env, orderBn);
+    ReleaseLRef(env, cofactorBn);
+    ReleaseLRef(env, seedBn);
 
     goto exit;
 
@@ -238,14 +238,14 @@ error:
     ReleaseGRef(env, *seed);
     *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
 
-    if (xBn) (*env)->DeleteLocalRef(env, xBn);
-    if (yBn) (*env)->DeleteLocalRef(env, yBn);
-    if (pBn) (*env)->DeleteLocalRef(env, pBn);
-    if (aBn) (*env)->DeleteLocalRef(env, aBn);
-    if (bBn) (*env)->DeleteLocalRef(env, bBn);
-    if (orderBn) (*env)->DeleteLocalRef(env, orderBn);
-    if (cofactorBn) (*env)->DeleteLocalRef(env, cofactorBn);
-    if (seedBn) (*env)->DeleteLocalRef(env, seedBn);
+    ReleaseLRef(env, xBn);
+    ReleaseLRef(env, yBn);
+    ReleaseLRef(env, pBn);
+    ReleaseLRef(env, aBn);
+    ReleaseLRef(env, bBn);
+    ReleaseLRef(env, orderBn);
+    ReleaseLRef(env, cofactorBn);
+    ReleaseLRef(env, seedBn);
 
 exit:
     return rc;
@@ -343,14 +343,14 @@ cleanup:
     CryptoNative_BigNumDestroy(qxBn);
     CryptoNative_BigNumDestroy(qyBn);
     CryptoNative_BigNumDestroy(dBn);
-    if (pubG) (*env)->DeleteLocalRef(env, pubG);
-    if (pubKeyPoint) (*env)->DeleteLocalRef(env, pubKeyPoint);
-    if (pubKeySpec) (*env)->DeleteLocalRef(env, pubKeySpec);
-    if (privKeySpec) (*env)->DeleteLocalRef(env, privKeySpec);
-    if (publicKey) (*env)->DeleteLocalRef(env, publicKey);
-    if (privateKey) (*env)->DeleteLocalRef(env, privateKey);
-    if (keyFactory) (*env)->DeleteLocalRef(env, keyFactory);
-    if (algorithmName) (*env)->DeleteLocalRef(env, algorithmName);
+    ReleaseLRef(env, pubG);
+    ReleaseLRef(env, pubKeyPoint);
+    ReleaseLRef(env, pubKeySpec);
+    ReleaseLRef(env, privKeySpec);
+    ReleaseLRef(env, publicKey);
+    ReleaseLRef(env, privateKey);
+    ReleaseLRef(env, keyFactory);
+    ReleaseLRef(env, algorithmName);
     return ToGRef(env, keyPair);
 }
 
@@ -548,11 +548,11 @@ error:
     CryptoNative_BigNumDestroy(gyBn);
     CryptoNative_BigNumDestroy(orderBn);
     CryptoNative_BigNumDestroy(cofactorBn);
-    if (G) (*env)->DeleteLocalRef(env, G);
-    if (group) (*env)->DeleteLocalRef(env, group);
-    if (paramSpec) (*env)->DeleteLocalRef(env, paramSpec);
-    if (seedArray) (*env)->DeleteLocalRef(env, seedArray);
-    if (field) (*env)->DeleteLocalRef(env, field);
+    ReleaseLRef(env, G);
+    ReleaseLRef(env, group);
+    ReleaseLRef(env, paramSpec);
+    ReleaseLRef(env, seedArray);
+    ReleaseLRef(env, field);
 
     return keyInfo;
 }
