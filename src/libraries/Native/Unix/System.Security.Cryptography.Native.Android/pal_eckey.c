@@ -85,7 +85,6 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
     }
 
     jobject curveParameters = (*env)->CallObjectMethod(env, keySpec, g_ECPublicKeySpecGetParams);
-    
 
     return CryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
 }

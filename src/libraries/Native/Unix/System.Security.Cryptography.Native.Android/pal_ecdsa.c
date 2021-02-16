@@ -6,9 +6,8 @@
 #include "pal_bignum.h"
 
 static jobject
-CryptoNative_GetEsDsaSignatureObject()
+CryptoNative_GetEsDsaSignatureObject(JNIEnv* env)
 {
-    JNIEnv* env = GetJNIEnv();
     jstring algorithmName = JSTRING("SHA1withECDSA");
     jobject signatureObject = (*env)->CallStaticObjectMethod(env, g_SignatureClass, g_SignatureGetInstance, algorithmName);
     (*env)->DeleteLocalRef(algorithmName);
@@ -26,7 +25,7 @@ CryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint8_t* sig, int32
 
     JNIEnv* env = GetJNIEnv();
 
-    jobject signatureObject = CryptoNative_GetEsDsaSignatureObject();
+    jobject signatureObject = CryptoNative_GetEsDsaSignatureObject(env);
     if (!signatureObject)
     {
         return FAIL;
@@ -63,7 +62,7 @@ CryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, const uint8_t* si
 {
     JNIEnv* env = GetJNIEnv();
 
-    jobject signatureObject = CryptoNative_GetEsDsaSignatureObject();
+    jobject signatureObject = CryptoNative_GetEsDsaSignatureObject(env);
     if (!signatureObject)
     {
         return FAIL;
