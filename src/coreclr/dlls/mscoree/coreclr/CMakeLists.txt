@@ -1,7 +1,7 @@
 
 # we need to define this library before adding .def fiels to sources.
 add_library_clr(coreclr_static
-    OBJECT
+    STATIC
     ${CLR_SOURCES}
 )
 
