@@ -127,6 +127,7 @@ struct MonoAotModule {
 	gpointer weak_field_indexes;
 	guint8 *method_flags_table;
 	/* Maps method indexes to their code */
+	/* Raw pointer on arm64e */
 	gpointer *methods;
 	/* Sorted array of method addresses */
 	gpointer *sorted_methods;
@@ -975,47 +976,6 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		image = mono_defaults.corlib;
 
 		switch (wrapper_type) {
-#ifndef DISABLE_REMOTING
-		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
-			MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
-			if (!m)
-				return FALSE;
-			mono_class_init_internal (m->klass);
-			if (mono_aot_only)
-				ref->method = m;
-			else {
-				ref->method = mono_marshal_get_remoting_invoke_with_check (m, error);
-				return_val_if_nok (error, FALSE);
-			}
-			break;
-		}
-		case MONO_WRAPPER_PROXY_ISINST: {
-			MonoClass *klass = decode_klass_ref (module, p, &p, error);
-			if (!klass)
-				return FALSE;
-			ref->method = mono_marshal_get_proxy_cancast (klass);
-			break;
-		}
-		case MONO_WRAPPER_LDFLD:
-		case MONO_WRAPPER_LDFLDA:
-		case MONO_WRAPPER_STFLD: {
-			MonoClass *klass = decode_klass_ref (module, p, &p, error);
-			if (!klass)
-				return FALSE;
-			MonoType *type = m_class_get_byval_arg (klass);
-			if (wrapper_type == MONO_WRAPPER_LDFLD)
-				ref->method = mono_marshal_get_ldfld_wrapper (type);
-			else if (wrapper_type == MONO_WRAPPER_LDFLDA)
-				ref->method = mono_marshal_get_ldflda_wrapper (type);
-			else if (wrapper_type == MONO_WRAPPER_STFLD)
-				ref->method = mono_marshal_get_stfld_wrapper (type);
-			else {
-				mono_error_set_bad_image_by_name (error, module->aot_name, "Unknown AOT wrapper type %d: %s", wrapper_type, module->aot_name);
-				return FALSE;
-			}
-			break;
-		}
-#endif
 		case MONO_WRAPPER_ALLOC: {
 			int atype = decode_value (p, &p);
 			ManagedAllocatorVariant variant =
@@ -2116,7 +2076,9 @@ init_amodule_got (MonoAotModule *amodule, gboolean preinit)
 #ifdef MONOTOUCH
 // Follow branch islands on ARM iOS machines.
 static inline guint8 *
-method_address_resolve (guint8 *code_addr) {
+method_address_resolve (guint8 *code_addr)
+{
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
 #if defined(TARGET_ARM)
 	// Skip branches to thumb destinations; the convention used is that the
 	// lowest bit is set if the destination is thumb. See
@@ -2131,6 +2093,8 @@ method_address_resolve (guint8 *code_addr) {
 		if (next == NULL) return code_addr;
 		code_addr = next;
 	}
+#endif
+	return code_addr;
 }
 #else
 static inline guint8 *
@@ -2199,8 +2163,8 @@ register_methods_in_jinfo (MonoAotModule *amodule)
 		/* The 'end' parameter is exclusive */
 		mono_jit_info_add_aot_module (assembly->image, GINT_TO_POINTER (start_method), GINT_TO_POINTER (end_method + 1));
 
-		for (int j = GINT_TO_POINTER (start_method); j < GINT_TO_POINTER (end_method + 1); ++j)
-			g_assert (!mono_bitset_test_fast (registered, GPOINTER_TO_INT (j)));
+		for (int j = start_method; j < end_method + 1; ++j)
+			g_assert (!mono_bitset_test_fast (registered, j));
 		start = end;
 	}
 	for (i = 0; i < amodule->sorted_methods_len; ++i)
@@ -2239,7 +2203,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		 */
 		return;
 
-	if (image_is_dynamic (assembly->image) || mono_asmctx_get_kind (&assembly->context) == MONO_ASMCTX_REFONLY || mono_domain_get () != mono_get_root_domain ())
+	if (image_is_dynamic (assembly->image) || mono_domain_get () != mono_get_root_domain ())
 		return;
 
 	mono_aot_lock ();
@@ -3304,6 +3268,8 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	int this_reg = 0, this_offset = 0;
 	gboolean async;
 
+	code = (guint8*)MINI_FTNPTR_TO_ADDR (code);
+
 	/* Load the method info from the AOT file */
 	async = mono_thread_info_is_async_context ();
 
@@ -3427,6 +3393,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	} else {
 		len = mono_jit_info_size (flags, num_clauses, num_holes);
 		jinfo = (MonoJitInfo *)alloc0_jit_info_data (domain, len, async);
+		/* The jit info table needs to sort addresses so it contains non-authenticated pointers on arm64e */
 		mono_jit_info_init (jinfo, method, code, code_len, flags, num_clauses, num_holes);
 
 		for (i = 0; i < jinfo->num_clauses; ++i) {
@@ -3442,9 +3409,9 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			ei->exvar_offset = decode_value (p, &p);
 #endif
 
-			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER || ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
+			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER || ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 				ei->data.filter = code + decode_value (p, &p);
-			else {
+			} else {
 				int len = decode_value (p, &p);
 
 				if (len > 0) {
@@ -3460,6 +3427,15 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			ei->try_start = code + decode_value (p, &p);
 			ei->try_end = code + decode_value (p, &p);
 			ei->handler_start = code + decode_value (p, &p);
+
+			/* Keep try_start/end non-authenticated, they are never branched to */
+			//ei->try_start = MINI_ADDR_TO_FTNPTR (ei->try_start);
+			//ei->try_end = MINI_ADDR_TO_FTNPTR (ei->try_end);
+			ei->handler_start = MINI_ADDR_TO_FTNPTR (ei->handler_start);
+			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+				ei->data.filter = MINI_ADDR_TO_FTNPTR (ei->data.filter);
+			else if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
+				ei->data.handler_end = MINI_ADDR_TO_FTNPTR (ei->data.handler_end);
 		}
 
 		jinfo->unwind_info = unwind_info;
@@ -3754,6 +3730,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	guint8 *code1, *code2;
 	int methods_len, i;
 	gboolean async;
+	gpointer orig_addr;
 
 	if (!amodule)
 		return NULL;
@@ -3763,6 +3740,9 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	if (domain != mono_get_root_domain ())
 		/* FIXME: */
 		return NULL;
+
+	orig_addr = addr;
+	addr = MINI_FTNPTR_TO_ADDR (addr);
 
 	if (!amodule_contains_code_addr (amodule, (guint8 *)addr))
 		return NULL;
@@ -4367,7 +4347,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	if (!code) {
 		if (method_index < amodule->info.nmethods)
-			code = (guint8 *)amodule->methods [method_index];
+			code = (guint8*)MINI_ADDR_TO_FTNPTR ((guint8 *)amodule->methods [method_index]);
 		else
 			return NULL;
 
@@ -4978,14 +4958,6 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 
 	/* Load the dedup module lazily */
 	load_container_amodule (mono_assembly_get_alc (amodule->assembly));
-
-	/*
-	 * Use the original method instead of its invoke-with-check wrapper.
-	 * This is not a problem when using full-aot, since it doesn't support
-	 * remoting.
-	 */
-	if (mono_aot_only && method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
-		return mono_aot_get_method (domain, mono_marshal_method_from_wrapper (method), error);
 
 	g_assert (m_class_is_inited (klass));
 
@@ -5658,7 +5630,6 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				case MONO_JIT_ICALL_generic_trampoline_aot:
 				case MONO_JIT_ICALL_generic_trampoline_aot_plt:
 				case MONO_JIT_ICALL_generic_trampoline_delegate:
-				case MONO_JIT_ICALL_generic_trampoline_generic_virtual_remoting:
 				case MONO_JIT_ICALL_generic_trampoline_vcall:
 					target = (gpointer)mono_get_trampoline_func (mono_jit_icall_id_to_trampoline_type (jit_icall_id));
 					break;
@@ -5933,8 +5904,7 @@ get_new_specific_trampoline_from_page (gpointer tramp, gpointer arg)
 	data [0] = arg;
 	data [1] = tramp;
 	/*g_warning ("new trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
-	return code;
-
+	return MINI_ADDR_TO_FTNPTR (code);
 }
 
 static gpointer
@@ -5949,8 +5919,7 @@ get_new_rgctx_trampoline_from_page (gpointer tramp, gpointer arg)
 	data [0] = arg;
 	data [1] = tramp;
 	/*g_warning ("new rgctx trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
-	return code;
-
+	return MINI_ADDR_TO_FTNPTR (code);
 }
 
 static gpointer
@@ -5964,8 +5933,7 @@ get_new_imt_trampoline_from_page (gpointer arg)
 	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = arg;
 	/*g_warning ("new imt trampoline at %p for data %p, (stored at %p)", code, arg, data);*/
-	return code;
-
+	return MINI_ADDR_TO_FTNPTR (code);
 }
 
 static gpointer
@@ -5980,7 +5948,7 @@ get_new_gsharedvt_arg_trampoline_from_page (gpointer tramp, gpointer arg)
 	data [0] = arg;
 	data [1] = tramp;
 	/*g_warning ("new rgctx trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
-	return code;
+	return MINI_ADDR_TO_FTNPTR (code);
 }
 
 static gpointer
@@ -5994,7 +5962,7 @@ get_new_unbox_arbitrary_trampoline_frome_page (gpointer addr)
 	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = addr;
 
-	return code;
+	return MINI_ADDR_TO_FTNPTR (code);
 }
 
 /* Return a given kind of trampoline */
@@ -6096,7 +6064,7 @@ mono_aot_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_typ
 	if (code_len)
 		*code_len = tramp_size;
 
-	return code;
+	return MINI_ADDR_TO_FTNPTR (code);
 }
 
 gpointer
@@ -6116,7 +6084,7 @@ mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr)
 	}
 
 	/* The caller expects an ftnptr */
-	return mono_create_ftnptr (mono_domain_get (), code);
+	return mono_create_ftnptr (mono_domain_get (), MINI_ADDR_TO_FTNPTR (code));
 }
 
 gpointer
@@ -6134,7 +6102,7 @@ mono_aot_get_unbox_arbitrary_trampoline (gpointer addr)
 	}
 
 	/* The caller expects an ftnptr */
-	return mono_create_ftnptr (mono_domain_get (), code);
+	return mono_create_ftnptr (mono_domain_get (), MINI_ADDR_TO_FTNPTR (code));
 }
 
 static int
@@ -6233,6 +6201,8 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		code = ((gpointer*)(amodule->info.llvm_unbox_trampolines))[unbox_tramp_idx];
 		g_assert (code);
 
+		code = MINI_ADDR_TO_FTNPTR (code);
+
 		mono_memory_barrier ();
 		amodule->unbox_tramp_per_method [method_index] = code;
 
@@ -6276,6 +6246,8 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		code = get_call_table_entry (amodule->unbox_trampoline_addresses, entry_index, amodule->info.call_table_entry_size);
 
 	g_assert (code);
+
+	code = MINI_ADDR_TO_FTNPTR (code);
 
 	tinfo = mono_tramp_info_create (NULL, (guint8 *)code, 0, NULL, NULL);
 
@@ -6388,7 +6360,7 @@ mono_aot_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 		amodule->got [got_offset] = buf;
 	}
 
-	return code;
+	return MINI_ADDR_TO_FTNPTR (code);
 }
 
 gpointer
@@ -6408,7 +6380,7 @@ mono_aot_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 	}
 
 	/* The caller expects an ftnptr */
-	return mono_create_ftnptr (mono_domain_get (), code);
+	return mono_create_ftnptr (mono_domain_get (), MINI_ADDR_TO_FTNPTR (code));
 }
 
 #ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
@@ -6429,7 +6401,7 @@ mono_aot_get_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
 	}
 
 	/* The caller expects an ftnptr */
-	return mono_create_ftnptr (mono_domain_get (), code);
+	return mono_create_ftnptr (mono_domain_get (), MINI_ADDR_TO_FTNPTR (code));
 }
 #endif
 

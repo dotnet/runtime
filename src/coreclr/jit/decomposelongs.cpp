@@ -247,6 +247,8 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
 #endif // FEATURE_SIMD
 
         case GT_LOCKADD:
+        case GT_XORR:
+        case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
         case GT_CMPXCHG:

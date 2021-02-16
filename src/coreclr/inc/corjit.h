@@ -272,7 +272,6 @@ public:
             OFFSET_MASK    = 0x3FFFFFFF
         };
 
-        UINT32 ILOffset;
         UINT32 Count;
         CORINFO_CLASS_HANDLE ClassTable[SIZE];
     };
@@ -306,6 +305,7 @@ public:
         TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
+        EdgeIntCount = (DescriptorMin * 6) | FourByte, // 4 byte edge counter, using unsigned 4 byte int
     };
 
     struct PgoInstrumentationSchema

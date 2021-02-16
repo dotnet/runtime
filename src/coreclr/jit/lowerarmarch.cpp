@@ -76,6 +76,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 #ifdef TARGET_ARM64
             case GT_CMPXCHG:
             case GT_LOCKADD:
+            case GT_XORR:
+            case GT_XAND:
             case GT_XADD:
                 return comp->compOpportunisticallyDependsOn(InstructionSet_Atomics)
                            ? false

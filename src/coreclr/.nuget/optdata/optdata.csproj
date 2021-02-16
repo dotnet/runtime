@@ -40,10 +40,19 @@
     <Error Condition="!Exists('$(PgoPackagePath)') And '$(OptimizationDataSupported)' == 'True'" Text="Unable to locate restored PGO package. Maybe the platform-specific package naming changed?" />
 
     <!-- Cleanup old version file -->
-    <Delete Files="$(PgoDataPackagePathOutputFile)" Condition="Exists('$(PgoDataPackagePathOutputFile)')" />
 
-    <WriteLinesToFile File="$(PgoDataPackagePathOutputFile)" Lines="$(PgoPackagePath)" Condition="'$(OptimizationDataSupported)' == 'True'" Overwrite="true"/>
-    <WriteLinesToFile File="$(PgoDataPackagePathOutputFile)" Lines="" Condition="'$(OptimizationDataSupported)' != 'True'" Overwrite="true"/>
+    <WriteLinesToFile File="$(PgoDataPackagePathOutputFile)"
+                      Lines="$(PgoPackagePath)"
+                      Condition="'$(OptimizationDataSupported)' == 'True'"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
+    <WriteLinesToFile File="$(PgoDataPackagePathOutputFile)"
+                      Lines=""
+                      Condition="'$(OptimizationDataSupported)' != 'True'"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
     <Message Text="optimizationPGOCoreCLR Package path: $(PgoPackagePath) written to: $(PgoDataPackagePathOutputFile)" Importance="High" />
   </Target>
 </Project>

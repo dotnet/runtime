@@ -154,6 +154,15 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getUnboxedEntry(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultComparerClass(
+          CORINFO_CLASS_HANDLE elemType)
+{
+    API_ENTER(getDefaultComparerClass);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getDefaultComparerClass(elemType);
+    API_LEAVE(getDefaultComparerClass);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {

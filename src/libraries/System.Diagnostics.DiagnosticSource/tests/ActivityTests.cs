@@ -1751,6 +1751,68 @@ namespace System.Diagnostics.Tests
             Assert.True(method.ReturnType.IsValueType);
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RestoreOriginalParentTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Assert.Null(Activity.Current);
+
+                Activity a = new Activity("Root");
+                a.Start();
+
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Root", Activity.Current.OperationName);
+
+                // Create Activity with the parent context to not use Activity.Current as a parent
+                Activity b = new Activity("Child");
+                b.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom());
+                b.Start();
+
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Child", Activity.Current.OperationName);
+
+                b.Stop();
+
+                // Now the child activity stopped. We used to restore null to the Activity.Current but now we restore
+                // the original parent stored in Activity.Current before we started the Activity.
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Root", Activity.Current.OperationName);
+
+                a.Stop();
+                Assert.Null(Activity.Current);
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TraceIdCustomGenerationTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Random random = new Random();
+                byte [] traceIdBytes = new byte[16];
+
+                Activity.TraceIdGenerator = () =>
+                {
+                    random.NextBytes(traceIdBytes);
+                    return ActivityTraceId.CreateFromBytes(traceIdBytes);
+                };
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                for (int i = 0; i < 100; i++)
+                {
+                    Assert.Null(Activity.Current);
+                    Activity a = new Activity("CustomTraceId");
+                    a.Start();
+
+                    Assert.Equal(ActivityTraceId.CreateFromBytes(traceIdBytes), a.TraceId);
+
+                    a.Stop();
+                }
+            }).Dispose();
+        }
+
         public void Dispose()
         {
             Activity.Current = null;

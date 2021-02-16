@@ -3,8 +3,6 @@
     <OutputType>Exe</OutputType>
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
-    <!-- Test unsupported outside of windows -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <!-- The test fails casting from ClassFromA from the default ALC to type IGetTypeFromC from a custom ALC -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>

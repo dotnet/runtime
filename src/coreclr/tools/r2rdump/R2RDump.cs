@@ -40,6 +40,7 @@ namespace R2RDump
 
         public bool Unwind { get; set; }
         public bool GC { get; set; }
+        public bool Pgo { get; set; }
         public bool SectionContents { get; set; }
         public bool EntryPoints { get; set; }
         public bool Normalize { get; set; }
@@ -240,6 +241,7 @@ namespace R2RDump
                 _options.Disasm = true;
                 _options.Unwind = true;
                 _options.GC = true;
+                _options.Pgo = true;
                 _options.SectionContents = true;
             }
 

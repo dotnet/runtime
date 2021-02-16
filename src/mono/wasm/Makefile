@@ -33,7 +33,7 @@ all: build-native icu-files source-files header-files
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
-EMSCRIPTEN_VERSION=2.0.11
+EMSCRIPTEN_VERSION=2.0.12
 EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
 
@@ -71,8 +71,8 @@ ifeq ($(ENABLE_METADATA_UPDATE),true)
     EMCC_FLAGS+=-DENABLE_METADATA_UPDATE=1
 endif
 
-EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1
-EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2 -DENABLE_NETCORE=1
+EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DDEBUG=1
+EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2
 
 ifeq ($(NOSTRIP),)
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm

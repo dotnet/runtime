@@ -233,6 +233,7 @@ namespace ILCompiler
             NodeFactory factory = new NodeFactory(
                 _context,
                 _compilationGroup,
+                _profileData,
                 _nameMangler,
                 corHeaderNode,
                 debugDirectoryNode,

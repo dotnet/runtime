@@ -182,6 +182,9 @@ namespace System.Drawing
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr GetForegroundWindow();
 
+        [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
+        public static extern int GetGuiResources(IntPtr hProcess, uint flags);
+
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr GetDC(IntPtr hWnd);
 

@@ -90,7 +90,6 @@ typedef MonoMethodInfo *MonoMethodInfo_ref;
 typedef MonoResolveTokenError *MonoResolveTokenError_ref;
 typedef MonoType *MonoType_ref;
 typedef MonoTypedRef *MonoTypedRef_ref;
-typedef MonoW32ProcessInfo *MonoW32ProcessInfo_ref;
 
 // Maybe do this in TYPED_HANDLE_DECL.
 typedef MonoArray MonoArrayOut;

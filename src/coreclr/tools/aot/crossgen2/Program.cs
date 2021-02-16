@@ -136,6 +136,7 @@ namespace ILCompiler
                     "exclusiveweight" => ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight,
                     "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
                     "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
+                    "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
                     _ => throw new CommandLineException(SR.InvalidMethodLayout)
                 };
             }
@@ -542,7 +543,8 @@ namespace ILCompiler
                         mibcFiles,
                         jsonProfile,
                         _typeSystemContext,
-                        compilationGroup);
+                        compilationGroup,
+                        _commandLineOptions.EmbedPgoData);
 
                     if (_commandLineOptions.Partial)
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
