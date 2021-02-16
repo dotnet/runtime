@@ -75,6 +75,15 @@ namespace System.Runtime.InteropServices.Tests
             VerifyDelegate(functionDelegate, targetMethod);
         }
 
+        [Fact]
+        public void GetDelegateForFunctionPointer_DelegateBaseTypes_ThrowsMustBeDelegate()
+        {
+            IntPtr ptr = Marshal.AllocHGlobal(16);
+            AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetDelegateForFunctionPointer(ptr, typeof(MulticastDelegate)));
+            AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetDelegateForFunctionPointer<MulticastDelegate>(ptr));
+            Marshal.FreeHGlobal(ptr);
+        }
+
         private static void VerifyDelegate(Delegate d, MethodInfo expectedMethod)
         {
             Assert.IsType<NonGenericDelegate>(d);
