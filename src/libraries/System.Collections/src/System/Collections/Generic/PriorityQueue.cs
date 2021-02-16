@@ -84,7 +84,7 @@ namespace System.Collections.Generic
         public PriorityQueue(IComparer<TPriority>? comparer)
         {
             _nodes = Array.Empty<(TElement, TPriority)>();
-            _comparer = InitializeComparer(null);
+            _comparer = InitializeComparer(comparer);
         }
 
         /// <summary>
