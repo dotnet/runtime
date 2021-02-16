@@ -3548,7 +3548,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
         return false;
     }
 
-    return missingEdges != 0;
+    return missingEdges == 0;
 }
 
 #endif // DEBUG
