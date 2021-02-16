@@ -269,55 +269,30 @@ get_vector_t_elem_type (MonoType *vector_type)
 }
 
 static MonoInst *
-emit_arch_vector64_create_multi (MonoCompile *cfg, MonoMethodSignature *fsig, MonoClass *klass, MonoType *etype, MonoInst **args)
+emit_vector_create_elementwise (
+	MonoCompile *cfg, MonoMethodSignature *fsig, MonoClass *klass,
+	MonoType *etype, MonoInst **args, int simd_width_bytes)
 {
-#if defined(TARGET_AMD64)
-	MonoInst *ins, *load;
-
-	// FIXME: Optimize this
-	MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
-	ins->dreg = alloc_preg (cfg);
-	ins->inst_imm = 8;
-	MONO_ADD_INS (cfg->cbb, ins);
+	MonoInst *stacktmp = NULL;
+	MONO_INST_NEW (cfg, stacktmp, OP_LOCALLOC_IMM);
+	stacktmp->dreg = alloc_preg (cfg);
+	stacktmp->inst_imm = simd_width_bytes;
+	MONO_ADD_INS (cfg->cbb, stacktmp);
 
 	int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 	int store_opcode = mono_type_to_store_membase (cfg, etype);
 	for (int i = 0; i < fsig->param_count; ++i)
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, store_opcode, ins->dreg, i * esize, args [i]->dreg);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, store_opcode, stacktmp->dreg, i * esize, args [i]->dreg);
 
-	load = emit_simd_ins (cfg, klass, OP_SSE_LOADU, ins->dreg, -1);
-	load->inst_c0 = 8;
-	load->inst_c1 = get_underlying_type (etype);
+	MonoInst *load = NULL;
+	MONO_INST_NEW (cfg, load, OP_LOADX_MEMBASE);
+	load->klass = klass;
+	load->sreg1 = stacktmp->dreg;
+	load->inst_offset = 0;
+	load->type = STACK_VTYPE;
+	load->dreg = alloc_xreg (cfg);
+	MONO_ADD_INS (cfg->cbb, load);
 	return load;
-#else
-	return NULL;
-#endif
-}
-
-static MonoInst *
-emit_arch_vector128_create_multi (MonoCompile *cfg, MonoMethodSignature *fsig, MonoClass *klass, MonoType *etype, MonoInst **args)
-{
-#if defined(TARGET_AMD64)
-	MonoInst *ins, *load;
-
-	// FIXME: Optimize this
-	MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
-	ins->dreg = alloc_preg (cfg);
-	ins->inst_imm = 16;
-	MONO_ADD_INS (cfg->cbb, ins);
-
-	int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-	int store_opcode = mono_type_to_store_membase (cfg, etype);
-	for (int i = 0; i < fsig->param_count; ++i)
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, store_opcode, ins->dreg, i * esize, args [i]->dreg);
-
-	load = emit_simd_ins (cfg, klass, OP_SSE_LOADU, ins->dreg, -1);
-	load->inst_c0 = 16;
-	load->inst_c1 = get_underlying_type (etype);
-	return load;
-#else
-	return NULL;
-#endif
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -395,7 +370,7 @@ emit_vector64 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		else
-			return emit_arch_vector64_create_multi (cfg, fsig, klass, etype, args);
+			return emit_vector_create_elementwise (cfg, fsig, klass, etype, args, 8);
 	}
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
@@ -454,7 +429,7 @@ emit_vector128 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		else
-			return emit_arch_vector128_create_multi (cfg, fsig, klass, etype, args);
+			return emit_vector_create_elementwise (cfg, fsig, klass, etype, args, 16);
 	}
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
