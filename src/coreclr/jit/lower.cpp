@@ -1560,7 +1560,8 @@ void Lowering::LowerCall(GenTree* node)
     LowerArgsForCall(call);
 
     // note that everything generated from this point on runs AFTER the outgoing args are placed
-    GenTree* controlExpr = nullptr;
+    GenTree* controlExpr          = nullptr;
+    bool     callWasExpandedEarly = false;
 
     // for x86, this is where we record ESP for checking later to make sure stack is balanced
 
@@ -1581,8 +1582,17 @@ void Lowering::LowerCall(GenTree* node)
                 break;
 
             case GTF_CALL_VIRT_VTABLE:
-                // stub dispatching is off or this is not a virtual call (could be a tailcall)
-                controlExpr = LowerVirtualVtableCall(call);
+                assert(call->IsVirtualVtable());
+                if (!call->IsExpandedEarly())
+                {
+                    assert(call->gtControlExpr == nullptr);
+                    controlExpr = LowerVirtualVtableCall(call);
+                }
+                else
+                {
+                    callWasExpandedEarly = true;
+                    controlExpr          = call->gtControlExpr;
+                }
                 break;
 
             case GTF_CALL_NONVIRT:
@@ -1619,7 +1629,9 @@ void Lowering::LowerCall(GenTree* node)
         controlExpr = LowerTailCallViaJitHelper(call, controlExpr);
     }
 
-    if (controlExpr != nullptr)
+    // Check if we need to thread a newly created controlExpr into the LIR
+    //
+    if ((controlExpr != nullptr) && !callWasExpandedEarly)
     {
         LIR::Range controlExprRange = LIR::SeqTree(comp, controlExpr);
 

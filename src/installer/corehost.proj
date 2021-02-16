@@ -45,8 +45,8 @@
       Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing
       warning in the macOS build when dsymutil tries to strip symbols.
     -->
-    <Message Text="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)" Importance="High"/>
-    <Exec Command="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
+    <Message Text="$(SharedNativeRoot)\corehost\build.sh $(BuildArgs)" Importance="High"/>
+    <Exec Command="$(SharedNativeRoot)\corehost\build.sh $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <Target Name="BuildCoreHostWindows"
@@ -103,8 +103,8 @@
       IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing
       warning in the native build.
     -->
-    <Message Text="$(MSBuildProjectDirectory)\build.cmd $(BuildArgs)" Importance="High"/>
-    <Exec Command="$(MSBuildProjectDirectory)\build.cmd $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
+    <Message Text="$(SharedNativeRoot)\corehost\build.cmd $(BuildArgs)" Importance="High"/>
+    <Exec Command="$(SharedNativeRoot)\corehost\build.cmd $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <Target Name="PrependWindowsHeaderIncludeToVersionHeaderFile"
