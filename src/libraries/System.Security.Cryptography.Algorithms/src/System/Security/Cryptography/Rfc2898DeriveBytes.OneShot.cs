@@ -11,6 +11,31 @@ namespace System.Security.Cryptography
         // Throwing UTF8 on invalid input.
         private static readonly Encoding s_throwingUtf8Encoding = new UTF8Encoding(false, true);
 
+        /// <summary>
+        /// Creates a PBKDF2 derived key from password bytes.
+        /// </summary>
+        /// <param name="password">The password used to derive the key.</param>
+        /// <param name="salt">The key salt used to derive the key.</param>
+        /// <param name="iterations">The number of iterations for the operation.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to derive the key.</param>
+        /// <param name="outputLength">The size of key to derive.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="password" /> or <paramref name="salt" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para><paramref name="outputLength" /> is not zero or a positive value.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="iterations" /> is not a positive value.</para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" />
+        ///   that is empty or <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="hashAlgorithm" /> is an unsupported hash algorithm. Supported algorithms
+        ///   are <see cref="HashAlgorithmName.SHA1" />, <see cref="HashAlgorithmName.SHA256" />,
+        ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
+        /// </exception>
         public static byte[] Pbkdf2(
             byte[] password,
             byte[] salt,
@@ -26,6 +51,28 @@ namespace System.Security.Cryptography
             return Pbkdf2(new ReadOnlySpan<byte>(password), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
 
+        /// <summary>
+        /// Creates a PBKDF2 derived key from password bytes.
+        /// </summary>
+        /// <param name="password">The password used to derive the key.</param>
+        /// <param name="salt">The key salt used to derive the key.</param>
+        /// <param name="iterations">The number of iterations for the operation.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to derive the key.</param>
+        /// <param name="outputLength">The size of key to derive.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para><paramref name="outputLength" /> is not zero or a positive value.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="iterations" /> is not a positive value.</para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" />
+        ///   that is empty or <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="hashAlgorithm" /> is an unsupported hash algorithm. Supported algorithms
+        ///   are <see cref="HashAlgorithmName.SHA1" />, <see cref="HashAlgorithmName.SHA256" />,
+        ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
+        /// </exception>
         public static byte[] Pbkdf2(
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
@@ -41,6 +88,26 @@ namespace System.Security.Cryptography
             return result;
         }
 
+        /// <summary>
+        /// Fills a buffer with a PBKDF2 derived key.
+        /// </summary>
+        /// <param name="password">The password used to derive the key.</param>
+        /// <param name="salt">The key salt used to derive the key.</param>
+        /// <param name="iterations">The number of iterations for the operation.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to derive the key.</param>
+        /// <param name="destination">The buffer to fill with a derived key.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="iterations" /> is not a positive value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" />
+        ///   that is empty or <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="hashAlgorithm" /> is an unsupported hash algorithm. Supported algorithms
+        ///   are <see cref="HashAlgorithmName.SHA1" />, <see cref="HashAlgorithmName.SHA256" />,
+        ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
+        /// </exception>
         public static void Pbkdf2(
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
@@ -51,6 +118,39 @@ namespace System.Security.Cryptography
             Pbkdf2Core(password, salt, destination, iterations, hashAlgorithm);
         }
 
+        /// <summary>
+        /// Creates a PBKDF2 derived key from a password.
+        /// </summary>
+        /// <param name="password">The password used to derive the key.</param>
+        /// <param name="salt">The key salt used to derive the key.</param>
+        /// <param name="iterations">The number of iterations for the operation.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to derive the key.</param>
+        /// <param name="outputLength">The size of key to derive.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="password" /> or <paramref name="salt" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para><paramref name="outputLength" /> is not zero or a positive value.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="iterations" /> is not a positive value.</para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" />
+        ///   that is empty or <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="hashAlgorithm" /> is an unsupported hash algorithm. Supported algorithms
+        ///   are <see cref="HashAlgorithmName.SHA1" />, <see cref="HashAlgorithmName.SHA256" />,
+        ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
+        /// </exception>
+        /// <exception cref="EncoderFallbackException">
+        /// <paramref name="password" /> contains text that cannot be converted to UTF8.
+        /// </exception>
+        /// <remarks>
+        /// The <paramref name="password" /> will be converted to bytes using the UTF8 encoding. For
+        /// other encodings, convert the password string to bytes using the appropriate <see cref="System.Text.Encoding" />
+        /// and use <see cref="Pbkdf2(byte[], byte[], int, HashAlgorithmName, int)" />.
+        /// </remarks>
         public static byte[] Pbkdf2(
             string password,
             byte[] salt,
@@ -66,6 +166,36 @@ namespace System.Security.Cryptography
             return Pbkdf2(password.AsSpan(), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
 
+        /// <summary>
+        /// Creates a PBKDF2 derived key from a password.
+        /// </summary>
+        /// <param name="password">The password used to derive the key.</param>
+        /// <param name="salt">The key salt used to derive the key.</param>
+        /// <param name="iterations">The number of iterations for the operation.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to derive the key.</param>
+        /// <param name="outputLength">The size of key to derive.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para><paramref name="outputLength" /> is not zero or a positive value.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="iterations" /> is not a positive value.</para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" />
+        ///   that is empty or <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="hashAlgorithm" /> is an unsupported hash algorithm. Supported algorithms
+        ///   are <see cref="HashAlgorithmName.SHA1" />, <see cref="HashAlgorithmName.SHA256" />,
+        ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
+        /// </exception>
+        /// <exception cref="EncoderFallbackException">
+        /// <paramref name="password" /> contains text that cannot be converted to UTF8.
+        /// </exception>
+        /// <remarks>
+        /// The <paramref name="password" /> will be converted to bytes using the UTF8 encoding. For
+        /// other encodings, convert the password string to bytes using the appropriate <see cref="System.Text.Encoding" />
+        /// and use <see cref="Pbkdf2(ReadOnlySpan{byte}, ReadOnlySpan{byte}, int, HashAlgorithmName, int)" />.
+        /// </remarks>
         public static byte[] Pbkdf2(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> salt,
@@ -81,6 +211,34 @@ namespace System.Security.Cryptography
             return result;
         }
 
+        /// <summary>
+        /// Fills a buffer with a PBKDF2 derived key.
+        /// </summary>
+        /// <param name="password">The password used to derive the key.</param>
+        /// <param name="salt">The key salt used to derive the key.</param>
+        /// <param name="iterations">The number of iterations for the operation.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to derive the key.</param>
+        /// <param name="destination">The buffer to fill with a derived key.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="iterations" /> is not a positive value.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm" /> has a <see cref="HashAlgorithmName.Name" />
+        ///   that is empty or <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="hashAlgorithm" /> is an unsupported hash algorithm. Supported algorithms
+        ///   are <see cref="HashAlgorithmName.SHA1" />, <see cref="HashAlgorithmName.SHA256" />,
+        ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
+        /// </exception>
+        /// <exception cref="EncoderFallbackException">
+        /// <paramref name="password" /> contains text that cannot be converted to UTF8.
+        /// </exception>
+        /// <remarks>
+        /// The <paramref name="password" /> will be converted to bytes using the UTF8 encoding. For
+        /// other encodings, convert the password string to bytes using the appropriate <see cref="System.Text.Encoding" />
+        /// and use <see cref="Pbkdf2(ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte}, int, HashAlgorithmName)" />.
+        /// </remarks>
         public static void Pbkdf2(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> salt,
