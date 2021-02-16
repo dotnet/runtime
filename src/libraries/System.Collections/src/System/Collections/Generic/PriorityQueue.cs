@@ -99,10 +99,7 @@ namespace System.Collections.Generic
                     nameof(initialCapacity), initialCapacity, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            _nodes = (initialCapacity == 0)
-                ? Array.Empty<(TElement, TPriority)>()
-                : new (TElement, TPriority)[initialCapacity];
-
+            _nodes = new (TElement, TPriority)[initialCapacity];
             _comparer = InitializeComparer(comparer);
         }
 
