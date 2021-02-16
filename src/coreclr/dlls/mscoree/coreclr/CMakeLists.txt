@@ -1,9 +1,11 @@
 
 # we need to define this library before adding .def fiels to sources.
-add_library_clr(coreclr_static
-    STATIC
+add_library_clr(coreclr_obj
+    OBJECT
     ${CLR_SOURCES}
 )
+
+target_compile_definitions(coreclr_obj PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_TARGET_WIN32)
     preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
@@ -169,9 +171,10 @@ endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
 target_sources(coreclr PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks)
-target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable)
-target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
+
+add_library(coreclr_static INTERFACE)
+target_sources(coreclr_static INTERFACE $<TARGET_OBJECTS:coreclr_obj> $<TARGET_OBJECTS:cee_wks_core>)
+target_link_libraries(coreclr_static INTERFACE ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable)
 
 # Create the runtime module index header file containing the coreclr build id
 # for xplat and the timestamp/size on Windows.
