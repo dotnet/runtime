@@ -106,16 +106,16 @@
       -->
       <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-hostfxr-internal-*.tar.gz" Category="hostfxr-internal" />
       <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-internal-*.tar.gz" Category="runtime-internal" />
-      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-*.tar.gz" Category="RuntimePack.archive" />
-      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Runtime.*.nupkg" Category="RuntimePack" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-*.tar.gz" Category="runtime" />
 
-      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz" Category="Crossgen2Pack.archive" />
-      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-apphost-pack-*.tar.gz" Category="HostPack.archive" />
-      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-targeting-pack-*.tar.gz" Category="RefPack.archive" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz" Category="Crossgen2Pack.Archive" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-apphost-pack-*.tar.gz" Category="HostPack.Archive" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-targeting-pack-*.tar.gz" Category="RefPack.Archive" />
 
       <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg" Category="Crossgen2Pack" />
       <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Host.*.nupkg" Category="HostPack" />
       <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Ref.*.nupkg" Category="RefPack" />
+      <_intermediateArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Runtime.*.nupkg" Category="RuntimePack" />
 
       <_intermediateArtifactFile
         Include="
