@@ -103,7 +103,6 @@ namespace System.Net.WebSockets.Tests
 
         [Theory]
         [PlatformSpecific(~TestPlatforms.Browser)] // System.Net.Sockets is not supported on this platform.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0b_1000_0001, 0b_0_000_0001, false)] // fin + text, no mask + length == 1
         [InlineData(0b_1010_0001, 0b_0_000_0001, true)] // fin + rsv2 + text, no mask + length == 1
         [InlineData(0b_1001_0001, 0b_0_000_0001, true)] // fin + rsv3 + text, no mask + length == 1
@@ -116,34 +115,22 @@ namespace System.Net.WebSockets.Tests
         [InlineData(0b_1000_0111, 0b_0_000_0001, true)] // fin + opcode==7, no mask + length == 1
         public async Task ReceiveAsync_InvalidFrameHeader_AbortsAndThrowsException(byte firstByte, byte secondByte, bool shouldFail)
         {
-            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            var stream = new MemoryStream(new byte[3] { firstByte, secondByte, (byte)'a' });
+            using var websocket = CreateFromStream(stream, isServer: false, null, Timeout.InfiniteTimeSpan);
+
+            var buffer = new byte[1];
+            Task<WebSocketReceiveResult> t = websocket.ReceiveAsync(buffer, CancellationToken.None);
+            if (shouldFail)
             {
-                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(1);
-
-                await client.ConnectAsync(listener.LocalEndPoint);
-                using (Socket server = await listener.AcceptAsync())
-                {
-                    WebSocket websocket = CreateFromStream(new NetworkStream(client, ownsSocket: false), isServer: false, null, Timeout.InfiniteTimeSpan);
-
-                    await server.SendAsync(new ArraySegment<byte>(new byte[3] { firstByte, secondByte, (byte)'a' }), SocketFlags.None);
-
-                    var buffer = new byte[1];
-                    Task<WebSocketReceiveResult> t = websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                    if (shouldFail)
-                    {
-                        await Assert.ThrowsAsync<WebSocketException>(() => t);
-                        Assert.Equal(WebSocketState.Aborted, websocket.State);
-                    }
-                    else
-                    {
-                        WebSocketReceiveResult result = await t;
-                        Assert.True(result.EndOfMessage);
-                        Assert.Equal(1, result.Count);
-                        Assert.Equal('a', (char)buffer[0]);
-                    }
-                }
+                await Assert.ThrowsAsync<WebSocketException>(() => t);
+                Assert.Equal(WebSocketState.Aborted, websocket.State);
+            }
+            else
+            {
+                WebSocketReceiveResult result = await t;
+                Assert.True(result.EndOfMessage);
+                Assert.Equal(1, result.Count);
+                Assert.Equal('a', (char)buffer[0]);
             }
         }
 
@@ -308,7 +295,7 @@ namespace System.Net.WebSockets.Tests
                 string statusLine = await reader.ReadLineAsync();
                 Assert.NotEmpty(statusLine);
                 Assert.Equal("HTTP/1.1 101 Switching Protocols", statusLine);
-                while (!string.IsNullOrEmpty(await reader.ReadLineAsync()));
+                while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
             }
 
             return stream;
