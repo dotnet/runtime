@@ -1289,7 +1289,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(pCallback != NULL);
-        PRECONDITION(pMT != NULL);
     }
     CONTRACTL_END;
 
@@ -1312,9 +1311,9 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         return ObjectFromHandle((OBJECTHANDLE)DelegateHnd);
     }
 
-    // Validate the MethodTable is a delegate type
-    // See Marshal.GetDelegateForFunctionPointer() for exception details.
-    if (!pMT->IsDelegate())
+    // Validate the MethodTable is a delegate type only when we are not able to find the callsite in the hash.
+    // It is necessary to allow lookups with System.MultiDelegate to succeed (for backwards compatibility).
+    if (pMT == NULL || !pMT->IsDelegate())
         COMPlusThrowArgumentException(W("t"), W("Arg_MustBeDelegate"));
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////

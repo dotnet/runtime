@@ -374,11 +374,8 @@ FCIMPL2(Object*, MarshalNative::GetDelegateForFunctionPointerInternal, LPVOID FP
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF) refTypeUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_2(refType, refDelegate);
 
-    // Retrieve the method table from the RuntimeType. We already verified in managed
-    // code that the type was a RuntimeType that represented a delegate. Because type handles
-    // for delegates must have a method table, we are safe in telling prefix to assume it below.
     MethodTable* pMT = refType->GetType().GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    // pMT can be NULL. COMDelegate::ConvertToDelegate handles it gracefully.
     refDelegate = COMDelegate::ConvertToDelegate(FPtr, pMT);
 
     HELPER_METHOD_FRAME_END();

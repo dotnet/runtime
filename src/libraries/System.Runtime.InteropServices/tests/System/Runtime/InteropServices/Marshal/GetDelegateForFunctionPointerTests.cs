@@ -15,6 +15,7 @@ namespace System.Runtime.InteropServices.Tests
     {
         [Theory]
         [InlineData(typeof(NonGenericDelegate))]
+        [InlineData(typeof(Delegate))]
         [InlineData(typeof(MulticastDelegate))]
         [InlineData(typeof(OtherNonGenericDelegate))]
         public void GetDelegateForFunctionPointer_NonGeneric_ReturnsExpected(Type t)
@@ -75,6 +76,17 @@ namespace System.Runtime.InteropServices.Tests
             VerifyDelegate(functionDelegate, targetMethod);
         }
 
+        [Fact]
+        public void GetDelegateForFunctionPointer_DelegateBaseTypes_ThrowsMustBeDelegate()
+        {
+            IntPtr ptr = Marshal.AllocHGlobal(16);
+            AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetDelegateForFunctionPointer(ptr, typeof(Delegate)));
+            AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetDelegateForFunctionPointer<Delegate>(ptr));
+            AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetDelegateForFunctionPointer(ptr, typeof(MulticastDelegate)));
+            AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetDelegateForFunctionPointer<MulticastDelegate>(ptr));
+            Marshal.FreeHGlobal(ptr);
+        }
+
         private static void VerifyDelegate(Delegate d, MethodInfo expectedMethod)
         {
             Assert.IsType<NonGenericDelegate>(d);
@@ -117,7 +129,6 @@ namespace System.Runtime.InteropServices.Tests
             TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
             yield return new object[] { typeBuilder };
 
-            yield return new object[] { typeof(Delegate) };
             yield return new object[] { typeof(GenericDelegate<>) };
             yield return new object[] { typeof(GenericDelegate<string>) };
         }
@@ -126,7 +137,9 @@ namespace System.Runtime.InteropServices.Tests
         [MemberData(nameof(GetDelegateForFunctionPointer_InvalidType_TestData))]
         public void GetDelegateForFunctionPointer_InvalidType_ThrowsArgumentException(Type t)
         {
-            AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetDelegateForFunctionPointer((IntPtr)1, t));
+            IntPtr ptr = Marshal.AllocHGlobal(16);
+            AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetDelegateForFunctionPointer(ptr, t));
+            Marshal.FreeHGlobal(ptr);
         }
 
         [Fact]
