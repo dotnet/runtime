@@ -240,7 +240,7 @@
          Excluding .sfxprojs as they have their own incremental servicing infra. -->
     <GeneratePackage Condition="'$(GeneratePackage)' == ''">true</GeneratePackage>
     <GeneratePackage Condition="(('$(PreReleaseVersionLabel)' == 'servicing' or
-                                  '$(RepositoryName)' == 'runtimelab') and
+                                  '$(GitHubRepositoryName)' == 'runtimelab') and
                                  '$(MSBuildProjectExtension)' != '.sfxproj')">false</GeneratePackage>
   </PropertyGroup>
 
