@@ -80,7 +80,7 @@ namespace System
                 // However, if the number of digits exceeds maxDigCount and rounding is required, we store the trailing zeros in the buffer.
                 if (fractionalDigitsPresent > 0 && !HasNonZeroTail)
                 {
-                    Debug.Assert(Digits[DigitsCount - 1] != '0');
+                    Debug.Assert(Digits[DigitsCount - 1] != '0', ToString());
                 }
 
 #endif // DEBUG
