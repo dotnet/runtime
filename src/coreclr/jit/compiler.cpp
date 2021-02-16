@@ -9550,7 +9550,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
 
-bool Compiler::IsInvariant(const GenTree *tree)
+bool Compiler::IsInvariant(const GenTree* tree)
 {
     GenTree* lclVarTree = nullptr;
     return tree->OperIsConst() || impIsAddressInLocal(tree, &lclVarTree);
