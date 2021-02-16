@@ -969,7 +969,7 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         assert((simdSize == 8) || (simdSize == 16));
 
-        if (VectorConstantIsBroadcastedI64(vecCns, (argCnt == 1) ? argCnt : (simdSize / 8)))
+        if (VectorConstantIsBroadcastedI64(vecCns, simdSize / 8))
         {
             // If we are a single constant or if all parts are the same, we might be able to optimize
             // this even further for certain values, such as Zero or AllBitsSet.
