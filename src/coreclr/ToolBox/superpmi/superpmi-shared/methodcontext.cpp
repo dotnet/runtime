@@ -3101,6 +3101,23 @@ CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ft
     return (CORINFO_METHOD_HANDLE)(result.A);
 }
 
+void MethodContext::recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetDefaultComparerClass == nullptr)
+        GetDefaultComparerClass = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetDefaultComparerClass->Add(CastHandle(cls), CastHandle(result));
+}
+void MethodContext::dmpGetDefaultComparerClass(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetDefaultComparerClass key cls-%016llX, value cls-%016llX", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls)
+{
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)GetDefaultComparerClass->Get(CastHandle(cls));
+    return result;
+}
+
 void MethodContext::recGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
 {
     if (GetDefaultEqualityComparerClass == nullptr)
@@ -4167,7 +4184,9 @@ LONG* MethodContext::repGetAddrOfCaptureThreadGlobal(void** ppIndirection)
     if ((GetAddrOfCaptureThreadGlobal == nullptr) || (GetAddrOfCaptureThreadGlobal->GetIndex((DWORD)0) == -1))
     {
 #ifdef sparseMC
-        LogDebug("Sparse - repGetAddrOfCaptureThreadGlobal returning 0xCAFE0001");
+        LogDebug("Sparse - repGetAddrOfCaptureThreadGlobal returning nullptr and 0xCAFE0001");
+        if (ppIndirection != nullptr)
+            *ppIndirection = nullptr;
         return (LONG*)(size_t)0xCAFE0001;
 #else
         LogException(EXCEPTIONCODE_MC, "Didn't find anything for GetAddrOfCaptureThreadGlobal", "");

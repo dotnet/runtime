@@ -111,9 +111,6 @@
              Importance="High" />
   </Target>
 
-  <UsingTask TaskName="GenerateCurrentVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
-  <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(InstallerTasksAssemblyPath)" />
-
   <Target Name="GenerateMsiVersionString">
     <PropertyGroup>
       <VersionPadding Condition="'$(VersionPadding)'==''">5</VersionPadding>

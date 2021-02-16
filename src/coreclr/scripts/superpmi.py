@@ -543,12 +543,13 @@ class TempDir:
 
         Use with: "with TempDir() as temp_dir" to change to that directory and then automatically
         change back to the original working directory afterwards and remove the temporary
-        directory and its contents (if args.skip_cleanup is False).
+        directory and its contents (if skip_cleanup is False).
     """
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, skip_cleanup=False):
         self.mydir = tempfile.mkdtemp() if path is None else path
         self.cwd = None
+        self._skip_cleanup = skip_cleanup
 
     def __enter__(self):
         self.cwd = os.getcwd()
@@ -557,10 +558,7 @@ class TempDir:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
-        # Note: we are using the global `args`, not coreclr_args. This works because
-        # the `skip_cleanup` argument is not processed by CoreclrArguments, but is
-        # just copied there.
-        if not args.skip_cleanup:
+        if not self._skip_cleanup:
             shutil.rmtree(self.mydir)
 
 
@@ -758,7 +756,7 @@ class SuperPMICollect:
         passed = False
 
         try:
-            with TempDir(self.coreclr_args.temp_dir) as temp_location:
+            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
@@ -1573,7 +1571,7 @@ class SuperPMIReplayAsmDiffs:
         files_with_asm_diffs = []
         files_with_replay_failures = []
 
-        with TempDir(self.coreclr_args.temp_dir) as temp_location:
+        with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
             logging.debug("")

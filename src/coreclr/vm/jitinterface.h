@@ -452,6 +452,10 @@ public:
 
     bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
 
+    CORINFO_CLASS_HANDLE getDefaultComparerClassHelper(
+        CORINFO_CLASS_HANDLE elemType
+        );
+
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClassHelper(
         CORINFO_CLASS_HANDLE elemType
         );
@@ -946,7 +950,7 @@ protected :
         ComputedPgoData* m_next = nullptr;
         MethodDesc *m_pMD;
         NewArrayHolder<BYTE> m_allocatedData;
-        PgoInstrumentationSchema* m_schema;
+        PgoInstrumentationSchema* m_schema = nullptr;
         UINT32 m_cSchemaElems;
         BYTE *m_pInstrumentationData = nullptr;
         HRESULT m_hr = E_NOTIMPL;

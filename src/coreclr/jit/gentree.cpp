@@ -4442,6 +4442,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             costEx = 5;
             costSz = 2;
 
+            GenTreeCall* call;
+            call = tree->AsCall();
+
             /* Evaluate the 'this' argument, if present */
 
             if (tree->AsCall()->gtCallThisArg != nullptr)
@@ -4459,10 +4462,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             /* Evaluate the arguments, right to left */
 
-            if (tree->AsCall()->gtCallArgs != nullptr)
+            if (call->gtCallArgs != nullptr)
             {
                 const bool lateArgs = false;
-                lvl2                = gtSetCallArgsOrder(tree->AsCall()->Args(), lateArgs, &costEx, &costSz);
+                lvl2                = gtSetCallArgsOrder(call->Args(), lateArgs, &costEx, &costSz);
                 if (level < lvl2)
                 {
                     level = lvl2;
@@ -4473,23 +4476,23 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
              * This is a "hidden" list and its only purpose is to
              * extend the life of temps until we make the call */
 
-            if (tree->AsCall()->gtCallLateArgs != nullptr)
+            if (call->gtCallLateArgs != nullptr)
             {
                 const bool lateArgs = true;
-                lvl2                = gtSetCallArgsOrder(tree->AsCall()->LateArgs(), lateArgs, &costEx, &costSz);
+                lvl2                = gtSetCallArgsOrder(call->LateArgs(), lateArgs, &costEx, &costSz);
                 if (level < lvl2)
                 {
                     level = lvl2;
                 }
             }
 
-            if (tree->AsCall()->gtCallType == CT_INDIRECT)
+            if (call->gtCallType == CT_INDIRECT)
             {
                 // pinvoke-calli cookie is a constant, or constant indirection
-                assert(tree->AsCall()->gtCallCookie == nullptr || tree->AsCall()->gtCallCookie->gtOper == GT_CNS_INT ||
-                       tree->AsCall()->gtCallCookie->gtOper == GT_IND);
+                assert(call->gtCallCookie == nullptr || call->gtCallCookie->gtOper == GT_CNS_INT ||
+                       call->gtCallCookie->gtOper == GT_IND);
 
-                GenTree* indirect = tree->AsCall()->gtCallAddr;
+                GenTree* indirect = call->gtCallAddr;
 
                 lvl2 = gtSetEvalOrder(indirect);
                 if (level < lvl2)
@@ -4501,13 +4504,27 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             }
             else
             {
+                if (call->IsVirtual())
+                {
+                    GenTree* controlExpr = call->gtControlExpr;
+                    if (controlExpr != nullptr)
+                    {
+                        lvl2 = gtSetEvalOrder(controlExpr);
+                        if (level < lvl2)
+                        {
+                            level = lvl2;
+                        }
+                        costEx += controlExpr->GetCostEx();
+                        costSz += controlExpr->GetCostSz();
+                    }
+                }
 #ifdef TARGET_ARM
-                if (tree->AsCall()->IsVirtualStub())
+                if (call->IsVirtualStub())
                 {
                     // We generate movw/movt/ldr
                     costEx += (1 + IND_COST_EX);
                     costSz += 8;
-                    if (tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT)
+                    if (call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT)
                     {
                         // Must use R12 for the ldr target -- REG_JUMP_THUNK_PARAM
                         costSz += 2;
@@ -4520,6 +4537,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 costSz += 2;
 #endif
+
 #ifdef TARGET_XARCH
                 costSz += 3;
 #endif
@@ -4528,7 +4546,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             level += 1;
 
             /* Virtual calls are a bit more expensive */
-            if (tree->AsCall()->IsVirtual())
+            if (call->IsVirtual())
             {
                 costEx += 2 * IND_COST_EX;
                 costSz += 2;
@@ -6327,6 +6345,7 @@ GenTreeCall* Compiler::gtNewCallNode(
 
 GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
 {
+    assert(type != TYP_VOID);
     // We need to ensure that all struct values are normalized.
     // It might be nice to assert this in general, but we have assignments of int to long.
     if (varTypeIsStruct(type))
@@ -6609,6 +6628,7 @@ GenTree* Compiler::gtArgNodeByLateArgInx(GenTreeCall* call, unsigned lateArgInx)
 
 GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 {
+    assert(!src->TypeIs(TYP_VOID));
     /* Mark the target as being assigned */
 
     if ((dst->gtOper == GT_LCL_VAR) || (dst->OperGet() == GT_LCL_FLD))
@@ -8110,7 +8130,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree, unsigned addFlag
 
     copy->gtCallType    = tree->gtCallType;
     copy->gtReturnType  = tree->gtReturnType;
-    copy->gtControlExpr = tree->gtControlExpr;
+    copy->gtControlExpr = gtCloneExpr(tree->gtControlExpr, addFlags, deepVarNum, deepVarVal);
 
     /* Copy the union */
     if (tree->gtCallType == CT_INDIRECT)
@@ -9818,7 +9838,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
         }
         if (tree->AsCall()->IsVirtualVtable())
         {
-            gtfType = " ind";
+            gtfType = " vt-ind";
         }
         else if (tree->AsCall()->IsVirtualStub())
         {

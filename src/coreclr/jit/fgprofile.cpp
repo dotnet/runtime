@@ -118,22 +118,27 @@ void Compiler::fgComputeProfileScale()
         return;
     }
 
-    // Note when/if we do normalization this may need to change.
+    // Note when/if we early do normalization this may need to change.
     //
-    BasicBlock::weight_t calleeWeight = fgFirstBB->bbWeight;
+    BasicBlock::weight_t const calleeWeight = fgFirstBB->bbWeight;
 
-    // We should generally be able to assume calleeWeight >= callSiteWeight.
-    // If this isn't so, perhaps something is wrong with the profile data
-    // collection or retrieval.
+    // If profile data reflects a complete single run we can expect
+    // calleeWeight >= callSiteWeight.
     //
-    if (calleeWeight < callSiteWeight)
+    // However if our profile is just a subset of execution we may
+    // not see this.
+    //
+    // So, we are willing to scale the callee counts down or up as
+    // needed to match the call site.
+    //
+    if (calleeWeight == BB_ZERO_WEIGHT)
     {
-        JITDUMP("   ... callee entry count %f is less than call site count %f\n", calleeWeight, callSiteWeight);
+        JITDUMP("   ... callee entry count is zero\n");
         impInlineInfo->profileScaleState = InlineInfo::ProfileScaleState::UNAVAILABLE;
         return;
     }
 
-    // Hence, scale is always in the range (0.0...1.0] -- we are always scaling down callee counts.
+    // Hence, scale can be somewhat arbitrary...
     //
     const double scale                = ((double)callSiteWeight) / calleeWeight;
     impInlineInfo->profileScaleFactor = scale;
@@ -904,17 +909,14 @@ public:
     {
         m_blockCount++;
         block->bbSparseProbeList = nullptr;
-        JITDUMP("node " FMT_BB "\n", block->bbNum);
     }
 
     void VisitTreeEdge(BasicBlock* source, BasicBlock* target) override
     {
-        JITDUMP("tree " FMT_BB " -> " FMT_BB "\n", source->bbNum, target->bbNum);
     }
 
     void VisitNonTreeEdge(BasicBlock* source, BasicBlock* target, SpanningTreeVisitor::EdgeKind kind) override
     {
-        JITDUMP("non-tree " FMT_BB " -> " FMT_BB "\n", source->bbNum, target->bbNum);
         switch (kind)
         {
             case EdgeKind::PostdominatesSource:

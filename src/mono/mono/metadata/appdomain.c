@@ -51,7 +51,6 @@
 #include <mono/metadata/marshal-internals.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/attach.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/lock-tracer.h>
 #include <mono/metadata/threads-types.h>
@@ -322,8 +321,6 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	if (!mono_runtime_get_no_exec ())
 		mono_runtime_install_appctx_properties ();
 
-	mono_attach_init ();
-
 	mono_locks_tracer_init ();
 
 	/* mscorlib is loaded before we install the load hook */
@@ -476,8 +473,6 @@ exit:
 void
 mono_runtime_cleanup (MonoDomain *domain)
 {
-	mono_attach_cleanup ();
-
 	/* This ends up calling any pending pending (for at most 2 seconds) */
 	mono_gc_cleanup ();
 

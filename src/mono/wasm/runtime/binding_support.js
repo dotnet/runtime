@@ -226,7 +226,9 @@ var BindingSupportLib = {
 		},
 
 		js_string_to_mono_string: function (string) {
-			if (typeof (string) === "symbol")
+			if (string === null)
+				return null;
+			else if (typeof (string) === "symbol")
 				return this.js_string_to_mono_string_interned (string);
 			else if (typeof (string) !== "string")
 				throw new Error ("Expected string argument");

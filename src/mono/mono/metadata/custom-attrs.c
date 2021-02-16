@@ -24,7 +24,6 @@
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
-#include "mono/metadata/verify-internals.h"
 #include "mono/metadata/icall-decl.h"
 #include "mono/utils/checked-build.h"
 
@@ -875,9 +874,6 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 
 	mono_class_init_internal (method->klass);
 
-	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
-		goto fail;
-
 	if (len == 0) {
 		attr = mono_object_new_handle (mono_domain_get (), method->klass, error);
 		goto_if_nok (error, fail);
@@ -1069,9 +1065,6 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 
 	error_init (error);
 
-	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
-		return;
-
 	mono_class_init_internal (method->klass);
 
 	domain = mono_domain_get ();
@@ -1234,9 +1227,6 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 	named_args = NULL;
 
 	error_init (error);
-
-	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
-		goto fail;
 
 	mono_class_init_internal (method->klass);
 
@@ -1688,11 +1678,6 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 			}
 		}
 
-		if (!mono_verifier_verify_cattr_blob (image, cols [MONO_CUSTOM_ATTR_VALUE], error)) {
-			g_array_free (attr_array, TRUE);
-			g_free (ainfo);
-			return NULL;
-		}
 		data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
 		attr->data_size = mono_metadata_decode_value (data, &data);
 		attr->data = (guchar*)data;

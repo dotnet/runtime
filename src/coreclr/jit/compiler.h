@@ -2120,6 +2120,10 @@ public:
         noway_assert(!"GetArgEntry: argNum not found");
         return nullptr;
     }
+    void SetNeedsTemps()
+    {
+        needsTemps = true;
+    }
 
     // Get the node for the arg at position argIndex.
     // Caller must ensure that this index is a valid arg index.
@@ -5792,6 +5796,7 @@ private:
                                                      Statement*     paramAssignmentInsertionPoint);
     static int fgEstimateCallStackSize(GenTreeCall* call);
     GenTree* fgMorphCall(GenTreeCall* call);
+    GenTree* fgExpandVirtualVtableCallTarget(GenTreeCall* call);
     void fgMorphCallInline(GenTreeCall* call, InlineResult* result);
     void fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result);
 #if DEBUG
@@ -9060,6 +9065,8 @@ public:
                               // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
         bool dspGCtbls;       // Display the GC tables
 #endif
+
+        bool compExpandCallsEarly; // True if we should expand virtual call targets early for this method
 
 // Default numbers used to perform loop alignment. All the numbers are choosen
 // based on experimenting with various benchmarks.
