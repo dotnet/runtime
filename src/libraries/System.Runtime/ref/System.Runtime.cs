@@ -5691,6 +5691,12 @@ namespace System.Configuration.Assemblies
 }
 namespace System.Diagnostics
 {
+    public sealed partial class ActualSystemClock : System.Diagnostics.TimeClock
+    {
+        internal ActualSystemClock() { }
+        public static System.Diagnostics.ActualSystemClock Instance { get { throw null; } }
+        protected override System.DateTimeOffset GetCurrentUtcDateTimeOffsetImpl() { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple=true)]
     public sealed partial class ConditionalAttribute : System.Attribute
     {
@@ -5878,6 +5884,46 @@ namespace System.Diagnostics
         public void Start() { }
         public static System.Diagnostics.Stopwatch StartNew() { throw null; }
         public void Stop() { }
+    }
+    public abstract partial class TimeClock
+    {
+        protected TimeClock() { }
+        public System.DateTime GetCurrentUtcDateTime() { throw null; }
+        public System.DateTimeOffset GetCurrentUtcDateTimeOffset() { throw null; }
+        protected abstract System.DateTimeOffset GetCurrentUtcDateTimeOffsetImpl();
+    }
+    public sealed partial class TimeContext
+    {
+        internal TimeContext() { }
+        public static System.TimeZoneInfo ActualSystemLocalTimeZone { get { throw null; } }
+        public static bool ActualSystemLocalTimeZoneIsActive { get { throw null; } }
+        public System.Diagnostics.TimeClock Clock { get { throw null; } }
+        public static System.Diagnostics.TimeContext Current { get { throw null; } }
+        public System.TimeZoneInfo LocalTimeZone { get { throw null; } }
+        public static System.Diagnostics.ActualSystemClock ActualSystemClock { get { throw null; } }
+        public static bool ActualSystemClockIsActive { get { throw null; } }
+        public static void Run(System.Diagnostics.TimeClock clock, System.Action action) { }
+        public static void Run(System.Diagnostics.TimeClock clock, System.TimeZoneInfo localTimeZone, System.Action action) { }
+        public static void Run(System.TimeZoneInfo localTimeZone, System.Action action) { }
+        public static System.Threading.Tasks.Task RunAsync(System.Diagnostics.TimeClock clock, System.Func<System.Threading.Tasks.Task> function) { throw null; }
+        public static System.Threading.Tasks.Task RunAsync(System.Diagnostics.TimeClock clock, System.TimeZoneInfo localTimeZone, System.Func<System.Threading.Tasks.Task> function) { throw null; }
+        public static System.Threading.Tasks.Task RunAsync(System.TimeZoneInfo localTimeZone, System.Func<System.Threading.Tasks.Task> function) { throw null; }
+        public static System.Threading.Tasks.Task<TResult> RunAsync<TResult>(System.Diagnostics.TimeClock clock, System.Func<System.Threading.Tasks.Task<TResult>> function) { throw null; }
+        public static System.Threading.Tasks.Task<TResult> RunAsync<TResult>(System.Diagnostics.TimeClock clock, System.TimeZoneInfo localTimeZone, System.Func<System.Threading.Tasks.Task<TResult>> function) { throw null; }
+        public static System.Threading.Tasks.Task<TResult> RunAsync<TResult>(System.TimeZoneInfo localTimeZone, System.Func<System.Threading.Tasks.Task<TResult>> function) { throw null; }
+        public static TResult Run<TResult>(System.Diagnostics.TimeClock clock, System.Func<TResult> function) { throw null; }
+        public static TResult Run<TResult>(System.Diagnostics.TimeClock clock, System.TimeZoneInfo localTimeZone, System.Func<TResult> function) { throw null; }
+        public static TResult Run<TResult>(System.TimeZoneInfo localTimeZone, System.Func<TResult> function) { throw null; }
+    }
+    public sealed partial class VirtualClock : System.Diagnostics.TimeClock
+    {
+        public VirtualClock(System.DateTime timeValue) { }
+        public VirtualClock(System.DateTime initialTimeValue, System.Func<System.DateTimeOffset, System.DateTimeOffset> advancementFunction) { }
+        public VirtualClock(System.DateTime initialTimeValue, System.TimeSpan advancementAmount) { }
+        public VirtualClock(System.DateTimeOffset timeValue) { }
+        public VirtualClock(System.DateTimeOffset initialTimeValue, System.Func<System.DateTimeOffset, System.DateTimeOffset> advancementFunction) { }
+        public VirtualClock(System.DateTimeOffset initialTimeValue, System.TimeSpan advancementAmount) { }
+        protected override System.DateTimeOffset GetCurrentUtcDateTimeOffsetImpl() { throw null; }
     }
 }
 namespace System.Diagnostics.CodeAnalysis

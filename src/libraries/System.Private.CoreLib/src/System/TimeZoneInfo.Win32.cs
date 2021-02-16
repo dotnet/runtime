@@ -364,6 +364,13 @@ namespace System
         // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
         internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
         {
+            if (!TimeContext.ActualSystemLocalTimeZoneIsActive)
+            {
+                // Use the standard code path when we're in a time context that has changed the system local time zone.
+                bool isDaylightSavings;
+                return GetUtcOffsetFromUtc(time, Local, out isDaylightSavings, out isAmbiguousLocalDst);
+            }
+
             isAmbiguousLocalDst = false;
             int timeYear = time.Year;
 

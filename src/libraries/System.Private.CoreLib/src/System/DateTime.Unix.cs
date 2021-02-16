@@ -7,14 +7,6 @@ namespace System
     {
         internal const bool s_systemSupportsLeapSeconds = false;
 
-        public static DateTime UtcNow
-        {
-            get
-            {
-                return new DateTime(((ulong)(Interop.Sys.GetSystemTimeAsTicks() + UnixEpochTicks)) | KindUtc);
-            }
-        }
-
         private static DateTime FromFileTimeLeapSecondsAware(ulong fileTime) => default;
         private static ulong ToFileTimeLeapSecondsAware(long ticks) => default;
 

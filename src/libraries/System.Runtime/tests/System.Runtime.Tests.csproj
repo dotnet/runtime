@@ -64,7 +64,6 @@
     <Compile Include="System\DBNullTests.cs" />
     <Compile Include="System\DecimalTests.cs" />
     <Compile Include="System\DelegateTests.cs" />
-    <Compile Include="System\Diagnostics\CodeAnalysis\DynamicDependencyAttributeTests.cs" />
     <Compile Include="System\DivideByZeroExceptionTests.cs" />
     <Compile Include="System\DoubleTests.cs" />
     <Compile Include="System\DuplicateWaitObjectExceptionTests.cs" />
@@ -157,7 +156,12 @@
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollectionTests.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.cs" />
     <Compile Include="System\ComponentModel\EditorBrowsableAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\ActualSystemClockTests.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\TimeClockTests.cs" />
+    <Compile Include="System\Diagnostics\TimeContextTests.cs" />
+    <Compile Include="System\Diagnostics\VirtualClockTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\DynamicDependencyAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttributeTests.cs" />

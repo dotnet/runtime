@@ -56,10 +56,8 @@ namespace System
         private static CachedData s_cachedData = new CachedData();
 
         //
-        // All cached data are encapsulated in a helper class to allow consistent view even when the data are refreshed using ClearCachedData()
-        //
-        // For example, TimeZoneInfo.Local can be cleared by another thread calling TimeZoneInfo.ClearCachedData. Without the consistent snapshot,
-        // there is a chance that the internal ConvertTime calls will throw since 'source' won't be reference equal to the new TimeZoneInfo.Local.
+        // All cached data come from the underlying operating system and are encapsulated in a helper class to allow
+        // consistent view even when refreshed using ClearCachedData()
         //
         private sealed partial class CachedData
         {
@@ -93,35 +91,6 @@ namespace System
             }
 
             public TimeZoneInfo Local => _localTimeZone ?? CreateLocal();
-
-            /// <summary>
-            /// Helper function that returns the corresponding DateTimeKind for this TimeZoneInfo.
-            /// </summary>
-            public DateTimeKind GetCorrespondingKind(TimeZoneInfo? timeZone)
-            {
-                // We check reference equality to see if 'this' is the same as
-                // TimeZoneInfo.Local or TimeZoneInfo.Utc.  This check is needed to
-                // support setting the DateTime Kind property to 'Local' or
-                // 'Utc' on the ConverTime(...) return value.
-                //
-                // Using reference equality instead of value equality was a
-                // performance based design compromise.  The reference equality
-                // has much greater performance, but it reduces the number of
-                // returned DateTime's that can be properly set as 'Local' or 'Utc'.
-                //
-                // For example, the user could be converting to the TimeZoneInfo returned
-                // by FindSystemTimeZoneById("Pacific Standard Time") and their local
-                // machine may be in Pacific time.  If we used value equality to determine
-                // the corresponding Kind then this conversion would be tagged as 'Local';
-                // where as we are currently tagging the returned DateTime as 'Unspecified'
-                // in this example.  Only when the user passes in TimeZoneInfo.Local or
-                // TimeZoneInfo.Utc to the ConvertTime(...) methods will this check succeed.
-                //
-                return
-                    ReferenceEquals(timeZone, s_utcTimeZone) ? DateTimeKind.Utc :
-                    ReferenceEquals(timeZone, _localTimeZone) ? DateTimeKind.Local :
-                    DateTimeKind.Unspecified;
-            }
 
             public Dictionary<string, TimeZoneInfo>? _systemTimeZones;
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlySystemTimeZones;
@@ -201,19 +170,17 @@ namespace System
             }
 
             DateTime adjustedTime;
-            if (dateTime.Kind == DateTimeKind.Local)
+            DateTimeKind sourceKind = dateTime.Kind;
+            if (sourceKind == DateTimeKind.Unspecified)
             {
-                CachedData cachedData = s_cachedData;
-                adjustedTime = ConvertTime(dateTime, cachedData.Local, this, TimeZoneInfoOptions.None, cachedData);
-            }
-            else if (dateTime.Kind == DateTimeKind.Utc)
-            {
-                CachedData cachedData = s_cachedData;
-                adjustedTime = ConvertTime(dateTime, s_utcTimeZone, this, TimeZoneInfoOptions.None, cachedData);
+                adjustedTime = dateTime;
             }
             else
             {
-                adjustedTime = dateTime;
+                TimeZoneInfo local = Local;
+                TimeZoneInfo sourceZone = sourceKind == DateTimeKind.Local ? local : s_utcTimeZone;
+                DateTimeKind targetKind = GetCorrespondingKind(this, local);
+                adjustedTime = ConvertTime(dateTime, sourceZone, this, sourceKind, targetKind, TimeZoneInfoOptions.None);
             }
 
             bool isAmbiguous = false;
@@ -303,31 +270,29 @@ namespace System
         /// Returns the Universal Coordinated Time (UTC) Offset for the current TimeZoneInfo instance.
         /// </summary>
         public TimeSpan GetUtcOffset(DateTime dateTime) =>
-            GetUtcOffset(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime, s_cachedData);
+            GetUtcOffset(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime);
 
         // Shortcut for TimeZoneInfo.Local.GetUtcOffset
         internal static TimeSpan GetLocalUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
         {
-            CachedData cachedData = s_cachedData;
-            return cachedData.Local.GetUtcOffset(dateTime, flags, cachedData);
+            return Local.GetUtcOffset(dateTime, flags);
         }
 
         /// <summary>
         /// Returns the Universal Coordinated Time (UTC) Offset for the current TimeZoneInfo instance.
         /// </summary>
-        internal TimeSpan GetUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags) =>
-            GetUtcOffset(dateTime, flags, s_cachedData);
-
-        private TimeSpan GetUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags, CachedData cachedData)
+        internal TimeSpan GetUtcOffset(DateTime dateTime, TimeZoneInfoOptions flags)
         {
             if (dateTime.Kind == DateTimeKind.Local)
             {
-                if (cachedData.GetCorrespondingKind(this) != DateTimeKind.Local)
+                TimeZoneInfo local = Local;
+                if (ReferenceEquals(this, local))
                 {
                     //
                     // normal case of converting from Local to Utc and then getting the offset from the UTC DateTime
                     //
-                    DateTime adjustedTime = ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, flags);
+                    DateTime adjustedTime = ConvertTime(dateTime, local, s_utcTimeZone,
+                        DateTimeKind.Local, DateTimeKind.Utc, flags);
                     return GetUtcOffsetFromUtc(adjustedTime, this);
                 }
 
@@ -348,7 +313,7 @@ namespace System
             }
             else if (dateTime.Kind == DateTimeKind.Utc)
             {
-                if (cachedData.GetCorrespondingKind(this) == DateTimeKind.Utc)
+                if (ReferenceEquals(this, s_utcTimeZone))
                 {
                     return _baseUtcOffset;
                 }
@@ -398,11 +363,19 @@ namespace System
                 return false;
             }
 
-            CachedData cachedData = s_cachedData;
-            DateTime adjustedTime =
-                dateTime.Kind == DateTimeKind.Local ? ConvertTime(dateTime, cachedData.Local, this, flags, cachedData) :
-                dateTime.Kind == DateTimeKind.Utc ? ConvertTime(dateTime, s_utcTimeZone, this, flags, cachedData) :
-                dateTime;
+            DateTime adjustedTime;
+            DateTimeKind sourceKind = dateTime.Kind;
+            if (sourceKind == DateTimeKind.Unspecified)
+            {
+                adjustedTime = dateTime;
+            }
+            else
+            {
+                TimeZoneInfo local = Local;
+                TimeZoneInfo sourceZone = sourceKind == DateTimeKind.Local ? local : s_utcTimeZone;
+                DateTimeKind targetKind = GetCorrespondingKind(this, local);
+                adjustedTime = ConvertTime(dateTime, sourceZone, this, sourceKind, targetKind, flags);
+            }
 
             AdjustmentRule? rule = GetAdjustmentRuleForTime(adjustedTime, out int? ruleIndex);
             if (rule != null && rule.HasDaylightSaving)
@@ -426,15 +399,12 @@ namespace System
         /// Returns true if the time is during Daylight Saving time for the current TimeZoneInfo instance.
         /// </summary>
         public bool IsDaylightSavingTime(DateTime dateTime) =>
-            IsDaylightSavingTime(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime, s_cachedData);
+            IsDaylightSavingTime(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime);
 
         /// <summary>
         /// Returns true if the time is during Daylight Saving time for the current TimeZoneInfo instance.
         /// </summary>
-        internal bool IsDaylightSavingTime(DateTime dateTime, TimeZoneInfoOptions flags) =>
-            IsDaylightSavingTime(dateTime, flags, s_cachedData);
-
-        private bool IsDaylightSavingTime(DateTime dateTime, TimeZoneInfoOptions flags, CachedData cachedData)
+        internal bool IsDaylightSavingTime(DateTime dateTime, TimeZoneInfoOptions flags)
         {
             //
             //    dateTime.Kind is UTC, then time will be converted from UTC
@@ -460,11 +430,13 @@ namespace System
             //
             if (dateTime.Kind == DateTimeKind.Local)
             {
-                adjustedTime = ConvertTime(dateTime, cachedData.Local, this, flags, cachedData);
+                TimeZoneInfo local = Local;
+                DateTimeKind targetKind = GetCorrespondingKind(this, local);
+                adjustedTime = ConvertTime(dateTime, local, this, DateTimeKind.Local, targetKind, flags);
             }
             else if (dateTime.Kind == DateTimeKind.Utc)
             {
-                if (cachedData.GetCorrespondingKind(this) == DateTimeKind.Utc)
+                if (ReferenceEquals(this, s_utcTimeZone))
                 {
                     // simple always false case: TimeZoneInfo.Utc.IsDaylightSavingTime(dateTime, flags);
                     return false;
@@ -505,9 +477,10 @@ namespace System
         public bool IsInvalidTime(DateTime dateTime)
         {
             bool isInvalid = false;
+            TimeZoneInfo local = Local;
 
             if ((dateTime.Kind == DateTimeKind.Unspecified) ||
-                (dateTime.Kind == DateTimeKind.Local && s_cachedData.GetCorrespondingKind(this) == DateTimeKind.Local))
+                (dateTime.Kind == DateTimeKind.Local && ReferenceEquals(this, local)))
             {
                 // only check Unspecified and (Local when this TimeZoneInfo instance is Local)
                 AdjustmentRule? rule = GetAdjustmentRuleForTime(dateTime, out int? ruleIndex);
@@ -552,24 +525,22 @@ namespace System
         /// </summary>
         public static DateTime ConvertTimeBySystemTimeZoneId(DateTime dateTime, string sourceTimeZoneId, string destinationTimeZoneId)
         {
-            if (dateTime.Kind == DateTimeKind.Local && string.Equals(sourceTimeZoneId, Local.Id, StringComparison.OrdinalIgnoreCase))
+            TimeZoneInfo local = Local;
+
+            TimeZoneInfo destinationTimeZone = FindSystemTimeZoneById(destinationTimeZoneId);
+            DateTimeKind targetKind = GetCorrespondingKind(destinationTimeZone, local);
+
+            DateTimeKind sourceKind = dateTime.Kind;
+            return sourceKind switch
             {
-                // TimeZoneInfo.Local can be cleared by another thread calling TimeZoneInfo.ClearCachedData.
-                // Take snapshot of cached data to guarantee this method will not be impacted by the ClearCachedData call.
-                // Without the snapshot, there is a chance that ConvertTime will throw since 'source' won't
-                // be reference equal to the new TimeZoneInfo.Local
-                //
-                CachedData cachedData = s_cachedData;
-                return ConvertTime(dateTime, cachedData.Local, FindSystemTimeZoneById(destinationTimeZoneId), TimeZoneInfoOptions.None, cachedData);
-            }
-            else if (dateTime.Kind == DateTimeKind.Utc && string.Equals(sourceTimeZoneId, Utc.Id, StringComparison.OrdinalIgnoreCase))
-            {
-                return ConvertTime(dateTime, s_utcTimeZone, FindSystemTimeZoneById(destinationTimeZoneId), TimeZoneInfoOptions.None, s_cachedData);
-            }
-            else
-            {
-                return ConvertTime(dateTime, FindSystemTimeZoneById(sourceTimeZoneId), FindSystemTimeZoneById(destinationTimeZoneId));
-            }
+                DateTimeKind.Local when string.Equals(sourceTimeZoneId, local.Id, StringComparison.OrdinalIgnoreCase) =>
+                    ConvertTime(dateTime, local, destinationTimeZone, sourceKind, targetKind, TimeZoneInfoOptions.None),
+
+                DateTimeKind.Utc when string.Equals(sourceTimeZoneId, UtcId, StringComparison.OrdinalIgnoreCase) =>
+                    ConvertTime(dateTime, s_utcTimeZone, destinationTimeZone, sourceKind, targetKind, TimeZoneInfoOptions.None),
+
+                _ => ConvertTime(dateTime, FindSystemTimeZoneById(sourceTimeZoneId), destinationTimeZone, sourceKind, targetKind, TimeZoneInfoOptions.None)
+            };
         }
 
         /// <summary>
@@ -605,29 +576,34 @@ namespace System
                 throw new ArgumentNullException(nameof(destinationTimeZone));
             }
 
-            // Special case to give a way clearing the cache without exposing ClearCachedData()
+            // Special case added for .NET Core/Standard 1.x to have a way for clearing the cache without
+            // exposing ClearCachedData(), which was made public in .NET Core/Standard 2.0, and was always
+            // public in .NET Framework.  Retaining this behavior for backwards compatibility purposes only.
             if (dateTime.Ticks == 0)
             {
                 ClearCachedData();
             }
-            CachedData cachedData = s_cachedData;
-            TimeZoneInfo sourceTimeZone = dateTime.Kind == DateTimeKind.Utc ? s_utcTimeZone : cachedData.Local;
-            return ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, TimeZoneInfoOptions.None, cachedData);
+
+            TimeZoneInfo local = Local;
+            DateTimeKind sourceKind = dateTime.Kind;
+            DateTimeKind targetKind = GetCorrespondingKind(destinationTimeZone, local);
+            TimeZoneInfo sourceTimeZone = sourceKind == DateTimeKind.Utc ? s_utcTimeZone : local;
+            return ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, sourceKind, targetKind, TimeZoneInfoOptions.None);
         }
 
         /// <summary>
         /// Converts the value of the dateTime object from sourceTimeZone to destinationTimeZone
         /// </summary>
-        public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone) =>
-            ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, TimeZoneInfoOptions.None, s_cachedData);
+        public static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone)
+        {
+            TimeZoneInfo local = Local;
+            DateTimeKind sourceKind = GetCorrespondingKind(sourceTimeZone, local);
+            DateTimeKind targetKind = GetCorrespondingKind(destinationTimeZone, local);
 
-        /// <summary>
-        /// Converts the value of the dateTime object from sourceTimeZone to destinationTimeZone
-        /// </summary>
-        internal static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags) =>
-            ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, flags, s_cachedData);
+            return ConvertTime(dateTime, sourceTimeZone, destinationTimeZone, sourceKind, targetKind, TimeZoneInfoOptions.None);
+        }
 
-        private static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, TimeZoneInfoOptions flags, CachedData cachedData)
+        private static DateTime ConvertTime(DateTime dateTime, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone, DateTimeKind sourceKind, DateTimeKind targetKind, TimeZoneInfoOptions flags)
         {
             if (sourceTimeZone == null)
             {
@@ -639,7 +615,6 @@ namespace System
                 throw new ArgumentNullException(nameof(destinationTimeZone));
             }
 
-            DateTimeKind sourceKind = cachedData.GetCorrespondingKind(sourceTimeZone);
             if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && (dateTime.Kind != DateTimeKind.Unspecified) && (dateTime.Kind != sourceKind))
             {
                 throw new ArgumentException(SR.Argument_ConvertMismatch, nameof(sourceTimeZone));
@@ -677,8 +652,6 @@ namespace System
                 }
             }
 
-            DateTimeKind targetKind = cachedData.GetCorrespondingKind(destinationTimeZone);
-
             // handle the special case of Loss-less Local->Local and UTC->UTC)
             if (dateTime.Kind != DateTimeKind.Unspecified && sourceKind != DateTimeKind.Unspecified && sourceKind == targetKind)
             {
@@ -705,8 +678,16 @@ namespace System
         /// <summary>
         /// Converts the value of a DateTime object from Coordinated Universal Time (UTC) to the destinationTimeZone.
         /// </summary>
-        public static DateTime ConvertTimeFromUtc(DateTime dateTime, TimeZoneInfo destinationTimeZone) =>
-            ConvertTime(dateTime, s_utcTimeZone, destinationTimeZone, TimeZoneInfoOptions.None, s_cachedData);
+        public static DateTime ConvertTimeFromUtc(DateTime dateTime, TimeZoneInfo destinationTimeZone)
+        {
+            if (dateTime.Kind == DateTimeKind.Utc && ReferenceEquals(destinationTimeZone, s_utcTimeZone))
+            {
+                return dateTime;
+            }
+
+            DateTimeKind targetKind = GetCorrespondingKind(destinationTimeZone, Local);
+            return ConvertTime(dateTime, s_utcTimeZone, destinationTimeZone, DateTimeKind.Utc, targetKind, TimeZoneInfoOptions.None);
+        }
 
         /// <summary>
         /// Converts the value of a DateTime object to Coordinated Universal Time (UTC).
@@ -717,8 +698,8 @@ namespace System
             {
                 return dateTime;
             }
-            CachedData cachedData = s_cachedData;
-            return ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, TimeZoneInfoOptions.None, cachedData);
+
+            return ConvertTime(dateTime, Local, s_utcTimeZone, DateTimeKind.Local, DateTimeKind.Utc, TimeZoneInfoOptions.None);
         }
 
         /// <summary>
@@ -730,15 +711,18 @@ namespace System
             {
                 return dateTime;
             }
-            CachedData cachedData = s_cachedData;
-            return ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, flags, cachedData);
+
+            return ConvertTime(dateTime, Local, s_utcTimeZone, DateTimeKind.Local, DateTimeKind.Utc, flags);
         }
 
         /// <summary>
         /// Converts the value of a DateTime object to Coordinated Universal Time (UTC).
         /// </summary>
-        public static DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfo sourceTimeZone) =>
-            ConvertTime(dateTime, sourceTimeZone, s_utcTimeZone, TimeZoneInfoOptions.None, s_cachedData);
+        public static DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfo sourceTimeZone)
+        {
+            DateTimeKind sourceKind = GetCorrespondingKind(sourceTimeZone, Local);
+            return ConvertTime(dateTime, sourceTimeZone, s_utcTimeZone, sourceKind, DateTimeKind.Utc, TimeZoneInfoOptions.None);
+        }
 
         /// <summary>
         /// Returns value equality. Equals does not compare any localizable
@@ -862,11 +846,16 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a TimeZoneInfo instance that represents the local time on the machine.
-        /// Accessing this property may throw InvalidTimeZoneException or COMException
+        /// Returns a TimeZoneInfo instance that represents the local time zone currently in effect.
+        /// </summary>
+        public static TimeZoneInfo Local => TimeContext.Current.LocalTimeZone;
+
+        /// <summary>
+        /// Returns a TimeZoneInfo instance that represents the actual local time zone currently on the machine.
+        /// Calling this method may throw InvalidTimeZoneException or COMException
         /// if the machine is in an unstable or corrupt state.
         /// </summary>
-        public static TimeZoneInfo Local => s_cachedData.Local;
+        internal static TimeZoneInfo GetActualSystemLocal() => s_cachedData.Local;
 
         //
         // ToSerializedString -
@@ -1983,5 +1972,33 @@ namespace System
             TimeSpan utcOffset = GetUtcOffset(baseUtcOffset, adjustmentRule);
             return !UtcOffsetOutOfRange(utcOffset);
         }
+
+        /// <summary>
+        /// Helper function that returns the corresponding DateTimeKind for a TimeZoneInfo.
+        /// </summary>
+        /// <remarks>
+        /// We check reference equality to see if the time zone is the same as
+        /// the given local time zone, or as TimeZoneInfo.Utc.  This check is needed to
+        /// support setting the DateTime Kind property to 'Local' or
+        /// 'Utc' on the ConvertTime(...) return value.
+        ///
+        /// Using reference equality instead of value equality was a
+        /// performance based design compromise.  The reference equality
+        /// has much greater performance, but it reduces the number of
+        /// returned DateTime's that can be properly set as 'Local' or 'Utc'.
+        ///
+        /// For example, the user could be converting to the TimeZoneInfo returned
+        /// by FindSystemTimeZoneById("Pacific Standard Time") and their local
+        /// machine may be in Pacific time.  If we used value equality to determine
+        /// the corresponding Kind then this conversion would be tagged as 'Local';
+        /// where as we are currently tagging the returned DateTime as 'Unspecified'
+        /// in this example.  Only when the user passes in TimeZoneInfo.Local or
+        /// TimeZoneInfo.Utc to the ConvertTime(...) methods will this check succeed.
+        ///
+        /// </remarks>
+        private static DateTimeKind GetCorrespondingKind(TimeZoneInfo? timeZone, TimeZoneInfo? localTimeZone) =>
+            ReferenceEquals(timeZone, s_utcTimeZone) ? DateTimeKind.Utc :
+            ReferenceEquals(timeZone, localTimeZone) ? DateTimeKind.Local :
+            DateTimeKind.Unspecified;
     }
 }

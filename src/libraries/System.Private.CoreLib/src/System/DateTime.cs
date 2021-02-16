@@ -81,7 +81,7 @@ namespace System
         private const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
 
         internal const long UnixEpochTicks = DaysTo1970 * TicksPerDay;
-        private const long FileTimeOffset = DaysTo1601 * TicksPerDay;
+        internal const long FileTimeOffset = DaysTo1601 * TicksPerDay;
         private const long DoubleDateOffset = DaysTo1899 * TicksPerDay;
         // The minimum OA date is 0100/01/01 (Note it's year 100).
         // The maximum OA date is 9999/12/31
@@ -112,7 +112,7 @@ namespace System
         private const ulong FlagsMask = 0xC000000000000000;
         private const long TicksCeiling = 0x4000000000000000;
         private const ulong KindUnspecified = 0x0000000000000000;
-        private const ulong KindUtc = 0x4000000000000000;
+        internal const ulong KindUtc = 0x4000000000000000;
         private const ulong KindLocal = 0x8000000000000000;
         private const ulong KindLocalAmbiguousDst = 0xC000000000000000;
         private const int KindShift = 62;
@@ -140,7 +140,7 @@ namespace System
             _dateData = (ulong)ticks;
         }
 
-        private DateTime(ulong dateData)
+        internal DateTime(ulong dateData)
         {
             this._dateData = dateData;
         }
@@ -743,7 +743,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(fileTime), SR.ArgumentOutOfRange_FileTimeInvalid);
             }
 
-#pragma warning disable 162 // Unrechable code on Unix
+#pragma warning disable 162 // Unreachable code on Unix
             if (s_systemSupportsLeapSeconds)
             {
                 return FromFileTimeLeapSecondsAware((ulong)fileTime);
@@ -1057,6 +1057,8 @@ namespace System
         //
         public static DateTime Today => Now.Date;
 
+        public static DateTime UtcNow => TimeContext.Current.Clock.GetCurrentUtcDateTime();
+
         // Returns the year part of this DateTime. The returned value is an
         // integer between 1 and 9999.
         //
@@ -1203,7 +1205,7 @@ namespace System
             // Treats the input as universal if it is not specified
             long ticks = ((_dateData & KindLocal) != 0) ? ToUniversalTime().Ticks : Ticks;
 
-#pragma warning disable 162 // Unrechable code on Unix
+#pragma warning disable 162 // Unreachable code on Unix
             if (s_systemSupportsLeapSeconds)
             {
                 return (long)ToFileTimeLeapSecondsAware(ticks);

@@ -54,7 +54,7 @@ namespace System
 
         // Constructors
 
-        private DateTimeOffset(short validOffsetMinutes, DateTime validDateTime)
+        internal DateTimeOffset(short validOffsetMinutes, DateTime validDateTime)
         {
             _dateTime = validDateTime;
             _offsetMinutes = validOffsetMinutes;
@@ -176,18 +176,7 @@ namespace System
         // resolution of the returned value depends on the system timer.
         public static DateTimeOffset Now => ToLocalTime(DateTime.UtcNow, true);
 
-        public static DateTimeOffset UtcNow
-        {
-            get
-            {
-                DateTime utcNow = DateTime.UtcNow;
-                var result = new DateTimeOffset(0, utcNow);
-
-                Debug.Assert(new DateTimeOffset(utcNow) == result); // ensure lack of verification does not break anything
-
-                return result;
-            }
-        }
+        public static DateTimeOffset UtcNow => TimeContext.Current.Clock.GetCurrentUtcDateTimeOffset();
 
         public DateTime DateTime => ClockDateTime;
 
