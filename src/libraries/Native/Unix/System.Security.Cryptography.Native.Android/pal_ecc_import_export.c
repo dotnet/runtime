@@ -482,7 +482,11 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 
             if ((p[0] & test) == test)
             {
-                // TODO: test for overflow.
+                if ((INT32_MAX - localBitIndex) / 8 < (pLength - 1))
+                {
+                    // We'll overflow if we try to calculate m.
+                    goto error;
+                }
                 m = 8 * (pLength - 1) + localBitIndex;
             }
         }
