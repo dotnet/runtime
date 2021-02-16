@@ -234,22 +234,22 @@ namespace System.Collections.Generic
         /// </summary>
         public TElement EnqueueDequeue(TElement element, TPriority priority)
         {
-            (TElement Element, TPriority Priority) root = _nodes[RootIndex];
-
-            if (Comparer.Compare(priority, root.Priority) <= 0)
+            if (_size != 0)
             {
-                return element;
-            }
-            else
-            {
-                (TElement Element, TPriority Priority) newRoot = (element, priority);
-                _nodes[RootIndex] = newRoot;
+                (TElement Element, TPriority Priority) root = _nodes[RootIndex];
+                if (Comparer.Compare(priority, root.Priority) > 0)
+                {
+                    (TElement Element, TPriority Priority) newRoot = (element, priority);
+                    _nodes[RootIndex] = newRoot;
 
-                MoveDown(newRoot, RootIndex);
-                _version++;
+                    MoveDown(newRoot, RootIndex);
+                    _version++;
 
-                return root.Element;
+                    return root.Element;
+                }
             }
+
+            return element;
         }
 
         /// <summary>

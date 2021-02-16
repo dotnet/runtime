@@ -22,6 +22,15 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public void PriorityQueue_Generic_EnqueueDequeue_Empty()
+        {
+            PriorityQueue<string, int> queue = new PriorityQueue<string, int>();
+
+            Assert.Equal("hello", queue.EnqueueDequeue("hello", 42));
+            Assert.Equal(0, queue.Count);
+        }
+
+        [Fact]
         public void PriorityQueue_Generic_EnqueueDequeue_SmallerThanMin()
         {
             PriorityQueue<string, int> queue = SmallPriorityQueueFactory(out HashSet<(string, int)> enqueuedItems);
