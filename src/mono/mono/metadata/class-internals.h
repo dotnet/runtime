@@ -1582,22 +1582,22 @@ m_class_alloc0 (MonoClass *klass, guint size)
 }
 
 static inline MonoMemoryManager*
-m_method_get_mem_manager (MonoDomain *domain, MonoMethod *method)
+m_method_get_mem_manager (MonoMethod *method)
 {
 	// FIXME:
-	return mono_domain_memory_manager (domain);
+	return mono_domain_memory_manager (mono_get_root_domain ());
 }
 
 static inline void *
-m_method_alloc (MonoDomain *domain, MonoMethod *method, guint size)
+m_method_alloc (MonoMethod *method, guint size)
 {
-	return mono_mem_manager_alloc (m_method_get_mem_manager (domain, method), size);
+	return mono_mem_manager_alloc (m_method_get_mem_manager (method), size);
 }
 
 static inline void *
-m_method_alloc0 (MonoDomain *domain, MonoMethod *method, guint size)
+m_method_alloc0 (MonoMethod *method, guint size)
 {
-	return mono_mem_manager_alloc0 (m_method_get_mem_manager (domain, method), size);
+	return mono_mem_manager_alloc0 (m_method_get_mem_manager (method), size);
 }
 
 // Enum and static storage for JIT icalls.

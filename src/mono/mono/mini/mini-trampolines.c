@@ -109,7 +109,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	ctx = mini_method_get_rgctx (m);
 
 	domain = mono_domain_get ();
-	mem_manager = m_method_get_mem_manager (domain, m);
+	mem_manager = m_method_get_mem_manager (m);
 
 	/* 
 	 * In the AOT case, addr might point to either the method, or to an unbox trampoline,
@@ -133,7 +133,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 
 	mono_domain_lock (domain);
 	/* Duplicates inserted while we didn't hold the lock are OK */
-	info = (RgctxTrampInfo *)m_method_alloc (domain, m, sizeof (RgctxTrampInfo));
+	info = (RgctxTrampInfo *)m_method_alloc (m, sizeof (RgctxTrampInfo));
 	info->m = m;
 	info->addr = addr;
 	g_hash_table_insert (domain_jit_info (domain)->static_rgctx_trampoline_hash, info, res);
@@ -1310,7 +1310,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	code = mono_create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
 	g_assert (code_size);
 
-	ji = (MonoJitInfo *)m_method_alloc0 (domain, method, MONO_SIZEOF_JIT_INFO);
+	ji = (MonoJitInfo *)m_method_alloc0 (method, MONO_SIZEOF_JIT_INFO);
 	ji->code_start = MINI_FTNPTR_TO_ADDR (code);
 	ji->code_size = code_size;
 	ji->d.method = method;

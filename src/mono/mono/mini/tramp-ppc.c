@@ -83,7 +83,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	int this_pos = 3;
 	guint32 short_branch;
 	MonoDomain *domain = mono_domain_get ();
-	MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, m);
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (m);
 	int size = MONO_PPC_32_64_CASE (20, 32) + PPC_FTNPTR_SIZE;
 
 	addr = mono_get_addr_from_ftnptr (addr);
