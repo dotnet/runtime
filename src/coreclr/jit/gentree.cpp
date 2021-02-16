@@ -19574,5 +19574,5 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    return Compiler::IsInvariant((GenTree*)this);
+    return Compiler::IsInvariant(this);
 }
