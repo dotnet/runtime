@@ -2,7 +2,7 @@
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <!-- The following property group can be simplified once runtime repo switches over to SDK 6.0 drop -->
     <PropertyGroup>
-      <CrossDir></CrossDir>
+      <CrossDir />
       <CrossDir Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">x64</CrossDir>
       <Crossgen2Dir>$(CoreCLRArtifactsPath)\$(CrossDir)\crossgen2</Crossgen2Dir>
       <Crossgen2Exe>$(Crossgen2Dir)\crossgen2$(ExeSuffix)</Crossgen2Exe>
