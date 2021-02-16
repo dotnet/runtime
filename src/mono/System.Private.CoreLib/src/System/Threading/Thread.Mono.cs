@@ -66,7 +66,7 @@ namespace System.Threading
         private StartHelper? _startHelper;
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_BROWSER
         internal WaitSubsystem.ThreadWaitInfo _waitInfo;
 #endif
 
@@ -148,7 +148,7 @@ namespace System.Threading
             }
         }
 
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_BROWSER
         internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
 #endif
 
@@ -204,14 +204,14 @@ namespace System.Threading
             return JoinInternal(this, millisecondsTimeout);
         }
 
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_BROWSER
         [MemberNotNull(nameof(_waitInfo))]
 #endif
         private void Initialize()
         {
             InitInternal(this);
 
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_BROWSER
             _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
 #endif
         }
