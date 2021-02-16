@@ -3,6 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoInstanceCtor
 {
+	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[Define ("IL_ASSEMBLY_COMPILED")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/NoInstanceCtorAndAssemblyPreserveAll_Lib.il" })]
 

@@ -96,8 +96,7 @@ namespace Mono.Linker.Steps
 			if (loaded != null)
 				return loaded;
 
-			Context.Resolver.CacheAssemblyWithPath (assembly);
-			Context.RegisterAssembly (assembly);
+			Context.Resolver.CacheAssembly (assembly);
 			return assembly;
 		}
 

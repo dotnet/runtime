@@ -3,6 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.UnreachableBody
 {
+	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[Define ("OTHER_INCLUDED")]
 #if NETCOREAPP
 	[SetupLinkerArgument ("-a", "other.dll", "visible")]

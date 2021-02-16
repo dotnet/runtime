@@ -4,6 +4,7 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols
 {
+	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[Reference ("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb")]
 	[SetupLinkerLinkSymbols ("false")]
