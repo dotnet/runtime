@@ -335,7 +335,7 @@ emit_vector_create_elementwise (
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-static guint16 vector_64_methods [] = {
+static guint16 sri_vector_methods [] = {
 	SN_AsByte,
 	SN_AsDouble,
 	SN_AsInt16,
@@ -351,72 +351,13 @@ static guint16 vector_64_methods [] = {
 };
 
 static MonoInst*
-emit_vector64 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
 
 	MonoClass *klass = cmethod->klass;
-	int id = lookup_intrins (vector_64_methods, sizeof (vector_64_methods), cmethod);
-	if (id == -1)
-		return NULL;
-
-	if (!strcmp (m_class_get_name (cfg->method->klass), "Vector256"))
-		return NULL; // TODO: Fix Vector256.WithUpper/WithLower
-
-	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
-
-	switch (id) {
-	case SN_AsByte:
-	case SN_AsDouble:
-	case SN_AsInt16:
-	case SN_AsInt32:
-	case SN_AsInt64:
-	case SN_AsSByte:
-	case SN_AsSingle:
-	case SN_AsUInt16:
-	case SN_AsUInt32:
-	case SN_AsUInt64:
-		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
-	case SN_Create: {
-		MonoType *etype = get_vector_t_elem_type (fsig->ret);
-		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
-			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
-		else
-			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, etype, args);
-	}
-	case SN_CreateScalarUnsafe:
-		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
-	default:
-		break;
-	}
-
-	return NULL;
-}
-
-static guint16 vector_128_methods [] = {
-	SN_AsByte,
-	SN_AsDouble,
-	SN_AsInt16,
-	SN_AsInt32,
-	SN_AsInt64,
-	SN_AsSByte,
-	SN_AsSingle,
-	SN_AsUInt16,
-	SN_AsUInt32,
-	SN_AsUInt64,
-	SN_Create,
-	SN_CreateScalarUnsafe,
-};
-
-static MonoInst*
-emit_vector128 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
-{
-	if (!COMPILE_LLVM (cfg))
-		return NULL;
-
-	MonoClass *klass = cmethod->klass;
-	int id = lookup_intrins (vector_128_methods, sizeof (vector_128_methods), cmethod);
+	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
 	if (id == -1)
 		return NULL;
 
@@ -2314,10 +2255,8 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
-		if (!strcmp (class_name, "Vector128"))
-			return emit_vector128 (cfg, cmethod, fsig, args);
-		if (!strcmp (class_name, "Vector64"))
-			return emit_vector64 (cfg, cmethod, fsig, args);
+		if (!strcmp (class_name, "Vector128") || !strcmp (class_name, "Vector64"))
+			return emit_sri_vector (cfg, cmethod, fsig, args);
 	}
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
