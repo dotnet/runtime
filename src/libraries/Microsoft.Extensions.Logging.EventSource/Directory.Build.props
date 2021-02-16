@@ -3,5 +3,7 @@
 
   <PropertyGroup>
     <NoWarn>$(NoWarn);PKG0001</NoWarn>
+    <PackageVersion>5.0.1</PackageVersion>
+    <AssemblyVersion Condition="$(TargetFramework.StartsWith('net4'))">5.0.0.1</AssemblyVersion>
   </PropertyGroup>
 </Project>

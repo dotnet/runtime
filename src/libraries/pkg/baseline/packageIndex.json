@@ -928,11 +928,13 @@
         "3.1.0",
         "3.1.1",
         "3.1.2",
-        "5.0.0"
+        "5.0.0",
+        "5.0.1"
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "5.0.0",
+        "5.0.0.1": "5.0.1"
       }
     },
     "Microsoft.Extensions.Logging.TraceSource": {
@@ -1054,11 +1056,13 @@
         "3.1.0",
         "3.1.1",
         "3.1.2",
-        "5.0.0"
+        "5.0.0",
+        "5.0.1"
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "5.0.0",
+        "5.0.0.1": "5.0.1"
       }
     },
     "Microsoft.IO.Redist": {
@@ -4864,13 +4868,15 @@
     "System.Reflection.MetadataLoadContext": {
       "StableVersions": [
         "4.6.0",
-        "5.0.0"
+        "5.0.0",
+        "5.0.1"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "5.0.1",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "5.0.0.0": "5.0.0",
+        "5.0.0.1": "5.0.1"
       }
     },
     "System.Reflection.Primitives": {
@@ -6468,9 +6474,10 @@
       "StableVersions": [
         "4.6.0",
         "5.0.0",
-        "5.0.1"
+        "5.0.1",
+        "5.0.2"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "5.0.2",
       "InboxOn": {
         "netcoreapp3.0": "4.0.0.0",
         "net5.0": "5.0.0.0"
@@ -6478,7 +6485,8 @@
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.6.0",
         "5.0.0.0": "5.0.0",
-        "5.0.0.1": "5.0.1"
+        "5.0.0.1": "5.0.1",
+        "5.0.0.2": "5.0.2"
       }
     },
     "System.Text.RegularExpressions": {
