@@ -260,10 +260,10 @@ namespace Internal.Cryptography
 
         private static int GetHashBlockSize(string hashAlgorithmName) => hashAlgorithmName switch {
             // Block sizes per NIST FIPS pub 180-4.
-            HashAlgorithmNames.SHA1 => 512,
-            HashAlgorithmNames.SHA256 => 512,
-            HashAlgorithmNames.SHA384 => 1024,
-            HashAlgorithmNames.SHA512 => 1024,
+            HashAlgorithmNames.SHA1 => 512 / 8,
+            HashAlgorithmNames.SHA256 => 512 / 8,
+            HashAlgorithmNames.SHA384 => 1024 / 8,
+            HashAlgorithmNames.SHA512 => 1024 / 8,
             _ => throw new CryptographicException(), // Should have been validated before getting here.
         };
     }
