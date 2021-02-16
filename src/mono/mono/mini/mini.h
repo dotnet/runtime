@@ -2470,7 +2470,7 @@ gpointer mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, M
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoMemoryManager *mem_manager, guint32 *code_len);
 MonoMethod* mono_arch_find_imt_method           (host_mgreg_t *regs, guint8 *code);
 MonoVTable* mono_arch_find_static_call_vtable   (host_mgreg_t *regs, guint8 *code);
-gpointer    mono_arch_build_imt_trampoline      (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
+gpointer    mono_arch_build_imt_trampoline      (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
 void    mono_arch_notify_pending_exc            (MonoThreadInfo *info);
 guint8* mono_arch_get_call_target               (guint8 *code);
 guint32 mono_arch_get_plt_info_offset           (guint8 *plt_entry, host_mgreg_t *regs, guint8 *code);

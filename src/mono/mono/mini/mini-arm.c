@@ -6927,8 +6927,8 @@ mini_dump_bad_imt (int input_imt, int compared_imt, int pc)
 #endif
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
-	gpointer fail_tramp)
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count,
+								gpointer fail_tramp)
 {
 	int size, i;
 	arminstr_t *code, *start;
@@ -6979,7 +6979,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 		size += 4 * count; /* The ARM_ADD_REG_IMM to pop the stack */
 
 	if (fail_tramp) {
-		code = mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), size);
+		code = (arminstr_t *)mini_alloc_generic_virtual_trampoline (vtable, size);
 	} else {
 		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		code = mono_mem_manager_code_reserve (mem_manager, size);
@@ -7159,7 +7159,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 
 	g_assert (DISTANCE (start, code) <= size);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, (guint8*)start, DISTANCE (start, code), NULL, unwind_ops), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, (guint8*)start, DISTANCE (start, code), NULL, unwind_ops), NULL);
 
 	return start;
 }

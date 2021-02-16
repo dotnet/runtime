@@ -5300,11 +5300,8 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 #define LOAD_CONST_SIZE			8
 #define JUMP_JR_SIZE			8
 
-/*
- * LOCKING: called with the domain lock held
- */
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count,
 								gpointer fail_tramp)
 {
 	int i;
@@ -5343,7 +5340,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	/* the initial load of the vtable address */
 	size += MIPS_LOAD_SEQUENCE_LENGTH;
 	if (fail_tramp) {
-		code = mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), size);
+		code = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, size);
 	} else {
 		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		code = mono_mem_manager_code_reserve (mem_manager, size);
@@ -5437,7 +5434,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	mono_arch_flush_icache (start, size);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
 
 	return start;
 }

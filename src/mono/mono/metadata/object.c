@@ -1476,7 +1476,7 @@ initialize_imt_slot (MonoVTable *vtable, MonoDomain *domain, MonoImtBuilderEntry
 			GPtrArray *imt_ir = imt_sort_slot_entries (imt_builder_entry);
 			gpointer result;
 			int i;
-			result = imt_trampoline_builder (vtable, domain,
+			result = imt_trampoline_builder (vtable,
 				(MonoIMTCheckItem**)imt_ir->pdata, imt_ir->len, fail_tramp);
 			for (i = 0; i < imt_ir->len; ++i)
 				g_free (g_ptr_array_index (imt_ir, i));
@@ -1689,31 +1689,6 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 
 #define THUNK_THRESHOLD		10
 
-/**
- * mono_method_alloc_generic_virtual_trampoline:
- * \param mem_manager a memory manager
- * \param size size in bytes
- * Allocs \p size bytes to be used for the code of a generic virtual
- * trampoline.
- */
-gpointer
-(mono_method_alloc_generic_virtual_trampoline) (MonoMemoryManager *mem_manager, int size)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	static gboolean inited = FALSE;
-	static int generic_virtual_trampolines_size = 0;
-
-	if (!inited) {
-		mono_counters_register ("Generic virtual trampoline bytes",
-				MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &generic_virtual_trampolines_size);
-		inited = TRUE;
-	}
-	generic_virtual_trampolines_size += size;
-
-	return mono_mem_manager_code_reserve (mem_manager, size);
-}
-
 typedef struct _GenericVirtualCase {
 	MonoMethod *method;
 	gpointer code;
@@ -1843,7 +1818,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 
 			sorted = imt_sort_slot_entries (entries);
 
-			*vtable_slot = imt_trampoline_builder (NULL, domain, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
+			*vtable_slot = imt_trampoline_builder (NULL, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
 												   vtable_trampoline);
 
 			while (entries) {

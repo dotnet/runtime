@@ -467,7 +467,7 @@ mono_arch_get_cie_program (void)
 }
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	g_error ("mono_arch_build_imt_trampoline");
 }

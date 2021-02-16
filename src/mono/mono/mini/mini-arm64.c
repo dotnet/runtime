@@ -5331,7 +5331,7 @@ mono_arch_get_patch_offset (guint8 *code)
 }
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count,
 								gpointer fail_tramp)
 {
 	int i, buf_len, imt_reg;
@@ -5373,7 +5373,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	}
 
 	if (fail_tramp) {
-		buf = (guint8*)mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), buf_len);
+		buf = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, buf_len);
 	} else {
 		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		buf = mono_mem_manager_code_reserve (mem_manager, buf_len);
@@ -5465,7 +5465,7 @@ mono_arch_get_trampolines (gboolean aot)
 #else /* DISABLE_JIT */
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count,
 								gpointer fail_tramp)
 {
 	g_assert_not_reached ();

@@ -540,6 +540,9 @@ void mono_enable_jit_dump (void);
 void mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code);
 void mono_jit_dump_cleanup (void);
 
+MonoMemoryManager* mini_get_default_mem_manager (void);
+gpointer mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size);
+
 /*
  * Per-OS implementation functions.
  */
@@ -644,4 +647,3 @@ void mini_register_sigterm_handler (void);
 	} while (0)
 
 #endif /* __MONO_MINI_RUNTIME_H__ */
-

@@ -1557,8 +1557,7 @@ struct _MonoIMTCheckItem {
 	guint8            has_target_code;
 };
 
-typedef gpointer (*MonoImtTrampolineBuilder) (MonoVTable *vtable, MonoDomain *domain,
-		MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
+typedef gpointer (*MonoImtTrampolineBuilder) (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
 
 void
 mono_install_imt_trampoline_builder (MonoImtTrampolineBuilder func);
@@ -1576,11 +1575,6 @@ void
 mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtable,
 											gpointer *vtable_slot,
 											MonoMethod *method, gpointer code);
-
-gpointer
-mono_method_alloc_generic_virtual_trampoline (MonoMemoryManager *mem_manager, int size);
-
-#define mono_method_alloc_generic_virtual_trampoline(mem_manager, size) (g_cast (mono_method_alloc_generic_virtual_trampoline ((mem_manager), (size))))
 
 typedef enum {
 	MONO_UNHANDLED_POLICY_LEGACY,

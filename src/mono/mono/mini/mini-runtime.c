@@ -5232,3 +5232,34 @@ mini_invalidate_transformed_interp_methods (MonoDomain *domain, MonoAssemblyLoad
 	mini_get_interp_callbacks ()->invalidate_transformed (domain);
 }
 #endif
+
+/*
+ * mini_get_default_mem_manager:
+ *
+ *   Return a memory manager which can be used for default allocation.
+ * FIXME: Review all callers and change them to allocate from a
+ * class/method/assembly specific memory manager.
+ */
+MonoMemoryManager*
+mini_get_default_mem_manager (void)
+{
+	return mono_domain_ambient_memory_manager (mono_get_root_domain ());
+}
+
+gpointer
+mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size)
+{
+	MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
+
+	static gboolean inited = FALSE;
+	static int generic_virtual_trampolines_size = 0;
+
+	if (!inited) {
+		mono_counters_register ("Generic virtual trampoline bytes",
+				MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &generic_virtual_trampolines_size);
+		inited = TRUE;
+	}
+	generic_virtual_trampolines_size += size;
+
+	return mono_mem_manager_code_reserve (mem_manager, size);
+}

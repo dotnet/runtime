@@ -6308,7 +6308,7 @@ no_imt_trampoline (void)
 }
 
 gpointer
-mono_aot_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+mono_aot_get_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	guint32 got_offset;
 	gpointer code;
@@ -6328,7 +6328,7 @@ mono_aot_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 	}
 
 	/* Save the entries into an array */
-	buf = (void **)mono_domain_alloc (domain, (real_count + 1) * 2 * sizeof (gpointer));
+	buf = (void **)m_class_alloc0 (vtable->klass, (real_count + 1) * 2 * sizeof (gpointer));
 	index = 0;
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];		
@@ -6340,7 +6340,7 @@ mono_aot_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTChec
 
 		buf [(index * 2)] = item->key;
 		if (item->has_target_code) {
-			gpointer *p = (gpointer *)mono_domain_alloc (domain, sizeof (gpointer));
+			gpointer *p = (gpointer *)m_class_alloc0 (vtable->klass, sizeof (gpointer));
 			*p = item->value.target_code;
 			buf [(index * 2) + 1] = p;
 		} else {
@@ -6660,7 +6660,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 }
 
 gpointer
-mono_aot_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+mono_aot_get_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	g_assert_not_reached ();
 	return NULL;
