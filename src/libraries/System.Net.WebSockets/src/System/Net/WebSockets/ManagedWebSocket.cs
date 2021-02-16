@@ -580,7 +580,7 @@ namespace System.Net.WebSockets
                         {
                             Debug.Assert(byteCount == ReceivedHeaderError);
 
-                            var error = _receiver.GetLastHeader().Error;
+                            var error = _receiver.GetHeaderError();
                             await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, error).ConfigureAwait(false);
                         }
                     }
@@ -742,17 +742,19 @@ namespace System.Net.WebSockets
             MessageHeader previousHeader,
             bool isServer,
             out MessageHeader header,
+            out string? error,
             out int consumedBytes)
         {
             header = default;
             consumedBytes = 0;
+            error = null;
 
             if (buffer.Length < 2)
                 return false;
 
             // Check first for reserved bits that should always be unset
             if ((buffer[0] & 0b0011_0000) != 0)
-                return Error(ref header, SR.net_Websockets_ReservedBitsSet);
+                return Error(ref error, SR.net_Websockets_ReservedBitsSet);
 
             header.Fin = (buffer[0] & 0x80) != 0;
             header.Opcode = (MessageOpcode)(buffer[0] & 0xF);
@@ -760,7 +762,7 @@ namespace System.Net.WebSockets
 
             bool masked = (buffer[1] & 0x80) != 0;
             if (masked && !isServer)
-                return Error(ref header, SR.net_Websockets_ClientReceivedMaskedFrame);
+                return Error(ref error, SR.net_Websockets_ClientReceivedMaskedFrame);
 
             header.PayloadLength = buffer[1] & 0x7F;
 
@@ -808,12 +810,12 @@ namespace System.Net.WebSockets
                     if (previousHeader.Fin)
                     {
                         // Can't continue from a final message
-                        return Error(ref header, SR.net_Websockets_ContinuationFromFinalFrame);
+                        return Error(ref error, SR.net_Websockets_ContinuationFromFinalFrame);
                     }
                     if (header.Compressed)
                     {
                         // Per-Message Compressed flag must be set only in the first frame
-                        return Error(ref header, SR.net_Websockets_PerMessageCompressedFlagInContinuation);
+                        return Error(ref error, SR.net_Websockets_PerMessageCompressedFlagInContinuation);
                     }
                     break;
 
@@ -822,7 +824,7 @@ namespace System.Net.WebSockets
                     if (!previousHeader.Fin)
                     {
                         // Must continue from a non-final message
-                        return Error(ref header, SR.net_Websockets_NonContinuationAfterNonFinalFrame);
+                        return Error(ref error, SR.net_Websockets_NonContinuationAfterNonFinalFrame);
                     }
                     break;
 
@@ -832,20 +834,20 @@ namespace System.Net.WebSockets
                     if (header.PayloadLength > MaxControlPayloadLength || !header.Fin)
                     {
                         // Invalid control messgae
-                        return Error(ref header, SR.net_Websockets_InvalidControlMessage);
+                        return Error(ref error, SR.net_Websockets_InvalidControlMessage);
                     }
                     break;
 
                 default:
                     // Unknown opcode
-                    return Error(ref header, SR.Format(SR.net_Websockets_UnknownOpcode, header.Opcode));
+                    return Error(ref error, SR.Format(SR.net_Websockets_UnknownOpcode, header.Opcode));
             }
 
             return true;
 
-            static bool Error(ref MessageHeader header, string error)
+            static bool Error(ref string? target, string error)
             {
-                header.Error = error;
+                target = error;
                 return false;
             }
         }
@@ -1211,7 +1213,6 @@ namespace System.Net.WebSockets
             internal long PayloadLength;
             internal int Mask;
             internal bool Compressed;
-            internal string? Error;
         }
 
         private readonly struct ControlMessage

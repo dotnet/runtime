@@ -115,8 +115,10 @@ namespace System.Net.WebSockets.Tests
         [InlineData(0b_1000_0111, 0b_0_000_0001, true)] // fin + opcode==7, no mask + length == 1
         public async Task ReceiveAsync_InvalidFrameHeader_AbortsAndThrowsException(byte firstByte, byte secondByte, bool shouldFail)
         {
-            var stream = new MemoryStream(new byte[3] { firstByte, secondByte, (byte)'a' });
-            using var websocket = CreateFromStream(stream, isServer: false, null, Timeout.InfiniteTimeSpan);
+            var (serverStream, clientStream) = WebSocketStream.Create();
+
+            serverStream.Write(firstByte, secondByte, (byte)'a');
+            using var websocket = CreateFromStream(clientStream, isServer: false, null, Timeout.InfiniteTimeSpan);
 
             var buffer = new byte[1];
             Task<WebSocketReceiveResult> t = websocket.ReceiveAsync(buffer, CancellationToken.None);

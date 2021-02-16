@@ -1,17 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="WebSocketDeflateTests.cs" />
+    <Compile Include="WebSocketStream.cs" />
     <Compile Include="WebSocketTests.cs" />
     <Compile Include="WebSocketExceptionTests.cs" />
     <Compile Include="WebSocketReceiveResultTests.cs" />
     <Compile Include="WebSocketCreateTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
-             Link="Common\System\Net\Configuration.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.WebSockets.cs"
-             Link="Common\System\Net\Configuration.WebSockets.cs" />
-    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
-             Link="Common\System\Net\HttpKnownHeaderNames.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="Common\System\Net\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.WebSockets.cs" Link="Common\System\Net\Configuration.WebSockets.cs" />
+    <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs" Link="Common\System\Net\HttpKnownHeaderNames.cs" />
   </ItemGroup>
 </Project>

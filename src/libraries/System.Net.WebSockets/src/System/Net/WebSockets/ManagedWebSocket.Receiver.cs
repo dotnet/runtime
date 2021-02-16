@@ -62,6 +62,12 @@ namespace System.Net.WebSockets
             /// </summary>
             private int _receivedMaskOffset;
 
+            /// <summary>
+            /// When parsing message header if an error occurs the websocket is notified and this
+            /// will contain the error message.
+            /// </summary>
+            private string? _headerError;
+
             public Receiver(Stream stream, WebSocketCreationOptions options)
             {
                 _stream = stream;
@@ -105,6 +111,8 @@ namespace System.Net.WebSockets
             }
 
             public MessageHeader GetLastHeader() => _lastHeader;
+
+            public string? GetHeaderError() => _headerError;
 
             /// <summary>Issues a read on the stream to wait for EOF.</summary>
             public async ValueTask WaitForServerToCloseConnectionAsync(CancellationToken cancellationToken)
@@ -177,10 +185,7 @@ namespace System.Net.WebSockets
                     var success = await ReceiveHeaderAsync(cancellationToken).ConfigureAwait(false);
 
                     if (!success)
-                        return ReceivedConnectionClose;
-
-                    if (_lastHeader.Error is not null)
-                        return ReceivedHeaderError;
+                        return _headerError is not null ? ReceivedHeaderError : ReceivedConnectionClose;
 
                     if (_lastHeader.Opcode > MessageOpcode.Binary)
                     {
@@ -265,7 +270,7 @@ namespace System.Net.WebSockets
 
                     // There is lefover data that we need to decode
                     _decoder.Decode(input: _decoderBuffer.AsSpan(_decoderBufferPosition, _decoderBufferCount),
-                                     output: buffer.Span, out var consumed, out var written);
+                                    output: buffer.Span, out var consumed, out var written);
 
                     resultByteCount += written;
                     _decoderBufferPosition += consumed;
@@ -291,7 +296,8 @@ namespace System.Net.WebSockets
 
                 while (true)
                 {
-                    if (TryParseMessageHeader(_readBuffer.AvailableSpan, _lastHeader, _isServer, out var header, out var consumedBytes))
+                    if (TryParseMessageHeader(_readBuffer.AvailableSpan, _lastHeader, _isServer, out var header,
+                            out var error, out var consumedBytes))
                     {
                         // If this is a continuation, replace the opcode with the one of the message it's continuing
                         if (header.Opcode == MessageOpcode.Continuation)
@@ -317,6 +323,11 @@ namespace System.Net.WebSockets
                         }
 
                         break;
+                    }
+                    else if (error is not null)
+                    {
+                        _headerError = error;
+                        return false;
                     }
 
                     // More data is neeed to parse the header
@@ -432,7 +443,10 @@ namespace System.Net.WebSockets
 
             private sealed class PersistedInflater : Decoder
             {
+                private static ReadOnlySpan<byte> Trailer => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
+
                 private readonly IO.Compression.Inflater _inflater;
+                private bool _needsTrailer;
 
                 public PersistedInflater(int windowBits) => _inflater = new(windowBits);
 
@@ -440,11 +454,22 @@ namespace System.Net.WebSockets
 
                 public override void Dispose() => _inflater.Dispose();
 
-                public override void Reset() { }
+                public override void Reset()
+                {
+                    if (_needsTrailer)
+                    {
+                        _needsTrailer = false;
+                        _inflater.Inflate(Trailer, Array.Empty<byte>(), out var consumed, out var written);
+
+                        Debug.Assert(consumed == 4);
+                        Debug.Assert(written == 0);
+                    }
+                }
 
                 public override void Decode(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
                 {
                     _inflater.Inflate(input, output, out consumed, out written);
+                    _needsTrailer = true;
                 }
             }
         }

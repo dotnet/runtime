@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.WebSockets;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Compression
 {
@@ -46,7 +47,7 @@ namespace System.IO.Compression
         internal unsafe void Inflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
         {
             fixed (byte* fixedInput = input)
-            fixed (byte* fixedOutput = output)
+            fixed (byte* fixedOutput = &MemoryMarshal.GetReference(output))
             {
                 _handle.NextIn = (IntPtr)fixedInput;
                 _handle.AvailIn = (uint)input.Length;

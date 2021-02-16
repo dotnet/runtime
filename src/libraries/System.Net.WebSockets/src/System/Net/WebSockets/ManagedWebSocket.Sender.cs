@@ -261,7 +261,7 @@ namespace System.Net.WebSockets
 
                     _deflater ??= new IO.Compression.Deflater(_windowBits);
 
-                    Encode(payload, ref buffer, _deflater);
+                    Encode(payload, ref buffer, _deflater, endOfMessage);
                     reservedBits = continuation ? 0 : PerMessageDeflateBit;
 
                     if (endOfMessage)
@@ -271,7 +271,7 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                public static void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer, IO.Compression.Deflater deflater)
+                public static void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer, IO.Compression.Deflater deflater, bool final)
                 {
                     while (payload.Length > 0)
                     {
@@ -290,8 +290,18 @@ namespace System.Net.WebSockets
                             break;
                     }
 
-                    // The deflated block always ends with 0x00 0x00 0xFF 0xFF but the websocket protocol doesn't want it.
-                    buffer.Advance(-4);
+                    if (final)
+                    {
+                        // The deflated block always ends with 0x00 0x00 0xFF 0xFF
+                        // but the websocket protocol doesn't want it.
+                        Debug.Assert(
+                            buffer.WrittenSpan[^4] == 0x00 &&
+                            buffer.WrittenSpan[^3] == 0x00 &&
+                            buffer.WrittenSpan[^2] == 0xFF &&
+                            buffer.WrittenSpan[^1] == 0xFF);
+
+                        buffer.Advance(-4);
+                    }
                 }
             }
 
@@ -308,7 +318,7 @@ namespace System.Net.WebSockets
 
                 internal override void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer, bool continuation, bool endOfMessage, out byte reservedBits)
                 {
-                    Deflater.Encode(payload, ref buffer, _deflater);
+                    Deflater.Encode(payload, ref buffer, _deflater, endOfMessage);
                     reservedBits = continuation ? 0 : PerMessageDeflateBit;
                 }
             }
