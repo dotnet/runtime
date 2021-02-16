@@ -81,14 +81,14 @@ namespace System.Net.WebSockets
                     if (options.IsServer)
                     {
                         _decoder = deflate.ServerContextTakeover ?
-                            new Inflater(-deflate.ServerMaxWindowBits) :
-                            new PersistedInflater(-deflate.ServerMaxWindowBits);
+                            new PersistedInflater(-deflate.ServerMaxWindowBits) :
+                            new Inflater(-deflate.ServerMaxWindowBits);
                     }
                     else
                     {
                         _decoder = deflate.ClientContextTakeover ?
-                            new Inflater(-deflate.ClientMaxWindowBits) :
-                            new PersistedInflater(-deflate.ClientMaxWindowBits);
+                            new PersistedInflater(-deflate.ClientMaxWindowBits) :
+                            new Inflater(-deflate.ClientMaxWindowBits);
                     }
                 }
             }

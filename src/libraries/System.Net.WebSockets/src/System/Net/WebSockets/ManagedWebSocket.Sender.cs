@@ -35,14 +35,14 @@ namespace System.Net.WebSockets
                     if (options.IsServer)
                     {
                         _encoder = deflate.ServerContextTakeover ?
-                            new Deflater(-deflate.ServerMaxWindowBits) :
-                            new PersistedDeflater(-deflate.ServerMaxWindowBits);
+                            new PersistedDeflater(-deflate.ServerMaxWindowBits) :
+                            new Deflater(-deflate.ServerMaxWindowBits);
                     }
                     else
                     {
                         _encoder = deflate.ClientContextTakeover ?
-                            new Deflater(-deflate.ClientMaxWindowBits) :
-                            new PersistedDeflater(-deflate.ClientMaxWindowBits);
+                            new PersistedDeflater(-deflate.ClientMaxWindowBits) :
+                            new Deflater(-deflate.ClientMaxWindowBits);
                     }
                 }
             }
