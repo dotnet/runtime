@@ -39,7 +39,7 @@ namespace System.Net.WebSockets
             get => _keepAliveInterval;
             set
             {
-                if (value != Timeout.InfiniteTimeSpan && value < TimeSpan.Zero)
+                if (!IsKeepAliveValid(value))
                     throw new ArgumentOutOfRangeException(nameof(KeepAliveInterval), value,
                         SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
 
@@ -51,5 +51,11 @@ namespace System.Net.WebSockets
         /// The agreed upon options for per message deflate.
         /// </summary>
         public WebSocketDeflateOptions? DeflateOptions { get; set; }
+
+        /// <summary>
+        /// Returns whether the provided value is valid websocket keep-alive interval.
+        /// </summary>
+        internal static bool IsKeepAliveValid(TimeSpan value) =>
+            value == Timeout.InfiniteTimeSpan || value >= TimeSpan.Zero;
     }
 }
