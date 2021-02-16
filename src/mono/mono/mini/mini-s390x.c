@@ -5339,7 +5339,6 @@ mono_arch_register_lowlevel_calls (void)
  * 
  * @param[in] @cfg - Compile control block
  * @param[in] @method - Current method
- * @param[in] @domain - Current Mono Domain
  * @param[in] @code - Current innstruction pointer
  * @param[in] @ji - Jump information 
  * @param[in] @run_cctors - Whether class constructors need to be initialized 
@@ -5350,8 +5349,8 @@ mono_arch_register_lowlevel_calls (void)
  */
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, 
-		          guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg,
+						  guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	unsigned char *ip = ji->ip.i + code;
 	gint64 displace;

@@ -540,8 +540,8 @@ void mono_enable_jit_dump (void);
 void mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code);
 void mono_jit_dump_cleanup (void);
 
-MonoMemoryManager* mini_get_default_mem_manager (void);
 gpointer mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size);
+MonoException* mini_get_stack_overflow_ex (void);
 
 /*
  * Per-OS implementation functions.

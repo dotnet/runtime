@@ -111,7 +111,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	domain = mono_domain_get ();
 	mem_manager = m_method_get_mem_manager (m);
 
-	/* 
+	/*
 	 * In the AOT case, addr might point to either the method, or to an unbox trampoline,
 	 * so make the hash keyed on the m+addr pair.
 	 */
@@ -148,11 +148,11 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 gpointer
 mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 {
-       /* 
-        * This shouldn't happen as all arches which support generic sharing support
-        * static rgctx trampolines as well.
-        */
-       g_assert_not_reached ();
+	/*
+	 * This shouldn't happen as all arches which support generic sharing support
+	 * static rgctx trampolines as well.
+	 */
+	g_assert_not_reached ();
 }
 #endif
 
@@ -160,7 +160,7 @@ gpointer
 mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
 {
 	gpointer res;
-	MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (mono_domain_get ());
+	MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
 
 #ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
 	if (mono_aot_only)

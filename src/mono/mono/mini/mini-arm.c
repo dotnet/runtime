@@ -6074,12 +6074,10 @@ mono_arch_register_lowlevel_calls (void)
 	} while (0)
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	unsigned char *ip = ji->ip.i + code;
-
-	if (ji->type == MONO_PATCH_INFO_SWITCH) {
-	}
+	MonoDomain *domain = mono_get_root_domain ();
 
 	switch (ji->type) {
 	case MONO_PATCH_INFO_SWITCH: {

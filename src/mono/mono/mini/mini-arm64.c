@@ -1004,9 +1004,10 @@ mono_arm_patch (guint8 *code, guint8 *target, int relocation)
 }
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	guint8 *ip;
+	MonoDomain *domain = mono_get_root_domain ();
 
 	ip = ji->ip.i + code;
 

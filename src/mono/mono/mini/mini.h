@@ -2352,13 +2352,13 @@ guchar*   mono_arch_create_generic_trampoline   (MonoTrampolineType tramp_type, 
 gpointer  mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot);
 gpointer  mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboolean aot);
 guint8*   mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gboolean aot);
-guint8 *mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8* addr);
+guint8 *mono_arch_create_llvm_native_thunk (guint8* addr);
 gpointer  mono_arch_get_get_tls_tramp (void);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg);
 guint32   mono_arch_regalloc_cost               (MonoCompile *cfg, MonoMethodVar *vmv);
 void      mono_arch_patch_code                  (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors, MonoError *error);
-void      mono_arch_patch_code_new              (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target);
+void      mono_arch_patch_code_new              (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target);
 void      mono_arch_flush_icache                (guint8 *code, gint size);
 guint8   *mono_arch_emit_prolog                 (MonoCompile *cfg);
 void      mono_arch_emit_epilog                 (MonoCompile *cfg);
@@ -2460,7 +2460,7 @@ gpointer mono_arch_get_unbox_trampoline         (MonoMethod *m, gpointer addr);
 gpointer mono_arch_get_static_rgctx_trampoline  (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr);
 gpointer mono_arch_get_ftnptr_arg_trampoline    (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr);
 gpointer  mono_arch_get_llvm_imt_trampoline     (MonoDomain *domain, MonoMethod *method, int vt_offset);
-gpointer mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr);
+gpointer mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr);
 void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *code, guint8 *addr);
 void     mono_arch_patch_plt_entry              (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr);
 int      mono_arch_get_this_arg_reg             (guint8 *code);
@@ -3023,5 +3023,7 @@ mono_arch_load_function (MonoJitICallId jit_icall_id);
 
 MonoGenericContext
 mono_get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info);
+
+MonoMemoryManager* mini_get_default_mem_manager (void);
 
 #endif /* __MONO_MINI_H__ */

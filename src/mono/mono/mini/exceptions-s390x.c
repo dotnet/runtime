@@ -630,7 +630,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 		nullref = FALSE;
 
 	if (stack_ovf)
-		exc = mono_domain_get ()->stack_overflow_ex;
+		exc = mini_get_stack_overflow_ex ();
 
 	/*
 	 * Setup the call frame on the application stack so that control is

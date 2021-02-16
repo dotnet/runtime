@@ -2234,7 +2234,7 @@ mono_codegen (MonoCompile *cfg)
 				mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 				return;
 			}
-			mono_arch_patch_code_new (cfg, cfg->domain, cfg->native_code, ji, target);
+			mono_arch_patch_code_new (cfg, cfg->native_code, ji, target);
 		}
 	}
 #else

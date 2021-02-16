@@ -1757,7 +1757,7 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 
 #ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 		for (tmp = jlist->list; tmp; tmp = tmp->next)
-			mono_arch_patch_code_new (NULL, domain, (guint8 *)tmp->data, &patch_info, addr);
+			mono_arch_patch_code_new (NULL, (guint8 *)tmp->data, &patch_info, addr);
 #else
 		// FIXME: This won't work since it ends up calling mono_create_jump_trampoline () which returns a trampoline
 		// for gshared methods
@@ -5262,4 +5262,10 @@ mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size)
 	generic_virtual_trampolines_size += size;
 
 	return mono_mem_manager_code_reserve (mem_manager, size);
+}
+
+MonoException*
+mini_get_stack_overflow_ex (void)
+{
+	return mono_get_root_domain ()->stack_overflow_ex;
 }
