@@ -44,6 +44,13 @@ int32_t CryptoNative_GetECKeyParameters(
     {
         jobject privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
 
+        if (!privateKey)
+        {
+            *d = NULL;
+            *cbD = 0;
+            goto error;
+        }
+
         jobject dBn = (*env)->CallObjectMethod(env, privateKey, g_ECPrivateKeyGetS);
 
         (*env)->DeleteLocalRef(env, privateKey);
