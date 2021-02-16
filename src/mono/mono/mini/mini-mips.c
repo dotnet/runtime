@@ -4475,65 +4475,52 @@ mono_arch_register_lowlevel_calls (void)
 }
 
 void
-mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors, MonoError *error)
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
-	MonoJumpInfo *patch_info;
+	unsigned char *ip = ji->ip.i + code;
 
-	error_init (error);
+	switch (ji->type) {
+	case MONO_PATCH_INFO_IP:
+		patch_lui_addiu ((guint32 *)(void *)ip, (guint32)ip);
+		continue;
+	case MONO_PATCH_INFO_SWITCH: {
+		gpointer *table = (gpointer *)ji->data.table->table;
+		int i;
 
-	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
-		unsigned char *ip = patch_info->ip.i + code;
-		const unsigned char *target = NULL;
+		patch_lui_addiu ((guint32 *)(void *)ip, (guint32)table);
 
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_IP:
-			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)ip);
-			continue;
-		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table = (gpointer *)patch_info->data.table->table;
-			int i;
-
-			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)table);
-
-			for (i = 0; i < patch_info->data.table->table_size; i++) { 
-				table [i] = (int)patch_info->data.table->table [i] + code;
-			}
-			continue;
+		for (i = 0; i < ji->data.table->table_size; i++) {
+			table [i] = (int)ji->data.table->table [i] + code;
 		}
-		case MONO_PATCH_INFO_METHODCONST:
-		case MONO_PATCH_INFO_CLASS:
-		case MONO_PATCH_INFO_IMAGE:
-		case MONO_PATCH_INFO_FIELD:
-		case MONO_PATCH_INFO_VTABLE:
-		case MONO_PATCH_INFO_IID:
-		case MONO_PATCH_INFO_SFLDA:
-		case MONO_PATCH_INFO_LDSTR:
-		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		case MONO_PATCH_INFO_LDTOKEN:
-		case MONO_PATCH_INFO_R4:
-		case MONO_PATCH_INFO_R8:
-			/* from OP_AOTCONST : lui + addiu */
-			target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, error);
-			return_if_nok (error);
-
-			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)target);
-			continue;
+		continue;
+	}
+	case MONO_PATCH_INFO_METHODCONST:
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_IMAGE:
+	case MONO_PATCH_INFO_FIELD:
+	case MONO_PATCH_INFO_VTABLE:
+	case MONO_PATCH_INFO_IID:
+	case MONO_PATCH_INFO_SFLDA:
+	case MONO_PATCH_INFO_LDSTR:
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_LDTOKEN:
+	case MONO_PATCH_INFO_R4:
+	case MONO_PATCH_INFO_R8:
+		/* from OP_AOTCONST : lui + addiu */
+		patch_lui_addiu ((guint32 *)(void *)ip, (guint32)target);
+		continue;
 #if 0
-		case MONO_PATCH_INFO_EXC_NAME:
-			g_assert_not_reached ();
-			*((gconstpointer *)(void *)(ip + 1)) = patch_info->data.name;
-			continue;
+	case MONO_PATCH_INFO_EXC_NAME:
+		g_assert_not_reached ();
+		*((gconstpointer *)(void *)(ip + 1)) = target;
+		continue;
 #endif
-		case MONO_PATCH_INFO_NONE:
-			/* everything is dealt with at epilog output time */
-			continue;
-		default:
-			target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, error);
-			return_if_nok (error);
-
-			mips_patch ((guint32 *)(void *)ip, (guint32)target);
-			break;
-		}
+	case MONO_PATCH_INFO_NONE:
+		/* everything is dealt with at epilog output time */
+		continue;
+	default:
+		mips_patch ((guint32 *)(void *)ip, (guint32)target);
+		break;
 	}
 }
 

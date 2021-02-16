@@ -1755,18 +1755,8 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 
 		mono_codeman_enable_write ();
 
-#ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 		for (tmp = jlist->list; tmp; tmp = tmp->next)
 			mono_arch_patch_code_new (NULL, (guint8 *)tmp->data, &patch_info, addr);
-#else
-		// FIXME: This won't work since it ends up calling mono_create_jump_trampoline () which returns a trampoline
-		// for gshared methods
-		for (tmp = jlist->list; tmp; tmp = tmp->next) {
-			ERROR_DECL (error);
-			mono_arch_patch_code (NULL, NULL, domain, tmp->data, &patch_info, TRUE, error);
-			mono_error_assert_ok (error);
-		}
-#endif
 
 		mono_codeman_disable_write ();
 	}

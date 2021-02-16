@@ -2209,7 +2209,6 @@ mono_codegen (MonoCompile *cfg)
 	mono_arch_save_unwind_info (cfg);
 #endif
 
-#ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 	{
 		MonoJumpInfo *ji;
 		gpointer target;
@@ -2237,13 +2236,6 @@ mono_codegen (MonoCompile *cfg)
 			mono_arch_patch_code_new (cfg, cfg->native_code, ji, target);
 		}
 	}
-#else
-	mono_arch_patch_code (cfg, cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors, cfg->error);
-	if (!is_ok (cfg->error)) {
-		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-		return;
-	}
-#endif
 
 	if (cfg->method->dynamic) {
 		if (mono_using_xdebug)
