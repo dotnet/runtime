@@ -68,7 +68,7 @@ namespace BundleTests.Helpers
                     throw new ArgumentException($"Bundle option {bundleOptions} doesn't extract any files to disk.");
 
                 case BundleOptions.BundleAllContent:
-                    return Directory.GetFiles(Path.Combine(fixture.TestProject.OutputDirectory, fixture.RepoDirProvider.Configuration, fixture.Framework, fixture.CurrentRid))
+                    return Directory.GetFiles(GetPublishPath(fixture))
                         .Select(f => Path.GetFileName(f))
                         .Except(GetFilesNeverExtracted(fixture)).ToArray();
 
@@ -83,7 +83,8 @@ namespace BundleTests.Helpers
         public static string[] GetFilesNeverExtracted(TestProjectFixture fixture)
         {
             string appBaseName = GetAppBaseName(fixture);
-            return new string[] { $"{appBaseName}.dll",
+            return new string[] { $"{appBaseName}",
+                                  $"{appBaseName}.dll",
                                   $"{appBaseName}.exe",
                                   $"{appBaseName}.pdb",
                                   $"{appBaseName}.runtimeconfig.dev.json",

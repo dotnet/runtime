@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
@@ -71,6 +72,13 @@ namespace AppHost.Bundle.Tests
         [Theory]
         private void Bundle_Extraction_To_Relative_Path_Succeeds(string relativePath, BundleOptions bundleOptions)
         {
+            // As we don't modify user defined environment variables, we will not convert
+            // any forward slashes to the standard Windows dir separator ('\'), thus
+            // failing to create directory trees for bundle extraction that use Unix
+            // style dir separator in Windows.
+            if (relativePath == "foo/bar" && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
             var fixture = sharedTestState.TestFixture.Copy();
             UseSingleFileSelfContainedHost(fixture);
             var bundler = BundleHelper.BundleApp(fixture, out var singleFile, bundleOptions);
