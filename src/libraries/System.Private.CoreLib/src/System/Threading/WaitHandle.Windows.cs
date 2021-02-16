@@ -26,7 +26,6 @@ namespace System.Threading
             if (numHandles == 1)
                 waitAll = false;
 
-            Thread currentThread = Thread.CurrentThread;
 #if !MONO // TODO: reentrant wait support
             bool reentrantWait = Thread.ReentrantWaitsEnabled;
 
@@ -44,9 +43,12 @@ namespace System.Threading
                 if (numHandles > 63)
                     throw new NotSupportedException(SR.NotSupported_MaxWaitHandles_STA);
             }
+#endif
 
+            Thread currentThread = Thread.CurrentThread;
             currentThread.SetWaitSleepJoinState();
 
+#if !MONO
             int result;
             if (reentrantWait)
             {
