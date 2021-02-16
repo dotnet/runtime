@@ -23,6 +23,7 @@
     <!-- This is merge marker 1 to help automerge -->
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Drawing.Common\pkg\System.Drawing.Common.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <!-- This is merge marker 2 to help automerge --> 
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Text.Encodings.Web\pkg\System.Text.Encodings.Web.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <!-- This is merge marker 3 to help automerge --> 
     <!-- This is merge marker 4 to help automerge --> 
     <!-- This is merge marker 5 to help automerge --> 

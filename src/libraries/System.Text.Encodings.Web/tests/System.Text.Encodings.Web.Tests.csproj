@@ -14,6 +14,7 @@
     <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.cs" />
     <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.generated.cs" />
     <Compile Include="AllowedCharsBitmapTests.cs" />
+    <Compile Include="TextEncoderBatteryTests.cs" />
     <Compile Include="TextEncoderTests.cs" />
     <Compile Include="ConfigurableScalarTextEncoder.cs" />
     <Compile Include="ScalarTestEncoder.cs" />
@@ -38,6 +39,7 @@
     <Compile Include="UnicodeRangesTests.cs" />
     <Compile Include="UnicodeRangesTests.generated.cs" />
     <Compile Include="UnicodeRangeTests.cs" />
+    <Compile Include="UnicodeTestHelpers.cs" />
     <Compile Include="UrlEncoderTests.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -54,6 +56,7 @@
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
     <ProjectReference Include="..\src\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
 </Project>

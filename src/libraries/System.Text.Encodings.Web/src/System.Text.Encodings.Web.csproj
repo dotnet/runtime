@@ -10,6 +10,7 @@
     <NoWarn>$(NoWarn);CS3019</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\IO\TextWriterExtensions.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoderBasicLatin.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
@@ -40,6 +41,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' or
                         '$(TargetFramework)' == 'netcoreapp3.0'">
@@ -51,8 +53,12 @@
     <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <Reference Include="System.Buffers" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
                         $(TargetFramework.StartsWith('net4'))">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

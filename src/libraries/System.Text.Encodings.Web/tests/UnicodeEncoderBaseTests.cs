@@ -89,7 +89,7 @@ namespace System.Text.Encodings.Web.Tests
                     {
                         mustEncode = true; // control char
                     }
-                    else if (!UnicodeHelpers.IsCharacterDefined((char)i))
+                    else if (!UnicodeTestHelpers.IsCharacterDefined((char)i))
                     {
                         mustEncode = true; // undefined (or otherwise disallowed) char
                     }

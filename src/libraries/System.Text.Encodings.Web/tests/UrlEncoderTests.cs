@@ -114,7 +114,7 @@ namespace System.Text.Encodings.Web.Tests
                     }
                     else if ((0x00A0 <= i && i <= 0xD7FF) | (0xF900 <= i && i <= 0xFDCF) | (0xFDF0 <= i && i <= 0xFFEF))
                     {
-                        mustEncode = !UnicodeHelpers.IsCharacterDefined((char)i); // 'ucschar'
+                        mustEncode = !UnicodeTestHelpers.IsCharacterDefined((char)i); // 'ucschar'
                     }
                     else
                     {

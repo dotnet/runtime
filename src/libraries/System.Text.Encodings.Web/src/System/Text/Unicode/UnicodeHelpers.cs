@@ -16,11 +16,6 @@ namespace System.Text.Unicode
     internal static unsafe partial class UnicodeHelpers
     {
         /// <summary>
-        /// Used for invalid Unicode sequences or other unrepresentable values.
-        /// </summary>
-        private const char UNICODE_REPLACEMENT_CHAR = '\uFFFD';
-
-        /// <summary>
         /// The last code point defined by the Unicode specification.
         /// </summary>
         internal const int UNICODE_LAST_CODEPOINT = 0x10FFFF;
@@ -239,134 +234,6 @@ namespace System.Text.Unicode
             }
         }
 
-        /// <summary>
-        /// Given a UTF-16 character stream, reads the next scalar value from the stream.
-        /// Set 'endOfString' to true if 'pChar' points to the last character in the stream.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int GetScalarValueFromUtf16(char first, char? second, out bool wasSurrogatePair, out bool needsMoreData)
-        {
-            if (!char.IsSurrogate(first))
-            {
-                wasSurrogatePair = false;
-                needsMoreData = false;
-                return first;
-            }
-
-            return GetScalarValueFromUtf16Slow(first, second, out wasSurrogatePair, out needsMoreData);
-        }
-
-        private static int GetScalarValueFromUtf16Slow(char first, char? second, out bool wasSurrogatePair, out bool needMoreData)
-        {
-#if DEBUG
-            if (!char.IsSurrogate(first))
-            {
-                Debug.Assert(false, "This case should've been handled by the fast path.");
-                wasSurrogatePair = false;
-                needMoreData = false;
-                return first;
-            }
-#endif
-            if (char.IsHighSurrogate(first))
-            {
-                if (second != null)
-                {
-                    if (char.IsLowSurrogate(second.Value))
-                    {
-                        // valid surrogate pair - extract codepoint
-                        wasSurrogatePair = true;
-                        needMoreData = false;
-                        return GetScalarValueFromUtf16SurrogatePair(first, second.Value);
-                    }
-                    else
-                    {
-                        // unmatched surrogate - substitute
-                        wasSurrogatePair = false;
-                        needMoreData = false;
-                        return UNICODE_REPLACEMENT_CHAR;
-                    }
-                }
-                else
-                {
-                    // unmatched surrogate - substitute
-                    wasSurrogatePair = false;
-                    needMoreData = true; // Last character was high surrogate; we need more data.
-                    return UNICODE_REPLACEMENT_CHAR;
-                }
-            }
-            else
-            {
-                // unmatched surrogate - substitute
-                Debug.Assert(char.IsLowSurrogate(first));
-                wasSurrogatePair = false;
-                needMoreData = false;
-                return UNICODE_REPLACEMENT_CHAR;
-            }
-        }
-
-        /// <summary>
-        /// Given a UTF-16 character stream, reads the next scalar value from the stream.
-        /// Set 'endOfString' to true if 'pChar' points to the last character in the stream.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int GetScalarValueFromUtf16(char* pChar, bool endOfString)
-        {
-            // This method is marked as AggressiveInlining to handle the common case of a non-surrogate
-            // character. The surrogate case is handled in the slower fallback code path.
-            char thisChar = *pChar;
-            return (char.IsSurrogate(thisChar)) ? GetScalarValueFromUtf16Slow(pChar, endOfString) : thisChar;
-        }
-
-        private static int GetScalarValueFromUtf16Slow(char* pChar, bool endOfString)
-        {
-            char firstChar = pChar[0];
-
-            if (!char.IsSurrogate(firstChar))
-            {
-                Debug.Assert(false, "This case should've been handled by the fast path.");
-                return firstChar;
-            }
-            else if (char.IsHighSurrogate(firstChar))
-            {
-                if (endOfString)
-                {
-                    // unmatched surrogate - substitute
-                    return UNICODE_REPLACEMENT_CHAR;
-                }
-                else
-                {
-                    char secondChar = pChar[1];
-                    if (char.IsLowSurrogate(secondChar))
-                    {
-                        // valid surrogate pair - extract codepoint
-                        return GetScalarValueFromUtf16SurrogatePair(firstChar, secondChar);
-                    }
-                    else
-                    {
-                        // unmatched surrogate - substitute
-                        return UNICODE_REPLACEMENT_CHAR;
-                    }
-                }
-            }
-            else
-            {
-                // unmatched surrogate - substitute
-                Debug.Assert(char.IsLowSurrogate(firstChar));
-                return UNICODE_REPLACEMENT_CHAR;
-            }
-        }
-
-        private static int GetScalarValueFromUtf16SurrogatePair(char highSurrogate, char lowSurrogate)
-        {
-            Debug.Assert(char.IsHighSurrogate(highSurrogate));
-            Debug.Assert(char.IsLowSurrogate(lowSurrogate));
-
-            // See https://www.unicode.org/versions/Unicode6.2.0/ch03.pdf, Table 3.5 for the
-            // details of this conversion. We don't use Char.ConvertToUtf32 because its exception
-            // handling shows up on the hot path, and our caller has already sanitized the inputs.
-            return (lowSurrogate & 0x3ff) | (((highSurrogate & 0x3ff) + (1 << 6)) << 10);
-        }
-
         internal static void GetUtf16SurrogatePairFromAstralScalarValue(int scalar, out char highSurrogate, out char lowSurrogate)
         {
             Debug.Assert(0x10000 <= scalar && scalar <= UNICODE_LAST_CODEPOINT);
@@ -427,21 +294,6 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
-        /// Returns a value stating whether a character is defined per the checked-in version
-        /// of the Unicode specification. Certain classes of characters (control chars,
-        /// private use, surrogates, some whitespace) are considered "undefined" for
-        /// our purposes.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsCharacterDefined(char c)
-        {
-            uint codePoint = (uint)c;
-            int index = (int)(codePoint >> 5);
-            int offset = (int)(codePoint & 0x1FU);
-            return ((GetDefinedCharacterBitmap()[index] >> offset) & 0x1U) != 0;
-        }
-
-        /// <summary>
         /// Determines whether the given scalar value is in the supplementary plane and thus
         /// requires 2 characters to be represented in UTF-16 (as a surrogate pair).
         /// </summary>
@@ -449,25 +301,6 @@ namespace System.Text.Unicode
         internal static bool IsSupplementaryCodePoint(int scalar)
         {
             return ((scalar & ~((int)char.MaxValue)) != 0);
-        }
-
-        /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is a UTF-8 continuation byte;
-        /// i.e., has binary representation 10xxxxxx, where x is any bit.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsUtf8ContinuationByte(in byte value)
-        {
-            // This API takes its input as a readonly ref so that the JIT can emit "cmp ModRM" statements
-            // directly rather than bounce a temporary through a register. That is, we want the JIT to be
-            // able to emit a single "cmp byte ptr [data], C0h" statement if we're querying a memory location
-            // to see if it's a continuation byte. Data that's already enregistered will go through the
-            // normal "cmp reg, C0h" code paths, perhaps with some extra unnecessary "movzx" instructions.
-            //
-            // The below check takes advantage of the two's complement representation of negative numbers.
-            // [ 0b1000_0000, 0b1011_1111 ] is [ -127 (sbyte.MinValue), -65 ]
-
-            return ((sbyte)value < -64);
         }
     }
 }

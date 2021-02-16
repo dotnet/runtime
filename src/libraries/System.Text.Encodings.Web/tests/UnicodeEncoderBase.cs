@@ -190,7 +190,22 @@ namespace System.Text.Encodings.Web.Tests
         {
             while (charsRemaining != 0)
             {
-                int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(input, endOfString: (charsRemaining == 1));
+                int nextScalar = 0xFFFD; // Unicode replacement char
+
+                char nextChar = input[0];
+                if (!char.IsSurrogate(nextChar))
+                {
+                    nextScalar = nextChar;
+                }
+                else if (char.IsHighSurrogate(nextChar) && charsRemaining > 1)
+                {
+                    char followingChar = input[1];
+                    if (char.IsLowSurrogate(followingChar))
+                    {
+                        nextScalar = char.ConvertToUtf32(nextChar, followingChar);
+                    }
+                }
+
                 if (UnicodeHelpers.IsSupplementaryCodePoint(nextScalar))
                 {
                     // Supplementary characters should always be encoded numerically.
