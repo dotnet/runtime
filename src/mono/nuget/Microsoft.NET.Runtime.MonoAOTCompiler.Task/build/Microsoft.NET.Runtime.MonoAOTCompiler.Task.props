@@ -1,5 +1,3 @@
 <Project>
-  <PropertyGroup>
-    <MonoAOTCompilerTaskAssemblyPath>$(MSBuildThisFileDirectory)..\tools\net5.0\MonoAOTCompiler.dll</MonoAOTCompilerTaskAssemblyPath>
-  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)..\Sdk\Sdk.props" />
 </Project>

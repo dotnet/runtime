@@ -1156,9 +1156,8 @@ typedef enum {
 	MONO_TRAMPOLINE_AOT      = 3,
 	MONO_TRAMPOLINE_AOT_PLT  = 4,
 	MONO_TRAMPOLINE_DELEGATE = 5,
-	MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING = 6,
-	MONO_TRAMPOLINE_VCALL    = 7,
-	MONO_TRAMPOLINE_NUM      = 8,
+	MONO_TRAMPOLINE_VCALL    = 6,
+	MONO_TRAMPOLINE_NUM      = 7,
 } MonoTrampolineType;
 
 // Assuming MONO_TRAMPOLINE_JIT / MONO_JIT_ICALL_generic_trampoline_jit are first.
@@ -2145,7 +2144,6 @@ MonoJitICallInfo *mono_find_jit_opcode_emulation (int opcode);
 void	  mono_print_ins_index (int i, MonoInst *ins);
 void	  mono_print_ins (MonoInst *ins);
 gboolean  mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method);
-gboolean mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile);
 MonoInst *mono_get_got_var (MonoCompile *cfg);
 void      mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int native_offset);
 void      mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg, int offset, int from, int to);
@@ -2210,9 +2208,6 @@ gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer a
 gpointer          mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr);
 guint32           mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr);
 gpointer          mono_magic_trampoline (host_mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp);
-#ifndef DISABLE_REMOTING
-gpointer          mono_generic_virtual_remoting_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp);
-#endif
 gpointer          mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp);
 gpointer          mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info, 
 									   guint8* tramp);
@@ -2980,6 +2975,7 @@ typedef enum {
 	SIMD_OP_ARM64_CRC32CX,
 	SIMD_OP_ARM64_RBIT32,
 	SIMD_OP_ARM64_RBIT64,
+	SIMD_OP_ARM64_AES_AESMC,
 	SIMD_OP_ARM64_SHA1C,
 	SIMD_OP_ARM64_SHA1H,
 	SIMD_OP_ARM64_SHA1M,

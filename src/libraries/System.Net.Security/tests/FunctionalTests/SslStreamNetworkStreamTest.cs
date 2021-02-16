@@ -349,12 +349,12 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             List<SslStream> streams = new List<SslStream>();
-            TestHelper.CleanupCertificates("SslStream_ClinetCertificate_SendsChain");
+            TestHelper.CleanupCertificates();
             (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates("SslStream_ClinetCertificate_SendsChain", serverCertificate: false);
             using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
             {
@@ -364,24 +364,17 @@ namespace System.Net.Security.Tests
                 store.Close();
             }
 
-            // There is race between adding certificate to the store and building chain
-            // Make sure we can build chain before proceeding to ssl handshale
             using (var chain = new X509Chain())
             {
-                int count = 25;
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.DisableCertificateDownloads = false;
                 bool chainStatus = chain.Build(clientCertificate);
-                while (chain.ChainElements.Count != (clientChain.Count + 1) && count > 0)
-                {
-                    Thread.Sleep(100);
-                    count--;
-                    chainStatus = chain.Build(clientCertificate);
-                }
-
                 // Verify we can construct full chain
-                Assert.True(chain.ChainElements.Count > clientChain.Count, "chain cannot be built");
+                if (chain.ChainElements.Count < clientChain.Count)
+                {
+                    throw new SkipTestException($"chain cannot be built {chain.ChainElements.Count}");
+                }
             }
 
             var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost",  };
@@ -421,7 +414,7 @@ namespace System.Net.Security.Tests
                 streams.Add(server);
             }
 
-            TestHelper.CleanupCertificates("SslStream_ClinetCertificate_SendsChain");
+            TestHelper.CleanupCertificates();
             clientCertificate.Dispose();
             foreach (X509Certificate c in clientChain)
             {

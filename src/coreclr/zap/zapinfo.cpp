@@ -4069,6 +4069,12 @@ CORINFO_METHOD_HANDLE ZapInfo::getUnboxedEntry(
     return m_pEEJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
 }
 
+CORINFO_CLASS_HANDLE ZapInfo::getDefaultComparerClass(
+    CORINFO_CLASS_HANDLE elemType)
+{
+    return m_pEEJitInfo->getDefaultComparerClass(elemType);
+}
+
 CORINFO_CLASS_HANDLE ZapInfo::getDefaultEqualityComparerClass(
     CORINFO_CLASS_HANDLE elemType)
 {

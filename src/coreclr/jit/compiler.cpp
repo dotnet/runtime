@@ -3979,6 +3979,15 @@ _SetMinOpts:
         }
     }
 
+#if TARGET_ARM
+    // A single JitStress=1 Linux ARM32 test fails when we expand virtual calls early
+    // JIT\HardwareIntrinsics\General\Vector128_1\Vector128_1_ro
+    //
+    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() == 2);
+#else
+    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() != 0);
+#endif
+
     fgCanRelocateEHRegions = true;
 }
 
@@ -4402,6 +4411,14 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // to happen before importation.
     //
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
+
+    // If we're going to instrument code, we may need to prepare before
+    // we import.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
+    }
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
@@ -5506,7 +5523,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 #ifdef TARGET_UNIX
     info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
 #else
-    info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
+    info.compMatchedVM        = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
 #endif
 
     // If we are not compiling for a matched VM, then we are getting JIT flags that don't match our target
