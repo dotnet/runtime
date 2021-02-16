@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using BCryptAlgPseudoHandle = Interop.BCrypt.BCryptAlgPseudoHandle;
@@ -17,11 +18,12 @@ namespace Internal.Cryptography
     {
         private static readonly bool s_usePseudoHandles = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 0);
 
-        // For Windows 7 we will use BCryptDeriveKeyPBKDF2. For Windows 8 we will use BCryptDeriveKey
+        // For Windows 7 we will use BCryptDeriveKeyPBKDF2. For Windows 8+ we will use BCryptKeyDerivation
         // since it has better performance.
         private static readonly bool s_useKeyDerivation = OperatingSystem.IsWindowsVersionAtLeast(8, 0, 0);
 
-        private static volatile SafeBCryptAlgorithmHandle? s_pbkdf2AlgorithmHandle;
+        // A cached instance of PBKDF2 for Windows 8, where pseudo handles are not supported.
+        private static SafeBCryptAlgorithmHandle? s_pbkdf2AlgorithmHandle;
 
         public static unsafe void Fill(
             ReadOnlySpan<byte> password,
@@ -55,18 +57,20 @@ namespace Internal.Cryptography
             int hashBlockSizeBytes = GetHashBlockSize(hashAlgorithmName);
 
             // stackalloc 0 to let compiler know this cannot escape.
+            Span<byte> clearSpan = stackalloc byte[0];
             ReadOnlySpan<byte> symmetricKeyMaterial = stackalloc byte[0];
             int symmetricKeyMaterialLength;
-            Span<byte> clearSpan = stackalloc byte[0];
 
             if (password.IsEmpty)
             {
+                // CNG won't accept a null pointer for the password.
                 symmetricKeyMaterial = stackalloc byte[1];
                 symmetricKeyMaterialLength = 0;
                 clearSpan = default;
             }
             else if (password.Length <= hashBlockSizeBytes)
             {
+                // Password is small enough to use as-is.
                 symmetricKeyMaterial = password;
                 symmetricKeyMaterialLength = password.Length;
                 clearSpan = default;
@@ -103,14 +107,18 @@ namespace Internal.Cryptography
 
                 clearSpan = hashBuffer.Slice(0, hashBufferSize);
                 symmetricKeyMaterial = clearSpan;
-                symmetricKeyMaterialLength = symmetricKeyMaterial.Length;
+                symmetricKeyMaterialLength = hashBufferSize;
             }
+
+            Debug.Assert(symmetricKeyMaterial.Length > 0);
+
+            NTSTATUS generateKeyStatus;
 
             if (s_usePseudoHandles)
             {
                 fixed (byte* pSymmetricKeyMaterial = symmetricKeyMaterial)
                 {
-                    NTSTATUS generateKeyStatus = Interop.BCrypt.BCryptGenerateSymmetricKey(
+                    generateKeyStatus = Interop.BCrypt.BCryptGenerateSymmetricKey(
                         (nuint)BCryptAlgPseudoHandle.BCRYPT_PBKDF2_ALG_HANDLE,
                         out keyHandle,
                         pbKeyObject: IntPtr.Zero,
@@ -118,13 +126,6 @@ namespace Internal.Cryptography
                         pSymmetricKeyMaterial,
                         symmetricKeyMaterialLength,
                         dwFlags: 0);
-
-                    CryptographicOperations.ZeroMemory(clearSpan);
-
-                    if (generateKeyStatus != NTSTATUS.STATUS_SUCCESS)
-                    {
-                        throw Interop.BCrypt.CreateCryptographicException(generateKeyStatus);
-                    }
                 }
             }
             else
@@ -133,24 +134,24 @@ namespace Internal.Cryptography
                 {
                     NTSTATUS openStatus = Interop.BCrypt.BCryptOpenAlgorithmProvider(
                         out SafeBCryptAlgorithmHandle pbkdf2AlgorithmHandle,
-                        "PBKDF2",
+                        Internal.NativeCrypto.BCryptNative.AlgorithmName.Pbkdf2,
                         null,
                         BCryptOpenAlgorithmProviderFlags.None);
 
                     if (openStatus != NTSTATUS.STATUS_SUCCESS)
                     {
+                        CryptographicOperations.ZeroMemory(clearSpan);
                         throw Interop.BCrypt.CreateCryptographicException(openStatus);
                     }
 
-                    // This might race on the null check above, and that's okay. Worst
-                    // case the algorithm is opened more than once, and they will get
-                    // cleaned up during collection.
-                    s_pbkdf2AlgorithmHandle = pbkdf2AlgorithmHandle;
+                    // This might race, and that's okay. Worst case the algorithm is opened
+                    // more than once, and the ones that lost will get cleaned up during collection.
+                    Interlocked.CompareExchange(ref s_pbkdf2AlgorithmHandle, pbkdf2AlgorithmHandle, null);
                 }
 
                 fixed (byte* pSymmetricKeyMaterial = symmetricKeyMaterial)
                 {
-                    NTSTATUS generateKeyStatus = Interop.BCrypt.BCryptGenerateSymmetricKey(
+                    generateKeyStatus = Interop.BCrypt.BCryptGenerateSymmetricKey(
                         s_pbkdf2AlgorithmHandle,
                         out keyHandle,
                         pbKeyObject: IntPtr.Zero,
@@ -158,14 +159,14 @@ namespace Internal.Cryptography
                         pSymmetricKeyMaterial,
                         symmetricKeyMaterialLength,
                         dwFlags: 0);
-
-                    CryptographicOperations.ZeroMemory(clearSpan);
-
-                    if (generateKeyStatus != NTSTATUS.STATUS_SUCCESS)
-                    {
-                        throw Interop.BCrypt.CreateCryptographicException(generateKeyStatus);
-                    }
                 }
+            }
+
+            CryptographicOperations.ZeroMemory(clearSpan);
+
+            if (generateKeyStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                throw Interop.BCrypt.CreateCryptographicException(generateKeyStatus);
             }
 
             Debug.Assert(!keyHandle.IsInvalid);
@@ -177,7 +178,7 @@ namespace Internal.Cryptography
             fixed (byte* pSalt = salt)
             fixed (byte* pDestination = destination)
             {
-                BCryptBuffer* buffers = stackalloc BCryptBuffer[3];
+                Span<BCryptBuffer> buffers = stackalloc BCryptBuffer[3];
                 buffers[0].BufferType = NCryptBCryptBufferDescriptors.KDF_ITERATION_COUNT;
                 buffers[0].pvBuffer = (IntPtr)(&kdfIterations);
                 buffers[0].cbBuffer = sizeof(ulong);
@@ -192,27 +193,31 @@ namespace Internal.Cryptography
                 // C# spec: "A char* value produced by fixing a string instance always points to a null-terminated string"
                 buffers[2].cbBuffer = checked((hashAlgorithmName.Length + 1) * sizeof(char)); // Add null terminator.
 
-                Interop.BCrypt.BCryptBufferDesc bufferDesc;
-                bufferDesc.ulVersion = Interop.BCrypt.BCRYPTBUFFER_VERSION;
-                bufferDesc.cBuffers = 3;
-                bufferDesc.pBuffers = (IntPtr)buffers;
-
-                NTSTATUS deriveStatus = Interop.BCrypt.BCryptKeyDerivation(
-                    keyHandle,
-                    &bufferDesc,
-                    pDestination,
-                    destination.Length,
-                    out uint resultLength,
-                    dwFlags: 0);
-
-                if (deriveStatus != NTSTATUS.STATUS_SUCCESS)
+                fixed (BCryptBuffer* pBuffers = buffers)
                 {
-                    throw Interop.BCrypt.CreateCryptographicException(deriveStatus);
-                }
+                    Interop.BCrypt.BCryptBufferDesc bufferDesc;
+                    bufferDesc.ulVersion = Interop.BCrypt.BCRYPTBUFFER_VERSION;
+                    bufferDesc.cBuffers = buffers.Length;
+                    bufferDesc.pBuffers = (IntPtr)pBuffers;
 
-                if (destination.Length != resultLength)
-                {
-                    throw new CryptographicException();
+                    NTSTATUS deriveStatus = Interop.BCrypt.BCryptKeyDerivation(
+                        keyHandle,
+                        &bufferDesc,
+                        pDestination,
+                        destination.Length,
+                        out uint resultLength,
+                        dwFlags: 0);
+
+                    if (deriveStatus != NTSTATUS.STATUS_SUCCESS)
+                    {
+                        throw Interop.BCrypt.CreateCryptographicException(deriveStatus);
+                    }
+
+                    if (destination.Length != resultLength)
+                    {
+                        Debug.Fail("PBKDF2 resultLength != destination.Length");
+                        throw new CryptographicException();
+                    }
                 }
             }
         }
