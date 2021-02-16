@@ -1411,7 +1411,7 @@ void QCALLTYPE AssemblyNative::TraceSatelliteSubdirectoryPathProbed(LPCWSTR file
 }
 
 // static
-INT32 QCALLTYPE AssemblyNative::ApplyHotReloadUpdate(
+INT32 QCALLTYPE AssemblyNative::ApplyUpdate(
     QCall::AssemblyHandle assembly,
     UINT8* metadataDelta,
     INT32 metadataDeltaLength,
@@ -1437,9 +1437,6 @@ INT32 QCALLTYPE AssemblyNative::ApplyHotReloadUpdate(
     {
         if (!CORDebuggerAttached())
         {
-            // Suspend the runtime.
-            ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
-
             Module* pModule = assembly->GetDomainAssembly()->GetModule();
             if (pModule->IsEditAndContinueEnabled())
             {
@@ -1449,8 +1446,6 @@ INT32 QCALLTYPE AssemblyNative::ApplyHotReloadUpdate(
             {
                 result = E_INVALIDARG;
             }
-
-            ThreadSuspend::RestartEE(FALSE, TRUE);
         }
         else
         {

@@ -42,22 +42,24 @@ namespace System.Reflection.Metadata
         }
 
         [DllImport(RuntimeHelpers.QCall)]
-        private static extern unsafe int ApplyHotReloadUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
+        private static extern unsafe int ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
 
         /// <summary>
-        /// Hot reload update API
-        /// Applies an update to the given assembly using the metadata, IL and PDB deltas. Currently executing
-        /// methods will continue to use the existing IL. New executions of modified methods will use the new
-        /// IL. The supported changes are runtime specific - different .NET runtimes may have different
-        /// limitations. The runtime makes no guarantees if the delta includes unsupported changes.
+        /// Updates the specified assembly using the provided metadata, IL and PDB deltas.
         /// </summary>
-        /// <param name="assembly">The assembly to update</param>
-        /// <param name="metadataDelta">The metadata changes</param>
-        /// <param name="ilDelta">The IL changes</param>
-        /// <param name="pdbDelta">The PDB changes. Current not supported on .NET Core</param>
-        /// <exception cref="ArgumentNullException">if assembly parameter is null</exception>
-        /// <exception cref="NotSupportedException">update failed</exception>
-        public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta = default)
+        /// <remarks>
+        /// Currently executing methods will continue to use the existing IL. New executions of modified methods will
+        /// use the new IL. Different runtimes may have different limitations on what kinds of changes are supported,
+        /// and runtimes make no guarantees as to the state of the assembly and process if the delta includes
+        /// unsupported changes.
+        /// </remarks>
+        /// <param name="assembly">The assembly to update.</param>
+        /// <param name="metadataDelta">The metadata changes to be applied.</param>
+        /// <param name="ilDelta">The IL changes to be applied.</param>
+        /// <param name="pdbDelta">The PDB changes to be applied.</param>
+        /// <exception cref="ArgumentNullException">The assembly argument is null.</exception>
+        /// <exception cref="NotSupportedException">The update could not be applied.</exception>
+        public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta)
         {
             if (assembly == null)
             {
@@ -67,7 +69,7 @@ namespace System.Reflection.Metadata
             RuntimeAssembly? runtimeAssembly = assembly as RuntimeAssembly;
             if (runtimeAssembly == null)
             {
-                throw new ArgumentException("Not a RuntimeAssembly", nameof(assembly));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
             }
 
             unsafe
@@ -75,7 +77,7 @@ namespace System.Reflection.Metadata
                 RuntimeAssembly rtAsm = runtimeAssembly;
                 fixed (byte* metadataDeltaPtr = metadataDelta, ilDeltaPtr = ilDelta, pdbDeltaPtr = pdbDelta)
                 {
-                    if (ApplyHotReloadUpdate(
+                    if (ApplyUpdate(
                         new QCallAssembly(ref rtAsm),
                         metadataDeltaPtr,
                         metadataDelta.Length,

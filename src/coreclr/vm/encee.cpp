@@ -397,7 +397,7 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
         return hr;
     }
 
-    // Tell the debugger about the new method so it get's the version number properly
+    // Tell the debugger about the new method so it gets the version number properly
     if (CORDebuggerAttached())
     {
         hr = g_pDebugInterface->AddFunction(pMethod, m_applyChangesCount);
