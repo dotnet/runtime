@@ -81,6 +81,7 @@ struct SeqPointInfo {
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES			1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX	1
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 		1
+#define MONO_ARCH_HAVE_PATCH_CODE_NEW 			1
 
 #define S390_STACK_ALIGNMENT		 8
 #define S390_FIRST_ARG_REG 		s390_r2
@@ -143,7 +144,7 @@ struct SeqPointInfo {
 
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
-#define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1 // FIXME?
+#define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0 // FIXME?
 
 /*-----------------------------------------------*/
 /* Macros used to generate instructions          */
