@@ -137,7 +137,7 @@ namespace System.Net.WebSockets
         [UnsupportedOSPlatform("browser")]
         public static WebSocket CreateFromStream(Stream stream, bool isServer, string? subProtocol, TimeSpan keepAliveInterval)
         {
-            if (WebSocketCreationOptions.IsKeepAliveValid(keepAliveInterval))
+            if (!WebSocketCreationOptions.IsKeepAliveValid(keepAliveInterval))
                 throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
                     SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
 
