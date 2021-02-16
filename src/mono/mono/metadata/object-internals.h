@@ -667,28 +667,6 @@ typedef struct {
 
 MONO_COLD void mono_set_pending_exception (MonoException *exc);
 
-/* remoting and async support */
-
-MonoAsyncResult *
-mono_async_result_new	    (MonoDomain *domain, gpointer handle, 
-			     MonoObject *state, gpointer data, MonoObject *object_data, MonoError *error);
-MonoWaitHandle *
-mono_wait_handle_new	    (MonoDomain *domain, gpointer handle, MonoError *error);
-
-gpointer
-mono_wait_handle_get_handle (MonoWaitHandle *handle);
-
-gboolean
-mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj, 
-			     MonoReflectionMethod *method, MonoArray *out_args, MonoError *error);
-
-MonoMethodMessage *
-mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
-			      MonoDelegate **cb, MonoObject **state, MonoError *error);
-
-void
-mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error);
-
 void
 mono_delegate_ctor	    (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
 
