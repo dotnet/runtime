@@ -163,7 +163,8 @@ void Phase::PostPhase(PhaseStatus status)
                                    PHASE_ALLOCATE_OBJECTS,  PHASE_EMPTY_TRY,
                                    PHASE_EMPTY_FINALLY,     PHASE_MERGE_FINALLY_CHAINS,
                                    PHASE_CLONE_FINALLY,     PHASE_MERGE_THROWS,
-                                   PHASE_MORPH_GLOBAL,      PHASE_BUILD_SSA,
+                                   PHASE_MORPH_GLOBAL,      PHASE_INVERT_LOOPS,
+                                   PHASE_OPTIMIZE_LAYOUT,   PHASE_BUILD_SSA,
                                    PHASE_RATIONALIZE,       PHASE_LOWERING,
                                    PHASE_STACK_LEVEL_SETTER};
 
