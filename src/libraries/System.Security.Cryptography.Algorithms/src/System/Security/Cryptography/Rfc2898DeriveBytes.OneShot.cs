@@ -8,6 +8,9 @@ namespace System.Security.Cryptography
 {
     public partial class Rfc2898DeriveBytes
     {
+        // Throwing UTF8 on invalid input.
+        private static readonly Encoding s_throwingUtf8Encoding = new UTF8Encoding(false, true);
+
         public static byte[] Pbkdf2DeriveBytes(
             byte[] password,
             byte[] salt,
@@ -88,12 +91,12 @@ namespace System.Security.Cryptography
             const int MaxPasswordStackSize = 256;
 
             byte[]? rentedPasswordBuffer = null;
-            int maxEncodedSize = Encoding.UTF8.GetMaxByteCount(password.Length);
+            int maxEncodedSize = s_throwingUtf8Encoding.GetMaxByteCount(password.Length);
 
             Span<byte> passwordBuffer = maxEncodedSize > MaxPasswordStackSize ?
                 (rentedPasswordBuffer = CryptoPool.Rent(maxEncodedSize)) :
                 stackalloc byte[MaxPasswordStackSize];
-            int passwordBytesWritten = Encoding.UTF8.GetBytes(password, passwordBuffer);
+            int passwordBytesWritten = s_throwingUtf8Encoding.GetBytes(password, passwordBuffer);
             Span<byte> passwordBytes = passwordBuffer.Slice(0, passwordBytesWritten);
 
             Pbkdf2DeriveBytesCore(passwordBytes, salt, iterations, hashAlgorithm, destination);

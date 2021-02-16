@@ -143,6 +143,14 @@ namespace System.Security.Cryptography.DeriveBytesTests
             );
         }
 
+        [Fact]
+        public static void Pbkdf2DeriveBytes_PasswordString_InvalidUtf8()
+        {
+            Assert.Throws<EncoderFallbackException>(() =>
+                Rfc2898DeriveBytes.Pbkdf2DeriveBytes(
+                    "\uD800", s_salt, iterations: 1, s_extractLength, HashAlgorithmName.SHA256));
+        }
+
         [Theory]
         [MemberData(nameof(Pbkdf2DeriveBytes_PasswordBytes_Compare_Data))]
         public static void Pbkdf2DeriveBytes_PasswordBytes_Compare(
