@@ -206,7 +206,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 throw new ArgumentException("Invalid input specification: Must specify the host binary");
             }
 
-            var bundleRelativePathCollision = fileSpecs.GroupBy(file => file.BundleRelativePath).Where(g => g.Count() > 1).FirstOrDefault();
+            var bundleRelativePathCollision = fileSpecs.GroupBy(file => file.BundleRelativePath).FirstOrDefault(g => g.Count() > 1);
             if (bundleRelativePathCollision != null)
             {
                 string fileSpecPaths = string.Join(", ", bundleRelativePathCollision.Select(file => "'" + file.SourcePath + "'"));
