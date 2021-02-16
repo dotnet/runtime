@@ -4184,7 +4184,9 @@ LONG* MethodContext::repGetAddrOfCaptureThreadGlobal(void** ppIndirection)
     if ((GetAddrOfCaptureThreadGlobal == nullptr) || (GetAddrOfCaptureThreadGlobal->GetIndex((DWORD)0) == -1))
     {
 #ifdef sparseMC
-        LogDebug("Sparse - repGetAddrOfCaptureThreadGlobal returning 0xCAFE0001");
+        LogDebug("Sparse - repGetAddrOfCaptureThreadGlobal returning nullptr and 0xCAFE0001");
+        if (ppIndirection != nullptr)
+            *ppIndirection = nullptr;
         return (LONG*)(size_t)0xCAFE0001;
 #else
         LogException(EXCEPTIONCODE_MC, "Didn't find anything for GetAddrOfCaptureThreadGlobal", "");
