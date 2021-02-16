@@ -265,6 +265,21 @@ namespace System.Reflection.Emit
                                                  assemblyAttributes);
         }
 
+        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
+        public static AssemblyBuilder DefineDynamicAssembly(
+            AssemblyName name,
+            AssemblyBuilderAccess access,
+            AssemblyLoadContext assemblyLoadContext,
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes = null)
+        {
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
+            return InternalDefineDynamicAssembly(name,
+                access,
+                ref stackMark,
+                assemblyLoadContext,
+                assemblyAttributes);
+        }
+
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void CreateDynamicAssembly(ObjectHandleOnStack name,
                                                          StackCrawlMarkHandle stackMark,
