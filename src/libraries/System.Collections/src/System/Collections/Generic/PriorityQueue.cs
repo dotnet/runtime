@@ -20,6 +20,9 @@ namespace System.Collections.Generic
         /// </summary>
         private (TElement Element, TPriority Priority)[] _nodes;
 
+        /// <summary>
+        /// Lazily-initialized collection used to expose the contents of the queue.
+        /// </summary>
         private UnorderedItemsCollection? _unorderedItems;
 
         /// <summary>
@@ -365,6 +368,9 @@ namespace System.Collections.Generic
             }
         }
 
+        /// <summary>
+        /// Ensures the queue has enough space to add another item.
+        /// </summary>
         private void EnsureEnoughCapacityBeforeAddingNode()
         {
             Debug.Assert(_size <= _nodes.Length);
@@ -374,6 +380,9 @@ namespace System.Collections.Generic
             }
         }
 
+        /// <summary>
+        /// Determines how large to size the queue when it expands.
+        /// </summary>
         private int ComputeCapacityForNextGrowth()
         {
             const int GrowthFactor = 2;
@@ -548,14 +557,14 @@ namespace System.Collections.Generic
             _nodes[nodeIndex] = node;
         }
 
+        /// <summary>
+        /// Represents the contents of a <see cref="PriorityQueue{TElement, TPriority}"/> without ordering.
+        /// </summary>
         public sealed class UnorderedItemsCollection : IReadOnlyCollection<(TElement Element, TPriority Priority)>, ICollection
         {
             private readonly PriorityQueue<TElement, TPriority> _queue;
 
-            internal UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue)
-            {
-                _queue = queue;
-            }
+            internal UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue) => _queue = queue;
 
             public int Count => _queue._size;
             object ICollection.SyncRoot => this;
@@ -598,6 +607,9 @@ namespace System.Collections.Generic
                 }
             }
 
+            /// <summary>
+            /// Enumerates the element and priority pairs of a <see cref="PriorityQueue{TElement, TPriority}"/>.
+            /// </summary>
             public struct Enumerator : IEnumerator<(TElement Element, TPriority Priority)>
             {
                 private readonly PriorityQueue<TElement, TPriority> _queue;
@@ -613,8 +625,15 @@ namespace System.Collections.Generic
                     _current = default;
                 }
 
+                /// <summary>
+                /// Releases all resources used by the <see cref="Enumerator"/>.
+                /// </summary>
                 public void Dispose() { }
 
+                /// <summary>
+                /// Advances the enumerator to the next element of the <see cref="UnorderedItems"/>.
+                /// </summary>
+                /// <returns><see langword="true"/> if the enumerator was successfully advanced to the next element; <see langword="false"/> if the enumerator has passed the end of the collection.</returns>
                 public bool MoveNext()
                 {
                     PriorityQueue<TElement, TPriority> localQueue = _queue;
@@ -641,6 +660,9 @@ namespace System.Collections.Generic
                     return false;
                 }
 
+                /// <summary>
+                /// Gets the element at the current position of the enumerator.
+                /// </summary>
                 public (TElement Element, TPriority Priority) Current => _current;
 
                 object IEnumerator.Current =>
@@ -659,6 +681,10 @@ namespace System.Collections.Generic
                 }
             }
 
+            /// <summary>
+            /// Returns an enumerator that iterates through the <see cref="UnorderedItems"/>.
+            /// </summary>
+            /// <returns>An <see cref="Enumerator"/> for the <see cref="UnorderedItems"/>.</returns>
             public Enumerator GetEnumerator() => new Enumerator(_queue);
 
             IEnumerator<(TElement Element, TPriority Priority)> IEnumerable<(TElement Element, TPriority Priority)>.GetEnumerator() => GetEnumerator();
