@@ -18999,15 +18999,9 @@ void gc_heap::gc1()
             }
             if (heap_number == 0)
             {
-#ifdef VERIFY_HEAP
-                // need take the gc_lock in preparation for verify_heap below
+                // need to take the gc_lock in preparation for verify_heap below
                 // *before* we suspend the EE, otherwise we get a deadlock
-                if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
-                {
-                    enter_spin_lock (&gc_heap::gc_lock);
-                    dprintf (SPINLOCK_LOG, ("enter gc_lock for verify_heap"));
-                }
-#endif // VERIFY_HEAP
+                enter_gc_lock_for_verify_heap();
 
                 suspend_EE();
                 bgc_threads_sync_event.Set();
@@ -19018,15 +19012,9 @@ void gc_heap::gc1()
                 dprintf (2, ("bgc_threads_sync_event is signalled"));
             }
 #else //MULTIPLE_HEAPS
-#ifdef VERIFY_HEAP
-            // need take the gc_lock in preparation for verify_heap below
+            // need to take the gc_lock in preparation for verify_heap below
             // *before* we suspend the EE, otherwise we get a deadlock
-            if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
-            {
-                enter_spin_lock (&gc_heap::gc_lock);
-                dprintf (SPINLOCK_LOG, ("enter gc_lock for verify_heap"));
-            }
-#endif // VERIFY_HEAP
+            enter_gc_lock_for_verify_heap();
 
             suspend_EE();
 #endif //MULTIPLE_HEAPS
@@ -19075,15 +19063,8 @@ void gc_heap::gc1()
             }
             if (heap_number == 0)
             {
-#ifdef VERIFY_HEAP
-                if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
-                {
-                    dprintf (SPINLOCK_LOG, ("leave gc_lock taken for verify_heap"));
-                    leave_spin_lock (&gc_heap::gc_lock);
-                }
-#endif // VERIFY_HEAP
-
                 restart_EE();
+                leave_gc_lock_for_verify_heap();
                 bgc_threads_sync_event.Set();
             }
             else
@@ -19092,15 +19073,9 @@ void gc_heap::gc1()
                 dprintf (2, ("bgc_threads_sync_event is signalled"));
             }
 #else //MULTIPLE_HEAPS
-#ifdef VERIFY_HEAP
-            if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
-            {
-                dprintf (SPINLOCK_LOG, ("leave gc_lock taken for verify_heap"));
-                leave_spin_lock (&gc_heap::gc_lock);
-            }
-#endif // VERIFY_HEAP
 
             restart_EE();
+            leave_gc_lock_for_verify_heap();
 #endif //MULTIPLE_HEAPS
 
             disable_preemptive (cooperative_mode);
@@ -39245,6 +39220,28 @@ BOOL gc_heap::check_need_card (uint8_t* child_obj, int gen_num_for_cards,
 #else
     return ((child_obj < high) && (child_obj >= low));
 #endif //USE_REGIONS
+}
+
+void gc_heap::enter_gc_lock_for_verify_heap()
+{
+#ifdef VERIFY_HEAP
+    if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
+    {
+        enter_spin_lock (&gc_heap::gc_lock);
+        dprintf (SPINLOCK_LOG, ("enter gc_lock for verify_heap"));
+    }
+#endif // VERIFY_HEAP
+}
+
+void gc_heap::leave_gc_lock_for_verify_heap()
+{
+#ifdef VERIFY_HEAP
+    if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
+    {
+        dprintf (SPINLOCK_LOG, ("leave gc_lock taken for verify_heap"));
+        leave_spin_lock (&gc_heap::gc_lock);
+    }
+#endif // VERIFY_HEAP
 }
 
 void gc_heap::verify_heap (BOOL begin_gc_p)
