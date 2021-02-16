@@ -2228,7 +2228,7 @@ mono_codegen (MonoCompile *cfg)
 			if (ji->type == MONO_PATCH_INFO_NONE)
 				continue;
 
-			target = mono_resolve_patch_target (cfg->method, cfg->domain, cfg->native_code, ji, cfg->run_cctors, cfg->error);
+			target = mono_resolve_patch_target (cfg->method, cfg->native_code, ji, cfg->run_cctors, cfg->error);
 			if (!is_ok (cfg->error)) {
 				mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 				return;

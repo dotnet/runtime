@@ -2178,7 +2178,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoJumpInfo ji;
 		ji.type = MONO_PATCH_INFO_METHOD_FTNDESC;
 		ji.data.method = m;
-		return mono_resolve_patch_target (m, domain, NULL, &ji, FALSE, error);
+		return mono_resolve_patch_target (m, NULL, &ji, FALSE, error);
 	}
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER: {
 		MonoMethod *m = (MonoMethod*)data;
