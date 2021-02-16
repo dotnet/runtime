@@ -397,7 +397,7 @@ namespace System.Net.Http.Headers
                 return null;
 
             var copy = new ObjectCollection<NameValueHeaderValue>();
-            foreach (var item in source)
+            foreach (NameValueHeaderValue item in source)
             {
                 copy.Add(new NameValueHeaderValue(item));
             }
