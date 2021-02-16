@@ -105,8 +105,11 @@ namespace System.Linq.Tests
             Type[] genericTypes = method.GetGenericArguments();
             foreach (Type genericType in genericTypes)
             {
-                // The generic types should not have DynamicallyAccessedMembersAttribute on them.
+                // The generic type should not have DynamicallyAccessedMembersAttribute on it.
                 Assert.Null(genericType.GetCustomAttribute<DynamicallyAccessedMembersAttribute>());
+
+                // The generic type should not have a 'where new()' constraint since that will tell the trimmer to keep the ctor
+                Assert.False(genericType.GenericParameterAttributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint));
             }
         }
     }
