@@ -120,6 +120,16 @@ namespace System.IO.Pipelines
         }
 
         /// <summary>
+        /// Creates a <see cref="PipeReader"/> wrapping the specified <see cref="ReadOnlySequence{T}"/>.
+        /// </summary>
+        /// <param name="sequence">The sequence.</param>
+        /// <returns>A <see cref="PipeReader"/> that wraps the <see cref="ReadOnlySequence{T}"/>.</returns>
+        public static PipeReader Create(ReadOnlySequence<byte> sequence)
+        {
+            return new SequencePipeReader(sequence);
+        }
+
+        /// <summary>
         /// Asynchronously reads the bytes from the <see cref="PipeReader"/> and writes them to the specified stream, using a specified buffer size and cancellation token.
         /// </summary>
         /// <param name="destination">The <see cref="PipeWriter"/> to which the contents of the current stream will be copied.</param>
