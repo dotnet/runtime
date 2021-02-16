@@ -116,9 +116,6 @@ static const MonoRuntimeInfo supported_runtimes[] = {
 static MonoCreateDomainFunc create_domain_hook;
 static MonoFreeDomainFunc free_domain_hook;
 
-/* AOT cache configuration */
-static MonoAotCacheConfig aot_cache_config;
-
 static GSList*
 get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 
@@ -1465,12 +1462,6 @@ const MonoRuntimeInfo*
 mono_get_runtime_info (void)
 {
 	return current_runtime;
-}
-
-MonoAotCacheConfig *
-mono_get_aot_cache_config (void)
-{
-	return &aot_cache_config;
 }
 
 void
